@@ -14,6 +14,7 @@
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_CreateDelegate.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
 #include "K2Node_FunctionEntry.h"
@@ -606,6 +607,9 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 			TEXT("; error: %s has no node type ID, so it cannot be written back. ")
 			TEXT("Its class is %s."),
 			*TurboMCPNodeId::MakeForNode(InNode), *InNode->GetClass()->GetName());
+        if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(InNode))
+            Note += FString::Printf(TEXT("\n; configured delegate function: %s (stored binding; runtime target not verified)"),
+                Delegate->GetFunctionName().IsNone() ? TEXT("none (unbound)") : *Delegate->GetFunctionName().ToString());
         auto Safe=[](const FString& Value) { return Value.Replace(TEXT("\r"),TEXT("\\r")).Replace(TEXT("\n"),TEXT("\\n")); };
         for(const UEdGraphPin* Pin:InNode->Pins)
         {
@@ -649,6 +653,10 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 				*Call->FunctionReference.GetMemberName().ToString());
 		}
 	}
+
+    if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(InNode))
+        Out += FString::Printf(TEXT(" ; configured delegate function: %s (stored binding; runtime target not verified)"),
+            Delegate->GetFunctionName().IsNone() ? TEXT("none (unbound)") : *Delegate->GetFunctionName().ToString());
 
 	int32 Printed = 0;
 	int32 InputIndex = 0;
@@ -1152,6 +1160,9 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 			Out += FString::Printf(TEXT("\n;   %s  %s"),
 				*TurboMCPNodeId::MakeForNode(Node),
 				*TurboMCPNodeId::GetNodeTitle(Node));
+            if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(Node))
+                Out += FString::Printf(TEXT(" ; configured delegate function: %s (stored binding; runtime target not verified)"),
+                    Delegate->GetFunctionName().IsNone() ? TEXT("none (unbound)") : *Delegate->GetFunctionName().ToString());
 			++Shown;
 		}
 	}

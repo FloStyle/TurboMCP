@@ -8,6 +8,7 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_CreateDelegate.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_VariableSet.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -101,6 +102,22 @@ bool FTurboMCPEventConnectWorkflowTest::RunTest(const FString& Parameters)
         }
         Rows.Sort(); return FString::Join(Rows, TEXT("\n"));
     };
+    // An isolated Create Event node proves stored binding inspection without executing it.
+    UK2Node_CreateDelegate* Delegate = NewObject<UK2Node_CreateDelegate>(Graph);
+    Graph->AddNode(Delegate, false, false); Delegate->CreateNewGuid(); Delegate->AllocateDefaultPins();
+    Delegate->SetFunction(TEXT("Purchase"));
+    const FString BindingBefore = Snapshot();
+    const bool BindingDirtyBefore = Package->IsDirty();
+    const FString DelegateId = TurboMCPNodeId::MakeForNode(Delegate, true);
+    const FString BindingGraph = Record(TEXT("GraphLoad delegate binding"), UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Asset, GraphName, TEXT("read"), TEXT("full")));
+    const FString BindingContext = Record(TEXT("NodeContext delegate binding"), UTurboMCPReadToolset::ReadTurboMCPNodeContext(Asset, GraphName, DelegateId, 0));
+    TestTrue(TEXT("Graph reader exposes configured delegate function"), BindingGraph.Contains(TEXT("configured delegate function: Purchase")));
+    TestTrue(TEXT("Context exposes configured function and runtime limit"), BindingContext.Contains(TEXT("configured delegate function: Purchase")) && BindingContext.Contains(TEXT("runtime target not verified")));
+    TestEqual(TEXT("Binding inspection leaves nodes and pins unchanged"), Snapshot(), BindingBefore);
+    TestEqual(TEXT("Binding inspection preserves dirty flag"), Package->IsDirty(), BindingDirtyBefore);
+    Delegate->SetFunction(NAME_None);
+    TestTrue(TEXT("Unbound delegate is explicit"), UTurboMCPReadToolset::ReadTurboMCPNodeContext(Asset, GraphName, DelegateId, 0).Contains(TEXT("none (unbound)")));
+    Graph->RemoveNode(Delegate); Delegate->MarkAsGarbage();
     const FString Before = Snapshot(); const bool DirtyBefore = Package->IsDirty();
     const FString Overview = Record(TEXT("ReadTurboMCPBlueprintLoad"), UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(Asset, TEXT("signatures"), TEXT(""), TEXT("read"), TEXT("60000")));
     TestTrue(TEXT("Overview identifies both graphs"), Overview.Contains(GraphName) && Overview.Contains(OtherGraph->GetName()));

@@ -16,6 +16,7 @@
 #include "EdGraph/EdGraphPin.h"
 #include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_CreateDelegate.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
 #include "K2Node_Variable.h"
@@ -711,6 +712,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const
     for(UEdGraphNode* Node:Ordered)
     {
         Out+=TEXT("\nnode ")+TurboMCPNodeId::MakeForNode(Node,true)+TEXT(" type=")+TurboMCPNodeId::GetNodeTypeId(Node);
+        // Report the stored selection even if the delegate is currently unbound or unresolved.
+        if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(Node))
+            Out += FString::Printf(TEXT("\n  configured delegate function: %s (stored binding; runtime target not verified)"),
+                Delegate->GetFunctionName().IsNone() ? TEXT("none (unbound)") : *Delegate->GetFunctionName().ToString());
+
         for(UEdGraphPin* P:Node->Pins) if(P)
         {
             if(P->Direction==EGPD_Input && P->PinType.PinCategory!=TEXT("exec") && P->LinkedTo.IsEmpty())
