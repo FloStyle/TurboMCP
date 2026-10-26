@@ -8,6 +8,7 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_Self.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_VariableSet.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -103,6 +104,43 @@ bool FTurboMCPCallSwapWorkflowTest::RunTest(const FString& Parameters)
         }
         Rows.Sort(); return FString::Join(Rows, TEXT("\n"));
     };
+    // Exercise explicit receiver replacement using a stock Actor instance function.
+    UK2Node_CallFunction* ReceiverCall = NewObject<UK2Node_CallFunction>(Graph);
+    ReceiverCall->SetFromFunction(AActor::StaticClass()->FindFunctionByName(TEXT("K2_GetActorLocation")));
+    Graph->AddNode(ReceiverCall, false, false); ReceiverCall->CreateNewGuid(); ReceiverCall->AllocateDefaultPins();
+    UK2Node_Self* ReceiverSource = NewObject<UK2Node_Self>(Graph);
+    Graph->AddNode(ReceiverSource, false, false); ReceiverSource->CreateNewGuid(); ReceiverSource->AllocateDefaultPins();
+    UEdGraphPin* ReceiverPin = ReceiverCall->FindPinChecked(TEXT("self"));
+    TestTrue(TEXT("Receiver fixture linked"), Graph->GetSchema()->TryCreateConnection(ReceiverSource->Pins[0], ReceiverPin));
+    const FString ReceiverId = TurboMCPNodeId::MakeForNode(ReceiverCall, true);
+    const FString ReceiverType = TurboMCPNodeId::GetNodeTypeId(ReceiverCall);
+    const FString ReceiverBefore = Snapshot();
+    const FString SelfOptions = TEXT("{\"target_self\":true}");
+    const FString SelfPreview = Record(TEXT("Swap to self preview"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphSwapCall(Asset, GraphName, ReceiverId, ReceiverType, TEXT("false"), SelfOptions));
+    TestTrue(TEXT("Self preview explains receiver change"), SelfPreview.Contains(TEXT("receiver: use self")));
+    TestFalse(TEXT("Self preview accepted"), SelfPreview.Contains(TEXT("refused:")) || SelfPreview.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Self preview preserves graph"), Snapshot(), ReceiverBefore);
+    const FString StaticRefusal = Record(TEXT("Static receiver refusal"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphSwapCall(Asset, GraphName, ReceiverId, TEXT("Function|/Script/Engine.KismetSystemLibrary:PrintString"), TEXT("false"), SelfOptions));
+    TestTrue(TEXT("Self retarget refuses static replacement"), StaticRefusal.Contains(TEXT("instance function")));
+    ReceiverPin->BreakAllPinLinks();
+    ReceiverPin->DefaultObject = AActor::StaticClass()->GetDefaultObject();
+    const FString DefaultPreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphSwapCall(Asset, GraphName, ReceiverId, ReceiverType, TEXT("false"), SelfOptions);
+    TestTrue(TEXT("Old receiver default can be explicitly discarded"), DefaultPreview.Contains(TEXT("receiver: use self")));
+    ReceiverPin->DefaultObject = nullptr;
+    Graph->GetSchema()->TryCreateConnection(ReceiverSource->Pins[0], ReceiverPin);
+    const FString SelfEdit = Record(TEXT("Swap to self edit"), UTurboMCPEditToolset::EditTurboMCPGraphSwapCall(Asset, GraphName, ReceiverId, ReceiverType, TEXT("false"), SelfOptions));
+    TestTrue(TEXT("Self edit succeeds"), SelfEdit.StartsWith(TEXT("changed:")) && SelfEdit.Contains(TEXT("receiver=self")));
+    TestFalse(TEXT("Old receiver call removed"), Graph->Nodes.Contains(ReceiverCall));
+    TestTrue(TEXT("Receiver source retained without old link"), Graph->Nodes.Contains(ReceiverSource) && ReceiverSource->Pins[0]->LinkedTo.IsEmpty());
+    UEdGraphNode* NewReceiverCall = nullptr;
+    for (UEdGraphNode* N : Graph->Nodes)
+        if (UK2Node_CallFunction* C = Cast<UK2Node_CallFunction>(N))
+            if (C->GetTargetFunction() == AActor::StaticClass()->FindFunctionByName(TEXT("K2_GetActorLocation"))) NewReceiverCall = N;
+    if (!TestNotNull(TEXT("Self replacement exists"), NewReceiverCall)) return false;
+    UEdGraphPin* SelfPin = NewReceiverCall->FindPinChecked(TEXT("self"));
+    TestTrue(TEXT("Self receiver has no old link or default"), SelfPin->LinkedTo.IsEmpty() && !SelfPin->DefaultObject && SelfPin->DefaultValue.IsEmpty());
+    FBlueprintEditorUtils::RemoveNode(BP, NewReceiverCall, true);
+    FBlueprintEditorUtils::RemoveNode(BP, ReceiverSource, true);
     const FString Before = Snapshot(); const bool DirtyBefore = Package->IsDirty();
     const FString Overview = Record(TEXT("ReadTurboMCPBlueprintLoad"), UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(Asset, TEXT("signatures"), TEXT(""), TEXT("read"), TEXT("60000")));
     TestTrue(TEXT("Overview identifies both graphs"), Overview.Contains(GraphName) && Overview.Contains(OtherGraph->GetName()));

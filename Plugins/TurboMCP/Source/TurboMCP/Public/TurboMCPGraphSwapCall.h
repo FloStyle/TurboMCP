@@ -34,6 +34,7 @@ public:
   FString OldTitle;
   FString NewClass;
   bool bKeepOld = true;
+  bool bTargetSelf = false;
   TArray<FLink> Links;
   TMap<FString, FString> PinMap;
   TArray<FString> UnmatchedPins;

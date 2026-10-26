@@ -75,6 +75,24 @@ namespace
             && Pin->LinkedTo.IsEmpty() && Function && Function->HasAnyFunctionFlags(FUNC_Static);
     }
 
+    // Explicit receiver changes are permitted only for instance functions owned by self.
+    bool ConfigureSelf(UBlueprint* Blueprint, UEdGraphNode* Node, FString& Error)
+    {
+        UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node);
+        UFunction* Function = Call ? Call->GetTargetFunction() : nullptr;
+        UClass* SelfClass = Blueprint ? Blueprint->SkeletonGeneratedClass : nullptr;
+        if (!Function || Function->HasAnyFunctionFlags(FUNC_Static) || !SelfClass
+            || !(SelfClass->IsChildOf(Function->GetOwnerClass())
+                || (Blueprint->GeneratedClass && Blueprint->GeneratedClass->IsChildOf(Function->GetOwnerClass()))))
+        { Error = TEXT("target_self requires an instance function available on this Blueprint; static or unrelated functions are refused"); return false; }
+        UEdGraphPin* Receiver = PinByName(Node, UEdGraphSchema_K2::PN_Self.ToString(), EGPD_Input);
+        if (!Receiver || Receiver->bOrphanedPin || Receiver->ParentPin || !Receiver->SubPins.IsEmpty() || !Receiver->LinkedTo.IsEmpty())
+        { Error = TEXT("target_self requires an unlinked, unsplit receiver pin on the replacement"); return false; }
+        Receiver->DefaultValue.Empty(); Receiver->DefaultObject = nullptr; Receiver->DefaultTextValue = FText::GetEmpty();
+        Call->FunctionReference.SetSelfMember(Function->GetFName());
+        return true;
+    }
+
     // Discovery exposes promotable operators as wildcards. Resolve a concrete
     // engine overload from the old call's mapped pins before testing defaults.
     // Only the probe/new node is changed; no editor conversion transaction is used.
@@ -109,7 +127,7 @@ namespace
     }
 
     // Keep all three default representations, including FText namespace/key identity.
-    bool TransferDefaults(UEdGraphNode* Old, UEdGraphNode* Replacement, bool Apply, FString& Error, const TMap<FString, FString>& PinMap, bool VerifyOnly = false)
+    bool TransferDefaults(UEdGraphNode* Old, UEdGraphNode* Replacement, bool Apply, FString& Error, const TMap<FString, FString>& PinMap, bool VerifyOnly = false, bool TargetSelf = false)
     {
         const UEdGraphSchema* Schema = Replacement->GetSchema();
         if (!Schema) { Error = TEXT("replacement has no schema"); return false; }
@@ -117,7 +135,7 @@ namespace
         TArray<FDefault> Defaults;
         for (UEdGraphPin* Pin : Old->Pins)
         {
-            if (!Pin || IsImplicitStaticReceiver(Old, Pin) || Pin->Direction != EGPD_Input || Pin->LinkedTo.Num() || Pin->PinType.PinCategory == TEXT("exec") || Pin->bDefaultValueIsIgnored) continue;
+            if (!Pin || (TargetSelf && Pin->PinName == UEdGraphSchema_K2::PN_Self) || IsImplicitStaticReceiver(Old, Pin) || Pin->Direction != EGPD_Input || Pin->LinkedTo.Num() || Pin->PinType.PinCategory == TEXT("exec") || Pin->bDefaultValueIsIgnored) continue;
             UEdGraphPin* Dest = PinByName(Replacement, PinMap.Contains(Pin->PinName.ToString()) ? PinMap[Pin->PinName.ToString()] : Pin->PinName.ToString(), EGPD_Input);
             if (Pin->bOrphanedPin || Pin->ParentPin || Pin->SubPins.Num() || !Dest || Dest->bOrphanedPin || Dest->ParentPin || Dest->SubPins.Num()
                 || !(Dest->PinType == Pin->PinType) || Dest->bDefaultValueIsIgnored)
@@ -234,8 +252,10 @@ bool FTurboMCPGraphSwapCall::Plan(const FString& InAsset, const FString& InGraph
 		if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Options), Config) || !Config)
 		{ OutError = TEXT("Options must be a JSON object"); return false; }
 		for (const auto& Field : Config->Values)
-			if (FString(*Field.Key) != TEXT("pin_map") && FString(*Field.Key) != TEXT("new_inputs"))
-			{ OutError = TEXT("unknown Options field; expected pin_map or new_inputs"); return false; }
+			if (FString(*Field.Key) != TEXT("pin_map") && FString(*Field.Key) != TEXT("new_inputs") && FString(*Field.Key) != TEXT("target_self"))
+			{ OutError = TEXT("unknown Options field; expected pin_map, new_inputs or target_self"); return false; }
+        if (Config->HasField(TEXT("target_self")) && !Config->TryGetBoolField(TEXT("target_self"), OutPlan.bTargetSelf))
+        { OutError = TEXT("target_self must be a JSON boolean"); return false; }
 		const TSharedPtr<FJsonObject>* Map = nullptr;
 		if (Config->HasField(TEXT("pin_map")))
 		{
@@ -258,6 +278,12 @@ bool FTurboMCPGraphSwapCall::Plan(const FString& InAsset, const FString& InGraph
 		}
 	}
 
+    if (OutPlan.bTargetSelf)
+    {
+        if (OutPlan.PinMap.Contains(TEXT("self")) || OutPlan.PinMap.FindKey(TEXT("self")))
+        { OutError = TEXT("target_self cannot be combined with a self pin mapping"); return false; }
+        if (!ConfigureSelf(Blueprint, Probe, OutError)) return false;
+    }
     if (!SpecializeOperator(Old, Probe, OutPlan.PinMap, OutError)) return false;
 	TSet<FString> Destinations;
 	for (UEdGraphPin* Pin : Old->Pins)
@@ -270,11 +296,11 @@ bool FTurboMCPGraphSwapCall::Plan(const FString& InAsset, const FString& InGraph
 		Destinations.Add(Key);
 	}
     FString DefaultError;
-    if (!TransferDefaults(Old, Probe, false, DefaultError, OutPlan.PinMap)) OutPlan.Refusals.Add(DefaultError);
+    if (!TransferDefaults(Old, Probe, false, DefaultError, OutPlan.PinMap, false, OutPlan.bTargetSelf)) OutPlan.Refusals.Add(DefaultError);
 
 	for (UEdGraphPin* OldPin : Old->Pins)
 	{
-		if (OldPin == nullptr || OldPin->LinkedTo.Num() == 0) continue;
+		if (OldPin == nullptr || (OutPlan.bTargetSelf && OldPin->PinName == UEdGraphSchema_K2::PN_Self) || OldPin->LinkedTo.Num() == 0) continue;
 		const FString DestName = OutPlan.PinMap.Contains(OldPin->PinName.ToString()) ? OutPlan.PinMap[OldPin->PinName.ToString()] : OldPin->PinName.ToString();
 		UEdGraphPin* NewPin = PinByName(Probe, DestName, OldPin->Direction);
 		if (NewPin == nullptr || OldPin->bOrphanedPin || NewPin->bOrphanedPin || !(NewPin->PinType == OldPin->PinType))
@@ -309,7 +335,7 @@ bool FTurboMCPGraphSwapCall::Plan(const FString& InAsset, const FString& InGraph
 			UEdGraphNode* Source = NodeById(Graph, NodeId);
 			UEdGraphPin* From = PinByName(Source, PinName, EGPD_Output);
 			UEdGraphPin* To = PinByName(Probe, DestName, EGPD_Input);
-			if (!From || !To || Source == Old || From->bOrphanedPin || To->bOrphanedPin
+			if ((OutPlan.bTargetSelf && DestName == TEXT("self")) || !From || !To || Source == Old || From->bOrphanedPin || To->bOrphanedPin
 				|| From->PinType.PinCategory == TEXT("exec") || !(From->PinType == To->PinType)
 				|| OutPlan.Links.ContainsByPredicate([&](const FLink& L) { return !L.bOldPinIsOutput && L.NewPinName == DestName; }))
 			{ OutError = TEXT("new input link is missing, incompatible, or already supplied by the old call"); return false; }
@@ -362,7 +388,8 @@ bool FTurboMCPGraphSwapCall::ApplyCore(const FPlan& InPlan, const FApplyContext&
 	NewNode->NodePosX = int32(NewX);
 	NewNode->NodePosY = Old->NodePosY;
     if (!SpecializeOperator(Old, NewNode, InPlan.PinMap, OutError)) return false;
-    if (!TransferDefaults(Old, NewNode, true, OutError, InPlan.PinMap)) return false;
+    if (InPlan.bTargetSelf && !ConfigureSelf(Blueprint, NewNode, OutError)) return false;
+    if (!TransferDefaults(Old, NewNode, true, OutError, InPlan.PinMap, false, InPlan.bTargetSelf)) return false;
 	for (const FLink& Link : InPlan.Links)
 	{
 		UEdGraphPin* OldPin = PinByName(Old, Link.PinName, Link.bOldPinIsOutput ? EGPD_Output : EGPD_Input);
@@ -387,7 +414,13 @@ bool FTurboMCPGraphSwapCall::ApplyCore(const FPlan& InPlan, const FApplyContext&
 		}
 	}
     // Revalidate defaults after link callbacks, before deleting the source.
-    if (!TransferDefaults(Old, NewNode, false, OutError, InPlan.PinMap, true)) return false;
+    if (!TransferDefaults(Old, NewNode, false, OutError, InPlan.PinMap, true, InPlan.bTargetSelf)) return false;
+    if (InPlan.bTargetSelf)
+    {
+        if (UEdGraphPin* Receiver = PinByName(Old, TEXT("self"), EGPD_Input))
+            Graph->GetSchema()->BreakPinLinks(*Receiver, true);
+        if (!ConfigureSelf(Blueprint, NewNode, OutError)) return false;
+    }
 	if (!InPlan.bKeepOld)
 	{
 		FBlueprintEditorUtils::RemoveNode(Blueprint, Old, true);
@@ -406,7 +439,8 @@ bool FTurboMCPGraphSwapCall::ApplyCore(const FPlan& InPlan, const FApplyContext&
 	OutReport = FString::Printf(TEXT("changed: swapped %s to %s; %d link(s) migrated or added using explicit pin names; old node %s"),
 		*InPlan.OldNodeId, *TurboMCPNodeId::MakeForNode(NewNode, true), InPlan.Links.Num(),
 		InPlan.bKeepOld ? TEXT("retained unplugged") : TEXT("deleted"));
-    OutReport += TEXT("\ndefaults=preserved; compile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
+    if (InPlan.bTargetSelf) OutReport += TEXT("\nreceiver=self; old receiver links/default discarded explicitly; receiver source nodes retained");
+    OutReport += TEXT("\nnon-receiver defaults=preserved; compile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
 	return true;
 }
 
@@ -454,13 +488,14 @@ FString FTurboMCPGraphSwapCall::RenderPreview(const FPlan& InPlan)
 	{
 		Out += FString::Printf(TEXT("\n- %s%s => replacement.%s; peer %s:%s"), Link.bNewInput ? TEXT("new input ") : TEXT("migrate "), *Link.PinName, *Link.NewPinName, *Link.OtherNodeId, *Link.OtherPinName);
 	}
+    if (InPlan.bTargetSelf) Out += TEXT("\nreceiver: use self; discard old receiver links/default only; receiver source nodes are retained");
     FTurboMCPAssetResolver::FResolved R;
     if (FTurboMCPAssetResolver::Resolve(InPlan.Asset,R).IsEmpty())
         if (UBlueprint* BP=LoadObject<UBlueprint>(nullptr,*R.ObjectPath))
             if (UEdGraph* G=FindGraph(BP,InPlan.GraphName))
                 if (UEdGraphNode* N=NodeById(G,InPlan.OldNodeId))
                     for (const UEdGraphPin* P : N->Pins)
-                        if (P && !IsImplicitStaticReceiver(N, P) && P->Direction==EGPD_Input && P->LinkedTo.IsEmpty() && P->PinType.PinCategory!=TEXT("exec") && !P->bDefaultValueIsIgnored)
+                        if (P && !(InPlan.bTargetSelf && P->PinName == UEdGraphSchema_K2::PN_Self) && !IsImplicitStaticReceiver(N, P) && P->Direction==EGPD_Input && P->LinkedTo.IsEmpty() && P->PinType.PinCategory!=TEXT("exec") && !P->bDefaultValueIsIgnored)
                         {
                             const FString Name=P->PinName.ToString();
                             Out+=TEXT("\n- default ")+Name+TEXT(" => ")+(InPlan.PinMap.Contains(Name)?InPlan.PinMap[Name]:Name);

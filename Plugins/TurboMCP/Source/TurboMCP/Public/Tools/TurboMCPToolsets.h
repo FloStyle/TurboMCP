@@ -1026,7 +1026,7 @@ public:
 	 * @param NodeId Exact reader ID of the existing call node to replace; empty is invalid.
 	 * @param ReplacementTypeId Exact replacement call type ID returned by node-type discovery for this graph. Do not use a display name or guessed C++ name.
 	 * @param KeepOld true or yes (also empty) keeps the original node disconnected; false or no removes it after verification. Other values are refused.
-	 * @param Options JSON object encoded as a string, or empty for exact-name pin matching. Optional pin_map maps old pin names to new names; new_inputs maps new input names to objects with node and pin. Example: {"pin_map":{"Old":"New"}}. Unknown fields are refused.
+	 * @param Options JSON object encoded as a string, or empty for exact-name pin matching. Optional target_self=true explicitly discards the old receiver link/default and calls the replacement on this Blueprint (instance functions only; receiver source nodes remain). It cannot be combined with a self pin mapping or new self input. Optional pin_map maps old pin names to new names; new_inputs maps new input names to objects with node and pin. Example: {"pin_map":{"Old":"New"}}. Unknown fields are refused.
 	*/
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphSwapCall(
@@ -1788,7 +1788,7 @@ public:
 	 * @param NodeId Exact reader ID of the existing call node to replace; empty is invalid.
 	 * @param ReplacementTypeId Exact replacement call type ID returned by node-type discovery for this graph. Do not use a display name or guessed C++ name.
 	 * @param KeepOld true or yes (also empty) keeps the original node disconnected; false or no removes it after verification. Other values are refused.
-	 * @param Options JSON object encoded as a string, or empty for exact-name pin matching. Optional pin_map maps old pin names to new names; new_inputs maps new input names to objects with node and pin. Example: {"pin_map":{"Old":"New"}}. Unknown fields are refused.
+	 * @param Options JSON object encoded as a string, or empty for exact-name pin matching. Optional target_self=true explicitly discards the old receiver link/default and calls the replacement on this Blueprint (instance functions only; receiver source nodes remain). It cannot be combined with a self pin mapping or new self input. Optional pin_map maps old pin names to new names; new_inputs maps new input names to objects with node and pin. Example: {"pin_map":{"Old":"New"}}. Unknown fields are refused.
 	*/
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphSwapCall(
