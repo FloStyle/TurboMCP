@@ -63,10 +63,15 @@ Generated from plugin declarations. For validation and compatibility limits, see
 
 ## UTurboMCPPreviewToolset
 
-41 declared tools.
+46 declared tools.
 
 | Function | Description |
 | --- | --- |
+| `PreviewTurboMCPInterfaceRemove` |  |
+| `PreviewTurboMCPDispatcherAdd` |  |
+| `PreviewTurboMCPMergeMembers` |  |
+| `PreviewTurboMCPGraphTransfer` |  |
+| `PreviewTurboMCPWidgetSubtreeCopy` |  |
 | `PreviewTurboMCPInterfaceAdd` | Preview adding an implemented interface on a Blueprint or Widget Blueprint |
 | `PreviewTurboMCPLocalVariableAdd` | Preview a typed local declaration in one owned function |
 | `PreviewTurboMCPToolset` | Preview the size of this plugin's own tool help |
@@ -111,10 +116,16 @@ Generated from plugin declarations. For validation and compatibility limits, see
 
 ## UTurboMCPEditToolset
 
-52 declared tools.
+58 declared tools.
 
 | Function | Description |
 | --- | --- |
+| `EditTurboMCPInterfaceRemove` |  |
+| `EditTurboMCPMenuActivate` |  |
+| `EditTurboMCPDispatcherAdd` |  |
+| `EditTurboMCPMergeMembers` |  |
+| `EditTurboMCPGraphTransfer` |  |
+| `EditTurboMCPWidgetSubtreeCopy` |  |
 | `EditTurboMCPInterfaceAdd` | Add an implemented interface on a Blueprint or Widget Blueprint |
 | `EditTurboMCPLocalVariableAdd` | Add a typed local declaration in one owned function |
 | `EditTurboMCPPlayInput` | Execute bounded keyboard/gamepad input through Slate in live PIE. Runtime exception to asset-edit tools: runs game/UI code, no asset transaction/save/undo |

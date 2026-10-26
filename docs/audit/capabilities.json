@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "2b88c0faef050d4bd461cd09bf49e5a57ddb4f45",
+  "plugin_tree": "30ea9a223f5e760407b837edb724f277ad6281c9",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 131,
+    "tools": 142,
     "by_toolset": {
-      "UTurboMCPEditToolset": 52,
+      "UTurboMCPEditToolset": 58,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 41,
+      "UTurboMCPPreviewToolset": 46,
       "UTurboMCPReadToolset": 32
     }
   },
@@ -256,6 +256,28 @@
         "Tools/test-datatable-rows.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPDispatcherAdd",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Name",
+        "Inputs"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+          "line": 317
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -766,6 +788,29 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "EditTurboMCPGraphTransfer",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "SourceAsset",
+        "SourceGraph",
+        "TargetAsset",
+        "TargetGraph"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+          "line": 321
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "EditTurboMCPInterfaceAdd",
       "toolset": "UTurboMCPEditToolset",
       "parameters": [
@@ -777,6 +822,28 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
           "line": 132
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPInterfaceRemove",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Interface",
+        "Confirm"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
+          "line": 159
         }
       ],
       "test_references": [],
@@ -925,6 +992,48 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "EditTurboMCPMenuActivate",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Target",
+        "Widget"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
+          "line": 236
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPMergeMembers",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "SourceAsset",
+        "TargetAsset"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+          "line": 319
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "EditTurboMCPOverrideAdd",
       "toolset": "UTurboMCPEditToolset",
       "parameters": [
@@ -1009,7 +1118,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
-          "line": 185
+          "line": 186
         }
       ],
       "test_references": [],
@@ -1241,6 +1350,29 @@
         "Tools/test-widget-retarget.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "compare-native-before-expanding"
+    },
+    {
+      "id": "EditTurboMCPWidgetSubtreeCopy",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "SourceAsset",
+        "SourceWidget",
+        "TargetAsset",
+        "Parent"
+      ],
+      "family": "widget",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+          "line": 323
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1596,6 +1728,28 @@
         "Tools/test-datatable-rows.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPDispatcherAdd",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "Name",
+        "Inputs"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+          "line": 316
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -2079,6 +2233,29 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "PreviewTurboMCPGraphTransfer",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "SourceAsset",
+        "SourceGraph",
+        "TargetAsset",
+        "TargetGraph"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+          "line": 320
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "PreviewTurboMCPInterfaceAdd",
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
@@ -2090,6 +2267,27 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
           "line": 131
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPInterfaceRemove",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "Interface"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
+          "line": 158
         }
       ],
       "test_references": [],
@@ -2209,6 +2407,27 @@
         "Tools/test-material-tidy.py"
       ],
       "static_call_evidence": "name_reference_only",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPMergeMembers",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "SourceAsset",
+        "TargetAsset"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+          "line": 318
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -2424,6 +2643,29 @@
         "Tools/test-widget-retarget.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "compare-native-before-expanding"
+    },
+    {
+      "id": "PreviewTurboMCPWidgetSubtreeCopy",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "SourceAsset",
+        "SourceWidget",
+        "TargetAsset",
+        "Parent"
+      ],
+      "family": "widget",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+          "line": 322
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -3037,7 +3279,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
-          "line": 235
+          "line": 265
         }
       ],
       "test_references": [],

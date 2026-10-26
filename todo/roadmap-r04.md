@@ -1745,3 +1745,16 @@ Readiness: ready. Assignment merge-member-foundation. First unblock FT-102 inter
 ### Oct26 merge and PIE completion — ready
 
 Readiness: ready. Assignment: oct26-merge-and-play. Owner: Codex integrator, DSH remains paused. User explicitly requests completion of both reports and prior capture prose cleanup. Implement bounded additive graph transfer, missing-member planning/creation, typed dispatchers and widget subtree transfer with preview, exact identities, collision refusal and source preservation. Use stock editor APIs, retain graph/local/delegate/macro references and widget properties/slots/text; never silently replace an occupied target. Correct GraphCopy external-member classification. Add a bounded named CommonUI button focus/press/release path using Slate, not direct Blueprint delegate invocation. Exempt only runtime input from the asset PIE gate. Verify actual dispatched PlayInput and asset-edit refusal. Correct capture guidance and concise asset-editor prose. Interface removal requires preview plus explicit confirmation and must state preserved-function semantics. Compile/native fixture assertions and source/target preservation are required; report any scope limitations rather than claiming general merge safety. Tests: execute-tests.py --profile engine --suites test-vision-workflow --execute; validate.py. New tools require catalog/routing refresh by integrator after code commit.
+
+
+### Oct26 merge and PIE completion — integrated
+
+Code: bdfe603 (main), candidate c680634. Supervised stock-engine run
+34a5272de22a43f1bb3a53b97f8d4ea9 passed build, Vision, PlayMenu and CommonPlay.
+The registered input path and named CommonUI button transition passed. Merge
+fixtures verify full function/local/event graph copies, interface removal,
+dispatcher signatures, copied widget ownership/GUIDs/slot/text identity and
+source preservation. See docs/audit/field-reports/batch-2026-10-26.json for
+remaining field-verification limits. There are 142 declarations, not 142 fully
+reviewed tools. DSH remains paused. Cleanup safety correction cfd0d3b prevents
+termination based on stale parent-PID ancestry after a crash.

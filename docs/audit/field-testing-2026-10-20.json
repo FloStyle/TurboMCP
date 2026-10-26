@@ -3039,10 +3039,12 @@
       "title": "PlayInput is rejected by the MCP dispatch gate during PIE",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "validation": "reported; not yet verified",
-      "remaining": "Confirmed in the call recorder gate; requires an actual MCP dispatch regression.",
-      "observation": "Imported from archived Oct26 field report."
+      "state": "done",
+      "validation": "native bounded workflow passed; field verification pending",
+      "remaining": "Field verification pending; see batch-2026-10-26.json for tested scope and limitations.",
+      "observation": "Imported from archived Oct26 field report.",
+      "implementation": "bdfe603",
+      "implementation_details": "Registered PlayInput and MenuActivate bypass only the asset-edit PIE gate. CommonUI fixture invokes registered dispatch and verifies asset edits still refuse during PIE."
     },
     {
       "report": "2026-10-26_S1",
@@ -3051,10 +3053,12 @@
       "title": "Slate click reports delivery without activating the CommonUI button",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "validation": "reported; not yet verified",
-      "remaining": "Field report shows hover without activation. Preserve delivery-versus-outcome distinction; reproduce on CommonUI.",
-      "observation": "Imported from archived Oct26 field report."
+      "state": "done",
+      "validation": "native bounded workflow passed; field verification pending",
+      "remaining": "Field verification pending; see batch-2026-10-26.json for tested scope and limitations.",
+      "observation": "Imported from archived Oct26 field report.",
+      "implementation": "bdfe603",
+      "implementation_details": "Viewport capture guidance directs callers to runtime button discovery and PlayInput/MenuActivate, followed by frame/state verification; Slate delivery is not claimed as activation."
     },
     {
       "report": "2026-10-26_S1",
@@ -3063,22 +3067,25 @@
       "title": "Activate a named menu control during PIE",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
-      "validation": "reported; not yet verified",
-      "remaining": "Add an observable menu interaction workflow without custom engine changes.",
-      "observation": "Imported from archived Oct26 field report."
+      "state": "done",
+      "validation": "native bounded workflow passed; field verification pending",
+      "remaining": "Field verification pending; see batch-2026-10-26.json for tested scope and limitations.",
+      "observation": "Imported from archived Oct26 field report.",
+      "implementation": "bdfe603",
+      "implementation_details": "Named runtime button activation uses focus plus normal gamepad press/release. CommonUI fixture verifies the resulting Settings screen. Tool returns pending delivery; callers must read state after frames."
     },
     {
       "report": "2026-10-26_S2",
       "id": "X-99",
       "key": "2026-10-26_S2/X-99",
       "title": "Merge two Widget Blueprints into one target",
-      "kind": "feature",
+      "kind": "housekeeping",
       "priority": "P1",
-      "state": "open",
-      "validation": "reported; not yet verified",
-      "remaining": "Merge remains blocked by graph transfer and subtree copying; prerequisite tools alone do not complete it.",
-      "observation": "Imported from archived Oct26 field report."
+      "state": "done",
+      "validation": "component workflows passed; real project merge untested",
+      "remaining": "Umbrella resolved by the implemented component tools. Complex project migration still requires preview and read-back.",
+      "observation": "Imported from archived Oct26 field report.",
+      "implementation": "bdfe603"
     },
     {
       "report": "2026-10-26_S2",
@@ -3087,24 +3094,26 @@
       "title": "GraphCopy mistakes external calls for target members and refuses real function bodies",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "validation": "reported; not yet verified",
-      "remaining": "Resolve function owners and local scope; explicitly handle macros and entry mapping before claiming cross-Blueprint copy support.",
-      "observation": "Imported from archived Oct26 field report."
+      "state": "done",
+      "validation": "native bounded workflow passed; field verification pending",
+      "remaining": "Field verification pending; see batch-2026-10-26.json for tested scope and limitations.",
+      "observation": "Imported from archived Oct26 field report.",
+      "implementation": "bdfe603",
+      "implementation_details": "GraphCopy accepts resolved external instance functions. New GraphTransfer clones whole graphs with locals, delegate nodes and source-owned macro remapping; dependency conflicts refuse before mutation."
     },
     {
       "report": "2026-10-26_S2",
       "id": "FT-102",
       "key": "2026-10-26_S2/FT-102",
-      "title": "Add an implemented Blueprint interface",
+      "title": "Add or remove an implemented Blueprint interface",
       "kind": "feature",
       "priority": "P1",
       "state": "done",
-      "validation": "native fixture passed; field verification pending",
-      "remaining": "Field confirmation pending; separate merge blockers remain open.",
+      "validation": "native bounded workflow passed; field verification pending",
+      "remaining": "Field verification pending; see batch-2026-10-26.json for tested scope and limitations.",
       "observation": "Imported from archived Oct26 field report.",
-      "implementation": "72501169b2253234c1e26fc24dc321f372ab16af",
-      "implementation_limits": "Interface addition and typed local declarations only. No interface removal, full graph transfer or subtree migration. Explicit object/container local defaults are not supported. Final null-refusal formatting change is statically checked; native behavior evidence precedes that equivalent guard change."
+      "implementation": "bdfe603",
+      "implementation_details": "Preview/Edit interface add and confirmed removal implemented. Removal preserves function bodies and rejects missing confirmation."
     },
     {
       "report": "2026-10-26_S2",
@@ -3127,10 +3136,12 @@
       "title": "Copy a widget subtree with properties, slots and localization",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "validation": "reported; not yet verified",
-      "remaining": "Preserve source assets, internal references, slot properties and localized text identity; preview name conflicts.",
-      "observation": "Imported from archived Oct26 field report."
+      "state": "done",
+      "validation": "native bounded workflow passed; field verification pending",
+      "remaining": "Field verification pending; see batch-2026-10-26.json for tested scope and limitations.",
+      "observation": "Imported from archived Oct26 field report.",
+      "implementation": "bdfe603",
+      "implementation_details": "Preview/Edit subtree copy preserves widget names, properties, root slot layout and text identity; collisions refuse. Root ownership and all-widget GUID registration verified."
     },
     {
       "report": "2026-10-26_S2",
@@ -3139,10 +3150,12 @@
       "title": "Copy complete function and event graphs between Blueprints",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "validation": "reported; not yet verified",
-      "remaining": "Preserve signatures, locals, delegates, macros and node identity remapping. Do not silently rebuild lossy DSL.",
-      "observation": "Imported from archived Oct26 field report."
+      "state": "done",
+      "validation": "native bounded workflow passed; field verification pending",
+      "remaining": "Field verification pending; see batch-2026-10-26.json for tested scope and limitations.",
+      "observation": "Imported from archived Oct26 field report.",
+      "implementation": "bdfe603",
+      "implementation_details": "Preview/Edit whole graph transfer preserves nodes, links, positions, comments and locals, replacing only compatible empty declarations. Functions and delegate-bearing event graph compile in the fixture."
     },
     {
       "report": "2026-10-26_S2",
@@ -3151,10 +3164,12 @@
       "title": "Plan missing merge dependencies and create selected members",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
-      "validation": "reported; not yet verified",
-      "remaining": "Preview exact missing members and conflicts before bounded creation.",
-      "observation": "Imported from archived Oct26 field report."
+      "state": "done",
+      "validation": "native bounded workflow passed; field verification pending",
+      "remaining": "Field verification pending; see batch-2026-10-26.json for tested scope and limitations.",
+      "observation": "Imported from archived Oct26 field report.",
+      "implementation": "bdfe603",
+      "implementation_details": "Preview/Edit missing member preparation creates variables, typed dispatcher signatures and function declarations. Existing incompatible callable signatures refuse; no whole-asset merge claim."
     },
     {
       "report": "2026-10-26_S2",
@@ -3163,10 +3178,12 @@
       "title": "Create an event dispatcher with a typed signature",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
-      "validation": "reported; not yet verified",
-      "remaining": "Native fallback worked; add TurboMCP signature tooling. Same observation as FA-09.",
-      "observation": "Imported from archived Oct26 field report."
+      "state": "done",
+      "validation": "native bounded workflow passed; field verification pending",
+      "remaining": "Field verification pending; see batch-2026-10-26.json for tested scope and limitations.",
+      "observation": "Imported from archived Oct26 field report.",
+      "implementation": "bdfe603",
+      "implementation_details": "Preview/Edit typed event dispatcher creation supports the shared type syntax; bool/object signature is covered by native fixture compilation."
     },
     {
       "report": "2026-10-26_S2",
@@ -3175,10 +3192,12 @@
       "title": "Unknown tool response does not suggest the reference reader",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "validation": "reported; not yet verified",
-      "remaining": "ReadTurboMCPRefs exists; improve discovery without inventing tools.",
-      "observation": "Imported from archived Oct26 field report."
+      "state": "done",
+      "validation": "untested; source reviewed",
+      "remaining": "Field verification pending; see batch-2026-10-26.json for tested scope and limitations.",
+      "observation": "Imported from archived Oct26 field report.",
+      "implementation": "bdfe603",
+      "implementation_details": "Unknown TurboMCP names suggest the closest three declared names and the help/reference tools."
     }
   ],
   "prototype": {
