@@ -36,6 +36,18 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPPurchaseWorkflowTest,
 
 bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
 {
+    // Exercise refusal wording independently of the fixture's changing geometry.
+    // This is output coverage, not a reproduction of the original field layout.
+    FTurboMCPGraphTidy::FPlan RejectedPlan;
+    RejectedPlan.RollbackReason = TEXT("candidate does not improve structural quality");
+    RejectedPlan.SelectedNodeKeys.Add(TEXT("new-node"));
+    const FString RejectedPreview = FTurboMCPGraphTidy::RenderPreview(RejectedPlan);
+    TestTrue(TEXT("Rejected scoped tidy explains fixed surrounding nodes"), RejectedPreview.Contains(TEXT("keeps surrounding nodes fixed")));
+    TestTrue(TEXT("Rejected scoped tidy names a concrete recovery preview"), RejectedPreview.Contains(TEXT("PreviewTurboMCPGraphGroupMove")));
+    TestTrue(TEXT("Rejected scoped tidy does not recommend forcing acceptance"), RejectedPreview.Contains(TEXT("Do not enable Force")));
+    RejectedPlan.bAlreadyTidy = true;
+    TestFalse(TEXT("Already tidy does not suggest recovery"), FTurboMCPGraphTidy::RenderPreview(RejectedPlan).Contains(TEXT("Next step:")));
+
     const FString Suffix = FGuid::NewGuid().ToString(EGuidFormats::Digits);
     UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/PurchaseWorkflow_") + Suffix));
     UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package,

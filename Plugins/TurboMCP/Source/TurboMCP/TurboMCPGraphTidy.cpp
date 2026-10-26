@@ -2656,6 +2656,19 @@ namespace
  }
 }
 
+// Suggest a new preview only after a rejected plan or a complete rollback.
+// These are alternatives to inspect, not permission to move unselected nodes.
+static FString TidyRecoveryGuidance(bool bSelectedScope)
+{
+    FString Advice = TEXT("Next step: inspect LookTurboMCPLayoutReport and LookTurboMCPGraphPositions for the affected graph.");
+    if (bSelectedScope)
+        Advice += TEXT(" Selected-node tidy keeps surrounding nodes fixed. If the inserted node has no forward space, preview tidy with the inserted node and the downstream chain selected together, or use PreviewTurboMCPGraphGroupMove to inspect an explicit shift of that chain. Check comment bounds and collisions before applying.");
+    else
+        Advice += TEXT(" Preview a smaller connected group, or use PreviewTurboMCPGraphGroupMove to inspect an explicit placement change. Check comment bounds and collisions before applying.");
+    Advice += TEXT(" Do not enable Force merely to suppress this refusal; Force does not bypass collision or membership guards.");
+    return Advice;
+}
+
 FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 {
 	TArray<FString> Lines;
@@ -2672,7 +2685,7 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 
 	if (InPlan.SelectedNodeKeys.Num() > 0)
 	{
-		Lines.Add(FString::Printf(TEXT("scope: %d selected node(s) are selected; %d surrounding node(s) stay fixed. Box members stay grouped; selected boxes may grow without moving their corners."),
+		Lines.Add(FString::Printf(TEXT("scope: %d selected node(s); %d surrounding node(s) stay fixed. Box members stay grouped; selected boxes may grow without moving their corners."),
 			InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount));
 	}
 	else
@@ -2727,6 +2740,7 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 	else
 	{
 		Lines.Add(FString::Printf(TEXT("the edit WOULD ROLL BACK: %s"), *InPlan.RollbackReason));
+        Lines.Add(TidyRecoveryGuidance(InPlan.SelectedNodeKeys.Num() > 0));
 	}
 
 	if (InPlan.bForce && InPlan.WireLengthAfter >= InPlan.WireLengthBefore && !InPlan.bAlreadyTidy)
@@ -3021,6 +3035,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		}
 		if (!CopyFailure.IsEmpty()) Out += TEXT(" Cause: ") + CopyFailure + TEXT(". Force does not bypass split failures.");
 		if (!bRollbackComplete) Out += TEXT(" rollback=incomplete; package remains dirty; inspect before retrying or saving.");
+        else if (CopyFailure.IsEmpty()) Out += TEXT(" ") + TidyRecoveryGuidance(InPlan.SelectedNodeKeys.Num() > 0);
         const auto CrossBoxRestored = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
         Out += FString::Printf(TEXT(" Cross-box estimated length before %.1f; after rollback %.1f; connections %d -> %d."), CrossBoxBefore.Length, CrossBoxRestored.Length, CrossBoxBefore.Count, CrossBoxRestored.Count);
 		return Out;
