@@ -1725,4 +1725,6 @@ Capture output-quality evidence: 43c3003, native 505f8f813a7b48e486b69f7a0c51cd1
 
 ### VISION-13 overview containment
 
-Readiness: ready. Assignment capture-overview-containment. Whole-graph target collection currently excludes comment boxes, so their top extent is outside the frame. Include comments in whole-graph bounds and preserve a screen-pixel inset at reduced zoom for comment bubbles. Keep explicit region semantics and target node/selector semantics. Extend dense fixture with independent comment-bound containment checks and visual overview review. Preserve graph text and nodes. Native supervisor and offline gate, stock engine, DSH paused.
+Implemented; native and visual checks passed. Assignment capture-overview-containment. Whole-graph target collection currently excludes comment boxes, so their top extent is outside the frame. Include comments in whole-graph bounds and preserve a screen-pixel inset at reduced zoom for comment bubbles. Keep explicit region semantics and target node/selector semantics. Extend dense fixture with independent comment-bound containment checks and visual overview review. Preserve graph text and nodes. Native supervisor and offline gate, stock engine, DSH paused.
+
+VISION-13 accepted in ac04ee9: native 7c628de2d3f14a11be0b13f931435d8c passed, overview image reviewed, scope check passed and claim 6a88f426e53a4b91918701624ee06c73 released. No engine edits; DSH remains paused.

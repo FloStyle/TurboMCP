@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "updated": "2026-10-25",
-  "native_run": "505f8f813a7b48e486b69f7a0c51cd1e",
+  "native_run": "7c628de2d3f14a11be0b13f931435d8c",
   "offline_run": "2d230dafffe2474a91fcf0320b9ef59c",
   "offline": "22/26; four unchanged baseline failures",
   "capture_count": 26,
@@ -61,7 +61,7 @@
       "verification": "Native output, default dimensions, invalid-size refusals and graph preservation passed in 505f8f813a7b48e486b69f7a0c51cd1e",
       "priority": "P2",
       "problem": "Capture asset-editor results still include long implementation catalogs; the compatibility Size parameter still serves two roles.",
-      "next": "Simplify remaining asset-editor result catalogs. Keep legacy parameter compatibility; capture is not fully accepted while VISION-13 remains open.",
+      "next": "Simplify remaining asset-editor result catalogs. Preserve legacy parameter compatibility. VISION-13 framing defect is fixed.",
       "fix": "Graph default documented as 1600x900; helper separates pixel dimensions from selector hops. Output reports readability uncertainty and exact overview-to-node/neighbours follow-up."
     },
     {
@@ -122,11 +122,12 @@
     {
       "id": "VISION-13",
       "kind": "bug",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "problem": "Dense whole-graph overview clips content at the top edge.",
-      "verification": "Visual evidence in native run 505f8f813a7b48e486b69f7a0c51cd1e; 1600x900 VisionEvents_0 overview shows the first comment/title above the image boundary.",
-      "next": "Investigate whole-graph measured bounds and native framing. Add an edge-containment assertion before accepting whole-graph fit; node detail is readable but does not prove overview completeness."
+      "verification": "Native 7c628de2d3f14a11be0b13f931435d8c passed independent comment-rectangle containment and graph-preservation checks. Dense overview visually reviewed: all four comment groups and the top title are inside the image.",
+      "next": "Retain regression; full capture acceptance remains separate from this fixed defect.",
+      "fix": "Whole-graph bounds include comment boxes. A screen-pixel inset protects zoom-invariant comment bubbles at reduced zoom. Explicit region and targeted capture semantics remain unchanged."
     }
   ],
   "planned_scenarios": [
@@ -138,6 +139,6 @@
     "Responsive widget, clipping and localization",
     "Directional CommonUI focus navigation, modal controls, focus-loss release and general stack/device diagnostics"
   ],
-  "current_offline_run": "130588bd2ba744e6a5812145aa6588e4",
-  "current_offline": "26/26 passed for capture output-quality integration."
+  "current_offline_run": "77985d3dcd784362a9542be5e47dbd0c",
+  "current_offline": "26/26 passed for overview containment repair."
 }

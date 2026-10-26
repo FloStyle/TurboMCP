@@ -49,3 +49,7 @@ Modal/deactivation follow-up: native 5c2d3e69eb5d49adbd9827b2dbe21577 passed; VI
 43c3003: native 505f8f813a7b48e486b69f7a0c51cd1e passed. Graph default resolution is 1600x900, now correctly documented. Size pixel-versus-hop semantics and examples are explicit; graph responses include a scale-based readability warning and concrete detail calls. Dense fixture checks default pixels, output guidance, invalid dimensions/hops, valid images and graph preservation. Overview and node-detail PNGs were visually inspected. Node detail is readable; whole-graph overview clips top-edge content, now VISION-13. Automated success is not visual completeness. VISION-06 remains open for asset-editor result simplification. No new full-tool acceptance; 38/127 remains.
 
 Capture output offline gate: 130588bd2ba744e6a5812145aa6588e4 passed 26/26.
+
+## VISION-13 fixed: complete overview framing
+
+ac04ee9 includes comment boxes in whole-graph targets and reserves screen-space padding for zoom-invariant comment bubbles. Native 7c628de2d3f14a11be0b13f931435d8c passed; independent assertions check every comment rectangle against returned frame bounds, while existing node/text preservation and image checks remain. The resulting 1600x900 overview was visually inspected: all four groups and the top title are inside the frame. Explicit regions and node/selector framing are unchanged. VISION-13 is done; VISION-06 asset-editor prose work remains.
