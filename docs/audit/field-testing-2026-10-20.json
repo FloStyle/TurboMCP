@@ -3637,11 +3637,13 @@
       "key": "2026-10-26_S8/ED-21",
       "title": "GraphSwapCall cannot change a call target from another object to self (medium)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md. No fix claimed from report intake."
+      "validation": "tested",
+      "remaining": "Field widget merge confirmation pending. Focused fixture uses a stock Actor instance function. Receiver source nodes are retained for explicit cleanup; no compile or save is implicit.",
+      "implementation": "dbbfb16: GraphSwapCall Options target_self=true explicitly replaces the receiver with self. Static/unrelated functions and conflicting self mappings refuse. Non-receiver defaults and links retain existing checks.",
+      "evidence": "Supervised build and test-call-swap-workflow passed: 417db3d25b76440ca99fb6dae3333bfb. Linked receiver, default discard preview, static refusal, original swap workflow."
     },
     {
       "report": "2026-10-26_S8",
@@ -3751,12 +3753,14 @@
       "key": "2026-10-26_S8/FT-115",
       "title": "Swap a call target to self",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_implemented",
-      "remaining": "Requested capability; see docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md",
-      "canonical_issue": "2026-10-26_S8/ED-21"
+      "validation": "tested",
+      "remaining": "Field widget merge confirmation pending. Focused fixture uses a stock Actor instance function. Receiver source nodes are retained for explicit cleanup; no compile or save is implicit.",
+      "canonical_issue": "2026-10-26_S8/ED-21",
+      "implementation": "dbbfb16: GraphSwapCall Options target_self=true explicitly replaces the receiver with self. Static/unrelated functions and conflicting self mappings refuse. Non-receiver defaults and links retain existing checks.",
+      "evidence": "Supervised build and test-call-swap-workflow passed: 417db3d25b76440ca99fb6dae3333bfb. Linked receiver, default discard preview, static refusal, original swap workflow."
     },
     {
       "report": "2026-10-26_S9",

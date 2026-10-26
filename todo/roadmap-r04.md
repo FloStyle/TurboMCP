@@ -1819,3 +1819,7 @@ LOG-01: d429950 corrects missing measurement labels and avoids claiming unrecord
 GL-23 (8d5cf89): unique graph-local bare keys accepted, ambiguity and wrong-graph IDs refused. Native workflow 38c2be5f92fe4fc3afc813ad639ee562 passed.
 
 GL-22 (86a22fb): configured Create Event bindings visible in graph/context readers, including disconnected summary; unbound and runtime limits explicit. Native workflow 1d5f34e1323c490a9eb12e2fe0d2cd43 passed after f02a8195c19140f4976523aa7a9ca2a6 exposed a missing disconnected path. Read inspection preserved nodes, pins and dirty flag. Original field confirmation remains pending.
+
+### Oct26 self receiver retarget — implemented
+
+ED-21 / FT-115: dbbfb16 adds explicit GraphSwapCall Options target_self=true, preserving non-receiver inputs/links and refusing static/unrelated targets. Help and preview describe discarded receiver links/defaults and retained source nodes. Stock Actor call-swap workflow passed (417db3d25b76440ca99fb6dae3333bfb); original widget field confirmation pending. Initial run d7f77e9f3ef648dd88320501e5512db4 failed the static refusal fixture wording, corrected to use a concrete static function. No engine changes.
