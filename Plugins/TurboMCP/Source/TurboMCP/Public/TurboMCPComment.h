@@ -104,6 +104,8 @@ public:
 		FString Asset;
 		FString GraphName;
 		EAction Action = EAction::Create;
+        /** Explicit selection-only enclosure; preserves node positions, not the old box rectangle. */
+        bool bRefit = false;
 
 		/** The nodes the caller named, for `Create`. */
 		TArray<FString> NodeKeys;

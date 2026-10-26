@@ -775,12 +775,12 @@ public:
 
 	/**
      * Plan comment changes; loads the Blueprint and may measure transient graph widgets, without applying edits, compiling or saving.
-     * Deleting a box keeps its nodes. Explicit fit expands outward to preserve the old rectangle; fit without Nodes fits current contents. Inspect preview geometry before applying.
+     * Deleting a box keeps its nodes. Explicit fit expands outward to preserve the old rectangle; fit without Nodes fits current contents. refit requires Box and Nodes and moves/resizes only the box around that explicit selection; unselected nodes remain in place and may be left outside. Inspect preview geometry before applying.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
      * @param GraphName Required existing graph name, e.g. EventGraph. Use the reader's name; missing targets are refused.
-     * @param Action Required create, set, fit or delete; case-insensitive and trimmed. Empty/unknown actions refuse.
+     * @param Action Required create, set, fit, refit or delete; case-insensitive and trimmed. Empty/unknown actions refuse.
      * @param Nodes Comma- or pipe-separated reader node IDs. Required for create; for fit selects nodes to enclose and requires Box. Empty fit uses current box contents. Unused for set/delete; pass empty.
-     * @param Box Existing comment ID for set/delete. For fit, empty with empty Nodes selects all boxes; nonempty selects one box. Explicit fit with Nodes requires one Box. Unused for create; pass empty.
+     * @param Box Existing comment ID for set/delete. For fit, empty with empty Nodes selects all boxes; nonempty selects one box. Explicit fit with Nodes requires one Box. refit always requires one Box and explicit Nodes. Unused for create; pass empty.
      * @param Text Comment label for create/set; empty means no supplied label on create or leave unchanged on set, not clear. Whitespace is retained. Unused for fit/delete; pass empty. Example: Input handling.
      * @param Color Optional #RRGGBB or comma-separated RGB values 0..255, e.g. #3A6EA5. Empty uses the new box default or preserves an existing color. Used by create/set; otherwise pass empty.
      * @param Size Optional width x height in graph units, e.g. 400x200. Each side must be finite numeric text in 1..2147483647; fractional parts truncate. Empty create encloses selected nodes; empty set keeps size. Explicit create size overrides automatic enclosure. Automatic height includes wrapped-title clearance; new boxes have no floating comment bubble. Used by create/set; otherwise pass empty.
@@ -792,9 +792,9 @@ public:
 		const FString& Action,
 		const FString& Nodes,
 		const FString& Box,
-		const FString& Text,
-		const FString& Color,
-		const FString& Size);
+		const FString& Text = TEXT(""),
+		const FString& Color = TEXT(""),
+		const FString& Size = TEXT(""));
 
 	/**
 	 * Identify removal candidates using static graph reachability; loads the Blueprint without requesting edits, compilation or saving.
@@ -1570,12 +1570,12 @@ public:
 
 	/**
      * Create, change, resize or delete comment boxes in an undo transaction; loads/measures the graph and does not compile or save.
-     * Deleting a box keeps its nodes. Explicit fit expands outward to preserve the old rectangle; fit without Nodes fits current contents. Inspect preview geometry before applying.
+     * Deleting a box keeps its nodes. Explicit fit expands outward to preserve the old rectangle; fit without Nodes fits current contents. refit requires Box and Nodes and moves/resizes only the box around that explicit selection; unselected nodes remain in place and may be left outside. Inspect preview geometry before applying.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
      * @param GraphName Required existing graph name, e.g. EventGraph. Use the reader's name; missing targets are refused.
-     * @param Action Required create, set, fit or delete; case-insensitive and trimmed. Empty/unknown actions refuse.
+     * @param Action Required create, set, fit, refit or delete; case-insensitive and trimmed. Empty/unknown actions refuse.
      * @param Nodes Comma- or pipe-separated reader node IDs. Required for create; for fit selects nodes to enclose and requires Box. Empty fit uses current box contents. Unused for set/delete; pass empty.
-     * @param Box Existing comment ID for set/delete. For fit, empty with empty Nodes selects all boxes; nonempty selects one box. Explicit fit with Nodes requires one Box. Unused for create; pass empty.
+     * @param Box Existing comment ID for set/delete. For fit, empty with empty Nodes selects all boxes; nonempty selects one box. Explicit fit with Nodes requires one Box. refit always requires one Box and explicit Nodes. Unused for create; pass empty.
      * @param Text Comment label for create/set; empty means no supplied label on create or leave unchanged on set, not clear. Whitespace is retained. Unused for fit/delete; pass empty. Example: Input handling.
      * @param Color Optional #RRGGBB or comma-separated RGB values 0..255, e.g. #3A6EA5. Empty uses the new box default or preserves an existing color. Used by create/set; otherwise pass empty.
      * @param Size Optional width x height in graph units, e.g. 400x200. Each side must be finite numeric text in 1..2147483647; fractional parts truncate. Empty create encloses selected nodes; empty set keeps size. Explicit create size overrides automatic enclosure. Automatic height includes wrapped-title clearance; new boxes have no floating comment bubble. Used by create/set; otherwise pass empty.
@@ -1587,9 +1587,9 @@ public:
 		const FString& Action,
 		const FString& Nodes,
 		const FString& Box,
-		const FString& Text,
-		const FString& Color,
-		const FString& Size);
+		const FString& Text = TEXT(""),
+		const FString& Color = TEXT(""),
+		const FString& Size = TEXT(""));
 
 	/**
 	 * Delete statically selected node groups and their links; no tool-owned undo transaction, compilation or save is performed.

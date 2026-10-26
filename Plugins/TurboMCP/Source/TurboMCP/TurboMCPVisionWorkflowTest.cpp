@@ -218,6 +218,20 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
   TestEqual(TEXT("Override entry count"), OverrideEntries.Num(), 1);
   if (OverrideEntries.Num() == 1) TestNotNull(TEXT("Override retains external parent reference"), OverrideEntries[0]->FunctionReference.GetMemberParentClass());
  }
+ // S5 CB-06: refit follows moved nodes without retaining an empty old rectangle.
+ auto* RefitBox = NewObject<UEdGraphNode_Comment>(Function);
+ Init(RefitBox, Function, -9000, -9000); RefitBox->NodeWidth = 200; RefitBox->NodeHeight = 200;
+ const FString RefitId = TurboMCPNodeId::MakeForNode(RefitBox, true);
+ const FString RefitNodes = TurboMCPNodeId::MakeForNode(Entry, true);
+ const int32 EntryX = Entry->NodePosX, EntryY = Entry->NodePosY;
+ const FString RefitPreview = UTurboMCPPreviewToolset::PreviewTurboMCPComment(MergeAsset, Function->GetName(), TEXT("refit"), RefitNodes, RefitId);
+ TestTrue(TEXT("Refit preview explains selection-only enclosure"), RefitPreview.Contains(TEXT("explicit refit:")));
+ TestEqual(TEXT("Refit preview preserves old box position"), RefitBox->NodePosX, -9000);
+ Record(TEXT("Refit moved selection"), UTurboMCPEditToolset::EditTurboMCPComment(MergeAsset, Function->GetName(), TEXT("refit"), RefitNodes, RefitId));
+ TestTrue(TEXT("Refit releases old empty rectangle"), RefitBox->NodePosX > -1000 && RefitBox->NodePosY > -1000 && RefitBox->NodeWidth < 2000);
+ TestEqual(TEXT("Refit preserves node X"), Entry->NodePosX, EntryX);
+ TestEqual(TEXT("Refit preserves node Y"), Entry->NodePosY, EntryY);
+ TestTrue(TEXT("Refit requires explicit nodes"), UTurboMCPPreviewToolset::PreviewTurboMCPComment(MergeAsset, Function->GetName(), TEXT("refit"), TEXT(""), RefitId).StartsWith(TEXT("error:")));
  const FString Removal=Record(TEXT("Interface removal preview"),UTurboMCPPreviewToolset::PreviewTurboMCPInterfaceRemove(MergeAsset,MergeInterface->GetPathName()));
  TestTrue(TEXT("Removal preview accepted"),Removal.StartsWith(TEXT("preview:")));
  TestTrue(TEXT("Removal without confirmation refuses"),UTurboMCPEditToolset::EditTurboMCPInterfaceRemove(MergeAsset,MergeInterface->GetPathName(),TEXT("")).StartsWith(TEXT("error:")));

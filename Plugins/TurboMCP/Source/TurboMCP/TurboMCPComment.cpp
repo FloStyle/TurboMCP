@@ -323,17 +323,17 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 	const FString ActionText = InAction.TrimStartAndEnd().ToLower();
 	if (ActionText.IsEmpty())
 	{
-		OutError = TEXT("no action given. Pass one of create, set, fit, delete.");
+		OutError = TEXT("no action given. Pass one of create, set, fit, refit, delete.");
 		return false;
 	}
 	if (ActionText == TEXT("create"))      { OutPlan.Action = EAction::Create; }
 	else if (ActionText == TEXT("set"))    { OutPlan.Action = EAction::Set; }
-	else if (ActionText == TEXT("fit"))    { OutPlan.Action = EAction::FitAll; }
+	else if (ActionText == TEXT("fit") || ActionText == TEXT("refit"))    { OutPlan.Action = EAction::FitAll; }
 	else if (ActionText == TEXT("delete")) { OutPlan.Action = EAction::Delete; }
 	else
 	{
 		OutError = FString::Printf(
-			TEXT("'%s' is not an action. Accepted: create, set, fit, delete."), *InAction);
+			TEXT("'%s' is not an action. Accepted: create, set, fit, refit, delete."), *InAction);
 		return false;
 	}
 
@@ -358,7 +358,7 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 	{
 		return false;
 	}
-    if(ActionText==TEXT("fit") || ActionText==TEXT("create"))
+    if(ActionText==TEXT("fit") || ActionText==TEXT("refit") || ActionText==TEXT("create"))
     {
         if(!FTurboMCPGraphTidy::PrepareAlignment(Blueprint,Graph,OutError)) return false;
     }
@@ -367,6 +367,9 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 
 	OutPlan.NodeKeys = FTurboMCPAssetResolver::SplitList(InNodes);
 	OutPlan.BoxKey = InBox.TrimStartAndEnd();
+    OutPlan.bRefit = ActionText == TEXT("refit");
+    if (OutPlan.bRefit && (OutPlan.BoxKey.IsEmpty() || OutPlan.NodeKeys.IsEmpty()))
+    { OutError = TEXT("refit requires one Box and explicit Nodes. Nothing changed."); return false; }
 	if (!OutPlan.BoxKey.IsEmpty())
 	{
 		UEdGraphNode* Match = nullptr;
@@ -540,6 +543,8 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 			OutPlan.Planned.Width, OutPlan.Planned.Height, Missing) || !Missing.IsEmpty())
 		{ OutError = TEXT("fit contains missing or invalid nodes; unchanged"); return false; }
         if (OutPlan.Boxes.Num()!=1) { OutError=TEXT("explicit fit requires exactly one existing comment box"); return false; }
+        if (!OutPlan.bRefit)
+        {
         const FBox& Existing=OutPlan.Boxes[0];
         // Union the requested enclosure with the entire old rectangle. Outward expansion
         // preserves old contents even when the caller supplied only some member IDs.
@@ -549,6 +554,7 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
         OutPlan.Planned.Y=FMath::Min(Existing.Y,OutPlan.Planned.Y);
         OutPlan.Planned.Width=Right-OutPlan.Planned.X;
         OutPlan.Planned.Height=Bottom-OutPlan.Planned.Y;
+        }
         OutPlan.Boxes[0].MemberCount = OutPlan.NodeKeys.Num();
 	}
 	// An empty Box keeps the explicit legacy fit-all behavior.
@@ -625,7 +631,12 @@ FString FTurboMCPComment::RenderPreview(const FPlan& InPlan)
 	else
 	{
         if (!InPlan.NodeKeys.IsEmpty())
-            Out += FString::Printf(TEXT("\nexplicit fit: expand outward only, preserving the old rectangle and all existing contents; planned rect=(%.0f,%.0f,%.0f,%.0f)"),InPlan.Planned.X,InPlan.Planned.Y,InPlan.Planned.Width,InPlan.Planned.Height);
+        {
+            Out += InPlan.bRefit
+                ? TEXT("\nexplicit refit: move and resize the box around only the selected nodes; other nodes stay in place and may no longer be enclosed;")
+                : TEXT("\nexplicit fit: expand outward only, preserving the old rectangle and all existing contents;");
+            Out += FString::Printf(TEXT(" planned rect=(%.0f,%.0f,%.0f,%.0f)"), InPlan.Planned.X, InPlan.Planned.Y, InPlan.Planned.Width, InPlan.Planned.Height);
+        }
 		int32 Fitted = 0;
 		int32 Empty = 0;
 		for (const FBox& Box : InPlan.Boxes)
