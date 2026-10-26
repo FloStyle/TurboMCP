@@ -3198,6 +3198,18 @@
       "observation": "Imported from archived Oct26 field report.",
       "implementation": "bdfe603",
       "implementation_details": "Unknown TurboMCP names suggest the closest three declared names and the help/reference tools."
+    },
+    {
+      "report": "2026-10-26",
+      "id": "WORKFLOW-CLEANUP",
+      "key": "2026-10-26/WORKFLOW-CLEANUP",
+      "title": "Clean up accumulated workflow test files and generated fixtures",
+      "kind": "housekeeping",
+      "priority": "P2",
+      "state": "open",
+      "validation": "not started",
+      "observation": "User requests future cleanup of workflow test files added to the project. Do not delete them during current field testing.",
+      "remaining": "Inventory workflow test sources and generated assets; consolidate duplicates, separate reusable test support from shipped plugin code, remove obsolete fixtures and artifacts after checking references, and retain useful regression coverage and evidence."
     }
   ],
   "prototype": {
