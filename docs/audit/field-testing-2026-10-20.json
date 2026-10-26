@@ -3401,13 +3401,15 @@
       "key": "2026-10-26_S4/GC-53",
       "title": "Fresh override parent-call scaffold blocks body transfer",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
       "disposition": "field_report_reconciled",
-      "validation": "reported_not_reproduced",
+      "validation": "tested",
       "implementation_limits": "Existing logic guard refuses the default parent call. Only a proven untouched scaffold may be replaced; arbitrary target logic must remain protected.",
-      "remaining": "Existing logic guard refuses the default parent call. Only a proven untouched scaffold may be replaced; arbitrary target logic must remain protected."
+      "remaining": "Original project field confirmation pending. Complex or modified scaffolds remain protected, not overwritten.",
+      "implementation": "dfe22ad: GraphTransfer accepts a minimal parent-call override scaffold with direct matching pin flow; authored nodes, comments, disabled nodes, local state and changed unlinked defaults refuse.",
+      "evidence": "Supervised build and test-vision-workflow passed e517764b9e984d3d800dddc8a669ba9c: fresh override target accepted, authored-comment/disabled-node targets refused, transfer compiles with inherited identity. Vision, PlayMenu and CommonPlay passed."
     },
     {
       "report": "2026-10-26_S4",

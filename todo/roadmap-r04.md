@@ -1831,3 +1831,7 @@ GC-59 / FT-114: 4e1a246 supplies Continuation before placement preflight. Native
 ### Oct26 guard placement follow-up — implemented
 
 TD-43: 5a313f4 places a single inserted execution node in a collision-free gap between its endpoints before general placement fallback. Existing nodes stay fixed. Native workflow 5baad9279e9d4b4883b2b20362e382e8 passed; screenshot AADF9B7241927C71A00F1D9019A8EBE1 reviewed, guard beside its own event, no crossing through Refund flow. Crowded gaps retain fallback; field confirmation pending.
+
+### Oct26 override scaffold transfer — implemented
+
+GC-53: dfe22ad accepts minimal parent-call scaffolds after verifying parent identity and direct matching pin flow. Comments, disabled nodes, extra logic and local state refuse. Native e517764b9e984d3d800dddc8a669ba9c passed including inherited transfer/compile and refusal controls; Vision/PlayMenu/CommonPlay passed. Earlier conservative identity refusals retained in batch evidence. Original field confirmation pending.

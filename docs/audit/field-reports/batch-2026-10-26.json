@@ -47,7 +47,6 @@
     "FT-108",
     "FT-109",
     "GC-50",
-    "GC-53",
     "FT-110",
     "GC-55",
     "GC-56",
@@ -124,7 +123,8 @@
     "FT-115",
     "GC-59",
     "FT-114",
-    "TD-43"
+    "TD-43",
+    "GC-53"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -291,5 +291,12 @@
     "result": "passed",
     "visual_review": "Guard is between Purchase event and setter; no wires traverse unrelated Refund flow. Existing positions unchanged.",
     "limits": "Single-node insertion with available gap. Crowded cases use previous fallback; original field confirmation pending."
+  },
+  "parent_scaffold_repair": {
+    "commit": "dfe22ad",
+    "native_run": "e517764b9e984d3d800dddc8a669ba9c",
+    "result": "passed",
+    "prior_runs": "c546101eeea04b95adaae009d1a629bd and 099093b57d354c0cae16868f1359575f refused stock scaffold; diagnosed skeleton/generated parent identity. dbb9a06766d947f69de8be245d8a4ed0 passed before additional disabled-node protection.",
+    "limits": "Minimal generated scaffold only; original field confirmation pending."
   }
 }
