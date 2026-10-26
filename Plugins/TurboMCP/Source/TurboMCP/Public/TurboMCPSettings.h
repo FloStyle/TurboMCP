@@ -12,26 +12,22 @@
 
 #include "TurboMCPSettings.generated.h"
 
-/**
- * The plugin's persisted choices.
- *
- * `03_TOOLS.md` requires the call log to be "turned on by a checkbox in the panel. It starts
- * unticked, and the choice persists in editor settings." `UDeveloperSettings` is what the editor
- * has for exactly that: it persists to a config file, it is readable and writable without an
- * editor window, and it appears under Project Settings so a user can find the switch even when the
- * TurboMCP panel is closed.
- *
- * THE DEFAULT IS OFF, deliberately: a log that switched itself on would make every user pay for it,
- * and the spec says it starts unticked. The panel's checkbox and this object are the SAME state, so
- * they cannot disagree.
+/** Personal preferences for this user and project. Never written to shared default config.
+ * Enablement is sampled once at module startup; restart the editor to apply a change.
+ * Call recording remains independently configurable from the panel or these preferences.
  */
-UCLASS(config = Editor, defaultconfig, meta = (DisplayName = "TurboMCP"))
+UCLASS(config = EditorPerProjectUserSettings, meta = (DisplayName = "TurboMCP"))
 class TURBOMCP_API UTurboMCPSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
 	UTurboMCPSettings();
+
+    /** Enable TurboMCP tools, panel and hooks for this user. Restart the editor after changing this preference. Unreal MCP and other toolsets are unaffected. */
+    UPROPERTY(EditAnywhere, config, Category = "Activation", meta = (DisplayName = "Enable TurboMCP", ConfigRestartRequired = true))
+    bool bEnableTurboMCP = true;
+
 
 	/** Record tool calls by default for field diagnostics. Saved user preferences override this default. */
 	UPROPERTY(EditAnywhere, config, Category = "Call log",
@@ -45,6 +41,6 @@ public:
 	static const UTurboMCPSettings* Get();
 
 	/** The config section name, so `SaveConfig` writes where the loader reads. */
-	virtual FName GetContainerName() const override { return TEXT("Project"); }
+	virtual FName GetContainerName() const override { return TEXT("Editor"); }
 	virtual FName GetCategoryName() const override { return TEXT("Plugins"); }
 };

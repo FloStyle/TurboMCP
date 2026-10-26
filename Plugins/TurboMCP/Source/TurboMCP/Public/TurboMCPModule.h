@@ -29,6 +29,9 @@ public:
 	virtual void ShutdownModule() override;
 	//~ End IModuleInterface
 
+    /** Activation latched at startup, independent of a pending preference change. */
+    bool IsEnabledForSession() const { return bEnabledForSession; }
+
 	/**
 	 * Registers every TurboMCP toolset with `UToolsetRegistry`.
 	 *
@@ -43,6 +46,7 @@ public:
 	void UnregisterToolsets();
 
 private:
+    bool bEnabledForSession = false;
 	/**
 	 * Installs the call log's analytics provider, keeping the provider that was
 	 * already installed so engine tool calls can still be forwarded.

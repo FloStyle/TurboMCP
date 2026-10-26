@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPModule.h"
+#include "TurboMCPSettings.h"
 #include "TurboMCPPlayInput.h"
 
 #include "Misc/CoreDelegates.h"
@@ -24,6 +25,14 @@
 
 void FTurboMCPModule::StartupModule()
 {
+    const UTurboMCPSettings* Settings = UTurboMCPSettings::Get();
+    bEnabledForSession = Settings && Settings->bEnableTurboMCP;
+    if (!bEnabledForSession)
+    {
+        UE_LOG(LogTurboMCP, Log, TEXT("TurboMCP disabled by this user's Editor Preferences. No tools, panel, recording hooks or native-tool filters installed. Enable TurboMCP in Editor Preferences > Plugins > TurboMCP and restart the editor to activate it. Unreal MCP is unchanged."));
+        return;
+    }
+
 	// The registry is not ready yet, so wait for every loading phase to finish.
 	// Registering in StartupModule would leave the class unregistered with no
 	// error, which is the worst kind of failure because the editor looks fine.
@@ -47,6 +56,7 @@ void FTurboMCPModule::StartupModule()
 
 void FTurboMCPModule::ShutdownModule()
 {
+    if (!bEnabledForSession) return;
     TurboMCPPlayInput::Shutdown();
 	if (LoadingPhasesCompleteHandle.IsValid())
 	{
@@ -66,6 +76,7 @@ void FTurboMCPModule::ShutdownModule()
 
 void FTurboMCPModule::RegisterToolsets()
 {
+    if (!bEnabledForSession) return;
 	// A toolset can only be registered once the registry exists. IsAvailable is
 	// the engine's own check for that, and it returns false when there is no
 	// editor (for example in a commandlet), which is not an error here.

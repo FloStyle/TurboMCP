@@ -43,11 +43,34 @@
 #include "ImageUtils.h"
 #include "ImageCore.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPSettings.h"
+#include "TurboMCPModule.h"
+#include "ToolsetRegistry/UToolsetRegistry.h"
 
 // Fixture authoring is setup, not evidence that graph editing tools created it.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPVisionWorkflowTest,"TurboMCP.Workflow.Vision",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
 {
+ // FT-112: preferences are personal; disabled activation must not touch active registries.
+ {
+  UTurboMCPSettings* Preferences = UTurboMCPSettings::GetMutable();
+  if (!TestNotNull(TEXT("Personal preferences available"), Preferences)) return false;
+  const bool PreviousEnabled = Preferences->bEnableTurboMCP;
+  ON_SCOPE_EXIT { Preferences->bEnableTurboMCP = PreviousEnabled; };
+  TestEqual(TEXT("Preferences use Editor container"), Preferences->GetContainerName(), FName(TEXT("Editor")));
+  TestEqual(TEXT("Preferences use per-user project config"), Preferences->GetClass()->ClassConfigName, FName(TEXT("EditorPerProjectUserSettings")));
+  TestFalse(TEXT("Preferences do not save shared defaults"), Preferences->GetClass()->HasAnyClassFlags(CLASS_DefaultConfig));
+  Preferences->bEnableTurboMCP = false; // In-memory only; never save test preferences.
+  const bool WasRegistered = UToolsetRegistry::IsToolsetClassRegistered(UTurboMCPReadToolset::StaticClass());
+  FTurboMCPModule DisabledInstance;
+  DisabledInstance.StartupModule();
+  TestFalse(TEXT("Disabled startup remains inactive"), DisabledInstance.IsEnabledForSession());
+  DisabledInstance.RegisterToolsets();
+  DisabledInstance.ShutdownModule();
+  TestEqual(TEXT("Disabled lifecycle preserves existing registry"), UToolsetRegistry::IsToolsetClassRegistered(UTurboMCPReadToolset::StaticClass()), WasRegistered);
+  const FString PendingStatus = UTurboMCPReadToolset::ReadTurboMCPStatus();
+  TestTrue(TEXT("Status distinguishes pending disable from current activation"), PendingStatus.Contains(TEXT("activation this session: enabled")) && PendingStatus.Contains(TEXT("per-user preference: disabled")) && PendingStatus.Contains(TEXT("restart required: yes")));
+ }
  const FString Suffix=FGuid::NewGuid().ToString(EGuidFormats::Digits);
  UPackage* Package=CreatePackage(*(TEXT("/Game/Tests/Vision_")+Suffix));
  FString Transcript;

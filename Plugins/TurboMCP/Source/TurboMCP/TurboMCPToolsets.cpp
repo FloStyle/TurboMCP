@@ -6,6 +6,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "Tools/TurboMCPToolsets.h"
+#include "TurboMCPModule.h"
+#include "TurboMCPSettings.h"
 
 #include "Containers/UnrealString.h"
 #include "Editor.h"
@@ -198,6 +200,14 @@ FString UTurboMCPReadToolset::ReadTurboMCPStatus()
 	FString Result = FString::Printf(
 		TEXT("read: TurboMCP status, %d toolsets\n"), ToolsetCount);
 
+    const FTurboMCPModule* Module = FModuleManager::GetModulePtr<FTurboMCPModule>(TEXT("TurboMCP"));
+    const bool Active = Module && Module->IsEnabledForSession();
+    const UTurboMCPSettings* Preferences = UTurboMCPSettings::Get();
+    const bool Requested = Preferences && Preferences->bEnableTurboMCP;
+    Result += FString::Printf(TEXT("activation this session: %s\nper-user preference: %s\nrestart required: %s\npreferences: Editor Preferences > Plugins > TurboMCP\n"),
+        Active ? TEXT("enabled") : TEXT("disabled"), Requested ? TEXT("enabled") : TEXT("disabled"), Active != Requested ? TEXT("yes") : TEXT("no"));
+    if (!Active)
+        return Result + TEXT("TurboMCP is disabled for this editor session. Its status tool is not exposed over MCP. Enable it in Editor Preferences and restart. Unreal MCP and other toolsets are unaffected.\n");
     if (const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("TurboMCP")))
     {
         const FPluginDescriptor& Descriptor = Plugin->GetDescriptor();
