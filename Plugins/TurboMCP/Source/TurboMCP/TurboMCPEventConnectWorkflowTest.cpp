@@ -10,6 +10,7 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_CreateDelegate.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_IfThenElse.h"
 #include "K2Node_VariableSet.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -202,6 +203,29 @@ bool FTurboMCPEventConnectWorkflowTest::RunTest(const FString& Parameters)
     const FString MissingRemove = Record(TEXT("EditTurboMCPGraphRemove missing"), UTurboMCPEditToolset::EditTurboMCPGraphRemove(Asset, GraphName, RemoveNodes, TEXT("[]")));
     TestTrue(TEXT("Repeated removal refuses missing node"), MissingRemove.StartsWith(TEXT("unchanged\nrefused:")));
     TestEqual(TEXT("Repeated cleanup preserves all state"), Snapshot(), ExpectedClean);
+    // Insert a false guard; only its else output must continue the original Purchase flow.
+    UK2Node_IfThenElse* BranchProbe = NewObject<UK2Node_IfThenElse>(Graph);
+    BranchProbe->AllocateDefaultPins();
+    const FString BranchType = TurboMCPNodeId::GetNodeTypeId(BranchProbe);
+    BranchProbe->MarkAsGarbage();
+    UEdGraphPin* PurchaseExec = Purchase->FindPinChecked(TEXT("execute"));
+    UEdGraphPin* EntryExec = PurchaseExec->LinkedTo[0];
+    const FString GuardText = FString::Printf(TEXT("(%s\n execute (-> %s:%s)\n Condition false\n) ; label Guard"),
+        *BranchType, *TurboMCPNodeId::MakeForNode(EntryExec->GetOwningNode(), true), *EntryExec->PinName.ToString());
+    const FString GuardBefore = Snapshot();
+    const bool GuardDirtyBefore = Package->IsDirty();
+    const FString BadGuard = Record(TEXT("Guard invalid exit preview"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Asset, GraphName, GuardText, TEXT("Guard:missing")));
+    TestTrue(TEXT("Invalid guard exit refused"), BadGuard.Contains(TEXT("refus")) || BadGuard.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Failed guard preview preserves graph"), Snapshot(), GuardBefore);
+    const FString GuardPreview = Record(TEXT("Guard preview"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Asset, GraphName, GuardText, TEXT("Guard:else")));
+    TestFalse(TEXT("Explicit guard continuation accepted during placement planning"), GuardPreview.Contains(TEXT("refused:")) || GuardPreview.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Guard preview preserves graph"), Snapshot(), GuardBefore);
+    TestEqual(TEXT("Guard preview preserves dirty state"), Package->IsDirty(), GuardDirtyBefore);
+    const FString GuardEdit = Record(TEXT("Guard edit"), UTurboMCPEditToolset::EditTurboMCPGraphAppend(Asset, GraphName, GuardText, TEXT("Guard:else")));
+    TestTrue(TEXT("Guard edit reports changed"), GuardEdit.StartsWith(TEXT("changed")));
+    UK2Node_IfThenElse* Guard = EntryExec->LinkedTo.Num() == 1 ? Cast<UK2Node_IfThenElse>(EntryExec->LinkedTo[0]->GetOwningNode()) : nullptr;
+    if (!TestNotNull(TEXT("Entry now reaches Branch"), Guard)) return false;
+    TestTrue(TEXT("Only else continues old flow"), Guard->FindPinChecked(TEXT("else"))->LinkedTo.Contains(PurchaseExec) && Guard->FindPinChecked(TEXT("then"))->LinkedTo.IsEmpty());
     Record(TEXT("EditTurboMCPCompile"), UTurboMCPEditToolset::EditTurboMCPCompile(Asset));
     if (!TestTrue(TEXT("Blueprint compiles"), BP->Status != BS_Error && BP->GeneratedClass != nullptr)) return false;
     UObject* Object = BP->GeneratedClass->GetDefaultObject();

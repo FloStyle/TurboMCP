@@ -157,7 +157,7 @@ public:
 	 *                           the legacy behavior and no positions are computed.
 	 */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, const FString& InText,
-		FPlan& OutPlan, FString& OutError, bool bRequestPlacement = false);
+		FPlan& OutPlan, FString& OutError, bool bRequestPlacement = false, const FString& Continuation = FString());
 
 	/**
 	 * Plans an attachment-relative block when links identify an existing exec source; otherwise a deterministic column.

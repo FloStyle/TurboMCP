@@ -19,15 +19,11 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
 {
 	FTurboMCPGraphAppend::FPlan Plan;
 	FString Error;
-	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error, /*bRequestPlacement=*/true))
+	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error, /*bRequestPlacement=*/true, Continuation))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
 
-    Plan.Continuation = Continuation.TrimStartAndEnd();
-    if (Plan.Continuation.IsEmpty()) Plan.Continuation = TEXT("auto");
-    if (Plan.Continuation != TEXT("auto") && Plan.Continuation != TEXT("all") && !Plan.Continuation.Contains(TEXT(":")))
-        Plan.Refusals.Add(TEXT("Continuation must be auto, all, or label:pin"));
 
     FString ExecutionReport;
     if (Plan.bAcceptable() && !FTurboMCPGraphAppend::Preflight(Plan, ExecutionReport, Error))
@@ -41,15 +37,11 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphAppend(
 	// Rebuild the plan against current state; a previous preview may be stale.
 	FTurboMCPGraphAppend::FPlan Plan;
 	FString Error;
-	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error, /*bRequestPlacement=*/true))
+	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error, /*bRequestPlacement=*/true, Continuation))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
 
-    Plan.Continuation = Continuation.TrimStartAndEnd();
-    if (Plan.Continuation.IsEmpty()) Plan.Continuation = TEXT("auto");
-    if (Plan.Continuation != TEXT("auto") && Plan.Continuation != TEXT("all") && !Plan.Continuation.Contains(TEXT(":")))
-        Plan.Refusals.Add(TEXT("Continuation must be auto, all, or label:pin"));
 
 	if (!Plan.bAcceptable())
 	{

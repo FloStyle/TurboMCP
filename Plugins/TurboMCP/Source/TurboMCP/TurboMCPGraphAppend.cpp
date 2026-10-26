@@ -181,10 +181,16 @@ namespace
 }
 
 bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphName,
-	const FString& InText, FPlan& OutPlan, FString& OutError, bool bRequestPlacement)
+	const FString& InText, FPlan& OutPlan, FString& OutError, bool bRequestPlacement, const FString& Continuation)
 {
 	OutError.Empty();
 	OutPlan = FPlan();
+    // Placement preflight executes the proposed links, so it must use the caller's continuation.
+    OutPlan.Continuation = Continuation.TrimStartAndEnd();
+    if (OutPlan.Continuation.IsEmpty()) OutPlan.Continuation = TEXT("auto");
+    if (OutPlan.Continuation != TEXT("auto") && OutPlan.Continuation != TEXT("all") && !OutPlan.Continuation.Contains(TEXT(":")))
+    { OutError = TEXT("Continuation must be auto, all, or label:pin"); return false; }
+
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
 	OutPlan.GraphName = InGraphName.TrimStartAndEnd();
 
