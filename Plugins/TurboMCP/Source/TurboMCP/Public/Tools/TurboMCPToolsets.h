@@ -665,6 +665,15 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphTransfer(const FString& SourceAsset, const FString& SourceGraph, const FString& TargetAsset, const FString& TargetGraph);
     /**
+     * Preview removal; no mutation is performed.
+     * Refuses graph references, designer bindings, animation bindings and explicit navigation targets in this Blueprint. External assets, dynamic string lookups and custom reference systems are not verified. Removing the root leaves an empty tree. Edit checks current state again; loaded dependent Blueprints may be refreshed. Compile and inspect before saving.
+     * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu. Requires an idle editor outside PIE and transactions.
+     * @param Widget Required exact designer object name from ReadTurboMCPWidgetTree. Includes its descendants in this tree, not the internals of embedded UserWidgets. Missing names refuse. Example: ObsoleteCard. Preview lists every affected name.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPWidgetRemove(const FString& Asset, const FString& Widget);
+
+    /**
      * Copy one widget and its descendants into another Widget Blueprint.
      *
      * Widget names must be unused. Copies widget properties, internal slots and the root slot layout; preserves direct/struct/array text identities. Designer bindings refuse. Graph logic and animations are not copied. Detected references outside the selected subtree refuse; prefer copying a common ancestor. Complex custom widget references and text map/set properties are not fully validated. Read the target tree and compile before saving.
@@ -1483,6 +1492,15 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
+
+    /**
+     * Remove the widget subtree through the stock editor operation, with an undo transaction and structural refresh. No full compile or save is requested.
+     * Refuses graph references, designer bindings, animation bindings and explicit navigation targets in this Blueprint. External assets, dynamic string lookups and custom reference systems are not verified. Removing the root leaves an empty tree. Edit checks current state again; loaded dependent Blueprints may be refreshed. Compile and inspect before saving.
+     * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu. Requires an idle editor outside PIE and transactions.
+     * @param Widget Required exact designer object name from ReadTurboMCPWidgetTree. Includes its descendants in this tree, not the internals of embedded UserWidgets. Missing names refuse. Example: ObsoleteCard. Preview lists every affected name.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPWidgetRemove(const FString& Asset, const FString& Widget);
 
     /**
      * Rename an existing designer widget using Unreal's undoable editor operation. Requires an idle editor outside PIE.

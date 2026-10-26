@@ -18,6 +18,8 @@
 #include "GameFramework/Actor.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_VariableGet.h"
+#include "K2Node_ComponentBoundEvent.h"
+#include "Blueprint/WidgetNavigation.h"
 #include "K2Node_ExecutionSequence.h"
 #include "K2Node_IfThenElse.h"
 #include "K2Node_AddDelegate.h"
@@ -384,6 +386,43 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
   TestTrue(TEXT("Repeated rename is no-op"),UTurboMCPEditToolset::EditTurboMCPWidgetRename(WidgetTarget->GetPathName(),TEXT("RenamedPurchaseLabel"),TEXT("RenamedPurchaseLabel")).StartsWith(TEXT("unchanged:")));
   Record(TEXT("Compile renamed widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));
   TestTrue(TEXT("Renamed widget compiles"),WidgetTarget->Status!=BS_Error);
+  TestTrue(TEXT("Referenced widget removal refuses"),Record(TEXT("Referenced removal"),UTurboMCPEditToolset::EditTurboMCPWidgetRemove(WidgetTarget->GetPathName(),TEXT("RenamedPurchaseLabel"))).StartsWith(TEXT("unchanged:")));
+  TestTrue(TEXT("Referenced subtree removal refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetRemove(WidgetTarget->GetPathName(),CopiedPanel->GetName()).StartsWith(TEXT("unchanged:")));
+  TestTrue(TEXT("Refused removal preserves widget"),WidgetTarget->WidgetTree->FindWidget(TEXT("RenamedPurchaseLabel"))==CopiedLabel);
+  TestTrue(TEXT("Refused removal preserves getter"),RenameGraph->Nodes.Contains(RenameGetter));
+  UK2Node_ComponentBoundEvent* RemovalEvent=NewObject<UK2Node_ComponentBoundEvent>(RenameGraph);
+  RemovalEvent->ComponentPropertyName=TEXT("Extra8");RenameGraph->AddNode(RemovalEvent,false,false);RemovalEvent->CreateNewGuid();
+  TestTrue(TEXT("Bound event blocks removal"),UTurboMCPEditToolset::EditTurboMCPWidgetRemove(WidgetTarget->GetPathName(),TEXT("Extra8")).StartsWith(TEXT("unchanged:")));
+  RenameGraph->RemoveNode(RemovalEvent);
+  UWidget* NavigationSource=WidgetTarget->WidgetTree->FindWidget(TEXT("Extra7"));
+  if(NavigationSource){
+   NavigationSource->Navigation=NewObject<UWidgetNavigation>(NavigationSource);
+   NavigationSource->Navigation->Right.Rule=EUINavigationRule::Explicit;
+   NavigationSource->Navigation->Right.WidgetToFocus=TEXT("Extra8");
+   TestTrue(TEXT("Explicit navigation blocks removal"),UTurboMCPEditToolset::EditTurboMCPWidgetRemove(WidgetTarget->GetPathName(),TEXT("Extra8")).StartsWith(TEXT("unchanged:")));
+   NavigationSource->Navigation=nullptr;
+  }
+  const FString RemovePreview=Record(TEXT("Widget removal preview"),UTurboMCPPreviewToolset::PreviewTurboMCPWidgetRemove(WidgetTarget->GetPathName(),TEXT("Extra8")));
+  TestTrue(TEXT("Unreferenced removal previews"),RemovePreview.StartsWith(TEXT("preview:")));
+  TestTrue(TEXT("Removal preview includes selected root"),RemovePreview.Contains(TEXT("widgets (1): Extra8")));
+  TestNotNull(TEXT("Removal preview preserves widget"),WidgetTarget->WidgetTree->FindWidget(TEXT("Extra8")));
+  TestTrue(TEXT("Unreferenced removal succeeds"),Record(TEXT("Widget removal edit"),UTurboMCPEditToolset::EditTurboMCPWidgetRemove(WidgetTarget->GetPathName(),TEXT("Extra8"))).StartsWith(TEXT("edited:")));
+  TestNull(TEXT("Removed widget absent"),WidgetTarget->WidgetTree->FindWidget(TEXT("Extra8")));
+  TestTrue(TEXT("Sibling preserved"),WidgetTarget->WidgetTree->FindWidget(TEXT("RenamedPurchaseLabel"))==CopiedLabel);
+  TestTrue(TEXT("Missing removal refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetRemove(WidgetTarget->GetPathName(),TEXT("Extra8")).StartsWith(TEXT("error:")));
+  UCanvasPanel* DisposablePanel=WidgetTarget->WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("DisposablePanel"));
+  CopiedPanel->AddChildToCanvas(DisposablePanel);
+  UTextBlock* DisposableChild=WidgetTarget->WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("DisposableChild"));
+  DisposablePanel->AddChildToCanvas(DisposableChild);
+  const FString SubtreeRemoval=Record(TEXT("Subtree removal preview"),UTurboMCPPreviewToolset::PreviewTurboMCPWidgetRemove(WidgetTarget->GetPathName(),TEXT("DisposablePanel")));
+  TestTrue(TEXT("Subtree preview lists root and child"),SubtreeRemoval.Contains(TEXT("widgets (2): DisposableChild, DisposablePanel")));
+  TestTrue(TEXT("Subtree removal succeeds"),UTurboMCPEditToolset::EditTurboMCPWidgetRemove(WidgetTarget->GetPathName(),TEXT("DisposablePanel")).StartsWith(TEXT("edited:")));
+  TestNull(TEXT("Removed subtree root absent"),WidgetTarget->WidgetTree->FindWidget(TEXT("DisposablePanel")));
+  TestNull(TEXT("Removed subtree child absent"),WidgetTarget->WidgetTree->FindWidget(TEXT("DisposableChild")));
+  TestTrue(TEXT("Subtree removal preserves sibling"),WidgetTarget->WidgetTree->FindWidget(TEXT("RenamedPurchaseLabel"))==CopiedLabel);
+  Record(TEXT("Compile after widget removal"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));
+  TestTrue(TEXT("Widget compiles after removal"),WidgetTarget->Status!=BS_Error);
+
  }
  Record(TEXT("Compile widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WB->GetPathName()));
  for(const FString Size:{FString(TEXT("640x240")),FString(TEXT("1920x720"))})ImageCheck(Record(TEXT("Widget preview ")+Size,UTurboMCPLookToolset::LookTurboMCPWidgetPreview(WB->GetPathName(),TEXT(""),TEXT(""),Size,TEXT("allow"))));

@@ -18,6 +18,13 @@
 #include "Blueprint/WidgetTree.h"
 #include "Components/Widget.h"
 #include "Kismet2/Kismet2NameValidators.h"
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "Animation/WidgetAnimation.h"
+#include "EdGraph/EdGraph.h"
+#include "K2Node_Variable.h"
+#include "K2Node_ComponentBoundEvent.h"
+#include "TurboMCPNodeId.h"
+#include "Blueprint/WidgetNavigation.h"
 
 // Read selected widget-tree data through the shared inspector; no writer is invoked here.
 FString UTurboMCPReadToolset::ReadTurboMCPWidgetTree(const FString& Asset)
@@ -70,4 +77,97 @@ FString UTurboMCPEditToolset::EditTurboMCPWidgetRename(
     if (!bRenamed || Target->GetFName() != FName(*Name))
         return FString::Printf(TEXT("error: Unreal did not confirm the requested rename from %s to %s. Current widget name: %s. Inspect the tree before retrying; no save was requested."), *OldName, *Name, *Target->GetName());
     return FString::Printf(TEXT("edited: Renamed widget %s to %s in %s using Unreal's editor rename operation. Graph and designer references handled by Unreal were refreshed. Dynamic string lookups and external assets are not verified. Structural refresh may affect loaded dependent Blueprints. Compile and inspect references before saving; no full compile or save was requested."), *OldName, *Target->GetName(), *Resolved.ObjectPath);
+}
+
+namespace
+{
+FString RemoveDesignerWidget(const FString& Asset, const FString& Widget, bool bApply)
+{
+    if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() ||
+        GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+        return TEXT("error: Widget removal requires an idle editor outside PIE and transactions. Nothing changed.");
+    FTurboMCPAssetResolver::FResolved Resolved;
+    const FString Error = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+    if (!Error.IsEmpty()) return Error;
+    UWidgetBlueprint* Blueprint = LoadObject<UWidgetBlueprint>(nullptr, *Resolved.ObjectPath);
+    if (!Blueprint || !Blueprint->WidgetTree)
+        return TEXT("error: Asset must be a Widget Blueprint with a widget tree. Nothing changed.");
+    UWidget* Target = Blueprint->WidgetTree->FindWidget(FName(*Widget.TrimStartAndEnd()));
+    if (!Target)
+        return TEXT("error: Widget was not found. Use ReadTurboMCPWidgetTree for its exact designer object name. Nothing changed.");
+    TSet<FName> Names;
+    TArray<FString> RemovedNames;
+    // The engine visitor enumerates descendants only; include the selected root.
+    Names.Add(Target->GetFName());
+    RemovedNames.Add(Target->GetName());
+    UWidgetTree::ForWidgetAndChildren(Target, [&](UWidget* Item)
+    {
+        Names.Add(Item->GetFName());
+        RemovedNames.Add(Item->GetName());
+    });
+    RemovedNames.Sort();
+    TArray<FString> Blockers;
+    for (const FName Name : Names)
+        if (FBlueprintEditorUtils::IsVariableUsed(Blueprint, Name))
+            Blockers.Add(FString::Printf(TEXT("graph reference to %s"), *Name.ToString()));
+    // GUID-based engine lookup can miss stale/uncompiled widget variables. Scan
+    // explicit local references by name as well, including bound widget events.
+    TArray<UEdGraph*> Graphs;
+    Blueprint->GetAllGraphs(Graphs);
+    for (UEdGraph* Graph : Graphs)
+        if (Graph)
+            for (UEdGraphNode* Node : Graph->Nodes)
+            {
+                const UK2Node_Variable* Variable = Cast<UK2Node_Variable>(Node);
+                const UK2Node_ComponentBoundEvent* Event = Cast<UK2Node_ComponentBoundEvent>(Node);
+                if ((Variable && Variable->VariableReference.IsSelfContext() && Names.Contains(Variable->VariableReference.GetMemberName())) ||
+                    (Event && Names.Contains(Event->GetComponentPropertyName())))
+                    Blockers.Add(FString::Printf(TEXT("graph node %s references this subtree"), *TurboMCPNodeId::MakeForNode(Node, true)));
+            }
+    // Refuse designer references as well: the stock delete operation can remove
+    // some bindings silently, which is inappropriate for a reference-checked tool.
+    for (const FDelegateEditorBinding& Binding : Blueprint->Bindings)
+        if (Names.Contains(FName(*Binding.ObjectName)))
+            Blockers.Add(FString::Printf(TEXT("designer binding on %s"), *Binding.ObjectName));
+    for (const UWidgetAnimation* Animation : Blueprint->Animations)
+        if (Animation)
+            for (const FWidgetAnimationBinding& Binding : Animation->AnimationBindings)
+                if (Names.Contains(Binding.WidgetName))
+                    Blockers.Add(FString::Printf(TEXT("animation %s uses %s"), *Animation->GetName(), *Binding.WidgetName.ToString()));
+    Blueprint->WidgetTree->ForEachWidget([&](UWidget* Item)
+    {
+        if (Names.Contains(Item->GetFName()) || !Item->Navigation) return;
+        for (const FWidgetNavigationData* Rule : { &Item->Navigation->Up, &Item->Navigation->Down,
+            &Item->Navigation->Left, &Item->Navigation->Right, &Item->Navigation->Next, &Item->Navigation->Previous })
+            if (Rule->Rule == EUINavigationRule::Explicit && Names.Contains(Rule->WidgetToFocus))
+                Blockers.Add(FString::Printf(TEXT("explicit navigation from %s to %s"), *Item->GetName(), *Rule->WidgetToFocus.ToString()));
+    });
+    if (!Blockers.IsEmpty())
+    {
+        Blockers.Sort();
+        return FString::Printf(TEXT("unchanged: Widget removal refused. Resolve these references before retrying:\n%s\nNothing was removed. Checks cover this Blueprint, not external assets or dynamic string lookups."), *FString::Join(Blockers, TEXT("\n")));
+    }
+    const FString Scope = FString::Printf(TEXT("asset: %s\nwidgets (%d): %s\nChecks cover graph references, designer bindings, animation bindings and explicit widget navigation in this Blueprint. External assets, dynamic string lookups and custom reference systems are not verified."), *Resolved.ObjectPath, RemovedNames.Num(), *FString::Join(RemovedNames, TEXT(", ")));
+    if (!bApply)
+        return TEXT("preview: Remove the named widget and its descendants. No changes made.\n") + Scope + TEXT("\nEdit replans from current state. Removing the root leaves an empty designer tree. Compile and inspect the result before saving.");
+    // The engine owns the undo transaction, tree detachment and structural refresh.
+    // All supported reference checks above run before that destructive operation.
+    FText Failure;
+    if (!FWidgetBlueprintOperationUtils::RemoveWidget(Blueprint, Target, Failure))
+        return TEXT("error: Unreal did not confirm widget removal: ") + Failure.ToString() + TEXT(". Inspect the tree before retrying; no save was requested.");
+    for (const FName Name : Names)
+        if (Blueprint->WidgetTree->FindWidget(Name))
+            return TEXT("partial: A requested widget remains after removal. Inspect ReadTurboMCPWidgetTree before retrying. No save was requested.");
+    return TEXT("edited: Removed the widget subtree.\n") + Scope + TEXT("\nStructural refresh requested; loaded dependent Blueprints may be affected. No full compile or save was requested. Compile and inspect the result before saving.");
+}
+}
+
+FString UTurboMCPPreviewToolset::PreviewTurboMCPWidgetRemove(const FString& Asset, const FString& Widget)
+{
+    return RemoveDesignerWidget(Asset, Widget, false);
+}
+
+FString UTurboMCPEditToolset::EditTurboMCPWidgetRemove(const FString& Asset, const FString& Widget)
+{
+    return RemoveDesignerWidget(Asset, Widget, true);
 }
