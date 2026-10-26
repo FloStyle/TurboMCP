@@ -973,7 +973,7 @@ public:
      * Removal considers the named graph, not just one execution branch. Entry/result/event nodes and comments are protected. Inspect the removal list before editing; successful preview does not guarantee a later edit.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
      * @param GraphName Required target graph name, e.g. EventGraph. Use the reader's exact graph name; missing or ambiguous targets are refused.
-     * @param Text Required nonempty graph text using the append grammar. Existing reader IDs identify nodes to retain; eligible nodes omitted from the text are deleted. Preserve exact type IDs and pin names. Start from a complete ReadTurboMCPGraphLoad result, not a truncated page or isolated fragment; preview the removal list before editing.
+     * @param Text Required nonempty graph text using the append grammar. Existing reader IDs identify nodes to retain; eligible nodes omitted from the text are deleted. Preserve exact type IDs and pin names. Use a complete ReadTurboMCPGraphLoad result as reference, not as an automatically writable payload. Convert the intended graph to append node forms: exact type ID, input pin lines, and explicit (-> NodeId:OutputPin) links. Keep existing node ID comments to retain those nodes. Reader branch headings such as :then/:else do not create execution links; express each destination execute input explicitly. Never use a truncated page as the replacement; preview and inspect every removal first.
      */
     UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphReplace(
@@ -1728,7 +1728,7 @@ public:
      * Removal considers the named graph, not just one execution branch. Entry/result/event nodes and comments are protected. Inspect the removal list before editing; successful preview does not guarantee a later edit.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
      * @param GraphName Required target graph name, e.g. EventGraph. Use the reader's exact graph name; missing or ambiguous targets are refused.
-     * @param Text Required nonempty graph text using the append grammar. Existing reader IDs identify nodes to retain; eligible nodes omitted from the text are deleted. Preserve exact type IDs and pin names. Start from a complete ReadTurboMCPGraphLoad result, not a truncated page or isolated fragment; preview the removal list before editing.
+     * @param Text Required nonempty graph text using the append grammar. Existing reader IDs identify nodes to retain; eligible nodes omitted from the text are deleted. Preserve exact type IDs and pin names. Use a complete ReadTurboMCPGraphLoad result as reference, not as an automatically writable payload. Convert the intended graph to append node forms: exact type ID, input pin lines, and explicit (-> NodeId:OutputPin) links. Keep existing node ID comments to retain those nodes. Reader branch headings such as :then/:else do not create execution links; express each destination execute input explicitly. Never use a truncated page as the replacement; preview and inspect every removal first.
      */
     UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphReplace(

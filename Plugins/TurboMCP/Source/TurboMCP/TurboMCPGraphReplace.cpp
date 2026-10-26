@@ -208,6 +208,9 @@ FString FTurboMCPGraphReplace::RenderPreview(const FPlan& InPlan)
 		{
 			Out += FString::Printf(TEXT("\n    refused %s"), *Refusal);
 		}
+		Out += TEXT("\nInput guidance: replacement uses the append grammar. Use the complete graph reader result as reference, then write node forms with exact type IDs, input pin names and explicit (-> NodeId:OutputPin) links. Preserve existing node ID comments for nodes you intend to retain.");
+		Out += TEXT("\nReader branch headings such as :then/:else do not create links. Write the destination execute input as (-> SourceNodeId:then) or (-> SourceNodeId:else). Use PreviewTurboMCPNodeType to check the actual pin names.");
+		Out += TEXT("\nDo not retry with a shortened graph fragment: replacement can delete omitted nodes. Correct the reported input and inspect a successful preview's removal list before editing.");
 		return Out;
 	}
 
