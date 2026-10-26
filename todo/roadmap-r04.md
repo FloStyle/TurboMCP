@@ -1839,3 +1839,7 @@ GC-53: dfe22ad accepts minimal parent-call scaffolds after verifying parent iden
 ## Oct26 replacement guidance correction
 
 GC-56 partial repair at 5668810: reader results are reference material, not guaranteed writer payloads. Public help and refused replacement plans explain node forms, explicit branch links, retained IDs and removal review. Source/scope reviewed; runtime untested. The original five-error payload is unavailable, so GC-56 remains open.
+
+## Oct26 existing-widget rename
+
+FT-110 implemented at 72384b8 through the stock editor operation. Identifier/collision refusal, same-name no-op and documented structural refresh limits. Native workflow c880c2db4a93445c88c405ffbe189360 passed, including graph getter reference/name identity, widget text/slot preservation and compile. Earlier run 2ccee348c459474cb034c7959f5e4002 passed native assertions but the suite rejected an engine HTTP timeout warning; warning policy unchanged. No claim of external or dynamic-string reference migration. Field confirmation pending; copy-time name collision handling remains FT-109.

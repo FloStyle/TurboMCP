@@ -58,6 +58,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPVarsAdd | [TurboMCPVarsAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAddTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPVcsCheckout | [TurboMCPSourceControlTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetBindAdd | [TurboMCPWidgetBindAdd.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBindAdd.cpp) | parsed_call | not certified | compare-native-before-expanding |
+| EditTurboMCPWidgetRename | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetRetarget | [TurboMCPWidgetRetargetTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetSubtreeCopy | [TurboMCPMergeTransferTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp) | missing | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetsAsVars | [TurboMCPWidgetsAsVarsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetsAsVarsTools.cpp) | parsed_call | not certified | compare-native-before-expanding |

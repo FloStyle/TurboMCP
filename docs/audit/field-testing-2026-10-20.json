@@ -3459,13 +3459,15 @@
       "key": "2026-10-26_S4/FT-110",
       "title": "Rename an existing widget through TurboMCP",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
       "disposition": "field_report_reconciled",
-      "validation": "reported_not_reproduced",
+      "validation": "native_pass_field_pending",
       "implementation_limits": "Separate operation from FT-109 copy-time collision renaming. Preview reference impact and preserve bindings/references; engine rename was the field workaround.",
-      "remaining": "Separate operation from FT-109 copy-time collision renaming. Preview reference impact and preserve bindings/references; engine rename was the field workaround."
+      "remaining": "Field confirmation pending. External assets and dynamic string lookups are not verified. Copy-time collision renaming is FT-109, not this operation.",
+      "implementation": "72384b80a569e7a8c35cf10a7878343de07f188f: EditTurboMCPWidgetRename uses stock editor rename with identifier/collision checks, repeat no-op and explicit scope limits.",
+      "evidence": "Supervised c880c2db4a93445c88c405ffbe189360 passed: rename, graph getter update and identity, text/slot preservation, invalid/collision refusal, repeat and compile. Earlier 2ccee348c459474cb034c7959f5e4002 passed native assertions but suite failed on an engine HTTP timeout warning."
     },
     {
       "report": "2026-10-26_S5",

@@ -47,7 +47,6 @@
     "FT-108",
     "FT-109",
     "GC-50",
-    "FT-110",
     "GC-55",
     "GC-56",
     "FT-111",
@@ -124,7 +123,8 @@
     "GC-59",
     "FT-114",
     "TD-43",
-    "GC-53"
+    "GC-53",
+    "FT-110"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -305,5 +305,12 @@
     "issue": "2026-10-26_S5/GC-56",
     "implemented": "Clarify writer grammar, explicit execution links, retained IDs and removal preview; include guidance with refused plans.",
     "remaining": "Original failed payload unavailable; runtime conversion acceptance not established. Issue stays open."
+  },
+  "widget_rename_repair": {
+    "commit": "72384b80a569e7a8c35cf10a7878343de07f188f",
+    "native_run": "c880c2db4a93445c88c405ffbe189360",
+    "status": "implemented_native_pass_field_pending",
+    "tool": "EditTurboMCPWidgetRename",
+    "limits": "External assets and dynamic string lookups not verified; loaded dependent Blueprints may be refreshed. FT-109 copy-time collision naming remains open."
   }
 }
