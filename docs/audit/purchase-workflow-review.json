@@ -820,7 +820,7 @@
       "tool": "PreviewTurboMCPGraphTransfer",
       "role": "Copy one complete owned graph, including its nodes, connections, layout, comments and locals.",
       "status": "scenario checked",
-      "ready": true,
+      "ready": false,
       "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
       "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
       "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
@@ -831,7 +831,7 @@
         "code_and_helpers": "reviewed; confirmed defects repaired",
         "workflow": "passed"
       },
-      "remaining": "Owned function/local and delegate-bearing event graphs tested. Macro/library variants and all project-specific reference types remain outside this fixture.",
+      "remaining": "S4: inherited override transfer compile failure (GC-52) and same-graph custom-event dependency refusal (X-101); follow-up required. Prior bounded native scenario remains passed.",
       "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
       "workflows": [
         "WF-OCT26-MERGE"
@@ -841,7 +841,7 @@
       "tool": "EditTurboMCPGraphTransfer",
       "role": "Copy one complete owned graph, including its nodes, connections, layout, comments and locals.",
       "status": "scenario checked",
-      "ready": true,
+      "ready": false,
       "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
       "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
       "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
@@ -852,7 +852,7 @@
         "code_and_helpers": "reviewed; confirmed defects repaired",
         "workflow": "passed"
       },
-      "remaining": "Owned function/local and delegate-bearing event graphs tested. Macro/library variants and all project-specific reference types remain outside this fixture.",
+      "remaining": "S4: inherited override transfer compile failure (GC-52) and same-graph custom-event dependency refusal (X-101); follow-up required. Prior bounded native scenario remains passed.",
       "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
       "workflows": [
         "WF-OCT26-MERGE"

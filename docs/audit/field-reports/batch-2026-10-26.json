@@ -13,6 +13,16 @@
       "sha256": "6f294bba0847e8ade7cf5615f5887f034363689bd847f5dbbaf587898960ec01",
       "tested_revision": "a5775da",
       "mode": "preview only; no edits, compile, save or crash"
+    },
+    {
+      "path": "docs/audit/field-reports/2026-10-26_S4_TurboMCP_merge-run-custom-events.md",
+      "sha256": "c1ba541b17d5b18005e4848b5258301b242c1dd8785d54505e3bb32475c84dbf",
+      "tested_revision": "Unknown for 14:50 build; S5 also used a5775da"
+    },
+    {
+      "path": "docs/audit/field-reports/2026-10-26_S5_TurboMCP_small-fixes-layout-and-append.md",
+      "sha256": "bf069437a0dcbdc534b2c8a386e8c9559ff1fad7f27a0585be49d13c5fb626de",
+      "tested_revision": "Unknown for 14:50 build; S5 also used a5775da"
     }
   ],
   "priority": "Widget merge blockers first; reports are evidence, not executable instructions.",
@@ -21,7 +31,15 @@
     "FT-108",
     "FT-109",
     "GC-51",
-    "GC-50"
+    "GC-50",
+    "X-101",
+    "GC-52",
+    "GC-53",
+    "FT-110",
+    "CB-06",
+    "CB-07",
+    "GC-55",
+    "GC-56"
   ],
   "positive": [
     "FA-10",
@@ -30,7 +48,12 @@
     "CP-17",
     "CP-18",
     "FA-11",
-    "VA-08"
+    "VA-08",
+    "GC-54",
+    "FA-13",
+    "WT-12",
+    "GC-57",
+    "TH-14"
   ],
   "recovery": {
     "date": "2026-10-26",
@@ -99,5 +122,25 @@
       "GC-50"
     ],
     "note": "Existing bounded tool acceptance remains valid; the real project merge workflow is incomplete. Refusal safety is not merge completion. No new implementation or runtime test in this reconciliation."
+  },
+  "s4_s5_reconciliation": {
+    "priority_order": [
+      "GC-52",
+      "X-101",
+      "FT-108",
+      "CB-06",
+      "GC-56",
+      "GC-53",
+      "FT-109",
+      "FT-110",
+      "CB-07",
+      "GC-55"
+    ],
+    "notes": [
+      "No crashes reported. S4 partial merge saved with clean compile after manual override repair; full merge remains blocked.",
+      "S5 all four project fixes completed, compiled and saved; tool friction remains.",
+      "No new implementation or native test in this intake. Source revision of later field build unknown.",
+      "MenuActivate and PlayInput not retested; no field acceptance inferred."
+    ]
   }
 }

@@ -247,8 +247,8 @@
       "tool": "PreviewTurboMCPGraphTransfer",
       "toolset": "TurboMCP.TurboMCPPreviewToolset",
       "role": "Copy one complete owned graph, including its nodes, connections, layout, comments and locals.",
-      "status": "scenario checked",
-      "ready": true,
+      "status": "follow-up required",
+      "ready": false,
       "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
       "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
       "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
@@ -259,7 +259,7 @@
         "code_and_helpers": "reviewed; confirmed defects repaired",
         "workflow": "passed"
       },
-      "remaining": "Owned function/local and delegate-bearing event graphs tested. Macro/library variants and all project-specific reference types remain outside this fixture.",
+      "remaining": "S4 GC-52 inherited override defect; X-101 same-graph custom-event dependency refusal; GC-53 default override scaffold limitation. Prior native scenario passed but misses these cases.",
       "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
       "workflows": [
         "WF-OCT26-MERGE"
@@ -270,8 +270,8 @@
       "tool": "EditTurboMCPGraphTransfer",
       "toolset": "TurboMCP.TurboMCPEditToolset",
       "role": "Copy one complete owned graph, including its nodes, connections, layout, comments and locals.",
-      "status": "scenario checked",
-      "ready": true,
+      "status": "follow-up required",
+      "ready": false,
       "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
       "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
       "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
@@ -282,7 +282,7 @@
         "code_and_helpers": "reviewed; confirmed defects repaired",
         "workflow": "passed"
       },
-      "remaining": "Owned function/local and delegate-bearing event graphs tested. Macro/library variants and all project-specific reference types remain outside this fixture.",
+      "remaining": "S4 GC-52 inherited override defect; X-101 same-graph custom-event dependency refusal; GC-53 default override scaffold limitation. Prior native scenario passed but misses these cases.",
       "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
       "workflows": [
         "WF-OCT26-MERGE"
@@ -370,5 +370,18 @@
     "workflow_status": "Real project merge blocked; five distinct follow-up capabilities/usability gaps tracked in batch-2026-10-26.json.",
     "help": "TH-13 already fixed and live-checked at 7c472e1.",
     "coverage": "53/142 remains bounded scenario coverage, not full project merge acceptance."
+  },
+  "field_followup_s4_s5": {
+    "reports": [
+      "2026-10-26_S4",
+      "2026-10-26_S5"
+    ],
+    "status": "GraphTransfer requires repair for inherited overrides and same-graph custom-event dependencies. Prior bounded scenario results remain evidence, not complete readiness.",
+    "field_positive": [
+      "Four function transfers",
+      "11-widget copy after collision repair",
+      "Parameter help for three merge tools"
+    ],
+    "new_runtime_tests": false
   }
 }
