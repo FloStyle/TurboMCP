@@ -3710,11 +3710,13 @@
       "key": "2026-10-26_S8/TD-41",
       "title": "Tidy of one inserted node rolled back with no other option offered (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md. No fix claimed from report intake."
+      "validation": "native_pass_field_pending",
+      "remaining": "Original field geometry unavailable. No new placement algorithm or general tidy certification; field confirmation pending.",
+      "implementation": "91b1593: rejected tidy previews and complete quality rollbacks explain fixed anchors and suggest a wider selection or PreviewTurboMCPGraphGroupMove. Incomplete rollback does not recommend a retry.",
+      "evidence": "Native purchase workflow passed: 228a44ccbf324766a118d0dae264c75e. Refused-preview guidance and already-tidy silence asserted."
     },
     {
       "report": "2026-10-26_S8",

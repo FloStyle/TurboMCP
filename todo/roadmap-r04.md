@@ -1855,3 +1855,7 @@ FT-117 implemented at 5dff02e. Preview/EditWidgetAdd resolve a compiled Widget B
 ## Oct26 widget and slot value properties
 
 FT-116 implemented at 4c85cf2. Reader lists supported property names/types/current Unreal text; preview/edit parse temporary copies and report actual post-notification values. Native suite a45c2ea31bba463f94b6fbd377b7493e passed visibility, margin, width override, canvas position/size, preview preservation, malformed/unsupported refusal, no-op and compile. Initial native run 34eca33e7f1c4669b67d10c58960c94d passed narrower checks; fixture build 5ef804cf71994e9b99c1c00fb3d60c79 failed on an unavailable margin getter and was corrected to reflected inspection. Field confirmation pending; object/delegate/container/localized-text values and rendered/runtime certification excluded.
+
+### TD-41 tidy recovery guidance (2026-10-27)
+
+Implemented in 91b1593. Rejected previews and complete quality rollbacks suggest inspecting layout/positions, widening the selected chain or previewing an explicit group shift. Force is not offered as a shortcut. Native purchase workflow 228a44ccbf324766a118d0dae264c75e passed. Output assertions cover refusal guidance and already-tidy silence; original field geometry remains unverified. No new placement behavior.
