@@ -23,9 +23,25 @@
       "path": "docs/audit/field-reports/2026-10-26_S5_TurboMCP_small-fixes-layout-and-append.md",
       "sha256": "bf069437a0dcbdc534b2c8a386e8c9559ff1fad7f27a0585be49d13c5fb626de",
       "tested_revision": "Unknown for 14:50 build; S5 also used a5775da"
+    },
+    {
+      "path": "docs/audit/field-reports/2026-10-26_S6_TurboMCP_plugin-folder-missing-license.md",
+      "sha256": "fb247e5a8b11ab0b4e5401075966cc7d38347ab3e6aefb4b034c3e0b7af4332f"
+    },
+    {
+      "path": "docs/audit/field-reports/2026-10-26_S7_TurboMCP_editor-preferences-enable-toggle.md",
+      "sha256": "131edf352cc46c2bd3bd76e8633ea67e268de6567f14664323b72ee9551d8e31"
+    },
+    {
+      "path": "docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md",
+      "sha256": "603d211c5afce8758e72e5f117b99ae22a2f40e5d58f26d032dc505d979347d5"
+    },
+    {
+      "path": "docs/audit/field-reports/2026-10-26_S9_TurboMCP_navbar-and-card-layout.md",
+      "sha256": "71f90abaa7a5669c6ba7496e366226b28eb90db4f2e6e44fbead571141e13aac"
     }
   ],
-  "priority": "Widget merge blockers first; reports are evidence, not executable instructions.",
+  "priority": "FT-112 implemented first. S6 packaging and remaining S8/S9 issues are open; no other fixes claimed in this intake.",
   "open": [
     "FT-107",
     "FT-108",
@@ -34,7 +50,27 @@
     "GC-53",
     "FT-110",
     "GC-55",
-    "GC-56"
+    "GC-56",
+    "X-102",
+    "FT-111",
+    "X-103",
+    "X-104",
+    "ED-21",
+    "GC-59",
+    "GL-22",
+    "GL-23",
+    "TD-41",
+    "WT-13",
+    "FT-113",
+    "FT-114",
+    "FT-115",
+    "X-105",
+    "GC-61",
+    "GC-62",
+    "TD-42",
+    "FT-116",
+    "FT-117",
+    "FT-118"
   ],
   "positive": [
     "FA-10",
@@ -48,7 +84,12 @@
     "FA-13",
     "WT-12",
     "GC-57",
-    "TH-14"
+    "TH-14",
+    "GC-58",
+    "GC-60",
+    "GC-63",
+    "WT-14",
+    "GC-64"
   ],
   "recovery": {
     "date": "2026-10-26",
@@ -81,7 +122,8 @@
     "GC-52",
     "GC-51",
     "CB-06",
-    "CB-07"
+    "CB-07",
+    "FT-112"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -156,5 +198,23 @@
     "final_build": "80971b5bbf3e4c29a87c8c5d804e116f",
     "behavior": "Explicit refit moves/resizes only the selected box; fit retains old rectangle. Text/Color/Size now default empty.",
     "limits": "Native geometry/preview/node preservation checked. Final change only scopes rectangle output to explicit selection; final build passed. MCP client argument omission not independently exercised."
+  },
+  "latest_field_summary": "S8 merge completed, compiled and saved; runtime untested. S9 changes compiled/saved and user played result. New usability/defect records remain open. S6 packaging and S7 settings are source/proposal reports, not runtime tests.",
+  "user_enable_toggle": {
+    "commit": "ce4ad95",
+    "state": "implemented",
+    "setting": "Editor Preferences > Plugins > TurboMCP > Enable TurboMCP",
+    "config": "EditorPerProjectUserSettings; no defaultconfig flag",
+    "activation": "restart required; current state latched at startup",
+    "default": true,
+    "native_run": "a309ae10a69e4b3b9e9220a8d6189f5d",
+    "prior_run": "16be792dfda24ba8941292446b3d83bc: toggle checks passed; PlayMenu input failed; unchanged rerun passed",
+    "limits": [
+      "Not module unloading; binary remains loaded to provide preferences.",
+      "Actual UI save/cold-restart sequence not separately tested.",
+      "Disabled status tool is absent; startup log and preferences explain the state.",
+      "Old shared call-log configuration is no longer used; new per-user logging default remains enabled."
+    ],
+    "offline_run": "8a7dab05fdb94571ac608ec774bfc977: 26/26 passed"
   }
 }

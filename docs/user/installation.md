@@ -30,3 +30,13 @@ Have the client discover the available toolsets and schemas, then consult the [t
 Adding reflected tool declarations during development requires a rebuild and editor restart.
 
 For connection, build or result problems, see [Troubleshooting](troubleshooting.md).
+
+## Disable TurboMCP for yourself
+
+Open **Edit > Editor Preferences > Plugins > TurboMCP** and clear **Enable TurboMCP**, then restart the editor. To enable it again, select the same checkbox and restart. The preference defaults to enabled and is stored in Unreal's `EditorPerProjectUserSettings` for your user and project. It does not modify the shared project descriptor or `DefaultEditor.ini`.
+
+When disabled at startup, TurboMCP does not register its tools, panel, recording/analytics hooks, focus guard or native-tool safety filters. Unreal's MCP server and unrelated toolsets are left alone. This preference does not unload the plugin binary; use Unreal's plugin manager if you need to prevent the module from loading altogether.
+
+Changes require an editor restart. Until then the current session keeps its previous activation state. While enabled, `ReadTurboMCPStatus` reports both the current state and the saved preference, including a pending restart. When disabled, that tool is absent too; use Editor Preferences or the `LogTurboMCP` startup message to identify the reason.
+
+**Record every tool call** is now a personal preference on the same page, shared with the panel checkbox. Old project-wide call-log configuration no longer controls this per-user setting; check the checkbox after upgrading. Logging still defaults to enabled.
