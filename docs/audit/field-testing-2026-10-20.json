@@ -3899,11 +3899,13 @@
       "key": "2026-10-26_S9/FT-118",
       "title": "Reader hint with the writable type ID for break and make struct nodes",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_implemented",
-      "remaining": "Requested capability; see docs/audit/field-reports/2026-10-26_S9_TurboMCP_navbar-and-card-layout.md"
+      "validation": "native_pass_field_pending",
+      "remaining": "Original project confirmation pending. This identifies the node type, not optional pin-visibility reconstruction or complete reader-text round trips.",
+      "implementation": "bffc6fe: concrete make/break struct nodes expose Struct|Make|<struct path> and Struct|Break|<struct path>. Discovery and append use the same identities; palette aliases remain available.",
+      "evidence": "759e69a6e1c84d6a9a41e5bef2d8b2d6: stock build and Vision/PlayMenu/CommonPlay passed. User-defined struct reader output and append identity/type checks passed."
     },
     {
       "report": "2026-10-26_Log",

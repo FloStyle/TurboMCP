@@ -1859,3 +1859,7 @@ FT-116 implemented at 4c85cf2. Reader lists supported property names/types/curre
 ### TD-41 tidy recovery guidance (2026-10-27)
 
 Implemented in 91b1593. Rejected previews and complete quality rollbacks suggest inspecting layout/positions, widening the selected chain or previewing an explicit group shift. Force is not offered as a shortcut. Native purchase workflow 228a44ccbf324766a118d0dae264c75e passed. Output assertions cover refusal guidance and already-tidy silence; original field geometry remains unverified. No new placement behavior.
+
+### FT-118 struct reader identities (2026-10-27)
+
+Implemented in bffc6fe. Make/break struct IDs use exact reflected paths; stock filtered spawners accept the same IDs and preserve legacy palette aliases. Native run 759e69a6e1c84d6a9a41e5bef2d8b2d6 passed connected reader and append identity checks plus existing Vision/PlayMenu/CommonPlay. Field confirmation pending; optional pin visibility/full text round trips are not certified.
