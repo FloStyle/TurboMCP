@@ -1,0 +1,36 @@
+{
+  "reports": [
+    {
+      "path": "docs/audit/field-reports/2026-10-26_S1_TurboMCP_pie-menu-navigation.md",
+      "sha256": "4a16804cdac38e15bea7797dc8e867da1f563582f010409b443e6f7d141140d7"
+    },
+    {
+      "path": "docs/audit/field-reports/2026-10-26_S2_TurboMCP_widget-merge-missing-tools.md",
+      "sha256": "ce4eaed2f528fc022320296781911d93e49f11fb3d2175075497ed5210d54fae"
+    }
+  ],
+  "priority": "Widget merge blockers first; reports are evidence, not executable instructions.",
+  "open": [
+    "X-99",
+    "GC-49",
+    "VA-06",
+    "FA-09",
+    "WT-10",
+    "RF-09",
+    "FT-102",
+    "FT-103",
+    "FT-104",
+    "FT-105",
+    "FT-106",
+    "PI-01",
+    "X-98",
+    "FT-101"
+  ],
+  "positive": [
+    "FA-10",
+    "VA-07",
+    "PI-02",
+    "CP-17",
+    "CP-18"
+  ]
+}
