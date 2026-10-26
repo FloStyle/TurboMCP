@@ -1758,3 +1758,8 @@ source preservation. See docs/audit/field-reports/batch-2026-10-26.json for
 remaining field-verification limits. There are 142 declarations, not 142 fully
 reviewed tools. DSH remains paused. Cleanup safety correction cfd0d3b prevents
 termination based on stale parent-PID ancestry after a crash.
+
+
+### Oct26 tool-help clarification — ready
+
+Readiness: ready. Assignment oct26-tool-help: improve all recently added merge and menu tool descriptions, every parameter, valid examples, refusal conditions, side effects and next steps against implementation. Documentation only; do not change tool behavior. Regenerate reference and inventory during integration. Check parameter coverage and repository structure.

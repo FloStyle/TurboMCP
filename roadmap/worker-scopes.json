@@ -2373,6 +2373,12 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp"
           ]
+        },
+        "oct26-tool-help": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
