@@ -32,5 +32,19 @@
     "PI-02",
     "CP-17",
     "CP-18"
-  ]
+  ],
+  "recovery": {
+    "date": "2026-10-26",
+    "state": "implementation-in-progress",
+    "candidate_branch": "fix/widget-compile-transaction",
+    "claim": "d892fd68b23948a5b9c6d0494dc292b6",
+    "cleanup_fix": "cfd0d3b",
+    "notes": [
+      "Recovered interrupted test fixtures; no candidate changes lost.",
+      "Removed unsafe parent-PID descendant termination; four cleanup checks pass.",
+      "Widget subtree root ownership and GUID registration corrected after native failures.",
+      "Text identity preservation added after native assertion; latest supervised run pending.",
+      "Reports remain open until required implementation and workflow review complete."
+    ]
+  }
 }
