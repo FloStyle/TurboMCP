@@ -327,24 +327,10 @@ function Stop-Editor {
     }
     finally { $env:TURBOMCP_RUNNER_ALLOW_STOP = $oldAllowStop }
 
-    # ---------------------------------------------------------------------------------------------
-    # *** A COMMANDLET OR TRACE SERVER IS CLEARED BY PID, NOT BY NAME. ***
-    #
-    # This was release finding R10's second half: the line below used to be
-    # `Get-Process -Name UnrealEditor-Cmd, UnrealTraceServer | Stop-Process -Force`, which stops EVERY process
-    # with those names on the machine - including a commandlet belonging to another checkout, or a trace server
-    # a person started deliberately. A commandlet CAN outlive UnrealEditor and still hold package handles, so
-    # the clearance is needed; what is not needed is the blast radius.
-    #
-    # The PIDs this runner observed while it owned the editor are the only ones it may end, and they are
-    # discovered BEFORE the editor is asked to stop, because afterwards the parent-child link is gone. A process
-    # that appeared after the snapshot is NOT touched: it is not this runner's child.
-    $ownedDescendants = @(Get-TurboMCPOwnedDescendants -EditorPid $script:EditorPid)
-    foreach ($processId in $ownedDescendants) {
-        try { Stop-Process -Id $processId -Force -ErrorAction Stop } catch {
-            Write-Host "  [cleanup] could not stop owned descendant pid $processId`: $($_.Exception.Message)"
-        }
-    }
+    # Do not terminate descendants inferred from parent PIDs. Windows can reuse
+    # those PIDs after an editor crash, so ancestry is not proof of ownership.
+    # The supervisor owns its Job Object; start-editor validates editor identity.
+    # Any surviving unowned process must remain untouched.
 
     # The wait is on processes this runner owns, re-derived from the editor's command line, so a foreign
     # encoder or commandlet never makes this loop fail.

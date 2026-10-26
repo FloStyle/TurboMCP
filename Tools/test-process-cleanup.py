@@ -50,6 +50,12 @@ $result=Stop-TurboMCPOwnedEditor -ProjectPath synthetic -EnginePath synthetic
         self.assertEqual(result['stopped'],0)
         self.assertEqual(result['removed'],1)
 
+    def test_suite_cleanup_does_not_kill_pid_inferred_descendants(self):
+        source=(ROOT/'Tools/run-suites.ps1').read_text(encoding='utf-8-sig')
+        body=source.split('function Stop-Editor {',1)[1].split('function ',1)[0]
+        self.assertNotIn('Get-TurboMCPOwnedDescendants',body)
+        self.assertNotIn('Stop-Process',body)
+
     def test_changed_powershell_files_parse(self):
         script=r"""
 $bad=@()
