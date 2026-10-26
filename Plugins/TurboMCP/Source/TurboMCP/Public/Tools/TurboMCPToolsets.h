@@ -987,13 +987,16 @@ public:
 	 * block, put `; label First` under the first form and write `(-> First:then)` in the
 	 * second form's input pin. A local label is unique within that submitted block.
 	 *
-	 * The text is the same dialect the readers print, checked by P-GRAPH-CHECK first, so
+	 * Use writer node forms and explicit input links, checked by P-GRAPH-CHECK, so
 	 * the edit rechecks the current graph and its mutation guards.
 	 *
 	 * Plans this operation without applying it to the target graph. A successful preview
 	 * does not guarantee a later edit: the target state and edit guards can change.
      * Local labels name the PRECEDING node form. Prefer `(TypeId) ; label Name` for a pinless node,
      * or put `; label Name` on its own line after the closed form. Never put a label before its node.
+     * Reader branch headings (:then/:else) are read-only and are refused. They do not create wires.
+     * Instead, label the Branch Choice and write `execute (-> Choice:then)` inside the destination
+     * node form (or Choice:else for the false output). Use the exact pin names from discovery.
      * Reference it as `(-> Name:ExactPinName)`. A pinless form needs no dummy pin. Semicolon comments
      * consume the rest of their line: put the closing parenthesis BEFORE a trailing label/comment.
 	 *
@@ -1791,6 +1794,9 @@ public:
      * Repeating new node forms creates another set of nodes; this is not idempotent.
      * Local labels name the PRECEDING node form. Prefer `(TypeId) ; label Name` for a pinless node,
      * or put `; label Name` on its own line after the closed form. Never put a label before its node.
+     * Reader branch headings (:then/:else) are read-only and are refused. They do not create wires.
+     * Instead, label the Branch Choice and write `execute (-> Choice:then)` inside the destination
+     * node form (or Choice:else for the false output). Use the exact pin names from discovery.
      * Reference it as `(-> Name:ExactPinName)`. A pinless form needs no dummy pin. Semicolon comments
      * consume the rest of their line: put the closing parenthesis BEFORE a trailing label/comment.
 	 *

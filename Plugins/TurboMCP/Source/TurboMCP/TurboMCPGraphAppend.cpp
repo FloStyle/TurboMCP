@@ -194,6 +194,15 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
 	OutPlan.GraphName = InGraphName.TrimStartAndEnd();
 
+    // Reader branch headings describe output groups, not executable writer links.
+    // Reject them before validation rather than silently discarding control flow.
+    for (const auto& Line : TurboMCPGraphTextLex::SplitLines(InText))
+        if (Line.Text.TrimStart().StartsWith(TEXT(":")))
+        {
+            OutError = FString::Printf(TEXT("line %d: reader-only branch section. Append and replace do not infer wires from :then/:else headings. Label the Branch with '; label Choice' after its form, then put execute (-> Choice:then) or execute (-> Choice:else) inside each destination node form. Use the exact input/output pin names from the reader or node-type preview."), Line.Number);
+            return false;
+        }
+
 	// ---- 1. THE CHECKER RUNS FIRST, BECAUSE IT IS THE GATE EVERY WRITER DEPENDS ON -----------------
 	//
 	// `Spec/03_TOOLS.md` puts `P-GRAPH-CHECK` before every write entry point so that a writer and its checker
@@ -319,12 +328,6 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		int32 PinColumn = 0;
 		if (CurrentIndex != INDEX_NONE && TurboMCPGraphTextLex::ParsePinLine(Line.Text, PinName, PinValue, PinColumn))
 		{
-			// Continuations such as `:then` and `:else` are reader containers, not input pins. Keep the append
-			// parser aligned with GraphCheck so exact reader text cannot later try to write a `:then` literal.
-			if (PinName.StartsWith(TEXT(":")))
-			{
-				continue;
-			}
 			TurboMCPGraphTextLex::FPinForm Pin;
 			Pin.Name = PinName;
 			Pin.Value = PinValue;

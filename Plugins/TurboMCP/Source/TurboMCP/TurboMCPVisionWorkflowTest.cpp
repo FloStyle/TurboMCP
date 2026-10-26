@@ -148,6 +148,49 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  for (auto* Node : Makes) TestTrue(TEXT("Make retains exact struct"), Node->StructType == ReaderStruct);
  for (auto* Node : Breaks) TestTrue(TEXT("Break retains exact struct"), Node->StructType == ReaderStruct);
 
+ // GC-55/56/62: labelled getter -> Branch, explicit links, then a converted replacement.
+ FEdGraphPinType SyntaxBool; SyntaxBool.PinCategory = UEdGraphSchema_K2::PC_Boolean;
+ TestTrue(TEXT("Declare syntax fixture variable"), FBlueprintEditorUtils::AddMemberVariable(BP, TEXT("SyntaxValue"), SyntaxBool));
+ UEdGraph* SyntaxGraph = UBlueprintEditorLibrary::AddFunctionGraph(BP, TEXT("WriterSyntaxProbe"));
+ TArray<UK2Node_FunctionEntry*> SyntaxEntries; SyntaxGraph->GetNodesOfClass(SyntaxEntries);
+ const FString SyntaxEntryId = TurboMCPNodeId::MakeForNode(SyntaxEntries[0]);
+ const FString GetterType = TEXT("Variable|") + BP->GetPathName() + TEXT("|Get|SyntaxValue");
+ const FString BranchType = TurboMCPNodeId::GetNodeTypeId(GetDefault<UK2Node_IfThenElse>());
+ const FString LabelText = FString::Printf(TEXT(R"DSL(("%s") ; label Flag
+(%s
+ execute (-> %s:then)
+ Condition (-> Flag:SyntaxValue)
+))DSL"), *GetterType, *BranchType, *SyntaxEntryId);
+ const FString LabelEdit = Record(TEXT("Labelled getter append"), UTurboMCPEditToolset::EditTurboMCPGraphAppend(BP->GetPathName(), SyntaxGraph->GetName(), LabelText));
+ TestTrue(TEXT("Getter label append accepted"), LabelEdit.StartsWith(TEXT("changed:")));
+ TArray<UK2Node_IfThenElse*> SyntaxBranches; SyntaxGraph->GetNodesOfClass(SyntaxBranches);
+ TArray<UK2Node_VariableGet*> SyntaxGetters; SyntaxGraph->GetNodesOfClass(SyntaxGetters);
+ if (!TestEqual(TEXT("One Branch created"), SyntaxBranches.Num(), 1) || !TestEqual(TEXT("One getter created"), SyntaxGetters.Num(), 1)) return false;
+ TestTrue(TEXT("Label resolves to actual getter output"), SyntaxBranches[0]->GetConditionPin()->LinkedTo.Contains(SyntaxGetters[0]->GetValuePin()));
+ const int32 SyntaxCount = SyntaxGraph->Nodes.Num();
+ const FString SectionText = FString::Printf(TEXT(R"DSL((%s
+ :then
+))DSL"), *BranchType);
+ const FString SectionRefusal = Record(TEXT("Reader branch section refusal"), UTurboMCPEditToolset::EditTurboMCPGraphAppend(BP->GetPathName(), SyntaxGraph->GetName(), SectionText));
+ TestTrue(TEXT("Reader sections explain explicit conversion"), SectionRefusal.Contains(TEXT("reader-only branch section")) && SectionRefusal.Contains(TEXT("Choice:then")));
+ TestEqual(TEXT("Reader section refusal preserves nodes"), SyntaxGraph->Nodes.Num(), SyntaxCount);
+ TestTrue(TEXT("Reader section refusal preserves existing condition link"), SyntaxBranches[0]->GetConditionPin()->LinkedTo.Contains(SyntaxGetters[0]->GetValuePin()));
+ const FGuid RetainedBranch = SyntaxBranches[0]->NodeGuid;
+ const FString ReplacementText = FString::Printf(TEXT(R"DSL((%s
+ ; %s
+ execute (-> %s:then)
+ Condition true
+))DSL"), *BranchType, *TurboMCPNodeId::MakeForNode(SyntaxBranches[0]), *SyntaxEntryId);
+ const FString ReplacementPreview = Record(TEXT("Converted replacement preview"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphReplace(BP->GetPathName(), SyntaxGraph->GetName(), ReplacementText));
+ TestEqual(TEXT("Replacement preview preserves nodes"), SyntaxGraph->Nodes.Num(), SyntaxCount);
+ const FString ReplacementEdit = Record(TEXT("Converted replacement edit"), UTurboMCPEditToolset::EditTurboMCPGraphReplace(BP->GetPathName(), SyntaxGraph->GetName(), ReplacementText));
+ TestTrue(TEXT("Converted replacement accepted"), ReplacementEdit.StartsWith(TEXT("changed:")));
+ SyntaxGetters.Reset(); SyntaxGraph->GetNodesOfClass(SyntaxGetters);
+ TestEqual(TEXT("Replacement removes only omitted getter"), SyntaxGetters.Num(), 0);
+ TestEqual(TEXT("Replacement preserves Branch identity"), SyntaxBranches[0]->NodeGuid, RetainedBranch);
+ TestEqual(TEXT("Replacement sets condition"), SyntaxBranches[0]->GetConditionPin()->DefaultValue, FString(TEXT("true")));
+ TestTrue(TEXT("Replacement preserves execution wire"), SyntaxBranches[0]->GetExecPin()->LinkedTo.Contains(SyntaxEntries[0]->FindPinChecked(UEdGraphSchema_K2::PN_Then)));
+
  // Merge prerequisites are exercised on disposable assets, never field assets.
  UEdGraph* MergeFunction=UBlueprintEditorLibrary::AddFunctionGraph(BP,TEXT("MergeMemberProbe"));
  const FString MergeAsset=BP->GetPathName();
