@@ -62,7 +62,6 @@
     "FT-114",
     "FT-115",
     "X-105",
-    "GC-61",
     "GC-62",
     "TD-42",
     "FT-116",
@@ -123,7 +122,8 @@
     "FT-112",
     "X-102",
     "X-103",
-    "X-104"
+    "X-104",
+    "GC-61"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -231,5 +231,13 @@
       "FT-111 provenance and binary package audit remain open.",
       "Scratch test simulates an error owner; original project preview was unavailable."
     ]
+  },
+  "quoted_type_ids": {
+    "commit": "360c291",
+    "native_run": "5c4894a88b7045ccae58d5b4b0ba0089",
+    "focused_test": "TurboMCP.GraphAppend.AliasCollision passed; quoted getter accepted without refusals",
+    "suite": "test-graph-append failed on separate placement/output checks",
+    "usage": "Double-quote the entire discovered type ID when it contains spaces.",
+    "remaining": "TD-42 and remaining report issues stay open. Field confirmation pending."
   }
 }

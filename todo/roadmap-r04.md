@@ -1797,3 +1797,5 @@ X-102, X-103 and X-104 implemented in 822b7a0. Build and native vision workflow 
 ### Oct26 quoted node type IDs (GC-61)
 
 Readiness: ready. Accept a double-quoted node type ID containing spaces in the shared graph lexer. Preserve unquoted syntax; refuse unterminated quoted heads. Validate the real append planner with a spaced variable name and malformed input, plus lexer delimiter handling. No engine changes. Scope: oct26-quoted-ids.
+
+GC-61 implemented in 360c291. Build and AliasCollision native test passed in 5c4894a88b7045ccae58d5b4b0ba0089. The full test-graph-append suite FAILED on placement/output checks; do not treat this as full append acceptance. Quote the entire discovered type ID when it contains spaces. Field confirmation pending. TD-42 remains open: mixed scoped selections use the free-group placement path, while consumer-relative placement is currently pure-selection-only; this is an investigation lead, not a completed fix.
