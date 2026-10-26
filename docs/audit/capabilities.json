@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "f5320562266059dab3dc9c5bef80c8f0982b5b44",
+  "plugin_tree": "a7686520c22119fea2988e9c97bab36af205a42d",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 142,

@@ -1827,3 +1827,7 @@ ED-21 / FT-115: dbbfb16 adds explicit GraphSwapCall Options target_self=true, pr
 ### Oct26 guard continuation — implemented; layout follow-up open
 
 GC-59 / FT-114: 4e1a246 supplies Continuation before placement preflight. Native workflow 6f203e54974740dfba1ca7a096f83c46 passed including false guard else wiring, compile and independent event results. Invalid exit preview preserves graph. Screenshot reviewed: new Branch is below unrelated Refund flow, with long wires. This remains open as TD-43; no clean-layout acceptance claimed. Original field confirmation pending.
+
+### Oct26 guard placement follow-up — implemented
+
+TD-43: 5a313f4 places a single inserted execution node in a collision-free gap between its endpoints before general placement fallback. Existing nodes stay fixed. Native workflow 5baad9279e9d4b4883b2b20362e382e8 passed; screenshot AADF9B7241927C71A00F1D9019A8EBE1 reviewed, guard beside its own event, no crossing through Refund flow. Crowded gaps retain fallback; field confirmation pending.

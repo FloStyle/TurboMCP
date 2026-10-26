@@ -3655,7 +3655,7 @@
       "priority": "P2",
       "owner": "R04",
       "validation": "tested",
-      "remaining": "Original field confirmation pending. Placement quality is separately open as 2026-10-26_Local/TD-43; screenshot shows inserted Branch below unrelated flow.",
+      "remaining": "Original field confirmation pending. Placement follow-up TD-43 is now implemented and locally tested; crowded gaps retain fallback.",
       "implementation": "4e1a246: Continuation is supplied before placement scratch preflight, so explicit Branch exits are validated correctly.",
       "evidence": "Supervised build and test-event-connect-workflow passed: 6f203e54974740dfba1ca7a096f83c46. False guard else reconnects original flow; compile and three event results passed; invalid exit preview preserves graph."
     },
@@ -3746,7 +3746,7 @@
       "priority": "P2",
       "owner": "R04",
       "validation": "tested",
-      "remaining": "Original field confirmation pending. Placement quality is separately open as 2026-10-26_Local/TD-43; screenshot shows inserted Branch below unrelated flow.",
+      "remaining": "Original field confirmation pending. Placement follow-up TD-43 is now implemented and locally tested; crowded gaps retain fallback.",
       "canonical_issue": "2026-10-26_S8/GC-59",
       "implementation": "4e1a246: Continuation is supplied before placement scratch preflight, so explicit Branch exits are validated correctly.",
       "evidence": "Supervised build and test-event-connect-workflow passed: 6f203e54974740dfba1ca7a096f83c46. False guard else reconnects original flow; compile and three event results passed; invalid exit preview preserves graph."
@@ -3910,12 +3910,13 @@
       "key": "2026-10-26_Local/TD-43",
       "title": "Inserted guard Branch is placed below an unrelated event flow, creating long execution wires",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reproduced",
-      "evidence": "Native event-connect-workflow run 6f203e54974740dfba1ca7a096f83c46; screenshot A32DA2F342A7848814CCF28008F16C41 reviewed.",
-      "remaining": "Improve insertion placement near its own execution flow without moving unrelated events or creating overlap. Functional continuation is fixed by GC-59; placement is not fixed."
+      "validation": "tested",
+      "evidence": "Supervised build and event-connect workflow passed: 5baad9279e9d4b4883b2b20362e382e8. Native screenshot AADF9B7241927C71A00F1D9019A8EBE1 reviewed: guard in Purchase row, separate from Refund.",
+      "remaining": "Crowded gaps retain general fallback. Original field confirmation pending; no global layout certification.",
+      "implementation": "5a313f4: single-node execution insertions first seek a collision-free local gap between existing endpoints; no existing nodes move."
     }
   ],
   "prototype": {

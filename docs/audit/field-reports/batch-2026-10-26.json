@@ -59,8 +59,7 @@
     "GC-62",
     "FT-116",
     "FT-117",
-    "FT-118",
-    "TD-43"
+    "FT-118"
   ],
   "positive": [
     "FA-10",
@@ -124,7 +123,8 @@
     "ED-21",
     "FT-115",
     "GC-59",
-    "FT-114"
+    "FT-114",
+    "TD-43"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -283,6 +283,13 @@
     "native_run": "6f203e54974740dfba1ca7a096f83c46",
     "result": "passed",
     "usage": "Continuation=Guard:else; label Guard on the new Branch",
-    "remaining": "TD-43: native screenshot shows poor insertion placement below unrelated flow. Functional correctness passed; no layout acceptance claimed."
+    "remaining": "Original field confirmation pending; TD-43 local placement follow-up implemented and tested."
+  },
+  "guard_placement_repair": {
+    "commit": "5a313f4",
+    "native_run": "5baad9279e9d4b4883b2b20362e382e8",
+    "result": "passed",
+    "visual_review": "Guard is between Purchase event and setter; no wires traverse unrelated Refund flow. Existing positions unchanged.",
+    "limits": "Single-node insertion with available gap. Crowded cases use previous fallback; original field confirmation pending."
   }
 }
