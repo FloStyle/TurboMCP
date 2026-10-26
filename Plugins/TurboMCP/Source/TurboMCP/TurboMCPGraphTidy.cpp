@@ -1993,6 +1993,103 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		}
 	}
 
+    // Retain the execution lane when a selected terminal follows a fixed node.
+    // The scoped row layout must not introduce a diagonal wire across data nodes.
+    if (!OutPlan.SelectedNodeKeys.IsEmpty())
+        for (int32 NodeIndex = 0; NodeIndex < OutPlan.Nodes.Num(); ++NodeIndex)
+        {
+            FNode& Moving = OutPlan.Nodes[NodeIndex];
+            if (Moving.bIsPure || Moving.bIsComment || OwnerOfNode[NodeIndex] != INDEX_NONE
+                || !OutPlan.SelectedNodeKeys.Contains(Moving.Key)) continue;
+            const FWire* Incoming = nullptr;
+            int32 IncomingCount = 0;
+            for (const FWire& Wire : OutPlan.Wires)
+                if (Wire.TargetNodeIndex == NodeIndex && Wire.InputPin
+                    && Wire.InputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                { Incoming = &Wire; ++IncomingCount; }
+            if (IncomingCount != 1 || Incoming == nullptr) continue;
+            const FNode& Source = OutPlan.Nodes[Incoming->SourceNodeIndex];
+            if (OutPlan.SelectedNodeKeys.Contains(Source.Key)) continue;
+            const double AlignedY = FMath::RoundToDouble(AlignmentPinPosition(Incoming->OutputPin).Y
+                + Source.PlannedY - Source.Y - (AlignmentPinPosition(Incoming->InputPin).Y - Moving.Y));
+            bool bBlocked = false;
+            for (int32 OtherIndex = 0; OtherIndex < OutPlan.Nodes.Num(); ++OtherIndex)
+                if (OtherIndex != NodeIndex)
+                {
+                    const FNode& Other = OutPlan.Nodes[OtherIndex];
+                    // A selected single-consumer reader is repositioned below;
+                    // its temporary row is not a fixed obstacle for the exec lane.
+                    if (Other.bIsGetter && Other.bIsPure && OwnerOfNode[OtherIndex] == INDEX_NONE
+                        && OutPlan.SelectedNodeKeys.Contains(Other.Key))
+                    {
+                        int32 OutgoingCount = 0;
+                        for (const FWire& Wire : OutPlan.Wires) if (Wire.SourceNodeIndex == OtherIndex) ++OutgoingCount;
+                        if (OutgoingCount == 1) continue;
+                    }
+                    if (Moving.PlannedX < Other.PlannedX + Other.Width + 16.0 && Moving.PlannedX + Moving.Width + 16.0 > Other.PlannedX
+                        && AlignedY < Other.PlannedY + Other.Height + 16.0 && AlignedY + Moving.Height + 16.0 > Other.PlannedY)
+                    { bBlocked = true; break; }
+                }
+            if (!bBlocked) Moving.PlannedY = AlignedY;
+        }
+
+    // Scoped layout must not detach a split reader from its sole consumer.
+    // Mixed selections use the general row layout above, which can place a
+    // reader beyond unrelated fixed nodes. Re-anchor only selected, unboxed
+    // getters; do not alter wires or move the consumer to accommodate them.
+    if (!OutPlan.SelectedNodeKeys.IsEmpty())
+    {
+        for (int32 ReaderIndex = 0; ReaderIndex < OutPlan.Nodes.Num(); ++ReaderIndex)
+        {
+            FNode& Reader = OutPlan.Nodes[ReaderIndex];
+            if (!Reader.bIsGetter || !Reader.bIsPure || Reader.bUnreachable
+                || OwnerOfNode[ReaderIndex] != INDEX_NONE || !OutPlan.SelectedNodeKeys.Contains(Reader.Key)) continue;
+            const FWire* OnlyWire = nullptr;
+            int32 WireCount = 0;
+            for (const FWire& Wire : OutPlan.Wires)
+                if (Wire.SourceNodeIndex == ReaderIndex) { OnlyWire = &Wire; ++WireCount; }
+            if (WireCount != 1 || OnlyWire == nullptr || OnlyWire->TargetNodeIndex == ReaderIndex) continue;
+            const FNode& Consumer = OutPlan.Nodes[OnlyWire->TargetNodeIndex];
+            const FVector2D Input = AlignmentPinPosition(OnlyWire->InputPin)
+                + FVector2D(Consumer.PlannedX - Consumer.X, Consumer.PlannedY - Consumer.Y);
+            const double PreferredX = Consumer.PlannedX - Reader.Width - SpacingX;
+            const double PreferredY = Input.Y - (AlignmentPinPosition(OnlyWire->OutputPin).Y - Reader.Y);
+            const double Floor = Consumer.bIsPure ? -TNumericLimits<double>::Max()
+                : ValueReaderFloor(Consumer.Node, Consumer.PlannedY);
+            TArray<double> Rows;
+            Rows.Add(FMath::Max(Floor, PreferredY));
+            for (int32 OtherIndex = 0; OtherIndex < OutPlan.Nodes.Num(); ++OtherIndex)
+                if (OtherIndex != ReaderIndex)
+                {
+                    const FNode& Other = OutPlan.Nodes[OtherIndex];
+                    Rows.Add(FMath::Max(Floor, Other.PlannedY - Reader.Height - SpacingY));
+                    Rows.Add(FMath::Max(Floor, Other.PlannedY + Other.Height + SpacingY));
+                }
+            double BestScore = TNumericLimits<double>::Max();
+            // Nearby alternate columns avoid an obstacle without introducing a
+            // long wire. If no local slot fits, retain the original reader position.
+            Reader.PlannedX = Reader.X; Reader.PlannedY = Reader.Y;
+            for (int32 Column = 0; Column < 3; ++Column)
+                for (double Row : Rows)
+                {
+                    const double X = FMath::RoundToDouble(PreferredX - Column * (Reader.Width + SpacingX));
+                    const double Y = FMath::RoundToDouble(Row);
+                    const double Score = FMath::Abs(X - PreferredX) + FMath::Abs(Y - PreferredY);
+                    if (Score > 1000.0 || Score >= BestScore) continue;
+                    bool bBlocked = false;
+                    for (int32 OtherIndex = 0; OtherIndex < OutPlan.Nodes.Num(); ++OtherIndex)
+                        if (OtherIndex != ReaderIndex)
+                        {
+                            const FNode& Other = OutPlan.Nodes[OtherIndex];
+                            if (X < Other.PlannedX + Other.Width + 16.0 && X + Reader.Width + 16.0 > Other.PlannedX
+                                && Y < Other.PlannedY + Other.Height + 16.0 && Y + Reader.Height + 16.0 > Other.PlannedY)
+                            { bBlocked = true; break; }
+                        }
+                    if (!bBlocked) { Reader.PlannedX = X; Reader.PlannedY = Y; BestScore = Score; }
+                }
+        }
+    }
+
 	// -----------------------------------------------------------------------------------------
 	// STEP 7: split variable getters that feed several consumers, BEFORE the measure, because a copy
 	// changes the graph's node set and therefore its wire set.

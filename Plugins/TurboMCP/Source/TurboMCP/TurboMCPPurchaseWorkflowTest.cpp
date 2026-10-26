@@ -253,6 +253,50 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
                             <= FTurboMCPGraphTidy::AlignmentPinPosition(Lower->LinkedTo[0]).Y);
 
     if (!CheckValues(true)) return false;
+    // TD-42: a mixed selection must keep a single-consumer getter near its
+    // fixed consumer, even when its starting position is thousands of units away.
+    UK2Node_VariableGet* ScopedReader = nullptr;
+    UEdGraphPin* ScopedInput = nullptr;
+    for (UEdGraphNode* Node : Graph->Nodes)
+        if (UK2Node_VariableGet* Candidate = Cast<UK2Node_VariableGet>(Node))
+            for (UEdGraphPin* Pin : Candidate->Pins)
+                if (!ScopedReader && Pin && Pin->Direction == EGPD_Output && Pin->LinkedTo.Num() == 1
+                    && Pin->LinkedTo[0]->GetOwningNode() != Result)
+                { ScopedReader = Candidate; ScopedInput = Pin->LinkedTo[0]; }
+    if (!TestNotNull(TEXT("Scoped tidy fixture has a single-consumer reader"), ScopedReader)) return false;
+    TMap<UEdGraphNode*, FIntPoint> SavedPositions;
+    for (UEdGraphNode* Node : Graph->Nodes) SavedPositions.Add(Node, FIntPoint(Node->NodePosX, Node->NodePosY));
+    ScopedReader->NodePosX += 4000;
+    const FString ScopedBefore = ReadGraph();
+    Record(TEXT("LookTurboMCPCapture scoped tidy before"), UTurboMCPLookToolset::LookTurboMCPCapture(Asset, GraphName, TEXT("graph"), TEXT(""), TEXT("2048x1152")));
+    const TArray<FString> MixedSelection{TurboMCPNodeId::MakeForNode(ScopedReader, true), TurboMCPNodeId::MakeForNode(Result, true)};
+    Record(TEXT("Scoped tidy mixed selection"), UTurboMCPEditToolset::EditTurboMCPGraphTidy(Asset, GraphName, true, MixedSelection));
+    TestEqual(TEXT("Scoped tidy preserves graph content and links"), ReadGraph(), ScopedBefore);
+    for (const auto& Saved : SavedPositions)
+        if (Saved.Key != ScopedReader && Saved.Key != Result)
+            TestTrue(TEXT("Scoped tidy preserves unselected positions"), Saved.Value == FIntPoint(Saved.Key->NodePosX, Saved.Key->NodePosY));
+    UEdGraphPin* ScopedExec = Result->FindPinChecked(UEdGraphSchema_K2::PN_Execute);
+    TestEqual(TEXT("Scoped return keeps one execution input"), ScopedExec->LinkedTo.Num(), 1);
+    if (ScopedExec->LinkedTo.Num() == 1)
+        TestTrue(TEXT("Scoped return stays on the fixed execution lane"), FMath::Abs(FTurboMCPGraphTidy::AlignmentPinPosition(ScopedExec).Y
+            - FTurboMCPGraphTidy::AlignmentPinPosition(ScopedExec->LinkedTo[0]).Y) <= 1.0);
+    const UEdGraphNode* ScopedConsumer = ScopedInput->GetOwningNode();
+    const FVector2D ReaderSize = FTurboMCPGraphTidy::AlignmentNodeSize(ScopedReader);
+    TestTrue(TEXT("Scoped getter is left of its consumer"), ScopedReader->NodePosX + ReaderSize.X < ScopedConsumer->NodePosX);
+    TestTrue(TEXT("Scoped getter stays near its consumer"), FMath::Abs(ScopedReader->NodePosX - ScopedConsumer->NodePosX) < 1200
+        && FMath::Abs(ScopedReader->NodePosY - ScopedConsumer->NodePosY) < 1200);
+    for (UEdGraphNode* Other : Graph->Nodes)
+        if (Other != ScopedReader)
+        {
+            const FVector2D OtherSize = FTurboMCPGraphTidy::AlignmentNodeSize(Other);
+            TestFalse(TEXT("Scoped getter does not overlap another node"), ScopedReader->NodePosX < Other->NodePosX + OtherSize.X
+                && ScopedReader->NodePosX + ReaderSize.X > Other->NodePosX && ScopedReader->NodePosY < Other->NodePosY + OtherSize.Y
+                && ScopedReader->NodePosY + ReaderSize.Y > Other->NodePosY);
+        }
+    Record(TEXT("LookTurboMCPCapture scoped tidy after"), UTurboMCPLookToolset::LookTurboMCPCapture(Asset, GraphName, TEXT("graph"), TEXT(""), TEXT("2048x1152")));
+    for (const auto& Saved : SavedPositions) { Saved.Key->NodePosX = Saved.Value.X; Saved.Key->NodePosY = Saved.Value.Y; }
+    Graph->NotifyGraphChanged();
+
     const FString NodeIds = TurboMCPNodeId::Make(Asset, GraphName, RateGuid, true);
     const int32 BeforeCommentCount = Graph->Nodes.Num();
     const FIntPoint RatePosition(Rate->NodePosX, Rate->NodePosY);
