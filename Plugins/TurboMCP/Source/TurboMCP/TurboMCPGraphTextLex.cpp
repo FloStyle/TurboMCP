@@ -63,6 +63,33 @@ namespace TurboMCPGraphTextLex
 
 		const int32 Open = Index;
 		++Index;
+		// Type IDs are opaque identifiers. Quotes let names contain spaces without
+		// confusing the identifier with the pin fields that follow it.
+		if (Index < InLine.Len() && InLine[Index] == TEXT('"'))
+		{
+			++Index;
+			FString QuotedHead;
+			bool bEscaped = false;
+			for (; Index < InLine.Len(); ++Index)
+			{
+				const TCHAR Ch = InLine[Index];
+				if (bEscaped) { QuotedHead.AppendChar(Ch); bEscaped = false; continue; }
+				if (Ch == TEXT('\\')) { bEscaped = true; continue; }
+				if (Ch == TEXT('"'))
+				{
+					++Index;
+					if (QuotedHead.IsEmpty() || (Index < InLine.Len()
+						&& !FChar::IsWhitespace(InLine[Index]) && InLine[Index] != TEXT(')') && InLine[Index] != TEXT(';')))
+						return false;
+					OutTypeId = QuotedHead;
+					OutColumn = Open + 1;
+					OutAfter = Index;
+					return true;
+				}
+				QuotedHead.AppendChar(Ch);
+			}
+			return false;
+		}
 		const int32 Start = Index;
 		int32 ParenthesisDepth = 1;
 		while (Index < InLine.Len() && !FChar::IsWhitespace(InLine[Index]))

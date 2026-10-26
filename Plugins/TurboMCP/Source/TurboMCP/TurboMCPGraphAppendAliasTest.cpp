@@ -11,6 +11,9 @@
 
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPGraphAppend.h"
+#include "TurboMCPGraphTextLex.h"
+#include "K2Node_VariableGet.h"
+#include "BlueprintActionDatabase.h"
 #include "TurboMCPNodeId.h"
 
 #include "EdGraph/EdGraph.h"
@@ -484,6 +487,37 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 			TEXT("the in-memory fixture does not resolve by its full object path: %s"), *ResolveError));
 		return false;
 	}
+
+	// A variable with a space must round-trip through its exact discovered type ID.
+	FEdGraphPinType SpacedType;
+	SpacedType.PinCategory = UEdGraphSchema_K2::PC_Int;
+	TestTrue(TEXT("create spaced variable"), FBlueprintEditorUtils::AddMemberVariable(Fixture.Blueprint, TEXT("Purchase Count"), SpacedType));
+	FKismetEditorUtilities::CompileBlueprint(Fixture.Blueprint);
+	// Unreal excludes transient assets and packages from its action catalogue.
+	// Temporarily classify this unsaved fixture as an asset only for registration.
+	Fixture.Blueprint->ClearFlags(RF_Transient);
+	Fixture.Package->ClearFlags(RF_Transient);
+	FBlueprintActionDatabase::Get().RefreshAssetActions(Fixture.Blueprint);
+	Fixture.Package->SetFlags(RF_Transient);
+	Fixture.Blueprint->SetFlags(RF_Transient);
+	UK2Node_VariableGet* Getter = NewObject<UK2Node_VariableGet>(Fixture.Unique);
+	Getter->VariableReference.SetSelfMember(TEXT("Purchase Count"));
+	Getter->CreateNewGuid();
+	Fixture.Unique->AddNode(Getter, false, false);
+	Getter->AllocateDefaultPins();
+	const FString SpacedId = TurboMCPNodeId::GetVariableNodeTypeId(Getter);
+	TestTrue(TEXT("discovered type ID preserves space"), SpacedId.Contains(TEXT("Purchase Count")));
+	const FString QuotedText = FString::Printf(TEXT("(\"%s\"\n)"), *SpacedId);
+	FTurboMCPGraphAppend::FPlan SpacedPlan;
+	FString SpacedError;
+	TestTrue(TEXT("append accepts quoted discovered ID"), FTurboMCPGraphAppend::Plan(Fixture.AssetPath, Fixture.Unique->GetName(), QuotedText, SpacedPlan, SpacedError));
+	TestEqual(TEXT("quoted getter produces one planned node"), SpacedPlan.Nodes.Num(), 1);
+	TestTrue(FString::Printf(TEXT("quoted getter has no refusals: %s"), *FString::Join(SpacedPlan.Refusals, TEXT("; "))), SpacedPlan.Refusals.IsEmpty());
+	FTurboMCPGraphAppend::FPlan BrokenPlan;
+	TestFalse(TEXT("unterminated quoted ID refuses"), FTurboMCPGraphAppend::Plan(Fixture.AssetPath, Fixture.Unique->GetName(), TEXT("(\"unterminated\n)"), BrokenPlan, SpacedError));
+	FString LexId; int32 LexColumn = 0, LexAfter = 0;
+	TestTrue(TEXT("quoted ID permits closing parenthesis"), TurboMCPGraphTextLex::ExtractHeadTypeId(TEXT("(\"Example ID\")"), LexId, LexColumn, LexAfter));
+	TestEqual(TEXT("quoted ID decoded"), LexId, FString(TEXT("Example ID")));
 
 	const FString ForwardAKey = TurboMCPNodeId::MakeForNode(Fixture.ForwardA);
 	const FString ForwardBKey = TurboMCPNodeId::MakeForNode(Fixture.ForwardB);
