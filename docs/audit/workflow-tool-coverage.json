@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-26",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 147,
+  "inventory": 150,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -484,7 +484,10 @@
         "PreviewTurboMCPWidgetRemove",
         "EditTurboMCPWidgetRemove",
         "PreviewTurboMCPWidgetAdd",
-        "EditTurboMCPWidgetAdd"
+        "EditTurboMCPWidgetAdd",
+        "ReadTurboMCPWidgetProperty",
+        "PreviewTurboMCPWidgetProperty",
+        "EditTurboMCPWidgetProperty"
       ],
       "limitations": [
         "See per-tool review for unsupported and untested cases."
@@ -503,6 +506,11 @@
         "run": "2459d5965e1440958c5e96effaf8857e",
         "checks": "Compiled child Blueprint and native widget addition, parent/class/slot, preview preservation, name/parent/cycle refusal and compile.",
         "limits": "Default slot layout; named panels only. Field confirmation pending."
+      },
+      "widget_property_evidence": {
+        "run": "a45c2ea31bba463f94b6fbd377b7493e",
+        "checks": "Visibility, margin, width override, canvas layout, readback, preview preservation, malformed/unsupported refusals, no-op and compile.",
+        "limits": "Supported editable value types only; not rendered/runtime acceptance."
       }
     },
     {
@@ -768,9 +776,18 @@
     ],
     "EditTurboMCPWidgetAdd": [
       "WF-OCT26-MERGE"
+    ],
+    "ReadTurboMCPWidgetProperty": [
+      "WF-OCT26-MERGE"
+    ],
+    "PreviewTurboMCPWidgetProperty": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPWidgetProperty": [
+      "WF-OCT26-MERGE"
     ]
   },
-  "unique_tools_scenario_reviewed": 58,
+  "unique_tools_scenario_reviewed": 61,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

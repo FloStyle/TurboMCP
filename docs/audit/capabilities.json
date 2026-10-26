@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "plugin_tree": "758960dcb1a71bd6416bcd721cc3a03660d256c3",
+  "plugin_tree": "24e07b631c59f93215bb40b62bc51c4bb8ae18c4",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 147,
+    "tools": 150,
     "by_toolset": {
-      "UTurboMCPEditToolset": 61,
+      "UTurboMCPEditToolset": 62,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 48,
-      "UTurboMCPReadToolset": 32
+      "UTurboMCPPreviewToolset": 49,
+      "UTurboMCPReadToolset": 33
     }
   },
   "tools": [
@@ -1321,7 +1321,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
-          "line": 265
+          "line": 269
         }
       ],
       "test_references": [],
@@ -1358,6 +1358,30 @@
       "investment_decision": "compare-native-before-expanding"
     },
     {
+      "id": "EditTurboMCPWidgetProperty",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Widget",
+        "Target",
+        "Property",
+        "Value"
+      ],
+      "family": "widget",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
+          "line": 394
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "compare-native-before-expanding"
+    },
+    {
       "id": "EditTurboMCPWidgetRemove",
       "toolset": "UTurboMCPEditToolset",
       "parameters": [
@@ -1368,7 +1392,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
-          "line": 172
+          "line": 176
         }
       ],
       "test_references": [],
@@ -1390,7 +1414,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
-          "line": 47
+          "line": 51
         }
       ],
       "test_references": [],
@@ -2706,7 +2730,31 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
-          "line": 260
+          "line": 264
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "compare-native-before-expanding"
+    },
+    {
+      "id": "PreviewTurboMCPWidgetProperty",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "Widget",
+        "Target",
+        "Property",
+        "Value"
+      ],
+      "family": "widget",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
+          "line": 390
         }
       ],
       "test_references": [],
@@ -2727,7 +2775,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
-          "line": 167
+          "line": 171
         }
       ],
       "test_references": [],
@@ -3620,6 +3668,29 @@
       "investment_decision": "compare-native-before-expanding"
     },
     {
+      "id": "ReadTurboMCPWidgetProperty",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "Asset",
+        "Widget",
+        "Target",
+        "Property"
+      ],
+      "family": "widget",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
+          "line": 386
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "compare-native-before-expanding"
+    },
+    {
       "id": "ReadTurboMCPWidgetTree",
       "toolset": "UTurboMCPReadToolset",
       "parameters": [
@@ -3629,7 +3700,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
-          "line": 32
+          "line": 36
         }
       ],
       "test_references": [

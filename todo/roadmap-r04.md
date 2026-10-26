@@ -1851,3 +1851,7 @@ WT-13/FT-113 implemented at 4a29020. Preview/EditWidgetRemove enumerate the sele
 ## Oct26 named-parent widget creation
 
 FT-117 implemented at 5dff02e. Preview/EditWidgetAdd resolve a compiled Widget Blueprint or native class, validate the requested name and parent, reject direct/indirect nesting cycles, and create one designer child through public stock APIs. Native suite 2459d5965e1440958c5e96effaf8857e passed, including no-add preview, exact class/parent/slot, duplicate/missing/non-panel/cycle refusals and compile. Build failures 50768f2626c1446cab54633b74bcdc8d and ff2900fdadba44908b2a5a8b62acc6af corrected before integration (fixture pointer and protected helper). Field confirmation pending. Layout properties remain FT-116.
+
+## Oct26 widget and slot value properties
+
+FT-116 implemented at 4c85cf2. Reader lists supported property names/types/current Unreal text; preview/edit parse temporary copies and report actual post-notification values. Native suite a45c2ea31bba463f94b6fbd377b7493e passed visibility, margin, width override, canvas position/size, preview preservation, malformed/unsupported refusal, no-op and compile. Initial native run 34eca33e7f1c4669b67d10c58960c94d passed narrower checks; fixture build 5ef804cf71994e9b99c1c00fb3d60c79 failed on an unavailable margin getter and was corrected to reflected inspection. Field confirmation pending; object/delegate/container/localized-text values and rendered/runtime certification excluded.

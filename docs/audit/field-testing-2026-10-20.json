@@ -3869,11 +3869,13 @@
       "key": "2026-10-26_S9/FT-116",
       "title": "Widget property set with slot support and read-back",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_implemented",
-      "remaining": "Requested capability; see docs/audit/field-reports/2026-10-26_S9_TurboMCP_navbar-and-card-layout.md"
+      "validation": "native_pass_field_pending",
+      "remaining": "Field confirmation pending. Object/container/delegate/localized-text properties excluded; value edits do not certify rendered layout or runtime behavior. No dotted property paths.",
+      "implementation": "4c85cf2: Read/Preview/EditTurboMCPWidgetProperty expose widget or slot scalar/value-struct properties, parse temporary copies, notify editor changes and read back actual values.",
+      "evidence": "a45c2ea31bba463f94b6fbd377b7493e: supervised native suite passed. Visibility, padding, width override, canvas slot position/size, preview preservation, read-back, invalid enum/trailing text/ownership refusal, repeat and compile."
     },
     {
       "report": "2026-10-26_S9",
