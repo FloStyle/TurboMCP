@@ -11,6 +11,9 @@
 #include "BlueprintActionDatabase.h"
 #include "BlueprintActionFilter.h"
 #include "BlueprintNodeSpawner.h"
+#include "BlueprintFieldNodeSpawner.h"
+#include "K2Node_MakeStruct.h"
+#include "K2Node_BreakStruct.h"
 #include "BlueprintVariableNodeSpawner.h"
 #include "K2Node_VariableGet.h"
 #include "WidgetBlueprint.h"
@@ -302,6 +305,18 @@ namespace
                         Entry.TypeId = TEXT("Function|") + (Source
                             ? Source->GetPathName() + TEXT(".") + Function->GetName() : Function->GetPathName());
                     }
+                // Match the reader's exact struct identity while keeping the palette
+                // spelling as a legacy alias. The filtered stock spawner still decides
+                // whether this graph can create the node; no direct construction bypass.
+                if (ActionInfo.GetNodeClass() == UK2Node_MakeStruct::StaticClass()
+                    || ActionInfo.GetNodeClass() == UK2Node_BreakStruct::StaticClass())
+                    if (const auto* FieldSpawner = Cast<UBlueprintFieldNodeSpawner>(NodeSpawner))
+                        if (const auto* Struct = Cast<UScriptStruct>(FieldSpawner->GetField().ToUObject()))
+                        {
+                            Entry.TypeId = FString(ActionInfo.GetNodeClass() == UK2Node_MakeStruct::StaticClass()
+                                ? TEXT("Struct|Make|") : TEXT("Struct|Break|")) + Struct->GetPathName();
+                            Entry.SearchKeywords += TEXT(" ") + Struct->GetName() + TEXT(" ") + UiSpec.MenuName.ToString();
+                        }
 				// Member-variable IDs must match the reader, not friendly menu labels.
 				if (const UBlueprintVariableNodeSpawner* VariableSpawner = Cast<UBlueprintVariableNodeSpawner>(NodeSpawner))
 				{

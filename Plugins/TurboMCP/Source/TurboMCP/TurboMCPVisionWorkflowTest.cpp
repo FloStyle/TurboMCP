@@ -3,6 +3,11 @@
 #include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "BlueprintEditorLibrary.h"
+#include "BlueprintActionDatabase.h"
+#include "StructUtils/UserDefinedStruct.h"
+#include "Kismet2/StructureEditorUtils.h"
+#include "K2Node_MakeStruct.h"
+#include "K2Node_BreakStruct.h"
 #include "Internationalization/Regex.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
@@ -98,6 +103,50 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  };
  UBlueprint* BP=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("BP_VisionStress"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
  if(!TestNotNull(TEXT("Blueprint"),BP))return false;
+
+ // FT-118: read identities must create the same concrete user-defined struct nodes.
+ UUserDefinedStruct* ReaderStruct = FStructureEditorUtils::CreateUserDefinedStruct(Package, TEXT("ReaderStruct"), RF_Transient);
+ if (!TestNotNull(TEXT("Disposable reader struct"), ReaderStruct)) return false;
+ FBlueprintActionDatabase::Get().RefreshAssetActions(ReaderStruct);
+ UEdGraph* StructGraph = UBlueprintEditorLibrary::AddFunctionGraph(BP, TEXT("StructIdentityProbe"));
+ auto* MakeStruct = NewObject<UK2Node_MakeStruct>(StructGraph);
+ auto* BreakStruct = NewObject<UK2Node_BreakStruct>(StructGraph);
+ MakeStruct->StructType = ReaderStruct; BreakStruct->StructType = ReaderStruct;
+ for (UK2Node_StructOperation* Node : {static_cast<UK2Node_StructOperation*>(MakeStruct), static_cast<UK2Node_StructOperation*>(BreakStruct)})
+ {
+  Node->CreateNewGuid(); StructGraph->AddNode(Node, false, false); Node->AllocateDefaultPins();
+ }
+ // Connect the pure nodes to a return value so the bodies reader visits them.
+ TArray<UK2Node_FunctionEntry*> StructEntries; StructGraph->GetNodesOfClass(StructEntries);
+ auto* StructResult = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(StructEntries[0]);
+ UEdGraphPin* MadeValue = nullptr; UEdGraphPin* BreakInput = nullptr; UEdGraphPin* BrokenValue = nullptr;
+ for (auto* Pin : MakeStruct->Pins) if (Pin->Direction == EGPD_Output) MadeValue = Pin;
+ for (auto* Pin : BreakStruct->Pins)
+ {
+  if (Pin->Direction == EGPD_Input) BreakInput = Pin;
+  else if (!Pin->bHidden && !BrokenValue) BrokenValue = Pin;
+ }
+ if (!TestNotNull(TEXT("Struct output"), MadeValue) || !TestNotNull(TEXT("Struct input"), BreakInput)
+     || !TestNotNull(TEXT("Struct member output"), BrokenValue)) return false;
+ auto* ReturnedValue = StructResult->CreateUserDefinedPin(TEXT("Value"), BrokenValue->PinType, EGPD_Input, false);
+ const auto* StructSchema = GetDefault<UEdGraphSchema_K2>();
+ TestTrue(TEXT("Make feeds break"), StructSchema->TryCreateConnection(MadeValue, BreakInput));
+ TestTrue(TEXT("Break feeds return"), StructSchema->TryCreateConnection(BrokenValue, ReturnedValue));
+ TestTrue(TEXT("Function reaches return"), StructSchema->TryCreateConnection(StructEntries[0]->FindPinChecked(UEdGraphSchema_K2::PN_Then), StructResult->FindPinChecked(UEdGraphSchema_K2::PN_Execute)));
+ const FString MakeId = TurboMCPNodeId::GetNodeTypeId(MakeStruct);
+ const FString BreakId = TurboMCPNodeId::GetNodeTypeId(BreakStruct);
+ TestEqual(TEXT("Make identity includes exact struct path"), MakeId, TEXT("Struct|Make|") + ReaderStruct->GetPathName());
+ TestEqual(TEXT("Break identity includes exact struct path"), BreakId, TEXT("Struct|Break|") + ReaderStruct->GetPathName());
+ const FString StructRead = Record(TEXT("Struct reader identities"), UTurboMCPReadToolset::ReadTurboMCPGraphLoad(BP->GetPathName(), StructGraph->GetName(), TEXT("read"), TEXT("bodies"), 0, 24000));
+ TestTrue(TEXT("Reader exposes both writable struct identities"), StructRead.Contains(MakeId) && StructRead.Contains(BreakId));
+ const FString StructAppend = Record(TEXT("Append reader struct identities"), UTurboMCPEditToolset::EditTurboMCPGraphAppend(BP->GetPathName(), StructGraph->GetName(), TEXT("(\"") + MakeId + TEXT("\")\n(\"") + BreakId + TEXT("\")")));
+ TestTrue(TEXT("Append accepts reader struct identities"), StructAppend.StartsWith(TEXT("changed:")));
+ TArray<UK2Node_MakeStruct*> Makes; StructGraph->GetNodesOfClass(Makes);
+ TArray<UK2Node_BreakStruct*> Breaks; StructGraph->GetNodesOfClass(Breaks);
+ TestEqual(TEXT("One matching make node appended"), Makes.Num(), 2);
+ TestEqual(TEXT("One matching break node appended"), Breaks.Num(), 2);
+ for (auto* Node : Makes) TestTrue(TEXT("Make retains exact struct"), Node->StructType == ReaderStruct);
+ for (auto* Node : Breaks) TestTrue(TEXT("Break retains exact struct"), Node->StructType == ReaderStruct);
 
  // Merge prerequisites are exercised on disposable assets, never field assets.
  UEdGraph* MergeFunction=UBlueprintEditorLibrary::AddFunctionGraph(BP,TEXT("MergeMemberProbe"));

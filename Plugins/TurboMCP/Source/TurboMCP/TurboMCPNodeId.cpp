@@ -7,6 +7,8 @@
 
 #include "TurboMCPNodeId.h"
 #include "K2Node_FunctionEntry.h"
+#include "K2Node_MakeStruct.h"
+#include "K2Node_BreakStruct.h"
 
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -507,6 +509,18 @@ namespace TurboMCPNodeId
 		{
 			return FString();
 		}
+
+        // Struct paths distinguish equal display names and do not depend on locale.
+        // Only concrete make/break nodes use this identity; other struct operations
+        // have different creation requirements and retain their existing handling.
+        if (InNode->GetClass() == UK2Node_MakeStruct::StaticClass()
+            || InNode->GetClass() == UK2Node_BreakStruct::StaticClass())
+        {
+            const auto* StructNode = CastChecked<UK2Node_StructOperation>(InNode);
+            return StructNode->StructType
+                ? FString(InNode->IsA<UK2Node_MakeStruct>() ? TEXT("Struct|Make|") : TEXT("Struct|Break|")) + StructNode->StructType->GetPathName()
+                : FString();
+        }
 
 		// Every whitespace character goes, not just the outer ones. A title like
 		// `sin ( degrees )` and one like `sin(degrees)` must give one type ID, and
