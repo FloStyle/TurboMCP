@@ -156,6 +156,11 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  Wire(Value,Output);
  Record(TEXT("Compile fixture"),UTurboMCPEditToolset::EditTurboMCPCompile(BP->GetPathName()));TestTrue(TEXT("Dense Blueprint compiles"),BP->Status!=BS_Error);
 
+ // Reproduce S4: a graph calls a custom event that it also declares.
+ auto* InternalEventCall = Call(Graphs[0], BP->SkeletonGeneratedClass, TEXT("Request_0_0"), 2200, 0);
+ InternalEventCall->FunctionReference.SetSelfMember(TEXT("Request_0_0"));
+ Record(TEXT("Compile internal event call"), UTurboMCPEditToolset::EditTurboMCPCompile(MergeAsset));
+ TestTrue(TEXT("Source with internal custom-event call compiles"), BP->Status != BS_Error);
  // A second Blueprint receives declarations and then complete graph bodies.
  UBlueprint* MergeTarget=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("BP_MergeTarget"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
  if(!TestNotNull(TEXT("Merge target"),MergeTarget))return false;
@@ -176,6 +181,9 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  TestTrue(TEXT("Same-asset merge refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPMergeMembers(MergeAsset,MergeAsset).StartsWith(TEXT("error:")));
  TestTrue(TEXT("Missing graph refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset,TEXT("MissingGraph"),MergeTarget->GetPathName(),TEXT("")).StartsWith(TEXT("error:")));
  TestTrue(TEXT("Graph transfer preview"),Record(TEXT("Transfer preview"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("preview:")));
+ const FString TransferPlan = UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset, Function->GetName(), MergeTarget->GetPathName(), TEXT(""));
+ TestTrue(TEXT("Transfer preview lists nodes"), TransferPlan.Contains(TEXT("\nnode:")));
+ TestTrue(TEXT("Transfer preview lists links"), TransferPlan.Contains(TEXT("\nlink:")));
  TestTrue(TEXT("Graph transfer edit"),Record(TEXT("Transfer edit"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("edited:")));
  TestTrue(TEXT("Local graph transfer"),Record(TEXT("Local graph transfer"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,TEXT("MergeMemberProbe"),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("edited:")));
  TestTrue(TEXT("Event graph transfer"),Record(TEXT("Event graph transfer"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Graphs[0]->GetName(),MergeTarget->GetPathName(),TEXT("CopiedEvents"))).StartsWith(TEXT("edited:")));
@@ -192,6 +200,23 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  TestNotNull(TEXT("Transferred local function exists"),LocalGraph);
  if(LocalGraph != nullptr){TArray<UK2Node_FunctionEntry*> LE;LocalGraph->GetNodesOfClass(LE);TestEqual(TEXT("Local copied"),LE[0]->LocalVariables.Num(),1);if(LE[0]->LocalVariables.Num())TestEqual(TEXT("Copied local default"),LE[0]->LocalVariables[0].DefaultValue,FString(TEXT("7")));}
  Record(TEXT("Compile merged target"),UTurboMCPEditToolset::EditTurboMCPCompile(MergeTarget->GetPathName()));TestTrue(TEXT("Merged target compiles"),MergeTarget->Status!=BS_Error);
+ // S4 GC-52: a real inherited function override must retain its parent identity.
+ UBlueprint* OverrideSource = FKismetEditorUtilities::CreateBlueprint(BP->GeneratedClass, Package, TEXT("BP_TransferOverrideSource"), BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+ UBlueprint* OverrideTarget = FKismetEditorUtilities::CreateBlueprint(BP->GeneratedClass, Package, TEXT("BP_TransferOverrideTarget"), BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+ if (!TestNotNull(TEXT("Override source created"), OverrideSource) || !TestNotNull(TEXT("Override target created"), OverrideTarget)) return false;
+ UEdGraph* OverrideGraph = UBlueprintEditorLibrary::AddFunctionOverride(OverrideSource, Function->GetFName());
+ if (!TestNotNull(TEXT("Source inherited override created"), OverrideGraph)) return false;
+ FKismetEditorUtilities::CompileBlueprint(OverrideSource);
+ TestTrue(TEXT("Source override compiles"), OverrideSource->Status != BS_Error);
+ TestTrue(TEXT("Inherited override transfer"), Record(TEXT("Inherited override transfer"), UTurboMCPEditToolset::EditTurboMCPGraphTransfer(OverrideSource->GetPathName(), Function->GetName(), OverrideTarget->GetPathName(), TEXT(""))).StartsWith(TEXT("edited:")));
+ FKismetEditorUtilities::CompileBlueprint(OverrideTarget);
+ TestTrue(TEXT("Transferred inherited override compiles"), OverrideTarget->Status != BS_Error);
+ UEdGraph* CopiedOverride = TurboMCPNodeId::FindGraphByName(OverrideTarget, Function->GetName());
+ if (TestNotNull(TEXT("Transferred override graph exists"), CopiedOverride)) {
+  TArray<UK2Node_FunctionEntry*> OverrideEntries; CopiedOverride->GetNodesOfClass(OverrideEntries);
+  TestEqual(TEXT("Override entry count"), OverrideEntries.Num(), 1);
+  if (OverrideEntries.Num() == 1) TestNotNull(TEXT("Override retains external parent reference"), OverrideEntries[0]->FunctionReference.GetMemberParentClass());
+ }
  const FString Removal=Record(TEXT("Interface removal preview"),UTurboMCPPreviewToolset::PreviewTurboMCPInterfaceRemove(MergeAsset,MergeInterface->GetPathName()));
  TestTrue(TEXT("Removal preview accepted"),Removal.StartsWith(TEXT("preview:")));
  TestTrue(TEXT("Removal without confirmation refuses"),UTurboMCPEditToolset::EditTurboMCPInterfaceRemove(MergeAsset,MergeInterface->GetPathName(),TEXT("")).StartsWith(TEXT("error:")));

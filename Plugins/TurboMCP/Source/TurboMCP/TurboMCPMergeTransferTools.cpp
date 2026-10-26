@@ -223,6 +223,15 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
     }
     else if(HasVariable(T,FName(*Name)))return TEXT("error: Target name conflicts with a variable. Nothing changed.");
     TArray<UK2Node_FunctionEntry*> Entries;G->GetNodesOfClass(Entries);
+    // Calls to custom events carried by this graph are internal dependencies.
+    // Other graphs must still be transferred after their event definitions.
+    TSet<FName> IncomingEvents;
+    for (UEdGraphNode* Node : G->Nodes)
+        if (const auto* EventNode = Cast<UK2Node_CustomEvent>(Node))
+            IncomingEvents.Add(EventNode->CustomFunctionName);
+    UFunction* ParentFunction = T->ParentClass ? T->ParentClass->FindFunctionByName(FName(*Name)) : nullptr;
+    if (Function && ParentFunction && Name != G->GetName())
+        return TEXT("error: An inherited override cannot be renamed during transfer. Keep its original name. Nothing changed.");
     FString Missing;
     for(UEdGraphNode* N:G->Nodes)
     {
@@ -232,7 +241,7 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
         }
         if(auto* C=Cast<UK2Node_CallFunction>(N))
         {
-            if(C->FunctionReference.IsSelfContext() && C->FunctionReference.GetMemberName()!=G->GetFName() && !HasFunction(T,C->FunctionReference.GetMemberName()))Missing+=TEXT("\nfunction: ")+C->FunctionReference.GetMemberName().ToString();
+            if(C->FunctionReference.IsSelfContext() && C->FunctionReference.GetMemberName()!=G->GetFName() && !IncomingEvents.Contains(C->FunctionReference.GetMemberName()) && !HasFunction(T,C->FunctionReference.GetMemberName()))Missing+=TEXT("\nfunction: ")+C->FunctionReference.GetMemberName().ToString();
             if(!C->FunctionReference.IsSelfContext() && !C->GetTargetFunction())Missing+=TEXT("\nunresolved external function: ")+C->FunctionReference.GetMemberName().ToString();
         }
         if(auto* D=Cast<UK2Node_BaseMCDelegate>(N))if(D->DelegateReference.IsSelfContext() && !HasVariable(T,D->DelegateReference.GetMemberName()))Missing+=TEXT("\ndispatcher: ")+D->DelegateReference.GetMemberName().ToString();
@@ -241,7 +250,21 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
         if(auto* C=Cast<UK2Node_CustomEvent>(N))if(HasFunction(T,C->CustomFunctionName))Missing+=TEXT("\nconflicting event: ")+C->CustomFunctionName.ToString();
     }
     if(!Missing.IsEmpty())return TEXT("error: Prepare these dependencies or resolve these conflicts before graph transfer. Nothing changed.")+Missing+TEXT("\nUse MergeMembers, InterfaceAdd and WidgetSubtreeCopy as appropriate.");
-    const FString Summary=FString::Printf(TEXT("\nsource: %s:%s\ntarget: %s:%s\nnodes: %d; existing empty declaration: %s"),*S->GetPathName(),*G->GetName(),*T->GetPathName(),*Name,G->Nodes.Num(),Old?TEXT("yes"):TEXT("no"));
+    FString Summary=FString::Printf(TEXT("\nsource: %s:%s\ntarget: %s:%s\nnodes: %d; existing empty declaration: %s"),*S->GetPathName(),*G->GetName(),*T->GetPathName(),*Name,G->Nodes.Num(),Old?TEXT("yes"):TEXT("no"));
+    // Use source GUIDs for the plan; clones receive new GUIDs on application.
+    for (UEdGraphNode* Node : G->Nodes)
+    {
+        Summary += FString::Printf(TEXT("\nnode: %s | %s"), *Node->NodeGuid.ToString(), *Node->GetNodeTitle(ENodeTitleType::ListView).ToString());
+        for (UEdGraphPin* Pin : Node->Pins)
+            if (Pin && Pin->Direction == EGPD_Output)
+                for (UEdGraphPin* Linked : Pin->LinkedTo)
+                    if (Linked && Linked->GetOwningNode())
+                        Summary += FString::Printf(TEXT("\nlink: %s.%s -> %s.%s"), *Node->NodeGuid.ToString(), *Pin->PinName.ToString(), *Linked->GetOwningNode()->NodeGuid.ToString(), *Linked->PinName.ToString());
+    }
+    for (const UK2Node_FunctionEntry* Entry : Entries)
+        for (const FBPVariableDescription& Local : Entry->LocalVariables)
+            Summary += TEXT("\nlocal: ") + Local.VarName.ToString();
+    if (Function && ParentFunction) Summary += TEXT("\nfunction kind: inherited override");
     if(!Apply)return TEXT("preview: Copy the complete graph, including connections, positions, comments and locals. No changes made.")+Summary;
     T->Modify();
     UEdGraph* Copy=FEdGraphUtilities::CloneGraph(G,T);
@@ -251,7 +274,7 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
     for(UEdGraphNode* N:Copy->Nodes)
     {
         N->CreateNewGuid();
-        if(auto* Term=Cast<UK2Node_FunctionTerminator>(N)){FMemberReference R;R.SetMemberName(FName(*Name));Term->FunctionReference=R;}
+        if(auto* Term=Cast<UK2Node_FunctionTerminator>(N)){FMemberReference R;if (Function && ParentFunction) R.SetExternalMember(FName(*Name), ParentFunction->GetOwnerClass()); else R.SetMemberName(FName(*Name));Term->FunctionReference=R;}
         if(auto* V=Cast<UK2Node_Variable>(N))
         {
             if(V->VariableReference.IsLocalScope())V->VariableReference.SetLocalMember(V->GetVarName(),Name,V->VariableReference.GetMemberGuid());
@@ -309,7 +332,7 @@ static FString Widgets(const FString& Source,const FString& RootName,const FStri
     TArray<UWidget*> Nodes{Root};UWidgetTree::ForWidgetAndChildren(Root,[&](UWidget* W){Nodes.Add(W);});
     TSet<FName> Names;for(UWidget* W:Nodes){Names.Add(W->GetFName());if(TW->WidgetTree->FindWidget(W->GetFName()) || StaticFindObjectFast(UObject::StaticClass(),TW->WidgetTree,W->GetFName()))return TEXT("error: Target widget name collision: ")+W->GetName()+TEXT(". Nothing changed.");}
     for(const auto& B:SW->Bindings)if(Names.Contains(FName(*B.ObjectName)))return TEXT("error: Subtree has designer bindings. Migrate those explicitly before copying; they are not silently dropped. Nothing changed.");
-    const FString Summary=FString::Printf(TEXT("\nsource: %s/%s\ntarget: %s/%s\nwidgets: %d; names, properties, internal slots and localized text preserved"),*S->GetPathName(),*RootName,*T->GetPathName(),Parent?*ParentName:TEXT("root"),Nodes.Num());
+    FString Summary=FString::Printf(TEXT("\nsource: %s/%s\ntarget: %s/%s\nwidgets: %d; names, properties, internal slots and localized text preserved"),*S->GetPathName(),*RootName,*T->GetPathName(),Parent?*ParentName:TEXT("root"),Nodes.Num());
     if(!Apply)return TEXT("preview: Copy widget subtree. No changes made. Graphs, animations and designer bindings are not copied.")+Summary;
     // Duplicate the tree together so sibling references and instanced slot objects
     // are remapped by Unreal before moving just the selected subtree.
