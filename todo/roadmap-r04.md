@@ -1823,3 +1823,7 @@ GL-22 (86a22fb): configured Create Event bindings visible in graph/context reade
 ### Oct26 self receiver retarget — implemented
 
 ED-21 / FT-115: dbbfb16 adds explicit GraphSwapCall Options target_self=true, preserving non-receiver inputs/links and refusing static/unrelated targets. Help and preview describe discarded receiver links/defaults and retained source nodes. Stock Actor call-swap workflow passed (417db3d25b76440ca99fb6dae3333bfb); original widget field confirmation pending. Initial run d7f77e9f3ef648dd88320501e5512db4 failed the static refusal fixture wording, corrected to use a concrete static function. No engine changes.
+
+### Oct26 guard continuation — implemented; layout follow-up open
+
+GC-59 / FT-114: 4e1a246 supplies Continuation before placement preflight. Native workflow 6f203e54974740dfba1ca7a096f83c46 passed including false guard else wiring, compile and independent event results. Invalid exit preview preserves graph. Screenshot reviewed: new Branch is below unrelated Refund flow, with long wires. This remains open as TD-43; no clean-layout acceptance claimed. Original field confirmation pending.

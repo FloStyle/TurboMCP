@@ -52,16 +52,15 @@
     "GC-55",
     "GC-56",
     "FT-111",
-    "GC-59",
     "TD-41",
     "WT-13",
     "FT-113",
-    "FT-114",
     "X-105",
     "GC-62",
     "FT-116",
     "FT-117",
-    "FT-118"
+    "FT-118",
+    "TD-43"
   ],
   "positive": [
     "FA-10",
@@ -123,7 +122,9 @@
     "GL-23",
     "GL-22",
     "ED-21",
-    "FT-115"
+    "FT-115",
+    "GC-59",
+    "FT-114"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -276,5 +277,12 @@
     "usage": "Options: {\"target_self\":true}",
     "limits": "Stock Actor fixture; original widget merge confirmation pending. Receiver source nodes are retained.",
     "initial_run": "d7f77e9f3ef648dd88320501e5512db4: edit passed; static test chose an operator identity and failed its expected refusal wording. Replaced with a concrete static function; rerun passed."
+  },
+  "guard_continuation_repair": {
+    "commit": "4e1a246",
+    "native_run": "6f203e54974740dfba1ca7a096f83c46",
+    "result": "passed",
+    "usage": "Continuation=Guard:else; label Guard on the new Branch",
+    "remaining": "TD-43: native screenshot shows poor insertion placement below unrelated flow. Functional correctness passed; no layout acceptance claimed."
   }
 }

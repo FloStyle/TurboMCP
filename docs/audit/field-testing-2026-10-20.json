@@ -3651,11 +3651,13 @@
       "key": "2026-10-26_S8/GC-59",
       "title": "GraphAppend cannot splice a Branch into an existing exec wire (medium)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md. No fix claimed from report intake."
+      "validation": "tested",
+      "remaining": "Original field confirmation pending. Placement quality is separately open as 2026-10-26_Local/TD-43; screenshot shows inserted Branch below unrelated flow.",
+      "implementation": "4e1a246: Continuation is supplied before placement scratch preflight, so explicit Branch exits are validated correctly.",
+      "evidence": "Supervised build and test-event-connect-workflow passed: 6f203e54974740dfba1ca7a096f83c46. False guard else reconnects original flow; compile and three event results passed; invalid exit preview preserves graph."
     },
     {
       "report": "2026-10-26_S8",
@@ -3740,12 +3742,14 @@
       "key": "2026-10-26_S8/FT-114",
       "title": "Insert a guard Branch on an existing exec wire",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_implemented",
-      "remaining": "Requested capability; see docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md",
-      "canonical_issue": "2026-10-26_S8/GC-59"
+      "validation": "tested",
+      "remaining": "Original field confirmation pending. Placement quality is separately open as 2026-10-26_Local/TD-43; screenshot shows inserted Branch below unrelated flow.",
+      "canonical_issue": "2026-10-26_S8/GC-59",
+      "implementation": "4e1a246: Continuation is supplied before placement scratch preflight, so explicit Branch exits are validated correctly.",
+      "evidence": "Supervised build and test-event-connect-workflow passed: 6f203e54974740dfba1ca7a096f83c46. False guard else reconnects original flow; compile and three event results passed; invalid exit preview preserves graph."
     },
     {
       "report": "2026-10-26_S8",
@@ -3899,6 +3903,19 @@
       "implementation": "d429950: explain arguments not recorded, response size not provided by engine, and tokens not estimated; preserve numeric zero.",
       "evidence": "Supervised build and test-panel-history passed: 566887df68dd4bc1b251daf51d9bde13.",
       "remaining": "Engine events do not carry response text or arguments; actual size measurement remains unavailable. Original screenshot wording corrected; field confirmation pending."
+    },
+    {
+      "report": "2026-10-26_Local",
+      "id": "TD-43",
+      "key": "2026-10-26_Local/TD-43",
+      "title": "Inserted guard Branch is placed below an unrelated event flow, creating long execution wires",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P2",
+      "owner": "R04",
+      "validation": "reproduced",
+      "evidence": "Native event-connect-workflow run 6f203e54974740dfba1ca7a096f83c46; screenshot A32DA2F342A7848814CCF28008F16C41 reviewed.",
+      "remaining": "Improve insertion placement near its own execution flow without moving unrelated events or creating overlap. Functional continuation is fixed by GC-59; placement is not fixed."
     }
   ],
   "prototype": {
