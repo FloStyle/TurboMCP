@@ -17,6 +17,7 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_VariableGet.h"
 #include "K2Node_ExecutionSequence.h"
 #include "K2Node_IfThenElse.h"
 #include "K2Node_AddDelegate.h"
@@ -357,6 +358,33 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  TestTrue(TEXT("Name collision refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Subtree->GetName(),WidgetTarget->GetPathName(),ParentName).StartsWith(TEXT("error:")));
  TestTrue(TEXT("Source text unchanged"),Label->GetText().IdenticalTo(OriginalText));
  Record(TEXT("Compile copied widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));TestTrue(TEXT("Copied widget compiles"),WidgetTarget->Status!=BS_Error);
+ if(CopiedLabel){
+  const FString OldWidgetName=CopiedLabel->GetName();
+  UPanelSlot* OriginalSlot=CopiedLabel->Slot;
+  FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(WidgetTarget,CopiedLabel,true,true);
+  FKismetEditorUtilities::CompileBlueprint(WidgetTarget);
+  UEdGraph* RenameGraph=UBlueprintEditorLibrary::AddFunctionGraph(WidgetTarget,TEXT("ReadRenamedWidget"));
+  UK2Node_VariableGet* RenameGetter=NewObject<UK2Node_VariableGet>(RenameGraph);
+  RenameGetter->VariableReference.SetSelfMember(FName(*OldWidgetName));
+  RenameGraph->AddNode(RenameGetter,false,false);RenameGetter->CreateNewGuid();RenameGetter->AllocateDefaultPins();
+  const FGuid GetterGuid=RenameGetter->NodeGuid;
+
+  TestTrue(TEXT("Widget rename collision refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetRename(WidgetTarget->GetPathName(),OldWidgetName,ParentName).StartsWith(TEXT("error:")));
+  TestTrue(TEXT("Widget rename invalid identifier refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetRename(WidgetTarget->GetPathName(),OldWidgetName,TEXT("Bad Name")).StartsWith(TEXT("error:")));
+  TestEqual(TEXT("Refused rename preserves name"),CopiedLabel->GetName(),OldWidgetName);
+  TestTrue(TEXT("Widget rename succeeds"),Record(TEXT("Widget rename"),UTurboMCPEditToolset::EditTurboMCPWidgetRename(WidgetTarget->GetPathName(),OldWidgetName,TEXT("RenamedPurchaseLabel"))).StartsWith(TEXT("edited:")));
+  TestNull(TEXT("Old widget name removed"),WidgetTarget->WidgetTree->FindWidget(FName(*OldWidgetName)));
+  TestTrue(TEXT("New name resolves same widget"),WidgetTarget->WidgetTree->FindWidget(TEXT("RenamedPurchaseLabel"))==CopiedLabel);
+  TestTrue(TEXT("Rename preserves slot identity"),CopiedLabel->Slot==OriginalSlot);
+  TestTrue(TEXT("Rename preserves localized text"),CopiedLabel->GetText().IdenticalTo(OriginalText));
+  TestEqual(TEXT("Graph getter follows renamed widget"),RenameGetter->VariableReference.GetMemberName(),FName(TEXT("RenamedPurchaseLabel")));
+  TestEqual(TEXT("Graph getter identity preserved"),RenameGetter->NodeGuid,GetterGuid);
+  TestNotNull(TEXT("Renamed getter value pin exists"),RenameGetter->FindPin(TEXT("RenamedPurchaseLabel")));
+
+  TestTrue(TEXT("Repeated rename is no-op"),UTurboMCPEditToolset::EditTurboMCPWidgetRename(WidgetTarget->GetPathName(),TEXT("RenamedPurchaseLabel"),TEXT("RenamedPurchaseLabel")).StartsWith(TEXT("unchanged:")));
+  Record(TEXT("Compile renamed widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));
+  TestTrue(TEXT("Renamed widget compiles"),WidgetTarget->Status!=BS_Error);
+ }
  Record(TEXT("Compile widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WB->GetPathName()));
  for(const FString Size:{FString(TEXT("640x240")),FString(TEXT("1920x720"))})ImageCheck(Record(TEXT("Widget preview ")+Size,UTurboMCPLookToolset::LookTurboMCPWidgetPreview(WB->GetPathName(),TEXT(""),TEXT(""),Size,TEXT("allow"))));
  UMaterial* Material=NewObject<UMaterial>(Package,TEXT("M_Vision"),RF_Public|RF_Standalone);

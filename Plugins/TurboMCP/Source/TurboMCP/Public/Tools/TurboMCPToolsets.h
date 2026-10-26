@@ -1484,6 +1484,16 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
 
+    /**
+     * Rename an existing designer widget using Unreal's undoable editor operation. Requires an idle editor outside PIE.
+     * Refreshes graph/designer references handled by Unreal, including bindings, animation names and navigation. Arbitrary string lookups and external assets are not verified. Structural refresh may affect loaded dependent Blueprints. No full compile or save is requested; inspect and compile before saving.
+     * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu.
+     * @param Widget Required existing designer object name from ReadTurboMCPWidgetTree, not display text or a PIE instance path. Matching ignores case.
+     * @param NewName Required unused identifier: 1 to 100 letters, digits or underscores, starting with a letter or underscore. Whitespace is trimmed; other invalid characters and member/name collisions refuse. Same name is a no-op; case-only renames are not supported. Example: PurchaseButton.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPWidgetRename(const FString& Asset, const FString& Widget, const FString& NewName);
+
 	/**
 	 * Set named widgets' Is Variable flags; changes may regenerate the Blueprint skeleton and run editor callbacks, do not perform a full compile or save, and have no dedicated undo transaction.
 	 * Resolves all names before changing flags. Existing requested values are not counted as changes; names are deduplicated ignoring case.
