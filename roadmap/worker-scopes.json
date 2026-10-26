@@ -2503,6 +2503,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "oct26-replace-guidance": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
