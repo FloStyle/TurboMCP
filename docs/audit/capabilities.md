@@ -44,7 +44,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPMaterialInstanceSet | [TurboMCPMaterialInstanceTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstanceTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPMaterialLabelPromote | [TurboMCPMaterialLabelsPromoteTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromoteTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPMaterialTidy | [TurboMCPMaterialTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
-| EditTurboMCPMenuActivate | [TurboMCPPlayInput.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPMenuActivate | [TurboMCPPlayInput.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPMergeMembers | [TurboMCPMergeTransferTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPOverrideAdd | [TurboMCPOverrideAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPOverrideRemove | [TurboMCPOverrideRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideRemove.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |

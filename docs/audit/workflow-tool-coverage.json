@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "updated": "2026-10-25",
+  "updated": "2026-10-26",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 127,
+  "inventory": 142,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -457,6 +457,47 @@
         "Directional focus movement, arbitrary modal stacks and device-specific prompts are not tested.",
         "CommonUI state is asserted by the fixture, not exposed by the production diagnostic tool."
       ]
+    },
+    {
+      "id": "WF-OCT26-MERGE",
+      "title": "Prepare and transfer Blueprint/widget content",
+      "status": "scenario_accepted",
+      "review": "docs/audit/oct26-tool-review.json",
+      "fixture": "TurboMCP.Workflow.Vision",
+      "evidence": "94a7bbd49865482a81998f3d835c131b",
+      "tools_used": [
+        "PreviewTurboMCPInterfaceAdd",
+        "EditTurboMCPInterfaceAdd",
+        "PreviewTurboMCPInterfaceRemove",
+        "EditTurboMCPInterfaceRemove",
+        "PreviewTurboMCPLocalVariableAdd",
+        "EditTurboMCPLocalVariableAdd",
+        "PreviewTurboMCPDispatcherAdd",
+        "EditTurboMCPDispatcherAdd",
+        "PreviewTurboMCPMergeMembers",
+        "EditTurboMCPMergeMembers",
+        "PreviewTurboMCPGraphTransfer",
+        "EditTurboMCPGraphTransfer",
+        "PreviewTurboMCPWidgetSubtreeCopy",
+        "EditTurboMCPWidgetSubtreeCopy"
+      ],
+      "limitations": [
+        "See per-tool review for unsupported and untested cases."
+      ]
+    },
+    {
+      "id": "WF-OCT26-MENU",
+      "title": "Activate a named CommonUI runtime button",
+      "status": "scenario_accepted",
+      "review": "docs/audit/oct26-tool-review.json",
+      "fixture": "TurboMCP.Workflow.CommonPlay",
+      "evidence": "94a7bbd49865482a81998f3d835c131b",
+      "tools_used": [
+        "EditTurboMCPMenuActivate"
+      ],
+      "limitations": [
+        "See per-tool review for unsupported and untested cases."
+      ]
     }
   ],
   "tool_usage": {
@@ -647,9 +688,54 @@
     ],
     "ReadTurboMCPPlayInputState": [
       "WF-VISION-07-COMMONUI"
+    ],
+    "PreviewTurboMCPInterfaceAdd": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPInterfaceAdd": [
+      "WF-OCT26-MERGE"
+    ],
+    "PreviewTurboMCPInterfaceRemove": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPInterfaceRemove": [
+      "WF-OCT26-MERGE"
+    ],
+    "PreviewTurboMCPLocalVariableAdd": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPLocalVariableAdd": [
+      "WF-OCT26-MERGE"
+    ],
+    "PreviewTurboMCPDispatcherAdd": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPDispatcherAdd": [
+      "WF-OCT26-MERGE"
+    ],
+    "PreviewTurboMCPMergeMembers": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPMergeMembers": [
+      "WF-OCT26-MERGE"
+    ],
+    "PreviewTurboMCPGraphTransfer": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPGraphTransfer": [
+      "WF-OCT26-MERGE"
+    ],
+    "PreviewTurboMCPWidgetSubtreeCopy": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPWidgetSubtreeCopy": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPMenuActivate": [
+      "WF-OCT26-MENU"
     ]
   },
-  "unique_tools_scenario_reviewed": 38,
+  "unique_tools_scenario_reviewed": 53,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
@@ -665,6 +751,6 @@
       "ReadTurboMCPPlayInputState",
       "EditTurboMCPPlayInput"
     ],
-    "limit": "Full-review count unchanged at 38/127. Actual OS switching, multiple players, chords and physical-device prompts remain unverified."
+    "limit": "Existing CommonUI review retained; global inventory is 142. OS switching, multiplayer, chords and physical-device prompts remain outside the tested scope."
   }
 }

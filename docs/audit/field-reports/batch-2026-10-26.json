@@ -52,19 +52,20 @@
     "X-99": "merge workflow umbrella"
   },
   "validation": {
-    "native": "PASS: build, Vision, PlayMenu, CommonPlay; run 34a5272de22a43f1bb3a53b97f8d4ea9",
+    "native": "PASS: final full-tool review run 94a7bbd49865482a81998f3d835c131b",
     "field": "pending",
     "tool_count": 142,
     "tool_count_meaning": "Declarations, not fully accepted tools.",
-    "offline": "24 checks passed in caa5cd184f184614ab9f91f2164cfc05; its two failures corrected: regenerated inventory validate-repo passes and explicit null-guard regression passes. Final character/encoding gate passes. Full offline suite not rerun after metadata refresh."
+    "offline": "PASS: 26/26, run f8900f6c6b9347af84c6584979237880 after full tool review"
   },
   "limits": [
     "No custom engine changes. Original user project/assets were unavailable.",
-    "Widget fixture copies one text widget and its Canvas slot; complex 11-widget hierarchy and project-specific classes remain field-unverified.",
+    "Eleven-widget Canvas subtree and text/slot preservation passed; project-specific custom classes remain field-unverified.",
     "Designer bindings refuse; animations are explicitly not copied. Text preservation covers direct, struct and array fields; text in map/set properties is not specifically validated.",
     "Whole-graph native fixture covers function locals and delegate-bearing event graph; standard macro transfer and cross-plugin calls still need broader field coverage.",
     "MenuActivate reports input pending, not a fabricated resulting screen; read state/capture after normal ticks.",
     "Unknown-name suggestions are source-reviewed only.",
     "These are implemented features with bounded evidence, not certification of every merge or every tool."
-  ]
+  ],
+  "full_tool_review": "docs/audit/oct26-tool-review.json"
 }

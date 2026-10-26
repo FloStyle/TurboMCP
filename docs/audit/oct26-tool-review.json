@@ -1,0 +1,366 @@
+{
+  "schema": 1,
+  "updated": "2026-10-26",
+  "candidate": "7c472e1358fb1b174a95515a01863513317fe5b2",
+  "native_run": "94a7bbd49865482a81998f3d835c131b",
+  "status": "scenario accepted",
+  "rule": "Ready for the bounded scenario and documented contract. This does not certify all inputs or all 142 tools.",
+  "fixes": [
+    "Individual parameter help and examples for all fifteen declarations, checked through the live help tool.",
+    "Repeated member preparation compares dispatcher signatures semantically, not by source/target generated-object identity.",
+    "Menu activation validates visible, enabled Slate ancestry before focus/input.",
+    "Executable Blueprint target validation and dispatcher failure guards.",
+    "Dispatcher result no longer refers to a nonexistent source asset."
+  ],
+  "tools": [
+    {
+      "tool": "PreviewTurboMCPInterfaceAdd",
+      "toolset": "TurboMCP.TurboMCPPreviewToolset",
+      "role": "Add a Blueprint interface contract and its required function declarations.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "No animation-layer interfaces; does not copy source logic. Field verification pending.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPPreviewToolset.PreviewTurboMCPInterfaceAdd\nkind: Preview   source: TurboMCP\nwhat: Add a Blueprint interface contract and its required function declarations.\nparameters: 2\n  asset: string [required] - Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.\n  interface: string [required] - Required compiled Blueprint interface asset path/name, such as /Game/Interfaces/BPI_Menu.BPI_Menu, or a Blueprint-implementable native /Script/Module.Interface class path.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "EditTurboMCPInterfaceAdd",
+      "toolset": "TurboMCP.TurboMCPEditToolset",
+      "role": "Add a Blueprint interface contract and its required function declarations.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "No animation-layer interfaces; does not copy source logic. Field verification pending.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPEditToolset.EditTurboMCPInterfaceAdd\nkind: Edit   source: TurboMCP\nwhat: Add a Blueprint interface contract and its required function declarations.\nparameters: 2\n  asset: string [required] - Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.\n  interface: string [required] - Required compiled Blueprint interface asset path/name, such as /Game/Interfaces/BPI_Menu.BPI_Menu, or a Blueprint-implementable native /Script/Module.Interface class path.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "PreviewTurboMCPInterfaceRemove",
+      "toolset": "TurboMCP.TurboMCPPreviewToolset",
+      "role": "Remove a directly implemented interface while keeping its function bodies as ordinary functions.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Preserves ordinary function bodies; callers may require repair. Confirmation is identity-based, not a stale-state lock.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPPreviewToolset.PreviewTurboMCPInterfaceRemove\nkind: Preview   source: TurboMCP\nwhat: Remove a directly implemented interface while keeping its function bodies as ordinary functions.\nparameters: 2\n  asset: string [required] - Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.\n  interface: string [required] - Required exact directly implemented interface class path, asset object path, or unique name. Inherited interfaces cannot be removed.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "EditTurboMCPInterfaceRemove",
+      "toolset": "TurboMCP.TurboMCPEditToolset",
+      "role": "Remove a directly implemented interface while keeping its function bodies as ordinary functions.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Preserves ordinary function bodies; callers may require repair. Confirmation is identity-based, not a stale-state lock.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPEditToolset.EditTurboMCPInterfaceRemove\nkind: Edit   source: TurboMCP\nwhat: Remove a directly implemented interface while keeping its function bodies as ordinary functions.\nparameters: 3\n  asset: string [required] - Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.\n  confirm: string [required] - Required exact confirmation value returned by PreviewTurboMCPInterfaceRemove for this asset/interface. Empty or different values refuse.\n  interface: string [required] - Required exact directly implemented interface class path, asset object path, or unique name. Inherited interfaces cannot be removed.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "PreviewTurboMCPLocalVariableAdd",
+      "toolset": "TurboMCP.TurboMCPPreviewToolset",
+      "role": "Declare a typed local variable in one function; do not create getter/setter nodes.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Owned functions only. Explicit object/class/container defaults are refused; graph assignments are separate.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPPreviewToolset.PreviewTurboMCPLocalVariableAdd\nkind: Preview   source: TurboMCP\nwhat: Declare a typed local variable in one function; do not create getter/setter nodes.\nparameters: 5\n  asset: string [required] - Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.\n  default: string [required] - Pass an empty string for the Unreal type default. Otherwise provide a schema-valid scalar/struct literal, for example 7 for int. Explicit object/class/container defaults refuse; assign them in graph logic.\n  function: string [required] - Required exact owned function graph name, for example CalculatePurchase. Event graphs, interface graphs and inherited functions are not accepted.\n  name: string [required] - Required identifier starting with a letter or underscore and containing only letters, digits or underscores. Must not conflict with parameters or members; None is reserved.\n  type: string [required] - Required shared Blueprint type syntax, for example int, float, vector, or object</Script/Engine.Actor>.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "EditTurboMCPLocalVariableAdd",
+      "toolset": "TurboMCP.TurboMCPEditToolset",
+      "role": "Declare a typed local variable in one function; do not create getter/setter nodes.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Owned functions only. Explicit object/class/container defaults are refused; graph assignments are separate.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPEditToolset.EditTurboMCPLocalVariableAdd\nkind: Edit   source: TurboMCP\nwhat: Declare a typed local variable in one function; do not create getter/setter nodes.\nparameters: 5\n  asset: string [required] - Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.\n  default: string [required] - Pass an empty string for the Unreal type default. Otherwise provide a schema-valid scalar/struct literal, for example 7 for int. Explicit object/class/container defaults refuse; assign them in graph logic.\n  function: string [required] - Required exact owned function graph name, for example CalculatePurchase. Event graphs, interface graphs and inherited functions are not accepted.\n  name: string [required] - Required identifier starting with a letter or underscore and containing only letters, digits or underscores. Must not conflict with parameters or members; None is reserved.\n  type: string [required] - Required shared Blueprint type syntax, for example int, float, vector, or object</Script/Engine.Actor>.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "PreviewTurboMCPDispatcherAdd",
+      "toolset": "TurboMCP.TurboMCPPreviewToolset",
+      "role": "Declare an event dispatcher with named, typed input parameters.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Creates a signature only. Runtime broadcasts/listener behavior and every container type are outside this fixture.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPPreviewToolset.PreviewTurboMCPDispatcherAdd\nkind: Preview   source: TurboMCP\nwhat: Declare an event dispatcher with named, typed input parameters.\nparameters: 3\n  asset: string [required] - Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.\n  inputs: string [required] - Required string: comma-separated Name:Type pairs. Use an empty string for no parameters. Example: Accepted:bool,Buyer:object</Script/Engine.Actor>. Parameter names must be distinct; nested container types use shared type syntax.\n  name: string [required] - Required unused member identifier, for example OnPurchase. Letters, digits and underscores only; start with a letter or underscore. None is reserved.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "EditTurboMCPDispatcherAdd",
+      "toolset": "TurboMCP.TurboMCPEditToolset",
+      "role": "Declare an event dispatcher with named, typed input parameters.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Creates a signature only. Runtime broadcasts/listener behavior and every container type are outside this fixture.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPEditToolset.EditTurboMCPDispatcherAdd\nkind: Edit   source: TurboMCP\nwhat: Declare an event dispatcher with named, typed input parameters.\nparameters: 3\n  asset: string [required] - Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.\n  inputs: string [required] - Required string: comma-separated Name:Type pairs. Use an empty string for no parameters. Example: Accepted:bool,Buyer:object</Script/Engine.Actor>. Parameter names must be distinct; nested container types use shared type syntax.\n  name: string [required] - Required unused member identifier, for example OnPurchase. Letters, digits and underscores only; start with a letter or underscore. None is reserved.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "PreviewTurboMCPMergeMembers",
+      "toolset": "TurboMCP.TurboMCPPreviewToolset",
+      "role": "Prepare missing member declarations before copying graph bodies between Blueprints.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Declarations only, not complete asset merge. A stock API failure after earlier writes may leave partial changes; output requires read-back.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPPreviewToolset.PreviewTurboMCPMergeMembers\nkind: Preview   source: TurboMCP\nwhat: Prepare missing member declarations before copying graph bodies between Blueprints.\nparameters: 2\n  sourceAsset: string [required] - Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.\n  targetAsset: string [required] - Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "EditTurboMCPMergeMembers",
+      "toolset": "TurboMCP.TurboMCPEditToolset",
+      "role": "Prepare missing member declarations before copying graph bodies between Blueprints.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Declarations only, not complete asset merge. A stock API failure after earlier writes may leave partial changes; output requires read-back.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPEditToolset.EditTurboMCPMergeMembers\nkind: Edit   source: TurboMCP\nwhat: Prepare missing member declarations before copying graph bodies between Blueprints.\nparameters: 2\n  sourceAsset: string [required] - Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.\n  targetAsset: string [required] - Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "PreviewTurboMCPGraphTransfer",
+      "toolset": "TurboMCP.TurboMCPPreviewToolset",
+      "role": "Copy one complete owned graph, including its nodes, connections, layout, comments and locals.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Owned function/local and delegate-bearing event graphs tested. Macro/library variants and all project-specific reference types remain outside this fixture.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPPreviewToolset.PreviewTurboMCPGraphTransfer\nkind: Preview   source: TurboMCP\nwhat: Copy one complete owned graph, including its nodes, connections, layout, comments and locals.\nparameters: 4\n  sourceAsset: string [required] - Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.\n  sourceGraph: string [required] - Required exact source function, interface-function, macro or event graph name. This selects the whole graph, not node IDs or an event label.\n  targetAsset: string [required] - Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.\n  targetGraph: string [required] - Pass an empty string to keep SourceGraph, or a valid destination identifier. Existing event/macro graphs refuse. An existing function must contain only entry/result nodes, no locals, and have a compiled compatible signature.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "EditTurboMCPGraphTransfer",
+      "toolset": "TurboMCP.TurboMCPEditToolset",
+      "role": "Copy one complete owned graph, including its nodes, connections, layout, comments and locals.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Owned function/local and delegate-bearing event graphs tested. Macro/library variants and all project-specific reference types remain outside this fixture.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPEditToolset.EditTurboMCPGraphTransfer\nkind: Edit   source: TurboMCP\nwhat: Copy one complete owned graph, including its nodes, connections, layout, comments and locals.\nparameters: 4\n  sourceAsset: string [required] - Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.\n  sourceGraph: string [required] - Required exact source function, interface-function, macro or event graph name. This selects the whole graph, not node IDs or an event label.\n  targetAsset: string [required] - Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.\n  targetGraph: string [required] - Pass an empty string to keep SourceGraph, or a valid destination identifier. Existing event/macro graphs refuse. An existing function must contain only entry/result nodes, no locals, and have a compiled compatible signature.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "PreviewTurboMCPWidgetSubtreeCopy",
+      "toolset": "TurboMCP.TurboMCPPreviewToolset",
+      "role": "Copy one widget and its descendants into another Widget Blueprint.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Eleven-widget Canvas subtree tested. Bindings refuse; animations not copied. Custom widget references and map/set text identities need separate evidence.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPPreviewToolset.PreviewTurboMCPWidgetSubtreeCopy\nkind: Preview   source: TurboMCP\nwhat: Copy one widget and its descendants into another Widget Blueprint.\nparameters: 4\n  parent: string [required] - Required string naming an existing target panel, such as RootCanvas. Pass an empty string only when the target widget tree is empty. A panel must have room; its class must match the source parent class when preserving the root slot.\n  sourceAsset: string [required] - Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.\n  sourceWidget: string [required] - Required exact designer object name, such as PurchasePanel. Use the widget-tree reader; this is not displayed text or a runtime PIE path.\n  targetAsset: string [required] - Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "EditTurboMCPWidgetSubtreeCopy",
+      "toolset": "TurboMCP.TurboMCPEditToolset",
+      "role": "Copy one widget and its descendants into another Widget Blueprint.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Eleven-widget Canvas subtree tested. Bindings refuse; animations not copied. Custom widget references and map/set text identities need separate evidence.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPEditToolset.EditTurboMCPWidgetSubtreeCopy\nkind: Edit   source: TurboMCP\nwhat: Copy one widget and its descendants into another Widget Blueprint.\nparameters: 4\n  parent: string [required] - Required string naming an existing target panel, such as RootCanvas. Pass an empty string only when the target widget tree is empty. A panel must have room; its class must match the source parent class when preserving the root slot.\n  sourceAsset: string [required] - Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.\n  sourceWidget: string [required] - Required exact designer object name, such as PurchasePanel. Use the widget-tree reader; this is not displayed text or a runtime PIE path.\n  targetAsset: string [required] - Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    },
+    {
+      "tool": "EditTurboMCPMenuActivate",
+      "toolset": "TurboMCP.TurboMCPEditToolset",
+      "role": "Request activation of one named runtime button through normal Slate input.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Single-player in-process PIE and bounded CommonUI fixture only. Reports pending delivery; screen change must be checked after frames.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MENU"
+      ],
+      "live_help": "read: TurboMCP.TurboMCPEditToolset.EditTurboMCPMenuActivate\nkind: Edit   source: TurboMCP\nwhat: Request activation of one named runtime button through normal Slate input.\nparameters: 2\n  target: string [required] - Required exact string pie:0. Standalone, multiplayer and other targets refuse.\n  widget: string [required] - Required exact runtime object path or unique object name from ReadTurboMCPPlayInputState. Not a designer name, display label, asset path or Slate ref. Prefer the complete runtime path when names repeat. Workflow: read current state, select its runtime button path, call once, allow normal frames for press/release, then read state and capture the viewport. A disabled/hidden/ambiguous button refuses. If focus moves but input fails, the error says so. Never retry blindly after an uncertain client outcome.\ntraps: none recorded for this tool. Notes were read from ../../../../Dev/worktrees/widget-roundtrip-review/TestProject/Config/TurboMCP/Traps.json."
+    }
+  ],
+  "offline": {
+    "run": "f8900f6c6b9347af84c6584979237880",
+    "result": "26/26 passed"
+  }
+}

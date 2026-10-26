@@ -1768,3 +1768,8 @@ Readiness: ready. Assignment oct26-tool-help: improve all recently added merge a
 ### Oct26 full new-tool review — ready
 
 Readiness: ready. Assignment oct26-tool-review supersedes the help-only task at user request. Review the 15 new interface/local/dispatcher/member/graph/subtree/menu declarations as complete tools: implementation, helpers, parameter help, plain English results, mutation/refusal semantics and native workflow assertions. Repair confirmed defects within the listed files. Use existing disposable Vision/CommonPlay scenarios; preserve the stock engine. Track each tool across workflows and update the distinct reviewed/declared count only for accepted scoped evidence.
+
+
+### Oct26 full-tool review — accepted in bounded workflows
+
+Fifteen new tools reviewed for behavior, code/helpers, English, results and live parameter help. Native run 94a7bbd49865482a81998f3d835c131b passed build, Vision, PlayMenu and CommonPlay. Fixed repeated dispatcher preparation and menu ancestor validation. Coverage is 53/142 distinct scenario-reviewed tools; see docs/audit/oct26-tool-review.json for individual limits. No new workflow test file was added; existing fixtures were strengthened.

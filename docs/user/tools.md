@@ -67,13 +67,13 @@ Generated from plugin declarations. For validation and compatibility limits, see
 
 | Function | Description |
 | --- | --- |
-| `PreviewTurboMCPInterfaceRemove` |  |
-| `PreviewTurboMCPDispatcherAdd` |  |
-| `PreviewTurboMCPMergeMembers` |  |
-| `PreviewTurboMCPGraphTransfer` |  |
-| `PreviewTurboMCPWidgetSubtreeCopy` |  |
-| `PreviewTurboMCPInterfaceAdd` | Preview adding an implemented interface on a Blueprint or Widget Blueprint |
-| `PreviewTurboMCPLocalVariableAdd` | Preview a typed local declaration in one owned function |
+| `PreviewTurboMCPInterfaceRemove` | Remove a directly implemented interface while keeping its function bodies as ordinary functions |
+| `PreviewTurboMCPDispatcherAdd` | Declare an event dispatcher with named, typed input parameters |
+| `PreviewTurboMCPMergeMembers` | Prepare missing member declarations before copying graph bodies between Blueprints |
+| `PreviewTurboMCPGraphTransfer` | Copy one complete owned graph, including its nodes, connections, layout, comments and locals |
+| `PreviewTurboMCPWidgetSubtreeCopy` | Copy one widget and its descendants into another Widget Blueprint |
+| `PreviewTurboMCPInterfaceAdd` | Add a Blueprint interface contract and its required function declarations |
+| `PreviewTurboMCPLocalVariableAdd` | Declare a typed local variable in one function; do not create getter/setter nodes |
 | `PreviewTurboMCPToolset` | Preview the size of this plugin's own tool help |
 | `PreviewTurboMCPEnumAdd` | Inspect a proposed new enum and check for an existing asset; does not create, compile or save an asset |
 | `PreviewTurboMCPVarsAdd` | Parse a variable creation request; may load referenced types but does not add variables, compile the target or save |
@@ -120,14 +120,14 @@ Generated from plugin declarations. For validation and compatibility limits, see
 
 | Function | Description |
 | --- | --- |
-| `EditTurboMCPInterfaceRemove` |  |
-| `EditTurboMCPMenuActivate` |  |
-| `EditTurboMCPDispatcherAdd` |  |
-| `EditTurboMCPMergeMembers` |  |
-| `EditTurboMCPGraphTransfer` |  |
-| `EditTurboMCPWidgetSubtreeCopy` |  |
-| `EditTurboMCPInterfaceAdd` | Add an implemented interface on a Blueprint or Widget Blueprint |
-| `EditTurboMCPLocalVariableAdd` | Add a typed local declaration in one owned function |
+| `EditTurboMCPInterfaceRemove` | Remove a directly implemented interface while keeping its function bodies as ordinary functions |
+| `EditTurboMCPMenuActivate` | Request activation of one named runtime button through normal Slate input |
+| `EditTurboMCPDispatcherAdd` | Declare an event dispatcher with named, typed input parameters |
+| `EditTurboMCPMergeMembers` | Prepare missing member declarations before copying graph bodies between Blueprints |
+| `EditTurboMCPGraphTransfer` | Copy one complete owned graph, including its nodes, connections, layout, comments and locals |
+| `EditTurboMCPWidgetSubtreeCopy` | Copy one widget and its descendants into another Widget Blueprint |
+| `EditTurboMCPInterfaceAdd` | Add a Blueprint interface contract and its required function declarations |
+| `EditTurboMCPLocalVariableAdd` | Declare a typed local variable in one function; do not create getter/setter nodes |
 | `EditTurboMCPPlayInput` | Execute bounded keyboard/gamepad input through Slate in live PIE. Runtime exception to asset-edit tools: runs game/UI code, no asset transaction/save/undo |
 | `ReadTurboMCPEditQueue` | Read whether the editor can accept a write right now |
 | `EditTurboMCPCompile` | Compile up to 25 named assets and report compiler and engine diagnostics; does not save |

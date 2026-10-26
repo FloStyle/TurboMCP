@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "workflow": "WF-BP-01-PURCHASE",
-  "updated": "2026-10-25",
+  "updated": "2026-10-26",
   "status": "getter stacking fixed; comment-crossing wire remains open",
   "ready": false,
   "scenario": "Correct a percent conversion in CalculatePurchase, introduce named locals for repeated arithmetic, tidy, comment and inspect the result.",
@@ -605,6 +605,321 @@
       "workflows": [
         "WF-UI-10-WIDGET-BINDING"
       ]
+    },
+    {
+      "tool": "PreviewTurboMCPInterfaceAdd",
+      "role": "Add a Blueprint interface contract and its required function declarations.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "No animation-layer interfaces; does not copy source logic. Field verification pending.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPInterfaceAdd",
+      "role": "Add a Blueprint interface contract and its required function declarations.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "No animation-layer interfaces; does not copy source logic. Field verification pending.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPInterfaceRemove",
+      "role": "Remove a directly implemented interface while keeping its function bodies as ordinary functions.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Preserves ordinary function bodies; callers may require repair. Confirmation is identity-based, not a stale-state lock.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPInterfaceRemove",
+      "role": "Remove a directly implemented interface while keeping its function bodies as ordinary functions.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Preserves ordinary function bodies; callers may require repair. Confirmation is identity-based, not a stale-state lock.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPLocalVariableAdd",
+      "role": "Declare a typed local variable in one function; do not create getter/setter nodes.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Owned functions only. Explicit object/class/container defaults are refused; graph assignments are separate.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPLocalVariableAdd",
+      "role": "Declare a typed local variable in one function; do not create getter/setter nodes.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Owned functions only. Explicit object/class/container defaults are refused; graph assignments are separate.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPDispatcherAdd",
+      "role": "Declare an event dispatcher with named, typed input parameters.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Creates a signature only. Runtime broadcasts/listener behavior and every container type are outside this fixture.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPDispatcherAdd",
+      "role": "Declare an event dispatcher with named, typed input parameters.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Creates a signature only. Runtime broadcasts/listener behavior and every container type are outside this fixture.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPMergeMembers",
+      "role": "Prepare missing member declarations before copying graph bodies between Blueprints.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Declarations only, not complete asset merge. A stock API failure after earlier writes may leave partial changes; output requires read-back.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPMergeMembers",
+      "role": "Prepare missing member declarations before copying graph bodies between Blueprints.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Declarations only, not complete asset merge. A stock API failure after earlier writes may leave partial changes; output requires read-back.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPGraphTransfer",
+      "role": "Copy one complete owned graph, including its nodes, connections, layout, comments and locals.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Owned function/local and delegate-bearing event graphs tested. Macro/library variants and all project-specific reference types remain outside this fixture.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPGraphTransfer",
+      "role": "Copy one complete owned graph, including its nodes, connections, layout, comments and locals.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Owned function/local and delegate-bearing event graphs tested. Macro/library variants and all project-specific reference types remain outside this fixture.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPWidgetSubtreeCopy",
+      "role": "Copy one widget and its descendants into another Widget Blueprint.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Eleven-widget Canvas subtree tested. Bindings refuse; animations not copied. Custom widget references and map/set text identities need separate evidence.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPWidgetSubtreeCopy",
+      "role": "Copy one widget and its descendants into another Widget Blueprint.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Eleven-widget Canvas subtree tested. Bindings refuse; animations not copied. Custom widget references and map/set text identities need separate evidence.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MERGE"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPMenuActivate",
+      "role": "Request activation of one named runtime button through normal Slate input.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow, not every supported input or project.",
+      "behavior": "Native intended operation, relevant refusal/no-op checks and source/target assertions passed in the linked workflow.",
+      "review": "Implementation, shared helpers, mutation boundaries, null checks, English help and result claims reviewed; actual registered parameter descriptions verified.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified for every parameter",
+        "outputs": "reviewed against observed results",
+        "code_and_helpers": "reviewed; confirmed defects repaired",
+        "workflow": "passed"
+      },
+      "remaining": "Single-player in-process PIE and bounded CommonUI fixture only. Reports pending delivery; screen change must be checked after frames.",
+      "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
+      "workflows": [
+        "WF-OCT26-MENU"
+      ]
     }
   ],
   "evidence": [
@@ -682,9 +997,9 @@
     "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
-    "scenario_reviewed": 38,
-    "inventory": 125,
-    "meaning": "Bounded workflow review, not global validation of every tool path."
+    "scenario_reviewed": 53,
+    "inventory": 142,
+    "meaning": "Distinct tools with bounded workflow reviews; not exhaustive certification."
   },
   "workflow_coverage": "docs/audit/workflow-tool-coverage.json",
   "quality_acceptance": [

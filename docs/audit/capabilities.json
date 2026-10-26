@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "30ea9a223f5e760407b837edb724f277ad6281c9",
+  "plugin_tree": "a69e380aac677a770442bc84d4b5d8a8174edb70",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 142,
@@ -273,7 +273,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 317
+          "line": 340
         }
       ],
       "test_references": [],
@@ -800,7 +800,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 321
+          "line": 344
         }
       ],
       "test_references": [],
@@ -1002,11 +1002,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
-          "line": 236
+          "line": 251
         }
       ],
-      "test_references": [],
-      "static_call_evidence": "missing",
+      "test_references": [
+        "Tools/test-vision-workflow.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1023,7 +1025,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 319
+          "line": 342
         }
       ],
       "test_references": [],
@@ -1118,7 +1120,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
-          "line": 186
+          "line": 187
         }
       ],
       "test_references": [],
@@ -1368,7 +1370,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 323
+          "line": 346
         }
       ],
       "test_references": [],
@@ -1745,7 +1747,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 316
+          "line": 339
         }
       ],
       "test_references": [],
@@ -2245,7 +2247,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 320
+          "line": 343
         }
       ],
       "test_references": [],
@@ -2423,7 +2425,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 318
+          "line": 341
         }
       ],
       "test_references": [],
@@ -2661,7 +2663,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 322
+          "line": 345
         }
       ],
       "test_references": [],
@@ -3279,7 +3281,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
-          "line": 265
+          "line": 280
         }
       ],
       "test_references": [],
@@ -3377,7 +3379,8 @@
       ],
       "test_references": [
         "Tools/test-agent-help.py",
-        "Tools/test-tool-text-inventory.py"
+        "Tools/test-tool-text-inventory.py",
+        "Tools/test-vision-workflow.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
