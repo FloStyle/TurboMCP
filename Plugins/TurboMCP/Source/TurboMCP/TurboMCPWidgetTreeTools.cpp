@@ -19,6 +19,10 @@
 #include "Components/Widget.h"
 #include "Components/PanelWidget.h"
 #include "Components/PanelSlot.h"
+#include "UObject/UnrealType.h"
+#include "Misc/OutputDevice.h"
+#include "ScopedTransaction.h"
+#include "Misc/ScopeExit.h"
 #include "Kismet2/Kismet2NameValidators.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Animation/WidgetAnimation.h"
@@ -265,4 +269,129 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPWidgetAdd(const FString& Asset, 
 FString UTurboMCPEditToolset::EditTurboMCPWidgetAdd(const FString& Asset, const FString& Parent, const FString& WidgetClass, const FString& Name)
 {
     return AddDesignerWidget(Asset, Parent, WidgetClass, Name, true);
+}
+
+namespace
+{
+// Deliberately exclude reference-bearing data and localized text: this operation
+// changes layout values, not object ownership, delegates or localization identity.
+bool IsWidgetValueType(const FProperty* Property, int32 Depth = 0)
+{
+    if (!Property || Property->ArrayDim != 1 || Depth > 12) return false;
+    if (const FStructProperty* Struct = CastField<FStructProperty>(Property))
+    {
+        for (TFieldIterator<FProperty> It(Struct->Struct); It; ++It)
+            if (!IsWidgetValueType(*It, Depth + 1)) return false;
+        return true;
+    }
+    return CastField<FNumericProperty>(Property) || CastField<FBoolProperty>(Property) ||
+        CastField<FEnumProperty>(Property) || CastField<FStrProperty>(Property) || CastField<FNameProperty>(Property);
+}
+
+bool IsEditableWidgetValue(const FProperty* Property)
+{
+    return Property && Property->HasAnyPropertyFlags(CPF_Edit) &&
+        !Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnTemplate | CPF_Transient) &&
+        Property->GetFName() != TEXT("bIsVariable") && IsWidgetValueType(Property);
+}
+
+bool IsFiniteWidgetValue(const FProperty* Property, const void* Value)
+{
+    if (const FNumericProperty* Number = CastField<FNumericProperty>(Property))
+        if (Number->IsFloatingPoint()) return FMath::IsFinite(Number->GetFloatingPointPropertyValue(Value));
+    if (const FStructProperty* Struct = CastField<FStructProperty>(Property))
+        for (TFieldIterator<FProperty> It(Struct->Struct); It; ++It)
+            if (!IsFiniteWidgetValue(*It, It->ContainerPtrToValuePtr<void>(Value))) return false;
+    return true;
+}
+
+struct FWidgetImportErrors : FOutputDevice
+{
+    FString Message;
+    virtual void Serialize(const TCHAR* Text, ELogVerbosity::Type Verbosity, const FName& Category) override
+    {
+        if (!Message.IsEmpty()) Message += TEXT("; ");
+        Message += Text;
+    }
+};
+
+FString WidgetPropertyOperation(const FString& Asset, const FString& Widget, const FString& Target,
+    const FString& PropertyName, const FString* Input, bool bApply)
+{
+    if (!IsInGameThread() || !GEditor || (Input && (!GEditor->CanTransact() || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())))
+        return TEXT("error: Property writes and previews require an idle editor outside PIE and transactions. Nothing changed.");
+    FTurboMCPAssetResolver::FResolved Resolved;
+    const FString Error = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+    if (!Error.IsEmpty()) return Error;
+    UWidgetBlueprint* Blueprint = LoadObject<UWidgetBlueprint>(nullptr, *Resolved.ObjectPath);
+    if (!Blueprint || !Blueprint->WidgetTree) return TEXT("error: Asset must be a Widget Blueprint with a widget tree.");
+    UWidget* Item = Blueprint->WidgetTree->FindWidget(FName(*Widget.TrimStartAndEnd()));
+    if (!Item) return TEXT("error: Widget not found. Use ReadTurboMCPWidgetTree for its exact designer object name.");
+    const FString TargetName = Target.TrimStartAndEnd().ToLower();
+    if (TargetName != TEXT("widget") && TargetName != TEXT("slot")) return TEXT("error: Target must be widget or slot.");
+    UObject* Object = TargetName == TEXT("slot") ? static_cast<UObject*>(Item->Slot.Get()) : Item;
+    if (!Object) return TEXT("error: This widget has no parent slot. Select Target=widget or choose a child widget.");
+    const FString Requested = PropertyName.TrimStartAndEnd();
+    if (Requested.IsEmpty() && Input) return TEXT("error: Property is required for a write. Read properties first; empty never means all properties.");
+    auto Export = [Object](const FProperty* Property, const void* Value)
+    {
+        FString Text;
+        Property->ExportTextItem_Direct(Text, Value, nullptr, Object, PPF_None);
+        return Text;
+    };
+    const FString Identity = FString::Printf(TEXT("asset: %s\nwidget: %s\ntarget: %s\nclass: %s"), *Resolved.ObjectPath, *Item->GetName(), *TargetName, *Object->GetClass()->GetPathName());
+    if (Requested.IsEmpty())
+    {
+        TArray<FString> Lines;
+        for (TFieldIterator<FProperty> It(Object->GetClass()); It; ++It)
+            if (IsEditableWidgetValue(*It))
+                Lines.Add(FString::Printf(TEXT("%s [%s] = %s"), *It->GetName(), *It->GetCPPType(), *Export(*It, It->ContainerPtrToValuePtr<void>(Object))));
+        Lines.Sort();
+        return TEXT("read: Supported editable value properties.\n") + Identity + TEXT("\n") + FString::Join(Lines, TEXT("\n")) + TEXT("\nValues use Unreal property text, not JSON. Objects, containers, delegates and localized text are omitted; this is not a full object export.");
+    }
+    FProperty* Property = FindFProperty<FProperty>(Object->GetClass(), FName(*Requested));
+    if (!IsEditableWidgetValue(Property))
+        return TEXT("error: Property is missing, read-only or outside supported value types. Use ReadTurboMCPWidgetProperty with empty Property to list supported names. Nothing changed.");
+    void* Live = Property->ContainerPtrToValuePtr<void>(Object);
+    const FString Before = Export(Property, Live);
+    const FString Header = Identity + FString::Printf(TEXT("\nproperty: %s\ntype: %s"), *Property->GetName(), *Property->GetCPPType());
+    if (!Input) return TEXT("read: Widget property.\n") + Header + TEXT("\nvalue: ") + Before;
+    if (Input->Len() > 65536) return TEXT("error: Value exceeds 65536 characters. Nothing changed.");
+    // Import into an initialized copy. Incomplete structs retain unspecified fields.
+    void* Temporary = FMemory::Malloc(Property->GetSize(), Property->GetMinAlignment());
+    Property->InitializeValue(Temporary);
+    ON_SCOPE_EXIT { Property->DestroyValue(Temporary); FMemory::Free(Temporary); };
+    Property->CopyCompleteValue(Temporary, Live);
+    FWidgetImportErrors Errors;
+    const TCHAR* End = Property->ImportText_Direct(**Input, Temporary, Object, PPF_None, &Errors);
+    if (!End || !FString(End).TrimStartAndEnd().IsEmpty() || !Errors.Message.IsEmpty() || !IsFiniteWidgetValue(Property, Temporary))
+        return TEXT("error: Value could not be read completely as the property's Unreal text type, or contains a non-finite number. Nothing changed. Read the current value for its format. ") + Errors.Message;
+    const FString Proposed = Export(Property, Temporary);
+    if (!bApply) return TEXT("preview: Property value only; nothing changed.\n") + Header + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed + TEXT("\nEdit reparses against current state. Compile/save are separate.");
+    if (Property->Identical(Live, Temporary)) return TEXT("unchanged: Property already has the requested value.\n") + Header + TEXT("\nvalue: ") + Before;
+    const FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "WidgetProperty", "Set widget property"));
+    Blueprint->Modify();
+    Object->SetFlags(RF_Transactional);
+    Object->Modify();
+    Object->PreEditChange(Property);
+    Property->CopyCompleteValue(Live, Temporary);
+    FPropertyChangedEvent Changed(Property, EPropertyChangeType::ValueSet);
+    Object->PostEditChangeProperty(Changed);
+    FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+    const FString After = Export(Property, Property->ContainerPtrToValuePtr<void>(Object));
+    return TEXT("edited: Property updated; current value read back after editor notification.\n") + Header + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + After + TEXT("\nNative property-change hooks may run. This does not prove rendered layout or runtime behavior. No compile or save was requested.");
+}
+}
+
+FString UTurboMCPReadToolset::ReadTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property)
+{
+    return WidgetPropertyOperation(Asset, Widget, Target, Property, nullptr, false);
+}
+FString UTurboMCPPreviewToolset::PreviewTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property, const FString& Value)
+{
+    return WidgetPropertyOperation(Asset, Widget, Target, Property, &Value, false);
+}
+FString UTurboMCPEditToolset::EditTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property, const FString& Value)
+{
+    return WidgetPropertyOperation(Asset, Widget, Target, Property, &Value, true);
 }

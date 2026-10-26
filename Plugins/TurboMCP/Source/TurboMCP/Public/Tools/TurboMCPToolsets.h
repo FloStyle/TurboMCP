@@ -437,6 +437,17 @@ public:
 		int32 Cap);
 
 	/**
+     * Read supported widget or slot value properties without explicitly editing, compiling or saving.
+     * Supports editable scalar values and structs composed of those values. Objects, containers, delegates, localized text and ownership fields are not supported. Writes parse into temporary storage before mutation. Preview does not change the object; edit uses a transaction and native property-change notification. Compile/save are separate; rendered/runtime behavior is not verified.
+     * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu.
+     * @param Widget Required designer object name from ReadTurboMCPWidgetTree, not display text or a runtime instance path.
+     * @param Target Required widget or slot. Slot means the named widget's parent slot; a root without a slot refuses.
+     * @param Property Exact supported property name, or empty to list supported names, types and current values.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString ReadTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property);
+
+    /**
 	 * Inspect selected Widget Blueprint hierarchy data; loads the asset without explicitly editing, compiling or saving it. This is not a complete or lossless export.
 	 * Reports names, classes, paths, variable flags, non-default visibility and selected padding. Panel children retain slot order; this alone does not establish visual draw order. Common Button context adds the assigned style class and inherited hover-event names as inspection comments; style values and runtime overrides remain omitted. Other properties, bindings and animations are omitted. Do not assume write-back preserves omitted state.
 	 * @param Asset Required Widget Blueprint path or unique short name, e.g. /Game/Tests/WBP_NodeTest. Empty, unresolved or non-widget assets are refused. A widget without a root returns an explicit no-root result.
@@ -664,6 +675,18 @@ public:
      */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphTransfer(const FString& SourceAsset, const FString& SourceGraph, const FString& TargetAsset, const FString& TargetGraph);
+    /**
+     * Validate and preview one widget or parent-slot value property; returns before/after values.
+     * Supports editable scalar values and structs composed of those values. Objects, containers, delegates, localized text and ownership fields are not supported. Writes parse into temporary storage before mutation. Preview does not change the object; edit uses a transaction and native property-change notification. Compile/save are separate; rendered/runtime behavior is not verified.
+     * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu.
+     * @param Widget Required designer object name from ReadTurboMCPWidgetTree, not display text or a runtime instance path.
+     * @param Target Required widget or slot. Slot means the named widget's parent slot; a root without a slot refuses.
+     * @param Property Required exact supported property name from ReadTurboMCPWidgetProperty; no dotted paths. Example: Visibility or LayoutData.
+     * @param Value Required Unreal property text, not JSON; use the reader value as a template. Examples: Hidden for Visibility, True for bAutoSize, (Offsets=(Left=12,Top=20,Right=320,Bottom=80)) for canvas LayoutData. Unspecified struct fields retain current values. Invalid/trailing text and non-finite numbers refuse. Maximum 65536 characters. Writes/previews require an idle editor outside PIE.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property, const FString& Value);
+
     /**
      * Preview adding a designer widget; loads classes but constructs no widget and makes no explicit edit.
      * Requires an idle editor outside PIE. Refuses missing/full parents, name conflicts and circular widget dependencies. Native construction/palette hooks and structural refresh may run on edit; loaded dependent Blueprints may be affected. No full compile or save is requested. Read back, configure layout separately and compile before saving.
@@ -1503,6 +1526,18 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
+
+    /**
+     * Validate and set one widget or parent-slot value property; returns before/after values.
+     * Supports editable scalar values and structs composed of those values. Objects, containers, delegates, localized text and ownership fields are not supported. Writes parse into temporary storage before mutation. Preview does not change the object; edit uses a transaction and native property-change notification. Compile/save are separate; rendered/runtime behavior is not verified.
+     * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu.
+     * @param Widget Required designer object name from ReadTurboMCPWidgetTree, not display text or a runtime instance path.
+     * @param Target Required widget or slot. Slot means the named widget's parent slot; a root without a slot refuses.
+     * @param Property Required exact supported property name from ReadTurboMCPWidgetProperty; no dotted paths. Example: Visibility or LayoutData.
+     * @param Value Required Unreal property text, not JSON; use the reader value as a template. Examples: Hidden for Visibility, True for bAutoSize, (Offsets=(Left=12,Top=20,Right=320,Bottom=80)) for canvas LayoutData. Unspecified struct fields retain current values. Invalid/trailing text and non-finite numbers refuse. Maximum 65536 characters. Writes/previews require an idle editor outside PIE.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property, const FString& Value);
 
     /**
      * Add one designer widget at the end of a named panel using Unreal's palette operation. Uses class defaults and a default parent slot.

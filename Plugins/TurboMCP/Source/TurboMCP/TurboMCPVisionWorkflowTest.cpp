@@ -8,6 +8,7 @@
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/TextBlock.h"
+#include "Components/SizeBox.h"
 #include "Components/Button.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraphUtilities.h"
@@ -445,6 +446,32 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  TestNotNull(TEXT("Native child has requested class"),Cast<UTextBlock>(WidgetTarget->WidgetTree->FindWidget(TEXT("AddedNativeText"))));
  Record(TEXT("Compile native widget addition"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));TestTrue(TEXT("Native addition compiles"),WidgetTarget->Status!=BS_Error);
 
+ const FString PropertyList=Record(TEXT("Widget property list"),UTurboMCPReadToolset::ReadTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("AddedNativeText"),TEXT("widget"),TEXT("")));
+ TestTrue(TEXT("Property reader exposes visibility"),PropertyList.Contains(TEXT("Visibility")));
+ UWidget* PropertyWidget=WidgetTarget->WidgetTree->FindWidget(TEXT("AddedNativeText"));
+ const ESlateVisibility OldVisibility=PropertyWidget->GetVisibility();
+ TestTrue(TEXT("Property preview accepted"),Record(TEXT("Property preview"),UTurboMCPPreviewToolset::PreviewTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("AddedNativeText"),TEXT("widget"),TEXT("Visibility"),TEXT("Hidden"))).StartsWith(TEXT("preview:")));
+ TestEqual(TEXT("Property preview preserves value"),PropertyWidget->GetVisibility(),OldVisibility);
+ TestTrue(TEXT("Visibility write accepted"),Record(TEXT("Property edit"),UTurboMCPEditToolset::EditTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("AddedNativeText"),TEXT("widget"),TEXT("Visibility"),TEXT("Hidden"))).StartsWith(TEXT("edited:")));
+ TestEqual(TEXT("Visibility actually changed"),PropertyWidget->GetVisibility(),ESlateVisibility::Hidden);
+ TestTrue(TEXT("Property readback matches"),UTurboMCPReadToolset::ReadTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("AddedNativeText"),TEXT("widget"),TEXT("Visibility")).Contains(TEXT("Hidden")));
+ TestTrue(TEXT("Invalid enum refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("AddedNativeText"),TEXT("widget"),TEXT("Visibility"),TEXT("NotAVisibility")).StartsWith(TEXT("error:")));
+ TestEqual(TEXT("Invalid value preserves property"),PropertyWidget->GetVisibility(),ESlateVisibility::Hidden);
+ TestTrue(TEXT("Slot layout accepted"),Record(TEXT("Slot layout edit"),UTurboMCPEditToolset::EditTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("AddedNativeText"),TEXT("slot"),TEXT("LayoutData"),TEXT("(Offsets=(Left=12,Top=20,Right=320,Bottom=80))"))).StartsWith(TEXT("edited:")));
+ UCanvasPanelSlot* PropertySlot=Cast<UCanvasPanelSlot>(PropertyWidget->Slot);
+ if(TestNotNull(TEXT("Property canvas slot"),PropertySlot)){TestEqual(TEXT("Slot position readback"),PropertySlot->GetPosition(),FVector2D(12,20));TestEqual(TEXT("Slot size readback"),PropertySlot->GetSize(),FVector2D(320,80));}
+ TestTrue(TEXT("Repeated property is no-op"),UTurboMCPEditToolset::EditTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("AddedNativeText"),TEXT("widget"),TEXT("Visibility"),TEXT("Hidden")).StartsWith(TEXT("unchanged:")));
+ TestTrue(TEXT("Trailing value text refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("AddedNativeText"),TEXT("widget"),TEXT("Visibility"),TEXT("Hidden garbage")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Object ownership property refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("AddedNativeText"),TEXT("widget"),TEXT("Slot"),TEXT("None")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Text padding edit accepted"),Record(TEXT("Padding edit"),UTurboMCPEditToolset::EditTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("AddedNativeText"),TEXT("widget"),TEXT("Margin"),TEXT("(Left=4,Top=8,Right=12,Bottom=16)"))).StartsWith(TEXT("edited:")));
+ FStructProperty* MarginProperty=FindFProperty<FStructProperty>(PropertyWidget->GetClass(),TEXT("Margin"));
+ if(TestNotNull(TEXT("Margin property exists"),MarginProperty))TestTrue(TEXT("Text padding readback"),*MarginProperty->ContainerPtrToValuePtr<FMargin>(PropertyWidget)==FMargin(4,8,12,16));
+ TestTrue(TEXT("SizeBox fixture added"),UTurboMCPEditToolset::EditTurboMCPWidgetAdd(WidgetTarget->GetPathName(),CopiedPanel->GetName(),TEXT("/Script/UMG.SizeBox"),TEXT("PropertySizeBox")).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Width edit accepted"),Record(TEXT("Width override"),UTurboMCPEditToolset::EditTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("PropertySizeBox"),TEXT("widget"),TEXT("WidthOverride"),TEXT("240"))).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Width flag accepted"),UTurboMCPEditToolset::EditTurboMCPWidgetProperty(WidgetTarget->GetPathName(),TEXT("PropertySizeBox"),TEXT("widget"),TEXT("bOverride_WidthOverride"),TEXT("True")).StartsWith(TEXT("edited:")));
+ USizeBox* PropertySizeBox=Cast<USizeBox>(WidgetTarget->WidgetTree->FindWidget(TEXT("PropertySizeBox")));
+ if(TestNotNull(TEXT("SizeBox exists"),PropertySizeBox))TestEqual(TEXT("Width readback"),PropertySizeBox->GetWidthOverride(),240.f);
+ Record(TEXT("Compile property edits"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));TestTrue(TEXT("Property edits compile"),WidgetTarget->Status!=BS_Error);
  for(const FString Size:{FString(TEXT("640x240")),FString(TEXT("1920x720"))})ImageCheck(Record(TEXT("Widget preview ")+Size,UTurboMCPLookToolset::LookTurboMCPWidgetPreview(WB->GetPathName(),TEXT(""),TEXT(""),Size,TEXT("allow"))));
  UMaterial* Material=NewObject<UMaterial>(Package,TEXT("M_Vision"),RF_Public|RF_Standalone);
  auto* Color=NewObject<UMaterialExpressionConstant3Vector>(Material);Color->Constant=FLinearColor(0.1f,0.6f,0.2f);Material->GetExpressionCollection().AddExpression(Color);Material->GetEditorOnlyData()->BaseColor.Expression=Color;Color->MaterialExpressionEditorX=-900; Color->MaterialExpressionEditorY=400; Material->EditorX=300; Material->EditorY=0; Material->PostEditChange();
