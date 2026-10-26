@@ -9,6 +9,7 @@
 
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
+#include "EdGraph/EdGraphPin.h"
 #include "Math/NumericLimits.h"
 #include "TurboMCPNodeId.h"
 
@@ -158,6 +159,58 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                     { Attachment = Node; AttachmentForm = Link.FromFormIndex; bDataAttachment = true; break; }
                 if (Attachment) break;
             }
+    // A single inserted execution node should use the available gap in its own
+    // flow before the general block layout searches below unrelated events.
+    // Existing nodes remain fixed. If no local slot fits, retain the general fallback.
+    if (Attachment && !bDataAttachment && CreatedCount == 1 && InLinks)
+    {
+        const UEdGraphNode* Consumer = nullptr;
+        for (const FNewLink& Link : *InLinks)
+            if (Link.FromFormIndex == INDEX_NONE && Link.ToFormIndex == AttachmentForm)
+                for (const UEdGraphPin* Pin : Attachment->Pins)
+                    if (Pin && Pin->Direction == EGPD_Output && Pin->PinName.ToString() == Link.FromPin
+                        && Pin->PinType.PinCategory == TEXT("exec") && Pin->LinkedTo.Num() == 1 && Pin->LinkedTo[0])
+                        Consumer = Pin->LinkedTo[0]->GetOwningNode();
+        if (Consumer && Consumer != Attachment)
+        {
+            const int64 MinX = int64(Attachment->NodePosX) + (Attachment->NodeWidth > 0 ? Attachment->NodeWidth : PlacementWidth) + 32;
+            const int64 MaxX = int64(Consumer->NodePosX) - CellWidth - 32;
+            if (MinX <= MaxX)
+            {
+                const int64 PreferredX = MinX + (MaxX - MinX) / 2;
+                const int64 PreferredY = Attachment->NodePosY;
+                bool Found = false;
+                int64 BestX = 0, BestY = 0, BestScore = MAX_int64;
+                for (int64 CandidateX : {PreferredX, MinX, MaxX})
+                    for (int32 Row = -4; Row <= 4; ++Row)
+                    {
+                        const int64 CandidateY = PreferredY + int64(Row) * 64;
+                        if (!FitsCoordinate(CandidateX) || !FitsCoordinate(CandidateX + CellWidth)
+                            || !FitsCoordinate(CandidateY) || !FitsCoordinate(CandidateY + CellHeight)) continue;
+                        bool Clear = true;
+                        for (const UEdGraphNode* Node : InGraph->Nodes)
+                        {
+                            if (!Node) continue;
+                            const int64 W = Node->NodeWidth > 0 ? Node->NodeWidth : PlacementWidth;
+                            const int64 H = Node->NodeHeight > 0 ? Node->NodeHeight : PlacementHeight;
+                            if (CandidateX < int64(Node->NodePosX) + W + 16 && CandidateX + CellWidth + 16 > Node->NodePosX
+                                && CandidateY < int64(Node->NodePosY) + H + 16 && CandidateY + CellHeight + 16 > Node->NodePosY)
+                            { Clear = false; break; }
+                        }
+                        const int64 Score = FMath::Abs(CandidateY - PreferredY) * 4 + FMath::Abs(CandidateX - PreferredX);
+                        if (Clear && Score < BestScore) { Found = true; BestX = CandidateX; BestY = CandidateY; BestScore = Score; }
+                    }
+                if (Found)
+                {
+                    FPlannedPosition Position;
+                    Position.FormIndex = AttachmentForm; Position.X = int32(BestX); Position.Y = int32(BestY);
+                    Position.bEstimatedSize = InNodes[AttachmentForm].MeasuredWidth <= 0 || InNodes[AttachmentForm].MeasuredHeight <= 0;
+                    OutPositions.Add(Position);
+                    return true;
+                }
+            }
+        }
+    }
     if (Attachment && InLinks)
     {
         TArray<int32> Degree, Depth, Lane, Order;

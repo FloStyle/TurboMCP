@@ -221,10 +221,16 @@ bool FTurboMCPEventConnectWorkflowTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Explicit guard continuation accepted during placement planning"), GuardPreview.Contains(TEXT("refused:")) || GuardPreview.StartsWith(TEXT("error:")));
     TestEqual(TEXT("Guard preview preserves graph"), Snapshot(), GuardBefore);
     TestEqual(TEXT("Guard preview preserves dirty state"), Package->IsDirty(), GuardDirtyBefore);
+    TMap<UEdGraphNode*, FIntPoint> BeforeGuardPositions;
+    for (UEdGraphNode* N : Graph->Nodes) BeforeGuardPositions.Add(N, FIntPoint(N->NodePosX, N->NodePosY));
     const FString GuardEdit = Record(TEXT("Guard edit"), UTurboMCPEditToolset::EditTurboMCPGraphAppend(Asset, GraphName, GuardText, TEXT("Guard:else")));
     TestTrue(TEXT("Guard edit reports changed"), GuardEdit.StartsWith(TEXT("changed")));
     UK2Node_IfThenElse* Guard = EntryExec->LinkedTo.Num() == 1 ? Cast<UK2Node_IfThenElse>(EntryExec->LinkedTo[0]->GetOwningNode()) : nullptr;
     if (!TestNotNull(TEXT("Entry now reaches Branch"), Guard)) return false;
+    TestTrue(TEXT("Guard stays in its own execution row"), FMath::Abs(Guard->NodePosY - EntryExec->GetOwningNode()->NodePosY) <= 64);
+    TestTrue(TEXT("Guard is between execution endpoints"), Guard->NodePosX > EntryExec->GetOwningNode()->NodePosX && Guard->NodePosX < Purchase->NodePosX);
+    for (const auto& Position : BeforeGuardPositions)
+        TestEqual(TEXT("Guard insertion preserves existing positions"), FIntPoint(Position.Key->NodePosX, Position.Key->NodePosY), Position.Value);
     TestTrue(TEXT("Only else continues old flow"), Guard->FindPinChecked(TEXT("else"))->LinkedTo.Contains(PurchaseExec) && Guard->FindPinChecked(TEXT("then"))->LinkedTo.IsEmpty());
     Record(TEXT("EditTurboMCPCompile"), UTurboMCPEditToolset::EditTurboMCPCompile(Asset));
     if (!TestTrue(TEXT("Blueprint compiles"), BP->Status != BS_Error && BP->GeneratedClass != nullptr)) return false;
