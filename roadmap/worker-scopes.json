@@ -2379,6 +2379,22 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "oct26-tool-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp",
+            "Tools/test-vision-workflow.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayViewport.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

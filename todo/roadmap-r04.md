@@ -1763,3 +1763,8 @@ termination based on stale parent-PID ancestry after a crash.
 ### Oct26 tool-help clarification — ready
 
 Readiness: ready. Assignment oct26-tool-help: improve all recently added merge and menu tool descriptions, every parameter, valid examples, refusal conditions, side effects and next steps against implementation. Documentation only; do not change tool behavior. Regenerate reference and inventory during integration. Check parameter coverage and repository structure.
+
+
+### Oct26 full new-tool review — ready
+
+Readiness: ready. Assignment oct26-tool-review supersedes the help-only task at user request. Review the 15 new interface/local/dispatcher/member/graph/subtree/menu declarations as complete tools: implementation, helpers, parameter help, plain English results, mutation/refusal semantics and native workflow assertions. Repair confirmed defects within the listed files. Use existing disposable Vision/CommonPlay scenarios; preserve the stock engine. Track each tool across workflows and update the distinct reviewed/declared count only for accepted scoped evidence.
