@@ -2449,6 +2449,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPurchaseWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "oct26-log-unavailable": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallTimeline.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelHistoryTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
