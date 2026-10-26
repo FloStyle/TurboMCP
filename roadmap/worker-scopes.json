@@ -2423,6 +2423,18 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "oct26-report-stability": {
+          "files": [
+            "Tools/validate-repo.py",
+            "Tools/export-public.py",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphScratch.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/LICENSE"
+          ]
         }
       },
       "preserve_rows": []

@@ -1785,3 +1785,7 @@ Readiness: ready. Add explicit refit action requiring a box and node list, movin
 ### FT-112 per-user enable switch — priority first
 
 Readiness: ready. Implement Editor Preferences / Plugins / TurboMCP using EditorPerProjectUserSettings, not shared default config. Enable TurboMCP defaults true and explicitly requires restart. Latch activation at module startup; disabled startup installs no panel, registry tools, recording/analytics, focus guard or safety filters. Keep engine MCP and unrelated toolsets unchanged. Move the call-log preference to the same per-user store. Status reports current activation and pending preference; when disabled, status itself is intentionally not exposed. Verify build, settings metadata and enabled workflow; record any disabled-startup runtime verification limitation.
+
+### Oct26 report stability batch
+
+Readiness: ready. X-102: copy canonical root license into installable plugin; require matching license in offline validation and export staged blobs. FT-111 notice/provenance audit remains separate. X-103: retire scratch Blueprint owners at scope exit without touching shared generated classes or forcing global GC; stock PlayLevel.cpp ignores invalid Blueprints. X-104: transfer edit output must include fresh target node IDs and a source-to-target map after structural refresh. Preserve source and preview IDs. Add focused existing native Vision assertions for cleanup and identity maps; build and run the supervised vision suite, then offline validation.
