@@ -1773,3 +1773,7 @@ Readiness: ready. Assignment oct26-tool-review supersedes the help-only task at 
 ### Oct26 full-tool review — accepted in bounded workflows
 
 Fifteen new tools reviewed for behavior, code/helpers, English, results and live parameter help. Native run 94a7bbd49865482a81998f3d835c131b passed build, Vision, PlayMenu and CommonPlay. Fixed repeated dispatcher preparation and menu ancestor validation. Coverage is 53/142 distinct scenario-reviewed tools; see docs/audit/oct26-tool-review.json for individual limits. No new workflow test file was added; existing fixtures were strengthened.
+
+### Oct26 field merge repair
+
+Readiness: ready. Integrator-approved bounded repair of S4 X-101 and GC-52 plus S3 GC-51. Preserve source assets and target logic. Recognize events declared in the incoming graph; preserve inherited function identity instead of creating a conflicting plain function; provide a detailed transfer preview. Add focused fixture assertions in the existing vision suite. Validate through the supervised engine test-vision-workflow suite. Other S3-S5 requests remain open for subsequent scopes.
