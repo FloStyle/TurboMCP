@@ -122,11 +122,31 @@ static FString Members(const FString& Source,const FString& Target,bool Apply)
         if(HasFunction(T,V.VarName))return TEXT("error: Target function conflicts with source variable: ")+V.VarName.ToString();
         Vars.Add(&V);Summary+=TEXT("\nvariable: ")+V.VarName.ToString();
     }
-    for(UEdGraph* G:S->DelegateSignatureGraphs)if(G && !GraphByName(T,G->GetName())){Delegates.Add(G);Summary+=TEXT("\ndispatcher signature: ")+G->GetName();}
-    for(UEdGraph* G:S->FunctionGraphs)if(G && !HasFunction(T,G->GetFName()))
+    // A same-named target is usable only with the same callable signature.
+    // Never treat a conflicting function or dispatcher as an already merged member.
+    for(UEdGraph* G:S->DelegateSignatureGraphs)if(G)
     {
+        UEdGraph* Existing=GraphByName(T,G->GetName());
+        if(Existing)
+        {
+            UFunction* SF=S->SkeletonGeneratedClass?S->SkeletonGeneratedClass->FindFunctionByName(G->GetFName()):nullptr;
+            UFunction* TF=T->SkeletonGeneratedClass?T->SkeletonGeneratedClass->FindFunctionByName(G->GetFName()):nullptr;
+            if(!T->DelegateSignatureGraphs.Contains(Existing) || !SF || !TF || !SF->IsSignatureCompatibleWith(TF))
+                return TEXT("error: Target dispatcher signature conflicts or is not compiled: ")+G->GetName()+TEXT(". Nothing changed.");
+        }
+        else {Delegates.Add(G);Summary+=TEXT("\ndispatcher signature: ")+G->GetName();}
+    }
+    for(UEdGraph* G:S->FunctionGraphs)if(G)
+    {
+        UFunction* SF=S->SkeletonGeneratedClass?S->SkeletonGeneratedClass->FindFunctionByName(G->GetFName()):nullptr;
+        if(!SF)return TEXT("error: Compile the source before preparing function signatures. Nothing changed.");
+        if(HasFunction(T,G->GetFName()))
+        {
+            UFunction* TF=T->SkeletonGeneratedClass?T->SkeletonGeneratedClass->FindFunctionByName(G->GetFName()):nullptr;
+            if(!TF || !SF->IsSignatureCompatibleWith(TF))return TEXT("error: Target function signature conflicts or is not compiled: ")+G->GetName()+TEXT(". Nothing changed.");
+            continue;
+        }
         if(HasVariable(T,G->GetFName()))return TEXT("error: Target variable conflicts with source function: ")+G->GetName();
-        if(!S->SkeletonGeneratedClass || !S->SkeletonGeneratedClass->FindFunctionByName(G->GetFName()))return TEXT("error: Compile the source before preparing function signatures. Nothing changed.");
         Functions.Add(G);Summary+=TEXT("\nfunction declaration: ")+G->GetName();
     }
     if(Vars.IsEmpty() && Functions.IsEmpty() && Delegates.IsEmpty())return TEXT("unchanged: No missing declared variables, functions or dispatchers. Widget trees, interfaces and graph bodies require their dedicated tools.");
