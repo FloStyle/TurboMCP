@@ -1843,3 +1843,7 @@ GC-56 partial repair at 5668810: reader results are reference material, not guar
 ## Oct26 existing-widget rename
 
 FT-110 implemented at 72384b8 through the stock editor operation. Identifier/collision refusal, same-name no-op and documented structural refresh limits. Native workflow c880c2db4a93445c88c405ffbe189360 passed, including graph getter reference/name identity, widget text/slot preservation and compile. Earlier run 2ccee348c459474cb034c7959f5e4002 passed native assertions but the suite rejected an engine HTTP timeout warning; warning policy unchanged. No claim of external or dynamic-string reference migration. Field confirmation pending; copy-time name collision handling remains FT-109.
+
+## Oct26 reference-checked widget removal
+
+WT-13/FT-113 implemented at 4a29020. Preview/EditWidgetRemove enumerate the selected widget and descendants, refuse local variable/bound-event, designer-binding, animation and explicit navigation references, then use stock editor removal. Native suite b3f0a47c80c74d81bc9e85b583bcaa02 passed with exact preview names, no-mutation refusal, single/subtree removal, sibling preservation and compile. Development failures 9d055c8f86a74b7d878f11dee65dc1be and d675b01ce64643fdba575972a39784b4 exposed missing selected-root traversal and insufficient GUID-only detection; repaired before integration. External/dynamic/custom references remain outside checked scope; field confirmation pending.

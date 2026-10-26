@@ -3722,11 +3722,13 @@
       "key": "2026-10-26_S8/WT-13",
       "title": "No TurboMCP tool removes a widget (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md. No fix claimed from report intake."
+      "validation": "native_pass_field_pending",
+      "remaining": "Field confirmation pending. External assets, dynamic strings and custom reference systems are not verified.",
+      "implementation": "4a29020: Preview/EditTurboMCPWidgetRemove check local graph and designer references before deleting the named subtree through stock Unreal.",
+      "evidence": "b3f0a47c80c74d81bc9e85b583bcaa02: native suite passed. Getter/subtree/bound-event/navigation refusals, preview preservation and exact list, single/subtree removal, sibling preservation, missing target refusal and compile."
     },
     {
       "report": "2026-10-26_S8",
@@ -3734,12 +3736,14 @@
       "key": "2026-10-26_S8/FT-113",
       "title": "Widget remove with a check for graph references to that widget",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_implemented",
-      "remaining": "Requested capability; see docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md",
-      "canonical_issue": "2026-10-26_S8/WT-13"
+      "validation": "native_pass_field_pending",
+      "remaining": "Field confirmation pending. External assets, dynamic strings and custom reference systems are not verified.",
+      "canonical_issue": "2026-10-26_S8/WT-13",
+      "implementation": "4a29020: Preview/EditTurboMCPWidgetRemove check local graph and designer references before deleting the named subtree through stock Unreal.",
+      "evidence": "b3f0a47c80c74d81bc9e85b583bcaa02: native suite passed. Getter/subtree/bound-event/navigation refusals, preview preservation and exact list, single/subtree removal, sibling preservation, missing target refusal and compile."
     },
     {
       "report": "2026-10-26_S8",

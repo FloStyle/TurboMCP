@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-26",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 143,
+  "inventory": 145,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -480,7 +480,9 @@
         "EditTurboMCPGraphTransfer",
         "PreviewTurboMCPWidgetSubtreeCopy",
         "EditTurboMCPWidgetSubtreeCopy",
-        "EditTurboMCPWidgetRename"
+        "EditTurboMCPWidgetRename",
+        "PreviewTurboMCPWidgetRemove",
+        "EditTurboMCPWidgetRemove"
       ],
       "limitations": [
         "See per-tool review for unsupported and untested cases."
@@ -489,6 +491,11 @@
         "run": "c880c2db4a93445c88c405ffbe189360",
         "checks": "Rename, graph getter reference and identity, text/slot preservation, collision/invalid refusal, same-name no-op and compile.",
         "limits": "Field pending; dynamic strings/external references not verified."
+      },
+      "widget_remove_evidence": {
+        "run": "b3f0a47c80c74d81bc9e85b583bcaa02",
+        "checks": "Reference refusals, exact subtree preview, mutation preservation, single/subtree removal and compile.",
+        "limits": "Local checks; external/dynamic/custom references unverified."
       }
     },
     {
@@ -742,9 +749,15 @@
     ],
     "EditTurboMCPWidgetRename": [
       "WF-OCT26-MERGE"
+    ],
+    "PreviewTurboMCPWidgetRemove": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPWidgetRemove": [
+      "WF-OCT26-MERGE"
     ]
   },
-  "unique_tools_scenario_reviewed": 54,
+  "unique_tools_scenario_reviewed": 56,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
