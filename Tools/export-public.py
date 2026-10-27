@@ -1,10 +1,11 @@
 """Copy the complete tracked source tree without Git history or path rewriting."""
+import plugin_notices
 import argparse, hashlib, json, pathlib, re, shutil, subprocess, sys
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 POLICY=ROOT/'release/export-policy.json'
 SECRET=re.compile(rb'(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|https?://[^\s/<>]+:[^\s/<>]+@)')
 PERSONAL=re.compile(rb'[A-Za-z]:[\\/]+Users[\\/]+(?!<)[^\\/\s]+',re.I)
-def source_files():
+def source_files(release=False):
     policy=json.loads(POLICY.read_text());result=[]
     if policy.get('schema')!=2 or policy.get('mode')!='complete-tracked-tree':raise ValueError('Unsupported full-tree export policy')
     # Export Git blob bytes, independent of checkout line-ending conversion.
@@ -28,6 +29,7 @@ def source_files():
     blobs = {path.as_posix(): data for _, path, data in result}
     if not blobs.get('LICENSE') or blobs.get('Plugins/TurboMCP/LICENSE') != blobs['LICENSE']:
         raise ValueError('Export requires matching root and installable-plugin LICENSE files')
+    plugin_notices.validate({name[len(plugin_notices.PREFIX):]: data for name, data in blobs.items() if name.startswith(plugin_notices.PREFIX)}, blobs['LICENSE'], release)
     return result
 
 def main():
@@ -48,7 +50,7 @@ def main():
     if not args.preview:
         if not args.evidence:raise ValueError('Release export requires --evidence from acceptance execution')
         subprocess.run([sys.executable,str(ROOT/'Tools/release-check.py'),'--evidence',args.evidence],check=True)
-    files=source_files();out.mkdir(parents=True)
+    files=source_files(release=not args.preview);out.mkdir(parents=True)
     entries=[]
     for p,target,data in files:
         dest=out/target;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(data)

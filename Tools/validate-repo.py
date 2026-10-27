@@ -2,6 +2,9 @@
 import ast, importlib.util, json, pathlib, re, subprocess, sys
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 def main():
+    import plugin_notices
+    pending = plugin_notices.validate(plugin_notices.tracked_files(ROOT), (ROOT/'LICENSE').read_bytes())
+    if pending: print('Release provenance pending: '+', '.join(pending))
     plugin_license = ROOT/'Plugins/TurboMCP/LICENSE'
     if not plugin_license.is_file() or plugin_license.read_text(encoding='utf-8') != (ROOT/'LICENSE').read_text(encoding='utf-8'):
         raise ValueError('Installable plugin must contain the complete canonical LICENSE')

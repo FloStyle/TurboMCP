@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "purpose": "Exact notices for non-source files. Source files carry their own headers. Unverified entries block release; they are not permission to distribute.",
+  "files": {
+    "Content/README.md": {
+      "license": "MPL-2.0",
+      "copyright": "Copyright (c) 2026 FloStyle",
+      "status": "repository_notice",
+      "provenance": "TurboMCP repository material under its stated MPL-2.0 project license. This records the repository notice, not an independent ownership certification."
+    },
+    "TurboMCP.uplugin": {
+      "license": "MPL-2.0",
+      "copyright": "Copyright (c) 2026 FloStyle",
+      "status": "repository_notice",
+      "provenance": "TurboMCP repository material under its stated MPL-2.0 project license. This records the repository notice, not an independent ownership certification."
+    },
+    "NOTICES.json": {
+      "license": "MPL-2.0",
+      "copyright": "Copyright (c) 2026 FloStyle",
+      "status": "repository_notice",
+      "provenance": "TurboMCP repository material under its stated MPL-2.0 project license. This records the repository notice, not an independent ownership certification."
+    },
+    "LICENSE": {
+      "license": "MPL-2.0 license text",
+      "copyright": "Mozilla Foundation; see license text",
+      "status": "repository_notice",
+      "provenance": "Canonical repository license adopted in commit 57c6424204e4a715fb9f75c34349fa2ce27db32b; reproduced unchanged."
+    },
+    "Resources/Icon128.png": {
+      "license": "NOASSERTION",
+      "copyright": "NOASSERTION",
+      "status": "unverified",
+      "provenance": "Introduced by eec301f496b13dbde94667109473d1758b6a960b. Commit authorship does not establish image creator or permission. Release blocked until confirmed or replaced."
+    },
+    "Content/Traps/EngineToolTraps.json": {
+      "license": "MPL-2.0",
+      "copyright": "Copyright (c) 2026 FloStyle",
+      "status": "repository_notice",
+      "provenance": "Original TurboMCP guidance independently reconstructed and source-reviewed on 2026-11-16 against the pinned stock Unreal interfaces and public Epic API documentation. No engine source is reproduced. See docs/audit/engine-tool-guidance.json in the source repository for bindings, sources and deferred claims. Historical versions require separate publication cleanup; this notice applies to the replacement text."
+    }
+  }
+}

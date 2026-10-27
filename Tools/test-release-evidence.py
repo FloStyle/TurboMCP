@@ -19,3 +19,28 @@ with tempfile.TemporaryDirectory() as tmp:
     except ValueError:pass
     else:raise AssertionError('Changed artifact accepted')
 print('RESULT: PASS (release evidence positive case and eight refusal controls)')
+
+# Package coverage uses bytes, so the same gate checks staged exports and installs.
+import plugin_notices
+import json
+notice = {'license': 'MPL-2.0', 'copyright': 'Example owner', 'provenance': 'Fixture', 'status': 'repository_notice'}
+files = {'LICENSE': b'license', 'NOTICES.json': json.dumps({'schema': 1, 'files': {'LICENSE': notice, 'NOTICES.json': notice}}).encode(), 'Source/Test.cpp': b'// Copyright Example\n// SPDX-License-Identifier: MPL-2.0\n'}
+assert plugin_notices.validate(files, b'license', True) == []
+controls = []
+r = dict(files); del r['LICENSE']; controls.append(r)
+r = dict(files); r['Source/Test.cpp'] = b'void missing_notice();'; controls.append(r)
+r = dict(files); r['extra.bin'] = b'unknown'; controls.append(r)
+r = dict(files); manifest = json.loads(r['NOTICES.json']); manifest['files']['absent'] = notice; r['NOTICES.json'] = json.dumps(manifest).encode(); controls.append(r)
+for r in controls:
+    try: plugin_notices.validate(r, b'license')
+    except ValueError: pass
+    else: raise AssertionError('Invalid package notice coverage accepted')
+r = dict(files); manifest = json.loads(r['NOTICES.json']); manifest['files']['LICENSE']['status'] = 'unverified'; r['NOTICES.json'] = json.dumps(manifest).encode()
+assert plugin_notices.validate(r, b'license') == ['LICENSE']
+try: plugin_notices.validate(r, b'license', True)
+except ValueError: pass
+else: raise AssertionError('Unverified provenance accepted for release')
+print('RESULT: PASS (plugin notices and release provenance refusal)')
+
+line_endings = dict(files); line_endings['LICENSE'] = b'license\r\n'
+assert plugin_notices.validate(line_endings, b'license\n', True) == []
