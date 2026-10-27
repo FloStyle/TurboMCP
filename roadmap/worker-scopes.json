@@ -2655,6 +2655,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp"
           ],
           "new_files": []
+        },
+        "oct27-datatable-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableQualityTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp",
+            "Tools/test-datatable-quality.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

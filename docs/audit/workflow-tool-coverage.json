@@ -829,7 +829,7 @@
       "WF-UI-05-COMMON-BUTTON"
     ]
   },
-  "unique_tools_scenario_reviewed": 63,
+  "unique_tools_scenario_reviewed": 66,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
@@ -850,8 +850,9 @@
   "common_style_review": {
     "candidate": "1a168124598dd718901238cf7b0382bf6b96ea7e",
     "native_run": "e6c1c80f15394c469e7a07b506a34f3e",
-    "status": "behavior_and_live_help_passed_visual_review_pending",
-    "counted_as_fully_reviewed": false,
-    "next": "Finish CommonUI visual interaction evidence, then review DataTables as requested."
+    "status": "bounded_style_workflow_accepted",
+    "counted_as_fully_reviewed": true,
+    "next": "DataTable public-tool review",
+    "visual_run": "b2b11644b5d44a6bb346facd68427350"
   }
 }

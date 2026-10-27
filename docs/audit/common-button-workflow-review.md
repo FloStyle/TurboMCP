@@ -44,3 +44,7 @@ Full interaction/visual acceptance remains pending. These three tools are not ye
 Offline integration checks: 26/26 passed, run 26729a9b3a8d4486bf36544df832eb48.
 
 Next DataTable review gap: TurboMCP.DataTable.OwnedRows currently exercises internal Parse/Plan/Apply helpers, not public reader/preview/edit calls or their live help/output. Extend the disposable fixture for those boundaries rather than relying on the old engine-content mutation suite.
+
+### Visual consumer check accepted
+
+Native run b2b11644b5d44a6bb346facd68427350 passed. Inspected normal blue, hover green, pressed orange and disabled grey captures. The fixture assigns the tool-edited asset using CommonUI SetStyle after initialization. Earlier run e4655cf3ff47467181cd182c3729eb4a exposed the fixture using default grey styles; strict color assertions prevent false acceptance from image differences alone. Candidate 206ee56. The three shared-style tools are accepted for this bounded scenario: 66/155. This does not close inherited graph editing, end-to-end pointer routing, focus navigation or persistence coverage.

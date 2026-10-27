@@ -1967,3 +1967,7 @@ Readiness: ready. User prioritizes CommonUI editing then DataTables. The existin
 ### Oct27 shared-style visual verification
 
 Readiness: ready. Extend the disposable CommonButton fixture with tool-authored distinct normal/hovered/pressed/disabled brushes. Render an actual CommonButton Slate widget, exercise its native Slate input handlers and retain images. This is bounded native widget-state evidence, not end-to-end pointer routing, focus navigation or PIE acceptance. Preserve those remaining workflow limits. Review output against observed values; repair only demonstrated style-tool defects. No engine modifications or new production dependencies.
+
+### Oct27 DataTable public-tool quality review
+
+Readiness: ready. Extend the disposable owned-row fixture to call the public reader, preview and edit trio. Capture actual text, validate add/update/remove and omitted-field preservation, preview/refusal nonmutation, exact identity, dirty-state and explicit persistence limits. Check live parameter help. Fix misleading row-edit output that currently describes completed edits in future tense. Simplify explanatory comments in the wrapper while preserving behavior. No engine-content mutations, save or dependency changes.
