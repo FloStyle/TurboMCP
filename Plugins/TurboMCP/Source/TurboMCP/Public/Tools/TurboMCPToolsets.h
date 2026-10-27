@@ -644,7 +644,7 @@ public:
     /**
      * Prepare missing member declarations before copying graph bodies between Blueprints.
      *
-     * Creates declared variables with defaults, function signatures and dispatcher signatures. Compatible existing members are retained; differing variable types or callable signatures refuse. Compile both assets first. Does not copy widget trees, interfaces, function bodies, animations or bindings. Add required interfaces and copy widget subtrees separately, then use GraphTransfer. A failed edit can leave earlier declarations created; inspect the target before retrying.
+     * Creates declared variables with defaults, function signatures, dispatcher signatures and custom-event declarations on a new named event graph. Exact-name exclusions skip creation without deleting existing target members. GraphTransfer can replace matching empty event declarations with their bodies; connected or commented target events refuse. Compatible existing members are retained; differing variable types or callable signatures refuse. Compile both assets first. Does not copy widget trees, interfaces, function bodies, animations or bindings. Add required interfaces and copy widget subtrees separately, then use GraphTransfer. A failed edit can leave earlier declarations created; inspect the target before retrying.
      * Preview only: may load assets but does not edit them. An unchanged response means no work is needed.
      * Requires the editor game thread outside PIE and active transactions.
      *
@@ -653,14 +653,15 @@ public:
      * @param SourceAsset Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.
      * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
      *
+     * @param Exclude Optional comma- or pipe-separated exact source member names to skip, case-insensitive. Empty includes all. Unknown names refuse before changes. Skipped dependencies may need separate preparation before transferring bodies.
      * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
      */
     UFUNCTION(meta = (AICallable))
-    static FString PreviewTurboMCPMergeMembers(const FString& SourceAsset, const FString& TargetAsset);
+    static FString PreviewTurboMCPMergeMembers(const FString& SourceAsset, const FString& TargetAsset, const FString& Exclude = TEXT(""));
     /**
      * Copy one complete owned graph, including its nodes, connections, layout, comments and locals.
      *
-     * Compile both assets and prepare referenced members/widgets first. Existing executable logic is never overwritten. Source-owned macro dependencies must already exist in the target; unresolved calls, missing self members and duplicate custom events refuse. This does not perform a whole-asset merge or automatically tidy the copied layout.
+     * Compile both assets and prepare referenced members/widgets first. Existing executable logic is never overwritten. Source-owned macro dependencies must already exist in the target; unresolved calls, missing self members and conflicting custom events refuse. Matching empty custom-event declarations can be replaced; connected, commented or disabled declarations are protected. This does not perform a whole-asset merge or automatically tidy the copied layout.
      * Preview only: may load assets but does not edit them. An unchanged response means no work is needed.
      * Requires the editor game thread outside PIE and active transactions.
      *
@@ -1378,7 +1379,7 @@ public:
     /**
      * Prepare missing member declarations before copying graph bodies between Blueprints.
      *
-     * Creates declared variables with defaults, function signatures and dispatcher signatures. Compatible existing members are retained; differing variable types or callable signatures refuse. Compile both assets first. Does not copy widget trees, interfaces, function bodies, animations or bindings. Add required interfaces and copy widget subtrees separately, then use GraphTransfer. A failed edit can leave earlier declarations created; inspect the target before retrying.
+     * Creates declared variables with defaults, function signatures, dispatcher signatures and custom-event declarations on a new named event graph. Exact-name exclusions skip creation without deleting existing target members. GraphTransfer can replace matching empty event declarations with their bodies; connected or commented target events refuse. Compatible existing members are retained; differing variable types or callable signatures refuse. Compile both assets first. Does not copy widget trees, interfaces, function bodies, animations or bindings. Add required interfaces and copy widget subtrees separately, then use GraphTransfer. A failed edit can leave earlier declarations created; inspect the target before retrying.
      * Mutates the target in memory and requests structural refresh, which can compile dependencies. Does not save. Undo is not guaranteed across structural compilation.
      * Requires the editor game thread outside PIE and active transactions.
      *
@@ -1387,14 +1388,15 @@ public:
      * @param SourceAsset Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.
      * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
      *
+     * @param Exclude Optional comma- or pipe-separated exact source member names to skip, case-insensitive. Empty includes all. Unknown names refuse before changes. Skipped dependencies may need separate preparation before transferring bodies.
      * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
      */
     UFUNCTION(meta = (AICallable))
-    static FString EditTurboMCPMergeMembers(const FString& SourceAsset, const FString& TargetAsset);
+    static FString EditTurboMCPMergeMembers(const FString& SourceAsset, const FString& TargetAsset, const FString& Exclude = TEXT(""));
     /**
      * Copy one complete owned graph, including its nodes, connections, layout, comments and locals.
      *
-     * Compile both assets and prepare referenced members/widgets first. Existing executable logic is never overwritten. Source-owned macro dependencies must already exist in the target; unresolved calls, missing self members and duplicate custom events refuse. This does not perform a whole-asset merge or automatically tidy the copied layout.
+     * Compile both assets and prepare referenced members/widgets first. Existing executable logic is never overwritten. Source-owned macro dependencies must already exist in the target; unresolved calls, missing self members and conflicting custom events refuse. Matching empty custom-event declarations can be replaced; connected, commented or disabled declarations are protected. This does not perform a whole-asset merge or automatically tidy the copied layout.
      * Mutates the target in memory and requests structural refresh, which can compile dependencies. Does not save. Undo is not guaranteed across structural compilation.
      * Requires the editor game thread outside PIE and active transactions.
      *

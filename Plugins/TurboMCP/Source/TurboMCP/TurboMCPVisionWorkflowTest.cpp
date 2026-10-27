@@ -279,6 +279,11 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  // Reproduce S4: a graph calls a custom event that it also declares.
  auto* InternalEventCall = Call(Graphs[0], BP->SkeletonGeneratedClass, TEXT("Request_0_0"), 2200, 0);
  InternalEventCall->FunctionReference.SetSelfMember(TEXT("Request_0_0"));
+ auto* FunctionEventCall=Call(Function,BP->SkeletonGeneratedClass,TEXT("Request_0_0"),1900,0);
+ FunctionEventCall->FunctionReference.SetSelfMember(TEXT("Request_0_0"));
+ Entry->FindPin(UEdGraphSchema_K2::PN_Then)->BreakAllPinLinks();
+ Wire(Entry->FindPin(UEdGraphSchema_K2::PN_Then),FunctionEventCall->GetExecPin());
+ Wire(FunctionEventCall->GetThenPin(),Result->GetExecPin());
  Record(TEXT("Compile internal event call"), UTurboMCPEditToolset::EditTurboMCPCompile(MergeAsset));
  TestTrue(TEXT("Source with internal custom-event call compiles"), BP->Status != BS_Error);
  // A second Blueprint receives declarations and then complete graph bodies.
@@ -307,6 +312,31 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  if(DispatcherProperty && DispatcherProperty->SignatureFunction){TestNotNull(TEXT("Dispatcher bool parameter preserved"),FindFProperty<FBoolProperty>(DispatcherProperty->SignatureFunction,TEXT("Ready")));const auto* OwnerParameter=FindFProperty<FObjectPropertyBase>(DispatcherProperty->SignatureFunction,TEXT("Owner"));TestNotNull(TEXT("Dispatcher object parameter preserved"),OwnerParameter);if(OwnerParameter)TestTrue(TEXT("Dispatcher object class preserved"),OwnerParameter->PropertyClass==AActor::StaticClass());}
  TestTrue(TEXT("Dispatcher duplicate refuses"),UTurboMCPEditToolset::EditTurboMCPDispatcherAdd(MergeAsset,TEXT("MergeReady"),TEXT("")).StartsWith(TEXT("error:")));
  TestTrue(TEXT("Dispatcher duplicate parameter refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPDispatcherAdd(MergeAsset,TEXT("InvalidDispatcher"),TEXT("Same:bool,Same:int")).StartsWith(TEXT("error:")));
+ UBlueprint* ExcludedTarget=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("BP_ExcludedMembers"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
+ const FString Exclusions=TEXT("MergeMemberProbe|Request_0_0|MergeReady");
+ const int32 ExcludedPagesBefore=ExcludedTarget->UbergraphPages.Num();
+ TestTrue(TEXT("Unknown member exclusion refuses"),UTurboMCPEditToolset::EditTurboMCPMergeMembers(MergeAsset,ExcludedTarget->GetPathName(),TEXT("NoSuchMember")).StartsWith(TEXT("error:")));
+ TestEqual(TEXT("Unknown exclusion leaves target pages unchanged"),ExcludedTarget->UbergraphPages.Num(),ExcludedPagesBefore);
+ const FString ExcludedPreview=Record(TEXT("Excluded member preview"),UTurboMCPPreviewToolset::PreviewTurboMCPMergeMembers(MergeAsset,ExcludedTarget->GetPathName(),Exclusions));
+ TestTrue(TEXT("Preview identifies excluded event"),ExcludedPreview.Contains(TEXT("excluded: Request_0_0")));
+ TestTrue(TEXT("Preview identifies event destination"),ExcludedPreview.Contains(TEXT("new declaration event graph:")));
+ TestEqual(TEXT("Exclusion preview does not create pages"),ExcludedTarget->UbergraphPages.Num(),ExcludedPagesBefore);
+ TestTrue(TEXT("Selected declarations created"),UTurboMCPEditToolset::EditTurboMCPMergeMembers(MergeAsset,ExcludedTarget->GetPathName(),Exclusions).StartsWith(TEXT("edited:")));
+ TestNull(TEXT("Excluded function absent"),ExcludedTarget->SkeletonGeneratedClass->FindFunctionByName(TEXT("MergeMemberProbe")));
+ TestNull(TEXT("Excluded event absent"),ExcludedTarget->SkeletonGeneratedClass->FindFunctionByName(TEXT("Request_0_0")));
+ TestNull(TEXT("Excluded dispatcher absent"),FindFProperty<FMulticastDelegateProperty>(ExcludedTarget->SkeletonGeneratedClass,TEXT("MergeReady")));
+ TestNotNull(TEXT("Included custom event declared"),ExcludedTarget->SkeletonGeneratedClass->FindFunctionByName(TEXT("Destroyed_0_0")));
+ auto FindEvent=[](UBlueprint* Asset,FName Name)->UK2Node_CustomEvent*{for(UEdGraph* Page:Asset->UbergraphPages)if(Page)for(UEdGraphNode* Node:Page->Nodes)if(auto* Event=Cast<UK2Node_CustomEvent>(Node))if(Event->CustomFunctionName==Name)return Event;return nullptr;};
+ auto* DeclaredEvent=FindEvent(ExcludedTarget,TEXT("Destroyed_0_0"));
+ if(TestNotNull(TEXT("Event declaration node exists"),DeclaredEvent))
+ {
+  TestNotNull(TEXT("Event parameter preserved"),DeclaredEvent->FindPin(TEXT("DestroyedActor")));
+  for(UEdGraphPin* Pin:DeclaredEvent->Pins)TestTrue(TEXT("Declaration has no body links"),Pin->LinkedTo.IsEmpty());
+  DeclaredEvent->bCallInEditor=!DeclaredEvent->bCallInEditor;
+  TestTrue(TEXT("Event settings conflict refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPMergeMembers(MergeAsset,ExcludedTarget->GetPathName(),Exclusions).StartsWith(TEXT("error:")));
+  DeclaredEvent->bCallInEditor=!DeclaredEvent->bCallInEditor;
+ }
+ TestTrue(TEXT("Repeated selected preparation unchanged"),UTurboMCPEditToolset::EditTurboMCPMergeMembers(MergeAsset,ExcludedTarget->GetPathName(),Exclusions).StartsWith(TEXT("unchanged:")));
  const int32 TargetGraphsBefore=MergeTarget->FunctionGraphs.Num();
  TestTrue(TEXT("Member preview"),Record(TEXT("Prepare members preview"),UTurboMCPPreviewToolset::PreviewTurboMCPMergeMembers(MergeAsset,MergeTarget->GetPathName())).StartsWith(TEXT("preview:")));
  TestEqual(TEXT("Member preview leaves target unchanged"),MergeTarget->FunctionGraphs.Num(),TargetGraphsBefore);
@@ -321,6 +351,13 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  const FString TransferResult = Record(TEXT("Transfer edit"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT("")));
  TestTrue(TEXT("Graph transfer edit"), TransferResult.StartsWith(TEXT("edited:")));
  TestTrue(TEXT("Local graph transfer"),Record(TEXT("Local graph transfer"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,TEXT("MergeMemberProbe"),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("edited:")));
+ auto* ProtectedEvent=FindEvent(MergeTarget,TEXT("Request_0_0"));
+ if(TestNotNull(TEXT("Prepared event is available for transfer"),ProtectedEvent))
+ {
+  ProtectedEvent->NodeComment=TEXT("Authored declaration: preserve me");
+  TestTrue(TEXT("Authored event declaration refuses transfer"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset,Graphs[0]->GetName(),MergeTarget->GetPathName(),TEXT("CopiedEvents")).StartsWith(TEXT("error:")));
+  ProtectedEvent->NodeComment.Reset();
+ }
  TestTrue(TEXT("Event graph transfer"),Record(TEXT("Event graph transfer"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Graphs[0]->GetName(),MergeTarget->GetPathName(),TEXT("CopiedEvents"))).StartsWith(TEXT("edited:")));
  TestTrue(TEXT("Occupied function refuses replacement"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT("" )).StartsWith(TEXT("error:")));
  TestEqual(TEXT("Source graph was not modified"),MergeSnapshot(Function),SourceSnapshot);

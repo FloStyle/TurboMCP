@@ -134,12 +134,74 @@ static UFunction* DispatcherSignature(UBlueprint* BP, FName Name)
     return Property ? Property->SignatureFunction : nullptr;
 }
 
-static FString Members(const FString& Source,const FString& Target,bool Apply)
+// Event declarations are distinct from ordinary functions with the same signature.
+static UK2Node_CustomEvent* CustomEvent(UBlueprint* BP, FName Name)
+{
+    UK2Node_CustomEvent* Found = nullptr;
+    for (UEdGraph* Page : BP->UbergraphPages) if (Page)
+        for (UEdGraphNode* Node : Page->Nodes)
+            if (auto* Event = Cast<UK2Node_CustomEvent>(Node)) if (Event->CustomFunctionName == Name)
+            { if (Found) return nullptr; Found = Event; }
+    return Found;
+}
+static bool SameEvent(UK2Node_CustomEvent* A, UK2Node_CustomEvent* B)
+{
+    if (!A || !B || A->FunctionFlags != B->FunctionFlags || A->bCallInEditor != B->bCallInEditor
+        || A->bIsDeprecated != B->bIsDeprecated || A->DeprecationMessage != B->DeprecationMessage
+        || A->UserDefinedPins.Num() != B->UserDefinedPins.Num()) return false;
+    for (int32 Index=0; Index<A->UserDefinedPins.Num(); ++Index)
+    {
+        const auto& Left=A->UserDefinedPins[Index]; const auto& Right=B->UserDefinedPins[Index];
+        if (!Left.IsValid() || !Right.IsValid() || Left->PinName!=Right->PinName
+            || !(Left->PinType==Right->PinType) || Left->DesiredPinDirection!=Right->DesiredPinDirection
+            || Left->PinDefaultValue!=Right->PinDefaultValue) return false;
+    }
+    return true;
+}
+static bool EmptyEventDeclaration(UK2Node_CustomEvent* Event)
+{
+    if (!Event || !Event->NodeComment.IsEmpty() || Event->GetDesiredEnabledState()!=ENodeEnabledState::Enabled) return false;
+    for (UEdGraphPin* Pin : Event->Pins)
+        if (!Pin || !Pin->LinkedTo.IsEmpty() || Pin->bOrphanedPin || Pin->ParentPin || !Pin->SubPins.IsEmpty()) return false;
+    return true;
+}
+
+static FString Members(const FString& Source,const FString& Target,const FString& Exclude,bool Apply)
 {
     UBlueprint *S=nullptr,*T=nullptr;FString E=Pair(Source,Target,S,T);if(!E.IsEmpty())return E;
     TArray<const FBPVariableDescription*> Vars;TArray<UEdGraph*> Functions,Delegates;FString Summary;
+    TSet<FName> Known, Skipped; TArray<UK2Node_CustomEvent*> Events;
+    for (const auto& V:S->NewVariables) Known.Add(V.VarName);
+    for (UEdGraph* G:S->FunctionGraphs) if(G) Known.Add(G->GetFName());
+    for (UEdGraph* G:S->DelegateSignatureGraphs) if(G) Known.Add(G->GetFName());
+    for (UEdGraph* G:S->UbergraphPages) if(G) for(UEdGraphNode* N:G->Nodes)
+        if(auto* C=Cast<UK2Node_CustomEvent>(N)) Known.Add(C->CustomFunctionName);
+    for (const FString& Name:FTurboMCPAssetResolver::SplitList(Exclude))
+    {
+        if(!Known.Contains(FName(*Name))) return TEXT("error: Unknown excluded source member: ")+Name+TEXT(". Use exact member names. Nothing changed.");
+        Skipped.Add(FName(*Name)); Summary+=TEXT("\nexcluded: ")+Name;
+    }
+    for (UEdGraph* G:S->UbergraphPages) if(G) for(UEdGraphNode* N:G->Nodes)
+        if(auto* C=Cast<UK2Node_CustomEvent>(N))
+        {
+            if(Skipped.Contains(C->CustomFunctionName)) continue;
+            if(CustomEvent(S,C->CustomFunctionName)!=C) return TEXT("error: Ambiguous source custom event. Nothing changed.");
+            if(HasFunction(T,C->CustomFunctionName))
+            {
+                if(!SameEvent(C,CustomEvent(T,C->CustomFunctionName))) return TEXT("error: Target custom-event signature or settings conflict: ")+C->CustomFunctionName.ToString()+TEXT(". Nothing changed.");
+                continue;
+            }
+            if(HasVariable(T,C->CustomFunctionName)) return TEXT("error: Target variable conflicts with custom event: ")+C->CustomFunctionName.ToString();
+            if(!S->SkeletonGeneratedClass || !S->SkeletonGeneratedClass->FindFunctionByName(C->CustomFunctionName)) return TEXT("error: Compile the source before preparing custom events. Nothing changed.");
+            Events.Add(C); Summary+=TEXT("\ncustom-event declaration: ")+C->CustomFunctionName.ToString();
+        }
+    FString EventPageName=TEXT("TurboMCP_MemberDeclarations");
+    for(int32 Suffix=2; GraphByName(T,EventPageName); ++Suffix) EventPageName=FString::Printf(TEXT("TurboMCP_MemberDeclarations_%d"),Suffix);
+    if(!Events.IsEmpty()) Summary+=TEXT("\nnew declaration event graph: ")+EventPageName;
+
     for(const auto& V:S->NewVariables)
     {
+        if(Skipped.Contains(V.VarName)) continue;
         if(const auto* Existing=Variable(T,V.VarName)){if(!SameMemberType(Existing->VarType,V.VarType))return TEXT("error: Target variable type conflict: ")+V.VarName.ToString();continue;}
         if(HasVariable(T,V.VarName)){
             FEdGraphPinType ExistingType;const FProperty* P=T->SkeletonGeneratedClass?FindFProperty<FProperty>(T->SkeletonGeneratedClass,V.VarName):nullptr;
@@ -153,6 +215,7 @@ static FString Members(const FString& Source,const FString& Target,bool Apply)
     // Never treat a conflicting function or dispatcher as an already merged member.
     for(UEdGraph* G:S->DelegateSignatureGraphs)if(G)
     {
+        if(Skipped.Contains(G->GetFName())) continue;
         UEdGraph* Existing=GraphByName(T,G->GetName());
         if(Existing)
         {
@@ -165,6 +228,7 @@ static FString Members(const FString& Source,const FString& Target,bool Apply)
     }
     for(UEdGraph* G:S->FunctionGraphs)if(G)
     {
+        if(Skipped.Contains(G->GetFName())) continue;
         UFunction* SF=S->SkeletonGeneratedClass?S->SkeletonGeneratedClass->FindFunctionByName(G->GetFName()):nullptr;
         if(!SF)return TEXT("error: Compile the source before preparing function signatures. Nothing changed.");
         if(HasFunction(T,G->GetFName()))
@@ -176,7 +240,7 @@ static FString Members(const FString& Source,const FString& Target,bool Apply)
         if(HasVariable(T,G->GetFName()))return TEXT("error: Target variable conflicts with source function: ")+G->GetName();
         Functions.Add(G);Summary+=TEXT("\nfunction declaration: ")+G->GetName();
     }
-    if(Vars.IsEmpty() && Functions.IsEmpty() && Delegates.IsEmpty())return TEXT("unchanged: No missing declared variables, functions or dispatchers. Widget trees, interfaces and graph bodies require their dedicated tools.");
+    if(Vars.IsEmpty() && Functions.IsEmpty() && Delegates.IsEmpty() && Events.IsEmpty())return TEXT("unchanged: No missing selected variables, functions, dispatchers or custom events. Widget trees, interfaces and graph bodies require their dedicated tools.")+Summary;
     if(!Apply)return TEXT("preview: Create missing declarations only; existing members are retained. No changes made.")+Summary+TEXT("\nThen copy widget subtrees and graph bodies. Interfaces are added separately. This is not a complete asset merge.");
     TArray<FBPVariableDescription> Copies;for(const auto* V:Vars){
         auto& Copy=Copies.Add_GetRef(*V);
@@ -199,6 +263,26 @@ static FString Members(const FString& Source,const FString& Target,bool Apply)
     {
         UEdGraph* Copy=FBlueprintEditorUtils::CreateNewGraph(T,G->GetFName(),UEdGraph::StaticClass(),UEdGraphSchema_K2::StaticClass());
         FBlueprintEditorUtils::AddFunctionGraph(T,Copy,true,S->SkeletonGeneratedClass->FindFunctionByName(G->GetFName()));
+    }
+    if(!Events.IsEmpty())
+    {
+        UEdGraph* Page=FBlueprintEditorUtils::CreateNewGraph(T,FName(*EventPageName),UEdGraph::StaticClass(),UEdGraphSchema_K2::StaticClass());
+        T->UbergraphPages.Add(Page);
+        int32 Y=0;
+        for(UK2Node_CustomEvent* SourceEvent:Events)
+        {
+            auto* Added=UK2Node_CustomEvent::CreateFromFunction(FVector2D(0,Y),Page,SourceEvent->CustomFunctionName.ToString(),S->SkeletonGeneratedClass->FindFunctionByName(SourceEvent->CustomFunctionName),false);
+            if(!Added) return TEXT("error: Custom-event creation failed after possible earlier member changes. Inspect target. Nothing saved.");
+            // Reflection can normalize pin qualifiers and omit editor defaults.
+            // Own fresh descriptors so the target never shares mutable source pin data.
+            Added->UserDefinedPins.Reset();
+            for(const auto& Pin:SourceEvent->UserDefinedPins)
+                Added->UserDefinedPins.Add(MakeShared<FUserPinInfo>(*Pin));
+            Added->ReconstructNode();
+            Added->FunctionFlags=SourceEvent->FunctionFlags; Added->bCallInEditor=SourceEvent->bCallInEditor;
+            Added->bIsDeprecated=SourceEvent->bIsDeprecated; Added->DeprecationMessage=SourceEvent->DeprecationMessage;
+            Y+=160+48*Added->UserDefinedPins.Num();
+        }
     }
     return TEXT("edited: Missing member declarations created; graph bodies were not copied.")+Summary+End(T);
 }
@@ -286,7 +370,7 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
     UFunction* ParentFunction = T->ParentClass ? T->ParentClass->FindFunctionByName(FName(*Name)) : nullptr;
     if (Function && ParentFunction && Name != G->GetName())
         return TEXT("error: An inherited override cannot be renamed during transfer. Keep its original name. Nothing changed.");
-    FString Missing;
+    FString Missing; TArray<UK2Node_CustomEvent*> ReplaceEvents;
     for(UEdGraphNode* N:G->Nodes)
     {
         if(auto* V=Cast<UK2Node_Variable>(N))
@@ -301,10 +385,16 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
         if(auto* D=Cast<UK2Node_BaseMCDelegate>(N))if(D->DelegateReference.IsSelfContext() && !HasVariable(T,D->DelegateReference.GetMemberName()))Missing+=TEXT("\ndispatcher: ")+D->DelegateReference.GetMemberName().ToString();
         if(auto* M=Cast<UK2Node_MacroInstance>(N))if(UEdGraph* MG=M->GetMacroGraph())
         {if(MG->GetOuter()==S && !T->MacroGraphs.Contains(GraphByName(T,MG->GetName())))Missing+=TEXT("\nmacro: ")+MG->GetName();}
-        if(auto* C=Cast<UK2Node_CustomEvent>(N))if(HasFunction(T,C->CustomFunctionName))Missing+=TEXT("\nconflicting event: ")+C->CustomFunctionName.ToString();
+        if(auto* C=Cast<UK2Node_CustomEvent>(N))if(HasFunction(T,C->CustomFunctionName))
+        {
+            auto* Existing=CustomEvent(T,C->CustomFunctionName);
+            if(SameEvent(C,Existing) && EmptyEventDeclaration(Existing)) ReplaceEvents.Add(Existing);
+            else Missing+=TEXT("\nconflicting or authored event: ")+C->CustomFunctionName.ToString();
+        }
     }
     if(!Missing.IsEmpty())return TEXT("error: Prepare these dependencies or resolve these conflicts before graph transfer. Nothing changed.")+Missing+TEXT("\nUse MergeMembers, InterfaceAdd and WidgetSubtreeCopy as appropriate.");
     FString Summary=FString::Printf(TEXT("\nsource: %s:%s\ntarget: %s:%s\nnodes: %d; existing empty declaration: %s"),*S->GetPathName(),*G->GetName(),*T->GetPathName(),*Name,G->Nodes.Num(),Old?TEXT("yes"):TEXT("no"));
+    for(auto* Existing:ReplaceEvents) Summary+=TEXT("\nreplace empty event declaration: ")+Existing->CustomFunctionName.ToString();
     if (ParentScaffold) Summary += TEXT("\ntarget scaffold: replace the untouched parent-call scaffold with the source graph body");
     // Use source GUIDs for the plan; clones receive new GUIDs on application.
     for (UEdGraphNode* Node : G->Nodes)
@@ -353,6 +443,7 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
         for(auto& I:T->ImplementedInterfaces)for(auto& Existing:I.Graphs)if(Existing==Old){Existing=Copy;Replaced=true;}
     }
     if(!Replaced){if(Event)T->UbergraphPages.Add(Copy);else if(Macro)T->MacroGraphs.Add(Copy);else T->FunctionGraphs.Add(Copy);}
+    for(auto* Existing:ReplaceEvents) FBlueprintEditorUtils::RemoveNode(T,Existing,true);
     const FString Completion = End(T);
     FString Result = FString::Printf(TEXT("edited: Complete graph copied.\nsource: %s:%s\ntarget: %s:%s\nsource-to-target node IDs:"), *S->GetPathName(), *G->GetName(), *T->GetPathName(), *Name);
     UEdGraph* FinalGraph = GraphByName(T, Name);
@@ -481,8 +572,8 @@ static FString Widgets(const FString& Source,const FString& RootName,const FStri
 }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPDispatcherAdd(const FString& Asset,const FString& Name,const FString& Inputs){return TurboMCPMergeTransfer::Dispatcher(Asset,Name,Inputs,false);}
 FString UTurboMCPEditToolset::EditTurboMCPDispatcherAdd(const FString& Asset,const FString& Name,const FString& Inputs){return TurboMCPMergeTransfer::Dispatcher(Asset,Name,Inputs,true);}
-FString UTurboMCPPreviewToolset::PreviewTurboMCPMergeMembers(const FString& SourceAsset,const FString& TargetAsset){return TurboMCPMergeTransfer::Members(SourceAsset,TargetAsset,false);}
-FString UTurboMCPEditToolset::EditTurboMCPMergeMembers(const FString& SourceAsset,const FString& TargetAsset){return TurboMCPMergeTransfer::Members(SourceAsset,TargetAsset,true);}
+FString UTurboMCPPreviewToolset::PreviewTurboMCPMergeMembers(const FString& SourceAsset,const FString& TargetAsset,const FString& Exclude){return TurboMCPMergeTransfer::Members(SourceAsset,TargetAsset,Exclude,false);}
+FString UTurboMCPEditToolset::EditTurboMCPMergeMembers(const FString& SourceAsset,const FString& TargetAsset,const FString& Exclude){return TurboMCPMergeTransfer::Members(SourceAsset,TargetAsset,Exclude,true);}
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(const FString& SourceAsset,const FString& SourceGraph,const FString& TargetAsset,const FString& TargetGraph){return TurboMCPMergeTransfer::Graph(SourceAsset,SourceGraph,TargetAsset,TargetGraph,false);}
 FString UTurboMCPEditToolset::EditTurboMCPGraphTransfer(const FString& SourceAsset,const FString& SourceGraph,const FString& TargetAsset,const FString& TargetGraph){return TurboMCPMergeTransfer::Graph(SourceAsset,SourceGraph,TargetAsset,TargetGraph,true);}
 FString UTurboMCPPreviewToolset::PreviewTurboMCPWidgetSubtreeCopy(const FString& SourceAsset,const FString& SourceWidget,const FString& TargetAsset,const FString& Parent,bool AutoRename){return TurboMCPMergeTransfer::Widgets(SourceAsset,SourceWidget,TargetAsset,Parent,AutoRename,false);}
