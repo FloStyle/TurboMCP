@@ -56,16 +56,7 @@ namespace
 		Out += FString::Printf(TEXT("\nitems the edit would change: %d"), Plan.Changes.Num());
 		for (const FTurboMCPDataTableRows::FFieldChange& Change : Plan.Changes)
 		{
-			// *** THE TERNARIES ARE RESOLVED INTO `FString` VARIABLES RATHER THAN PASSED TO `Printf`, AND THAT IS A
-			// MEASURED REQUIREMENT RATHER THAN STYLE. *** Passing `TEXT("...") : TEXT("")` straight into a variadic
-			// argument made UE5's compile-time format checker refuse the call:
-			//
-			//     error C7595: 'UE::Core::Private::FormatStringSan::TCheckedFormatStringPrivate<...>'
-			//
-			// The sanitizer has to prove each argument's type against its specifier, and an array literal whose type
-			// depends on a conditional is not something it can prove. A NAMED `FString` IS. This is the same family
-			// as the split `TEXT()` literal that is `error C2816` in this project: **the format checker is part of
-			// the compiler here, so a string built the convenient way is a build failure rather than a warning.**
+			// Named FString values keep variadic format argument types explicit.
 			const FString OldText = Change.OldText.IsEmpty() ? FString(TEXT("(empty)")) : Change.OldText;
 			const FString Suffix = Change.bUnchanged
 				? FString(TEXT("   [already this value, so nothing would be written]"))
@@ -75,9 +66,7 @@ namespace
 				*Change.RowName, *Change.Field, *OldText, *Change.NewText, *Suffix);
 		}
 
-		// *** EVERY REMOVAL BY NAME, NEVER A COUNT. *** `D-45`: *"a writer that removes anything lists each removal
-		// by key with its class and title, never a count ... a count says how much is gone and a list says what."*
-		// For a data table the "class and title" of a row IS its name and its struct, which is what is printed.
+		// List each removed row so callers can review the exact destructive scope.
 		Out += FString::Printf(TEXT("\nrows the edit would REMOVE: %d"), Plan.Removals.Num());
 		if (Plan.Removals.Num() == 0)
 		{
@@ -107,12 +96,7 @@ namespace
 	/** Shared by both entry points, so the preview and the edit cannot disagree about validity. */
 	FString Run(const FString& Asset, const TArray<FString>& Lines, bool bWrite, FString& OutReport)
 	{
-		// *** THE OPERATION TEXT IS PARSED BEFORE THE ASSET IS LOADED, AND THAT ORDER IS THE FIX. ***
-		// Loading the table first makes EVERY malformed line come back as "the asset did not resolve", so the
-		// parser's own refusals are unreachable: a suite then asserts on syntax it can never see, and TEN
-		// CHECKS FAIL FROM ONE ORDERING MISTAKE. **A REFUSAL ABOUT THE REQUEST MUST NOT BE
-		// MASKED BY A REFUSAL ABOUT THE TARGET.** It is also the reader's own idiom: `TurboMCPDataTable.cpp`
-		// validates its `include` filter *before anything loads, so a typo costs nothing*.
+		// Validate request syntax before loading the target.
 		if (Asset.IsEmpty())
 		{
 			return TEXT("error: no DataTable given; pass a unique name or full asset path, for example /Game/Data/DT_Items.");
@@ -142,12 +126,12 @@ namespace
 		// Plan, not in Apply, so the Preview and its Edit twin refuse the SAME input."*
 		if (!Plan.bAcceptable())
 		{
-			return PreviewText(Table, Plan);
+			return TEXT("error: Row edit refused; nothing was written.\n") + PreviewText(Table, Plan);
 		}
 
 		if (!bWrite)
 		{
-			return PreviewText(Table, Plan);
+			return TEXT("preview: Proposed row changes; nothing was written.\n") + PreviewText(Table, Plan) + TEXT("\nNo compile or save was requested.");
 		}
 
 		Error = FTurboMCPDataTableRows::Apply(Table, Plan, OutReport);
@@ -158,7 +142,12 @@ namespace
 			return OutReport.IsEmpty() ? Error : FString::Printf(TEXT("%s\n\n%s"), *Error, *OutReport);
 		}
 
-		return FString::Printf(TEXT("%s\n\n%s"), *PreviewText(Table, Plan), *OutReport);
+		FString Summary = PreviewText(Table, Plan);
+        Summary.ReplaceInline(TEXT("items the edit would change"), TEXT("requested field changes"));
+        Summary.ReplaceInline(TEXT("rows the edit would REMOVE"), TEXT("requested row removals"));
+        Summary.ReplaceInline(TEXT("rows the edit would ADD"), TEXT("requested row additions"));
+        Summary.ReplaceInline(TEXT("already this value, so nothing would be written"), TEXT("already matched before execution"));
+        return FString::Printf(TEXT("%s\n\nrequest summary:\n%s\nNo compile or save was requested; changes are in memory."), *OutReport, *Summary);
 	}
 }
 
