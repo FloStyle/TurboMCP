@@ -1871,3 +1871,7 @@ Implemented/verified in d25e927. Labels feed the actual getter pin; reader branc
 ### FT-109 widget collision renaming (2026-10-27)
 
 Implemented in f298344. AutoRename is opt-in and reports deterministic names; explicit internal navigation is remapped, outside targets refuse. Native run 70c811d4553246d58f39ef92323c29bf passed all workflows; field confirmation pending. Prior run 5b1d670c662b4a24b0107149828ca6d9 passed widget checks but failed menu state/analog checks; the unresolved intermittent problem is tracked as 2026-10-27_Local/PLAY-01. Graphs, animations and custom strings are not remapped by subtree copy.
+
+### Oct27 menu failure evidence retention
+
+50a8427 preserves failed PlayMenu/CommonPlay diagnostics before verdict parsing and removes stale menu evidence. Injected-failure check and offline validation d6252363958b4a788a9ab0509588f57f passed. PLAY-01 stays open: stock Slate click callback failure, cause not established; no production behavior change or native reproduction claimed.
