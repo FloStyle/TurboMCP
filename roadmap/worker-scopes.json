@@ -2625,6 +2625,12 @@
             "Tools/plugin_notices.py",
             "Plugins/TurboMCP/NOTICES.json"
           ]
+        },
+        "oct27-default-off": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPSettings.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

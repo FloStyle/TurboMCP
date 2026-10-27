@@ -1941,3 +1941,7 @@ Readiness: ready. Integration owner authorizes oct27-package-notices.
 - Run `python Tools/plugin_notices.py --package <plugin-folder>` for an installable directory; add `--release` to refuse unresolved provenance. Unknown files fail; compiled packages need explicit notices too.
 - Per-file notice coverage implemented for tracked files, staged exports and installable directories. Offline controls and copied source package passed. Release refuses unresolved icon/trap-data provenance. This is coverage validation, not ownership certification or binary-release acceptance.
 - Original report feature completed; public release remains not ready and unapproved. No claim that the icon or trap data ownership has been confirmed.
+
+### Oct27 user preference default off
+
+Readiness: ready. User explicitly requests Enable TurboMCP default false. Change the settings initializer and its help only; existing saved per-user/project values must remain authoritative. Restart requirement and call-recording preference unchanged. Source-check the config path and initializer; no native rebuild needed for this one-value change.
