@@ -3287,12 +3287,12 @@
       "key": "2026-10-26_S3/FT-107",
       "title": "Rename a function and update Blueprint call sites",
       "kind": "feature",
-      "state": "open",
+      "state": "in_progress",
       "priority": "P1",
       "owner": "R04",
       "disposition": "reconciled_with_current_source",
       "validation": "reported_source_reviewed",
-      "implementation_limits": "Merge blocker. Needs affected-asset preview and explicit scope; cross-asset call-site repair is not implemented."
+      "implementation_limits": "Implementation pending. Source-reviewed contract in todo/roadmap-r04.md: affected-asset discovery and preview must cover native rename side effects on callers and child Blueprints. No fix claimed."
     },
     {
       "report": "2026-10-26_S3",

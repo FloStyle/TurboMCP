@@ -1893,3 +1893,14 @@ Required behavior:
 - Extend the existing Vision fixture: exclusion preview/edit and unknown-name refusal; custom-event parameter/settings preservation; repeat no-op; conflicting signature refusal; function calling prepared event; body transfer into declarations; refusal when target event already has authored logic; source unchanged and target compile. Run supervised test-vision-workflow and offline validate.py. Do not close FT-108 until this connected workflow passes.
 
 FT-108/FA-12 implemented in 4fc5194. Native 237bfd22de774306b2f4a854ae72cef2 passed the connected declaration/function/body workflow and preservation refusals; offline 4838a2e6b4a4495ea6afbc5e0dfd5724 passed 26 checks after inventory regeneration. Original project confirmation pending. Earlier b1d95903ad8f46cd93c909eb4f53ef8f CommonPlay failed while the editor was inactive; evidence retained, no pass claimed.
+
+### Oct27 function rename repair contract (FT-107 / X-100)
+
+Readiness: ready. Integration-owner scope: oct27-function-rename. Source review: stock FBlueprintEditorUtils::RenameGraph renames child override graphs and loaded call nodes, then structurally refreshes the owner; RenameFunctionReferences supports additional graph node reference handlers. The tool must disclose this multi-asset scope, not claim a source-only rename.
+
+Required behavior:
+- Provide preview/edit function rename with exact owner/function/new-name inputs and an explicit affected-asset plan. Discover Blueprint referencers and children before mutation, including loaded unsaved callers. Do not claim dynamic string/native references are repaired.
+- Refuse unresolved or incomplete discovery, unsupported interface/inherited ownership, invalid names and collisions before rename. An unchanged name is a no-op. Preserve call links, defaults, graph identity and layout.
+- Preview lists affected assets and identifiable call nodes, including child overrides if supported. Edit repeats preflight, updates discovered callers using stock APIs, and reports actual changes and any partial failure. No automatic save and no custom engine edits. Explicitly disclose load/structural-refresh side effects and scope limits.
+- Native scenario: source function collides with an interface member; another Blueprint calls it. Preview changes no graph names; edit renames source and caller references with links/defaults preserved; both compile; previously blocked InterfaceAdd succeeds. Include collision refusal, same-name no-op, source-inherited/interface refusal and caller-discovery evidence. Extend existing Vision fixture rather than add another workflow file.
+- Refresh new-tool inventory/routing/help coverage and keep review count evidence-based. Run supervised test-vision-workflow and offline validate.py. FT-107/X-100 remain open until the end-to-end scenario passes.
