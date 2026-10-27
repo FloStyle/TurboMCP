@@ -642,6 +642,15 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPDispatcherAdd(const FString& Asset, const FString& Name, const FString& Inputs);
     /**
+     * Rename a Blueprint-owned function and update discovered Blueprint callers.
+     * Preview lists affected assets and call/delegate nodes. Dependencies are loaded; load callbacks may run. Edit repeats discovery, renames child overrides through stock editor APIs and updates references. No save or guaranteed rollback; compile affected assets before saving. Inherited/interface functions and name conflicts refuse. Dynamic strings, native code and unavailable content are not verified.
+     * @param Asset Required defining Blueprint path or unique name.
+     * @param Function Required exact owned function name; inherited overrides are not independently renamed.
+     * @param NewName Required valid new member name, 1 to 100 characters. Same name is a no-op.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPFunctionRename(const FString& Asset, const FString& Function, const FString& NewName);
+    /**
      * Prepare missing member declarations before copying graph bodies between Blueprints.
      *
      * Creates declared variables with defaults, function signatures, dispatcher signatures and custom-event declarations on a new named event graph. Exact-name exclusions skip creation without deleting existing target members. GraphTransfer can replace matching empty event declarations with their bodies; connected or commented target events refuse. Compatible existing members are retained; differing variable types or callable signatures refuse. Compile both assets first. Does not copy widget trees, interfaces, function bodies, animations or bindings. Add required interfaces and copy widget subtrees separately, then use GraphTransfer. A failed edit can leave earlier declarations created; inspect the target before retrying.
@@ -1376,6 +1385,15 @@ public:
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPDispatcherAdd(const FString& Asset, const FString& Name, const FString& Inputs);
+    /**
+     * Rename a Blueprint-owned function and update discovered Blueprint callers.
+     * Preview lists affected assets and call/delegate nodes. Dependencies are loaded; load callbacks may run. Edit repeats discovery, renames child overrides through stock editor APIs and updates references. No save or guaranteed rollback; compile affected assets before saving. Inherited/interface functions and name conflicts refuse. Dynamic strings, native code and unavailable content are not verified.
+     * @param Asset Required defining Blueprint path or unique name.
+     * @param Function Required exact owned function name; inherited overrides are not independently renamed.
+     * @param NewName Required valid new member name, 1 to 100 characters. Same name is a no-op.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPFunctionRename(const FString& Asset, const FString& Function, const FString& NewName);
     /**
      * Prepare missing member declarations before copying graph bodies between Blueprints.
      *
