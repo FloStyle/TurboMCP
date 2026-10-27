@@ -4,5 +4,9 @@
   "engine_version": "5.8.3",
   "engine_commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
   "reason": "Product acceptance and engine compatibility validation remain incomplete.",
-  "public_export_approved": false
+  "public_export_approved": false,
+  "notice_provenance_blockers": [
+    "Plugins/TurboMCP/Resources/Icon128.png: original creator/license unverified",
+    "Plugins/TurboMCP/Content/Traps/EngineToolTraps.json: original content ownership/permission unverified"
+  ]
 }

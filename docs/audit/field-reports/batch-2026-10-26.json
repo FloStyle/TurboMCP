@@ -42,9 +42,7 @@
     }
   ],
   "priority": "Personal enable toggle and X-102/X-103/X-104 implemented. Remaining S8/S9 parser, layout and merge capability issues stay open.",
-  "open": [
-    "FT-111"
-  ],
+  "open": [],
   "positive": [
     "FA-10",
     "VA-07",
@@ -124,7 +122,8 @@
     "X-105",
     "FT-108",
     "FT-107",
-    "GC-50"
+    "GC-50",
+    "FT-111"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -407,5 +406,12 @@
     "limits": "Complete event-page append passed native preservation and compile workflow. Incoming relative layout is translated below existing content; unmeasured node heights use 512 units. No automatic execution splicing or tidy. Nested source graphs refuse append. Original-project confirmation pending.",
     "offline_run": "b2c270cdb3ba4cb6a938a5b1957864a0",
     "offline_result": "passed"
+  },
+  "package_notice_repair": {
+    "commit": "b7fc05387e9e259f89b1fdc4eeb722c29156f07d",
+    "offline_run": "3c401451ef284700963648fa681d7a6a",
+    "followup_check": "Line-ending regression and actual exported plugin directory passed after final fix.",
+    "limits": "Per-file notice coverage implemented for tracked files, staged exports and installable directories. Offline controls and copied source package passed. Release refuses unresolved icon/trap-data provenance. This is coverage validation, not ownership certification or binary-release acceptance.",
+    "integration_validation": "c76107f6a015411bb6331b8d8b202d40: 25 checks passed; validate-repo initially stale inventory, passed after regeneration."
   }
 }

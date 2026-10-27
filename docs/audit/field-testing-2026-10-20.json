@@ -3593,12 +3593,14 @@
       "key": "2026-10-26_S6/FT-111",
       "title": "A release check that requires a license file and a license notice for every file in the installable plugin folder",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_implemented",
-      "remaining": "Requested capability; see docs/audit/field-reports/2026-10-26_S6_TurboMCP_plugin-folder-missing-license.md",
-      "canonical_issue": "2026-10-26_S6/X-102"
+      "validation": "offline_pass",
+      "remaining": "Release ownership confirmation for icon and trap data remains blocked; recorded in plugin NOTICES.json and release/status.json.",
+      "canonical_issue": "2026-10-26_S6/X-102",
+      "implementation_limits": "Per-file notice coverage implemented for tracked files, staged exports and installable directories. Offline controls and copied source package passed. Release refuses unresolved icon/trap-data provenance. This is coverage validation, not ownership certification or binary-release acceptance.",
+      "implementation_commit": "b7fc05387e9e259f89b1fdc4eeb722c29156f07d"
     },
     {
       "report": "2026-10-26_S7",

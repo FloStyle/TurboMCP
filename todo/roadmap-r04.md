@@ -1934,3 +1934,10 @@ Readiness: ready. Integration owner authorizes oct27-package-notices.
 - Validate working tracked files offline and actual staged export bytes in export-public. Provide a standalone directory check for an installable package, including extra files; no silent binary exclusion.
 - Record repository provenance honestly. The icon's original author/license is not proven by its introducing commit; do not invent ownership. Explicit unresolved provenance must block release mode, while development checks report it clearly. No public release authorized.
 - Cover missing license, missing source notice, unknown file, stale notice, and unresolved provenance refusal with focused offline tests. Update tracker with the technical feature completion separately from release ownership confirmation.
+
+### Oct27 FT-111 notice coverage implemented
+
+- Candidate b7fc05387e9e259f89b1fdc4eeb722c29156f07d; scope PASS. Offline 26 checks passed in 3c401451ef284700963648fa681d7a6a; final line-ending regression and copied package check passed. Export preview copied 758 tracked files; 256 plugin files covered.
+- Run `python Tools/plugin_notices.py --package <plugin-folder>` for an installable directory; add `--release` to refuse unresolved provenance. Unknown files fail; compiled packages need explicit notices too.
+- Per-file notice coverage implemented for tracked files, staged exports and installable directories. Offline controls and copied source package passed. Release refuses unresolved icon/trap-data provenance. This is coverage validation, not ownership certification or binary-release acceptance.
+- Original report feature completed; public release remains not ready and unapproved. No claim that the icon or trap data ownership has been confirmed.
