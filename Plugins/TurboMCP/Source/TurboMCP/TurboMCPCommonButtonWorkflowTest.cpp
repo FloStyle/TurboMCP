@@ -3,6 +3,13 @@
 #include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Blueprint/WidgetTree.h"
+#include "Blueprint/UserWidget.h"
+#include "Slate/WidgetRenderer.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "ImageUtils.h"
+#include "Input/Events.h"
+#include "InputCoreTypes.h"
+#include "Widgets/SWidget.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/TextBlock.h"
@@ -99,6 +106,87 @@ bool FTurboMCPCommonButtonWorkflowTest::RunTest(const FString& Parameters)
     FClassProperty* StyleProperty=FindFProperty<FClassProperty>(ButtonClass,TEXT("Style"));
     if (!TestNotNull(TEXT("Style reference reflected"),StyleProperty)) return false;
     StyleProperty->SetObjectPropertyValue_InContainer(BP->GeneratedClass->GetDefaultObject(),Style->GeneratedClass);
+    // Native Slate state rendering proves the style is consumed by CommonUI.
+    // This does not claim OS pointer routing, focus navigation or PIE coverage.
+    const TCHAR* States[] = {TEXT("NormalBase"), TEXT("NormalHovered"), TEXT("NormalPressed"), TEXT("Disabled")};
+    const TCHAR* Colors[] = {TEXT("(R=0.05,G=0.1,B=0.3,A=1)"), TEXT("(R=0.1,G=0.6,B=0.2,A=1)"), TEXT("(R=0.7,G=0.2,B=0.05,A=1)"), TEXT("(R=0.3,G=0.3,B=0.3,A=1)")};
+    for (int32 Index=0; Index<4; ++Index)
+    {
+        const FString Brush=States[Index];
+        auto AcceptEdit=[&](const FString& Field,const FString& Value)
+        {
+            const FString Result=EditStyle(Field,Value);
+            TestTrue(TEXT("Visual style edit accepted"),Result.StartsWith(TEXT("edited:")) || Result.StartsWith(TEXT("unchanged:")));
+        };
+        AcceptEdit(Brush+TEXT(".DrawAs"),TEXT("Box"));
+        AcceptEdit(Brush+TEXT(".TintColor.ColorUseRule"),TEXT("UseColor_Specified"));
+        AcceptEdit(Brush+TEXT(".TintColor.SpecifiedColor"),Colors[Index]);
+    }
+    FKismetEditorUtilities::CompileBlueprint(Style);
+    StyleProperty->SetObjectPropertyValue_InContainer(BP->GeneratedClass->GetDefaultObject(),Style->GeneratedClass);
+    UUserWidget* Visual=NewObject<UUserWidget>(GetTransientPackage(),BP->GeneratedClass);
+    if (!TestNotNull(TEXT("Visual widget created"),Visual)) return false;
+    Visual->Initialize();
+    // The disposable generated widget initializes from its archetype. Assign the
+    // style through CommonUI's runtime setter after initialization, as a consumer
+    // of the tool-edited shared asset; this is fixture setup, not a tool call.
+    UFunction* SetStyleFunction=Visual->FindFunction(TEXT("SetStyle"));
+    if (!TestNotNull(TEXT("CommonUI style setter available"),SetStyleFunction)) return false;
+    struct { UClass* InStyle; } StyleArgs{Style->GeneratedClass};
+    Visual->ProcessEvent(SetStyleFunction,&StyleArgs);
+    TSharedRef<SWidget> RootWidget=Visual->TakeWidget();
+    Visual->SynchronizeProperties();
+    TestTrue(TEXT("Visual instance uses edited style"),StyleProperty->GetObjectPropertyValue_InContainer(Visual)==Style->GeneratedClass);
+    TSharedPtr<SWidget> NativeButton;
+    TFunction<void(TSharedRef<SWidget>)> FindButton=[&](TSharedRef<SWidget> Widget)
+    {
+        if (Widget->GetType()==TEXT("SCommonButton")) { NativeButton=Widget; return; }
+        FChildren* Children=Widget->GetChildren();
+        for (int32 Index=0;Index<Children->Num() && !NativeButton; ++Index) FindButton(Children->GetChildAt(Index));
+    };
+    FindButton(RootWidget);
+    if (!TestTrue(TEXT("Actual CommonUI Slate button found"),NativeButton.IsValid())) return false;
+    FWidgetRenderer Renderer(false);
+    UTextureRenderTarget2D* RenderTarget=FWidgetRenderer::CreateTargetFor(FVector2D(640,240),TF_Bilinear,false);
+    if (!TestNotNull(TEXT("Visual render target created"),RenderTarget)) return false;
+    const FString VisualFolder=FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("TurboMCP/Workflow"),Suffix);
+    IFileManager::Get().MakeDirectory(*VisualFolder,true);
+    auto CaptureState=[&](const TCHAR* State)
+    {
+        Renderer.DrawWidget(RenderTarget,RootWidget,FVector2D(640,240),1.0f,false);
+        TArray<FColor> Pixels;
+        FReadSurfaceDataFlags Flags(RCM_UNorm,CubeFace_MAX);Flags.SetLinearToGamma(false);
+        TestTrue(TEXT("State pixels readable"),RenderTarget->GameThread_GetRenderTargetResource()->ReadPixels(Pixels,Flags));
+        if (Pixels.Num()==640*240)
+        {
+            const FColor Sample=Pixels[200*640+500];
+            Record(TEXT("background pixel"),Sample.ToString());
+            const FString StateName=State;
+            if (StateName==TEXT("style-normal")) TestTrue(TEXT("Normal brush is blue"),Sample.B>Sample.R && Sample.B>Sample.G);
+            if (StateName==TEXT("style-hovered")) TestTrue(TEXT("Hovered brush is green"),Sample.G>Sample.R && Sample.G>Sample.B);
+            if (StateName==TEXT("style-pressed")) TestTrue(TEXT("Pressed brush is orange"),Sample.R>Sample.G && Sample.G>Sample.B);
+        }
+        for (FColor& Pixel:Pixels) Pixel.A=255;
+        TArray64<uint8> Bytes;FImageUtils::PNGCompressImageArray(640,240,Pixels,Bytes);
+        const FString Path=FPaths::Combine(VisualFolder,FString(State)+TEXT(".png"));
+        TestTrue(TEXT("State image saved"),FFileHelper::SaveArrayToFile(Bytes,*Path));
+        Record(State,Path);
+        return Bytes;
+    };
+    const auto BaseImage=CaptureState(TEXT("style-normal"));
+    const FPointerEvent Pointer(0,FVector2D(50,50),FVector2D(50,50),TSet<FKey>{EKeys::LeftMouseButton},EKeys::LeftMouseButton,0,FModifierKeysState());
+    NativeButton->OnMouseEnter(NativeButton->GetCachedGeometry(),Pointer);
+    const auto HoverImage=CaptureState(TEXT("style-hovered"));
+    TestTrue(TEXT("Hover style differs from normal"),BaseImage!=HoverImage);
+    TestTrue(TEXT("Native press handled"),NativeButton->OnMouseButtonDown(NativeButton->GetCachedGeometry(),Pointer).IsEventHandled());
+    const auto PressImage=CaptureState(TEXT("style-pressed"));
+    TestTrue(TEXT("Pressed style differs from hover"),PressImage!=HoverImage);
+    NativeButton->OnMouseButtonUp(NativeButton->GetCachedGeometry(),Pointer);
+    NativeButton->OnMouseLeave(Pointer);
+    Visual->SetIsEnabled(false);
+    const auto DisabledImage=CaptureState(TEXT("style-disabled"));
+    TestTrue(TEXT("Disabled style differs from normal"),DisabledImage!=BaseImage);
+    Visual->ReleaseSlateResources(true);
     const FString Asset=BP->GetPathName();
     const FString Before=Record(TEXT("ReadTurboMCPWidgetTree"),UTurboMCPReadToolset::ReadTurboMCPWidgetTree(Asset));
     TestTrue(TEXT("Tree names label"),Before.Contains(TEXT("Label")));
