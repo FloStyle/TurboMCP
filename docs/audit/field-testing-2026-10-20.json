@@ -3287,12 +3287,14 @@
       "key": "2026-10-26_S3/FT-107",
       "title": "Rename a function and update Blueprint call sites",
       "kind": "feature",
-      "state": "in_progress",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
       "disposition": "reconciled_with_current_source",
-      "validation": "reported_source_reviewed",
-      "implementation_limits": "Implementation pending. Source-reviewed contract in todo/roadmap-r04.md: affected-asset discovery and preview must cover native rename side effects on callers and child Blueprints. No fix claimed."
+      "validation": "native_pass_field_pending",
+      "implementation_limits": "Native synthetic external-caller/interface-collision scenario passed. Original-project confirmation pending. Map referencers refuse; dynamic strings, native and unavailable content are not verified. Child/delegate paths are source-reviewed but not separately native-tested. No automatic save or guaranteed rollback.",
+      "implementation_commit": "c169539ec20057144a0ba5203097835ca0436cb4",
+      "native_run": "22a631e5725a45a7a1afe3e98e849795"
     },
     {
       "report": "2026-10-26_S3",
@@ -3330,14 +3332,16 @@
       "key": "2026-10-26_S3/X-100",
       "title": "Interface merge blocked by an existing function name",
       "kind": "housekeeping",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
       "disposition": "reconciled_with_current_source",
-      "validation": "reported_source_reviewed",
-      "implementation_limits": "Alias of FT-107; safe collision refusal works, but the rename workflow is missing.",
+      "validation": "native_pass_field_pending",
+      "implementation_limits": "Native synthetic external-caller/interface-collision scenario passed. Original-project confirmation pending. Map referencers refuse; dynamic strings, native and unavailable content are not verified. Child/delegate paths are source-reviewed but not separately native-tested. No automatic save or guaranteed rollback.",
       "duplicate_of": "2026-10-26_S3/FT-107",
-      "canonical_issue": "2026-10-26_S3/FT-107"
+      "canonical_issue": "2026-10-26_S3/FT-107",
+      "implementation_commit": "c169539ec20057144a0ba5203097835ca0436cb4",
+      "native_run": "22a631e5725a45a7a1afe3e98e849795"
     },
     {
       "report": "2026-10-26_S3",

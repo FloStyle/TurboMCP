@@ -2263,6 +2263,34 @@
       },
       "preference": "unverified",
       "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPFunctionRename",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPFunctionRename",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
     }
   ],
   "source_comparison": {

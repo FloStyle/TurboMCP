@@ -1904,3 +1904,10 @@ Required behavior:
 - Preview lists affected assets and identifiable call nodes, including child overrides if supported. Edit repeats preflight, updates discovered callers using stock APIs, and reports actual changes and any partial failure. No automatic save and no custom engine edits. Explicitly disclose load/structural-refresh side effects and scope limits.
 - Native scenario: source function collides with an interface member; another Blueprint calls it. Preview changes no graph names; edit renames source and caller references with links/defaults preserved; both compile; previously blocked InterfaceAdd succeeds. Include collision refusal, same-name no-op, source-inherited/interface refusal and caller-discovery evidence. Extend existing Vision fixture rather than add another workflow file.
 - Refresh new-tool inventory/routing/help coverage and keep review count evidence-based. Run supervised test-vision-workflow and offline validate.py. FT-107/X-100 remain open until the end-to-end scenario passes.
+
+### Oct27 FT-107 function rename implemented
+
+- Candidate c169539ec20057144a0ba5203097835ca0436cb4; immutable scope PASS. Native build and Vision/PlayMenu/CommonPlay passed in 22a631e5725a45a7a1afe3e98e849795.
+- Preview leaves function identity unchanged; edit preserves graph GUID, external caller literal and links, compiles both Blueprints, and clears the interface collision. Same-name and conflict refusals covered.
+- Native synthetic external-caller/interface-collision scenario passed. Original-project confirmation pending. Map referencers refuse; dynamic strings, native and unavailable content are not verified. Child/delegate paths are source-reviewed but not separately native-tested. No automatic save or guaranteed rollback.
+- Tool inventory is 152. Full scenario-reviewed total remains 61 pending live help/full acceptance for these two new tools.

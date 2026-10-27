@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "a17abd99a45a4e5d5dcb0060544831ee8c33ee0a",
+  "plugin_tree": "c3cdcea7e3d131b37ba45c9a6fe6a5e1b94f2160",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 150,
+    "tools": 152,
     "by_toolset": {
-      "UTurboMCPEditToolset": 62,
+      "UTurboMCPEditToolset": 63,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 49,
+      "UTurboMCPPreviewToolset": 50,
       "UTurboMCPReadToolset": 33
     }
   },
@@ -351,6 +351,28 @@
         "Tools/test-function.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPFunctionRename",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Function",
+        "NewName"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionRenameTools.cpp",
+          "line": 131
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1871,6 +1893,28 @@
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
       "investment_decision": "compare-native-before-expanding"
+    },
+    {
+      "id": "PreviewTurboMCPFunctionRename",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "Function",
+        "NewName"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionRenameTools.cpp",
+          "line": 129
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
       "id": "PreviewTurboMCPGraphAppend",

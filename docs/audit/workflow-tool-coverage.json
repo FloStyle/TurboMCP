@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "updated": "2026-10-26",
+  "updated": "2026-10-27",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 150,
+  "inventory": 152,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -526,6 +526,21 @@
       "limitations": [
         "See per-tool review for unsupported and untested cases."
       ]
+    },
+    {
+      "id": "WF-OCT27-FUNCTION-RENAME",
+      "title": "Rename an owned function to resolve an interface collision",
+      "status": "native_pass_help_review_pending",
+      "fixture": "TurboMCP.Workflow.Vision",
+      "evidence": "22a631e5725a45a7a1afe3e98e849795",
+      "tools_used": [
+        "PreviewTurboMCPFunctionRename",
+        "EditTurboMCPFunctionRename"
+      ],
+      "limitations": [
+        "Native synthetic external-caller/interface-collision scenario passed. Original-project confirmation pending. Map referencers refuse; dynamic strings, native and unavailable content are not verified. Child/delegate paths are source-reviewed but not separately native-tested. No automatic save or guaranteed rollback.",
+        "Live help capture and full per-tool acceptance remain pending; not added to scenario-reviewed total."
+      ]
     }
   ],
   "tool_usage": {
@@ -785,6 +800,12 @@
     ],
     "EditTurboMCPWidgetProperty": [
       "WF-OCT26-MERGE"
+    ],
+    "PreviewTurboMCPFunctionRename": [
+      "WF-OCT27-FUNCTION-RENAME"
+    ],
+    "EditTurboMCPFunctionRename": [
+      "WF-OCT27-FUNCTION-RENAME"
     ]
   },
   "unique_tools_scenario_reviewed": 61,
