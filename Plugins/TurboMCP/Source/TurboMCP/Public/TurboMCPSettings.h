@@ -24,9 +24,9 @@ class TURBOMCP_API UTurboMCPSettings : public UDeveloperSettings
 public:
 	UTurboMCPSettings();
 
-    /** Enable TurboMCP tools, panel and hooks for this user. Restart the editor after changing this preference. Unreal MCP and other toolsets are unaffected. */
+    /** Enable TurboMCP tools, panel and hooks for this user. Off by default; saved user preferences take precedence. Restart the editor after changing this preference. Unreal MCP and other toolsets are unaffected. */
     UPROPERTY(EditAnywhere, config, Category = "Activation", meta = (DisplayName = "Enable TurboMCP", ConfigRestartRequired = true))
-    bool bEnableTurboMCP = true;
+    bool bEnableTurboMCP = false;
 
 
 	/** Record tool calls by default for field diagnostics. Saved user preferences override this default. */
