@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "plugin_tree": "7549394610d6cef73308355bc89b01899b20c38f",
+  "plugin_tree": "8cc31bc7130671fb4d0cc3e11953708b2097f5ef",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 152,
+    "tools": 155,
     "by_toolset": {
-      "UTurboMCPEditToolset": 63,
+      "UTurboMCPEditToolset": 64,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 50,
-      "UTurboMCPReadToolset": 33
+      "UTurboMCPPreviewToolset": 51,
+      "UTurboMCPReadToolset": 34
     }
   },
   "tools": [
@@ -205,6 +205,28 @@
         "Tools/test-comment-boxes.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPCommonButtonStyle",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Property",
+        "Value"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp",
+          "line": 118
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1827,6 +1849,28 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "PreviewTurboMCPCommonButtonStyle",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "Property",
+        "Value"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp",
+          "line": 117
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "PreviewTurboMCPDataTableRows",
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
@@ -3091,6 +3135,27 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "ReadTurboMCPCommonButtonStyle",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "Asset",
+        "Property"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp",
+          "line": 116
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "ReadTurboMCPDataTable",
       "toolset": "UTurboMCPReadToolset",
       "parameters": [
@@ -3585,6 +3650,7 @@
       ],
       "test_references": [
         "Tools/test-agent-help.py",
+        "Tools/test-common-button-workflow.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-vision-workflow.py"
       ],

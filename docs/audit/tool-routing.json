@@ -2291,6 +2291,48 @@
       },
       "preference": "unverified",
       "evidence": []
+    },
+    {
+      "tool": "ReadTurboMCPCommonButtonStyle",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPCommonButtonStyle",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPCommonButtonStyle",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
     }
   ],
   "source_comparison": {

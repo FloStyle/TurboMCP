@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-27",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 152,
+  "inventory": 155,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -126,13 +126,16 @@
     {
       "id": "WF-UI-05-COMMON-BUTTON",
       "title": "Inspect and edit a Common UI button, events and styles",
-      "status": "inspection_and_preview_checked_full_workflow_incomplete",
+      "status": "style_tool_checks_passed_interaction_review_pending",
       "review": "docs/audit/common-button-workflow-review.md",
       "tools_used": [
         "ReadTurboMCPWidgetTree",
         "LookTurboMCPWidgetPreview",
         "ReadTurboMCPBlueprintLoad",
-        "ReadTurboMCPGraphLoad"
+        "ReadTurboMCPGraphLoad",
+        "ReadTurboMCPCommonButtonStyle",
+        "PreviewTurboMCPCommonButtonStyle",
+        "EditTurboMCPCommonButtonStyle"
       ],
       "tools_planned": [
         "PreviewTurboMCPBindNewEvent",
@@ -155,7 +158,7 @@
       "scenario": "Inspect an existing Common Button and its assigned style. Make a targeted style and hover/unhover label-behavior change, preserve unrelated state, tidy and verify visually and interactively.",
       "limitations": [
         "Full style/event edit workflow remains incomplete; native fixture setup is not tool editing evidence",
-        "Style class reference exposed; detailed style values and targeted style editing still need a supported path",
+        "Shared style padding and nested color read/preview/edit, refusals, no-op and compile preservation passed. Real interaction visuals still pending.",
         "Explicit callback preview passed, not actual pointer/focus/pressed/disabled state testing",
         "Unsaved disposable fixture; no persistence or general external-effect rollback proof"
       ],
@@ -168,7 +171,7 @@
         "Evidence: record each tool used, actual output, scenario result, remaining gaps and user visual feedback; no blanket bug-free claim."
       ],
       "fixture": "TurboMCP.Workflow.CommonButton",
-      "evidence": "f7ee45f24a69440fb5ee5dcc3c3654a6",
+      "evidence": "e6c1c80f15394c469e7a07b506a34f3e",
       "not_used": {
         "PreviewTurboMCPBindNewEvent": "Fixture overrides inherited BP_OnHovered/BP_OnUnhovered; no parent delegate binding needed",
         "EditTurboMCPBindNewEvent": "Same inherited-event mechanism; not validated by this scenario"
@@ -815,6 +818,15 @@
     ],
     "EditTurboMCPFunctionRename": [
       "WF-OCT27-FUNCTION-RENAME"
+    ],
+    "ReadTurboMCPCommonButtonStyle": [
+      "WF-UI-05-COMMON-BUTTON"
+    ],
+    "PreviewTurboMCPCommonButtonStyle": [
+      "WF-UI-05-COMMON-BUTTON"
+    ],
+    "EditTurboMCPCommonButtonStyle": [
+      "WF-UI-05-COMMON-BUTTON"
     ]
   },
   "unique_tools_scenario_reviewed": 63,
@@ -834,5 +846,12 @@
       "EditTurboMCPPlayInput"
     ],
     "limit": "Existing CommonUI review retained; global inventory is 142. OS switching, multiplayer, chords and physical-device prompts remain outside the tested scope."
+  },
+  "common_style_review": {
+    "candidate": "1a168124598dd718901238cf7b0382bf6b96ea7e",
+    "native_run": "e6c1c80f15394c469e7a07b506a34f3e",
+    "status": "behavior_and_live_help_passed_visual_review_pending",
+    "counted_as_fully_reviewed": false,
+    "next": "Finish CommonUI visual interaction evidence, then review DataTables as requested."
   }
 }

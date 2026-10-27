@@ -32,3 +32,15 @@ Initial run ea5a544faf9748b5bd60cfbb79b718fa exposed missing style context and u
 These are open workflow capabilities/evidence gaps, not completed features. No bug-free certification is claimed. Cross-workflow usage and quality criteria remain in workflow-tool-coverage.json; dashboard per-tool records are in purchase-workflow-review.json. Coverage is 30/125 unique tools in bounded scenarios. DSH remains paused.
 
 Offline gate 91161d123b484a939583638659e187e6: 22/26 passed; existing structure, language, client-retry and lookup-guards failures remain separate validation debt.
+
+## 2026-10-27 targeted shared-style tools
+
+Candidate: 1a168124598dd718901238cf7b0382bf6b96ea7e. Stock-engine build and focused editor run e6c1c80f15394c469e7a07b506a34f3e passed.
+
+Read/Preview/EditTurboMCPCommonButtonStyle provide explicit shared Blueprint style inspection and scalar/value-struct editing, including nested brush colors. The workflow passed padding and color readback, preview preservation, no-op, malformed/missing/reference refusals, compilation preservation, and live individual parameter help. Output identifies shared effects and explicitly excludes automatic compile, save and runtime refresh. Object references, containers and localized text are not writable through this path. No CommonUI module dependency or engine changes were added.
+
+Full interaction/visual acceptance remains pending. These three tools are not yet added to the fully reviewed count: 63/155. Earlier totals above are historical. Next: finish this style workflow's visuals, then DataTables. DSH remains paused.
+
+Offline integration checks: 26/26 passed, run 26729a9b3a8d4486bf36544df832eb48.
+
+Next DataTable review gap: TurboMCP.DataTable.OwnedRows currently exercises internal Parse/Plan/Apply helpers, not public reader/preview/edit calls or their live help/output. Extend the disposable fixture for those boundaries rather than relying on the old engine-content mutation suite.
