@@ -1971,3 +1971,7 @@ Readiness: ready. Extend the disposable CommonButton fixture with tool-authored 
 ### Oct27 DataTable public-tool quality review
 
 Readiness: ready. Extend the disposable owned-row fixture to call the public reader, preview and edit trio. Capture actual text, validate add/update/remove and omitted-field preservation, preview/refusal nonmutation, exact identity, dirty-state and explicit persistence limits. Check live parameter help. Fix misleading row-edit output that currently describes completed edits in future tense. Simplify explanatory comments in the wrapper while preserving behavior. No engine-content mutations, save or dependency changes.
+
+### Oct27 DataTable default-value reader repair
+
+Readiness: ready. Public workflow 3319bdf908994f9abfe1cc2205e535bd exposes zero float and None name as export unavailable. Export selected values directly rather than treating ExportText_InContainer suppression of default values as failure. Preserve fixed-array element addressing. Assert default-value output and retain refusal/preservation checks. No new feature or persistence claim.
