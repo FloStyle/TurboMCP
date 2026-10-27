@@ -394,7 +394,33 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
   TestTrue(TEXT("Authored event declaration refuses transfer"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset,Graphs[0]->GetName(),MergeTarget->GetPathName(),TEXT("CopiedEvents")).StartsWith(TEXT("error:")));
   ProtectedEvent->NodeComment.Reset();
  }
+ UEdGraph* ExistingPage=FBlueprintEditorUtils::CreateNewGraph(MergeTarget,TEXT("CopiedEvents"),UEdGraph::StaticClass(),UEdGraphSchema_K2::StaticClass());
+ FBlueprintEditorUtils::AddUbergraphPage(MergeTarget,ExistingPage);
+ auto* ExistingComment=NewObject<UEdGraphNode_Comment>(ExistingPage);ExistingPage->AddNode(ExistingComment,false,false);ExistingComment->CreateNewGuid();ExistingComment->NodePosX=100;ExistingComment->NodePosY=200;ExistingComment->NodeWidth=400;ExistingComment->NodeHeight=600;ExistingComment->NodeComment=TEXT("Keep existing content");
+ auto* KeptEvent=NewObject<UK2Node_CustomEvent>(ExistingPage);KeptEvent->CustomFunctionName=TEXT("KeepDestinationChain");Init(KeptEvent,ExistingPage,100,200);
+ auto* KeptPrint=Call(ExistingPage,UKismetSystemLibrary::StaticClass(),TEXT("PrintString"),400,200);KeptPrint->FindPinChecked(TEXT("InString"))->DefaultValue=TEXT("Keep this literal");Wire(KeptEvent->FindPinChecked(TEXT("then")),KeptPrint->GetExecPin());
+ const FGuid KeptPrintId=KeptPrint->NodeGuid;
+ const FString IncomingSnapshot=MergeSnapshot(Graphs[0]);
+ auto LinkCount=[](UEdGraph* Page){int32 Count=0;for(UEdGraphNode* Node:Page->Nodes)for(UEdGraphPin* Pin:Node->Pins)if(Pin)Count+=Pin->LinkedTo.Num();return Count;};
+ const int32 ExpectedLinks=LinkCount(Graphs[0])+LinkCount(ExistingPage);
+ const FGuid ExistingPageId=ExistingPage->GraphGuid, ExistingNodeId=ExistingComment->NodeGuid;
+ const int32 IncomingCount=Graphs[0]->Nodes.Num();
+ const FString AppendPreview=UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset,Graphs[0]->GetName(),MergeTarget->GetPathName(),TEXT("CopiedEvents"));
+ TestTrue(TEXT("Existing event-page preview describes append"),AppendPreview.StartsWith(TEXT("preview:")) && AppendPreview.Contains(TEXT("mode: append")));
+ TestEqual(TEXT("Append preview preserves existing nodes"),ExistingPage->Nodes.Num(),3);
  TestTrue(TEXT("Event graph transfer"),Record(TEXT("Event graph transfer"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Graphs[0]->GetName(),MergeTarget->GetPathName(),TEXT("CopiedEvents"))).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Append retains destination graph identity"),ExistingPage->GraphGuid==ExistingPageId && MergeTarget->UbergraphPages.Contains(ExistingPage));
+ TestTrue(TEXT("Append retains existing node identity and position"),ExistingComment->NodeGuid==ExistingNodeId && ExistingComment->NodePosX==100 && ExistingComment->NodePosY==200);
+ TestEqual(TEXT("Append retains existing comment"),ExistingComment->NodeComment,FString(TEXT("Keep existing content")));
+ TestEqual(TEXT("Append adds all source nodes"),ExistingPage->Nodes.Num(),IncomingCount+3);
+ for(UEdGraphNode* Node:ExistingPage->Nodes) if(Node!=ExistingComment && Node!=KeptEvent && Node!=KeptPrint) {TestTrue(TEXT("Appended node belongs to existing page"),Node->GetGraph()==ExistingPage);TestTrue(TEXT("Appended group is below existing content"),Node->NodePosY>=992);}
+ TestEqual(TEXT("Append preserves all internal links"),LinkCount(ExistingPage),ExpectedLinks);
+ TestEqual(TEXT("Append preserves source content"),MergeSnapshot(Graphs[0]),IncomingSnapshot);
+ TestTrue(TEXT("Append preserves existing call identity and placement"),KeptPrint->NodeGuid==KeptPrintId && KeptPrint->NodePosX==400 && KeptPrint->NodePosY==200);
+ TestEqual(TEXT("Append preserves existing literal"),KeptPrint->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("Keep this literal")));
+ TestTrue(TEXT("Append preserves existing execution connection"),KeptPrint->GetExecPin()->LinkedTo.Contains(KeptEvent->FindPinChecked(TEXT("then"))));
+ TestTrue(TEXT("Repeated authored event append refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset,Graphs[0]->GetName(),MergeTarget->GetPathName(),TEXT("CopiedEvents")).StartsWith(TEXT("error:")));
+
  TestTrue(TEXT("Occupied function refuses replacement"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT("" )).StartsWith(TEXT("error:")));
  TestEqual(TEXT("Source graph was not modified"),MergeSnapshot(Function),SourceSnapshot);
  UEdGraph* Transferred=TurboMCPNodeId::FindGraphByName(MergeTarget,Function->GetName());

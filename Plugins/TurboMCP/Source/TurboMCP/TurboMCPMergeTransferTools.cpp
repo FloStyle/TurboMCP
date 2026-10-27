@@ -18,6 +18,7 @@
 #include "K2Node_BaseMCDelegate.h"
 #include "K2Node_MacroInstance.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_Event.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "WidgetBlueprint.h"
 #include "Blueprint/WidgetTree.h"
@@ -346,8 +347,11 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
     const FString Name=TargetGraph.IsEmpty()?G->GetName():TargetGraph;
     if(!ValidName(Name))return TEXT("error: TargetGraph must be a valid graph identifier. Nothing changed.");
     UEdGraph* Old=GraphByName(T,Name);
+    const bool AppendEvent = Event && Old && T->UbergraphPages.Contains(Old);
+    if (Event && Old && !AppendEvent) return TEXT("error: An event graph can only append into an owned event page. Nothing changed.");
+    if (AppendEvent && !G->SubGraphs.IsEmpty()) return TEXT("error: Append does not support nested source graphs yet. Transfer to a new page instead. Nothing changed.");
     const bool ParentScaffold = Old && IsParentScaffold(T, Old);
-    if(Old)
+    if(Old && !AppendEvent)
     {
         // Only declarations produced by member/interface preparation may be filled.
         // Never overwrite executable logic, even when graph names match.
@@ -360,6 +364,24 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
         if(!SF || !TF || !SF->IsSignatureCompatibleWith(TF))return TEXT("error: Source and target function signatures differ or are not compiled. Nothing changed.");
     }
     else if(HasVariable(T,FName(*Name)))return TEXT("error: Target name conflicts with a variable. Nothing changed.");
+    // Move the incoming group as a unit. Unmeasured nodes use conservative
+    // dimensions; this is separation, not a rendered-layout certification.
+    int32 AppendOffsetY = 0;
+    if (AppendEvent && !Old->Nodes.IsEmpty() && !G->Nodes.IsEmpty())
+    {
+        int64 Bottom = MIN_int32, Top = MAX_int32, IncomingBottom = MIN_int32;
+        for (UEdGraphNode* Node : Old->Nodes) if (Node)
+            Bottom = FMath::Max(Bottom, int64(Node->NodePosY) + FMath::Max(Node->NodeHeight, 512));
+        for (UEdGraphNode* Node : G->Nodes) if (Node)
+        {
+            Top = FMath::Min(Top, int64(Node->NodePosY));
+            IncomingBottom = FMath::Max(IncomingBottom, int64(Node->NodePosY) + FMath::Max(Node->NodeHeight, 512));
+        }
+        const int64 Offset = Bottom + 192 - Top;
+        if (Offset < MIN_int32 || Offset > MAX_int32 || IncomingBottom + Offset > MAX_int32)
+            return TEXT("error: Appended graph positions would exceed supported coordinates. Nothing changed.");
+        AppendOffsetY = int32(Offset);
+    }
     TArray<UK2Node_FunctionEntry*> Entries;G->GetNodesOfClass(Entries);
     // Calls to custom events carried by this graph are internal dependencies.
     // Other graphs must still be transferred after their event definitions.
@@ -370,6 +392,15 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
     UFunction* ParentFunction = T->ParentClass ? T->ParentClass->FindFunctionByName(FName(*Name)) : nullptr;
     if (Function && ParentFunction && Name != G->GetName())
         return TEXT("error: An inherited override cannot be renamed during transfer. Keep its original name. Nothing changed.");
+    // Native/override event entry points are unique within a Blueprint. Custom
+    // events use the more precise empty-declaration compatibility path below.
+    if (AppendEvent)
+        for (UEdGraphNode* Node : G->Nodes)
+            if (auto* Incoming = Cast<UK2Node_Event>(Node); Incoming && !Incoming->IsA<UK2Node_CustomEvent>())
+                for (UEdGraph* Page : T->UbergraphPages) if (Page)
+                    for (UEdGraphNode* Existing : Page->Nodes)
+                        if (auto* Other = Cast<UK2Node_Event>(Existing); Other && Other->EventReference.GetMemberName() == Incoming->EventReference.GetMemberName())
+                            return TEXT("error: A matching event entry point already exists in the target. Nothing changed; choose distinct chains instead.");
     FString Missing; TArray<UK2Node_CustomEvent*> ReplaceEvents;
     for(UEdGraphNode* N:G->Nodes)
     {
@@ -410,12 +441,14 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
         for (const FBPVariableDescription& Local : Entry->LocalVariables)
             Summary += TEXT("\nlocal: ") + Local.VarName.ToString();
     if (Function && ParentFunction) Summary += TEXT("\nfunction kind: inherited override");
+    if (AppendEvent) Summary += FString::Printf(TEXT("\nmode: append into existing event page; existing nodes and links preserved\nincoming vertical offset: %d; 512-unit fallback height for unmeasured nodes; no automatic execution links or tidy"), AppendOffsetY);
     if(!Apply)return TEXT("preview: Copy the complete graph, including connections, positions, comments and locals. No changes made. Listed IDs belong to the source; use the edit result for target IDs.")+Summary;
     T->Modify();
     UEdGraph* Copy=FEdGraphUtilities::CloneGraph(G,T);
     if(!Copy)return TEXT("error: Unreal could not clone the graph. No save requested.");
-    if(Old)Old->Rename(nullptr,GetTransientPackage(),REN_DontCreateRedirectors|REN_NonTransactional);
-    Copy->Rename(*Name,T,REN_DontCreateRedirectors|REN_NonTransactional);Copy->GraphGuid=FGuid::NewGuid();
+    if(Old && !AppendEvent)Old->Rename(nullptr,GetTransientPackage(),REN_DontCreateRedirectors|REN_NonTransactional);
+    if (!AppendEvent) Copy->Rename(*Name,T,REN_DontCreateRedirectors|REN_NonTransactional);
+    Copy->GraphGuid=FGuid::NewGuid();
     TArray<TPair<FString, FGuid>> IdentityMap;
     for(UEdGraphNode* N:Copy->Nodes)
     {
@@ -437,7 +470,21 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
         for(UEdGraphPin* P:N->Pins)if(P && P->PinName==UEdGraphSchema_K2::PN_Self && P->PinType.PinSubCategoryObject.Get()==S->GeneratedClass)P->PinType.PinSubCategoryObject=T->GeneratedClass;
     }
     bool Replaced=false;
-    if(Old)
+    if (AppendEvent)
+    {
+        Old->Modify();
+        // Clone first, then reparent nodes without breaking their internal links.
+        const auto IncomingNodes = Copy->Nodes;
+        for (UEdGraphNode* Node : IncomingNodes) if (Node)
+        {
+            Node->Rename(nullptr, Old, REN_DontCreateRedirectors|REN_NonTransactional);
+            Node->NodePosY += AppendOffsetY;
+            Old->Nodes.Add(Node);
+        }
+        Copy->Nodes.Reset();
+        Replaced = true;
+    }
+    if(Old && !AppendEvent)
     {
         for(auto& Existing:T->FunctionGraphs)if(Existing==Old){Existing=Copy;Replaced=true;}
         for(auto& I:T->ImplementedInterfaces)for(auto& Existing:I.Graphs)if(Existing==Old){Existing=Copy;Replaced=true;}
@@ -455,6 +502,7 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
                 if (Node && Node->NodeGuid == Pair.Value) { TargetNode = Node; break; }
         Result += TEXT("\n") + Pair.Key + TEXT(" -> ") + (TargetNode ? TurboMCPNodeId::MakeForNode(TargetNode, true) : TEXT("unresolved after structural refresh; read the target graph"));
     }
+    if (AppendEvent) Result += TEXT("\nmode: appended; existing page identity and unrelated nodes retained. No automatic execution links or tidy.");
     return Result + Completion;
 }
 

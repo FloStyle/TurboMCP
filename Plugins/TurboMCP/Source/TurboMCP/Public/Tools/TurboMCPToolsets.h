@@ -679,7 +679,7 @@ public:
      * @param SourceAsset Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.
      * @param SourceGraph Required exact source function, interface-function, macro or event graph name. This selects the whole graph, not node IDs or an event label.
      * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
-     * @param TargetGraph Pass an empty string to keep SourceGraph, or a valid destination identifier. Existing event/macro graphs refuse. An existing function must contain only entry/result nodes, no locals, and have a compiled compatible signature.
+     * @param TargetGraph Pass an empty string to keep SourceGraph, or a valid destination identifier. Existing event pages receive the whole source group below existing nodes, preserving internal links and relative positions; unmeasured nodes use a conservative 512-unit height. This does not splice execution chains or tidy. Nested source graphs refuse append. Existing macro graphs refuse. An existing function must contain only entry/result nodes, no locals, and have a compiled compatible signature.
      *
      * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
      */
@@ -1423,7 +1423,7 @@ public:
      * @param SourceAsset Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.
      * @param SourceGraph Required exact source function, interface-function, macro or event graph name. This selects the whole graph, not node IDs or an event label.
      * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
-     * @param TargetGraph Pass an empty string to keep SourceGraph, or a valid destination identifier. Existing event/macro graphs refuse. An existing function must contain only entry/result nodes, no locals, and have a compiled compatible signature.
+     * @param TargetGraph Pass an empty string to keep SourceGraph, or a valid destination identifier. Existing event pages receive the whole source group below existing nodes, preserving internal links and relative positions; unmeasured nodes use a conservative 512-unit height. This does not splice execution chains or tidy. Nested source graphs refuse append. Existing macro graphs refuse. An existing function must contain only entry/result nodes, no locals, and have a compiled compatible signature.
      *
      * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
      */
