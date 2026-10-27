@@ -46,9 +46,10 @@ def common_play():
     if evidence.exists(): evidence.unlink()
     result = s.call(support['AUTO_TOOLSET'], 'RunTests', {'testNames':[name]})
     print(result)
+    # Keep fresh diagnostic evidence in the supervisor log even when assertions fail.
+    if evidence.exists(): print(evidence.read_text(encoding='utf-8-sig'))
     support['parse_run_tests_report'](result, name)
     if not evidence.exists(): raise RuntimeError('Fresh CommonUI evidence missing')
-    print(evidence.read_text(encoding='utf-8-sig'))
     print('RESULT: PASS CommonUI controller workflow')
 import os
 if os.environ.get('TURBOMCP_VISION_SCENARIO') == 'commonui':
@@ -92,13 +93,17 @@ print('MATERIAL AFTER ACTIVE VIEWPORT TICKS:', settled_shot)
 # Keep the entire play/input loop in one native latent test. Starting a second
 # automation test tears down an existing PIE session in Unreal's test framework.
 name = 'TurboMCP.Workflow.PlayMenu'
-result = s.call(support['AUTO_TOOLSET'], 'RunTests', {'testNames':[name]})
-support['parse_run_tests_report'](result, name)
 menu_evidence = folder / 'play-menu.txt'
-if not menu_evidence.exists(): raise RuntimeError('Menu workflow evidence missing')
-menu_text = menu_evidence.read_text(encoding='utf-8-sig')
+if menu_evidence.exists(): menu_evidence.unlink()
+result = s.call(support['AUTO_TOOLSET'], 'RunTests', {'testNames':[name]})
+# Archive before checking success: a failed test is the most useful transcript.
+# Remove the previous transcript first so an early failure cannot reuse old evidence.
+menu_text = menu_evidence.read_text(encoding='utf-8-sig') if menu_evidence.exists() else 'Fresh menu workflow evidence missing.'
 with transcript.open('a', encoding='utf-8') as out: out.write('\n=== Owned play and menu loop ===\n' + result + '\n' + menu_text)
+print(result)
 print(menu_text)
+support['parse_run_tests_report'](result, name)
+if not menu_evidence.exists(): raise RuntimeError('Fresh menu workflow evidence missing')
 print('RESULT: PASS')
 
 common_play()
