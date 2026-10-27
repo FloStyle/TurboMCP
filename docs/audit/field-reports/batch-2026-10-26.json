@@ -190,7 +190,7 @@
     "native_run": "634f1ae847c8482b9296fe386e17da1f",
     "result": "passed",
     "workflow": "Transfer event definitions first under a new graph name, then functions that call them. Incoming custom events satisfy internal dependencies. Inherited overrides retain parent ownership. Preview lists source nodes, links and local names.",
-    "remaining": "GC-53 remains; does not add member exclusions or declaration-only custom events."
+    "remaining": "GC-53 and FT-108 follow-ups implemented; see their dedicated evidence. Original-project confirmation pending."
   },
   "comment_repair": {
     "commit": "c32d23f",
@@ -238,7 +238,7 @@
     "focused_test": "TurboMCP.GraphAppend.AliasCollision passed; quoted getter accepted without refusals",
     "suite": "test-graph-append failed on separate placement/output checks",
     "usage": "Double-quote the entire discovered type ID when it contains spaces.",
-    "remaining": "TD-42 and remaining report issues stay open. Field confirmation pending."
+    "remaining": "Focused AliasCollision case passed; this historical full suite failed other checks and is not a full-suite pass. TD-42 follow-up implemented separately."
   },
   "scoped_tidy_repair": {
     "commit": "7118d02",
@@ -310,7 +310,7 @@
     "native_run": "c880c2db4a93445c88c405ffbe189360",
     "status": "implemented_native_pass_field_pending",
     "tool": "EditTurboMCPWidgetRename",
-    "limits": "External assets and dynamic string lookups not verified; loaded dependent Blueprints may be refreshed. FT-109 copy-time collision naming remains open."
+    "limits": "External assets and dynamic strings not verified; loaded dependent Blueprints may refresh. Copy-time FT-109 naming is implemented separately."
   },
   "widget_remove_repair": {
     "commit": "4a29020e567df96f7013cf821c05051f7aad7af8",
@@ -327,7 +327,7 @@
     "commit": "5dff02eb9f2b67da176c23817fdf945446d5452d",
     "native_run": "2459d5965e1440958c5e96effaf8857e",
     "status": "implemented_native_pass_field_pending",
-    "limits": "Named parent panels; class defaults and default slot. Property editing remains FT-116. No named-slot insertion or root creation."
+    "limits": "Named parent panels; class defaults and default slot. FT-116 property editing is implemented separately. Named-slot/root creation excluded."
   },
   "widget_property_repair": {
     "commit": "4c85cf211aeee4ab9bc7f923c65ccea2e7c570bc",
@@ -413,5 +413,198 @@
     "followup_check": "Line-ending regression and actual exported plugin directory passed after final fix.",
     "limits": "Per-file notice coverage implemented for tracked files, staged exports and installable directories. Offline controls and copied source package passed. Release refuses unresolved icon/trap-data provenance. This is coverage validation, not ownership certification or binary-release acceptance.",
     "integration_validation": "c76107f6a015411bb6331b8d8b202d40: 25 checks passed; validate-repo initially stale inventory, passed after regeneration."
+  },
+  "completion_audit": {
+    "date": "2026-10-27",
+    "scope": "Original nine Oct26 field reports: implementation and intake closure, with validation flags preserved. Not public release or global tool certification.",
+    "report_hashes_match": true,
+    "implementation_checks": [
+      {
+        "section": "transfer_repair",
+        "commit": "1a81340",
+        "ancestor_of_main": true,
+        "native_run": "634f1ae847c8482b9296fe386e17da1f",
+        "native_status": "passed"
+      },
+      {
+        "section": "comment_repair",
+        "commit": "c32d23f",
+        "ancestor_of_main": true,
+        "native_run": "44c8a30becfe47bf96f7b8672773b34a",
+        "native_status": "passed"
+      },
+      {
+        "section": "user_enable_toggle",
+        "commit": "ce4ad95",
+        "ancestor_of_main": true,
+        "native_run": "a309ae10a69e4b3b9e9220a8d6189f5d",
+        "native_status": "passed"
+      },
+      {
+        "section": "report_stability_repair",
+        "commit": "822b7a0",
+        "ancestor_of_main": true,
+        "native_run": "28c311c118894529998ea6f8b44a3808",
+        "native_status": "passed"
+      },
+      {
+        "section": "quoted_type_ids",
+        "commit": "360c291",
+        "ancestor_of_main": true,
+        "native_run": "5c4894a88b7045ccae58d5b4b0ba0089",
+        "native_status": "failed"
+      },
+      {
+        "section": "scoped_tidy_repair",
+        "commit": "7118d02",
+        "ancestor_of_main": true,
+        "native_run": "f500ee874eac4e54999b1924ed9507a1",
+        "native_status": "passed"
+      },
+      {
+        "section": "log_clarity_repair",
+        "commit": "d429950",
+        "ancestor_of_main": true,
+        "native_run": "566887df68dd4bc1b251daf51d9bde13",
+        "native_status": "passed"
+      },
+      {
+        "section": "self_retarget_repair",
+        "commit": "dbbfb16",
+        "ancestor_of_main": true,
+        "native_run": "417db3d25b76440ca99fb6dae3333bfb",
+        "native_status": "passed"
+      },
+      {
+        "section": "guard_continuation_repair",
+        "commit": "4e1a246",
+        "ancestor_of_main": true,
+        "native_run": "6f203e54974740dfba1ca7a096f83c46",
+        "native_status": "passed"
+      },
+      {
+        "section": "guard_placement_repair",
+        "commit": "5a313f4",
+        "ancestor_of_main": true,
+        "native_run": "5baad9279e9d4b4883b2b20362e382e8",
+        "native_status": "passed"
+      },
+      {
+        "section": "parent_scaffold_repair",
+        "commit": "dfe22ad",
+        "ancestor_of_main": true,
+        "native_run": "e517764b9e984d3d800dddc8a669ba9c",
+        "native_status": "passed"
+      },
+      {
+        "section": "replace_guidance_repair",
+        "commit": "566881010b1fd3a417dec3f9d5d91aa78e8f86a0",
+        "ancestor_of_main": true
+      },
+      {
+        "section": "widget_rename_repair",
+        "commit": "72384b80a569e7a8c35cf10a7878343de07f188f",
+        "ancestor_of_main": true,
+        "native_run": "c880c2db4a93445c88c405ffbe189360",
+        "native_status": "passed"
+      },
+      {
+        "section": "widget_remove_repair",
+        "commit": "4a29020e567df96f7013cf821c05051f7aad7af8",
+        "ancestor_of_main": true,
+        "native_run": "b3f0a47c80c74d81bc9e85b583bcaa02",
+        "native_status": "passed"
+      },
+      {
+        "section": "widget_add_repair",
+        "commit": "5dff02eb9f2b67da176c23817fdf945446d5452d",
+        "ancestor_of_main": true,
+        "native_run": "2459d5965e1440958c5e96effaf8857e",
+        "native_status": "passed"
+      },
+      {
+        "section": "widget_property_repair",
+        "commit": "4c85cf211aeee4ab9bc7f923c65ccea2e7c570bc",
+        "ancestor_of_main": true,
+        "native_run": "a45c2ea31bba463f94b6fbd377b7493e",
+        "native_status": "passed"
+      },
+      {
+        "section": "tidy_recovery_repair",
+        "commit": "91b1593be9f7b5ba0fb6cff267a55c793bc2bf01",
+        "ancestor_of_main": true,
+        "native_run": "228a44ccbf324766a118d0dae264c75e",
+        "native_status": "passed"
+      },
+      {
+        "section": "struct_identity_repair",
+        "commit": "bffc6fec856c1ab64a318bdbb43e1e06840536c3",
+        "ancestor_of_main": true,
+        "native_run": "759e69a6e1c84d6a9a41e5bef2d8b2d6",
+        "native_status": "passed"
+      },
+      {
+        "section": "writer_syntax_repair",
+        "commit": "d25e927a82489be9bc113b178858cc1d2e88f2bf",
+        "ancestor_of_main": true,
+        "native_run": "e5c8a11f4b574808ad7fbe861773c91a",
+        "native_status": "passed"
+      },
+      {
+        "section": "widget_collision_repair",
+        "commit": "f2983447c97630798a18003f6b43384c7c994b48",
+        "ancestor_of_main": true,
+        "native_run": "70c811d4553246d58f39ef92323c29bf",
+        "native_status": "passed"
+      },
+      {
+        "section": "menu_diagnostics",
+        "commit": "50a8427",
+        "ancestor_of_main": true,
+        "native_run": "9c3633c63a4f45b29244e6ea9fb3382a",
+        "native_status": "passed"
+      },
+      {
+        "section": "pie_warning_repair",
+        "commit": "726db2c",
+        "ancestor_of_main": true,
+        "native_run": "9de1cc9c02e441f0aa7c2a6163b0cc1b",
+        "native_status": "passed"
+      },
+      {
+        "section": "member_merge_repair",
+        "commit": "4fc5194",
+        "ancestor_of_main": true,
+        "native_run": "237bfd22de774306b2f4a854ae72cef2",
+        "native_status": "passed"
+      },
+      {
+        "section": "function_rename_repair",
+        "commit": "c169539ec20057144a0ba5203097835ca0436cb4",
+        "ancestor_of_main": true,
+        "native_run": "22a631e5725a45a7a1afe3e98e849795",
+        "native_status": "passed"
+      },
+      {
+        "section": "event_append_repair",
+        "commit": "55aa09dda957d0a53f6fa119a5dda876558b1d71",
+        "ancestor_of_main": true,
+        "native_run": "09f4933792bc4961a91c769ae61e890a",
+        "native_status": "passed"
+      },
+      {
+        "section": "package_notice_repair",
+        "commit": "b7fc05387e9e259f89b1fdc4eeb722c29156f07d",
+        "ancestor_of_main": true
+      }
+    ],
+    "open_original_items": [],
+    "remaining_separate_work": [
+      "2026-10-27_Local/PLAY-01: intermittent menu failure, not fixed by a passing rerun",
+      "2026-10-26/WORKFLOW-CLEANUP: deferred test-file cleanup",
+      "Release ownership verification for icon and trap data; public export remains blocked",
+      "Full live-help acceptance for two new function-rename tools; review total remains 61/152"
+    ],
+    "historical_failure": "Quoted-type AliasCollision focused case passed inside a failed full suite. No full-suite success claimed."
   }
 }

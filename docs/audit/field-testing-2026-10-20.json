@@ -3124,7 +3124,7 @@
       "priority": "P1",
       "state": "done",
       "validation": "native fixture passed; field verification pending",
-      "remaining": "Field confirmation pending; separate merge blockers remain open.",
+      "remaining": "Field confirmation pending. The original merge blockers are implemented; documented type/default restrictions remain.",
       "observation": "Imported from archived Oct26 field report.",
       "implementation": "72501169b2253234c1e26fc24dc321f372ab16af",
       "implementation_limits": "Interface addition and typed local declarations only. No interface removal, full graph transfer or subtree migration. Explicit object/container local defaults are not supported. Final null-refusal formatting change is statically checked; native behavior evidence precedes that equivalent guard change."
@@ -3251,7 +3251,7 @@
       "owner": "R04",
       "disposition": "reconciled_with_current_source",
       "validation": "native_passed_and_field_confirmed_S8_GC-58",
-      "implementation_limits": "Source confirms a passing preview reports node count only, not individual nodes, links or locals. Field attempts stopped at dependency refusals.",
+      "implementation_limits": "Preview now lists source nodes, links and locals; S8 confirms the detailed plan. Preview IDs are source IDs; edit returns target mappings.",
       "implementation": "1a81340; stock-engine build and native workflow 634f1ae847c8482b9296fe386e17da1f passed",
       "remaining": "S8 confirms event/function transfer and detailed preview; runtime behavior of merged asset was not tested."
     },
@@ -3390,7 +3390,7 @@
       "owner": "R04",
       "disposition": "field_report_reconciled",
       "validation": "native_passed_and_field_confirmed_S8_GC-58",
-      "implementation_limits": "Source dependency check requires target functions before cloning and does not account for custom events defined by the incoming graph. Separate defect from FT-108 declaration support; two functions and event graph remain blocked.",
+      "implementation_limits": "Incoming custom-event definitions now satisfy same-graph dependencies. S8 confirms transfer; separate external dependencies still require preparation.",
       "remaining": "S8 confirms event/function transfer and detailed preview; runtime behavior of merged asset was not tested.",
       "implementation": "1a81340; stock-engine build and native workflow 634f1ae847c8482b9296fe386e17da1f passed"
     },
@@ -3406,7 +3406,7 @@
       "disposition": "field_report_reconciled",
       "validation": "native_passed_field_recheck_pending",
       "implementation_limits": "Field compile failure, repaired manually. Detect parent-declared functions and preserve override identity or refuse before mutation. Exact later build revision unknown.",
-      "remaining": "Real-project recheck pending. Existing nonempty override scaffolds still refuse (GC-53); member exclusions/custom-event declaration preparation remain FT-108.",
+      "remaining": "Real-project confirmation pending. GC-53 parent-scaffold filling and FT-108 member preparation are now implemented.",
       "implementation": "1a81340; stock-engine build and native workflow 634f1ae847c8482b9296fe386e17da1f passed"
     },
     {
@@ -3583,7 +3583,7 @@
       "priority": "P1",
       "owner": "R04",
       "validation": "tested",
-      "remaining": "Field confirmation pending. FT-111 broader provenance review remains open.",
+      "remaining": "Field confirmation pending. FT-111 notice-coverage checker is implemented; unverified icon/trap-data ownership blocks release.",
       "implementation": "Installable plugin includes the root license. Validation and export reject missing or mismatched copies.",
       "evidence": "822b7a0; native build/suite 28c311c118894529998ea6f8b44a3808 passed. License export matching/missing/mismatch checks passed."
     },
