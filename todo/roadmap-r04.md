@@ -1945,3 +1945,7 @@ Readiness: ready. Integration owner authorizes oct27-package-notices.
 ### Oct27 user preference default off
 
 Readiness: ready. User explicitly requests Enable TurboMCP default false. Change the settings initializer and its help only; existing saved per-user/project values must remain authoritative. Restart requirement and call-recording preference unchanged. Source-check the config path and initializer; no native rebuild needed for this one-value change.
+
+### Oct27 focused function rename quality review
+
+Readiness: ready. Review preview/edit function rename help, English output, helper contracts and existing native scenario evidence. Add explicit example, map/dependency limits and a help-only supervised scenario selecting these two tools. Reuse passing behavior evidence; do not rerun unrelated workflows. Capture live parameter help and only then update focused review count. Existing saved enable preference remains authoritative.

@@ -2631,6 +2631,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPSettings.h"
           ],
           "new_files": []
+        },
+        "oct27-rename-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-vision-workflow.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
