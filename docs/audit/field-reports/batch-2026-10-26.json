@@ -372,5 +372,11 @@
   },
   "native_followups": [
     "2026-10-27_Local/PLAY-01"
-  ]
+  ],
+  "menu_diagnostics": {
+    "commit": "50a8427",
+    "native_run": "9c3633c63a4f45b29244e6ea9fb3382a",
+    "result": "passed",
+    "limits": "Failure evidence retention verified; intermittent PLAY-01 remains open, not reproduced in this run."
+  }
 }

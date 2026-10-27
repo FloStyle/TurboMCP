@@ -3957,7 +3957,8 @@
       "evidence": "5b1d670c662b4a24b0107149828ca6d9: Vision passed; PlayMenu callback state expected Gameplay but was Main menu, then analog evaluation failed. Unchanged rerun 70c811d4553246d58f39ef92323c29bf passed all scenarios.",
       "remaining": "Investigate input/focus/timing and fixture state; cause not established. Do not count a rerun as a fix.",
       "investigation": "2026-10-27: failing fixture uses stock SlateInspector Click, not TurboMCP MenuActivate. PIE capture uses TakeScreenshot on the live window, not offscreen reparenting. Click delivery does not prove callback activation. Root cause remains unproven.",
-      "diagnostic_repair": "50a8427: preserve PlayMenu and CommonPlay transcripts in supervisor output before parsing failed verdicts; remove stale menu transcript before execution. Focused injected-failure check passed; offline validation d6252363958b4a788a9ab0509588f57f passed. Native reproduction pending; not a menu behavior fix."
+      "diagnostic_repair": "50a8427: preserve PlayMenu and CommonPlay transcripts in supervisor output before parsing failed verdicts; remove stale menu transcript before execution. Focused injected-failure check passed; offline validation d6252363958b4a788a9ab0509588f57f passed. Native reproduction pending; not a menu behavior fix.",
+      "latest_reproduction": "9c3633c63a4f45b29244e6ea9fb3382a: supervised build and Vision/PlayMenu/CommonPlay passed at c71b6fe. Both Resume callbacks reached Gameplay; per-run log retains details. Intermittent failure not reproduced or resolved."
     }
   ],
   "prototype": {
