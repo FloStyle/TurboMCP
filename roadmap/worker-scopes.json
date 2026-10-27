@@ -2648,6 +2648,13 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp"
           ]
+        },
+        "oct27-style-visual": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonButtonWorkflowTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

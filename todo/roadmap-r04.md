@@ -1963,3 +1963,7 @@ Readiness: ready. User prioritizes CommonUI editing then DataTables. The existin
 - Exact reflected property paths may descend value structs, never object ownership. Support finite scalar/value-struct writes, preserving unspecified fields; object/container/delegate/text writes refuse. Expose omitted reference values read-only where possible, with clear support labels. No arbitrary object traversal, save, compile or automatic runtime refresh.
 - Preview parses into temporary storage; edit uses native property notification and transaction. Refuse invalid names, unsupported types, invalid enum/text and non-finite data without mutation. Do not report runtime or save success.
 - Extend existing CommonButton fixture with tool-driven style color/padding changes, preview/no-op/refusal/read-back and compile preservation checks. Capture live help. Real pointer/pressed/disabled evidence remains required for full workflow completion; do not count callback-only imagery as input testing.
+
+### Oct27 shared-style visual verification
+
+Readiness: ready. Extend the disposable CommonButton fixture with tool-authored distinct normal/hovered/pressed/disabled brushes. Render an actual CommonButton Slate widget, exercise its native Slate input handlers and retain images. This is bounded native widget-state evidence, not end-to-end pointer routing, focus navigation or PIE acceptance. Preserve those remaining workflow limits. Review output against observed values; repair only demonstrated style-tool defects. No engine modifications or new production dependencies.
