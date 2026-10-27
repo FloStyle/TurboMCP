@@ -2605,6 +2605,14 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionRenameTools.cpp"
           ]
+        },
+        "oct27-event-append": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

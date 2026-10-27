@@ -1911,3 +1911,12 @@ Required behavior:
 - Preview leaves function identity unchanged; edit preserves graph GUID, external caller literal and links, compiles both Blueprints, and clears the interface collision. Same-name and conflict refusals covered.
 - Native synthetic external-caller/interface-collision scenario passed. Original-project confirmation pending. Map referencers refuse; dynamic strings, native and unavailable content are not verified. Child/delegate paths are source-reviewed but not separately native-tested. No automatic save or guaranteed rollback.
 - Tool inventory is 152. Full scenario-reviewed total remains 61 pending live help/full acceptance for these two new tools.
+
+### Oct27 existing event-page append contract (GC-50)
+
+Readiness: ready. Integration owner authorizes oct27-event-append, scoped to transfer implementation, public help and native workflow fixture.
+- When an event source targets an existing owned event page, append the complete cloned source graph into that page. Preserve destination graph identity, existing node identities, positions, defaults and connections. Do not connect independent incoming chains to existing execution pins automatically.
+- Preserve incoming internal connections, comments and relative layout; translate the incoming group below existing content with a gap. Use explicit conservative bounds for nodes without measured dimensions and describe this limitation honestly. New target IDs must resolve in the existing page.
+- Preserve current dependency checks and protection against replacing authored custom events. Empty compatible declarations may be consumed through the existing merge contract. Reject graph-kind mismatches, duplicate event entry points and unsupported nested graph ownership before mutation. Existing macro graphs remain protected.
+- Preview must describe append versus replacement, translation and limitations without mutation. Help must explain whole-page scope, not imply selective event splicing or automatic tidy.
+- Native fixture must append into a populated event page, verify existing identity/layout/links/defaults, source preservation, incoming links/IDs, preview immutability and repeated conflict refusal, then compile. Run supervised test-vision-workflow and offline integration validation. Do not close GC-50 before acceptance.
