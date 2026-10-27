@@ -2579,6 +2579,15 @@
             "Tools/test-vision-workflow.py"
           ],
           "new_files": []
+        },
+        "oct27-pie-warning": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
