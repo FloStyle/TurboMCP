@@ -62,12 +62,12 @@ namespace
 		if (GEditor->IsPlaySessionInProgress())
 		{
 			return TEXT("a play in editor session is running or queued, and saving during ")
-				TEXT("play is refused (D-34). Stop the session and ask again.");
+				TEXT("play is refused (D-34). Nothing saved or queued. Earlier edits may still be unsaved; this refusal does not undo them. Stop the session, call ReadTurboMCPDirtyList, inspect and compile changed assets, then explicitly save the assets you want to keep.");
 		}
 		if (GEditor->IsSimulateInEditorInProgress())
 		{
 			return TEXT("a simulate in editor session is running or queued, and saving during ")
-				TEXT("simulate is refused (D-34). Stop the session and ask again.");
+				TEXT("simulate is refused (D-34). Nothing saved or queued. Earlier edits may still be unsaved; this refusal does not undo them. Stop simulation, call ReadTurboMCPDirtyList, inspect and compile changed assets, then explicitly save the assets you want to keep.");
 		}
 		return FString();
 	}
@@ -153,8 +153,8 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 			Parts.Num(), MaxAssetsPerCall);
 	}
 
-	// Compiling is safe during play, unlike saving, so only the editor-available
-	// check applies here.
+	// Public tool dispatch refuses asset edits during PIE. Internal callers still
+	// require an available editor before entering the compiler.
 	if (!GIsEditor || GEditor == nullptr)
 	{
 		return FString::Printf(TEXT("error: %s."), *WriteRefusalReason());

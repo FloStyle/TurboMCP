@@ -271,7 +271,11 @@ namespace
             if (bAssetEdit
                 && (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress()))
             {
-                const FString Error = TEXT("unchanged: edit refused; requires the editor game thread, no play session and no active transaction. Run individual edits outside script transactions.");
+                FString Error = TEXT("unchanged: edit refused; requires the editor game thread, no play session and no active transaction. Run individual edits outside script transactions.");
+                if (IsInGameThread() && GEditor && GEditor->IsPlaySessionInProgress())
+                {
+                    Error += TEXT("\nThis call made no changes and was not queued. Earlier edits made by other tools may still be unsaved; this refusal does not undo them. TurboMCP does not control the engine property writer. Stop play, call ReadTurboMCPDirtyList and inspect the changed assets, then compile and explicitly save the assets you want to keep.");
+                }
                 Call->Finish(Error, true);
                 return MakeFulfilledPromise<FToolResult>(MakeError(Error)).GetFuture();
             }

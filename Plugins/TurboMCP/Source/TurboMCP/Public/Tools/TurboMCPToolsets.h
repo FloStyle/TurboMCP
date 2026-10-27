@@ -1491,7 +1491,7 @@ public:
 
 	/**
 	 * Compile up to 25 named assets and report compiler and engine diagnostics; does not save.
-	 * Compilation can reinstance classes and affect dependent objects. Refuses during an active editor transaction. Inspect each asset result before saving; this is not an atomic batch.
+	 * Compilation can reinstance classes and affect dependent objects. Public tool calls refuse during play or an active editor transaction. Earlier edits from other tools are not undone or queued: stop play, inspect ReadTurboMCPDirtyList, then compile and explicitly save wanted changes. Inspect each asset result before saving; this is not an atomic batch.
 	 * @param Assets Required comma- or pipe-separated asset paths or unique short names, e.g. /Game/Tests/BP_NodeTest|/Game/Tests/WBP_NodeTest. Empty lists and lists over 25 entries are refused. Unsupported asset types are reported individually.
 	 */
 	UFUNCTION(meta = (AICallable))
@@ -1500,7 +1500,7 @@ public:
 	/**
 	 * Write named asset packages to disk, including packages whose dirty flag is clear; does not explicitly compile.
 	 * Widget Blueprints use direct package serialization without refreshing their thumbnail. Other assets use the editor save path, which may render thumbnails and execute asset code. Saving is not an undoable graph edit.
-	 * Refuses during play, simulation or an active editor transaction. Each asset is saved separately, with one retry on failure; earlier writes are not rolled back if another asset fails. Source-control checkout results are reported and do not guarantee a lock or block the save. Inspect each result.
+	 * Refuses during play, simulation or an active editor transaction. A refusal does not undo earlier edits or queue a save. Stop play and inspect ReadTurboMCPDirtyList before compiling and saving wanted changes. Each asset is saved separately, with one retry on failure; earlier writes are not rolled back if another asset fails. Source-control checkout results are reported and do not guarantee a lock or block the save. Inspect each result.
 	 * @param Assets Required comma- or pipe-separated asset paths or unique short names, e.g. /Game/Tests/BP_NodeTest. Empty lists and lists over 25 entries are refused. This is an explicit save list, not a dirty-asset filter.
 	 */
 	UFUNCTION(meta = (AICallable))
@@ -1509,7 +1509,7 @@ public:
 	/**
 	 * Write named asset packages directly to disk without refreshing thumbnails; does not explicitly compile.
 	 * Skips the editor thumbnail draw, but package serialization still runs engine and asset save callbacks. This is not a sandbox or an undoable graph edit. Existing thumbnails may remain stale. Mounted package filenames must resolve successfully.
-	 * Refuses during play, simulation or an active editor transaction. Saves each asset separately with one retry on failure; earlier writes are not rolled back. Source-control checkout results are reported, not a guarantee that a lock was acquired.
+	 * Refuses during play, simulation or an active editor transaction. A refusal does not undo earlier edits or queue a save. Stop play and inspect ReadTurboMCPDirtyList before compiling and saving wanted changes. Saves each asset separately with one retry on failure; earlier writes are not rolled back. Source-control checkout results are reported, not a guarantee that a lock was acquired.
 	 * @param Assets Required comma- or pipe-separated asset paths or unique short names, e.g. /Game/Tests/BP_NodeTest. Empty lists and lists over 25 entries are refused. Explicitly saves even packages whose dirty flag is clear.
 	 */
 	UFUNCTION(meta = (AICallable))

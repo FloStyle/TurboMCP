@@ -81,6 +81,15 @@ public:
             Record(Dispatch(TEXT("EditTurboMCPPlayInput"),TEXT("{\"Target\":\"pie:0\",\"Action\":\"focus\",\"Key\":\"\",\"Value\":\"\",\"Seconds\":\"\"}")));
             const FString Refused=Dispatch(TEXT("EditTurboMCPFunctionAdd"),TEXT("{\"Asset\":\"NotAnAsset\",\"Name\":\"MustNotEditInPIE\",\"Inputs\":\"\",\"Outputs\":\"\"}"));
             Test->TestTrue(TEXT("Asset edits still refused by PIE gate"),Refused.Contains(TEXT("no play session")));
+            for (const TCHAR* Tool : {TEXT("EditTurboMCPCompile"), TEXT("EditTurboMCPSave"), TEXT("EditTurboMCPSaveWithoutThumbnail")})
+            {
+                const FString Result=Dispatch(Tool,TEXT("{\"Assets\":\"NotAnAsset\"}"));
+                Record(Result);
+                Test->TestTrue(TEXT("PIE refusal precedes asset lookup"),Result.Contains(TEXT("no play session")));
+                Test->TestTrue(TEXT("Earlier edits are not reported as rolled back"),Result.Contains(TEXT("does not undo them")));
+                Test->TestTrue(TEXT("Refused call is not queued"),Result.Contains(TEXT("not queued")));
+                Test->TestTrue(TEXT("PIE refusal gives dirty-asset recovery step"),Result.Contains(TEXT("ReadTurboMCPDirtyList")));
+            }
             ++Step;return false;
         }
         if (Step<=10 && (!Fixture.IsValid() || !GEditor || !GEditor->PlayWorld))
