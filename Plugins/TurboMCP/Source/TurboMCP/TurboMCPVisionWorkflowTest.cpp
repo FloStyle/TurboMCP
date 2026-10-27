@@ -451,6 +451,31 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
   auto* CopiedSlot=Cast<UCanvasPanelSlot>(CopiedLabel->Slot);if(TestNotNull(TEXT("Copied root slot"),CopiedSlot)){TestEqual(TEXT("Slot position preserved"),CopiedSlot->GetPosition(),Slot->GetPosition());TestEqual(TEXT("Slot size preserved"),CopiedSlot->GetSize(),Slot->GetSize());}
  }
  TestTrue(TEXT("Name collision refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Subtree->GetName(),WidgetTarget->GetPathName(),ParentName).StartsWith(TEXT("error:")));
+ // FT-109: repeat copy with collisions, preserving the first copy and source.
+ Label->Navigation = NewObject<UWidgetNavigation>(Label);
+ Label->Navigation->Next.Rule = EUINavigationRule::Explicit;
+ Label->Navigation->Next.WidgetToFocus = TEXT("Extra0");
+ const FString RenamePreview = Record(TEXT("Subtree auto-rename preview"), UTurboMCPPreviewToolset::PreviewTurboMCPWidgetSubtreeCopy(WB->GetPathName(), Subtree->GetName(), WidgetTarget->GetPathName(), ParentName, true));
+ TestTrue(TEXT("Preview lists root and descendant mappings"), RenamePreview.Contains(TEXT("PurchasePanel -> PurchasePanel_Copy")) && RenamePreview.Contains(TEXT("StatusLabel -> StatusLabel_Copy")));
+ TestNull(TEXT("Auto-rename preview leaves tree unchanged"), WidgetTarget->WidgetTree->FindWidget(TEXT("PurchasePanel_Copy")));
+ const FString RenamedCopy = Record(TEXT("Subtree auto-rename edit"), UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(WB->GetPathName(), Subtree->GetName(), WidgetTarget->GetPathName(), ParentName, true));
+ TestTrue(TEXT("Auto-rename copy accepted"), RenamedCopy.StartsWith(TEXT("edited:")));
+ auto* RenamedPanel = Cast<UCanvasPanel>(WidgetTarget->WidgetTree->FindWidget(TEXT("PurchasePanel_Copy")));
+ auto* RenamedLabel = Cast<UTextBlock>(WidgetTarget->WidgetTree->FindWidget(TEXT("StatusLabel_Copy")));
+ if (!TestNotNull(TEXT("Renamed panel exists"), RenamedPanel) || !TestNotNull(TEXT("Renamed label exists"), RenamedLabel)) return false;
+ TestEqual(TEXT("Renamed subtree retains all children"), RenamedPanel->GetChildrenCount(), 10);
+ TestTrue(TEXT("Renamed descendant retains parent"), RenamedLabel->GetParent() == RenamedPanel);
+ TestTrue(TEXT("First copy is unchanged"), WidgetTarget->WidgetTree->FindWidget(TEXT("PurchasePanel")) == CopiedPanel && WidgetTarget->WidgetTree->FindWidget(TEXT("StatusLabel")) == CopiedLabel);
+ TestTrue(TEXT("Renamed text identity retained"), RenamedLabel->GetText().IdenticalTo(OriginalText));
+ if (TestNotNull(TEXT("Copied navigation exists"), RenamedLabel->Navigation.Get()))
+  TestEqual(TEXT("Copied navigation uses renamed sibling"), RenamedLabel->Navigation->Next.WidgetToFocus, FName(TEXT("Extra0_Copy")));
+ TestEqual(TEXT("Source navigation unchanged"), Label->Navigation->Next.WidgetToFocus, FName(TEXT("Extra0")));
+ TestTrue(TEXT("Source name unchanged"), WB->WidgetTree->FindWidget(TEXT("StatusLabel")) == Label);
+ const FString NextNames = UTurboMCPPreviewToolset::PreviewTurboMCPWidgetSubtreeCopy(WB->GetPathName(), Subtree->GetName(), WidgetTarget->GetPathName(), ParentName, true);
+ TestTrue(TEXT("Next copy skips reserved suffix"), NextNames.Contains(TEXT("PurchasePanel -> PurchasePanel_Copy2")));
+ Label->Navigation->Next.WidgetToFocus = WB->WidgetTree->RootWidget->GetFName();
+ TestTrue(TEXT("Outside navigation refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPWidgetSubtreeCopy(WB->GetPathName(), Subtree->GetName(), WidgetTarget->GetPathName(), ParentName, true).Contains(TEXT("outside widget")));
+ Label->Navigation->Next.WidgetToFocus = TEXT("Extra0");
  TestTrue(TEXT("Source text unchanged"),Label->GetText().IdenticalTo(OriginalText));
  Record(TEXT("Compile copied widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));TestTrue(TEXT("Copied widget compiles"),WidgetTarget->Status!=BS_Error);
  if(CopiedLabel){

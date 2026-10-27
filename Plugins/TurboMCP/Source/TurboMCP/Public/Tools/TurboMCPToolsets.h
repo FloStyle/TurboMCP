@@ -710,7 +710,7 @@ public:
     /**
      * Copy one widget and its descendants into another Widget Blueprint.
      *
-     * Widget names must be unused. Copies widget properties, internal slots and the root slot layout; preserves direct/struct/array text identities. Designer bindings refuse. Graph logic and animations are not copied. Detected references outside the selected subtree refuse; prefer copying a common ancestor. Complex custom widget references and text map/set properties are not fully validated. Read the target tree and compile before saving.
+     * Widget names must be unused unless AutoRename is enabled. Copies widget properties, internal slots and the root slot layout; preserves direct/struct/array text identities. Designer bindings refuse. Graph logic and animations are not copied. Detected references outside the selected subtree refuse; prefer copying a common ancestor. Complex custom widget references and text map/set properties are not fully validated. Read the target tree and compile before saving.
      * Preview only: may load assets but does not edit them. An unchanged response means no work is needed.
      * Requires the editor game thread outside PIE and active transactions.
      *
@@ -720,11 +720,12 @@ public:
      * @param SourceWidget Required exact designer object name, such as PurchasePanel. Use the widget-tree reader; this is not displayed text or a runtime PIE path.
      * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
      * @param Parent Required string naming an existing target panel, such as RootCanvas. Pass an empty string only when the target widget tree is empty. A panel must have room; its class must match the source parent class when preserving the root slot.
+     * @param AutoRename Optional, default false. Rename colliding copied widgets with _Copy, _Copy2, etc.; preview/edit list every mapping. The source and existing target widgets are untouched. Explicit navigation inside the subtree is remapped; outside navigation refuses. Graphs, animations and custom string references are not migrated. Edit recalculates names, so inspect its returned mapping.
      *
      * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
      */
     UFUNCTION(meta = (AICallable))
-    static FString PreviewTurboMCPWidgetSubtreeCopy(const FString& SourceAsset, const FString& SourceWidget, const FString& TargetAsset, const FString& Parent);
+    static FString PreviewTurboMCPWidgetSubtreeCopy(const FString& SourceAsset, const FString& SourceWidget, const FString& TargetAsset, const FString& Parent, bool AutoRename = false);
 
     /**
      * Add a Blueprint interface contract and its required function declarations.
@@ -1411,7 +1412,7 @@ public:
     /**
      * Copy one widget and its descendants into another Widget Blueprint.
      *
-     * Widget names must be unused. Copies widget properties, internal slots and the root slot layout; preserves direct/struct/array text identities. Designer bindings refuse. Graph logic and animations are not copied. Detected references outside the selected subtree refuse; prefer copying a common ancestor. Complex custom widget references and text map/set properties are not fully validated. Read the target tree and compile before saving.
+     * Widget names must be unused unless AutoRename is enabled. Copies widget properties, internal slots and the root slot layout; preserves direct/struct/array text identities. Designer bindings refuse. Graph logic and animations are not copied. Detected references outside the selected subtree refuse; prefer copying a common ancestor. Complex custom widget references and text map/set properties are not fully validated. Read the target tree and compile before saving.
      * Mutates the target in memory and requests structural refresh, which can compile dependencies. Does not save. Undo is not guaranteed across structural compilation.
      * Requires the editor game thread outside PIE and active transactions.
      *
@@ -1421,11 +1422,12 @@ public:
      * @param SourceWidget Required exact designer object name, such as PurchasePanel. Use the widget-tree reader; this is not displayed text or a runtime PIE path.
      * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
      * @param Parent Required string naming an existing target panel, such as RootCanvas. Pass an empty string only when the target widget tree is empty. A panel must have room; its class must match the source parent class when preserving the root slot.
+     * @param AutoRename Optional, default false. Rename colliding copied widgets with _Copy, _Copy2, etc.; preview/edit list every mapping. The source and existing target widgets are untouched. Explicit navigation inside the subtree is remapped; outside navigation refuses. Graphs, animations and custom string references are not migrated. Edit recalculates names, so inspect its returned mapping.
      *
      * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
      */
     UFUNCTION(meta = (AICallable))
-    static FString EditTurboMCPWidgetSubtreeCopy(const FString& SourceAsset, const FString& SourceWidget, const FString& TargetAsset, const FString& Parent);
+    static FString EditTurboMCPWidgetSubtreeCopy(const FString& SourceAsset, const FString& SourceWidget, const FString& TargetAsset, const FString& Parent, bool AutoRename = false);
 
     /**
      * Add a Blueprint interface contract and its required function declarations.

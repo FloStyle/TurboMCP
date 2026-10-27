@@ -21,6 +21,8 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "WidgetBlueprint.h"
 #include "Blueprint/WidgetTree.h"
+#include "Blueprint/WidgetNavigation.h"
+#include "Kismet2/Kismet2NameValidators.h"
 #include "Components/PanelWidget.h"
 #include "Components/PanelSlot.h"
 #include "UObject/UnrealType.h"
@@ -388,7 +390,7 @@ static void PreserveWidgetText(const UObject* Source, UObject* Target)
             PreserveText(*Property, Property->ContainerPtrToValuePtr<void>(Source, Index), Property->ContainerPtrToValuePtr<void>(Target, Index));
 }
 
-static FString Widgets(const FString& Source,const FString& RootName,const FString& Target,const FString& ParentName,bool Apply)
+static FString Widgets(const FString& Source,const FString& RootName,const FString& Target,const FString& ParentName,bool AutoRename,bool Apply)
 {
     UBlueprint *S=nullptr,*T=nullptr;FString E=Pair(Source,Target,S,T);if(!E.IsEmpty())return E;
     auto* SW=Cast<UWidgetBlueprint>(S);auto* TW=Cast<UWidgetBlueprint>(T);
@@ -400,9 +402,46 @@ static FString Widgets(const FString& Source,const FString& RootName,const FStri
     if(Root->Slot && Parent && Root->Slot->Parent && Root->Slot->Parent->GetClass()!=Parent->GetClass())return TEXT("error: Target panel class differs from the source parent; slot properties cannot be preserved. Choose a matching panel. Nothing changed.");
     // ForWidgetAndChildren visits descendants only; include the selected root.
     TArray<UWidget*> Nodes{Root};UWidgetTree::ForWidgetAndChildren(Root,[&](UWidget* W){Nodes.Add(W);});
-    TSet<FName> Names;for(UWidget* W:Nodes){Names.Add(W->GetFName());if(TW->WidgetTree->FindWidget(W->GetFName()) || StaticFindObjectFast(UObject::StaticClass(),TW->WidgetTree,W->GetFName()))return TEXT("error: Target widget name collision: ")+W->GetName()+TEXT(". Nothing changed.");}
+    TSet<FName> Names; for (UWidget* W : Nodes) Names.Add(W->GetFName());
+    TSet<FName> Reserved = Names;
+    TMap<FName, FName> Renames;
+    FString NameReport;
+    FKismetNameValidator NameValidator(TW);
+    auto TargetNameAvailable = [&](FName Name)
+    {
+        return !TW->WidgetTree->FindWidget(Name)
+            && !StaticFindObjectFast(UObject::StaticClass(), TW->WidgetTree, Name)
+            && NameValidator.IsValid(Name.ToString()) == EValidatorResult::Ok;
+    };
+    for (UWidget* W : Nodes)
+    {
+        if (TargetNameAvailable(W->GetFName())) continue;
+        if (!AutoRename) return TEXT("error: Target widget name collision: ") + W->GetName()
+            + TEXT(". Preview with AutoRename=true to inspect replacement names. Nothing changed.");
+        FName Candidate;
+        for (int32 Index = 1; Index <= 10000; ++Index)
+        {
+            Candidate = FName(*(W->GetName().Left(80) + (Index == 1 ? TEXT("_Copy") : FString::Printf(TEXT("_Copy%d"), Index))));
+            if (!Reserved.Contains(Candidate) && TargetNameAvailable(Candidate)
+                && !StaticFindObjectFast(UObject::StaticClass(), SW->WidgetTree, Candidate)) break;
+            Candidate = NAME_None;
+        }
+        if (Candidate.IsNone()) return TEXT("error: Could not reserve a collision-free widget name. Nothing changed.");
+        Reserved.Add(Candidate); Renames.Add(W->GetFName(), Candidate);
+        NameReport += FString::Printf(TEXT("\nrename: %s -> %s"), *W->GetName(), *Candidate.ToString());
+    }
+    // Explicit navigation stores names separately from UObject references.
+    // Refuse outside targets instead of binding a same-named widget in the destination.
+    for (UWidget* W : Nodes) if (W->Navigation)
+        for (const auto* Nav : {&W->Navigation->Up, &W->Navigation->Down, &W->Navigation->Left,
+            &W->Navigation->Right, &W->Navigation->Next, &W->Navigation->Previous})
+            if (Nav->Rule == EUINavigationRule::Explicit && !Nav->WidgetToFocus.IsNone() && !Names.Contains(Nav->WidgetToFocus))
+                return TEXT("error: Subtree has explicit navigation to an outside widget. Copy their common parent or update navigation first. Nothing changed.");
+
     for(const auto& B:SW->Bindings)if(Names.Contains(FName(*B.ObjectName)))return TEXT("error: Subtree has designer bindings. Migrate those explicitly before copying; they are not silently dropped. Nothing changed.");
-    FString Summary=FString::Printf(TEXT("\nsource: %s/%s\ntarget: %s/%s\nwidgets: %d; names, properties, internal slots and localized text preserved"),*S->GetPathName(),*RootName,*T->GetPathName(),Parent?*ParentName:TEXT("root"),Nodes.Num());
+    FString Summary=FString::Printf(TEXT("\nsource: %s/%s\ntarget: %s/%s\nwidgets: %d; properties, internal slots and localized text preserved; names preserved except listed renames"),*S->GetPathName(),*RootName,*T->GetPathName(),Parent?*ParentName:TEXT("root"),Nodes.Num());
+    Summary += NameReport;
+    if (!Renames.IsEmpty()) Summary += TEXT("\nExplicit internal navigation names are remapped. Graphs, animations and custom string-based references are not migrated; use the listed names when reconnecting graph references. GraphTransfer does not automatically remap renamed widgets. Preview does not reserve names; edit replans.");
     if(!Apply)return TEXT("preview: Copy widget subtree. No changes made. Graphs, animations and designer bindings are not copied.")+Summary;
     // Duplicate the tree together so sibling references and instanced slot objects
     // are remapped by Unreal before moving just the selected subtree.
@@ -414,6 +453,17 @@ static FString Widgets(const FString& Source,const FString& RootName,const FStri
     for(UWidget* W:Copies)for(TFieldIterator<FObjectProperty> P(W->GetClass());P;++P)
     {UObject* V=P->GetObjectPropertyValue_InContainer(W);if(auto* Other=Cast<UWidget>(V))if(Other->GetOuter()==Staging.Get() && !Copies.Contains(Other))return TEXT("error: Subtree references a widget outside the selection. Copy their common parent instead. Nothing changed.");}
     for(UWidget* W:Copies)if(UWidget* Original=SW->WidgetTree->FindWidget(W->GetFName()))PreserveWidgetText(Original,W);
+    // Rename only staged objects. No source or target object changes if staging fails.
+    for (UWidget* W : Copies)
+        if (const FName* NewName = Renames.Find(W->GetFName()))
+            if (!W->Rename(*NewName->ToString(), Staging.Get(), REN_DontCreateRedirectors | REN_NonTransactional))
+                return TEXT("error: Could not rename a staged widget. Nothing changed.");
+    for (UWidget* W : Copies) if (W->Navigation)
+        for (auto* Nav : {&W->Navigation->Up, &W->Navigation->Down, &W->Navigation->Left,
+            &W->Navigation->Right, &W->Navigation->Next, &W->Navigation->Previous})
+            if (Nav->Rule == EUINavigationRule::Explicit)
+                if (const FName* NewName = Renames.Find(Nav->WidgetToFocus))
+                { Nav->WidgetToFocus = *NewName; Nav->Widget.Reset(); }
     T->Modify();TW->WidgetTree->Modify();
     if(UPanelWidget* Previous=Copy->GetParent())Previous->RemoveChild(Copy);
     for(UWidget* W:Copies){if(!UWidgetTree::TryMoveWidgetToNewTree(W,TW->WidgetTree))return TEXT("error: Unreal could not move a copied widget into the target tree. Inspect target before retrying; no save requested.");TW->WidgetVariableNameToGuidMap.Add(W->GetFName(),FGuid::NewGuid());}
@@ -435,5 +485,5 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPMergeMembers(const FString& Sour
 FString UTurboMCPEditToolset::EditTurboMCPMergeMembers(const FString& SourceAsset,const FString& TargetAsset){return TurboMCPMergeTransfer::Members(SourceAsset,TargetAsset,true);}
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(const FString& SourceAsset,const FString& SourceGraph,const FString& TargetAsset,const FString& TargetGraph){return TurboMCPMergeTransfer::Graph(SourceAsset,SourceGraph,TargetAsset,TargetGraph,false);}
 FString UTurboMCPEditToolset::EditTurboMCPGraphTransfer(const FString& SourceAsset,const FString& SourceGraph,const FString& TargetAsset,const FString& TargetGraph){return TurboMCPMergeTransfer::Graph(SourceAsset,SourceGraph,TargetAsset,TargetGraph,true);}
-FString UTurboMCPPreviewToolset::PreviewTurboMCPWidgetSubtreeCopy(const FString& SourceAsset,const FString& SourceWidget,const FString& TargetAsset,const FString& Parent){return TurboMCPMergeTransfer::Widgets(SourceAsset,SourceWidget,TargetAsset,Parent,false);}
-FString UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(const FString& SourceAsset,const FString& SourceWidget,const FString& TargetAsset,const FString& Parent){return TurboMCPMergeTransfer::Widgets(SourceAsset,SourceWidget,TargetAsset,Parent,true);}
+FString UTurboMCPPreviewToolset::PreviewTurboMCPWidgetSubtreeCopy(const FString& SourceAsset,const FString& SourceWidget,const FString& TargetAsset,const FString& Parent,bool AutoRename){return TurboMCPMergeTransfer::Widgets(SourceAsset,SourceWidget,TargetAsset,Parent,AutoRename,false);}
+FString UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(const FString& SourceAsset,const FString& SourceWidget,const FString& TargetAsset,const FString& Parent,bool AutoRename){return TurboMCPMergeTransfer::Widgets(SourceAsset,SourceWidget,TargetAsset,Parent,AutoRename,true);}
