@@ -1955,3 +1955,11 @@ Readiness: ready. Review preview/edit function rename help, English output, help
 - Preview/Edit FunctionRename accepted for the bounded owned-function workflow. Review count 63/152. Native behavior evidence retained; focused live help passed f9f606a23f9e4fdaba3d0bc7b49e52b8.
 - Essential limits moved into parameter help because engine summaries expose only the first sentence. Source/help/examples/results reviewed; unsupported map/dynamic references and untested child/delegate paths remain explicit.
 - Test-project local user config explicitly opts in after the new default-off preference. Shipped default remains off.
+
+### Oct27 CommonUI style workflow expansion
+
+Readiness: ready. User prioritizes CommonUI editing then DataTables. The existing widget-property trio does not inspect/edit shared style Blueprint defaults. Add an explicit style-asset read/preview/edit trio using reflection without a production CommonUI module dependency.
+- Target only a compiled Blueprint derived from CommonButtonStyle. Identify the shared asset and warn that all users of the style may change; no implicit style traversal from a widget name.
+- Exact reflected property paths may descend value structs, never object ownership. Support finite scalar/value-struct writes, preserving unspecified fields; object/container/delegate/text writes refuse. Expose omitted reference values read-only where possible, with clear support labels. No arbitrary object traversal, save, compile or automatic runtime refresh.
+- Preview parses into temporary storage; edit uses native property notification and transaction. Refuse invalid names, unsupported types, invalid enum/text and non-finite data without mutation. Do not report runtime or save success.
+- Extend existing CommonButton fixture with tool-driven style color/padding changes, preview/no-op/refusal/read-back and compile preservation checks. Capture live help. Real pointer/pressed/disabled evidence remains required for full workflow completion; do not count callback-only imagery as input testing.

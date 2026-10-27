@@ -2638,6 +2638,16 @@
             "Tools/test-vision-workflow.py"
           ],
           "new_files": []
+        },
+        "oct27-common-style": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonButtonWorkflowTest.cpp",
+            "Tools/test-common-button-workflow.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp"
+          ]
         }
       },
       "preserve_rows": []
