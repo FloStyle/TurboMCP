@@ -2613,6 +2613,17 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "oct27-package-notices": {
+          "files": [
+            "Tools/validate-repo.py",
+            "Tools/export-public.py",
+            "Tools/test-release-evidence.py"
+          ],
+          "new_files": [
+            "Tools/plugin_notices.py",
+            "Plugins/TurboMCP/NOTICES.json"
+          ]
         }
       },
       "preserve_rows": []

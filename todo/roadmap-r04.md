@@ -1926,3 +1926,11 @@ Readiness: ready. Integration owner authorizes oct27-event-append, scoped to tra
 - Candidate 55aa09dda957d0a53f6fa119a5dda876558b1d71; scope PASS; native run 09f4933792bc4961a91c769ae61e890a passed build and Vision/PlayMenu/CommonPlay.
 - Existing page and node identities, existing chain/literal/positions, incoming links and source content preserved. Preview immutability and repeated authored-event refusal checked.
 - Complete event-page append passed native preservation and compile workflow. Incoming relative layout is translated below existing content; unmeasured node heights use 512 units. No automatic execution splicing or tidy. Nested source graphs refuse append. Original-project confirmation pending.
+
+### Oct27 FT-111 package notice coverage
+
+Readiness: ready. Integration owner authorizes oct27-package-notices.
+- Require canonical LICENSE and coverage for every shipped plugin file: source SPDX plus copyright headers, or an exact sidecar entry for non-source files. Reject unknown files and stale sidecar entries.
+- Validate working tracked files offline and actual staged export bytes in export-public. Provide a standalone directory check for an installable package, including extra files; no silent binary exclusion.
+- Record repository provenance honestly. The icon's original author/license is not proven by its introducing commit; do not invent ownership. Explicit unresolved provenance must block release mode, while development checks report it clearly. No public release authorized.
+- Cover missing license, missing source notice, unknown file, stale notice, and unresolved provenance refusal with focused offline tests. Update tracker with the technical feature completion separately from release ownership confirmation.
