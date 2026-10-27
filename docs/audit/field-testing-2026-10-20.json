@@ -3231,12 +3231,14 @@
       "key": "2026-10-26_S3/GC-50",
       "title": "Append event chains into an existing event graph",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P3",
       "owner": "R04",
       "disposition": "reconciled_with_current_source",
-      "validation": "reported_source_reviewed",
-      "implementation_limits": "Current GraphTransfer intentionally refuses existing event pages. A new page name is the documented workaround."
+      "validation": "native_pass_field_pending",
+      "implementation_limits": "Complete event-page append passed native preservation and compile workflow. Incoming relative layout is translated below existing content; unmeasured node heights use 512 units. No automatic execution splicing or tidy. Nested source graphs refuse append. Original-project confirmation pending.",
+      "implementation_commit": "55aa09dda957d0a53f6fa119a5dda876558b1d71",
+      "native_run": "09f4933792bc4961a91c769ae61e890a"
     },
     {
       "report": "2026-10-26_S3",

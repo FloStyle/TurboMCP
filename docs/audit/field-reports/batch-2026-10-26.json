@@ -43,7 +43,6 @@
   ],
   "priority": "Personal enable toggle and X-102/X-103/X-104 implemented. Remaining S8/S9 parser, layout and merge capability issues stay open.",
   "open": [
-    "GC-50",
     "FT-111"
   ],
   "positive": [
@@ -124,7 +123,8 @@
     "FT-109",
     "X-105",
     "FT-108",
-    "FT-107"
+    "FT-107",
+    "GC-50"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -398,6 +398,14 @@
     "status": "implemented_native_pass_field_pending",
     "limits": "Native synthetic external-caller/interface-collision scenario passed. Original-project confirmation pending. Map referencers refuse; dynamic strings, native and unavailable content are not verified. Child/delegate paths are source-reviewed but not separately native-tested. No automatic save or guaranteed rollback.",
     "offline_run": "e377002550e54459bf0ab359506d6bf9",
+    "offline_result": "passed"
+  },
+  "event_append_repair": {
+    "commit": "55aa09dda957d0a53f6fa119a5dda876558b1d71",
+    "native_run": "09f4933792bc4961a91c769ae61e890a",
+    "status": "implemented_native_pass_field_pending",
+    "limits": "Complete event-page append passed native preservation and compile workflow. Incoming relative layout is translated below existing content; unmeasured node heights use 512 units. No automatic execution splicing or tidy. Nested source graphs refuse append. Original-project confirmation pending.",
+    "offline_run": "b2c270cdb3ba4cb6a938a5b1957864a0",
     "offline_result": "passed"
   }
 }

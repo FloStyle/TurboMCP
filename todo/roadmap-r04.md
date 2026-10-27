@@ -1920,3 +1920,9 @@ Readiness: ready. Integration owner authorizes oct27-event-append, scoped to tra
 - Preserve current dependency checks and protection against replacing authored custom events. Empty compatible declarations may be consumed through the existing merge contract. Reject graph-kind mismatches, duplicate event entry points and unsupported nested graph ownership before mutation. Existing macro graphs remain protected.
 - Preview must describe append versus replacement, translation and limitations without mutation. Help must explain whole-page scope, not imply selective event splicing or automatic tidy.
 - Native fixture must append into a populated event page, verify existing identity/layout/links/defaults, source preservation, incoming links/IDs, preview immutability and repeated conflict refusal, then compile. Run supervised test-vision-workflow and offline integration validation. Do not close GC-50 before acceptance.
+
+### Oct27 GC-50 event append acceptance
+
+- Candidate 55aa09dda957d0a53f6fa119a5dda876558b1d71; scope PASS; native run 09f4933792bc4961a91c769ae61e890a passed build and Vision/PlayMenu/CommonPlay.
+- Existing page and node identities, existing chain/literal/positions, incoming links and source content preserved. Preview immutability and repeated authored-event refusal checked.
+- Complete event-page append passed native preservation and compile workflow. Incoming relative layout is translated below existing content; unmeasured node heights use 512 units. No automatic execution splicing or tidy. Nested source graphs refuse append. Original-project confirmation pending.
