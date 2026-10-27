@@ -1875,3 +1875,7 @@ Implemented in f298344. AutoRename is opt-in and reports deterministic names; ex
 ### Oct27 menu failure evidence retention
 
 50a8427 preserves failed PlayMenu/CommonPlay diagnostics before verdict parsing and removes stale menu evidence. Injected-failure check and offline validation d6252363958b4a788a9ab0509588f57f passed. PLAY-01 stays open: stock Slate click callback failure, cause not established; no production behavior change or native reproduction claimed.
+
+### Oct27 PIE partial-edit warning (X-105)
+
+726db2c implements the report warning alternative: public compile/save/edit refusals explain earlier edits can remain unsaved and are not rolled back or queued. Stop play, inspect DirtyList, compile and explicitly save wanted assets. Native 9de1cc9c02e441f0aa7c2a6163b0cc1b and offline f9050afa7be3412298b929292a6fe906 passed. Stock engine unchanged; original-project confirmation pending.

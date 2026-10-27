@@ -3790,11 +3790,13 @@
       "key": "2026-10-26_S9/X-105",
       "title": "TurboMCP edits refuse during play mode, but engine property edits apply (medium)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S9_TurboMCP_navbar-and-card-layout.md. No fix claimed from report intake."
+      "validation": "native_pass_field_pending",
+      "remaining": "Original project field confirmation pending. Engine property writer is unchanged; TurboMCP does not intercept or undo its changes.",
+      "implementation": "726db2c: public PIE edit refusals warn that prior edits may remain unsaved, are not undone and are not queued. Gives DirtyList, inspect, compile and explicit save recovery steps. Save-path wording and compile/save help aligned.",
+      "evidence": "Native run 9de1cc9c02e441f0aa7c2a6163b0cc1b passed build and Vision/PlayMenu/CommonPlay; asserts public compile and both save refusals during PIE. Offline f9050afa7be3412298b929292a6fe906 passed 26 checks."
     },
     {
       "report": "2026-10-26_S9",
