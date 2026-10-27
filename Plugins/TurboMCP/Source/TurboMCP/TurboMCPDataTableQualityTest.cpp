@@ -83,7 +83,12 @@ bool FTurboMCPDataTableQualityTest::RunTest(const FString& Parameters)
     const FString ReadBack=Read();
     TestTrue(TEXT("Reader confirms updated count"),ReadBack.Contains(TEXT("Count = 11")));
     TestTrue(TEXT("Reader confirms added row"),ReadBack.Contains(TEXT("Added")));
-    TestTrue(TEXT("Unspecified field preserved through public edit"),Table->FindRow<FTurboMCPKitRow>(TEXT("Existing"),TEXT("public review"))->Label==FName(TEXT("Preserve")));
+    TestFalse(TEXT("Default values are not reported unavailable"),ReadBack.Contains(TEXT("<export unavailable>")));
+    TestTrue(TEXT("Default float is explicit"),ReadBack.Contains(TEXT("Weight = 0.000000")));
+    TestTrue(TEXT("Default name is explicit"),ReadBack.Contains(TEXT("Label = None")));
+    const FTurboMCPKitRow* PublicExisting=Table->FindRow<FTurboMCPKitRow>(TEXT("Existing"),TEXT("public review"),false);
+    if (TestNotNull(TEXT("Public edited row exists"),PublicExisting))
+        TestEqual(TEXT("Unspecified field preserved through public edit"),PublicExisting->Label,FName(TEXT("Preserve")));
     TestFalse(TEXT("Public edit removed named row"),Table->GetRowMap().Contains(TEXT("New")));
     const bool DirtyBeforeRefusal=Package->IsDirty();
     const TArray<FString> BadRequest={TEXT("Existing = NoSuchField=1")};

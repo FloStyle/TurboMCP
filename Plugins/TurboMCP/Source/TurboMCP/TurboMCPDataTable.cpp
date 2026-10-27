@@ -248,8 +248,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 					for (int32 Element = 0; Element < Column->ArrayDim; ++Element)
 					{
 						if (Element) Value += TEXT(", ");
-						if (!Column->ExportText_InContainer(Element, Value, *Row, nullptr, Table, PPF_None))
-							Value += TEXT("<export unavailable>");
+						// ExportText_InContainer can suppress zero/default values and
+                            // return false without an error. Readers need the actual
+                            // value, including zero and None, so export it directly.
+                            Column->ExportTextItem_Direct(Value,
+                                Column->ContainerPtrToValuePtr<void>(*Row, Element),
+                                nullptr, Table, PPF_None);
 					}
 				}
 				else Value = TEXT("<missing row storage>");
