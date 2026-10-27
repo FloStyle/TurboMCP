@@ -1949,3 +1949,9 @@ Readiness: ready. User explicitly requests Enable TurboMCP default false. Change
 ### Oct27 focused function rename quality review
 
 Readiness: ready. Review preview/edit function rename help, English output, helper contracts and existing native scenario evidence. Add explicit example, map/dependency limits and a help-only supervised scenario selecting these two tools. Reuse passing behavior evidence; do not rerun unrelated workflows. Capture live parameter help and only then update focused review count. Existing saved enable preference remains authoritative.
+
+### Oct27 function rename full review accepted
+
+- Preview/Edit FunctionRename accepted for the bounded owned-function workflow. Review count 63/152. Native behavior evidence retained; focused live help passed f9f606a23f9e4fdaba3d0bc7b49e52b8.
+- Essential limits moved into parameter help because engine summaries expose only the first sentence. Source/help/examples/results reviewed; unsupported map/dynamic references and untested child/delegate paths remain explicit.
+- Test-project local user config explicitly opts in after the new default-off preference. Shipped default remains off.

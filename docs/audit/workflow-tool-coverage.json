@@ -530,7 +530,7 @@
     {
       "id": "WF-OCT27-FUNCTION-RENAME",
       "title": "Rename an owned function to resolve an interface collision",
-      "status": "native_pass_help_review_pending",
+      "status": "scenario_accepted",
       "fixture": "TurboMCP.Workflow.Vision",
       "evidence": "22a631e5725a45a7a1afe3e98e849795",
       "tools_used": [
@@ -538,9 +538,18 @@
         "EditTurboMCPFunctionRename"
       ],
       "limitations": [
-        "Native synthetic external-caller/interface-collision scenario passed. Original-project confirmation pending. Map referencers refuse; dynamic strings, native and unavailable content are not verified. Child/delegate paths are source-reviewed but not separately native-tested. No automatic save or guaranteed rollback.",
-        "Live help capture and full per-tool acceptance remain pending; not added to scenario-reviewed total."
-      ]
+        "Native synthetic external-caller/interface-collision scenario passed. Original-project confirmation pending. Map referencers refuse; dynamic strings, native and unavailable content are not verified. Child/delegate paths are source-reviewed but not separately native-tested. No automatic save or guaranteed rollback."
+      ],
+      "live_help_run": "f9f606a23f9e4fdaba3d0bc7b49e52b8",
+      "review_commit": "109a96be3a3a6d48e6e54ad0bdf55bdcda747288",
+      "quality_review": {
+        "behavior": "Native rename/caller/default/link preservation, compile, interface collision recovery, refusal and no-op checks passed in 22a631e5725a45a7a1afe3e98e849795.",
+        "english_output": "Actual preview/edit transcript reviewed: affected assets and call identities, no-save and rollback limits, and next actions explicit.",
+        "help": "Live parameter descriptions, example, package cap, map refusal, save/rollback limits verified for both tools. Engine exposes only the first summary sentence; essential limits now appear in parameters.",
+        "code_and_comments": "Reviewed dependency discovery, ambiguity/name guards, inherited-reference scope, stock rename helper, explicit delegate update and post-write verification. Documented load side effects and partial-failure limits.",
+        "acceptance": "Bounded owned-function rename workflow, not universal project refactoring.",
+        "development_evidence": "b1a33fba190b494db01373094aa91326 interrupted and recovered after test project default-off; d46fcd5ee7314a3bb73b8a125ff84d0e and 47c2942816184066a47fb7555a6ff484 exposed missing live limits; e5272026ed764f42b7d3201e3cc83be9 confirmed first-sentence truncation. Final focused run passed."
+      }
     }
   ],
   "tool_usage": {
@@ -808,7 +817,7 @@
       "WF-OCT27-FUNCTION-RENAME"
     ]
   },
-  "unique_tools_scenario_reviewed": 61,
+  "unique_tools_scenario_reviewed": 63,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

@@ -402,7 +402,13 @@
     "status": "implemented_native_pass_field_pending",
     "limits": "Native synthetic external-caller/interface-collision scenario passed. Original-project confirmation pending. Map referencers refuse; dynamic strings, native and unavailable content are not verified. Child/delegate paths are source-reviewed but not separately native-tested. No automatic save or guaranteed rollback.",
     "offline_run": "e377002550e54459bf0ab359506d6bf9",
-    "offline_result": "passed"
+    "offline_result": "passed",
+    "full_review": {
+      "status": "bounded_scenario_accepted",
+      "live_help_run": "f9f606a23f9e4fdaba3d0bc7b49e52b8",
+      "offline_run": "759bc1e7f1c847e394ef2ce25e3226e7",
+      "count": "63/152"
+    }
   },
   "event_append_repair": {
     "commit": "55aa09dda957d0a53f6fa119a5dda876558b1d71",
@@ -607,8 +613,7 @@
     "remaining_separate_work": [
       "2026-10-27_Local/PLAY-01: intermittent menu failure, not fixed by a passing rerun",
       "2026-10-26/WORKFLOW-CLEANUP: deferred test-file cleanup",
-      "Release ownership verification for icon and trap data; public export remains blocked",
-      "Full live-help acceptance for two new function-rename tools; review total remains 61/152"
+      "Release ownership verification for icon and trap data; public export remains blocked"
     ],
     "historical_failure": "Quoted-type AliasCollision focused case passed inside a failed full suite. No full-suite success claimed."
   }
