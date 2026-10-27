@@ -642,11 +642,13 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPDispatcherAdd(const FString& Asset, const FString& Name, const FString& Inputs);
     /**
-     * Rename a Blueprint-owned function and update discovered Blueprint callers.
+     * Rename an owned Blueprint function and discovered callers. Preview loads dependencies; edit repeats discovery using the same arguments. Requires a compiled owner and idle editor. Dependent maps and more than 256 packages refuse. No save or guaranteed rollback. Compile affected assets before saving; dynamic/native references are not verified.
+     * Requires an idle editor outside play/transactions and a successfully compiled defining Blueprint. Dependent maps refuse; discovery refuses above 256 packages. Preview does not reserve a plan: edit discovers references again.
+     * Example: Asset=/Game/UI/WBP_Menu, Function=RefreshState, NewName=RefreshLegacyState. Preview first, inspect affected assets, then edit with the same arguments.
      * Preview lists affected assets and call/delegate nodes. Dependencies are loaded; load callbacks may run. Edit repeats discovery, renames child overrides through stock editor APIs and updates references. No save or guaranteed rollback; compile affected assets before saving. Inherited/interface functions and name conflicts refuse. Dynamic strings, native code and unavailable content are not verified.
-     * @param Asset Required defining Blueprint path or unique name.
+     * @param Asset Required defining Blueprint path or unique name. Example: /Game/UI/WBP_Menu with Function=RefreshState and NewName=RefreshLegacyState. Preview first and inspect affected assets. Requires a compiled owner and idle editor. Dependent maps and more than 256 packages refuse.
      * @param Function Required exact owned function name; inherited overrides are not independently renamed.
-     * @param NewName Required valid new member name, 1 to 100 characters. Same name is a no-op.
+     * @param NewName Required valid new member name, 1 to 100 characters. Same name is a no-op. Edit repeats discovery with the same arguments. No save or guaranteed rollback; compile affected assets before saving. Dynamic/native references are not verified.
      */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPFunctionRename(const FString& Asset, const FString& Function, const FString& NewName);
@@ -1386,11 +1388,13 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPDispatcherAdd(const FString& Asset, const FString& Name, const FString& Inputs);
     /**
-     * Rename a Blueprint-owned function and update discovered Blueprint callers.
+     * Rename an owned Blueprint function and discovered callers. Preview loads dependencies; edit repeats discovery using the same arguments. Requires a compiled owner and idle editor. Dependent maps and more than 256 packages refuse. No save or guaranteed rollback. Compile affected assets before saving; dynamic/native references are not verified.
+     * Requires an idle editor outside play/transactions and a successfully compiled defining Blueprint. Dependent maps refuse; discovery refuses above 256 packages. Preview does not reserve a plan: edit discovers references again.
+     * Example: Asset=/Game/UI/WBP_Menu, Function=RefreshState, NewName=RefreshLegacyState. Preview first, inspect affected assets, then edit with the same arguments.
      * Preview lists affected assets and call/delegate nodes. Dependencies are loaded; load callbacks may run. Edit repeats discovery, renames child overrides through stock editor APIs and updates references. No save or guaranteed rollback; compile affected assets before saving. Inherited/interface functions and name conflicts refuse. Dynamic strings, native code and unavailable content are not verified.
-     * @param Asset Required defining Blueprint path or unique name.
+     * @param Asset Required defining Blueprint path or unique name. Example: /Game/UI/WBP_Menu with Function=RefreshState and NewName=RefreshLegacyState. Preview first and inspect affected assets. Requires a compiled owner and idle editor. Dependent maps and more than 256 packages refuse.
      * @param Function Required exact owned function name; inherited overrides are not independently renamed.
-     * @param NewName Required valid new member name, 1 to 100 characters. Same name is a no-op.
+     * @param NewName Required valid new member name, 1 to 100 characters. Same name is a no-op. Edit repeats discovery with the same arguments. No save or guaranteed rollback; compile affected assets before saving. Dynamic/native references are not verified.
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPFunctionRename(const FString& Asset, const FString& Function, const FString& NewName);

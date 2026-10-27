@@ -9,6 +9,27 @@ support = runpy.run_path(str(Path(__file__).with_name('test-widget-roundtrip.py'
 folder = root / 'TestProject/Saved/TurboMCP/Workflow'
 before = set(folder.glob('*/vision-review.txt'))
 s = Session(); s.connect()
+# A focused review must not rerun unrelated mutation/PIE scenarios.
+import os
+if os.environ.get('TMCP_RENAME_HELP_ONLY') == '1':
+    evidence = []
+    for mode in ('Preview', 'Edit'):
+        name = mode + 'TurboMCPFunctionRename'
+        text = s.call(READ_TOOLSET, 'ReadTurboMCPToolHelp', {'ToolsetName': 'TurboMCP.TurboMCP' + mode + 'Toolset', 'ToolName': name})
+        evidence.append(name + '\n' + text)
+        print(name + '\n' + text, flush=True)
+        for parameter in ('Asset', 'Function', 'NewName'):
+            if not re.search(r'(?im)^  ' + parameter + r':.*\] - .+', text):
+                raise RuntimeError('Missing live rename parameter description: ' + name + '.' + parameter)
+        for phrase in ('256', 'Dependent maps', 'Example:', 'No save', 'same arguments'):
+            if phrase not in text:
+                raise RuntimeError('Missing live rename contract: ' + name + ': ' + phrase)
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / 'function-rename-help.txt').write_text('\n\n'.join(evidence), encoding='utf-8')
+    print('\n\n'.join(evidence))
+    print('RESULT: PASS focused function rename live help; no mutation or PIE scenarios run')
+    raise SystemExit(0)
+
 # Audit the live registered help, not just C++ comments or generated docs.
 help_specs = {
     'InterfaceAdd': ['Asset', 'Interface'],
