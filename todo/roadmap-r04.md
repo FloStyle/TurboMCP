@@ -1867,3 +1867,7 @@ Implemented in bffc6fe. Make/break struct IDs use exact reflected paths; stock f
 ### GC-55/GC-56/GC-62 writer syntax (2026-10-27)
 
 Implemented/verified in d25e927. Labels feed the actual getter pin; reader branch containers refuse with conversion instructions instead of being silently ignored. Replacement conversion preserves named Branch identity/execution, removes the omitted getter and applies the new condition. Native run e5c8a11f4b574808ad7fbe861773c91a passed build and Vision/PlayMenu/CommonPlay. Original field payloads unavailable; field confirmation pending. Raw reader containers remain read-only by documented design.
+
+### FT-109 widget collision renaming (2026-10-27)
+
+Implemented in f298344. AutoRename is opt-in and reports deterministic names; explicit internal navigation is remapped, outside targets refuse. Native run 70c811d4553246d58f39ef92323c29bf passed all workflows; field confirmation pending. Prior run 5b1d670c662b4a24b0107149828ca6d9 passed widget checks but failed menu state/analog checks; the unresolved intermittent problem is tracked as 2026-10-27_Local/PLAY-01. Graphs, animations and custom strings are not remapped by subtree copy.

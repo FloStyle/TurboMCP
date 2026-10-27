@@ -3313,12 +3313,14 @@
       "key": "2026-10-26_S3/FT-109",
       "title": "Rename colliding widgets during subtree copy",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
       "disposition": "reconciled_with_current_source",
-      "validation": "reported_source_reviewed",
-      "implementation_limits": "Needs deterministic old-to-new name mapping and safe reference handling; existing collision refusal must remain default."
+      "validation": "native_pass_field_pending",
+      "implementation_limits": "Graphs/animations/custom string references not migrated. Outside explicit navigation refuses; edit recalculates names. Original project confirmation pending.",
+      "implementation": "f298344: AutoRename=false remains default. Opt-in copy reserves _Copy suffixes, reports mappings, renames staged widgets, and remaps explicit internal navigation.",
+      "evidence": "Native 70c811d4553246d58f39ef92323c29bf passed build and Vision/PlayMenu/CommonPlay. Root/descendant mapping, repeat suffix, source/first-copy preservation, navigation and text checked."
     },
     {
       "report": "2026-10-26_S3",
@@ -3356,14 +3358,16 @@
       "key": "2026-10-26_S3/WT-11",
       "title": "Subtree copy stops on inner widget name collisions",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
       "disposition": "reconciled_with_current_source",
-      "validation": "reported_source_reviewed",
-      "implementation_limits": "Alias of FT-109; current safe refusal is intentional. Copying a deeper subtree passed preview only.",
+      "validation": "native_pass_field_pending",
+      "implementation_limits": "Graphs/animations/custom string references not migrated. Outside explicit navigation refuses; edit recalculates names. Original project confirmation pending.",
       "duplicate_of": "2026-10-26_S3/FT-109",
-      "canonical_issue": "2026-10-26_S3/FT-109"
+      "canonical_issue": "2026-10-26_S3/FT-109",
+      "implementation": "f298344: AutoRename=false remains default. Opt-in copy reserves _Copy suffixes, reports mappings, renames staged widgets, and remaps explicit internal navigation.",
+      "evidence": "Native 70c811d4553246d58f39ef92323c29bf passed build and Vision/PlayMenu/CommonPlay. Root/descendant mapping, repeat suffix, source/first-copy preservation, navigation and text checked."
     },
     {
       "report": "2026-10-26_S4",
@@ -3939,6 +3943,19 @@
       "evidence": "Supervised build and event-connect workflow passed: 5baad9279e9d4b4883b2b20362e382e8. Native screenshot AADF9B7241927C71A00F1D9019A8EBE1 reviewed: guard in Purchase row, separate from Refund.",
       "remaining": "Crowded gaps retain general fallback. Original field confirmation pending; no global layout certification.",
       "implementation": "5a313f4: single-node execution insertions first seek a collision-free local gap between existing endpoints; no existing nodes move."
+    },
+    {
+      "report": "2026-10-27_Local",
+      "id": "PLAY-01",
+      "key": "2026-10-27_Local/PLAY-01",
+      "title": "Play-menu workflow intermittently remains on Main menu instead of returning to gameplay",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P1",
+      "owner": "R04",
+      "validation": "native_failure_then_unchanged_rerun_passed",
+      "evidence": "5b1d670c662b4a24b0107149828ca6d9: Vision passed; PlayMenu callback state expected Gameplay but was Main menu, then analog evaluation failed. Unchanged rerun 70c811d4553246d58f39ef92323c29bf passed all scenarios.",
+      "remaining": "Investigate input/focus/timing and fixture state; cause not established. Do not count a rerun as a fix."
     }
   ],
   "prototype": {

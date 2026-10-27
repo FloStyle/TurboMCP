@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "2b06f9785935fa8bb1826239ad1d269fe28209bf",
+  "plugin_tree": "f2544b1f6107a3141eb5e9b7899fb73ef7cdea3d",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 150,
@@ -273,7 +273,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 433
+          "line": 483
         }
       ],
       "test_references": [],
@@ -800,7 +800,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 437
+          "line": 487
         }
       ],
       "test_references": [],
@@ -1025,7 +1025,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 435
+          "line": 485
         }
       ],
       "test_references": [],
@@ -1454,13 +1454,14 @@
         "SourceAsset",
         "SourceWidget",
         "TargetAsset",
-        "Parent"
+        "Parent",
+        "AutoRename"
       ],
       "family": "widget",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 439
+          "line": 489
         }
       ],
       "test_references": [],
@@ -1837,7 +1838,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 432
+          "line": 482
         }
       ],
       "test_references": [],
@@ -2337,7 +2338,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 436
+          "line": 486
         }
       ],
       "test_references": [],
@@ -2515,7 +2516,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 434
+          "line": 484
         }
       ],
       "test_references": [],
@@ -2815,13 +2816,14 @@
         "SourceAsset",
         "SourceWidget",
         "TargetAsset",
-        "Parent"
+        "Parent",
+        "AutoRename"
       ],
       "family": "widget",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 438
+          "line": 488
         }
       ],
       "test_references": [],

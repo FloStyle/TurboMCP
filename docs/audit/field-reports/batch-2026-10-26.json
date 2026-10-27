@@ -45,7 +45,6 @@
   "open": [
     "FT-107",
     "FT-108",
-    "FT-109",
     "GC-50",
     "FT-111",
     "X-105"
@@ -124,7 +123,8 @@
     "FT-118",
     "GC-55",
     "GC-56",
-    "GC-62"
+    "GC-62",
+    "FT-109"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -362,5 +362,15 @@
       "GC-62": "Reader-only branch sections explicitly refused with a concrete explicit-link example. Help no longer claims reader and writer dialects are interchangeable."
     },
     "limits": "Original payload unavailable. Reader branch nesting remains read-only; supported conversion tested, not universal raw-reader round trips."
-  }
+  },
+  "widget_collision_repair": {
+    "commit": "f2983447c97630798a18003f6b43384c7c994b48",
+    "native_run": "70c811d4553246d58f39ef92323c29bf",
+    "status": "implemented_native_pass_field_pending",
+    "prior_run": "5b1d670c662b4a24b0107149828ca6d9: widget checks passed; subsequent menu failure tracked as 2026-10-27_Local/PLAY-01",
+    "limits": "Custom strings, graphs and animations not migrated. Explicit outside navigation refuses."
+  },
+  "native_followups": [
+    "2026-10-27_Local/PLAY-01"
+  ]
 }
