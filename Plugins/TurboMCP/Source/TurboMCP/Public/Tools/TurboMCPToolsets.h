@@ -446,6 +446,13 @@ public:
      */
     UFUNCTION(meta = (AICallable))
     static FString ReadTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property);
+    /**
+     * Inspect or change explicit shared CommonButtonStyle Blueprint defaults.
+     * @param Asset Required compiled CommonButtonStyle Blueprint path, not a widget. All buttons using this shared asset may change. No compile/save/runtime refresh is performed; recreate affected widgets after compiling to verify visuals.
+     * @param Property Exact reflected path. Empty lists readable fields for read only. Examples: ButtonPadding or NormalHovered.TintColor.SpecifiedColor. Paths descend structs, never objects/containers. Edit conditions and color-use rules still apply. Native references and localized text are read-only.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString ReadTurboMCPCommonButtonStyle(const FString& Asset, const FString& Property);
 
     /**
 	 * Inspect selected Widget Blueprint hierarchy data; loads the asset without explicitly editing, compiling or saving it. This is not a complete or lossless export.
@@ -698,6 +705,14 @@ public:
      */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property, const FString& Value);
+    /**
+     * Inspect or change explicit shared CommonButtonStyle Blueprint defaults.
+     * @param Asset Required compiled CommonButtonStyle Blueprint path, not a widget. All buttons using this shared asset may change. No compile/save/runtime refresh is performed; recreate affected widgets after compiling to verify visuals.
+     * @param Property Exact reflected path. Empty lists readable fields for read only. Examples: ButtonPadding or NormalHovered.TintColor.SpecifiedColor. Paths descend structs, never objects/containers. Edit conditions and color-use rules still apply. Native references and localized text are read-only.
+     * @param Value Required Unreal property text, not JSON; up to 65536 characters. Example padding: (Left=8,Top=4,Right=8,Bottom=4). Example color: (R=0.2,G=0.5,B=0.8,A=1). Partial structs retain other fields. Preview first; edit reparses current state. Invalid/non-finite values refuse. Requires an idle editor outside PIE.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPCommonButtonStyle(const FString& Asset, const FString& Property, const FString& Value);
 
     /**
      * Preview adding a designer widget; loads classes but constructs no widget and makes no explicit edit.
@@ -1567,6 +1582,14 @@ public:
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property, const FString& Value);
+    /**
+     * Inspect or change explicit shared CommonButtonStyle Blueprint defaults.
+     * @param Asset Required compiled CommonButtonStyle Blueprint path, not a widget. All buttons using this shared asset may change. No compile/save/runtime refresh is performed; recreate affected widgets after compiling to verify visuals.
+     * @param Property Exact reflected path. Empty lists readable fields for read only. Examples: ButtonPadding or NormalHovered.TintColor.SpecifiedColor. Paths descend structs, never objects/containers. Edit conditions and color-use rules still apply. Native references and localized text are read-only.
+     * @param Value Required Unreal property text, not JSON; up to 65536 characters. Example padding: (Left=8,Top=4,Right=8,Bottom=4). Example color: (R=0.2,G=0.5,B=0.8,A=1). Partial structs retain other fields. Preview first; edit reparses current state. Invalid/non-finite values refuse. Requires an idle editor outside PIE.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPCommonButtonStyle(const FString& Asset, const FString& Property, const FString& Value);
 
     /**
      * Add one designer widget at the end of a named panel using Unreal's palette operation. Uses class defaults and a default parent slot.
