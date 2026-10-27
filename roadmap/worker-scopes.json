@@ -2588,6 +2588,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "oct27-member-merge": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

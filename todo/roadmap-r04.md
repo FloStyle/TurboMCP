@@ -1879,3 +1879,15 @@ Implemented in f298344. AutoRename is opt-in and reports deterministic names; ex
 ### Oct27 PIE partial-edit warning (X-105)
 
 726db2c implements the report warning alternative: public compile/save/edit refusals explain earlier edits can remain unsaved and are not rolled back or queued. Stop play, inspect DirtyList, compile and explicitly save wanted assets. Native 9de1cc9c02e441f0aa7c2a6163b0cc1b and offline f9050afa7be3412298b929292a6fe906 passed. Stock engine unchanged; original-project confirmation pending.
+
+### Oct27 member merge repair contract (FT-108 / FA-12)
+
+Readiness: ready. Integration-owner scope: oct27-member-merge. Extend the existing member preparation workflow, not a separate merge tool. Source review: Members currently enumerates NewVariables, DelegateSignatureGraphs and FunctionGraphs only. GraphTransfer rejects every existing custom-event name, so declarations alone cannot complete the workflow.
+
+Required behavior:
+- Add optional exact-name exclusions to preview/edit; preserve backward-compatible calls. Exclusions apply to variables, functions, dispatchers and custom events. Unknown names refuse before mutation, preventing silent typos. Preview lists exclusions; existing target members are never deleted.
+- Enumerate custom events across source event graphs. Create declaration-only nodes with their parameter types and event settings using stock editor APIs. Preserve source and target authored logic. Resolve a deterministic destination without scattering or overlapping declarations; preview names that destination.
+- Repeated preparation must be unchanged for compatible declarations. Conflicting callable kinds/signatures/settings refuse before writes; do not silently accept a function as a custom event.
+- Graph transfer may replace only matching empty custom-event declarations when importing their bodies. Connected execution/data pins or authored extra state protect existing event logic. Full incoming event definitions must not coexist with duplicate declarations. Preserve unrelated nodes and source state.
+- Output explains declaration-only scope, exclusions, destination, partial failure limits, and separate compile/save steps in clear English. No engine patches.
+- Extend the existing Vision fixture: exclusion preview/edit and unknown-name refusal; custom-event parameter/settings preservation; repeat no-op; conflicting signature refusal; function calling prepared event; body transfer into declarations; refusal when target event already has authored logic; source unchanged and target compile. Run supervised test-vision-workflow and offline validate.py. Do not close FT-108 until this connected workflow passes.
