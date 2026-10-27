@@ -3300,12 +3300,14 @@
       "key": "2026-10-26_S3/FT-108",
       "title": "Prepare custom events and exclude selected merge members",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
       "disposition": "reconciled_with_current_source",
-      "validation": "reported_source_reviewed",
-      "implementation_limits": "Needs explicit selection and compatible event signatures; later body transfer must fill declarations without creating duplicate events."
+      "validation": "native_pass_field_pending",
+      "implementation_limits": "Original project confirmation pending. Declarations use a separate named event graph; graph bodies still require GraphTransfer. Exclusions skip creation, never delete target members. Existing target event logic is not overwritten.",
+      "implementation": "4fc5194: optional exact-name Exclude list, custom-event declarations with owned pin descriptors/settings, matching empty declaration replacement by GraphTransfer. Existing authored event logic is protected.",
+      "evidence": "237bfd22de774306b2f4a854ae72cef2 passed build and Vision/PlayMenu/CommonPlay. Fixture covers exclusions, unknown-name refusal, repeat no-op, parameter preservation, settings conflict, protected comment, function calling prepared event, body transfer and compile. Offline 4838a2e6b4a4495ea6afbc5e0dfd5724 passed 26 checks."
     },
     {
       "report": "2026-10-26_S3",
@@ -3343,14 +3345,16 @@
       "key": "2026-10-26_S3/FA-12",
       "title": "Member preparation omits custom events and cannot exclude members",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
       "disposition": "reconciled_with_current_source",
-      "validation": "reported_source_reviewed",
-      "implementation_limits": "Alias of FT-108; current implementation prepares variables, functions and dispatchers only.",
+      "validation": "native_pass_field_pending",
+      "implementation_limits": "Original project confirmation pending. Declarations use a separate named event graph; graph bodies still require GraphTransfer. Exclusions skip creation, never delete target members. Existing target event logic is not overwritten.",
       "duplicate_of": "2026-10-26_S3/FT-108",
-      "canonical_issue": "2026-10-26_S3/FT-108"
+      "canonical_issue": "2026-10-26_S3/FT-108",
+      "implementation": "4fc5194: optional exact-name Exclude list, custom-event declarations with owned pin descriptors/settings, matching empty declaration replacement by GraphTransfer. Existing authored event logic is protected.",
+      "evidence": "237bfd22de774306b2f4a854ae72cef2 passed build and Vision/PlayMenu/CommonPlay. Fixture covers exclusions, unknown-name refusal, repeat no-op, parameter preservation, settings conflict, protected comment, function calling prepared event, body transfer and compile. Offline 4838a2e6b4a4495ea6afbc5e0dfd5724 passed 26 checks."
     },
     {
       "report": "2026-10-26_S3",

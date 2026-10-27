@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "81becc2f2fb64f5d3d855d9166456a921d1cff41",
+  "plugin_tree": "a17abd99a45a4e5d5dcb0060544831ee8c33ee0a",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 150,
@@ -273,7 +273,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 483
+          "line": 574
         }
       ],
       "test_references": [],
@@ -800,7 +800,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 487
+          "line": 578
         }
       ],
       "test_references": [],
@@ -1019,13 +1019,14 @@
       "toolset": "UTurboMCPEditToolset",
       "parameters": [
         "SourceAsset",
-        "TargetAsset"
+        "TargetAsset",
+        "Exclude"
       ],
       "family": "asset-and-data",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 485
+          "line": 576
         }
       ],
       "test_references": [],
@@ -1461,7 +1462,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 489
+          "line": 580
         }
       ],
       "test_references": [],
@@ -1838,7 +1839,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 482
+          "line": 573
         }
       ],
       "test_references": [],
@@ -2338,7 +2339,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 486
+          "line": 577
         }
       ],
       "test_references": [],
@@ -2510,13 +2511,14 @@
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
         "SourceAsset",
-        "TargetAsset"
+        "TargetAsset",
+        "Exclude"
       ],
       "family": "asset-and-data",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 484
+          "line": 575
         }
       ],
       "test_references": [],
@@ -2823,7 +2825,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 488
+          "line": 579
         }
       ],
       "test_references": [],
