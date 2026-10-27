@@ -206,7 +206,7 @@
     "setting": "Editor Preferences > Plugins > TurboMCP > Enable TurboMCP",
     "config": "EditorPerProjectUserSettings; no defaultconfig flag",
     "activation": "restart required; current state latched at startup",
-    "default": true,
+    "default": false,
     "native_run": "a309ae10a69e4b3b9e9220a8d6189f5d",
     "prior_run": "16be792dfda24ba8941292446b3d83bc: toggle checks passed; PlayMenu input failed; unchanged rerun passed",
     "limits": [
@@ -215,7 +215,12 @@
       "Disabled status tool is absent; startup log and preferences explain the state.",
       "Old shared call-log configuration is no longer used; new per-user logging default remains enabled."
     ],
-    "offline_run": "8a7dab05fdb94571ac608ec774bfc977: 26/26 passed"
+    "offline_run": "8a7dab05fdb94571ac608ec774bfc977: 26/26 passed",
+    "default_change": {
+      "commit": "55b6aa8e61dbe4f46e3aec8881747b71f37a4038",
+      "reason": "User requested opt-in default on Oct27. Saved preferences take precedence.",
+      "validation": "source reviewed; no rebuild or editor run for this default-only change"
+    }
   },
   "report_stability_repair": {
     "commit": "822b7a0",
