@@ -1,0 +1,433 @@
+{
+  "schema": 1,
+  "updated": "2026-10-28",
+  "source_batch": "docs/audit/field-reports/batch-2026-10-27.json",
+  "scope": "All 47 observations/proposals in five Oct27 reports; 19 work packages plus nine positive observations. Planning only, not completed implementation.",
+  "rules": [
+    "Task is a problem or feature. Tested/untested is a separate flag.",
+    "Close only implemented scope; partial fixes retain explicit remaining work.",
+    "No custom Unreal engine requirement; DSH stays paused.",
+    "Test focused changed behavior, actual output/help and visual layout where relevant; reuse existing support-tool evidence.",
+    "Archive evidence and update main/dashboard after each bounded accepted batch.",
+    "Unknown causes stay investigations; feature proposals are not regressions."
+  ],
+  "waves": {
+    "1": "Data safety and installation: documentation quick win; quoted literals; engine-write reproduction and supported recovery design.",
+    "2": "Graph entry correctness, local layout, geometry/report filtering and syntax consistency.",
+    "3": "Assisted play debugging, logs, explicit activation/console actions and disconnect diagnostics.",
+    "4": "Custom events, function flags and collapse-to-function capabilities.",
+    "5": "Per-user individual tool controls and domain presets."
+  },
+  "tasks": [
+    {
+      "id": "OCT27-01",
+      "title": "Fix opt-in installation instructions",
+      "kind": "bug",
+      "priority": "P1",
+      "wave": 1,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "X-106"
+      ],
+      "depends_on": [],
+      "scope": "README, installation and troubleshooting",
+      "acceptance": "Document default OFF, project plugin enable versus per-user opt-in, exact preferences path, restart, absent status tool and startup-log diagnosis. Preserve saved settings.",
+      "verification": "Source comparison with settings initializer; follow fresh-user setup steps.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-02",
+      "title": "Preserve quoted struct literals during append",
+      "kind": "bug",
+      "priority": "P0",
+      "wave": 1,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "GC-67"
+      ],
+      "depends_on": [],
+      "scope": "Append parser, default assignment and readback",
+      "acceptance": "Reproduce nested quotes/backslashes in gameplay-tag struct literals. Preserve the intended canonical value or refuse before mutation. Compare actual readback, not compile success alone.",
+      "verification": "Public preview/edit with quoted tag, escaped text, invalid input and unchanged graph on refusal; compile and read back.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-03",
+      "title": "Recognize input-action execution entries",
+      "kind": "bug",
+      "priority": "P1",
+      "wave": 2,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "GC-68",
+        "FT-125"
+      ],
+      "depends_on": [],
+      "scope": "Shared reachability rules used by append and compile",
+      "acceptance": "Recognize supported Enhanced Input event nodes and outputs without treating arbitrary orphan nodes as entries. Existing-event and same-batch-event append must agree with compile diagnostics.",
+      "verification": "New and existing input event cases, linked call, genuinely unreachable control and unchanged-state refusal.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-04",
+      "title": "Keep scoped tidy near fixed connections and explain rejection",
+      "kind": "bug",
+      "priority": "P1",
+      "wave": 2,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "TD-43",
+        "TD-44",
+        "TD-47",
+        "TD-49"
+      ],
+      "depends_on": [],
+      "scope": "Tidy candidate scoring, fixed boundary constraints and output",
+      "acceptance": "Use a dense boxed fixture with distant selected nodes. Bound fixed-neighbour wire growth, retain untouched nodes/boxes, and report the precise failing criterion. Shorter total wires alone do not guarantee a valid layout. Roll back rejected candidates.",
+      "verification": "Inspect before/after captures and distances for small scope in large graph, single spliced log and seven-node function. Preserve passing whole-graph layout.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-05",
+      "title": "Place appended chains beside their execution anchor",
+      "kind": "bug",
+      "priority": "P1",
+      "wave": 2,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "GC-66",
+        "TD-45",
+        "FT-122"
+      ],
+      "depends_on": [
+        "OCT27-04"
+      ],
+      "scope": "Append local placement and explicit fixed-anchor layout",
+      "acceptance": "Try collision-free placement beside predecessor/consumer. Support an explicit fixed anchor for a new chain. Never silently move unselected downstream nodes; any wider shift must be previewed and explicitly scoped.",
+      "verification": "Dense and sparse graph insertions, fixed anchor outside movable scope, overlap refusal/fallback, preserved external coordinates and links.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-06",
+      "title": "Expose targeted node geometry clearly",
+      "kind": "feature",
+      "priority": "P2",
+      "wave": 2,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "X-107",
+        "FT-120"
+      ],
+      "depends_on": [],
+      "scope": "Existing LookTurboMCPGraphPositions discovery and filtering",
+      "acceptance": "Reuse existing position/size reader. Improve help/discovery and add bounded node-ID selection if needed. State graph units, measurement limits and omitted counts. No duplicate geometry tool.",
+      "verification": "Find geometry through live help; exact node selection and ambiguity/refusal; compare values with captured layout.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-07",
+      "title": "Filter large layout and comment reports",
+      "kind": "feature",
+      "priority": "P2",
+      "wave": 2,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "X-108",
+        "FT-121"
+      ],
+      "depends_on": [
+        "OCT27-06"
+      ],
+      "scope": "Layout reports, comment listing and capture selection",
+      "acceptance": "Support a bounded node/box/region scope with explicit overlap inclusion rules. Put actionable scoped problems before verbose details and expose truncation/paging. Do not force oversized full-graph capture.",
+      "verification": "390-node/29-box equivalent synthetic graph; scoped overlap and comment remain visible within output budget.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-08",
+      "title": "Make append type lookup and link grammar consistent",
+      "kind": "bug",
+      "priority": "P2",
+      "wave": 2,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "GC-65",
+        "GC-70",
+        "GC-71"
+      ],
+      "depends_on": [],
+      "scope": "Type resolution, suggestions and live append help",
+      "acceptance": "Resolve supported engine-search IDs consistently, suggest self-reference and promotable operators, and document new-to-existing link syntax with copyable examples. Unknown/ambiguous IDs must not guess.",
+      "verification": "Use live help examples and engine-returned IDs in preview; self, input event and multiply controls; clear refusal alternatives.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-09",
+      "title": "Apply consistent unique-short-ID rules to edit tools",
+      "kind": "bug",
+      "priority": "P2",
+      "wave": 2,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "GC-72",
+        "GC-75"
+      ],
+      "depends_on": [],
+      "scope": "Shared pin/node resolution for connect and bind",
+      "acceptance": "Accept a uniquely matching supported short ID or explicitly require a full ID. Never bind/connect an ambiguous match. Preserve displaced-node cleanup reporting.",
+      "verification": "Unique, ambiguous, missing and full ID cases through public connect/bind tools; refusal preserves links.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-10",
+      "title": "Document and support named custom events",
+      "kind": "feature",
+      "priority": "P2",
+      "wave": 4,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "GC-69"
+      ],
+      "depends_on": [
+        "OCT27-08",
+        "OCT27-03"
+      ],
+      "scope": "Existing append/event capabilities",
+      "acceptance": "Reconcile existing support first; provide one documented creation route with name/signature rules and duplicate-name refusal. Ensure entry reachability and help match supported syntax.",
+      "verification": "Create event, append call, compile; duplicate/incompatible event refusal and unchanged existing graph.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-11",
+      "title": "Make play focus and application activation explicit",
+      "kind": "feature",
+      "priority": "P1",
+      "wave": 3,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "PI-03",
+        "FT-119"
+      ],
+      "depends_on": [],
+      "scope": "PlayInput focus and state diagnostics",
+      "acceptance": "Distinguish Slate focus from OS foreground activation. Report inactive application honestly; design explicit activation request with verified outcome and fallback when OS refuses. Keep inactive-input guard.",
+      "verification": "Inactive/active editor cases, focus outcome readback, activation refusal and no unintended input delivery.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-12",
+      "title": "Read bounded filtered editor/play logs",
+      "kind": "feature",
+      "priority": "P1",
+      "wave": 3,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "X-111",
+        "FT-124"
+      ],
+      "depends_on": [],
+      "scope": "Log reader and cursor/filter contract",
+      "acceptance": "Return category/text/time or cursor filtered records with bounded output, timestamps, dropped-count and session identity. Distinguish output log from tool-call log. Avoid arbitrary filesystem read capability.",
+      "verification": "Known log markers across cursor boundaries, category/text filters, truncation and stale cursor; clear live help.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-13",
+      "title": "Execute explicitly targeted diagnostic console commands",
+      "kind": "feature",
+      "priority": "P1",
+      "wave": 3,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "X-110",
+        "FT-123"
+      ],
+      "depends_on": [
+        "OCT27-12"
+      ],
+      "scope": "Editor versus PIE console target and command-result contract",
+      "acceptance": "Define supported diagnostic command surface before implementation. Explicit world target and side-effect description; reject ambiguous targets. Do not treat command dispatch as verified effect or captured output. Confirm risky operations separately.",
+      "verification": "Logging/diagnostic command and CVar cases with log/readback evidence; invalid target/command and blocked destructive cases.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-14",
+      "title": "Investigate engine writer corruption and design safe data-asset edits",
+      "kind": "investigation",
+      "priority": "P1",
+      "wave": 1,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "X-113",
+        "X-116",
+        "FT-130"
+      ],
+      "depends_on": [],
+      "scope": "Stock engine writer reproduction, plugin containment and future engine proposal",
+      "acceptance": "Reproduce object-keyed map failure and instanced-subobject false success on owned assets. Document engine defect separately. Specify plugin temporary import, identity validation, readback and rollback; never apply unvalidated imports to live properties. No engine patch requirement.",
+      "verification": "Controlled refusal preserves original map and dirty state; new instanced object ownership correct; successful writes independently read back. No claim until reproduced.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-15",
+      "title": "Recover supported non-Blueprint assets without restart",
+      "kind": "feature",
+      "priority": "P1",
+      "wave": 1,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "X-114",
+        "FT-129"
+      ],
+      "depends_on": [
+        "OCT27-14"
+      ],
+      "scope": "Asset revert/undo eligibility and package lifetime",
+      "acceptance": "Design supported asset classes first; do not promise every asset. Preview exact package/assets and unsaved loss, bind confirmation to current state, reject unsafe live references/PIE. Keep transaction undo distinct from disk reload. Extend destructive confirmation only under applicable user authorization.",
+      "verification": "Owned data-asset fixture, cancelled/stale confirmation, unsaved loss preview, disk restoration and refusal; inspect reference/undo side effects.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-16",
+      "title": "Create and edit pure/const function flags",
+      "kind": "feature",
+      "priority": "P2",
+      "wave": 4,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "CB-10",
+        "FT-128"
+      ],
+      "depends_on": [],
+      "scope": "Function member schema, preview and compile behavior",
+      "acceptance": "Expose current flags and explicit changes, validate inherited/override constraints and affected call-site execution wiring. Refuse unsafe flag conversion rather than silently disconnecting flow.",
+      "verification": "Create pure string helper, edit eligible function, invalid const/purity constraints and preserved callers; live help and compile.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-17",
+      "title": "Add per-user individual and domain tool controls",
+      "kind": "feature",
+      "priority": "P1",
+      "wave": 5,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "FT-126",
+        "FT-127"
+      ],
+      "depends_on": [],
+      "scope": "Settings, registration, presets and diagnostics",
+      "acceptance": "Retain master default OFF. Define domain presets and per-tool overrides, dependency/preview-edit pairing, restart versus live behavior and recovery discovery. Persist per-user/project without changing shared project settings.",
+      "verification": "Individual disable, preset disable, explicit override precedence, restart persistence, no callable disabled tool and accurate diagnostics.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-18",
+      "title": "Implement supported collapse-to-function workflow",
+      "kind": "feature",
+      "priority": "P2",
+      "wave": 4,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "GC-74"
+      ],
+      "depends_on": [
+        "OCT27-16"
+      ],
+      "scope": "Graph collapse preview/edit and boundary pins",
+      "acceptance": "Define supported selection and external data/exec boundaries; preview proposed signature and replacements. Preserve semantics, comments and layout; refuse latent or unsupported mixed-entry selections without mutation.",
+      "verification": "Small string chain plus external input/output consumers, refusal controls, compile/runtime equivalence and visual review.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    },
+    {
+      "id": "OCT27-19",
+      "title": "Diagnose interrupted MCP sessions without blind retries",
+      "kind": "investigation",
+      "priority": "P2",
+      "wave": 3,
+      "state": "open",
+      "validation": "untested",
+      "readiness": "needs_scoped_source_review",
+      "reports": [
+        "X-115"
+      ],
+      "depends_on": [],
+      "scope": "Connection diagnostics and mutation-result uncertainty",
+      "acceptance": "Collect timestamped server/editor disconnect reason and build identity on recurrence. Never assume a fetch failure means no mutation or automatically replay writes. Provide reconnect and state-reconciliation guidance.",
+      "verification": "Controlled transport loss before/after mutation; ambiguous result explicitly reported and no duplicate write. Historical field cause remains unknown.",
+      "owner": "Codex",
+      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+    }
+  ],
+  "positive_evidence": {
+    "TD-46": "Retained field evidence; preserve during relevant fixes, not a separate implementation task.",
+    "CB-08": "Retained field evidence; preserve during relevant fixes, not a separate implementation task.",
+    "X-109": "Retained field evidence; preserve during relevant fixes, not a separate implementation task.",
+    "X-112": "Retained field evidence; preserve during relevant fixes, not a separate implementation task.",
+    "GC-73": "Retained field evidence; preserve during relevant fixes, not a separate implementation task.",
+    "TD-48": "Retained field evidence; preserve during relevant fixes, not a separate implementation task.",
+    "CB-09": "Retained field evidence; preserve during relevant fixes, not a separate implementation task.",
+    "CB-11": "Retained field evidence; preserve during relevant fixes, not a separate implementation task.",
+    "X-117": "Retained field evidence; preserve during relevant fixes, not a separate implementation task."
+  },
+  "coverage": {
+    "report_records": 47,
+    "work_packages": 19,
+    "positive_observations": 9,
+    "unmapped": []
+  }
+}

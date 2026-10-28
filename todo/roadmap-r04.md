@@ -1975,3 +1975,7 @@ Readiness: ready. Extend the disposable owned-row fixture to call the public rea
 ### Oct27 DataTable default-value reader repair
 
 Readiness: ready. Public workflow 3319bdf908994f9abfe1cc2205e535bd exposes zero float and None name as export unavailable. Export selected values directly rather than treating ExportText_InContainer suppression of default values as failure. Preserve fixed-array element addressing. Assert default-value output and retain refusal/preservation checks. No new feature or persistence claim.
+
+### Oct27 report execution plan (recorded Oct28)
+
+All five reports are mapped to 19 bounded work packages in [the batch plan](../docs/audit/field-reports/plan-2026-10-27.json). The plan covers every observation/proposal and preserves nine positive observations without inventing verification tasks. Order: data safety/setup, graph correctness/layout, assisted debugging, editing capabilities, then tool controls. Each package has source IDs, priority, dependencies, scope, acceptance and verification. These are planning contracts; exact source review, immutable base and file assignment precede implementation. Unknown causes remain investigations. DSH remains paused; stock engine is required.

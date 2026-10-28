@@ -3985,8 +3985,10 @@
       "owner": "R04",
       "validation": "source_confirmed",
       "observation": "4 problems.\n  1. The guide says the preference defaults to enabled. The code default is off. The commit that changed the default is titled Default TurboMCP user preference to off, so the code looks intentional and the guide looks out of date.\n  2. The guide's section is about disabling TurboMCP for yourself. With an off default, most users first need to turn it on.\n  3. The install steps say to enable TurboMCP in the project, build and open the editor. They do not say that each user must also tick Enable TurboMCP in Editor Preferences and restart. The README quick start has the same gap. A user who follows the steps gets an editor with no TurboMCP tools, panel or hooks.\n  4. When TurboMCP is off, the status tool is also absent, as the guide says. An agent that cannot find any TurboMCP tool cannot ask TurboMCP why. The guide points to Editor Preferences and the startup log message, but the install steps do not.",
-      "remaining": "README, docs/user/installation.md and troubleshooting omit per-user opt-in; installation still says enabled by default. Preserve the explicitly requested default OFF.",
-      "source": "docs/audit/field-reports/2026-10-27_S1_TurboMCP_enable-preference-docs-mismatch.md"
+      "remaining": "OCT27-01: README, docs/user/installation.md and troubleshooting omit per-user opt-in; installation still says enabled by default. Preserve the explicitly requested default OFF.",
+      "source": "docs/audit/field-reports/2026-10-27_S1_TurboMCP_enable-preference-docs-mismatch.md",
+      "planned_task": "OCT27-01",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S2",
@@ -3999,8 +4001,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "Focus reported success. Hold refused with \"The editor application is inactive. No input was sent.\" ReadTurboMCPPlayInputState reported application active: no.",
-      "remaining": "Inactive application guard is intentional. Investigate focus-result clarity and an explicit activation request; do not bypass the guard. Earlier PI-01 tracked a different PIE dispatch-gate refusal, so do not reopen it as the same cause.",
-      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md"
+      "remaining": "OCT27-11: Inactive application guard is intentional. Investigate focus-result clarity and an explicit activation request; do not bypass the guard. Earlier PI-01 tracked a different PIE dispatch-gate refusal, so do not reopen it as the same cause.",
+      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md",
+      "planned_task": "OCT27-11",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S2",
@@ -4013,8 +4017,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "Refused with no close match. The engine node-type search returned the real type ID, and append then accepted it.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md"
+      "remaining": "OCT27-08: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md",
+      "planned_task": "OCT27-08",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S2",
@@ -4027,8 +4033,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "Both scoped tidies predicted longer wires and rolled back. The new nodes stay where append placed them.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md"
+      "remaining": "OCT27-04: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md",
+      "planned_task": "OCT27-04",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S2",
@@ -4041,8 +4049,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "PI-03",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md"
+      "remaining": "OCT27-11: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md",
+      "planned_task": "OCT27-11",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -4055,8 +4065,10 @@
       "owner": "R04",
       "validation": "partially_existing_source_confirmed",
       "observation": "GraphLoad, NodeContext, NodeResolve and the layout check do not print node positions. Comment boxes have rectangles, but nodes do not. Positions were estimated from region captures by converting pixels to graph units.",
-      "remaining": "LookTurboMCPGraphPositions already returns node IDs, x/y/width/height in graph units. Remaining gap is discoverability and targeted filtering in large graphs, not absence of position data.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "OCT27-06: LookTurboMCPGraphPositions already returns node IDs, x/y/width/height in graph units. Remaining gap is discoverability and targeted filtering in large graphs, not absence of position data.",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "planned_task": "OCT27-06",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -4069,8 +4081,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "The layout check output was cut off before the overlap list, so the overlaps caused by a new node could not be identified. The full-graph capture failed because the frame exceeded the zoom range. The comment list was cut off before the boxes of interest.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "OCT27-07: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "planned_task": "OCT27-07",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -4083,8 +4097,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "The result said \"longer wires; structural quality improved\". Total wire length grew by about 30,000 units. Captures showed both groups still spread over thousands of units.",
-      "remaining": "Related earlier bounded layout fixes do not cover this large boxed graph case. Reproduce fixed-neighbour distance and local insertion behavior; do not mark fixed from prior simple fixtures.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "OCT27-04: Related earlier bounded layout fixes do not cover this large boxed graph case. Reproduce fixed-neighbour distance and local insertion behavior; do not mark fixed from prior simple fixtures.",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "planned_task": "OCT27-04",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -4097,8 +4113,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "A MainPath that included the fixed predecessor was refused: \"MainPath requires distinct execution nodes within the selected scope\".",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "OCT27-05: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "planned_task": "OCT27-05",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -4125,8 +4143,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "New nodes were placed 1,800 to 9,700 units from the node they follow, sometimes in a diagonal. Each case needed a later layout pass.",
-      "remaining": "Related earlier bounded layout fixes do not cover this large boxed graph case. Reproduce fixed-neighbour distance and local insertion behavior; do not mark fixed from prior simple fixtures.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "OCT27-05: Related earlier bounded layout fixes do not cover this large boxed graph case. Reproduce fixed-neighbour distance and local insertion behavior; do not mark fixed from prior simple fixtures.",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "planned_task": "OCT27-05",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -4139,8 +4159,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "Append reported the value written, but the pin held a tag name made of backslashes. The compile did not flag it.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "OCT27-02: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "planned_task": "OCT27-02",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -4181,8 +4203,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "X-107",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "OCT27-06: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "planned_task": "OCT27-06",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -4195,8 +4219,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "X-108",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "OCT27-07: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "planned_task": "OCT27-07",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -4209,8 +4235,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "TD-45",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "OCT27-05: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "planned_task": "OCT27-05",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4223,8 +4251,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "No TurboMCP or engine tool executes a console command. The user typed every command. One typed command had a typo and the debug capture was lost for one repro.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-13: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-13",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4237,8 +4267,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "No tool reads the output log. The agent read the log file from disk with shell commands after each repro.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-12: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-12",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4265,8 +4297,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "Preflight refused with \"newly created execution nodes have no path from recognized entries\". The same happened when the event already existed in the graph. Compile also lists nodes after input action events as not reached from recognized entries.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-03: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-03",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4279,8 +4313,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "A guessed custom event form was refused as an unknown type. The tool help gives no custom event syntax. The engine node-type search returned a custom event entry that append did not offer.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-10: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-10",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4293,8 +4329,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "The engine search returned short IDs. Append created nodes whose reported IDs used a different form. A guessed long form for an input event was refused. A float multiply operator was not found in either form. Append link ends need the long form of the same type.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-08: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-08",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4307,8 +4345,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "The help shows a node example only. Two link syntaxes were refused before the correct form was found from an earlier session.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-08: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-08",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4321,8 +4361,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "Short IDs were refused with \"pins must resolve uniquely\". Full IDs worked. Other tools in the session accepted short IDs.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-09: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-09",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4349,8 +4391,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "The result said no acceptable layout and rolled back. The reported total wire length fell by about a fifth.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-04: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-04",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4391,8 +4435,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "X-110",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-13: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-13",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4405,8 +4451,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "X-111",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-12: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-12",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4419,8 +4467,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "GC-68",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "OCT27-03: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "planned_task": "OCT27-03",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4433,9 +4483,11 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "The writer refused every key (\"is not a subobject of the property owner\") and reported that the property could not be set. A read-back then showed the map reduced to one entry with a None key. The asset was dirty in memory.",
-      "remaining": "Reported engine object-writer corruption, not a TurboMCP writer regression. Track stock-engine proposal and safe recovery separately; never save the corrupted in-memory map.",
+      "remaining": "OCT27-14: Reported engine object-writer corruption, not a TurboMCP writer regression. Track stock-engine proposal and safe recovery separately; never save the corrupted in-memory map.",
       "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
-      "component": "Unreal engine tool"
+      "component": "Unreal engine tool",
+      "planned_task": "OCT27-14",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4448,8 +4500,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "PreviewTurboMCPAssetUndo refused: undo supports Blueprint assets only. PreviewTurboMCPAssetRevert refused: revert requires a Blueprint.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-15: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-15",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4462,8 +4516,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "The first call failed with a fetch error. The second reported the server unavailable. Neither call changed anything. The user restarted the editor, after which calls worked.",
-      "remaining": "Unknown cause; retain as evidence-needed. Need future timestamped server/editor logs and exact build if it recurs; old evidence may not be recoverable.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-19: Unknown cause; retain as evidence-needed. Need future timestamped server/editor logs and exact build if it recurs; old evidence may not be recoverable.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-19",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4476,8 +4532,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "Both writes returned success. A read-back showed the property still None.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-14: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-14",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4490,8 +4548,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "FunctionAdd has no flag parameter. No other tool sets function flags. The engine reader could not read the entry node flags.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-16: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-16",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4504,8 +4564,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "The help states collapse is not implemented. The nodes were rebuilt in the new function by hand and the originals removed.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-18: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-18",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4518,8 +4580,10 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "Short IDs were refused with \"target must be an exact delegate input pin\". The full ID worked.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-09: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-09",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4546,9 +4610,11 @@
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "The tidy reported improved structure. A capture showed the lane far from the chain it feeds, with a long backward wire across boxes.",
-      "remaining": "Same scoped fixed-neighbour placement problem as TD-44; preserve this occurrence without a duplicate work item.",
+      "remaining": "OCT27-04: Same scoped fixed-neighbour placement problem as TD-44; preserve this occurrence without a duplicate work item.",
       "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
-      "duplicate_of": "TD-44"
+      "duplicate_of": "TD-44",
+      "planned_task": "OCT27-04",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4575,8 +4641,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": null,
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-17: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-17",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4589,8 +4657,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": null,
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-17: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-17",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4603,8 +4673,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "CB-10",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-16: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-16",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4617,8 +4689,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "X-114",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-15: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-15",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     },
     {
       "report": "2026-10-27_S5",
@@ -4631,8 +4705,10 @@
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "X-116",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "OCT27-14: Feature request, not a confirmed regression.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "planned_task": "OCT27-14",
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
     }
   ],
   "prototype": {
