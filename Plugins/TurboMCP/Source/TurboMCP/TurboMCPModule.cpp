@@ -7,6 +7,9 @@
 
 #include "TurboMCPModule.h"
 #include "TurboMCPSettings.h"
+#include "TurboMCPToolPolicy.h"
+#include "TurboMCPToolsetsInternal.h"
+#include "UObject/FieldIterator.h"
 #include "TurboMCPPlayInput.h"
 #include "TurboMCPEditorLog.h"
 
@@ -98,6 +101,12 @@ void FTurboMCPModule::RegisterToolsets()
 		return;
 	}
 
+    TArray<FString> PolicyToolNames;
+    for (const auto& Class:TurboMCPToolsets::GetToolsetClasses())
+        for (TFieldIterator<UFunction> Function(Class.Get());Function;++Function)
+            if (Function->HasMetaData(TEXT("AICallable"))) PolicyToolNames.AddUnique(Function->GetName());
+    if (const UTurboMCPSettings* Settings=UTurboMCPSettings::Get())
+        TurboMCPToolPolicy::Initialize(*Settings,PolicyToolNames);
 	RegisterTurboMCPToolsets();
     // Stock-engine containment: these native paths bypass the plugin's write
     // and rollback safeguards. Exact suffixes avoid blocking unrelated tools.
@@ -105,6 +114,16 @@ void FTurboMCPModule::RegisterToolsets()
     if (!RegistryResult.HasError())
     {
         auto& Registry = RegistryResult.GetValue()->ToolsetRegistry;
+        for (const FString& Name:TurboMCPToolPolicy::DisabledNames())
+        {
+            // Names come from reflected functions, never from user regex input.
+            const FString Pattern=TEXT("/(^|\\.)TurboMCP\\.TurboMCP(Read|Look|Preview|Edit)Toolset\\.")+Name+TEXT("$/");
+            if (!Registry.GetBlockedNames().Contains(Pattern))
+            {
+                Registry.AddBlockedName(Pattern);
+                InstalledPolicyFilters.Add(Pattern);
+            }
+        }
         const TArray<FString> Patterns = {
             TEXT("/(^|\\.)DataTableTools\\.(add_rows|set_rows|rename_rows)$/"),
             TEXT("/(^|\\.)BlueprintTools\\.(set_pin_value|compile_blueprint)$/"),
@@ -138,11 +157,13 @@ void FTurboMCPModule::UnregisterToolsets()
     if (!RegistryResult.HasError())
     {
         auto& Registry = RegistryResult.GetValue()->ToolsetRegistry;
+        for (const FString& Pattern : InstalledPolicyFilters) Registry.RemoveBlockedName(Pattern);
         for (const FString& Pattern : InstalledSafetyFilters)
         {
             Registry.RemoveBlockedName(Pattern);
         }
     }
+    InstalledPolicyFilters.Reset();
     InstalledSafetyFilters.Reset();
 	UnregisterTurboMCPToolsets();
 }

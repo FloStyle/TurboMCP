@@ -8,6 +8,7 @@
 #include "Tools/TurboMCPToolsets.h"
 #include "TurboMCPModule.h"
 #include "TurboMCPSettings.h"
+#include "TurboMCPToolPolicy.h"
 
 #include "Containers/UnrealString.h"
 #include "Editor.h"
@@ -208,6 +209,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPStatus()
         Active ? TEXT("enabled") : TEXT("disabled"), Requested ? TEXT("enabled") : TEXT("disabled"), Active != Requested ? TEXT("yes") : TEXT("no"));
     if (!Active)
         return Result + TEXT("TurboMCP is disabled for this editor session. Its status tool is not exposed over MCP. Enable it in Editor Preferences and restart. Unreal MCP and other toolsets are unaffected.\n");
+    if (Preferences) Result += TurboMCPToolPolicy::Describe(*Preferences);
     if (const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("TurboMCP")))
     {
         const FPluginDescriptor& Descriptor = Plugin->GetDescriptor();

@@ -5,6 +5,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#include "TurboMCPToolPolicy.h"
 #include "TurboMCPCallRecorder.h"
 
 #include "Async/Future.h"
@@ -257,6 +258,13 @@ namespace
 			TSharedPtr<FTurboMCPCallLog::FScopedCall> Call =
 				MakeShared<FTurboMCPCallLog::FScopedCall>(RecordedToolset, ToolName, JsonInput);
 
+            FString PolicyReason;
+            if (!TurboMCPToolPolicy::IsAllowed(ToolName,PolicyReason))
+            {
+                const FString Error=TEXT("unchanged: ")+PolicyReason+TEXT(" Open Editor Preferences > Plugins > TurboMCP, adjust Tool controls and restart the editor. This call did not execute.");
+                Call->Finish(Error,true);
+                return MakeFulfilledPromise<FToolResult>(MakeError(Error)).GetFuture();
+            }
             FString NormalizedInput, AliasError;
             if (!NormalizeParameterAliases(Inner->GetToolsetClass(), ToolName, JsonInput, NormalizedInput, AliasError))
             {
