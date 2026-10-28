@@ -1987,3 +1987,7 @@ Readiness: ready. Integrator-approved assignment: `oct27-quoted-literals`. Sourc
 ### Literal consumer follow-up
 
 Readiness: ready. `oct27-literal-consumers` supersedes `oct27-quoted-literals` and includes its candidate. Extend shared decoding to GraphPatch, which uses append planning but currently strips quotes without decoding. Repair obsolete wrapper schema arguments and orphan-node positive fixtures; retain negative reachability and placement assertions. Add public append/readback coverage for quoted struct and escaped string values. Native run d9f1bd67c21747adb8f78a725cad4627 built successfully and passed AliasCollision, but failed full append and Placement acceptance; those failures remain unresolved until explained and verified.
+
+### Literal native acceptance setup
+
+Readiness: ready. `oct27-literal-acceptance` supersedes `oct27-literal-consumers`; same repair plus Tools/run-suites.ps1 to classify test-graph-append as rendering-dependent. Run 192de3f29d7647bab296d4479a63eb6d refused both literal writes because NullRHI cannot measure node geometry. Preserve that refusal and run with real rendering; do not bypass geometry checks. Retain the earlier full-suite failures and complete public struct/text readback acceptance.

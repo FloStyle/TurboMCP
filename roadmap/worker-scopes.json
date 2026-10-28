@@ -2694,6 +2694,20 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacementTest.cpp"
           ],
           "new_files": []
+        },
+        "oct27-literal-acceptance": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextLex.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphTextLex.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendAliasTest.cpp",
+            "Tools/test-graph-append.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatch.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacementTest.cpp",
+            "Tools/run-suites.ps1"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
