@@ -73,7 +73,7 @@ def common_play():
     if not evidence.exists(): raise RuntimeError('Fresh CommonUI evidence missing')
     print('RESULT: PASS CommonUI controller workflow')
 import os
-if os.environ.get('TURBOMCP_VISION_SCENARIO') == 'commonui':
+if os.environ.get('TURBOMCP_VISION_SCENARIO') == 'commonui' or os.environ.get('TMCP_COMMON_PLAY_ONLY') == '1':
     common_play()
     raise SystemExit(0)
 
