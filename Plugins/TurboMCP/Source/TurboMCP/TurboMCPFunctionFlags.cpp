@@ -10,6 +10,11 @@
 #include "K2Node_VariableSet.h"
 #include "K2Node_MacroInstance.h"
 #include "EdGraphSchema_K2.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetRegistry/IAssetRegistry.h"
+#include "K2Node_CreateDelegate.h"
+#include "Modules/ModuleManager.h"
+#include "UObject/UObjectIterator.h"
 
 namespace TurboMCPFunctionFlags
 {
@@ -20,6 +25,8 @@ struct FPlan
     UBlueprint* Blueprint = nullptr;
     UEdGraph* Graph = nullptr;
     UK2Node_FunctionEntry* Entry = nullptr;
+    TArray<UK2Node_CallFunction*> Calls;
+    TArray<UBlueprint*> Affected;
     bool WasPure = false;
     bool WasConst = false;
     bool Pure = false;
@@ -73,4 +80,90 @@ FString PrepareDefinition(const FString& Asset, const FString& Function,
         return TEXT("error: Static functions have no receiver and cannot be made const. Nothing changed.");
     return FString();
 }
+
+// Class identity must be checked as well as the name: unrelated Blueprints may
+// legitimately declare functions with identical names.
+bool DerivesFrom(UClass* Class, const UBlueprint* Owner)
+{
+    for (UClass* Current = Class; Current; Current = Current->GetSuperClass())
+        if (Current->ClassGeneratedBy == Owner) return true;
+    return false;
+}
+
+FString InspectCallers(FPlan& Plan)
+{
+    IAssetRegistry& Registry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+    if (Registry.IsLoadingAssets())
+        return TEXT("error: Asset discovery is still running. Wait for it to finish, then preview again. Nothing changed.");
+    TArray<FName> Packages;
+    Packages.Add(Plan.Blueprint->GetOutermost()->GetFName());
+    TSet<FName> Seen;
+    Seen.Add(Packages[0]);
+    for (int32 Index = 0; Index < Packages.Num(); ++Index)
+    {
+        TArray<FName> Referencers;
+        Registry.GetReferencers(Packages[Index], Referencers);
+        for (FName Package : Referencers)
+        {
+            if (Seen.Contains(Package)) continue;
+            if (Seen.Num() >= 256)
+                return TEXT("error: More than 256 dependent packages require inspection. Use the editor for this project-wide change. Nothing changed.");
+            Seen.Add(Package);
+            Packages.Add(Package);
+        }
+    }
+    for (FName Package : Packages)
+    {
+        TArray<FAssetData> Assets;
+        Registry.GetAssetsByPackageName(Package, Assets);
+        for (const FAssetData& Data : Assets)
+        {
+            if (Data.AssetClassPath.GetAssetName() == FName(TEXT("World")))
+                return TEXT("error: A dependent map may contain level-script callers: ") + Data.GetObjectPathString() + TEXT(". Map callers are not supported. Nothing changed.");
+            UClass* Class = Data.GetClass();
+            if (!Class)
+                return TEXT("error: Cannot classify dependent asset: ") + Data.GetObjectPathString() + TEXT(". Nothing changed.");
+            if (Class->IsChildOf(UBlueprint::StaticClass()) && !Cast<UBlueprint>(Data.GetAsset()))
+                return TEXT("error: Cannot load dependent Blueprint: ") + Data.GetObjectPathString() + TEXT(". Nothing changed.");
+        }
+    }
+    Plan.Affected.Add(Plan.Blueprint);
+    for (TObjectIterator<UBlueprint> It; It; ++It)
+    {
+        UBlueprint* Blueprint = *It;
+        if (!IsValid(Blueprint) || Blueprint->HasAnyFlags(RF_ClassDefaultObject)) continue;
+        if (Blueprint != Plan.Blueprint && DerivesFrom(Blueprint->ParentClass, Plan.Blueprint))
+            for (UEdGraph* Graph : Blueprint->FunctionGraphs)
+                if (Graph && Graph->GetFName() == Plan.Graph->GetFName())
+                    return TEXT("error: A child Blueprint overrides this function: ") + Blueprint->GetPathName() + TEXT(". Change the inheritance contract in the editor. Nothing changed.");
+        TArray<UEdGraph*> Graphs;
+        Blueprint->GetAllGraphs(Graphs);
+        for (UEdGraph* Graph : Graphs)
+        {
+            if (!Graph) continue;
+            for (UEdGraphNode* Node : Graph->Nodes)
+            {
+                if (UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(Node))
+                    if (Delegate->GetFunctionName() == Plan.Graph->GetFName() && DerivesFrom(Delegate->GetScopeClass(), Plan.Blueprint))
+                        return TEXT("error: A delegate references this function: ") + Delegate->GetPathName() + TEXT(". Delegate-contract conversion is not supported. Nothing changed.");
+                UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node);
+                if (!Call || Call->FunctionReference.GetMemberName() != Plan.Graph->GetFName()) continue;
+                UClass* Scope = Call->FunctionReference.IsSelfContext() ? Blueprint->GeneratedClass.Get() : Call->FunctionReference.GetMemberParentClass();
+                if (!DerivesFrom(Scope, Plan.Blueprint)) continue;
+                if (Plan.Pure != Plan.WasPure)
+                    for (UEdGraphPin* Pin : Call->Pins)
+                    {
+                        if (!Pin || Pin->LinkedTo.IsEmpty()) continue;
+                        const bool Exec = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec;
+                        if ((Plan.Pure && Exec) || (!Plan.Pure && !Exec))
+                            return TEXT("error: Purity conversion would remove connected execution flow or introduce an unexecuted data producer at ") + Call->GetPathName() + TEXT(". Rewire the caller explicitly first. Nothing changed.");
+                    }
+                Plan.Calls.Add(Call);
+                Plan.Affected.AddUnique(Blueprint);
+            }
+        }
+    }
+    return FString();
+}
+
 } // namespace TurboMCPFunctionFlags
