@@ -139,6 +139,7 @@ Generated from declarations, definitions and static test references. All runtime
 | ReadTurboMCPDataTable | [TurboMCPDataTable.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTable.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPDirtyList | [TurboMCPTypes.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPEditQueue | [TurboMCPToolsets.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| ReadTurboMCPEditorLog | [TurboMCPEditorLog.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPEditorLog.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPGraphLoad | [TurboMCPGraphLoad.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPMaterialBlocks | [TurboMCPMaterialTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPMaterialInstance | [TurboMCPMaterialInstanceTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstanceTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |

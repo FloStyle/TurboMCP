@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-28",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 158,
+  "inventory": 159,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -662,6 +662,22 @@
         "Tight fixed gaps can retain bent boundary wires",
         "Reused tools do not increase the unique reviewed-tool count"
       ]
+    },
+    {
+      "id": "WF-DEBUG-EDITOR-LOG",
+      "title": "Read and page filtered editor output without confusing it with tool-call history",
+      "status": "bounded_scenario_checked",
+      "review": "docs/audit/editor-log-review.json",
+      "fixture": "TurboMCP.Diagnostics.EditorLog",
+      "tools_used": [
+        "ReadTurboMCPEditorLog"
+      ],
+      "limitations": [
+        "Only records captured while TurboMCP is enabled in this editor session; no historical disk log access",
+        "Editor and PIE share the output stream; no inferred world attribution",
+        "Truncated message tails are unavailable and cannot be searched",
+        "Bounded fixture evidence does not certify every project or logging producer"
+      ]
     }
   ],
   "tool_usage": {
@@ -960,9 +976,12 @@
     ],
     "EditTurboMCPAssetRevert": [
       "WF-DATA-03-RECOVERY"
+    ],
+    "ReadTurboMCPEditorLog": [
+      "WF-DEBUG-EDITOR-LOG"
     ]
   },
-  "unique_tools_scenario_reviewed": 77,
+  "unique_tools_scenario_reviewed": 78,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

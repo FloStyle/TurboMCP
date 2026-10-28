@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "plugin_tree": "b0460ec8ba1d72b6529c57970131c06ea7048752",
+  "plugin_tree": "e9d13d55df1d2a501e0bd21117603f49c1452432",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 158,
+    "tools": 159,
     "by_toolset": {
       "UTurboMCPEditToolset": 65,
       "UTurboMCPLookToolset": 6,
       "UTurboMCPPreviewToolset": 52,
-      "UTurboMCPReadToolset": 35
+      "UTurboMCPReadToolset": 36
     }
   },
   "tools": [
@@ -3312,6 +3312,32 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "ReadTurboMCPEditorLog",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "Category",
+        "Contains",
+        "Since",
+        "Cursor",
+        "Limit"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEditorLog.cpp",
+          "line": 120
+        }
+      ],
+      "test_references": [
+        "Tools/test-editor-log.py"
+      ],
+      "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "ReadTurboMCPGraphLoad",
       "toolset": "UTurboMCPReadToolset",
       "parameters": [
@@ -3737,6 +3763,7 @@
         "Tools/test-asset-recovery.py",
         "Tools/test-common-button-workflow.py",
         "Tools/test-datatable-quality.py",
+        "Tools/test-editor-log.py",
         "Tools/test-scoped-tidy.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-vision-workflow.py"

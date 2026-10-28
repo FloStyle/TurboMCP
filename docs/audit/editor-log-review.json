@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "tasks": [
+    "OCT27-12"
+  ],
+  "status": "implemented_focused_native_passed",
+  "candidate": "c34d23aa0b1b717fdc986a83ed2a2a8edbecdf61",
+  "native_run": "0bb9580c42824795857a2407ad012687",
+  "checks": [
+    "Actual GLog marker reaches the public reader with category, severity and UTC timestamp",
+    "Category, text, time and exclusive session cursor filters; sequential pages do not skip matching records",
+    "2048-record retention and dropped counts; 2048-character truncation; 24000-character whole-record pages",
+    "Malformed, future and other-session cursors refused; bounded limits validated",
+    "Concurrent producers retained; live help documents all five parameters"
+  ],
+  "retained_evidence": [
+    "bf01e864a502458f866d81ccd9af1fce: native assertions passed; wrapper failed because parameter-name matching was case-sensitive. Wrapper now matches case-insensitively and still requires nonempty parameter descriptions."
+  ],
+  "limits": [
+    "Only records captured while TurboMCP is enabled in this editor session; no historical disk log access",
+    "Editor and PIE share the output stream; no inferred world attribution",
+    "Truncated message tails are unavailable and cannot be searched",
+    "Bounded fixture evidence does not certify every project or logging producer"
+  ]
+}

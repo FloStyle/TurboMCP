@@ -338,8 +338,8 @@
       "kind": "feature",
       "priority": "P1",
       "wave": 3,
-      "state": "in_progress",
-      "validation": "untested",
+      "state": "done",
+      "validation": "focused_native_passed",
       "readiness": "ready",
       "reports": [
         "X-111",
@@ -352,7 +352,11 @@
       "owner": "Codex",
       "dispatch": "Codex oct27-editor-log; DSH paused",
       "source_review": "Only per-call warning capture and tool-call history exist. Neither provides editor log history. Add a bounded output-device history during enabled module lifetime; do not change existing per-call attribution.",
-      "repair_contract": "ReadTurboMCPEditorLog reads an enabled-session memory ring of at most 2048 records, at most 2048 characters each. Capture UTC timestamp, category, verbosity, monotonically increasing sequence and session GUID. Optional exact Category, case-insensitive Contains, UTC Since and exclusive Cursor=session:sequence; default empty cursor starts oldest retained. Limit 1..100, character-budget whole records. Return next cursor, retention loss since requested cursor, filtered/scanned counts, message truncation flags and session identity. Refuse malformed/future/other-session cursor and invalid time/limit. Filtered scans advance cursor only through considered records, never skip a matching record that did not fit output. Thread-safe capture, no recursive logging under lock, install only when enabled and detach safely on shutdown. No arbitrary file path, disk log read, clear operation or world attribution claims. Test actual GLog markers, filters, sequential pages, retention loss, truncated text, stale cursor, live help, no self-generated log recursion. Integrator owns catalog/inventory registration."
+      "repair_contract": "ReadTurboMCPEditorLog reads an enabled-session memory ring of at most 2048 records, at most 2048 characters each. Capture UTC timestamp, category, verbosity, monotonically increasing sequence and session GUID. Optional exact Category, case-insensitive Contains, UTC Since and exclusive Cursor=session:sequence; default empty cursor starts oldest retained. Limit 1..100, character-budget whole records. Return next cursor, retention loss since requested cursor, filtered/scanned counts, message truncation flags and session identity. Refuse malformed/future/other-session cursor and invalid time/limit. Filtered scans advance cursor only through considered records, never skip a matching record that did not fit output. Thread-safe capture, no recursive logging under lock, install only when enabled and detach safely on shutdown. No arbitrary file path, disk log read, clear operation or world attribution claims. Test actual GLog markers, filters, sequential pages, retention loss, truncated text, stale cursor, live help, no self-generated log recursion. Integrator owns catalog/inventory registration.",
+      "candidate": "c34d23aa0b1b717fdc986a83ed2a2a8edbecdf61",
+      "review": "docs/audit/editor-log-review.json",
+      "resolution": "Implemented ReadTurboMCPEditorLog with bounded session history, category/text/time filters, exclusive cursor paging, retention-loss and truncation reporting. Public tool and live help verified in a focused native workflow.",
+      "remaining": ""
     },
     {
       "id": "OCT27-13",
