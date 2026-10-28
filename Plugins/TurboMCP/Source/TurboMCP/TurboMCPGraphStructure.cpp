@@ -683,6 +683,15 @@ bool FTurboMCPGraphStructure::PlanCollapse(const FString& InAsset, const FString
         OutPlan.Refusals.Add(TEXT("Macro extraction is not supported. Choose function for the supported collapse workflow."));
         return true;
     }
+    bool ValidIdentifier = InMemberName.Len() > 0 && InMemberName.Len() <= 100 &&
+        (FChar::IsAlpha(InMemberName[0]) || InMemberName[0] == TCHAR('_'));
+    for (TCHAR Character : InMemberName)
+        ValidIdentifier = ValidIdentifier && (FChar::IsAlnum(Character) || Character == TCHAR('_'));
+    if (!ValidIdentifier || FName(*InMemberName).IsNone())
+    {
+        OutPlan.Refusals.Add(TEXT("Use a function identifier of 1 to 100 letters, digits or underscores, starting with a letter or underscore. Nothing changed."));
+        return true;
+    }
     FKismetNameValidator NameValidator(Blueprint);
     if (NameValidator.IsValid(InMemberName) != EValidatorResult::Ok)
     {
