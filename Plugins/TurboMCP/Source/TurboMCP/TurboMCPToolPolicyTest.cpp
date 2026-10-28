@@ -7,6 +7,8 @@
 #include "Tools/TurboMCPToolsets.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
+#include "Misc/Paths.h"
+#include "HAL/FileManager.h"
 #include "UObject/FieldIterator.h"
 #include "ToolsetRegistry/ToolsetRegistrySubsystem.h"
 #include "ToolsetRegistry/Toolset.h"
@@ -53,6 +55,15 @@ bool FTurboMCPToolPolicyTest::RunTest(const FString&)
     TestSettings->DisabledToolDomains.Add(TEXT("UnknownDomain"));
     TestTrue(TEXT("Unknown override diagnosed"),TurboMCPToolPolicy::Describe(*TestSettings).Contains(TEXT("Unknown tool override")));
     TestTrue(TEXT("Unknown domain diagnosed"),TurboMCPToolPolicy::Describe(*TestSettings).Contains(TEXT("Unknown tool domain")));
+    // Serialize a separate fixture file with Unreal's own map/array syntax.
+    // The Python restart workflow copies only this settings section and restores
+    // the original user file byte-for-byte after the two editor launches.
+    TestSettings->DisabledToolDomains={TEXT("Blueprint")};
+    TestSettings->ToolOverrides.Reset();
+    TestSettings->ToolOverrides.Add(TEXT("ReadTurboMCPNodeFind"),true);
+    const FString FixtureDirectory=FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("TurboMCP/Workflow"));
+    IFileManager::Get().MakeDirectory(*FixtureDirectory,true);
+    TestSettings->SaveConfig(CPF_Config,*FPaths::Combine(FixtureDirectory,TEXT("tool-policy-fixture.ini")));
     TestSettings->bEnableTurboMCP=false;
     TurboMCPToolPolicy::Initialize(*TestSettings,Names);
     TestFalse(TEXT("Master off wins over recovery"),TurboMCPToolPolicy::IsAllowed(TEXT("ReadTurboMCPStatus"),Reason));
