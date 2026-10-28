@@ -33,6 +33,41 @@ UEdGraphNode* ResolveNode(UEdGraph* Graph,UEdGraph* Identity,const FString& Id)
     UEdGraphNode* Original=TurboMCPGraphScratch::Find(Identity,Id);
     return Original?TurboMCPGraphScratch::ByGuid(Graph,Original->NodeGuid):nullptr;
 }
+/** Resolve edit endpoints without dropping asset/graph qualifiers or guessing a match.
+ * Bare hexadecimal keys are scoped by the already resolved graph. Exact reader
+ * IDs retain their full identity; a failed qualified ID is never treated as a key.
+ */
+UEdGraphNode* ResolveEditNode(UEdGraph* Graph, UEdGraph* Identity, const FString& Id, FString& Error)
+{
+    const FString Requested = Id.TrimStartAndEnd();
+    TArray<UEdGraphNode*> Matches;
+    const FString Key = TurboMCPNodeId::NormaliseKey(Requested);
+    if (!Key.IsEmpty())
+        TurboMCPNodeId::FindNodesByKey(Identity, Key, Matches);
+    else if (Identity)
+        for (UEdGraphNode* Node : Identity->Nodes)
+            if (Node && (TurboMCPNodeId::MakeForNode(Node, true) == Requested
+                || TurboMCPNodeId::MakeForNode(Node, false) == Requested))
+                Matches.Add(Node);
+    if (Matches.Num() != 1)
+    {
+        Error = Matches.IsEmpty()
+            ? TEXT("Node ID was not found in the named graph. Use an exact ID from the reader or a unique hexadecimal node key of at least six digits: ") + Requested
+            : TEXT("Node ID is ambiguous in the named graph. Use a longer unique key or an exact reader ID: ") + Requested;
+        return nullptr;
+    }
+    // Scratch copies preserve GUIDs, but a malformed duplicate must not select
+    // the first node silently when mapping back to the editable graph.
+    UEdGraphNode* Found = nullptr;
+    if (Graph) for (UEdGraphNode* Node : Graph->Nodes)
+        if (Node && Node->NodeGuid == Matches[0]->NodeGuid)
+        {
+            if (Found) { Error = TEXT("Node GUID is duplicated in the graph; repair the duplicate identity before editing."); return nullptr; }
+            Found = Node;
+        }
+    if (!Found) Error = TEXT("Resolved node is unavailable in the editable graph. Read the graph again before retrying.");
+    return Found;
+}
 UEdGraphPin* Pin(UEdGraphNode* Node,const FString& Name,EEdGraphPinDirection Direction)
 {
     UEdGraphPin* Found=nullptr;
@@ -194,7 +229,8 @@ bool BindNewEvent(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
     for(UEdGraph* G:AllGraphs) if(G) for(UEdGraphNode* N:G->Nodes)
         if(const UK2Node_CustomEvent* E=Cast<UK2Node_CustomEvent>(N)) if(E->CustomFunctionName==Name)
         { Error=TEXT("event name already exists"); return false; }
-    UEdGraphNode* Target=ResolveNode(Graph,Identity,TargetId);
+    UEdGraphNode* Target=ResolveEditNode(Graph,Identity,TargetId,Error);
+    if (!Target) return false;
     UEdGraphPin* Input=Pin(Target,TargetPin,EGPD_Input);
     if(!Input || Input->PinType.PinCategory!=TEXT("delegate"))
     { Error=TEXT("target must be an exact delegate input pin"); return false; }
@@ -232,7 +268,7 @@ bool BindNewEvent(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
             Parameters.Add(Parameter->PinName.ToString() + TEXT(": ") + Type);
         }
     Report = TEXT("handler: ") + TurboMCPNodeId::MakeForNode(Event, true) + TEXT("; name=") + EventName
-        + TEXT("\ntarget: ") + TargetId + TEXT(":") + TargetPin
+        + TEXT("\ntarget: ") + TurboMCPNodeId::MakeForNode(TurboMCPGraphScratch::ByGuid(Identity, Target->NodeGuid), true) + TEXT(":") + TargetPin
         + TEXT("\nsignature: ") + Signature->GetPathName()
         + TEXT("\nhandler parameters: ") + (Parameters.IsEmpty() ? FString(TEXT("none")) : FString::Join(Parameters, TEXT(", ")))
         + TEXT("\nreplaced input sources: ") + (Displaced.IsEmpty() ? FString(TEXT("none")) : FString::Join(Displaced, TEXT(", ")))
@@ -244,14 +280,17 @@ bool BindNewEvent(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
 }
 bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin,FString& Report,FString& Error)
 {
-    UEdGraphNode* Target=ResolveNode(Graph,Identity,TargetId);
+    UEdGraphNode* Target=ResolveEditNode(Graph,Identity,TargetId,Error);
+    if (!Target) return false;
     UEdGraphPin* Input=Pin(Target,TargetPin,EGPD_Input);
     if(!Input || Input->PinType.PinCategory!=TEXT("delegate") || FunctionName.TrimStartAndEnd().IsEmpty())
     { Error=TEXT("requires an exact delegate input pin and a function name"); return false; }
     const bool ExplicitObject=!ObjectNodeId.IsEmpty();
     if(ExplicitObject!=!ObjectPin.IsEmpty())
     { Error=TEXT("ObjectNodeId and ObjectPin must both be supplied, or both empty for self"); return false; }
-    UEdGraphPin* ObjectOutput=ExplicitObject?Pin(ResolveNode(Graph,Identity,ObjectNodeId),ObjectPin,EGPD_Output):nullptr;
+    UEdGraphNode* ObjectNode = ExplicitObject ? ResolveEditNode(Graph, Identity, ObjectNodeId, Error) : nullptr;
+    if (ExplicitObject && !ObjectNode) return false;
+    UEdGraphPin* ObjectOutput=ExplicitObject?Pin(ObjectNode,ObjectPin,EGPD_Output):nullptr;
     if(ExplicitObject && (!ObjectOutput || ObjectOutput->PinType.PinCategory!=UEdGraphSchema_K2::PC_Object))
     { Error=TEXT("object endpoint must resolve to an object-reference output pin"); return false; }
     UK2Node_CreateDelegate* Event=NewObject<UK2Node_CreateDelegate>(Graph,NAME_None,RF_Transactional);
@@ -274,7 +313,7 @@ bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
     { Error=TEXT("delegate function selection or link did not survive read-back"); return false; }
     if(ExplicitObject)
     {
-        UEdGraphPin* CurrentObject=Pin(ResolveNode(Graph,Identity,ObjectNodeId),ObjectPin,EGPD_Output);
+        UEdGraphPin* CurrentObject=Pin(ObjectNode,ObjectPin,EGPD_Output);
         UEdGraphPin* ObjectInput=Event->GetObjectInPin();
         if(!CurrentObject || !ObjectInput || ObjectInput->LinkedTo.Num()!=1
             || ObjectInput->LinkedTo[0]!=CurrentObject || !CurrentObject->LinkedTo.Contains(ObjectInput))
@@ -441,9 +480,14 @@ FString ConnectNamed(const FString& Asset, const FString& GraphName, bool bEdit,
 {
     return Run(Asset, GraphName, bEdit, [&](UEdGraph* Graph, UEdGraph* Identity, FString& Report, FString& Error)
     {
-        UEdGraphPin* Output = Pin(ResolveNode(Graph, Identity, SourceNodeId), SourcePin, EGPD_Output);
-        UEdGraphPin* Input = Pin(ResolveNode(Graph, Identity, TargetNodeId), TargetPin, EGPD_Input);
-        const FString Endpoints = SourceNodeId + TEXT(":") + SourcePin + TEXT(" -> ") + TargetNodeId + TEXT(":") + TargetPin;
+        UEdGraphNode* Source = ResolveEditNode(Graph, Identity, SourceNodeId, Error);
+        if (!Source) return false;
+        UEdGraphNode* Target = ResolveEditNode(Graph, Identity, TargetNodeId, Error);
+        if (!Target) return false;
+        UEdGraphPin* Output = Pin(Source, SourcePin, EGPD_Output);
+        UEdGraphPin* Input = Pin(Target, TargetPin, EGPD_Input);
+        const FString Endpoints = TurboMCPNodeId::MakeForNode(TurboMCPGraphScratch::ByGuid(Identity, Source->NodeGuid), true) + TEXT(":") + SourcePin
+            + TEXT(" -> ") + TurboMCPNodeId::MakeForNode(TurboMCPGraphScratch::ByGuid(Identity, Target->NodeGuid), true) + TEXT(":") + TargetPin;
         const bool bExec = Output && Output->PinType.PinCategory == TEXT("exec");
         TArray<FString> Displaced;
         TArray<FGuid> DisplacedSourceNodes;

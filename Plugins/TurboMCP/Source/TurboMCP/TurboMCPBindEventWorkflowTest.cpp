@@ -80,9 +80,23 @@ bool FTurboMCPBindEventWorkflowTest::RunTest(const FString& Parameters)
         const FString Result=Record(TEXT("BindNewEvent refusal"),Edit?UTurboMCPEditToolset::EditTurboMCPBindNewEvent(Asset,GraphName,Id,Pin,Name):UTurboMCPPreviewToolset::PreviewTurboMCPBindNewEvent(Asset,GraphName,Id,Pin,Name));
         TestTrue(TEXT("Invalid request explicitly refused"),Result.Contains(TEXT("refused:")));TestEqual(TEXT("Refusal preserves state"),Snapshot(),Before);TestEqual(TEXT("Refusal preserves dirty flag"),Package->IsDirty(),Dirty);
     }
+    const FString TargetKey = Bind->NodeGuid.ToString(EGuidFormats::DigitsLower).Left(6);
+    const FGuid OriginalGetGuid = Get->NodeGuid;
+    Get->NodeGuid = Bind->NodeGuid;
+    const FString AmbiguousBefore = Snapshot();
+    for (bool Apply : {false, true})
+    {
+        const FString Result = Apply
+            ? UTurboMCPEditToolset::EditTurboMCPBindNewEvent(Asset, GraphName, TargetKey, PinName, TEXT("HandlePurchase"))
+            : UTurboMCPPreviewToolset::PreviewTurboMCPBindNewEvent(Asset, GraphName, TargetKey, PinName, TEXT("HandlePurchase"));
+        TestTrue(TEXT("Ambiguous bind ID explains identity problem"), Result.Contains(TEXT("ambiguous")));
+        TestEqual(TEXT("Ambiguous bind preserves graph"), Snapshot(), AmbiguousBefore);
+        TestEqual(TEXT("Ambiguous bind preserves dirty flag"), Package->IsDirty(), Dirty);
+    }
+    Get->NodeGuid = OriginalGetGuid;
     const FString Preview=Record(TEXT("PreviewTurboMCPBindNewEvent"),UTurboMCPPreviewToolset::PreviewTurboMCPBindNewEvent(Asset,GraphName,Target,PinName,TEXT("HandlePurchase")));
     TestFalse(TEXT("Valid preview not refused"),Preview.Contains(TEXT("refused:")));TestEqual(TEXT("Preview preserves state"),Snapshot(),Before);TestEqual(TEXT("Preview preserves dirty flag"),Package->IsDirty(),Dirty);
-    const FString Edit=Record(TEXT("EditTurboMCPBindNewEvent"),UTurboMCPEditToolset::EditTurboMCPBindNewEvent(Asset,GraphName,Target,PinName,TEXT("HandlePurchase")));
+    const FString Edit=Record(TEXT("EditTurboMCPBindNewEvent"),UTurboMCPEditToolset::EditTurboMCPBindNewEvent(Asset,GraphName,TargetKey,PinName,TEXT("HandlePurchase")));
     if(!TestTrue(TEXT("Binding changed"),Edit.StartsWith(TEXT("changed"))))return false;
     TestEqual(TEXT("Exactly one new handler"),Graph->Nodes.Num(),Count+1);
     for(const auto& Pair:Positions) TestEqual(TEXT("Existing positions preserved"),FIntPoint(Pair.Key->NodePosX,Pair.Key->NodePosY),Pair.Value);

@@ -155,6 +155,23 @@ bool FTurboMCPEventConnectWorkflowTest::RunTest(const FString& Parameters)
             TestEqual(TEXT("Refusal preserves every flow"), Snapshot(), Before);
             TestEqual(TEXT("Refusal preserves dirty flag"), Package->IsDirty(), DirtyBefore);
         }
+    const FString SourceKey = Correct->NodeGuid.ToString(EGuidFormats::DigitsLower).Left(6);
+    const FString ShortPreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphConnect(Asset, GraphName, SourceKey, TEXT("ReturnValue"), ShortKey, TEXT("PurchaseValue"));
+    TestTrue(TEXT("Unique keys preview canonical endpoints"), ShortPreview.Contains(SourceId) && ShortPreview.Contains(TargetId) && !ShortPreview.Contains(TEXT("refused:")));
+    TestEqual(TEXT("Short-key preview preserves graph"), Snapshot(), Before);
+    const FGuid OriginalObsoleteGuid = Obsolete->NodeGuid;
+    Obsolete->NodeGuid = Correct->NodeGuid;
+    const FString AmbiguousBefore = Snapshot();
+    for (bool Edit : {false, true})
+    {
+        const FString Result = Edit
+            ? UTurboMCPEditToolset::EditTurboMCPGraphConnect(Asset, GraphName, SourceKey, TEXT("ReturnValue"), ShortKey, TEXT("PurchaseValue"))
+            : UTurboMCPPreviewToolset::PreviewTurboMCPGraphConnect(Asset, GraphName, SourceKey, TEXT("ReturnValue"), ShortKey, TEXT("PurchaseValue"));
+        TestTrue(TEXT("Ambiguous connect key is explicitly refused"), Result.Contains(TEXT("ambiguous")));
+        TestEqual(TEXT("Ambiguous connect preserves every link"), Snapshot(), AmbiguousBefore);
+        TestEqual(TEXT("Ambiguous connect preserves dirty flag"), Package->IsDirty(), DirtyBefore);
+    }
+    Obsolete->NodeGuid = OriginalObsoleteGuid;
     // A source still used elsewhere is not a cleanup candidate. This temporary
     // fixture variant gives it a second consumer, then restores the baseline.
     UEdGraphPin* SharedInput = Correct->FindPinChecked(TEXT("A"));
@@ -171,7 +188,7 @@ bool FTurboMCPEventConnectWorkflowTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Preview explicitly transient"), Preview.Contains(TEXT("preview (transient graph)")));
     TestFalse(TEXT("Connect preview does not imply new node IDs"), Preview.Contains(TEXT("New node IDs")));
     TestEqual(TEXT("Preview preserves all state"), Snapshot(), Before);
-    const FString Applied = Record(TEXT("EditTurboMCPGraphConnect"), UTurboMCPEditToolset::EditTurboMCPGraphConnect(Asset, GraphName, SourceId, TEXT("ReturnValue"), TargetId, TEXT("PurchaseValue")));
+    const FString Applied = Record(TEXT("EditTurboMCPGraphConnect"), UTurboMCPEditToolset::EditTurboMCPGraphConnect(Asset, GraphName, SourceKey, TEXT("ReturnValue"), ShortKey, TEXT("PurchaseValue")));
     TestTrue(TEXT("Edit exposes cleanup instead of silently deleting"), Applied.Contains(TEXT("cleanup review:")) && Graph->Nodes.Contains(Obsolete));
     TestTrue(TEXT("Edit reports changed"), Applied.StartsWith(TEXT("changed\n")));
     TestTrue(TEXT("Edit identifies endpoints"), Applied.Contains(SourceId) && Applied.Contains(TargetId));
