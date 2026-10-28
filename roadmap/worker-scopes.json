@@ -2681,6 +2681,19 @@
             "Tools/test-graph-append.py"
           ],
           "new_files": []
+        },
+        "oct27-literal-consumers": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextLex.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphTextLex.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendAliasTest.cpp",
+            "Tools/test-graph-append.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatch.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacementTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
