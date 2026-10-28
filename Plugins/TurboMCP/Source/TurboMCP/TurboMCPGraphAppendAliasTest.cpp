@@ -513,16 +513,19 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 
 
     // Exercise the public entry points and inspect actual stored defaults independently.
-    for (const FName FunctionName : { FName(TEXT("MakeLiteralString")) })
+    for (const FName FunctionName : { FName(TEXT("MakeLiteralString")), FName(TEXT("MakeLiteralGameplayTag")) })
     {
-        UFunction* Function = UKismetSystemLibrary::StaticClass()->FindFunctionByName(FunctionName);
+        const bool bTag = FunctionName == TEXT("MakeLiteralGameplayTag");
+        UClass* Library = bTag ? LoadObject<UClass>(nullptr, TEXT("/Script/GameplayTags.BlueprintGameplayTagLibrary"))
+            : UKismetSystemLibrary::StaticClass();
+        UFunction* Function = Library ? Library->FindFunctionByName(FunctionName) : nullptr;
         if (!TestNotNull(TEXT("literal fixture function exists"), Function)) return false;
         UK2Node_CallFunction* Probe = NewObject<UK2Node_CallFunction>(Fixture.Unique);
         Probe->SetFromFunction(Function);
         Probe->CreateNewGuid();
         Probe->AllocateDefaultPins();
         const FString TypeId = TurboMCPNodeId::GetNodeTypeId(Probe);
-        const FString Expected = TEXT("quoted \"value; still content\" and C:\\Temp\\file");
+        const FString Expected = bTag ? TEXT("(TagName=\"UI.Menu.Pause\")") : TEXT("quoted \"value; still content\" and C:\\Temp\\file");
         const FString Request = FString::Printf(TEXT("(%s\n    Value %s\n)"),
             *TypeId, *TurboMCPGraphTextLex::QuoteLiteral(Expected));
         const FString Before = SerializeGraph(Fixture.Unique);
