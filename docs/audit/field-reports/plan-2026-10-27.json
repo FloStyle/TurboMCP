@@ -498,8 +498,8 @@
       "kind": "feature",
       "priority": "P2",
       "wave": 4,
-      "state": "open",
-      "validation": "untested",
+      "state": "in_progress",
+      "validation": "focused_workflows_passed_acceptance_incomplete",
       "readiness": "ready",
       "reports": [
         "GC-74"
@@ -513,7 +513,9 @@
       "owner": "Codex",
       "dispatch": "Codex oct27-collapse-function; DSH paused; claim required at approved base",
       "repair_contract": "docs/design/collapse-function.md",
-      "source_review": "Existing GraphCollapse tools plan selection but do not apply collapse. Stock CanCollapseSelectionToFunction creates a temporary function graph, so it must not run on the live asset during preview. Stock collapse is editor-instance based and assumes valid boundaries; plugin must preflight those boundaries and verify preservation."
+      "source_review": "Existing GraphCollapse tools plan selection but do not apply collapse. Stock CanCollapseSelectionToFunction creates a temporary function graph, so it must not run on the live asset during preview. Stock collapse is editor-instance based and assumes valid boundaries; plugin must preflight those boundaries and verify preservation.",
+      "implementation_progress": "Candidate implements pure string-chain and single-entry execution extraction. Runtime, internal values/links and selected-comment preservation passed on d857725; screenshot inspected. Current candidate adds apply-time revalidation and both boundary endpoint checks. Not yet integrated or accepted.",
+      "remaining": "Complete unsupported-selection and replacement-layout safety checks, final source review, offline gate and integration. Preserve earlier invalid-name and visual failures in the review record."
     },
     {
       "id": "OCT27-19",
