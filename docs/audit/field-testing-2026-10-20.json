@@ -3953,9 +3953,9 @@
       "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "focused_native_and_visual_passed",
-      "evidence": "docs/audit/scoped-tidy-review.json",
-      "remaining": "OCT27-04 implemented: local scoped placement, boundary limits and exact quality rejection reasons. Native synthetic workflow and screenshots passed; exact private historical graph not reproduced.",
+      "validation": "tested",
+      "evidence": "Supervised build and event-connect workflow passed: 5baad9279e9d4b4883b2b20362e382e8. Native screenshot AADF9B7241927C71A00F1D9019A8EBE1 reviewed: guard in Purchase row, separate from Refund.",
+      "remaining": "Crowded gaps retain general fallback. Original field confirmation pending; no global layout certification.",
       "implementation": "5a313f4: single-node execution insertions first seek a collision-free local gap between existing endpoints; no existing nodes move."
     },
     {
