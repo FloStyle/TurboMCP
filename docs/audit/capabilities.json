@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "5df40cf2bd49bd9bf235b0c4ae747da6f0a7dffa",
+  "plugin_tree": "9e32ef6ff4970fa1229e4303fa54b826b748065f",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -3901,6 +3901,7 @@
       "test_references": [
         "Tools/test-agent-help.py",
         "Tools/test-asset-recovery.py",
+        "Tools/test-collapse-function.py",
         "Tools/test-common-button-workflow.py",
         "Tools/test-custom-event.py",
         "Tools/test-datatable-quality.py",
