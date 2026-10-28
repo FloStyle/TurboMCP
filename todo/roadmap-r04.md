@@ -2042,3 +2042,5 @@ OCT27-06 complete and OCT27-04 follow-up accepted: targeted geometry and safe fo
 OCT27-07 ready/in progress: scoped layout/comment reports with complete-record pagination, boundary-inclusive finding rules and existing targeted capture. Exact scope oct27-scoped-reports; contract in Oct27 plan.
 
 OCT27-07 complete: scoped layout/comment reports and dense 390-node/29-box workflow accepted. Final native run e08dbdcb2722444fa8dce6c42abab90e proves oversized-record stop/explicit skip; prior combined purchase/scoped run retained. See docs/audit/scoped-reports-review.json for failures, screenshot and limitations.
+
+OCT27-11 implemented: explicit activation request, separate Slate/foreground diagnostics and unattended guard refusal. Native 1c2e0df66d624fc0a56475097ec24145 and offline b6abf0065c0248ffb5d08cfe84cbbb3d passed. OS foreground success was not observed; manual fallback remains. Retained failures and exact limits: docs/audit/play-activation-review.json.

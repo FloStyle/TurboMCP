@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "tasks": [
+    "OCT27-11"
+  ],
+  "status": "implemented_with_explicit_os_limit",
+  "candidate": "9508be43bc03cd4a323640b587a6436a6702be7d",
+  "native_run": "1c2e0df66d624fc0a56475097ec24145",
+  "offline": "26/26 passed b6abf0065c0248ffb5d08cfe84cbbb3d",
+  "checks": [
+    "Explicit activate validates empty arguments and refuses the unattended focus guard without changing it",
+    "Stock native foreground request; no game key sent; foreground and Slate active states reported separately",
+    "Native readback after normal ticks agrees with native window observation",
+    "Slate focus alone explicitly does not request OS activation",
+    "Inactive hold refused; held input cleanup preserved; CommonUI controller and menu sequence passed",
+    "Live help states activate/focus distinction and manual fallback"
+  ],
+  "retained_evidence": [
+    "4abd1a3b53034208b4021d6e5218c4a4: passed assertions but foreground=no; BringToFront alone insufficient for stock Windows foreground request",
+    "49828a3631b54b9097c1bda9241947ac: stock foreground request added; foreground still no under unattended focus guard",
+    "35b672e57f564006ae8000edd0e8011c: failed inactive assertions because OS reactivation could occur between synthetic callback and assertion; same-tick callback checks isolate this test",
+    "0c29aefe72ee41c4bc7ff89d5a195b67: guard refusal and same-tick checks passed; guard restored before subsequent activation ticks",
+    "70b733c9594440589a1ffba52a5ce1db: actual foreground-success assertion failed even with guard suspended across ticks. Retained, not represented as success. Final assertion compares reported state to actual OS state and requires explicit fallback per task contract."
+  ],
+  "limits": [
+    "Successful OS foreground activation was NOT demonstrated on this host. Final run observed foreground=no. The API requests activation but cannot guarantee OS permission; manual fallback remains necessary when denied or delayed.",
+    "The unattended focus guard is never disabled by the production tool. The owned test temporarily suspends and restores it.",
+    "Inactive-input checks use a controlled Slate deactivation callback, not proof of every real Alt-Tab timing case.",
+    "No custom engine or OS focus-policy bypass. No increase to unique reviewed-tool count."
+  ],
+  "scope_review": "Immutable scope check passed c6ca5645249cc537bb7fb7ba25c41a854e722ffd at a1ea0fbbe5b5aafe636b3d8963a5cc03afb791b4. Subsequent 9508be4 changes only the same three approved files; fc4a465 runner selection separately approved in main plan.",
+  "images_inspected": [
+    "pie_2AB8AB3E4EE716383E826D89E4D9447A.png: readable CommonUI settings view; does not prove OS activation"
+  ]
+}

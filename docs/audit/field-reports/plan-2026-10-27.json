@@ -306,8 +306,8 @@
       "kind": "feature",
       "priority": "P1",
       "wave": 3,
-      "state": "in_progress",
-      "validation": "partial_native_passed_activation_unresolved",
+      "state": "done",
+      "validation": "focused_native_passed_os_activation_not_granted",
       "readiness": "ready",
       "reports": [
         "PI-03",
@@ -318,7 +318,7 @@
       "acceptance": "Distinguish Slate focus from OS foreground activation. Report inactive application honestly; design explicit activation request with verified outcome and fallback when OS refuses. Keep inactive-input guard.",
       "verification": "Inactive/active editor cases, focus outcome readback, activation refusal and no unintended input delivery.",
       "owner": "Codex",
-      "dispatch": "Codex oct27-play-activation; DSH paused",
+      "dispatch": "Integrated by Codex; DSH paused",
       "source_review": "Focus currently sets Slate user focus without distinguishing inactive application. Hold correctly rejects inactive Slate state. Stock SWindow supports BringToFront and native IsForegroundWindow; activation requests may be refused or delayed by the OS.",
       "repair_contract": "Extend existing PlayInput Action with explicit activate: resolve the PIE viewport owning window, require empty Key/Value/Seconds and no held input, request stock native activation, report immediate foreground and Slate-active observations without claiming guaranteed success or sending a key. Focus remains Slate-only and says so. Read state includes owning-window foreground separately from application active. Preserve inactive input guard. Help explains activation side effects, delayed/refused fallback, and menu focus preservation. Extend existing CommonPlay workflow with active/inactive state, argument refusal, no-key delivery and live help; record simulated callback controls separately from actual native activation observations. No engine changes or OS focus-policy bypass. Source follow-up: unattended launcher installs FTurboMCPFocusGuard, which returns foreground on activation. Explicit activate must refuse clearly while that guard is active, without silently disabling it. The owned CommonPlay fixture may temporarily remove/reinstall the guard to measure a real stock foreground request; restore it on all exits. Keep callback simulation distinct from OS observations.",
       "integrator_test_scope": {
@@ -327,8 +327,10 @@
         ],
         "reason": "Expose existing CommonPlay-only selection with a supervisor-preserved TMCP_COMMON_PLAY_ONLY variable; reuse existing scenario without running unrelated vision workflows. Keep the full default suite unchanged."
       },
-      "implementation_progress": "Review branch implements explicit activate and separate Slate/native state. Focused CommonPlay runs 4abd1a3b53034208b4021d6e5218c4a4 and 49828a3631b54b9097c1bda9241947ac pass, including inactive callback refusal/help. Both report native foreground=no; not accepted as proof of successful OS activation.",
-      "remaining": "Resolve embedded PIE versus top-level window selection and validate actual activation outcomes. Preserve existing inactive guard. Do not close from the passing CommonPlay assertions alone."
+      "implementation_progress": "Implemented explicit activation request, guard refusal, separate native/Slate state and fallback. Native workflow and offline gate passed; OS did not grant foreground in this host run.",
+      "remaining": "",
+      "evidence": "docs/audit/play-activation-review.json",
+      "resolution": "Implemented the requested activation/focus contract, including refusal and manual fallback. This does not claim successful unattended foreground acquisition: Windows foreground remained no in the observed run. Failure evidence and simulation limits are retained."
     },
     {
       "id": "OCT27-12",

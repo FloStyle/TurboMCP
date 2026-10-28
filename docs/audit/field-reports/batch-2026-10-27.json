@@ -49,13 +49,14 @@
       "key": "2026-10-27_S2/PI-03",
       "title": "Feature: Synthetic input refuses while the editor application is not focused (medium)",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_passed_os_activation_not_granted",
       "observation": "Focus reported success. Hold refused with \"The editor application is inactive. No input was sent.\" ReadTurboMCPPlayInputState reported application active: no.",
-      "remaining": "Inactive application guard is intentional. Investigate focus-result clarity and an explicit activation request; do not bypass the guard. Earlier PI-01 tracked a different PIE dispatch-gate refusal, so do not reopen it as the same cause.",
-      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md"
+      "remaining": "",
+      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md",
+      "resolution": "OCT27-11 implemented with explicit OS refusal/manual fallback; foreground success not observed. See docs/audit/play-activation-review.json."
     },
     {
       "report": "2026-10-27_S2",
@@ -92,13 +93,14 @@
       "key": "2026-10-27_S2/FT-119",
       "title": "Activate the editor window before sending play input",
       "kind": "reference",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "proposed_not_implemented",
+      "validation": "focused_native_passed_os_activation_not_granted",
       "duplicate_of": "PI-03",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md"
+      "remaining": "",
+      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md",
+      "resolution": "OCT27-11 implemented with explicit OS refusal/manual fallback; foreground success not observed. See docs/audit/play-activation-review.json."
     },
     {
       "report": "2026-10-27_S3",
