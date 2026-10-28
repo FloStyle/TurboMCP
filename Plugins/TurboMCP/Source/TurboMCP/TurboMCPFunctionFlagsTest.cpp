@@ -14,6 +14,7 @@
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_VariableSet.h"
 #include "EdGraphSchema_K2.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -116,6 +117,35 @@ bool FTurboMCPFunctionFlagsTest::RunTest(const FString&)
     TestTrue(TEXT("Execution output retained"),Then->LinkedTo.Contains(CallerResult->FindPin(UEdGraphSchema_K2::PN_Execute)));
     FKismetEditorUtilities::CompileBlueprint(BP);
     TestTrue(TEXT("Preserved caller compiles"),BP->Status!=BS_Error);
+
+    // A loaded child is a real dependent caller even before it is saved into
+    // the asset registry. Its inherited call must be reconstructed as well.
+    UBlueprint* Child=FKismetEditorUtilities::CreateBlueprint(BP->GeneratedClass,Package,TEXT("BP_FunctionFlagsChild"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
+    if (!TestNotNull(TEXT("Dependent Blueprint"),Child)) return false;
+    UEdGraph* ChildGraph=FBlueprintEditorUtils::CreateNewGraph(Child,TEXT("DependentEvents"),UEdGraph::StaticClass(),UEdGraphSchema_K2::StaticClass());
+    FBlueprintEditorUtils::AddUbergraphPage(Child,ChildGraph);
+    UK2Node_CallFunction* ChildCall=NewObject<UK2Node_CallFunction>(ChildGraph);
+    ChildCall->FunctionReference.SetSelfMember(TEXT("GetLabel"));
+    ChildGraph->AddNode(ChildCall,false,false);ChildCall->CreateNewGuid();ChildCall->AllocateDefaultPins();
+    ChildCall->NodePosX=320;ChildCall->NodePosY=64;
+    TestTrue(TEXT("Const change with dependent caller"),Run(true,TEXT("keep"),TEXT("true")).StartsWith(TEXT("edited:")));
+    TestEqual(TEXT("Dependent position preserved"),FIntPoint(ChildCall->NodePosX,ChildCall->NodePosY),FIntPoint(320,64));
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    FKismetEditorUtilities::CompileBlueprint(Child);
+    TestTrue(TEXT("Dependent compiles after flags"),Child->Status!=BS_Error);
+    TestTrue(TEXT("Inherited function refusal"),UTurboMCPEditToolset::EditTurboMCPFunctionFlags(Child->GetPathName(),TEXT("GetLabel"),TEXT("true"),TEXT("keep")).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Return to non-const"),Run(true,TEXT("keep"),TEXT("false")).StartsWith(TEXT("edited:")));
+    FEdGraphPinType Integer;Integer.PinCategory=UEdGraphSchema_K2::PC_Int;
+    TestTrue(TEXT("Add member for const control"),FBlueprintEditorUtils::AddMemberVariable(BP,TEXT("Counter"),Integer,TEXT("0")));
+    UK2Node_VariableSet* Set=NewObject<UK2Node_VariableSet>(Graph);
+    Set->VariableReference.SetSelfMember(TEXT("Counter"));Graph->AddNode(Set,false,false);Set->CreateNewGuid();Set->AllocateDefaultPins();
+    const int32 FlagsBeforeConstRefusal=Entry->GetFunctionFlags();
+    const int32 NodesBeforeConstRefusal=Graph->Nodes.Num();
+    const FString ConstRefusal=Run(true,TEXT("keep"),TEXT("true"));
+    TestTrue(TEXT("Member write refuses const"),ConstRefusal.Contains(TEXT("writes a member")));
+    TestEqual(TEXT("Const refusal preserves flags"),Entry->GetFunctionFlags(),FlagsBeforeConstRefusal);
+    TestEqual(TEXT("Const refusal preserves nodes"),Graph->Nodes.Num(),NodesBeforeConstRefusal);
+    Set->DestroyNode();
     Transcript+=TEXT("\n")+UTurboMCPLookToolset::LookTurboMCPCapture(Asset,TEXT("GetLabel"),TEXT("graph"),TEXT(""),TEXT("1200x700"));
     return true;
 }
