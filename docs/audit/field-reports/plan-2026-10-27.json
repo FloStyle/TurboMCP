@@ -284,9 +284,9 @@
       "kind": "feature",
       "priority": "P2",
       "wave": 4,
-      "state": "open",
+      "state": "in_progress",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "GC-69"
       ],
@@ -298,7 +298,9 @@
       "acceptance": "Reconcile existing support first; provide one documented creation route with name/signature rules and duplicate-name refusal. Ensure entry reachability and help match supported syntax.",
       "verification": "Create event, append call, compile; duplicate/incompatible event refusal and unchanged existing graph.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-custom-event; DSH paused",
+      "source_review": "GraphAppend has no standalone named custom-event grammar. BindEvent creates an event from an existing delegate signature; MergeMembers/GraphTransfer create or transfer declarations. None provides an independent named event with caller-supplied inputs. Reuse FTurboMCPFunction::CheckName for inherited/local collision rules and FTurboMCPTypeParser for parameter types.",
+      "repair_contract": "Add PreviewTurboMCPCustomEventAdd and EditTurboMCPCustomEventAdd with Asset, GraphName, Name and Inputs. Inputs uses existing one-per-line Name:type signature syntax; empty means no parameters. Support event graphs only; reject function/macro graphs, invalid/oversized/duplicate/reserved names, incompatible types, duplicate events across the Blueprint and inherited callable collisions before mutation. Create a local non-replicated custom event, not an override or delegate-binding operation; no output parameters or implicit compile/save. Preview validates without dirtying. Edit one undo transaction; place the new node in free space without moving existing nodes, return stable graph/node/pin IDs and append guidance. Validate created pins and roll back on mismatch. Native workflow creates typed event, appends a call from its exec output, compiles and rereads signature; refusal preserves graph nodes/links/dirty state. Inspect capture for readable placement; verify public help and English results. Dedicated route avoids a second inconsistent event grammar in append."
     },
     {
       "id": "OCT27-11",

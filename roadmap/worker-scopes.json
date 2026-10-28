@@ -2855,6 +2855,16 @@
             "docs/user/troubleshooting.md"
           ],
           "new_files": []
+        },
+        "oct27-custom-event": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCustomEvent.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCustomEventTest.cpp",
+            "Tools/test-custom-event.py"
+          ]
         }
       },
       "preserve_rows": []
