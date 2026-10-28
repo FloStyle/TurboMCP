@@ -4154,15 +4154,16 @@
       "key": "2026-10-27_S3/GC-67",
       "title": "A quoted struct literal in append text was stored with broken escaping (medium)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_passed",
       "observation": "Append reported the value written, but the pin held a tag name made of backslashes. The compile did not flag it.",
-      "remaining": "OCT27-02: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "remaining": "",
       "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
       "planned_task": "OCT27-02",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "resolution": "Shared literal escaping repaired for append, reader and patch. Rendered public regression 57488220f6db4e0a8b033bb691694a5d passed exact string/gameplay-tag readback, preview preservation, refusal preservation and targeted patch. No field retest claimed."
     },
     {
       "report": "2026-10-27_S3",

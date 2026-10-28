@@ -44,8 +44,8 @@
       "kind": "bug",
       "priority": "P0",
       "wave": 1,
-      "state": "in_progress",
-      "validation": "partial: rendered public append string/gameplay-tag stored-value and refusal regression passed",
+      "state": "done",
+      "validation": "focused_native_passed",
       "readiness": "ready",
       "reports": [
         "GC-67"
@@ -55,11 +55,17 @@
       "acceptance": "Reproduce nested quotes/backslashes in gameplay-tag struct literals. Preserve the intended canonical value or refuse before mutation. Compare actual readback, not compile success alone.",
       "verification": "Public preview/edit with quoted tag, escaped text, invalid input and unchanged graph on refusal; compile and read back.",
       "owner": "Codex",
-      "dispatch": "Codex: oct27-quoted-literals; isolated worktree; DSH paused",
+      "dispatch": "Integrated by Codex; DSH paused",
       "source_review": "Append Unquote removes outer quotes without decoding escapes. ParsePinLine comment scan toggles on escaped quotes. GraphText literal writer adds quotes without escaping embedded quotes/backslashes. Repair the shared representation and prove canonical stored readback; native evidence pending.",
-      "candidate": "9f5c601",
-      "evidence_run": "66aa998e1e1f4b94848907c520f95075",
-      "remaining": "Verify independent graph-reader and patch compatibility; repair full append wrapper and placement fixtures. Prior failed runs d9f1bd67c21747adb8f78a725cad4627 and 192de3f29d7647bab296d4479a63eb6d retained. Second run refused because NullRHI cannot measure nodes; runner rendering classification corrected. Candidate not merged."
+      "candidate": "1de4c0fa348499b5afdac908f7a7e5b92befc70e",
+      "evidence_run": "57488220f6db4e0a8b033bb691694a5d",
+      "remaining": "",
+      "resolution": "Shared quote encoding/decoding preserves literal content in append, reader and patch. Malformed escapes refuse during planning. Rendered public preview/edit/readback/patch checks passed for escaped strings and gameplay-tag structs; fixture compilation passed. Offline checks: 25 passed in 30038d07334448e5ac1eb6cf22a1a382; stale generated inventory corrected and validate-repo then passed.",
+      "prior_failures": [
+        "d9f1bd67c21747adb8f78a725cad4627: full append wrapper/placement failures remain tracked with OCT27-05",
+        "192de3f29d7647bab296d4479a63eb6d: NullRHI setup refused geometry; fixed rendering requirement",
+        "0edf8ddf80ff4d9bb3ebe67228b4cbe8: missing fixture return node; added explicit result"
+      ]
     },
     {
       "id": "OCT27-03",
@@ -124,7 +130,8 @@
       "acceptance": "Try collision-free placement beside predecessor/consumer. Support an explicit fixed anchor for a new chain. Never silently move unselected downstream nodes; any wider shift must be previewed and explicitly scoped.",
       "verification": "Dense and sparse graph insertions, fixed anchor outside movable scope, overlap refusal/fallback, preserved external coordinates and links.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "DSH paused; exact file assignment and base required before implementation",
+      "acceptance_debt": "Retain and repair full test-graph-append wrapper schema/connected-positive assertions and GraphAppend.Placement fixture assumptions. Failed evidence d9f1bd67c21747adb8f78a725cad4627 is not superseded by the focused literal pass."
     },
     {
       "id": "OCT27-06",
