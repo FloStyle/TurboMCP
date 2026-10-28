@@ -2716,6 +2716,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetSafetyTest.cpp",
             "Tools/test-data-asset-safety.py"
           ]
+        },
+        "oct27-data-value-planner": {
+          "files": [],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPDataAssetValues.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetValues.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetValuesTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
