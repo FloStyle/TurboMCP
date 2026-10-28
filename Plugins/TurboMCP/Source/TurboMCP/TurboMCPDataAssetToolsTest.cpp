@@ -8,6 +8,7 @@
 #include "UObject/Package.h"
 #include "UObject/StrongObjectPtr.h"
 #include "InputAction.h"
+#include "Editor.h"
 #include "PlayerMappableKeySettings.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPDataAssetToolsTest,
@@ -96,6 +97,10 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
     const FString Remove = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("map_remove"), KeyC->GetPathName(), TEXT(""), ReadRevision());
     TestTrue(TEXT("exact entry removal accepted"), Remove.StartsWith(TEXT("edited:")));
     TestTrue(TEXT("removal preserves unrelated map entries"), Asset->Entries.Num() == 2 && Asset->Entries.FindRef(KeyA.Get()) == ChildA && Asset->Entries.FindRef(KeyB.Get()) == ChildB);
+    GEditor->UndoTransaction();
+    TestTrue(TEXT("undo restores only the removed entry"), Asset->Entries.Num() == 3 && Asset->Entries.FindRef(KeyC.Get()) == ChildC && Asset->Entries.FindRef(KeyA.Get()) == ChildA);
+    const FString RemoveAfterUndo = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("map_remove"), KeyC->GetPathName(), TEXT(""), ReadRevision());
+    TestTrue(TEXT("entry can be removed again after undo"), RemoveAfterUndo.StartsWith(TEXT("edited:")));
     const FString RemoveAgain = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("map_remove"), KeyC->GetPathName(), TEXT(""), ReadRevision());
     TestTrue(TEXT("absent entry removal is an explicit no-op"), RemoveAgain.StartsWith(TEXT("unchanged:")));
     if (Asset->Child)
@@ -105,6 +110,14 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
         Asset->Child->Label = TEXT("\u4e01");
         TestTrue(TEXT("revision distinguishes non-ASCII values"), ReadRevision() != UnicodeRevision);
     }
+
+    const FString BeforeInvalidCreate = ReadRevision();
+    const FString InvalidCreate = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("create_child"), KeyC->GetPathName(), TEXT("{\"class\":\"/Script/Engine.DataAsset\"}"), BeforeInvalidCreate);
+    TestTrue(TEXT("incompatible child class refuses"), InvalidCreate.StartsWith(TEXT("refused:")));
+    TestEqual(TEXT("incompatible class leaves state unchanged"), ReadRevision(), BeforeInvalidCreate);
+    const FString InvalidInitial = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("create_child"), KeyC->GetPathName(), TEXT("{\"class\":\"/Script/TurboMCP.TurboMCPDataAssetSafetyChild\",\"fields\":{\"Missing\":\"7\"}}"), BeforeInvalidCreate);
+    TestTrue(TEXT("invalid initial field refuses"), InvalidInitial.StartsWith(TEXT("refused:")));
+    TestEqual(TEXT("invalid initial field leaves state unchanged"), ReadRevision(), BeforeInvalidCreate);
 
     TStrongObjectPtr<UInputAction> Action(NewObject<UInputAction>(Package, TEXT("InputAction")));
     UPlayerMappableKeySettings::StaticClass();

@@ -134,10 +134,18 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
 {
     FTurboMCPResult Result;
     Result.OperationId = FTurboMCPResult::NewOperationId();
+    auto Respond = [&](const FString& Body)
+    {
+        constexpr int32 MaxBodyCharacters = 32768;
+        if (Body.Len() <= MaxBodyCharacters) return Result.AppendTo(Body);
+        Result.bTruncated = true;
+        Result.Omitted = Body.Len() - MaxBodyCharacters;
+        return Result.AppendTo(Body.Left(MaxBodyCharacters) + TEXT("\n[Output truncated; do not reuse partial property text as input. Select a smaller property. Omitted count is characters.]"));
+    };
     auto Refuse = [&](const FString& Message)
     {
         Result.Outcome = ETurboMCPResultOutcome::Refused; Result.Code = TEXT("invalid_request");
-        return Result.AppendTo(TEXT("refused: ") + Message + TEXT(" No property write was applied."));
+        return Respond(TEXT("refused: ") + Message + TEXT(" No property write was applied."));
     };
     if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive() || (Mode && !GEditor->CanTransact()))
         return Refuse(TEXT("Use an idle editor outside play and active transactions."));
@@ -155,7 +163,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         FString Body = TEXT("read: Editable data-asset properties.\n") + Header;
         for (TFieldIterator<FProperty> It(Asset->GetClass()); It; ++It)
             if (Editable(*It)) Body += TEXT("\n") + It->GetName() + TEXT(" [") + It->GetCPPType() + TEXT("]");
-        return Result.AppendTo(Body + TEXT("\nRead an exact Property for its current value. Save and compile are separate."));
+        return Respond(Body + TEXT("\nRead an exact Property for its current value. Save and compile are separate."));
     }
     FTarget Target;
     FString Error;
@@ -189,7 +197,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         SelectedChild = TEXT("\nselected_child: ") + Child->GetPathName() + TEXT("\nchild_property: ") + ChildPath;
     }
     const FString Before = Export(Target.Property, Target.Address, Target.Owner);
-    if (!Mode) return Result.AppendTo(TEXT("read: Data-asset property.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\ntype: ") + Target.Property->GetCPPType() + TEXT("\nvalue: ") + Before + TEXT("\nformat: Unreal property text for values; exact loaded object paths for references. Map operations take one key and value separately."));
+    if (!Mode) return Respond(TEXT("read: Data-asset property.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\ntype: ") + Target.Property->GetCPPType() + TEXT("\nvalue: ") + Before + TEXT("\nformat: Unreal property text for values; exact loaded object paths for references. Map operations take one key and value separately."));
     if (Revision.IsEmpty() || Revision != Baseline.Revision) return Refuse(TEXT("State revision is missing or stale. Read the asset again before previewing or editing."));
     FValue Planned(Target.Property, Target.Address);
     TStrongObjectPtr<UObject> HeldKey, HeldValue, TemporaryOwner, ProposedChild, CreatedChild;
@@ -197,6 +205,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
     FMapProperty* ChildMap = nullptr;
     TUniquePtr<FValue> ChildKey;
     FString ChildDescription;
+    TArray<FStoredField> ChildInitialFields;
     auto Parse = [&](FProperty* Property, const FString& Input, bool IsKey, void* Out, TStrongObjectPtr<UObject>& Held)
     {
         if (CastField<FObjectPropertyBase>(Property)) return TurboMCPDataAssetValues::ResolveReference(Property, Input, Asset, IsKey, Out, Held, Error);
@@ -253,7 +262,6 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
             return Refuse(TEXT("Class must be loaded, exact, concrete, EditInlineNew and compatible with the property."));
         if (Target.Owner->GetClass()->HasAnyClassFlags(CLASS_Abstract) || !Target.Owner->IsA(Class->ClassWithin))
             return Refuse(TEXT("The child class cannot be constructed under this property's owner."));
-        TArray<FStoredField> InitialFields;
         if (Spec->HasField(TEXT("fields")))
         {
             const TSharedPtr<FJsonObject>* Fields = nullptr;
@@ -265,7 +273,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
                 if (!Editable(Field) || !Item.Value->TryGetString(Input)) return Refuse(TEXT("Each initial field must be an editable reflected field with a string value: ") + FString(*Item.Key));
                 FValue Parsed(Field);
                 if (!TurboMCPDataAssetValues::ParseValue(Field, Input, Parsed.Get(), Error)) return Refuse(FString(*Item.Key) + TEXT(": ") + Error);
-                InitialFields.Add({nullptr, Field, MakeUnique<FValue>(Field, Parsed.Get())});
+                ChildInitialFields.Add({nullptr, Field, MakeUnique<FValue>(Field, Parsed.Get())});
             }
         }
         // Construct under an isolated owner of the same class. Constructors may execute project
@@ -274,7 +282,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         ProposedChild.Reset(NewObject<UObject>(TemporaryOwner.Get(), Class, NAME_None, RF_Transient));
         if (!ProposedChild.IsValid()) return Refuse(TEXT("The temporary child could not be constructed."));
         Result.Effects.Add(TEXT("temporary_object_constructors_executed"));
-        for (const FStoredField& Field : InitialFields)
+        for (const FStoredField& Field : ChildInitialFields)
             Field.Property->CopyCompleteValue(Field.Property->ContainerPtrToValuePtr<void>(ProposedChild.Get()), Field.Value->Get());
         FValue ChildValue(ChildProperty);
         ChildProperty->SetObjectPropertyValue(ChildValue.Get(), ProposedChild.Get());
@@ -286,15 +294,15 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         {
             Result.Outcome = ETurboMCPResultOutcome::Failed; Result.Code = TEXT("constructor_changed_live_state");
             Result.SetChangedUnknown(); Result.bComplete = false;
-            return Result.AppendTo(TEXT("failed: A project constructor changed live state while preparing the child. No planned write was applied. Inspect the asset; do not retry blindly."));
+            return Respond(TEXT("failed: A project constructor changed live state while preparing the child. No planned write was applied. Inspect the asset; do not retry blindly."));
         }
     }
     else return Refuse(TEXT("Operation must be set, map_upsert, map_remove, create_child or child_set."));
     const FString Proposed = Export(Target.Property, Planned.Get(), Target.Owner);
     const FString Detail = Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed + ChildDescription + SelectedChild;
-    if (Mode == 1) { Result.Outcome = ETurboMCPResultOutcome::Planned; return Result.AppendTo(TEXT("preview: Validated temporary values; live properties unchanged.\n") + Detail); }
+    if (Mode == 1) { Result.Outcome = ETurboMCPResultOutcome::Planned; return Respond(TEXT("preview: Validated temporary values; live properties unchanged.\n") + Detail); }
     if (Target.Property->Identical(Target.Address, Planned.Get(), PPF_None))
-    { Result.Outcome = ETurboMCPResultOutcome::Unchanged; return Result.AppendTo(TEXT("unchanged: The requested value is already present.\n") + Detail); }
+    { Result.Outcome = ETurboMCPResultOutcome::Unchanged; return Respond(TEXT("unchanged: The requested value is already present.\n") + Detail); }
     FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "DataAssetProperty", "Edit data-asset property"));
     Asset->SetFlags(RF_Transactional); Asset->Modify();
     if (Target.Owner != Asset) { Target.Owner->SetFlags(RF_Transactional); Target.Owner->Modify(); }
@@ -327,6 +335,11 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         Applied = true;
         FSnapshot Actual(Asset);
         Verified = Expected.Matches() && Actual.Revision == Expected.Revision;
+        // A project's duplication hook may change requested initial values before the
+        // notification snapshot is taken. Compare those values against the parsed request too.
+        if (CreatedChild.IsValid())
+            for (const FStoredField& Field : ChildInitialFields)
+                Verified = Verified && Field.Property->Identical(Field.Value->Get(), Field.Property->ContainerPtrToValuePtr<void>(CreatedChild.Get()), PPF_None);
         }
     }
     Result.Effects.Add(TEXT("edit_notifications_may_execute_project_code"));
@@ -342,13 +355,13 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         Result.Rollback = RestoredExactly ? ETurboMCPResultRollback::Complete : ETurboMCPResultRollback::Failed;
         Result.bComplete = false;
         if (!RestoredExactly) Result.SetChangedUnknown();
-        return Result.AppendTo(FString(TEXT("failed: ")) + (Applied ? TEXT("Post-edit readback did not match the plan. ") : TEXT("Pre-edit notification changed the baseline. ")) +
+        return Respond(FString(TEXT("failed: ")) + (Applied ? TEXT("Post-edit readback did not match the plan. ") : TEXT("Pre-edit notification changed the baseline. ")) +
             (RestoredExactly ? TEXT("Captured asset values were restored and verified. External callback effects are not reversible by this tool.") : TEXT("Restoration could not be verified. Inspect the asset; do not save or retry blindly.")));
     }
     Asset->MarkPackageDirty();
     FSnapshot Final(Asset);
     Result.Outcome = ETurboMCPResultOutcome::Changed; Result.SetChanged(true);
-    return Result.AppendTo(TEXT("edited: Property updated and readback verified. Not saved.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + SelectedChild + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Export(Target.Property, Target.Address, Target.Owner) + (CreatedChild.IsValid() ? TEXT("\ncreated_object: ") + CreatedChild->GetPathName() : FString()) + TEXT("\ncurrent_revision: ") + Final.Revision + TEXT("\ndirty: ") + (Asset->GetOutermost()->IsDirty() ? TEXT("true") : TEXT("false")) + TEXT("\nProject edit notifications ran; external callback effects are outside this asset snapshot."));
+    return Respond(TEXT("edited: Property updated and readback verified. Not saved.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + SelectedChild + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Export(Target.Property, Target.Address, Target.Owner) + (CreatedChild.IsValid() ? TEXT("\ncreated_object: ") + CreatedChild->GetPathName() : FString()) + TEXT("\ncurrent_revision: ") + Final.Revision + TEXT("\ndirty: ") + (Asset->GetOutermost()->IsDirty() ? TEXT("true") : TEXT("false")) + TEXT("\nProject edit notifications ran; external callback effects are outside this asset snapshot."));
 }
 }
 FString UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(const FString& Asset, const FString& Property)
