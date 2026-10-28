@@ -452,8 +452,8 @@
       "kind": "feature",
       "priority": "P2",
       "wave": 4,
-      "state": "open",
-      "validation": "untested",
+      "state": "in_progress",
+      "validation": "partial_native_workflow_passed",
       "readiness": "ready",
       "reports": [
         "CB-10",
@@ -466,7 +466,9 @@
       "owner": "Codex",
       "dispatch": "Codex oct27-function-flags; DSH paused; implementation requires claim at approved scope commit",
       "repair_contract": "docs/design/function-flags.md",
-      "source_review": "Stock BlueprintDetailsCustomization changes entry extra flags and UFunction flags, then reconstructs through OnParamsChanged. This can change caller execution pins. Existing function rename inspects registered dependencies and loaded callers; the flags operation must inspect affected references before mutation and preserve connected flow."
+      "source_review": "Stock BlueprintDetailsCustomization changes entry extra flags and UFunction flags, then reconstructs through OnParamsChanged. This can change caller execution pins. Existing function rename inspects registered dependencies and loaded callers; the flags operation must inspect affected references before mutation and preserve connected flow.",
+      "implementation_progress": "Candidate preview/edit and help implemented in review worktree. Stock build fc4fd69728754a2b92e658aa36d5ef0c passed. Native workflow 0abf84cdb62647cc884c70b87514b09e proves pure/const string helper compilation, runtime return, preview/refusal/no-op state and live parameter help. Capture inspected: readable aligned entry and return, no overlap.",
+      "remaining": "Connected execution/data callers, disconnected reconstruction, dependent callers, invalid const body and override controls still need focused evidence. Candidate not accepted or integrated."
     },
     {
       "id": "OCT27-17",
