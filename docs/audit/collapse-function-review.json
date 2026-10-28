@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "tasks": [
+    "OCT27-18"
+  ],
+  "status": "candidate_acceptance_incomplete",
+  "actual_candidate": "70ad3cd",
+  "native_run": "61f81c4a8c4b4a9bac3e25ea5d43ac47",
+  "checks": [
+    "Pure string chain returns Order123 before/after extraction",
+    "Single-entry execution preserves Counter=7 side effect",
+    "Name, boundary node and partially selected comment refusals preserve graph state",
+    "Internal defaults/links, selected comment text and ownership preserved",
+    "Measured replacement avoids unrelated obstacle and preserves its position",
+    "Public help parameters and native captures exercised"
+  ],
+  "images_inspected": [
+    "BP_CollapseReview_AppendSuffix_native_1200x700_0AC4D8C2402E7982A7C2789C2D49EDB5.png: comment contains the three nodes, readable flow",
+    "BP_CollapseReview_AssignCounter_native_1200x700_4A3024944EA427CD832A4DBCA7EE7BA3.png: no overlap; execution pins are not perfectly aligned"
+  ],
+  "retained_failures": [
+    "Initial pure function screenshot had an execution wire crossing data nodes; endpoints moved above the data lane.",
+    "62e97095919d407d970f3b06f9fdcc81: invalid identifier was accepted; explicit identifier validation added.",
+    "cf75be887d8c4348b0e29a8e248394f7: offline gate reported stale capability inventory."
+  ],
+  "remaining": [
+    "Latent and mixed-entry refusal controls",
+    "Final supported-selection semantic review",
+    "Offline gate and exact scoped source verification",
+    "Final screenshot inspection of crowded source graph",
+    "Integration and coverage ledger update"
+  ],
+  "limits": [
+    "No automatic save",
+    "Post-mutation failure reports partial and requires undo/inspection; automatic restoration is not promised",
+    "Macro extraction and local-variable captures unsupported",
+    "Placement search bounded to 4096 positions"
+  ]
+}
