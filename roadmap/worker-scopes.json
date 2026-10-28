@@ -2708,6 +2708,14 @@
             "Tools/run-suites.ps1"
           ],
           "new_files": []
+        },
+        "oct27-data-asset-safety": {
+          "files": [],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPDataAssetSafetyFixture.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetSafetyTest.cpp",
+            "Tools/test-data-asset-safety.py"
+          ]
         }
       },
       "preserve_rows": []

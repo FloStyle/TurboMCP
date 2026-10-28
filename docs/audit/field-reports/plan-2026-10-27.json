@@ -306,9 +306,9 @@
       "kind": "investigation",
       "priority": "P1",
       "wave": 1,
-      "state": "open",
+      "state": "in_progress",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "X-113",
         "X-116",
@@ -319,7 +319,8 @@
       "acceptance": "Reproduce object-keyed map failure and instanced-subobject false success on owned assets. Document engine defect separately. Specify plugin temporary import, identity validation, readback and rollback; never apply unvalidated imports to live properties. No engine patch requirement.",
       "verification": "Controlled refusal preserves original map and dirty state; new instanced object ownership correct; successful writes independently read back. No claim until reproduced.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex owned-asset reproduction: oct27-data-asset-safety; DSH paused",
+      "source_review": "Stock 396c9f05990: SetObjectProperties passes live property memory into ImportPropertyWithNotify. ReferenceConverter enforces instanced ownership and supports class-path instantiation. Reproduction required before attributing the field cause."
     },
     {
       "id": "OCT27-15",
