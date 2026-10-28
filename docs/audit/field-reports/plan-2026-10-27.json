@@ -323,8 +323,8 @@
       "source_review": "Pinned stock engine: corrected concrete-key fixture preserves the map with container checks enabled, but bypass mode returns false and replaces its key with None. Class-path child creation succeeds with the correct outer. This isolates a stock writer failure; it does not prove the exact historical input or all instanced-object failures.",
       "evidence_run": "88c27e3e88834583af0e4d8420911842",
       "candidate": "f2b1ccfc1633f5e3188a986919fe968d9b093d98",
-      "remaining": "Public read/preview/edit tools, revision checks, owned child creation, notification/readback and verified rollback remain. Preserve the failing stock baseline separately; X-116 historical input remains unknown.",
-      "implementation_progress": "Temporary scalar/reference/map-entry planner implemented in isolated candidate 2812bc97fc673962d2e77fd7950afceb2960fa1c; scope check passed. Native value-planning suite passed in 8e45f02d522c45d19c5508517369150d. This is helper evidence, not public writer acceptance."
+      "remaining": "Finish public writer verification, owned child creation/initialization, InputAction key-settings scenario, help/output review and integration gates. Retain the original stock failure and public dirty-state failure. X-116 historical input remains unknown.",
+      "implementation_progress": "Temporary planner integrated after focused native pass 8e45f02d522c45d19c5508517369150d and offline checks. Public reader/preview/editor with revision checks and snapshot rollback implemented in isolated candidate; initial build passed a1338bd2ee674310b20171203de93fc3. Public workflow a5ee3aff28614bcfaa3424841073fc75 exposed hardcoded dirty-state reporting on a transient fixture; corrected in 685af38, repeat run pending. No public writer acceptance yet."
     },
     {
       "id": "OCT27-15",
