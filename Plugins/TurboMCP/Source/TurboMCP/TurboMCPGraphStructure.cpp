@@ -983,7 +983,10 @@ bool ApplyFunctionCollapse(const FTurboMCPGraphStructure::FPlan& Plan, FString& 
         const bool Input=Boundary.Inside->Direction==EGPD_Input;
         UEdGraphPin* Gateway=Call->FindPin(Boundary.Parameter,Input?EGPD_Input:EGPD_Output);
         if (!Gateway || !Boundary.Outside->LinkedTo.Contains(Gateway) || !Gateway->LinkedTo.Contains(Boundary.Outside)) return Fail();
-        if (Boundary.Inside->LinkedTo.Contains(Boundary.Outside)) return Fail();
+        const bool Exec=Boundary.Inside->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec;
+        UEdGraphPin* Endpoint=Input?Entry->FindPin(Exec?UEdGraphSchema_K2::PN_Then:Boundary.Parameter,EGPD_Output):Result->FindPin(Exec?UEdGraphSchema_K2::PN_Execute:Boundary.Parameter,EGPD_Input);
+        if (!Endpoint || !Endpoint->LinkedTo.Contains(Boundary.Inside) || !Boundary.Inside->LinkedTo.Contains(Endpoint)) return Fail();
+        if (Boundary.Inside->LinkedTo.Contains(Boundary.Outside) || Boundary.Outside->LinkedTo.Contains(Boundary.Inside)) return Fail();
     }
     Report=FString::Printf(TEXT("changed: Extracted %d nodes into function '%s'; replacement call: %s. Nothing saved. Compile and inspect both graphs before saving."),Selected.Num(),*Plan.MemberName,*KeyOf(Call));
     return true;
@@ -1014,7 +1017,18 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 
 	if (InPlan.Verb == EVerb::Collapse)
 	{
-        return ApplyFunctionCollapse(InPlan,OutReport,OutError);
+        // A retained plan is not authorization to mutate a graph that has changed.
+        TArray<FString> Keys;
+        for (const FCopiedNode& Node : InPlan.Nodes) Keys.Add(Node.SourceKey);
+        FPlan CurrentPlan;
+        if (!PlanCollapse(InPlan.SourceAsset, InPlan.SourceGraph, Keys,
+            InPlan.MemberName, InPlan.MemberKind, CurrentPlan, OutError)) return false;
+        if (!CurrentPlan.bAcceptable())
+        {
+            OutReport = RenderPreview(CurrentPlan);
+            return true;
+        }
+        return ApplyFunctionCollapse(CurrentPlan,OutReport,OutError);
 	}
 
 	FTurboMCPAssetResolver::FResolved SourceResolved;
