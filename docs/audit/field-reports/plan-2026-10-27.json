@@ -226,9 +226,10 @@
       "integrator_repair_scope": {
         "files": [
           "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheck.cpp",
-          "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPNodeType.h"
+          "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPNodeType.h",
+          "Tools/test-graph-append.py"
         ],
-        "reason": "Public regression 0a686b5076984de9ba1dab03af049f1f proves checker discards BuildProbeNode refusal guidance. Preserve that diagnostic without changing acceptance, retain existing-node suggestions; correct stale identity comments and unused match fields. Existing approved integrator help work remains required."
+        "reason": "Public regression 0a686b5076984de9ba1dab03af049f1f proves checker discards BuildProbeNode refusal guidance. Preserve that diagnostic without changing acceptance, retain existing-node suggestions; correct stale identity comments and unused match fields. Existing approved integrator help work remains required. Run 0377353d300744ccb9c43155991b8c37 passes the new public assertion but fails the legacy lowercase wording check. Update that assertion to require line, exact rejected ID, mismatch diagnosis and discovery action; retain mutation-preservation checks."
       }
     },
     {
