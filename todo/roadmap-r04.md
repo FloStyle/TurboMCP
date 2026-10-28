@@ -2022,3 +2022,5 @@ OCT27-05 ready/in progress: docs/design/append-local-anchor.md approves local pl
 OCT27-05 done: local append placement, fixed first MainPath anchor and full append acceptance repaired. Frozen run a9a6499efba44c79acdd23906654dc46 passed, including dense geometry; live help passed 4e0b66701c444d94ac0299aff459cdad. See docs/audit/append-local-review.json for inspected captures, prior failures and limits. R04 remains open.
 
 OCT27-01 ready: source-reviewed documentation correction under oct27-opt-in-docs. Match default OFF, saved per-user preference, project enablement, restart and disabled startup diagnostics to TurboMCPSettings.h and TurboMCPModule.cpp. No behavior change or setting reset.
+
+OCT27-01 done: three setup documents corrected in 3b5d91e and immutable scope passed. Source comparison verifies OFF default, saved preferences, restart and disabled diagnostics. Fresh-user walkthrough remains untested; no runtime changes.

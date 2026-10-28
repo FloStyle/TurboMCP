@@ -25,8 +25,8 @@
       "kind": "bug",
       "priority": "P1",
       "wave": 1,
-      "state": "open",
-      "validation": "untested",
+      "state": "done",
+      "validation": "source_reviewed_fresh_user_walkthrough_untested",
       "readiness": "ready",
       "reports": [
         "X-106"
@@ -36,8 +36,11 @@
       "acceptance": "Document default OFF, project plugin enable versus per-user opt-in, exact preferences path, restart, absent status tool and startup-log diagnosis. Preserve saved settings.",
       "verification": "Source comparison with settings initializer; follow fresh-user setup steps.",
       "owner": "Codex",
-      "dispatch": "Codex oct27-opt-in-docs; DSH paused",
-      "source_review": "Settings initializer is false; startup samples the saved per-user setting once. README omits opt-in; installation incorrectly says enabled by default. Correct only README and user installation/troubleshooting; preserve existing settings and distinguish unavailable status while disabled."
+      "dispatch": "Integrated by Codex; DSH paused",
+      "source_review": "Settings initializer is false; startup samples the saved per-user setting once. README omits opt-in; installation incorrectly says enabled by default. Correct only README and user installation/troubleshooting; preserve existing settings and distinguish unavailable status while disabled.",
+      "candidate": "3b5d91e024ed7a3d775b0af6b70633c614e87ae9",
+      "resolution": "README, installation and troubleshooting now match default OFF, existing saved preferences, per-user opt-in, restart and unavailable disabled status tool. Compared with Settings.h and Module.cpp; no settings or runtime changes.",
+      "remaining": ""
     },
     {
       "id": "OCT27-02",

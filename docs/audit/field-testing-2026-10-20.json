@@ -3980,15 +3980,16 @@
       "key": "2026-10-27_S1/X-106",
       "title": "The installation guide says Enable TurboMCP defaults to enabled, but the code defaults it to off (medium)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
-      "validation": "source_confirmed",
+      "validation": "source_reviewed_fresh_user_walkthrough_untested",
       "observation": "4 problems.\n  1. The guide says the preference defaults to enabled. The code default is off. The commit that changed the default is titled Default TurboMCP user preference to off, so the code looks intentional and the guide looks out of date.\n  2. The guide's section is about disabling TurboMCP for yourself. With an off default, most users first need to turn it on.\n  3. The install steps say to enable TurboMCP in the project, build and open the editor. They do not say that each user must also tick Enable TurboMCP in Editor Preferences and restart. The README quick start has the same gap. A user who follows the steps gets an editor with no TurboMCP tools, panel or hooks.\n  4. When TurboMCP is off, the status tool is also absent, as the guide says. An agent that cannot find any TurboMCP tool cannot ask TurboMCP why. The guide points to Editor Preferences and the startup log message, but the install steps do not.",
-      "remaining": "OCT27-01: README, docs/user/installation.md and troubleshooting omit per-user opt-in; installation still says enabled by default. Preserve the explicitly requested default OFF.",
+      "remaining": "",
       "source": "docs/audit/field-reports/2026-10-27_S1_TurboMCP_enable-preference-docs-mismatch.md",
       "planned_task": "OCT27-01",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "resolution": "OCT27-01 setup documents corrected against settings and startup code; existing saved preferences preserved. Fresh-user walkthrough not run."
     },
     {
       "report": "2026-10-27_S2",
