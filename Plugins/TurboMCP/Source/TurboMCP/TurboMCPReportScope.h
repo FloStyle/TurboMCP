@@ -6,7 +6,7 @@
 #include "TurboMCPGraphTidy.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraphNode_Comment.h"
-#include "Misc/LexFromString.h"
+#include "String/LexFromString.h"
 
 // Shared report selection. Never changes graph membership or expands an invalid scope.
 namespace TurboMCPReportScope

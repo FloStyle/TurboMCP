@@ -305,11 +305,14 @@ public:
 	 * Read Blueprint comment rectangles, membership and nesting. Membership uses node origins inside box rectangles, not full rendered bounds or a stored ownership relation; overlapping membership is reported. Loads the Blueprint; no explicit compile or save.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or non-Blueprint targets are refused.
 	 * @param GraphName Existing graph name, e.g. EventGraph. Empty lists all collected graphs; unknown names are refused with available names.
+     * @param Scope Optional empty for all boxes, node:<reader ID or unique hex key> for boxes containing that node's origin, box:<comment ID> for intersecting boxes, or region:x,y,width,height in graph units. Region dimensions must be finite and positive; edge-only contact is excluded. Nonempty scope requires GraphName. Relationships are still computed against all boxes.
+     * @param Offset Optional zero-based matched-box offset, default 0. Use nextOffset from the response; -1 means complete. Pages are live, so restart after graph edits.
+     * @param Limit Optional maximum whole box records per page, 1..80, default 80. The text budget can shorten a page; omitted counts remain explicit.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPCommentList(
 		const FString& Asset,
-		const FString& GraphName);
+		const FString& GraphName, const FString& Scope = TEXT(""), int32 Offset = 0, int32 Limit = 80);
 
 	/**
 	 * Read DataTable schema, row names, selected values and registry-based readers. Displays up to 80 fields and 60 sorted row names, with omitted counts; no paging parameter. Reader graph details are searched only in loaded Blueprints. Registry results do not prove all unsaved or dynamic uses. Loads the table; no explicit edit or save.
@@ -522,6 +525,9 @@ public:
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
 	 * @param GraphName Required exact graph name, e.g. EventGraph. Empty or unresolved names are refused; use the Blueprint reader to list graphs.
 	 * @param AlignmentTolerance Optional finite vertical pin-offset tolerance in graph units, 0..1024; default 64. Use 8 for stricter alignment review. Does not suppress overlaps or backward-wire findings. Values outside the range are refused.
+     * @param Scope Optional empty for whole graph, node:<reader ID or unique hex key>, box:<comment ID>, or region:x,y,width,height in graph units. Box/region scopes include intersecting node rectangles, excluding edge-only contact. A finding is included if any involved node is selected, including links to outside nodes. Measurement still covers the graph.
+     * @param Offset Optional zero-based matched-finding offset, default 0. Use nextOffset from the response; -1 means complete. Pages are live; restart at 0 after edits.
+     * @param Limit Optional maximum whole findings per page, 1..120, default 120. Overlaps are listed first. Text-budget limits never split a finding. Use targeted capture separately for visual review.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPLayoutReport(const FString& Asset, const FString& GraphName, double AlignmentTolerance = 64.0, const FString& Scope = TEXT(""), int32 Offset = 0, int32 Limit = 120);

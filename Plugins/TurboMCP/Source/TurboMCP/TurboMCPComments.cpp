@@ -18,13 +18,14 @@
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPBlueprintRead.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPReportScope.h"
 
 // Comment rectangles and nesting are stored geometry. Membership below uses node
 // origins as an approximation and does not measure rendered node extents or titles.
 namespace
 {
 	/** How many boxes one graph may report before the list caps. */
-	constexpr int32 MaxBoxes = 80;
+
 
 	/** How many node IDs are printed per box before that list caps. */
 	constexpr int32 MaxNodesPerBox = 60;
@@ -87,8 +88,10 @@ namespace
 
 FString UTurboMCPReadToolset::ReadTurboMCPCommentList(
 	const FString& Asset,
-	const FString& GraphName)
+	const FString& GraphName, const FString& Scope, int32 Offset, int32 Limit)
 {
+    if (Offset < 0 || Limit < 1 || Limit > 80) return TEXT("error: Offset must be nonnegative and Limit must be between 1 and 80");
+    if (!Scope.IsEmpty() && GraphName.IsEmpty()) return TEXT("error: scoped comments require an explicit GraphName");
 	if (Asset.IsEmpty())
 	{
 		return TEXT("error: no asset given. Pass a Blueprint in any path form, for ")
@@ -156,10 +159,14 @@ FString UTurboMCPReadToolset::ReadTurboMCPCommentList(
 	int32 TotalNested = 0;
 	int32 TotalOverlapping = 0;
 	int32 BoxesWithNodes = 0;
-	FString Body;
+	TArray<FString> Records;
 
+    Graphs.Sort([](const UEdGraph& A, const UEdGraph& B) { return A.GetName() < B.GetName(); });
 	for (UEdGraph* Graph : Graphs)
 	{
+        TurboMCPReportScope::FSelection Selection;
+        FString ScopeError;
+        if (!TurboMCPReportScope::Resolve(Graph, Scope, Selection, ScopeError)) return TEXT("error: ") + ScopeError;
 		// Every comment box in this graph.
 		TArray<UEdGraphNode_Comment*> Boxes;
 		for (UEdGraphNode* Node : Graph->Nodes)
@@ -170,18 +177,6 @@ FString UTurboMCPReadToolset::ReadTurboMCPCommentList(
 			}
 		}
 
-		if (Boxes.Num() == 0)
-		{
-			// `P1`: a graph with no boxes says so rather than being omitted, so a
-			// caller can tell "no boxes here" from "this graph was not looked at".
-			Body += FString::Printf(TEXT("\n\ngraph %s: no comment boxes"), *Graph->GetName());
-			continue;
-		}
-
-		TotalBoxes += Boxes.Num();
-		Body += FString::Printf(TEXT("\n\ngraph %s: %d comment box(es)"),
-			*Graph->GetName(), Boxes.Num());
-
 		// Sorted by position, top to bottom then left to right, so the output reads
 		// in the order the boxes appear and is stable between reads.
 		Boxes.Sort([](const UEdGraphNode_Comment& A, const UEdGraphNode_Comment& B)
@@ -190,19 +185,19 @@ FString UTurboMCPReadToolset::ReadTurboMCPCommentList(
 			{
 				return A.NodePosY < B.NodePosY;
 			}
-			return A.NodePosX < B.NodePosX;
+			return A.NodePosX != B.NodePosX ? A.NodePosX < B.NodePosX : TurboMCPNodeId::MakeForNode(&A, true) < TurboMCPNodeId::MakeForNode(&B, true);
 		});
 
-		int32 Shown = 0;
-		for (UEdGraphNode_Comment* Box : Boxes)
-		{
-			if (Shown >= MaxBoxes)
-			{
-				Body += FString::Printf(TEXT("\n  (%d more box(es) not shown)"),
-					Boxes.Num() - Shown);
-				break;
-			}
-			++Shown;
+        for (UEdGraphNode_Comment* Box : Boxes)
+        {
+            bool Included = Selection.Includes(Box);
+            if (!Included && Scope.StartsWith(TEXT("node:")))
+                for (const UEdGraphNode* Node : Selection.Nodes)
+                    if (Node && Node->NodePosX >= Box->NodePosX && Node->NodePosX < Box->NodePosX + Box->NodeWidth
+                        && Node->NodePosY >= Box->NodePosY && Node->NodePosY < Box->NodePosY + Box->NodeHeight) Included = true;
+            if (!Included) continue;
+            ++TotalBoxes;
+            FString Body = FString::Printf(TEXT("\ngraph %s:"), *Graph->GetName());
 
 			const FRect BoxRect = RectOf(Box);
 
@@ -348,6 +343,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCommentList(
 			{
 				++BoxesWithNodes;
 			}
+            Records.Add(MoveTemp(Body));
 		}
 	}
 
@@ -361,7 +357,17 @@ FString UTurboMCPReadToolset::ReadTurboMCPCommentList(
 			TEXT("text writer prints one comment line per box when there are any.");
 	}
 
-	Out += Body;
+    if (Offset > Records.Num()) return TEXT("error: Offset exceeds matched boxes; restart at Offset=0 after graph changes");
+    int32 Shown = 0;
+    for (int32 I = Offset; I < Records.Num() && Shown < Limit; ++I)
+    {
+        if (Out.Len() + Records[I].Len() > MaxResultChars - 700) break;
+        Out += Records[I]; ++Shown;
+    }
+    const int32 Next = Offset + Shown;
+    Out += FString::Printf(TEXT("\npage: matched=%d offset=%d shown=%d remaining=%d nextOffset=%d. Pages reflect live state; restart after edits."),
+        Records.Num(), Offset, Shown, Records.Num() - Next, Next < Records.Num() ? Next : -1);
+    if (Shown == 0 && Next < Records.Num()) Out += TEXT("\nA box record exceeds the output budget; use its layout/capture scope. No partial record was printed.");
 
 	if (TotalOverlapping > 0)
 	{
@@ -371,15 +377,6 @@ FString UTurboMCPReadToolset::ReadTurboMCPCommentList(
 			TEXT("\n; %d node(s) fall inside more than one box. Moving one of them ")
 			TEXT("changes the membership of every box that covers it."),
 			TotalOverlapping);
-	}
-
-	if (Out.Len() > MaxResultChars)
-	{
-		const int32 Dropped = Out.Len() - MaxResultChars;
-		Out = Out.Left(MaxResultChars);
-		Out += FString::Printf(
-			TEXT("\n\n; (%d more character(s) were dropped; name one graph to read ")
-			TEXT("fewer boxes at a time)"), Dropped);
 	}
 
 	return Out;

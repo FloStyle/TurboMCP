@@ -104,6 +104,7 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
         return true;
     });
     Report.Findings.StableSort([](const auto& A, const auto& B) {
+        if ((A.Kind == TEXT("overlap")) != (B.Kind == TEXT("overlap"))) return A.Kind == TEXT("overlap");
         if (A.Kind != B.Kind) return A.Kind < B.Kind;
         return A.Detail < B.Detail;
     });
@@ -125,6 +126,27 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
     if (Shown == 0 && Next < Report.Findings.Num()) Out += TEXT("\nA finding exceeds the output budget; inspect its node scope. No partial finding was printed.");
     Out += FString::Printf(TEXT("\nwhole-graph context: %d nodes, %d wires, %d comment boxes; total wire length %.0f, longest %.0f graph units. Wire lengths are straight-line estimates, not rendered curves. Alignment tolerance %.1f graph units."),
         Report.NodeCount, Report.WireCount, Report.CommentBoxCount, Report.TotalWireLength, Report.LongestWire, AlignmentTolerance);
+    struct FWireDetail { double Length; FString Text; };
+    TArray<FWireDetail> Wires;
+    for (const UEdGraphNode* Node : Graph->Nodes) if (Node)
+        for (const UEdGraphPin* Pin : Node->Pins) if (Pin && Pin->Direction == EGPD_Output)
+            for (const UEdGraphPin* Input : Pin->LinkedTo) if (Input && Input->GetOwningNodeUnchecked()
+                && (Selection.Includes(Node) || Selection.Includes(Input->GetOwningNodeUnchecked())))
+            {
+                const double Length = FVector2D::Distance(FTurboMCPGraphTidy::AlignmentPinPosition(Pin), FTurboMCPGraphTidy::AlignmentPinPosition(Input));
+                Wires.Add({Length, FString::Printf(TEXT("\n  %.1f units: %s:%s -> %s:%s"), Length,
+                    *TurboMCPNodeId::MakeForNode(Node), *Pin->PinName.ToString(),
+                    *TurboMCPNodeId::MakeForNode(Input->GetOwningNodeUnchecked()), *Input->PinName.ToString())});
+            }
+    Wires.Sort([](const FWireDetail& A, const FWireDetail& B) { return A.Length != B.Length ? A.Length > B.Length : A.Text < B.Text; });
+    Out += TEXT("\nlongest scoped wires (up to 10; measured straight pin-to-pin distances, not curves):");
+    int32 WiresShown = 0;
+    for (const auto& Wire : Wires)
+    {
+        if (WiresShown >= 10 || Out.Len() + Wire.Text.Len() > MaxResultChars - 1000) break;
+        Out += Wire.Text; ++WiresShown;
+    }
+    Out += FString::Printf(TEXT("\nwire context: shown=%d matched=%d"), WiresShown, Wires.Num());
     TArray<TurboMCPCaptureSelector::FBox> Boxes;
     TurboMCPCaptureSelector::CollectCommentBoxes(Graph, Boxes);
     int32 BoxShown = 0, BoxMatched = 0;

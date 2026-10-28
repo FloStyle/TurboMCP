@@ -251,6 +251,49 @@ bool FTurboMCPScopedTidyTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Target comment stays fixed"), TargetBox->NodePosX, 2360);
     TestEqual(TEXT("Target comment is not resized"), TargetBox->NodeWidth, 400);
     AddInfo(TEXT("Boxed-target capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(), Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("2048x512")));
+    Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("DenseReports"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+    FBlueprintEditorUtils::AddUbergraphPage(BP, Graph);
+    TArray<UEdGraphNode*> DenseNodes;
+    for (int32 I = 0; I < 390; ++I) DenseNodes.Add(MakeCall((I % 30) * 900, (I / 30) * 600));
+    DenseNodes[1]->NodePosX = DenseNodes[0]->NodePosX + 20;
+    DenseNodes[1]->NodePosY = DenseNodes[0]->NodePosY + 20;
+    UEdGraphNode_Comment* FirstBox = nullptr;
+    for (int32 I = 0; I < 29; ++I)
+    {
+        auto* Box = NewObject<UEdGraphNode_Comment>(Graph);
+        Graph->AddNode(Box, false, false); Box->CreateNewGuid();
+        Box->NodePosX = I * 900 - 40; Box->NodePosY = -40;
+        Box->NodeWidth = 800; Box->NodeHeight = 500; Box->NodeComment = FString::Printf(TEXT("Dense section %d"), I);
+        if (I == 0) FirstBox = Box;
+    }
+    Package->SetDirtyFlag(false);
+    const FString DenseAsset = BP->GetPathName();
+    const FString NodeScope = TEXT("node:") + TurboMCPNodeId::MakeForNode(DenseNodes[0], true);
+    const FString BoxScope = TEXT("box:") + TurboMCPNodeId::MakeForNode(FirstBox, true);
+    const FString ScopedReport = UTurboMCPLookToolset::LookTurboMCPLayoutReport(DenseAsset, Graph->GetName(), 64, NodeScope, 0, 10);
+    AddInfo(ScopedReport);
+    TestTrue(TEXT("Dense scoped overlap remains visible"), ScopedReport.Contains(TEXT("overlap:")));
+    TestTrue(TEXT("Dense layout stays bounded"), ScopedReport.Len() <= 24000);
+    TestTrue(TEXT("Dense layout reports paging"), ScopedReport.Contains(TEXT("nextOffset=")));
+    const FString Comments = UTurboMCPReadToolset::ReadTurboMCPCommentList(DenseAsset, Graph->GetName(), BoxScope, 0, 1);
+    AddInfo(Comments);
+    TestTrue(TEXT("Box scope keeps selected comment"), Comments.Contains(TEXT("Dense section 0")));
+    TestFalse(TEXT("Box scope excludes distant comment"), Comments.Contains(TEXT("Dense section 28")));
+    const FString Page = UTurboMCPReadToolset::ReadTurboMCPCommentList(DenseAsset, Graph->GetName(), TEXT(""), 0, 1);
+    TestTrue(TEXT("Comment pagination retains all matching count"), Page.Contains(TEXT("matched=29")) && Page.Contains(TEXT("nextOffset=1")));
+    TestTrue(TEXT("Region scope reports overlap"), UTurboMCPLookToolset::LookTurboMCPLayoutReport(DenseAsset, Graph->GetName(), 64, TEXT("region:-40,-40,800,500")).Contains(TEXT("overlap:")));
+    TestTrue(TEXT("Unknown scope refuses"), UTurboMCPLookToolset::LookTurboMCPLayoutReport(DenseAsset, Graph->GetName(), 64, TEXT("box:missing")).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Invalid region refuses"), UTurboMCPReadToolset::ReadTurboMCPCommentList(DenseAsset, Graph->GetName(), TEXT("region:0,0,-1,4")).StartsWith(TEXT("error:")));
+    for (const FString Tool : {TEXT("LookTurboMCPLayoutReport"), TEXT("ReadTurboMCPCommentList")})
+    {
+        const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(
+            Tool.StartsWith(TEXT("Look")) ? TEXT("TurboMCP.TurboMCPLookToolset") : TEXT("TurboMCP.TurboMCPReadToolset"), Tool);
+        TestTrue(*(Tool + TEXT(" exposes scope and paging in live help")), Help.Contains(TEXT("Scope"), ESearchCase::IgnoreCase)
+            && Help.Contains(TEXT("Offset"), ESearchCase::IgnoreCase) && Help.Contains(TEXT("Limit"), ESearchCase::IgnoreCase));
+    }
+    TestEqual(TEXT("Report preserves dense graph entries"), Graph->Nodes.Num(), 419);
+    TestFalse(TEXT("Reports preserve clean package"), Package->IsDirty());
+    AddInfo(TEXT("Dense targeted capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(DenseAsset, Graph->GetName(), TEXT("node"), TurboMCPNodeId::MakeForNode(DenseNodes[0], true), TEXT("1200x800")));
     Graph = OriginalGraph;
     BP->ClearFlags(RF_Public | RF_Standalone);
     Package->SetDirtyFlag(false);
