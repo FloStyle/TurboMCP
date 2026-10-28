@@ -964,7 +964,7 @@ public:
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
 	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope, collision or fixed-boundary wire-growth limits.
 	 * @param NodeIds Array of reader node IDs; [] selects the whole graph. Unselected nodes remain fixed. ["@unboxed"] selects unboxed nodes; combine it with IDs to restrict those IDs to unboxed nodes.
-	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode.
+	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode. With NodeIds selection, only the first explicit path node may be outside the selection: it stays fixed and must connect to the next selected node. All later path nodes must be selected.
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
@@ -1053,6 +1053,8 @@ public:
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param Text Nonempty append graph text. New forms create nodes; reader-derived IDs refer to existing nodes. Use Preview first and preserve exact type IDs and pin names. Partial reader pages are not standalone append input.
+	 * Connected append placement searches nearby space above and below fixed connections. Existing nodes stay fixed. If no local slot fits, free space or submit a smaller connected block. Tight gaps may require bent wires; this is not whole-graph tidy.
+	 *
 	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence. Example: Done:then for a submitted local label.
 	*/
 	UFUNCTION(meta = (AICallable))
@@ -1796,7 +1798,7 @@ public:
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
 	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope, collision or fixed-boundary wire-growth limits.
 	 * @param NodeIds Array of reader node IDs; [] selects the whole graph. Unselected nodes remain fixed. ["@unboxed"] selects unboxed nodes; combine it with IDs to restrict those IDs to unboxed nodes.
-	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode.
+	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode. With NodeIds selection, only the first explicit path node may be outside the selection: it stays fixed and must connect to the next selected node. All later path nodes must be selected.
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
@@ -1889,6 +1891,8 @@ public:
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param Text Nonempty append graph text. New forms create nodes; reader-derived IDs refer to existing nodes. Use Preview first and preserve exact type IDs and pin names. Partial reader pages are not standalone append input.
+	 * Connected append placement searches nearby space above and below fixed connections. Existing nodes stay fixed. If no local slot fits, free space or submit a smaller connected block. Tight gaps may require bent wires; this is not whole-graph tidy.
+	 *
 	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence. Example: Done:then for a submitted local label.
 	*/
 	UFUNCTION(meta = (AICallable))
