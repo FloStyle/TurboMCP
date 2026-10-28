@@ -2774,6 +2774,14 @@
             "Tools/test-graph-append.py"
           ],
           "new_files": []
+        },
+        "oct27-opt-in-docs": {
+          "files": [
+            "README.md",
+            "docs/user/installation.md",
+            "docs/user/troubleshooting.md"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

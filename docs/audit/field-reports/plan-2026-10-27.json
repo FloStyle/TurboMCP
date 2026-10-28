@@ -27,7 +27,7 @@
       "wave": 1,
       "state": "open",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "X-106"
       ],
@@ -36,7 +36,8 @@
       "acceptance": "Document default OFF, project plugin enable versus per-user opt-in, exact preferences path, restart, absent status tool and startup-log diagnosis. Preserve saved settings.",
       "verification": "Source comparison with settings initializer; follow fresh-user setup steps.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-opt-in-docs; DSH paused",
+      "source_review": "Settings initializer is false; startup samples the saved per-user setting once. README omits opt-in; installation incorrectly says enabled by default. Correct only README and user installation/troubleshooting; preserve existing settings and distinguish unavailable status while disabled."
     },
     {
       "id": "OCT27-02",
