@@ -731,7 +731,8 @@ def main():
     refused, _ = refusal_pair(session, "truncated node type", ASSET, GRAPH, truncated_type)
     check("the truncated type refusal names the line, the id and the reason",
           "line 1" in refused and "Development|Print" in refused
-          and "no node type" in refused, refused[:500])
+          and "No supported creation ID" in refused
+          and "PreviewTurboMCPNodeType" in refused, refused[:500])
 
     truncated_literal = '(Development|PrintString\n    InString "unterminated)'
     refused, _ = refusal_pair(session, "truncated quoted literal", ASSET, GRAPH,

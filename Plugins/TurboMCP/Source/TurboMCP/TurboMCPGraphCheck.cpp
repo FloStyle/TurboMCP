@@ -526,6 +526,7 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 			// The build caught the shadow as `error C4456`, which this project treats as an error: a
 			// second `Resolved` in the same scope reads as the same thing to a reader and is not.
 			const UEdGraphNode* NodeForType = nullptr;
+			FString ProbeNote;
 			if (const UEdGraphNode* const* Found = NodeByTypeId.Find(TypeId))
 			{
 				NodeForType = *Found;
@@ -536,7 +537,6 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 				// The finder and writers resolve creation ids through FTurboMCPNodeType. The checker must
 				// ask that same resolver before it declares a type absent: a type can be valid for this
 				// graph without an instance already being present in it.
-				FString ProbeNote;
 				if (UEdGraphNode* Probe = FTurboMCPNodeType::BuildProbeNode(Blueprint, Graph, TypeId, ProbeNote))
 				{
 					NodeForType = Probe;
@@ -555,8 +555,10 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 				Finding.Column = Column;
 				Finding.Written = TypeId;
 				Finding.Suggestions = Suggestions;
-				Finding.Message = FString::Printf(
-					TEXT("no node type in %s is written '%s'."), *OutPlan.GraphName, *TypeId);
+				// Preserve the creation resolver's diagnosis, including ambiguous-ID and discovery guidance.
+				Finding.Message = ProbeNote.IsEmpty()
+					? FString::Printf(TEXT("No supported node type in %s matches '%s'."), *OutPlan.GraphName, *TypeId)
+					: ProbeNote;
 				if (Suggestions.Num() > 0)
 				{
 					Finding.Message += FString::Printf(
@@ -564,7 +566,7 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 				}
 				else
 				{
-					Finding.Message += TEXT(" No close match exists in this graph.");
+					Finding.Message += TEXT(" No close existing-node type match exists in this graph.");
 				}
 				OutPlan.Findings.Add(Finding);
 			}

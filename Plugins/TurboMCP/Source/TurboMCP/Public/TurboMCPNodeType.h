@@ -18,39 +18,18 @@ class UEdGraphPin;
 class UK2Node;
 
 /**
- * `P-NODE-TYPE` and `P-NODE-PINS`: the node type ID the engine will actually accept, and the
- * pins that ID produces.
- *
- * WHY THE LIST OF REAL IDS IS BUILT HERE AND NOT CALLED
- * -----------------------------------------------------
- * The engine's own list comes from `UBlueprintGraphEditor::ListAvailableNodes`, whose behaviour
- * this reproduces. It CANNOT BE CALLED: `UBlueprintGraphEditor` is declared
- * `UCLASS(Transient, BlueprintType, HideDropDown)` with NO module API macro
- * (`BlueprintEditorLibrary/Private/BlueprintEditorLibrary/BlueprintGraphEditor.h:53-54`), so its
- * methods are not exported and a second module cannot link them. Verified in the generated code:
- * the only `BLUEPRINTEDITORLIBRARY_API` symbols for that class are the reflection
- * constructors.
- *
- * So the ALGORITHM is reproduced from `BlueprintGraphEditor.cpp:1788-1838`, using three
- * primitives that ARE exported as `BLUEPRINTGRAPH_API`:
- * `FBlueprintActionDatabase::GetAllActions` (`BlueprintActionDatabase.h:94`),
- * `FBlueprintActionFilter::IsFiltered` (`BlueprintActionFilter.h:369`) and
- * `FBlueprintNodeSpawner::GetUiSpec` (`BlueprintNodeSpawner.h:198`).
- *
- * THE ID FORMAT IS NOT REPRODUCED - IT IS REUSED. `TurboMCPNodeId::GetNodeTypeId` already owns
- * the rule `03_TOOLS.md` requires, and its own comment records that it deliberately matches the
- * engine's Python `_get_node_type_id`. The action database reports a `Category` and a `MenuName`
- * separately rather than a node, so the same two `Replace(TEXT(" "), TEXT(""))` calls the engine
- * makes are applied here - and the result is checked against the canonical generator for any node
- * that already exists, which is the only way to know the two agree.
+ * Discovers creation IDs and pins supported by TurboMCP in a specific Blueprint graph.
+ * Uses the exported action database, graph filter and node spawners from stock Unreal.
+ * Function entries prefer canonical reflected paths; palette IDs remain aliases when unique.
+ * Reader IDs and native engine creation IDs may differ. Titles are display text, not identity.
  */
 class FTurboMCPNodeType
 {
 public:
-	/** One node type the engine will accept in the graph. */
+	/** One creation type supported by the graph-filtered resolver. */
 	struct FMatch
 	{
-		/** The exact ID, `<category>|<menu name>` with whitespace removed. */
+		/** The exact creation ID returned by discovery; pass it unchanged. */
 		FString TypeId;
 
 		/** The category part, before the last `|`. */
@@ -71,18 +50,7 @@ public:
 		/** Why this entry matched, in a few words. */
 		FString Reason;
 
-		/** The ID this plugin's graph text uses, when it differs from `TypeId`. */
-		FString GraphTextId;
 
-		/**
-		 * True when the two IDs differ, which `03_TOOLS.md` asks to be printed.
-		 *
-		 * A node that already exists in the graph is written by the text writer under the
-		 * canonical `TurboMCPNodeId::GetNodeTypeId` form; the engine's creation tool uses the
-		 * action database form. Where they differ, the caller needs BOTH: one to match the
-		 * graph text, one to create.
-		 */
-		bool bIdsDiffer = false;
 	};
 
 	/** What the caller asked for, resolved. */
