@@ -524,7 +524,7 @@ public:
 	 * @param AlignmentTolerance Optional finite vertical pin-offset tolerance in graph units, 0..1024; default 64. Use 8 for stricter alignment review. Does not suppress overlaps or backward-wire findings. Values outside the range are refused.
 	 */
 	UFUNCTION(meta = (AICallable))
-	static FString LookTurboMCPLayoutReport(const FString& Asset, const FString& GraphName, double AlignmentTolerance = 64.0);
+	static FString LookTurboMCPLayoutReport(const FString& Asset, const FString& GraphName, double AlignmentTolerance = 64.0, const FString& Scope = TEXT(""), int32 Offset = 0, int32 Limit = 120);
 
 	/**
 	 * Return layout findings and capture a graph image; may open editor UI and writes an image file, but does not request asset edits, compile or save.
