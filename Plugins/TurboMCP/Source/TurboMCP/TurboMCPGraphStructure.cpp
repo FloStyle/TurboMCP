@@ -801,6 +801,28 @@ bool FTurboMCPGraphStructure::PlanCollapse(const FString& InAsset, const FString
     }
     if (HasExecution && (ExecutionInputs.Num() != 1 || ExecutionContinuations.Num() > 1))
         OutPlan.Refusals.Add(TEXT("Execution collapse requires exactly one incoming execution pin and at most one external continuation. Select a single connected flow."));
+    TMap<UEdGraphPin*, FName> SignatureNames;
+    int32 SignatureIndex = 0;
+    for (UEdGraphNode* Node : Selected) for (UEdGraphPin* Pin : Node->Pins) if (Pin)
+    {
+        for (UEdGraphPin* Other : Pin->LinkedTo)
+        {
+            if (!Other || SelectedSet.Contains(Other->GetOwningNode())) continue;
+            if (Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec) continue;
+            if (Pin->ParentPin || !Pin->SubPins.IsEmpty() || Pin->PinType.bIsReference ||
+                Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Wildcard ||
+                Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Delegate ||
+                Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_MCDelegate)
+                OutPlan.Refusals.Add(TEXT("Split, reference, wildcard and delegate boundary pins are not supported. Recombine or pass a concrete value explicitly before collapse."));
+            if (!SignatureNames.Contains(Pin))
+            {
+                const FName Name(*FString::Printf(TEXT("%s_%d"),Pin->Direction==EGPD_Input?TEXT("Input"):TEXT("Output"),++SignatureIndex));
+                SignatureNames.Add(Pin,Name);
+                OutPlan.Signature.Add(FString::Printf(TEXT("%s %s: %s | source %s:%s"),Pin->Direction==EGPD_Input?TEXT("input"):TEXT("output"),*Name.ToString(),*UEdGraphSchema_K2::TypeToText(Pin->PinType).ToString(),*KeyOf(Node),*Pin->PinName.ToString()));
+            }
+        }
+    }
+    OutPlan.Signature.Insert(HasExecution?TEXT("execution: one input and at most one continuation"):TEXT("pure: data evaluation remains consumer-driven"),0);
     if (OutPlan.ReLinkable.IsEmpty())
         OutPlan.Refusals.Add(TEXT("The selection has no external input or output connections. There is no connected behavior to replace."));
 
@@ -1243,6 +1265,8 @@ FString FTurboMCPGraphStructure::RenderPreview(const FPlan& InPlan)
 		Lines.Add(FString::Printf(TEXT("collapse: %s / %s  ->  %s '%s'"),
 			*InPlan.SourceAsset, *InPlan.SourceGraph, *InPlan.MemberKind, *InPlan.MemberName));
 	}
+
+    for (const FString& Parameter : InPlan.Signature) Lines.Add(TEXT("signature: ") + Parameter);
 
 	if (!InPlan.TargetAnchorNodeKey.IsEmpty())
 	{

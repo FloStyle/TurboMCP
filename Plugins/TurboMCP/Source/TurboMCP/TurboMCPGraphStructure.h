@@ -112,6 +112,9 @@ public:
 		FString MemberName;
 		FString MemberKind;
 
+        /** Exact proposed signature, generated without editing the source graph. */
+        TArray<FString> Signature;
+
 		/** Optional node in the target the copied block's entry links into. */
 		FString TargetAnchorNodeKey;
 
