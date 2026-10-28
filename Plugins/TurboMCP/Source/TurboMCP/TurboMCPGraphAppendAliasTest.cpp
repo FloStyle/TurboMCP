@@ -552,6 +552,13 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
             if (auto* Result = Cast<UK2Node_FunctionResult>(Node)) ResultNode = Result;
             if (auto* Entry = Cast<UK2Node_FunctionEntry>(Node)) EntryNode = Entry;
         }
+        if (!ResultNode)
+        {
+            ResultNode = NewObject<UK2Node_FunctionResult>(Fixture.Unique);
+            ResultNode->CreateNewGuid();
+            Fixture.Unique->AddNode(ResultNode, false, false);
+            ResultNode->AllocateDefaultPins();
+        }
         if (!TestNotNull(TEXT("written call available for readback"), WrittenCall)
             || !TestNotNull(TEXT("fixture return node"), ResultNode)
             || !TestNotNull(TEXT("fixture entry node"), EntryNode)) return false;
