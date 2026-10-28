@@ -34,6 +34,14 @@ class UTurboMCPReadToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+
+    /** Inspect an existing data asset's reflected property and obtain its state revision. Empty Property lists editable fields. Loading an asset may execute its load hooks; no property write, save or compile is requested.
+     * @param Asset Exact asset path or uniquely resolved asset name; must resolve to UDataAsset.
+     * @param Property Exact reflected path, for example Metadata or Settings.Number. Paths may traverse structs and owned instanced objects, never external referenced assets.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString ReadTurboMCPDataAssetProperty(const FString& Asset, const FString& Property);
+
     /** Inspect the single PIE player's focus, held synthetic input and Enhanced Input context priorities; no input or asset mutation. Reports optional CommonInput device type and unordered active CommonUI widgets when loaded; unavailable is not zero. Does not determine the routing owner.
      * @param Target Required exact pie:0. Refuses absent/multiple PIE worlds or multiple local players.
      */
@@ -614,6 +622,18 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+
+    /** Preview one data-asset property using temporary validation. Requires the current reader revision. No implicit save or compile. Preview does not modify live properties or run edit notifications. create_child runs constructors on temporary objects; project constructors can have external effects.
+     * @param Asset Exact asset path or uniquely resolved asset name; must resolve to UDataAsset.
+     * @param Property Exact reflected property path from ReadTurboMCPDataAssetProperty. External objects are never implicit edit targets.
+     * @param Operation set, map_upsert, map_remove, create_child or child_set. child_set edits an existing owned map child selected by Key. create_child creates a compatible instanced object in an empty property/map entry; it never replaces an existing child. Set changes one scalar/value-struct or existing object reference; map operations change one entry, preserving unrelated entries.
+     * @param Key Exact loaded object path for object keys, otherwise Unreal property text. Required for map operations and map-child creation; empty for set or direct child creation.
+     * @param Value Unreal property text for value fields, or exact loaded object path for references. Empty for map_remove. Example integer: 42. Object example: /Game/Input/IA_Jump.IA_Jump. For child_set, use JSON: {"property":"Number","value":"42"}. For create_child, use JSON: {"class":"/Script/EnhancedInput.PlayerMappableKeySettings","fields":{"Name":"Jump"}}. Initial fields are scalar/value-struct property-text strings. Other operations do not accept stock engine JSON.
+     * @param Revision Exact revision returned by the reader or preview; stale revisions refuse without writing. Read again after any change.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPDataAssetProperty(const FString& Asset, const FString& Property, const FString& Operation, const FString& Key, const FString& Value, const FString& Revision);
+
     /**
      * Remove a directly implemented interface while keeping its function bodies as ordinary functions.
      *
@@ -1345,6 +1365,18 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+
+    /** Edit one data-asset property using temporary validation. Requires the current reader revision. No implicit save or compile. Edit notifications may run project code. The tool verifies resulting state and attempts restoration on mismatch; inspect the final result and rollback status.
+     * @param Asset Exact asset path or uniquely resolved asset name; must resolve to UDataAsset.
+     * @param Property Exact reflected property path from ReadTurboMCPDataAssetProperty. External objects are never implicit edit targets.
+     * @param Operation set, map_upsert, map_remove, create_child or child_set. child_set edits an existing owned map child selected by Key. create_child creates a compatible instanced object in an empty property/map entry; it never replaces an existing child. Set changes one scalar/value-struct or existing object reference; map operations change one entry, preserving unrelated entries.
+     * @param Key Exact loaded object path for object keys, otherwise Unreal property text. Required for map operations and map-child creation; empty for set or direct child creation.
+     * @param Value Unreal property text for value fields, or exact loaded object path for references. Empty for map_remove. Example integer: 42. Object example: /Game/Input/IA_Jump.IA_Jump. For child_set, use JSON: {"property":"Number","value":"42"}. For create_child, use JSON: {"class":"/Script/EnhancedInput.PlayerMappableKeySettings","fields":{"Name":"Jump"}}. Initial fields are scalar/value-struct property-text strings. Other operations do not accept stock engine JSON.
+     * @param Revision Exact revision returned by the reader or preview; stale revisions refuse without writing. Read again after any change.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPDataAssetProperty(const FString& Asset, const FString& Property, const FString& Operation, const FString& Key, const FString& Value, const FString& Revision);
+
     /**
      * Remove a directly implemented interface while keeping its function bodies as ordinary functions.
      *

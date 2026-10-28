@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-28",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 155,
+  "inventory": 158,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -571,6 +571,25 @@
         "Arbitrary user callbacks, reference-valued fields and user-defined row structures are outside this bounded scenario",
         "Registry reader discovery and large-table truncation were source-reviewed, not exercised here"
       ]
+    },
+    {
+      "id": "WF-DATA-02-ASSET-PROPERTIES",
+      "title": "Safely edit data-asset maps and owned children",
+      "status": "bounded_scenario_checked",
+      "fixture": "TurboMCP.DataAsset.PropertyWorkflow",
+      "review": "docs/audit/data-asset-tool-review.json",
+      "tools_used": [
+        "ReadTurboMCPDataAssetProperty",
+        "PreviewTurboMCPDataAssetProperty",
+        "EditTurboMCPDataAssetProperty"
+      ],
+      "evidence": "d7f1fd0ee7894a1b815145397527418a",
+      "limitations": [
+        "No persistence or disk-reload certification; save remains separate.",
+        "Project constructors and edit notifications can have external effects outside the captured asset.",
+        "Scalar/value-struct initial fields only; no localized text, delegate or container import.",
+        "Historical X-116 input formats remain unavailable; real InputAction key-settings creation is independently verified."
+      ]
     }
   ],
   "tool_usage": {
@@ -854,9 +873,18 @@
     ],
     "EditTurboMCPDataTableRows": [
       "WF-DATA-01-ROWS"
+    ],
+    "ReadTurboMCPDataAssetProperty": [
+      "WF-DATA-02-ASSET-PROPERTIES"
+    ],
+    "PreviewTurboMCPDataAssetProperty": [
+      "WF-DATA-02-ASSET-PROPERTIES"
+    ],
+    "EditTurboMCPDataAssetProperty": [
+      "WF-DATA-02-ASSET-PROPERTIES"
     ]
   },
-  "unique_tools_scenario_reviewed": 69,
+  "unique_tools_scenario_reviewed": 72,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

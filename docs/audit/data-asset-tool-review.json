@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "updated": "2026-10-28",
+  "workflow": "WF-DATA-02-ASSET-PROPERTIES",
+  "status": "bounded_scenario_checked",
+  "native_run": "d7f1fd0ee7894a1b815145397527418a",
+  "fixture": "TurboMCP.DataAsset.PropertyWorkflow",
+  "tools": [
+    "ReadTurboMCPDataAssetProperty",
+    "PreviewTurboMCPDataAssetProperty",
+    "EditTurboMCPDataAssetProperty"
+  ],
+  "checked": [
+    "Exact map key and existing child identity preservation",
+    "Preview without live value/dirty mutation",
+    "Stale revision and missing reference refusal",
+    "Owned direct and map child creation and non-overwrite",
+    "Real InputAction PlayerMappableKeySettings Name and outer readback",
+    "Map-child field editing and invalid value refusal",
+    "Exact map removal, no-op and transaction undo",
+    "Notification mismatch restoration with clean dirty-state recovery",
+    "Unicode revision distinction",
+    "Reader reusable keys/child fields and live reflected help",
+    "Compatible abstract and missing class refusal without changes",
+    "Incomplete restoration reports rollback failed and changed unknown, preserving dirty state"
+  ],
+  "limitations": [
+    "No persistence or disk-reload certification; save remains separate.",
+    "Project constructors and edit notifications can have external effects outside the captured asset.",
+    "Scalar/value-struct initial fields only; no localized text, delegate or container import.",
+    "Historical X-116 input formats remain unavailable; real InputAction key-settings creation is independently verified."
+  ],
+  "prior_failures": [
+    "a5ee3aff28614bcfaa3424841073fc75: transient fixture revealed inaccurate hardcoded dirty report; corrected to observed dirty flag and eligible fixture",
+    "1f71e22e77854b15b00e67f5745244f0: pinned JSON key string build incompatibility; fixed explicit conversion",
+    "cef658e315914699b61f15a28bfe0e9e: callback failure correctly reported but test assumed compact JSON; corrected to parse metadata, with assertions retained"
+  ],
+  "stock_baseline": "88c27e3e88834583af0e4d8420911842 remains failing against stock bypass writer; not hidden or rerouted to plugin pass",
+  "integration": "Offline 26/26 passed in b8d0bfca63a44ba5982b7d1986a71e78 before final fixture-only controls; current structure/language checks run before integration. Not full plugin certification."
+}

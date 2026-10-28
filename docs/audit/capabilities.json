@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "plugin_tree": "c8c912f3221f8537e6fdedc0a64cf4631d2d93a1",
+  "plugin_tree": "23fc2e979346ca680ddfc9bfb561e2acb86f17ff",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 155,
+    "tools": 158,
     "by_toolset": {
-      "UTurboMCPEditToolset": 64,
+      "UTurboMCPEditToolset": 65,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 51,
-      "UTurboMCPReadToolset": 34
+      "UTurboMCPPreviewToolset": 52,
+      "UTurboMCPReadToolset": 35
     }
   },
   "tools": [
@@ -255,6 +255,31 @@
         "Tools/test-widgets-as-vars.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPDataAssetProperty",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Property",
+        "Operation",
+        "Key",
+        "Value",
+        "Revision"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
+          "line": 411
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1871,6 +1896,31 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "PreviewTurboMCPDataAssetProperty",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "Property",
+        "Operation",
+        "Key",
+        "Value",
+        "Revision"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
+          "line": 409
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "PreviewTurboMCPDataTableRows",
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
@@ -3146,6 +3196,27 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp",
           "line": 116
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "ReadTurboMCPDataAssetProperty",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "Asset",
+        "Property"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
+          "line": 407
         }
       ],
       "test_references": [],
