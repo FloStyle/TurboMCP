@@ -18,6 +18,7 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_VariableSet.h"
 #include "K2Node_ExecutionSequence.h"
+#include "K2Node_Timeline.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -145,6 +146,18 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
     TestEqual(TEXT("Latent refusal creates no function"),BP->FunctionGraphs.Num(),FunctionCount);
     TestFalse(TEXT("Latent refusal stays clean"),Package->IsDirty());
     Graph->RemoveNode(Latent);
+    UK2Node_Timeline* Timeline=NewObject<UK2Node_Timeline>(Graph);
+    Graph->AddNode(Timeline,false,false);Timeline->CreateNewGuid();
+    Timeline->NodePosX=2000;Timeline->NodePosY=800;
+    TArray<FString> WithTimeline=Ids;WithTimeline.Add(TurboMCPNodeId::MakeForNode(Timeline,true));
+    Package->SetDirtyFlag(false);
+    const FString TimelineRefusal=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),WithTimeline,TEXT("InvalidTimeline"),TEXT("function"));
+    Transcript+=TEXT("\n")+TimelineRefusal;
+    TestTrue(TEXT("Event-only timeline refused"),TimelineRefusal.StartsWith(TEXT("unchanged")) && TimelineRefusal.Contains(TEXT("timeline")));
+    TestEqual(TEXT("Timeline refusal creates no function"),BP->FunctionGraphs.Num(),FunctionCount);
+    TestFalse(TEXT("Timeline refusal stays clean"),Package->IsDirty());
+    Graph->RemoveNode(Timeline);
+
     const FString Edit=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),Ids,TEXT("AppendSuffix"),TEXT("function"));
     Transcript+=TEXT("\n")+Edit;
     if (!TestTrue(TEXT("Collapse applied"),Edit.StartsWith(TEXT("changed:")))) return false;
