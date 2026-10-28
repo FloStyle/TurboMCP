@@ -30,8 +30,6 @@ namespace
 	/** How many characters one result may hold. */
 	constexpr int32 MaxResultChars = 24000;
 
-	/** How many findings are printed before the list caps. */
-	constexpr int32 MaxFindings = 120;
 }
 
 FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
@@ -121,9 +119,11 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
     }
     if (Report.Findings.IsEmpty()) Out += TEXT("\nfindings: none in this scope. This does not certify layout or behavior.");
     const int32 Next = Offset + Shown;
+    const bool bOversizedRecord = Shown == 0 && Next < Report.Findings.Num();
     Out += FString::Printf(TEXT("\nfindings: matched=%d graphTotal=%d offset=%d shown=%d remaining=%d nextOffset=%d\nPages reflect live state; restart at Offset=0 after edits. Findings are diagnostic, not automatic repair instructions."),
-        Report.Findings.Num(), AllFindings, Offset, Shown, Report.Findings.Num() - Next, Next < Report.Findings.Num() ? Next : -1);
-    if (Shown == 0 && Next < Report.Findings.Num()) Out += TEXT("\nA finding exceeds the output budget; inspect its node scope. No partial finding was printed.");
+        Report.Findings.Num(), AllFindings, Offset, Shown, Report.Findings.Num() - Next, !bOversizedRecord && Next < Report.Findings.Num() ? Next : -1);
+    if (bOversizedRecord) Out += FString::Printf(TEXT("\npageBlocked: finding at Offset=%d exceeds the output budget (%d characters). No partial finding was printed. Narrow Scope to inspect relevant nodes. To explicitly skip this unprinted finding and inspect later findings, use Offset=%d. nextOffset=-1 means automatic paging stopped, not that all findings were returned."),
+        Next, Report.Findings[Next].Detail.Len(), Next + 1);
     Out += FString::Printf(TEXT("\nwhole-graph context: %d nodes, %d wires, %d comment boxes; total wire length %.0f, longest %.0f graph units. Wire lengths are straight-line estimates, not rendered curves. Alignment tolerance %.1f graph units."),
         Report.NodeCount, Report.WireCount, Report.CommentBoxCount, Report.TotalWireLength, Report.LongestWire, AlignmentTolerance);
     struct FWireDetail { double Length; FString Text; };

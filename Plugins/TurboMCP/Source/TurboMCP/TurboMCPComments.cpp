@@ -365,9 +365,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPCommentList(
         Out += Records[I]; ++Shown;
     }
     const int32 Next = Offset + Shown;
+    const bool bOversizedRecord = Shown == 0 && Next < Records.Num();
     Out += FString::Printf(TEXT("\npage: matched=%d offset=%d shown=%d remaining=%d nextOffset=%d. Pages reflect live state; restart after edits."),
-        Records.Num(), Offset, Shown, Records.Num() - Next, Next < Records.Num() ? Next : -1);
-    if (Shown == 0 && Next < Records.Num()) Out += TEXT("\nA box record exceeds the output budget; use its layout/capture scope. No partial record was printed.");
+        Records.Num(), Offset, Shown, Records.Num() - Next, !bOversizedRecord && Next < Records.Num() ? Next : -1);
+    if (bOversizedRecord) Out += FString::Printf(TEXT("\npageBlocked: box record at Offset=%d exceeds the output budget (%d characters). No partial record was printed. Use targeted layout or graph readers to inspect its nodes. To explicitly skip this unprinted box and inspect later boxes, use Offset=%d. nextOffset=-1 means automatic paging stopped, not that all boxes were returned."),
+        Next, Records[Next].Len(), Next + 1);
 
 	if (TotalOverlapping > 0)
 	{

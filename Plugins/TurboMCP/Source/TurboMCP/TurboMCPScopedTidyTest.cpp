@@ -281,6 +281,17 @@ bool FTurboMCPScopedTidyTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Box scope excludes distant comment"), Comments.Contains(TEXT("Dense section 28")));
     const FString Page = UTurboMCPReadToolset::ReadTurboMCPCommentList(DenseAsset, Graph->GetName(), TEXT(""), 0, 1);
     TestTrue(TEXT("Comment pagination retains all matching count"), Page.Contains(TEXT("matched=29")) && Page.Contains(TEXT("nextOffset=1")));
+    // An unprintable record must not send clients back to the same cursor forever.
+    const FString OriginalTitle = FirstBox->NodeComment;
+    FirstBox->NodeComment = FString::ChrN(25000, TCHAR('X'));
+    const FString OversizedPage = UTurboMCPReadToolset::ReadTurboMCPCommentList(DenseAsset, Graph->GetName(), TEXT(""), 0, 1);
+    TestTrue(TEXT("Oversized record reports blocked paging without a partial record"),
+        OversizedPage.Len() <= 24000 && OversizedPage.Contains(TEXT("pageBlocked:"))
+        && OversizedPage.Contains(TEXT("nextOffset=-1")) && OversizedPage.Contains(TEXT("use Offset=1")));
+    const FString AfterOversized = UTurboMCPReadToolset::ReadTurboMCPCommentList(DenseAsset, Graph->GetName(), TEXT(""), 1, 1);
+    TestTrue(TEXT("Explicit skip reaches the next complete box"), AfterOversized.Contains(TEXT("Dense section 1"))
+        && AfterOversized.Contains(TEXT("nextOffset=2")));
+    FirstBox->NodeComment = OriginalTitle;
     TestTrue(TEXT("Region scope reports overlap"), UTurboMCPLookToolset::LookTurboMCPLayoutReport(DenseAsset, Graph->GetName(), 64, TEXT("region:-40,-40,800,500")).Contains(TEXT("overlap:")));
     TestTrue(TEXT("Unknown scope refuses"), UTurboMCPLookToolset::LookTurboMCPLayoutReport(DenseAsset, Graph->GetName(), 64, TEXT("box:missing")).StartsWith(TEXT("error:")));
     TestTrue(TEXT("Invalid region refuses"), UTurboMCPReadToolset::ReadTurboMCPCommentList(DenseAsset, Graph->GetName(), TEXT("region:0,0,-1,4")).StartsWith(TEXT("error:")));
