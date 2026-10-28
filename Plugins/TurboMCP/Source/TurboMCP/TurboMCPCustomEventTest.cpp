@@ -72,6 +72,16 @@ bool FTurboMCPCustomEventTest::RunTest(const FString&)
     Transcript+=TEXT("\nReadback:\n")+Read;
     TestTrue(TEXT("Readback contains event and data pin"),Read.Contains(TEXT("HandlePurchase"))&&Read.Contains(TEXT("Label")));
     Transcript+=TEXT("\nCapture:\n")+UTurboMCPLookToolset::LookTurboMCPCapture(Asset,GraphName,TEXT("graph"),TEXT(""),TEXT("1200x700"));
+    TMap<FGuid,FIntPoint> ExistingPositions;
+    for (UEdGraphNode* Node:Graph->Nodes) if (Node) ExistingPositions.Add(Node->NodeGuid,FIntPoint(Node->NodePosX,Node->NodePosY));
+    const bool DirtyBeforeSecond=Package->IsDirty();
+    TestTrue(TEXT("Preview second event"),Run(false,TEXT("OtherEntry"),TEXT("")).StartsWith(TEXT("preview:")));
+    TestEqual(TEXT("Second preview preserves dirty state"),Package->IsDirty(),DirtyBeforeSecond);
+    TestTrue(TEXT("Create beside existing logic"),Run(true,TEXT("OtherEntry"),TEXT("")).StartsWith(TEXT("created custom event:")));
+    for (UEdGraphNode* Node:Graph->Nodes)
+        if (Node && ExistingPositions.Contains(Node->NodeGuid))
+            TestEqual(TEXT("Existing logic remains fixed"),FIntPoint(Node->NodePosX,Node->NodePosY),ExistingPositions[Node->NodeGuid]);
+    TestTrue(TEXT("Inherited event name refused"),Run(true,TEXT("ReceiveBeginPlay"),TEXT("")).StartsWith(TEXT("unchanged:")));
     return true;
 }
 #endif
