@@ -12,6 +12,7 @@
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPGraphAppend.h"
 #include "TurboMCPGraphTextLex.h"
+#include "Tools/TurboMCPToolsets.h"
 #include "K2Node_VariableGet.h"
 #include "BlueprintActionDatabase.h"
 #include "TurboMCPNodeId.h"
@@ -509,6 +510,40 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 			TEXT("the in-memory fixture does not resolve by its full object path: %s"), *ResolveError));
 		return false;
 	}
+
+
+    // Exercise the public entry points and inspect actual stored defaults independently.
+    for (const FName FunctionName : { FName(TEXT("MakeLiteralString")) })
+    {
+        UFunction* Function = UKismetSystemLibrary::StaticClass()->FindFunctionByName(FunctionName);
+        if (!TestNotNull(TEXT("literal fixture function exists"), Function)) return false;
+        UK2Node_CallFunction* Probe = NewObject<UK2Node_CallFunction>(Fixture.Unique);
+        Probe->SetFromFunction(Function);
+        Probe->CreateNewGuid();
+        Probe->AllocateDefaultPins();
+        const FString TypeId = TurboMCPNodeId::GetNodeTypeId(Probe);
+        const FString Expected = TEXT("quoted \"value; still content\" and C:\\Temp\\file");
+        const FString Request = FString::Printf(TEXT("(%s\n    Value %s\n)"),
+            *TypeId, *TurboMCPGraphTextLex::QuoteLiteral(Expected));
+        const FString Before = SerializeGraph(Fixture.Unique);
+        const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), Request);
+        TestTrue(FString::Printf(TEXT("literal preview accepted: %s"), *Preview), Preview.StartsWith(TEXT("preview:")));
+        TestEqual(TEXT("literal preview preserves graph"), SerializeGraph(Fixture.Unique), Before);
+        const FString Edited = UTurboMCPEditToolset::EditTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), Request);
+        TestTrue(FString::Printf(TEXT("literal edit accepted: %s"), *Edited), Edited.StartsWith(TEXT("changed:")));
+        int32 MatchingDefaults = 0;
+        for (UEdGraphNode* Node : Fixture.Unique->Nodes)
+            if (UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
+                if (Call->GetTargetFunction() == Function)
+                    if (UEdGraphPin* ValuePin = Call->FindPin(TEXT("Value"), EGPD_Input))
+                        if (ValuePin->DefaultValue == Expected) ++MatchingDefaults;
+        TestEqual(TEXT("one appended node stores the exact decoded value"), MatchingDefaults, 1);
+        const FString BeforeRefusal = SerializeGraph(Fixture.Unique);
+        const FString Invalid = FString::Printf(TEXT("(%s\n    Value \"bad\\q\"\n)"), *TypeId);
+        const FString Refused = UTurboMCPEditToolset::EditTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), Invalid);
+        TestTrue(TEXT("unsupported escape reports error"), Refused.StartsWith(TEXT("error:")));
+        TestEqual(TEXT("invalid escape preserves graph"), SerializeGraph(Fixture.Unique), BeforeRefusal);
+    }
 
 	// A variable with a space must round-trip through its exact discovered type ID.
 	FEdGraphPinType SpacedType;

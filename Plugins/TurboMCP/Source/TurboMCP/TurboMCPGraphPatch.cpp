@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPGraphPatch.h"
+#include "TurboMCPGraphTextLex.h"
 
 #include "TurboMCPRollback.h"
 #include "TurboMCPAssetResolver.h"
@@ -98,16 +99,14 @@ namespace
 		return Found;
 	}
 
-	/** The literal a pin line carries, with the writer's quotes removed. Mirrors APPEND's own unquoting. */
+	/** Append planning has already validated the shared graph-text escape layer. */
 	FString Unquote(const FString& InValue)
 	{
-		FString Out = InValue;
-		if (Out.Len() >= 2 && Out.StartsWith(TEXT("\"")) && Out.EndsWith(TEXT("\"")))
-		{
-			Out = Out.Mid(1, Out.Len() - 2);
-		}
-		return Out;
+        FString Literal, Error;
+        TurboMCPGraphTextLex::DecodeLiteral(InValue, Literal, Error);
+        return Literal;
 	}
+
 }
 
 bool FTurboMCPGraphPatch::Plan(const FString& InAsset, const FString& InGraphName,
