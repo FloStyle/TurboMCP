@@ -15,6 +15,8 @@
 #include "K2Node_CreateDelegate.h"
 #include "Modules/ModuleManager.h"
 #include "UObject/UObjectIterator.h"
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "ScopedTransaction.h"
 
 namespace TurboMCPFunctionFlags
 {
@@ -166,4 +168,118 @@ FString InspectCallers(FPlan& Plan)
     return FString();
 }
 
+
+FString Change(const FString& Asset, const FString& Function, const FString& Pure,
+    const FString& Const, bool Apply)
+{
+    FPlan Plan;
+    FString Error = PrepareDefinition(Asset, Function, Pure, Const, Plan);
+    if (!Error.IsEmpty()) return Error;
+    const FString Summary = FString::Printf(TEXT("\nfunction: %s:%s\npure: %s -> %s\nconst: %s -> %s"),
+        *Plan.Blueprint->GetPathName(), *Function,
+        Plan.WasPure ? TEXT("true") : TEXT("false"), Plan.Pure ? TEXT("true") : TEXT("false"),
+        Plan.WasConst ? TEXT("true") : TEXT("false"), Plan.Const ? TEXT("true") : TEXT("false"));
+    if (Plan.Pure == Plan.WasPure && Plan.Const == Plan.WasConst)
+        return TEXT("unchanged: The requested flags already match. No graph changes performed.") + Summary;
+    if (!Plan.Blueprint->GeneratedClass || !Plan.Blueprint->SkeletonGeneratedClass || Plan.Blueprint->Status == BS_Error)
+        return TEXT("error: Compile the defining Blueprint successfully before changing flags. Nothing changed.") + Summary;
+    // Const restricts writes through this receiver. External-object effects are
+    // not a promise this tool can infer from a function's name or pure flag.
+    for (UEdGraphNode* Node : Plan.Graph->Nodes)
+    {
+        if (UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
+        {
+            UFunction* Target = Call->GetTargetFunction();
+            if (!Target) return TEXT("error: A function call in the body cannot be resolved. Compile and repair it first. Nothing changed.") + Summary;
+            if (Plan.Pure && Target->HasMetaData(TEXT("Latent")))
+                return TEXT("error: A pure function cannot contain a latent call. Nothing changed.") + Summary;
+            if (Plan.Const && !Plan.WasConst && Call->FunctionReference.IsSelfContext() &&
+                !Target->HasAnyFunctionFlags(FUNC_Const | FUNC_Static))
+                return TEXT("error: The body calls a non-const function on this receiver. Nothing changed.") + Summary;
+        }
+        if (Plan.Const && !Plan.WasConst)
+        {
+            if (UK2Node_VariableSet* Set = Cast<UK2Node_VariableSet>(Node))
+                if (Set->VariableReference.IsSelfContext() && !Set->VariableReference.IsLocalScope())
+                    return TEXT("error: The body writes a member of this receiver and cannot be made const. Nothing changed.") + Summary;
+            if (Cast<UK2Node_MacroInstance>(Node))
+                return TEXT("error: Const conversion requires inspection of the expanded macro body. This conversion is not supported yet; nothing changed.") + Summary;
+        }
+    }
+    Error = InspectCallers(Plan);
+    if (!Error.IsEmpty()) return Error + Summary;
+    FString Details = Summary;
+    for (UBlueprint* Blueprint : Plan.Affected) Details += TEXT("\naffected asset: ") + Blueprint->GetPathName();
+    Details += FString::Printf(TEXT("\ncallers inspected: %d"), Plan.Calls.Num());
+    const FString Limits = TEXT("\nScope: registered Blueprint dependencies and loaded callers. Dependency loading may run engine callbacks. Dynamic/native references are not verified. Const constrains the receiver, not all external objects. No save. Compile affected assets and inspect the result before saving.");
+    if (!Apply) return TEXT("preview: The requested flag change passed preflight. No flags or links changed. Edit repeats inspection.") + Details + Limits;
+
+    struct FPinState
+    {
+        UEdGraphNode* Node;
+        FName Name;
+        EEdGraphPinDirection Direction;
+        bool Exec;
+        FString Default;
+        UObject* Object;
+        FText Text;
+        TArray<TPair<UEdGraphNode*, FName>> Links;
+    };
+    TArray<FPinState> Pins;
+    TMap<UEdGraphNode*, FIntPoint> Positions;
+    for (UBlueprint* Blueprint : Plan.Affected)
+    {
+        TArray<UEdGraph*> Graphs;
+        Blueprint->GetAllGraphs(Graphs);
+        for (UEdGraph* Graph : Graphs) if (Graph) for (UEdGraphNode* Node : Graph->Nodes) if (Node)
+        {
+            Positions.Add(Node, FIntPoint(Node->NodePosX, Node->NodePosY));
+            for (UEdGraphPin* Pin : Node->Pins) if (Pin)
+            {
+                FPinState State{Node, Pin->PinName, Pin->Direction, Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec, Pin->DefaultValue, Pin->DefaultObject, Pin->DefaultTextValue, {}};
+                for (UEdGraphPin* Link : Pin->LinkedTo) if (Link) State.Links.Emplace(Link->GetOwningNode(), Link->PinName);
+                Pins.Add(MoveTemp(State));
+            }
+        }
+    }
+    FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "FunctionFlags", "Change Blueprint function flags"));
+    for (UBlueprint* Blueprint : Plan.Affected) Blueprint->Modify();
+    Plan.Graph->Modify();
+    Plan.Entry->Modify();
+    int32 Flags = Plan.Entry->GetExtraFlags();
+    Flags = Plan.Pure ? Flags | FUNC_BlueprintPure : Flags & ~FUNC_BlueprintPure;
+    Flags = Plan.Const ? Flags | FUNC_Const : Flags & ~FUNC_Const;
+    Plan.Entry->SetExtraFlags(Flags);
+    // Use the editor's signature propagation, rather than changing only the
+    // generated UFunction and leaving serialized entry flags inconsistent.
+    GetDefault<UEdGraphSchema_K2>()->HandleParameterDefaultValueChanged(Plan.Entry);
+    auto Partial = [&]() { return TEXT("error: Flags were changed, but preservation checks failed. Partial changes may remain; nothing saved. Inspect affected assets or undo before continuing.") + Details; };
+    if (((Plan.Entry->GetFunctionFlags() & FUNC_BlueprintPure) != 0) != Plan.Pure ||
+        ((Plan.Entry->GetFunctionFlags() & FUNC_Const) != 0) != Plan.Const) return Partial();
+    for (const auto& Pair : Positions)
+        if (!IsValid(Pair.Key) || Pair.Key->NodePosX != Pair.Value.X || Pair.Key->NodePosY != Pair.Value.Y) return Partial();
+    for (const FPinState& State : Pins)
+    {
+        UEdGraphPin* Pin = IsValid(State.Node) ? State.Node->FindPin(State.Name, State.Direction) : nullptr;
+        if (!Pin)
+        {
+            // Disconnected execution pins are the intentional purity delta.
+            if (State.Exec && State.Links.IsEmpty() && Plan.Calls.Contains(Cast<UK2Node_CallFunction>(State.Node)) && Plan.Pure) continue;
+            return Partial();
+        }
+        if (Pin->DefaultValue != State.Default || Pin->DefaultObject != State.Object || !Pin->DefaultTextValue.EqualTo(State.Text) || Pin->LinkedTo.Num() != State.Links.Num()) return Partial();
+        for (const auto& Link : State.Links)
+        {
+            UEdGraphPin* Other = IsValid(Link.Key) ? Link.Key->FindPin(Link.Value, State.Direction == EGPD_Input ? EGPD_Output : EGPD_Input) : nullptr;
+            if (!Other || !Pin->LinkedTo.Contains(Other) || !Other->LinkedTo.Contains(Pin)) return Partial();
+        }
+    }
+    return TEXT("edited: Function flags changed in memory; existing links, defaults and positions were preserved. Nothing saved.") + Details + Limits;
+}
+
 } // namespace TurboMCPFunctionFlags
+
+FString UTurboMCPPreviewToolset::PreviewTurboMCPFunctionFlags(const FString& Asset, const FString& Function, const FString& Pure, const FString& Const)
+{ return TurboMCPFunctionFlags::Change(Asset, Function, Pure, Const, false); }
+FString UTurboMCPEditToolset::EditTurboMCPFunctionFlags(const FString& Asset, const FString& Function, const FString& Pure, const FString& Const)
+{ return TurboMCPFunctionFlags::Change(Asset, Function, Pure, Const, true); }

@@ -717,6 +717,16 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPFunctionRename(const FString& Asset, const FString& Function, const FString& NewName);
     /**
+     * Inspect or change owned function purity and receiver constness. Preview first; edit repeats preflight. Requires an idle editor and compiled owner. Refuses unsafe connected callers, overrides and delegate references. Dependencies are loaded and callbacks may run. No automatic save; compile affected assets before saving. A failed postcondition explicitly reports partial changes.
+     * @param Asset Required Blueprint path or unique asset name.
+     * @param Function Required exact owned function name. Use FunctionAdd first to create a new helper.
+     * @param Pure Required keep, true or false. Removing connected execution pins or introducing an unexecuted data producer refuses.
+     * @param Const Required keep, true or false. Const constrains this receiver, not all external objects. Unsupported macro-body analysis refuses.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPFunctionFlags(const FString& Asset, const FString& Function, const FString& Pure, const FString& Const);
+
+    /**
      * Prepare missing member declarations before copying graph bodies between Blueprints.
      *
      * Creates declared variables with defaults, function signatures, dispatcher signatures and custom-event declarations on a new named event graph. Exact-name exclusions skip creation without deleting existing target members. GraphTransfer can replace matching empty event declarations with their bodies; connected or commented target events refuse. Compatible existing members are retained; differing variable types or callable signatures refuse. Compile both assets first. Does not copy widget trees, interfaces, function bodies, animations or bindings. Add required interfaces and copy widget subtrees separately, then use GraphTransfer. A failed edit can leave earlier declarations created; inspect the target before retrying.
@@ -1507,6 +1517,16 @@ public:
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPFunctionRename(const FString& Asset, const FString& Function, const FString& NewName);
+    /**
+     * Inspect or change owned function purity and receiver constness. Preview first; edit repeats preflight. Requires an idle editor and compiled owner. Refuses unsafe connected callers, overrides and delegate references. Dependencies are loaded and callbacks may run. No automatic save; compile affected assets before saving. A failed postcondition explicitly reports partial changes.
+     * @param Asset Required Blueprint path or unique asset name.
+     * @param Function Required exact owned function name. Use FunctionAdd first to create a new helper.
+     * @param Pure Required keep, true or false. Removing connected execution pins or introducing an unexecuted data producer refuses.
+     * @param Const Required keep, true or false. Const constrains this receiver, not all external objects. Unsupported macro-body analysis refuses.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPFunctionFlags(const FString& Asset, const FString& Function, const FString& Pure, const FString& Const);
+
     /**
      * Prepare missing member declarations before copying graph bodies between Blueprints.
      *
