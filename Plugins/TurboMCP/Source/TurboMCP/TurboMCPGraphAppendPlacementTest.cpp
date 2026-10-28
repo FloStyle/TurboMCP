@@ -1109,6 +1109,13 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
         UEdGraph* Graph = Fixture.Negative;
         UK2Node_CallFunction* Anchor = PlacePrintString(Graph, 0x91000001, 0, 0, 200, 100);
         UEdGraphNode_Comment* Obstacle = PlaceComment(Graph, 0x91000002, -2000, -20, 10000, 4000);
+        // Populate the obstructed region with distinct nodes. The local search
+        // must remain independent of distant graph density and preserve them all.
+        for (int32 Index = 0; Index < 80; ++Index)
+        {
+            PlacePrintString(Graph, 0x92000000 + Index,
+                1200 + (Index % 10) * 500, 400 + (Index / 10) * 400, 200, 100);
+        }
         TArray<FTurboMCPGraphAppend::FNewNode> Forms;
         Forms.SetNum(2);
         for (auto& Form : Forms)

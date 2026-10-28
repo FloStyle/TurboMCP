@@ -642,6 +642,26 @@
         "Post-edit guard failure is deliberate plan fault injection, not a naturally reproduced planner race",
         "No new runtime gameplay claim; reused capture tool does not gain broad new certification"
       ]
+    },
+    {
+      "id": "WF-BP-APPEND-LOCAL",
+      "title": "Append a connected chain near fixed nodes, then tidy with a fixed predecessor",
+      "status": "bounded_scenario_checked",
+      "review": "docs/audit/append-local-review.json",
+      "fixture": "TurboMCP.GraphAppend.Placement",
+      "tools_used": [
+        "PreviewTurboMCPGraphAppend",
+        "EditTurboMCPGraphAppend",
+        "ReadTurboMCPBlueprint",
+        "PreviewTurboMCPGraphTidy",
+        "EditTurboMCPGraphTidy",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "Synthetic fixtures; no exact private-graph reproduction",
+        "Tight fixed gaps can retain bent boundary wires",
+        "Reused tools do not increase the unique reviewed-tool count"
+      ]
     }
   ],
   "tool_usage": {

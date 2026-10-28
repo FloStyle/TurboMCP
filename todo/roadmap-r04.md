@@ -2018,3 +2018,5 @@ OCT27-03 done: stock event-interface reachability implemented. Native existing-e
 OCT27-04 done: scoped connected components stay near fixed neighbours; planned/actual boundary checks cannot be bypassed by Force; rejection states the actual failing criterion. Native, live-help and inspected screenshots passed a7695fbdac1a40f6b140df272704ceeb. See docs/audit/scoped-tidy-review.json for baseline, controls and limits.
 
 OCT27-05 ready/in progress: docs/design/append-local-anchor.md approves local placement search, fixed MainPath predecessor and retained full append-suite debt. Assignment oct27-append-local; native acceptance pending.
+
+OCT27-05 done: local append placement, fixed first MainPath anchor and full append acceptance repaired. Frozen run a9a6499efba44c79acdd23906654dc46 passed, including dense geometry; live help passed 4e0b66701c444d94ac0299aff459cdad. See docs/audit/append-local-review.json for inspected captures, prior failures and limits. R04 remains open.

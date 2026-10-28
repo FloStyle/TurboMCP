@@ -7,7 +7,7 @@ session = Session()
 session.connect()
 for toolset, tool in ((PREVIEW_TOOLSET, "PreviewTurboMCPGraphTidy"), (EDIT_TOOLSET, "EditTurboMCPGraphTidy")):
     help_text = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolset": toolset, "tool": tool})
-    for phrase in ("unselected nodes stay fixed", "Force does not bypass", "fixed-boundary", "64..256", "no compile or save"):
+    for phrase in ("unselected nodes stay fixed", "first explicit MainPath", "later path nodes must be selected", "Force does not bypass", "fixed-boundary", "64..256", "no compile or save"):
         if phrase not in help_text:
             raise RuntimeError(f"{tool} help lacks {phrase}: {help_text}")
 name = "TurboMCP.Graph.ScopedTidy"

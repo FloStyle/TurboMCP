@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "updated": "2026-10-28",
+  "task": "OCT27-05",
+  "workflow": "WF-BP-APPEND-LOCAL",
+  "status": "accepted_bounded_workflow",
+  "source_commit": "02bc30b977b0767c38013a443ee6b2256953ddd8",
+  "native_run": "ec88df5e8d51455197b0630e950ab918",
+  "visual_run": "f293ecd93f5b47048547271a3df00580",
+  "checked": [
+    "Full public append wrapper: preview, connected edit, independent literal readback, identity preservation, links, local labels and saved bytes",
+    "Native placement: coordinate limits, malformed-plan refusal, exact node/link delta and existing defaults/positions preserved",
+    "Bounded search finds space above a tall obstacle and refuses when its neighbourhood is blocked",
+    "Fixed first explicit MainPath accepted without adding it to movable selection; fixed tail, single fixed node and disconnected anchor refused",
+    "Scoped tidy suite includes populated distant boxes and fixed neighbouring calls",
+    "Updated live MainPath help and scoped native suite passed in 4e0b66701c444d94ac0299aff459cdad",
+    "Dense placement with 80 existing nodes: local placement and unchanged graph snapshots; full append suite and frozen candidate gate passed"
+  ],
+  "images_inspected": [
+    "TurboMCPAppendPlacement_a1d2c1e044fc833fcd431e81c944d305_ApplyGraph_native_1600x900_D54C248147B8BB18079B78B1FA6B08AC.png",
+    "TurboMCPAppendPlacement_a1d2c1e044fc833fcd431e81c944d305_ApplyGraph_native_1600x900_ED71370D4B6CF9CFAD2DCB9809305E4C.png"
+  ],
+  "visual_findings": "New calls stay beside fixed connections without overlap. Tight fixed gaps cause bent/backward boundary wires; no existing nodes were moved. This is local append, not whole-graph layout.",
+  "limitations": [
+    "Synthetic owned fixtures, not the private field graph",
+    "Direct obstacle geometry uses supplied dimensions, not a Slate measurement claim",
+    "No save/reload or gameplay guarantee; saved-file hash is checked unchanged"
+  ],
+  "prior_failures": [
+    "d9f1bd67c21747adb8f78a725cad4627: original full-suite debt",
+    "5b7521ef4c1340dbb60a58809546c442: fixed-anchor rejection baseline",
+    "6be350b45f2d489793674ba2b83dfe4f: obsolete reader/fixture assertions",
+    "446ca90826a64d9b9227f2a879627bff: obsolete predecessor type lookup",
+    "31af1b78579340ffa9e98ba8df2caaad: wording, dirty observation and native fixture failures",
+    "1b60f8d3e3624aa69c3f12b89d8ebfd5: native placement failures",
+    "0a93eb1d5fe9413799e45e1bfecd9bac: legacy fixture and old geometry wording",
+    "9eb80775a2e34840932b047e13678f5b: append suite passed, supervisor rejected candidate-tree change caused by review-record update during run"
+  ],
+  "assertion_repairs": [
+    "Reader requests now supply revision and entryFilter; predecessor lookup uses canonical function ID",
+    "Positive executable nodes connect to an entry; detached geometry plans remain refusal cases",
+    "Malformed placement starts from a valid connected plan so it reaches the actual placement guard",
+    "Compare refusal bodies after independently requiring equal dirty counts and zero dirty delta; no general metadata stripping",
+    "Geometry wording follows current scratch-measured versus estimated evidence",
+    "Saved file fingerprint compared across the entire public workflow"
+  ],
+  "offline": "41333330069340a49d8a15776d6eefbc: 25 passed, inventory stale; regeneration and validate-repo recheck passed",
+  "scope_gate": "PASS against f39549cf35d9173ffb0c2516f1808d0a1e11466b for oct27-append-local",
+  "help_run": "4e0b66701c444d94ac0299aff459cdad",
+  "remaining": "",
+  "dense_acceptance_run": "a9a6499efba44c79acdd23906654dc46"
+}

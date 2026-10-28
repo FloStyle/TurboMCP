@@ -123,8 +123,8 @@
       "kind": "bug",
       "priority": "P1",
       "wave": 2,
-      "state": "in_progress",
-      "validation": "partial_focused_evidence",
+      "state": "done",
+      "validation": "focused_native_and_visual_passed",
       "readiness": "ready",
       "reports": [
         "GC-66",
@@ -138,19 +138,20 @@
       "acceptance": "Try collision-free placement beside predecessor/consumer. Support an explicit fixed anchor for a new chain. Never silently move unselected downstream nodes; any wider shift must be previewed and explicitly scoped.",
       "verification": "Dense and sparse graph insertions, fixed anchor outside movable scope, overlap refusal/fallback, preserved external coordinates and links.",
       "owner": "Codex",
-      "dispatch": "Codex oct27-append-local; DSH paused",
-      "acceptance_debt": "Retain and repair full test-graph-append wrapper schema/connected-positive assertions and GraphAppend.Placement fixture assumptions. Failed evidence d9f1bd67c21747adb8f78a725cad4627 is not superseded by the focused literal pass.",
+      "dispatch": "Integrated by Codex; DSH paused",
+      "acceptance_debt": "Resolved full append wrapper and native fixture assumptions; prior failures retained in review evidence.",
       "repair_contract": "docs/design/append-local-anchor.md",
       "source_review": "Existing relative placement fallback starts below the anchor and searches only downward; MainPath rejects a fixed first predecessor. Full append wrapper retains obsolete reader/positive-fixture assumptions.",
-      "progress": "Candidate only, not integrated: fixed first MainPath anchor accepted while remaining immovable; focused native run e05a6973682440f3b720971a8bdb0b9c passed. Bounded append placement now searches above/below fixed connections. Public append wrapper checks passed within overall failed run 1b60f8d3e3624aa69c3f12b89d8ebfd5; native Placement remained failed. No full-task completion claim.",
-      "remaining": "Repair native placement success fixtures and outdated geometry expectations; verify local placement, blocked-space refusal, measured visual captures and help; run full append acceptance and integration gates before merging candidate.",
+      "progress": "Bounded local placement and fixed first MainPath anchor implemented. Full append suite, dense geometry control, live help and scoped tidy passed; before/after captures inspected.",
+      "remaining": "",
       "prior_failures": [
         "5b7521ef4c1340dbb60a58809546c442: fixed first MainPath baseline refused",
         "6be350b45f2d489793674ba2b83dfe4f: full append failed with obsolete reader/fixture assertions",
         "446ca90826a64d9b9227f2a879627bff: predecessor lookup used obsolete reader type ID",
         "31af1b78579340ffa9e98ba8df2caaad: nine checks failed, including wording/dirty observation and native Placement",
         "1b60f8d3e3624aa69c3f12b89d8ebfd5: public checks passed; native Placement failed"
-      ]
+      ],
+      "evidence": "docs/audit/append-local-review.json"
     },
     {
       "id": "OCT27-06",
