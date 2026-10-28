@@ -994,12 +994,17 @@ bool ApplyFunctionCollapse(const FTurboMCPGraphStructure::FPlan& Plan, FString& 
         return true;
     };
     bool Placed=false;
-    for (int32 Y=Top;Y<=SelectionBottom && !Placed;Y+=16)
-        for (int32 X=Left;X<=SelectionRight && !Placed;X+=16)
+    int32 PlacementAttempts=0;
+    constexpr int32 MaxPlacementAttempts=4096;
+    for (int32 Y=Top;Y<=SelectionBottom && !Placed && PlacementAttempts<MaxPlacementAttempts;Y+=16)
+        for (int32 X=Left;X<=SelectionRight && !Placed && PlacementAttempts<MaxPlacementAttempts;X+=16)
+        {
+            ++PlacementAttempts;
             if (Fits(X,Y)) {Call->NodePosX=X;Call->NodePosY=Y;Placed=true;}
+        }
     if (!Placed)
     {
-        Error=TEXT("partial: Function extracted, but the replacement call has no clear position in the original selection region. Nothing saved. Undo or arrange the call before continuing.");
+        Error=TEXT("partial: Function extracted, but the bounded placement search found no clear position for the replacement call in the original selection region. Nothing saved. Undo or arrange the call before continuing.");
         return false;
     }
     Source->NotifyGraphChanged();

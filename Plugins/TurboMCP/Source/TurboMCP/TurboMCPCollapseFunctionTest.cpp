@@ -23,6 +23,7 @@
 #include "UObject/Package.h"
 #include "UObject/StructOnScope.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPGraphTidy.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPCollapseFunctionTest,"TurboMCP.Workflow.CollapseFunction",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
@@ -87,6 +88,13 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
     Ids.Add(TurboMCPNodeId::MakeForNode(Comment,true));
     TestEqual(TEXT("Baseline runtime"),Evaluate(),FString(TEXT("Order123")));
     Package->SetDirtyFlag(false);
+    // An unrelated node crosses the proposed replacement position from outside
+    // the selected comment. Collapse must place around it, never move it.
+    UK2Node_CallFunction* Obstacle=NewObject<UK2Node_CallFunction>(Graph);
+    Obstacle->SetFromFunction(UKismetStringLibrary::StaticClass()->FindFunctionByName(TEXT("Concat_StrStr")));
+    Graph->AddNode(Obstacle,false,false);Obstacle->CreateNewGuid();Obstacle->AllocateDefaultPins();
+    Obstacle->NodePosX=100;Obstacle->NodePosY=120;
+    Package->SetDirtyFlag(false);
     const int32 Count=Graph->Nodes.Num();
     const FString Preview=UTurboMCPPreviewToolset::PreviewTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),Ids,TEXT("AppendSuffix"),TEXT("function"));
     Transcript+=TEXT("\n")+Preview;
@@ -123,6 +131,23 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
     if (!TestTrue(TEXT("Collapse applied"),Edit.StartsWith(TEXT("changed:")))) return false;
     TestEqual(TEXT("One replacement for three nodes"),Graph->Nodes.Num(),Count-Ids.Num()+1);
     TestEqual(TEXT("Runtime preserved"),Evaluate(),FString(TEXT("Order123")));
+    TestEqual(TEXT("Obstacle X preserved"),Obstacle->NodePosX,100);
+    TestEqual(TEXT("Obstacle Y preserved"),Obstacle->NodePosY,120);
+    UK2Node_CallFunction* Replacement=nullptr;
+    for (UEdGraphNode* Node:Graph->Nodes)
+        if (auto* Call=Cast<UK2Node_CallFunction>(Node))
+            if (Call->FunctionReference.GetMemberName()==TEXT("AppendSuffix")) Replacement=Call;
+    FString MeasureError;
+    if (TestNotNull(TEXT("Replacement call"),Replacement) &&
+        TestTrue(TEXT("Measure replacement"),FTurboMCPGraphTidy::PrepareAlignment(BP,Graph,MeasureError)))
+    {
+        const FVector2D A=FTurboMCPGraphTidy::AlignmentNodeSize(Replacement);
+        const FVector2D B=FTurboMCPGraphTidy::AlignmentNodeSize(Obstacle);
+        const bool Overlap=Replacement->NodePosX<Obstacle->NodePosX+B.X && Replacement->NodePosX+A.X>Obstacle->NodePosX &&
+            Replacement->NodePosY<Obstacle->NodePosY+B.Y && Replacement->NodePosY+A.Y>Obstacle->NodePosY;
+        TestFalse(TEXT("Replacement avoids unrelated node"),Overlap);
+    }
+
     TestEqual(TEXT("Comment moved into function"),Comment->GetGraph()->GetName(),FString(TEXT("AppendSuffix")));
     TestEqual(TEXT("Comment text preserved"),Comment->NodeComment,FString(TEXT("Append the three label suffixes")));
     TestEqual(TEXT("Entry position preserved"),Entry->NodePosX,0);TestEqual(TEXT("Return position preserved"),Result->NodePosX,1500);
