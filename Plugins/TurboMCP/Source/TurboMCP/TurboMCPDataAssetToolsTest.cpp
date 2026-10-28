@@ -125,6 +125,29 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("invalid initial field refuses"), InvalidInitial.StartsWith(TEXT("refused:")));
     TestEqual(TEXT("invalid initial field leaves state unchanged"), ReadRevision(), BeforeInvalidCreate);
 
+    UTurboMCPDataAssetAbstractChild::StaticClass();
+    const FString AbstractCreate = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("create_child"), KeyC->GetPathName(), TEXT("{\"class\":\"/Script/TurboMCP.TurboMCPDataAssetAbstractChild\"}"), ReadRevision());
+    TestTrue(TEXT("compatible abstract child refuses"), AbstractCreate.StartsWith(TEXT("refused:")));
+    TestEqual(TEXT("abstract refusal leaves state unchanged"), ReadRevision(), BeforeInvalidCreate);
+    const FString MissingCreate = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("create_child"), KeyC->GetPathName(), TEXT("{\"class\":\"/Script/Missing.NoSuchChild\"}"), ReadRevision());
+    TestTrue(TEXT("missing child class refuses"), MissingCreate.StartsWith(TEXT("refused:")));
+    TestEqual(TEXT("missing class leaves state unchanged"), ReadRevision(), BeforeInvalidCreate);
+    if (Asset->Child)
+    {
+        const int32 PriorNumber = Asset->Child->Number;
+        Package->SetDirtyFlag(false);
+        Asset->Child->bSpawnAfterEdit = true;
+        const FString IncompleteRestore = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Child.Number"), TEXT("set"), TEXT(""), TEXT("24"), ReadRevision());
+        AddInfo(IncompleteRestore);
+        TestTrue(TEXT("unrestored callback object reports failure"), IncompleteRestore.StartsWith(TEXT("failed:")) && IncompleteRestore.Contains(TEXT("\"rollback\":\"failed\"")));
+        TestTrue(TEXT("incomplete restoration reports unknown changed state"), IncompleteRestore.Contains(TEXT("\"changed\":null")));
+        TestTrue(TEXT("incomplete restoration does not clear dirty state"), Package->IsDirty());
+        TestEqual(TEXT("known prior field restored despite extra callback object"), Asset->Child->Number, PriorNumber);
+        Asset->Child->bSpawnAfterEdit = false;
+        if (Asset->Child->ExtraChild) Asset->Child->ExtraChild->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_NonTransactional | REN_DoNotDirty);
+        Asset->Child->ExtraChild = nullptr;
+    }
+
     TStrongObjectPtr<UInputAction> Action(NewObject<UInputAction>(Package, TEXT("InputAction")));
     UPlayerMappableKeySettings::StaticClass();
     const FString ActionRead = UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(Action->GetPathName(), TEXT("PlayerMappableKeySettings"));

@@ -8,6 +8,7 @@
 
 #pragma once
 #include "Engine/DataAsset.h"
+#include "UObject/Package.h"
 #include "TurboMCPDataAssetSafetyFixture.generated.h"
 
 /** Disposable native fixture; never used by production tools or saved as project content. */
@@ -23,10 +24,18 @@ public:
 #if WITH_EDITOR
     // Deliberate synchronous notification mismatch for owned rollback tests only.
     bool bChangeAfterEdit = false;
+    bool bSpawnAfterEdit = false;
+    UPROPERTY(Transient)
+    TObjectPtr<UObject> ExtraChild;
     virtual void PostEditChangeProperty(FPropertyChangedEvent& Event) override
     {
         Super::PostEditChangeProperty(Event);
         if (bChangeAfterEdit) Number = 99;
+        if (bSpawnAfterEdit)
+        {
+            ExtraChild = NewObject<UTurboMCPDataAssetSafetyChild>(GetOuter());
+            GetOutermost()->SetDirtyFlag(true);
+        }
     }
 #endif
 };
@@ -41,4 +50,11 @@ public:
     TMap<UObject*, UTurboMCPDataAssetSafetyChild*> Entries;
     UPROPERTY(EditAnywhere, Instanced, Category="Test")
     TObjectPtr<UTurboMCPDataAssetSafetyChild> Child;
+};
+
+/** Abstract compatibility control for creation refusal; never instantiated. */
+UCLASS(Abstract, EditInlineNew, Transient)
+class UTurboMCPDataAssetAbstractChild : public UTurboMCPDataAssetSafetyChild
+{
+    GENERATED_BODY()
 };
