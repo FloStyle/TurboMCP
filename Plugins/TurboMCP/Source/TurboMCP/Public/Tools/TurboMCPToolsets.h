@@ -1108,8 +1108,8 @@ public:
 
 
 	/**
-	 * Preview discarding all unsaved changes in a saved Blueprint package; does not reload or save. Returns a confirmation valid for 60 seconds. The edit can reinstance references and reset global undo history.
-	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer the full path. A saved package must exist.
+	 * Preview discarding all unsaved changes in a saved Blueprint or data-asset package; does not reload or save. Returns a one-use confirmation valid for 60 seconds, bound to loaded package state and disk content. Refuses open asset editors, detected live-world references, PIE, active transactions and multiple top-level assets. The edit can reinstance references and reset global undo history; raw native references cannot all be detected.
+	 * @param Asset Required saved Blueprint or data-asset path, or unique short name. Prefer an exact path such as /Game/Tests/BP_NodeTest. Empty, ambiguous, unsupported or unsaved assets are refused.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetRevert(const FString& Asset);
@@ -1930,9 +1930,9 @@ public:
 	static FString EditTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY, const FString& DestinationBox = TEXT(""));
 
 	/**
-	 * Reload a saved Blueprint package, discarding ALL unsaved changes, including edits made after preview; does not save. May reinstance references and reset global undo history. Re-read asset IDs and references after reload.
-	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer the full path. A saved package must exist.
-	 * @param Confirm Required exact DISCARD confirmation string from the latest PreviewTurboMCPAssetRevert for this asset. Expires after 60 seconds and is consumed before reload. Empty, expired or replaced tokens are refused; preview again. Do not construct a token yourself.
+	 * Reload a saved Blueprint or data-asset package, discarding ALL unsaved changes approved by preview; never saves. Memory or disk changes after preview invalidate confirmation. Refuses open asset editors and detected live-world references. May reinstance references and reset global undo history. Re-read asset IDs, values and references after reload. A failed verification reports unknown change state; inspect it before further edits.
+	 * @param Asset Required saved Blueprint or data-asset path, or unique short name. Prefer an exact path such as /Game/Tests/BP_NodeTest. Empty, ambiguous, unsupported or unsaved assets are refused.
+	 * @param Confirm Required exact DISCARD confirmation string from the latest PreviewTurboMCPAssetRevert for this asset. Expires after 60 seconds and is consumed before reload. Empty, expired, replaced or stale tokens are refused; preview again. Do not construct a token yourself.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPAssetRevert(const FString& Asset, const FString& Confirm);

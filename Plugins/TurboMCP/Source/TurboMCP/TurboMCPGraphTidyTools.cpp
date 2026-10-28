@@ -148,40 +148,115 @@ FString UTurboMCPEditToolset::EditTurboMCPAssetUndo(const FString& Asset,const F
 #include "PackageTools.h"
 #include "Misc/PackageName.h"
 #include "HAL/PlatformTime.h"
+#include "Misc/SecureHash.h"
+#include "Serialization/ObjectWriter.h"
+#include "UObject/UObjectHash.h"
+#include "Engine/DataAsset.h"
+#include "Subsystems/AssetEditorSubsystem.h"
 
 namespace
 {
- struct FRevertApproval { FString Token; double Expires = 0; };
+ // Serialize every loaded package object, not only the root asset: a graph or
+ // owned subobject can change without changing the package's dirty flag.
+ // DuplicateVerbatim prevents ObjectWriter from assigning a localization namespace.
+ bool RecoveryFingerprint(UPackage* Package, FString& MemoryHash, FString& DiskHash)
+ {
+  FString Filename;
+  if (!FPackageName::DoesPackageExist(Package->GetName(), &Filename)) return false;
+  const FMD5Hash FileHash = FMD5Hash::HashFile(*Filename);
+  if (!FileHash.IsValid()) return false;
+  DiskHash = LexToString(FileHash);
+  TArray<UObject*> Objects;
+  GetObjectsWithOuter(Package, Objects, EGetObjectsFlags::IncludeNestedObjects);
+  Objects.Sort([](const UObject& A, const UObject& B) { return A.GetPathName() < B.GetPathName(); });
+  FString State = Package->IsDirty() ? TEXT("dirty\n") : TEXT("clean\n");
+  for (UObject* Object : Objects)
+  {
+   if (!IsValid(Object)) return false;
+   TArray<uint8> Bytes;
+   FObjectWriter Writer(Object, Bytes, false, false, false, PPF_DuplicateVerbatim);
+   if (Writer.IsError()) return false;
+   State += Object->GetPathName() + TEXT("|") + Object->GetClass()->GetPathName()
+    + TEXT("|") + FString::FromInt(static_cast<int32>(Object->GetFlags()))
+    + TEXT("|") + FMD5::HashBytes(Bytes.GetData(), Bytes.Num()) + TEXT("\n");
+  }
+  FTCHARToUTF8 Utf8(*State);
+  MemoryHash = FMD5::HashBytes(reinterpret_cast<const uint8*>(Utf8.Get()), Utf8.Length());
+  return true;
+ }
+ struct FRevertApproval { FString Token; FString MemoryHash; FString DiskHash; double Expires = 0; };
  TMap<FString, FRevertApproval> RevertApprovals;
  FString AssetRevert(const FString& Asset, const FString& Confirm, bool Edit)
  {
   if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
-   return TEXT("error: revert requires idle editor outside PIE and transactions");
+   return TEXT("error: recovery requires an idle editor outside PIE and active transactions; no reload was attempted");
   FTurboMCPAssetResolver::FResolved R;
   const FString Error = FTurboMCPAssetResolver::Resolve(Asset, R);
   if (!Error.IsEmpty()) return FTurboMCPToolError::AsError(Error);
-  UBlueprint* BP = LoadObject<UBlueprint>(nullptr, *R.ObjectPath);
-  if (!BP || !FPackageName::DoesPackageExist(BP->GetOutermost()->GetName()))
-   return TEXT("error: revert requires a Blueprint with an existing saved package; unchanged");
+  UObject* Target = LoadObject<UObject>(nullptr, *R.ObjectPath);
+  if (!Target || (!Target->IsA<UBlueprint>() && !Target->IsA<UDataAsset>()))
+   return TEXT("error: recovery supports saved Blueprint and data assets only; no reload was attempted");
+  UPackage* Package = Target->GetOutermost();
+  FString Filename;
+  if (!FPackageName::DoesPackageExist(Package->GetName(), &Filename))
+   return TEXT("error: no saved package exists; recovery cannot restore an unsaved asset");
+  TArray<UObject*> TopLevel;
+  GetObjectsWithOuter(Package, TopLevel, EGetObjectsFlags::None);
+  for (UObject* Object : TopLevel)
+   if (Object != Target && Object->IsAsset())
+    return TEXT("error: package contains multiple top-level assets; recovery refuses to discard unrelated asset changes");
+  UAssetEditorSubsystem* Editors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+  if (!Editors || Editors->FindEditorForAsset(Target, false))
+   return TEXT("error: close the asset editor before previewing recovery; no editor was closed and no reload was attempted");
+  // Stock reference collection sees UObject references, not arbitrary raw native pointers.
+  // Reject world-backed consumers; persistent asset references may be reinstanced by reload.
+  FReferencerInformationList References;
+  UObject* ReferenceTarget = Package;
+  IsReferenced(ReferenceTarget, RF_NoFlags, EInternalObjectFlags::None, true, &References);
+  for (const FReferencerInformation& Reference : References.ExternalReferences)
+   if (Reference.Referencer && Reference.Referencer->GetOutermost() != Package && Reference.Referencer->GetWorld())
+    return TEXT("error: a live world object references this asset; remove that use before recovery; no reload was attempted");
+  FString MemoryHash, DiskHash;
+  if (!RecoveryFingerprint(Package, MemoryHash, DiskHash))
+   return TEXT("error: could not fingerprint the loaded package and saved file; no reload was attempted");
   if (!Edit)
   {
    FRevertApproval Approval;
+   Approval.MemoryHash = MemoryHash;
+   Approval.DiskHash = DiskHash;
    Approval.Token = TEXT("DISCARD ") + R.ObjectPath + TEXT(" ") + FGuid::NewGuid().ToString();
    Approval.Expires = FPlatformTime::Seconds() + 60.0;
    RevertApprovals.Add(R.ObjectPath, Approval);
-   return TEXT("preview: discard ALL unsaved changes in package ") + BP->GetOutermost()->GetName()
-    + TEXT(" and reload its saved version. This is not a selective graph undo. References can be reinstanced and global undo history can be reset. Changes made before confirmation are also discarded. No save will run. Confirmation expires in 60 seconds. Confirm=") + Approval.Token;
+   return TEXT("preview: discard ALL unsaved changes in package ") + Package->GetName()
+    + TEXT("; asset=") + R.ObjectPath + TEXT("; disk_file=") + Filename
+    + TEXT("; dirty=") + (Package->IsDirty() ? TEXT("true") : TEXT("false"))
+    + TEXT(". Reload the saved version, not a selective undo. References may be reinstanced and global undo history may be reset. Raw native references cannot all be detected. Changes to memory or disk invalidate this approval. No save will run. Confirmation expires in 60 seconds. Confirm=") + Approval.Token;
   }
   const FRevertApproval* Approval = RevertApprovals.Find(R.ObjectPath);
   if (!Approval || Approval->Token != Confirm || FPlatformTime::Seconds() > Approval->Expires)
-   return TEXT("error: matching unexpired preview confirmation required; unchanged");
+   return TEXT("error: matching unexpired preview confirmation required; no reload was attempted");
+  if (Approval->MemoryHash != MemoryHash || Approval->DiskHash != DiskHash)
+  {
+   RevertApprovals.Remove(R.ObjectPath);
+   return TEXT("error: the loaded package or saved file changed after preview; confirmation was invalidated; preview again; no reload was attempted");
+  }
+  const FString ExpectedClass = Target->GetClass()->GetPathName();
   RevertApprovals.Remove(R.ObjectPath);
-  TArray<UPackage*> Packages; Packages.Add(BP->GetOutermost());
+  TArray<UPackage*> Packages;
+  Packages.Add(Package);
   FText ReloadError;
-  const bool Changed = UPackageTools::ReloadPackages(Packages, ReloadError, EReloadPackagesInteractionMode::AssumePositive);
-  return Changed ? TEXT("changed: requested package reloaded from disk; unsaved changes discarded; re-read asset IDs and references before further edits")
-   : TEXT("error: package reload failed: ") + ReloadError.ToString();
+  const bool Reloaded = UPackageTools::ReloadPackages(Packages, ReloadError, EReloadPackagesInteractionMode::AssumePositive);
+  // Reload can destroy/reinstance the original objects. Only use freshly resolved pointers below.
+  UObject* Fresh = FindObject<UObject>(nullptr, *R.ObjectPath);
+  const FMD5Hash FreshDisk = FMD5Hash::HashFile(*Filename);
+  if (!Reloaded || !Fresh || Fresh->GetClass()->GetPathName() != ExpectedClass
+   || Fresh->GetOutermost()->IsDirty() || !FreshDisk.IsValid() || LexToString(FreshDisk) != DiskHash)
+   return TEXT("error: recovery verification failed; changed=unknown; inspect the asset before further edits. Confirmation was consumed. Global undo history may have been reset. No save was requested. Engine detail: ") + ReloadError.ToString();
+  return TEXT("changed: reloaded saved package; asset=") + R.ObjectPath
+   + TEXT("; class=") + Fresh->GetClass()->GetPathName() + TEXT("; dirty=false; disk_hash=") + DiskHash
+   + TEXT("; disk unchanged; save=not_requested. Global undo history may have been reset and references reinstanced. Re-read asset IDs and values before editing. Project-specific PostLoad behavior is not verified by this result.");
  }
+
 }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPAssetRevert(const FString& Asset) { return AssetRevert(Asset, FString(), false); }
 FString UTurboMCPEditToolset::EditTurboMCPAssetRevert(const FString& Asset, const FString& Confirm) { return AssetRevert(Asset, Confirm, true); }
