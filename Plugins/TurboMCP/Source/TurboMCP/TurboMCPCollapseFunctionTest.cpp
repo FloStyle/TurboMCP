@@ -15,6 +15,8 @@
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_VariableSet.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "UObject/Package.h"
@@ -108,6 +110,42 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
     TestEqual(TEXT("Entry position preserved"),Entry->NodePosX,0);TestEqual(TEXT("Return position preserved"),Result->NodePosX,1500);
     for (const FString& Name:{FString(TEXT("FormatLabel")),FString(TEXT("AppendSuffix"))})
         Transcript+=TEXT("\n")+UTurboMCPLookToolset::LookTurboMCPCapture(Asset,Name,TEXT("graph"),TEXT(""),TEXT("1200x700"));
+
+    FEdGraphPinType Integer;Integer.PinCategory=UEdGraphSchema_K2::PC_Int;
+    TestTrue(TEXT("Add execution fixture member"),FBlueprintEditorUtils::AddMemberVariable(BP,TEXT("Counter"),Integer,TEXT("0")));
+    Transcript+=UTurboMCPEditToolset::EditTurboMCPFunctionAdd(Asset,TEXT("WriteCounter"),TEXT(""),TEXT("ReturnValue:int"));
+    UEdGraph* ExecGraph=nullptr;
+    for (UEdGraph* G:BP->FunctionGraphs) if (G->GetName()==TEXT("WriteCounter")) ExecGraph=G;
+    if (!ExecGraph) return false;
+    UK2Node_FunctionEntry* ExecEntry=nullptr;UK2Node_FunctionResult* ExecResult=nullptr;
+    for (UEdGraphNode* Node:ExecGraph->Nodes)
+    { if(auto* N=Cast<UK2Node_FunctionEntry>(Node))ExecEntry=N;if(auto* N=Cast<UK2Node_FunctionResult>(Node))ExecResult=N; }
+    if (!ExecEntry || !ExecResult) return false;
+    UK2Node_VariableSet* Set=NewObject<UK2Node_VariableSet>(ExecGraph);
+    Set->VariableReference.SetSelfMember(TEXT("Counter"));ExecGraph->AddNode(Set,false,false);Set->CreateNewGuid();Set->AllocateDefaultPins();
+    Set->NodePosX=320;Set->NodePosY=0;ExecResult->NodePosX=700;
+    Set->FindPin(TEXT("Counter"))->DefaultValue=TEXT("7");
+    ExecEntry->FindPin(UEdGraphSchema_K2::PN_Then)->BreakAllPinLinks();
+    TestTrue(TEXT("Execution into selection"),Schema->TryCreateConnection(ExecEntry->FindPin(UEdGraphSchema_K2::PN_Then),Set->FindPin(UEdGraphSchema_K2::PN_Execute)));
+    TestTrue(TEXT("Execution out of selection"),Schema->TryCreateConnection(Set->FindPin(UEdGraphSchema_K2::PN_Then),ExecResult->FindPin(UEdGraphSchema_K2::PN_Execute)));
+    auto ExecuteWrite=[&]()
+    {
+        FKismetEditorUtilities::CompileBlueprint(BP);
+        if (!TestTrue(TEXT("Execution compile"),BP->Status!=BS_Error)) return;
+        UObject* Object=BP->GeneratedClass->GetDefaultObject();
+        FIntProperty* Counter=FindFProperty<FIntProperty>(BP->GeneratedClass,TEXT("Counter"));
+        UFunction* Write=BP->GeneratedClass->FindFunctionByName(TEXT("WriteCounter"));
+        if (!Counter || !Write) {AddError(TEXT("Execution fixture reflection missing"));return;}
+        Counter->SetPropertyValue_InContainer(Object,0);
+        FStructOnScope Parameters(Write);Object->ProcessEvent(Write,Parameters.GetStructMemory());
+        TestEqual(TEXT("Execution side effect preserved"),Counter->GetPropertyValue_InContainer(Object),7);
+    };
+    ExecuteWrite();
+    TArray<FString> ExecIds{TurboMCPNodeId::MakeForNode(Set,true)};
+    const FString ExecEdit=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("WriteCounter"),ExecIds,TEXT("AssignCounter"),TEXT("function"));
+    Transcript+=TEXT("\n")+ExecEdit;
+    TestTrue(TEXT("Execution selection extracted"),ExecEdit.StartsWith(TEXT("changed:")));
+    ExecuteWrite();
     return true;
 }
 #endif
