@@ -29,6 +29,8 @@
 #include "K2Node_MacroInstance.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
+#include "EdGraphNode_Comment.h"
+#include "TurboMCPGraphTidy.h"
 #include "ScopedTransaction.h"
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
@@ -716,6 +718,20 @@ bool FTurboMCPGraphStructure::PlanCollapse(const FString& InAsset, const FString
 		}
 	}
 
+    // A selected box must travel with all of its current contents. Splitting
+    // an annotation silently would change the human meaning of the graph.
+    for (UEdGraphNode* Node : Selected)
+        if (UEdGraphNode_Comment* Box = Cast<UEdGraphNode_Comment>(Node))
+            for (UEdGraphNode* Other : Graph->Nodes)
+                if (Other && Other != Box && !SelectedSet.Contains(Other) &&
+                    Other->NodePosX >= Box->NodePosX && Other->NodePosY >= Box->NodePosY &&
+                    int64(Other->NodePosX) < int64(Box->NodePosX) + Box->NodeWidth &&
+                    int64(Other->NodePosY) < int64(Box->NodePosY) + Box->NodeHeight)
+                    OutPlan.Refusals.Add(TEXT("A selected comment contains an unselected node. Include all contents or leave the comment in the source graph."));
+    for (UEdGraphNode* Node : Selected)
+        if (FMath::Abs(int64(Node->NodePosX)) > 1000000 || FMath::Abs(int64(Node->NodePosY)) > 1000000)
+            OutPlan.Refusals.Add(TEXT("A selected node exceeds the supported coordinate range. Move the graph closer to its origin before collapse."));
+
 	OutPlan.TargetNodeCountBefore = Graph->Nodes.Num();
 
 	for (int32 Index = 0; Index < Selected.Num(); ++Index)
@@ -873,6 +889,16 @@ bool ApplyFunctionCollapse(const FTurboMCPGraphStructure::FPlan& Plan, FString& 
             }
         }
     }
+    FString GeometryError;
+    if (!FTurboMCPGraphTidy::PrepareAlignment(Blueprint,Source,GeometryError))
+    { Error=TEXT("unchanged: Could not measure graph layout: ")+GeometryError; return false; }
+    TMap<UEdGraphNode*,FIntPoint> FixedPositions;
+    TMap<UEdGraphNode*,FVector2D> SelectedSizes;
+    for (UEdGraphNode* Node:Source->Nodes) if (Node)
+    {
+        if (Set.Contains(Node)) SelectedSizes.Add(Node,FTurboMCPGraphTidy::AlignmentNodeSize(Node));
+        else FixedPositions.Add(Node,FIntPoint(Node->NodePosX,Node->NodePosY));
+    }
     FScopedTransaction Transaction(NSLOCTEXT("TurboMCP","CollapseFunction","Collapse nodes to function"));
     Blueprint->Modify();Source->Modify();
     for (UEdGraphNode* Node:Source->Nodes) if(Node) Node->Modify();
@@ -903,7 +929,10 @@ bool ApplyFunctionCollapse(const FTurboMCPGraphStructure::FPlan& Plan, FString& 
         Node->NodePosX=Node->NodePosX-Left+320;Node->NodePosY=Node->NodePosY-Top;
     }
     Entry->NodePosX=0;Entry->NodePosY=0;
-    Result->NodePosX=640;Result->NodePosY=0;
+    int32 Right=320;
+    for (UEdGraphNode* Node:Selected)
+        Right=FMath::Max(Right,Node->NodePosX+FMath::CeilToInt(SelectedSizes.FindRef(Node).X)+160);
+    Result->NodePosX=Right;Result->NodePosY=0;
     for (const FBoundary& Boundary:Boundaries)
     {
         const bool Input=Boundary.Inside->Direction==EGPD_Input;
@@ -917,6 +946,15 @@ bool ApplyFunctionCollapse(const FTurboMCPGraphStructure::FPlan& Plan, FString& 
     if (Pure && !Schema->TryCreateConnection(Entry->FindPin(UEdGraphSchema_K2::PN_Then),Result->FindPin(UEdGraphSchema_K2::PN_Execute))) return Fail();
     FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
     Source->NotifyGraphChanged();Destination->NotifyGraphChanged();
+    for (const auto& Pair:FixedPositions)
+        if (!IsValid(Pair.Key) || Pair.Key->GetGraph()!=Source || Pair.Key->NodePosX!=Pair.Value.X || Pair.Key->NodePosY!=Pair.Value.Y) return Fail();
+    for (const FBoundary& Boundary:Boundaries)
+    {
+        const bool Input=Boundary.Inside->Direction==EGPD_Input;
+        UEdGraphPin* Gateway=Call->FindPin(Boundary.Parameter,Input?EGPD_Input:EGPD_Output);
+        if (!Gateway || !Boundary.Outside->LinkedTo.Contains(Gateway) || !Gateway->LinkedTo.Contains(Boundary.Outside)) return Fail();
+        if (Boundary.Inside->LinkedTo.Contains(Boundary.Outside)) return Fail();
+    }
     Report=FString::Printf(TEXT("changed: Extracted %d nodes into function '%s'; replacement call: %s. Nothing saved. Compile and inspect both graphs before saving."),Selected.Num(),*Plan.MemberName,*KeyOf(Call));
     return true;
 }
