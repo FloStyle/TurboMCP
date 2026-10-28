@@ -14,6 +14,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPComment | [TurboMCPCommentTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPCommonButtonStyle | [TurboMCPCommonStyleTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPCompile | [TurboMCPCompile.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPDataAssetProperty | [TurboMCPDataAssetTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPDataTableRows | [TurboMCPDataTableRowsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPDispatcherAdd | [TurboMCPMergeTransferTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPEnumAdd | [TurboMCPEnumAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
@@ -80,6 +81,7 @@ Generated from declarations, definitions and static test references. All runtime
 | PreviewTurboMCPBindNewEvent | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPComment | [TurboMCPCommentTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPCommonButtonStyle | [TurboMCPCommonStyleTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPDataAssetProperty | [TurboMCPDataAssetTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPDataTableRows | [TurboMCPDataTableRowsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPDispatcherAdd | [TurboMCPMergeTransferTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPEnumAdd | [TurboMCPEnumAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
@@ -133,6 +135,7 @@ Generated from declarations, definitions and static test references. All runtime
 | ReadTurboMCPCallLog | [TurboMCPCallLogTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPCommentList | [TurboMCPComments.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPComments.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPCommonButtonStyle | [TurboMCPCommonStyleTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| ReadTurboMCPDataAssetProperty | [TurboMCPDataAssetTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPDataTable | [TurboMCPDataTable.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTable.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPDirtyList | [TurboMCPTypes.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPEditQueue | [TurboMCPToolsets.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |

@@ -1046,6 +1046,69 @@
       "workflows": [
         "WF-DATA-01-ROWS"
       ]
+    },
+    {
+      "tool": "ReadTurboMCPDataAssetProperty",
+      "role": "Inspect, preview or safely edit a data-asset property, map entry or owned child.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded data-asset workflow only.",
+      "behavior": "Native public-call behavior, refusals, undo and notification rollback passed.",
+      "review": "Live parameter help, English outputs, temporary import, identity and snapshot boundaries reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "reviewed against native evidence",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "No persistence or disk-reload certification; save remains separate.; Project constructors and edit notifications can have external effects outside the captured asset.; Scalar/value-struct initial fields only; no localized text, delegate or container import.; Historical X-116 input formats remain unavailable; real InputAction key-settings creation is independently verified.",
+      "scenario_evidence": "d7f1fd0ee7894a1b815145397527418a",
+      "workflows": [
+        "WF-DATA-02-ASSET-PROPERTIES"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPDataAssetProperty",
+      "role": "Inspect, preview or safely edit a data-asset property, map entry or owned child.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded data-asset workflow only.",
+      "behavior": "Native public-call behavior, refusals, undo and notification rollback passed.",
+      "review": "Live parameter help, English outputs, temporary import, identity and snapshot boundaries reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "reviewed against native evidence",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "No persistence or disk-reload certification; save remains separate.; Project constructors and edit notifications can have external effects outside the captured asset.; Scalar/value-struct initial fields only; no localized text, delegate or container import.; Historical X-116 input formats remain unavailable; real InputAction key-settings creation is independently verified.",
+      "scenario_evidence": "d7f1fd0ee7894a1b815145397527418a",
+      "workflows": [
+        "WF-DATA-02-ASSET-PROPERTIES"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPDataAssetProperty",
+      "role": "Inspect, preview or safely edit a data-asset property, map entry or owned child.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded data-asset workflow only.",
+      "behavior": "Native public-call behavior, refusals, undo and notification rollback passed.",
+      "review": "Live parameter help, English outputs, temporary import, identity and snapshot boundaries reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "reviewed against native evidence",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "No persistence or disk-reload certification; save remains separate.; Project constructors and edit notifications can have external effects outside the captured asset.; Scalar/value-struct initial fields only; no localized text, delegate or container import.; Historical X-116 input formats remain unavailable; real InputAction key-settings creation is independently verified.",
+      "scenario_evidence": "d7f1fd0ee7894a1b815145397527418a",
+      "workflows": [
+        "WF-DATA-02-ASSET-PROPERTIES"
+      ]
     }
   ],
   "evidence": [
@@ -1123,8 +1186,8 @@
     "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
-    "scenario_reviewed": 53,
-    "inventory": 142,
+    "scenario_reviewed": 22,
+    "inventory": 158,
     "meaning": "Distinct tools with bounded workflow reviews; not exhaustive certification."
   },
   "workflow_coverage": "docs/audit/workflow-tool-coverage.json",
