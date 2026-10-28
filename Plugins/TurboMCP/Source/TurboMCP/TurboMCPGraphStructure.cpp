@@ -27,6 +27,8 @@
 #include "Kismet2/Kismet2NameValidators.h"
 #include "EdGraphSchema_K2.h"
 #include "K2Node_MacroInstance.h"
+#include "K2Node_BaseAsyncTask.h"
+#include "K2Node_Timeline.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
 #include "EdGraphNode_Comment.h"
@@ -803,6 +805,8 @@ bool FTurboMCPGraphStructure::PlanCollapse(const FString& InAsset, const FString
         if (UK2Node_Variable* Variable = Cast<UK2Node_Variable>(Node))
             if (Variable->VariableReference.IsLocalScope())
                 OutPlan.Refusals.Add(TEXT("Local-variable captures require explicit parameters; select the value-producing nodes without local variable nodes."));
+        if (Cast<UK2Node_BaseAsyncTask>(Node) || Cast<UK2Node_Timeline>(Node))
+            OutPlan.Refusals.Add(TEXT("Async-task and timeline nodes require an event graph and cannot be extracted into a function."));
         if (Cast<UK2Node_MacroInstance>(Node))
             OutPlan.Refusals.Add(TEXT("Macro instances require expanded-body analysis and cannot be collapsed by this tool yet."));
         if (UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
