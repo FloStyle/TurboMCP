@@ -2865,6 +2865,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCustomEventTest.cpp",
             "Tools/test-custom-event.py"
           ]
+        },
+        "oct27-function-flags": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlags.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlagsTest.cpp",
+            "Tools/test-function-flags.py"
+          ]
         }
       },
       "preserve_rows": []

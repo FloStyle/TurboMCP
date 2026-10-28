@@ -454,7 +454,7 @@
       "wave": 4,
       "state": "open",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "CB-10",
         "FT-128"
@@ -464,7 +464,9 @@
       "acceptance": "Expose current flags and explicit changes, validate inherited/override constraints and affected call-site execution wiring. Refuse unsafe flag conversion rather than silently disconnecting flow.",
       "verification": "Create pure string helper, edit eligible function, invalid const/purity constraints and preserved callers; live help and compile.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-function-flags; DSH paused; implementation requires claim at approved scope commit",
+      "repair_contract": "docs/design/function-flags.md",
+      "source_review": "Stock BlueprintDetailsCustomization changes entry extra flags and UFunction flags, then reconstructs through OnParamsChanged. This can change caller execution pins. Existing function rename inspects registered dependencies and loaded callers; the flags operation must inspect affected references before mutation and preserve connected flow."
     },
     {
       "id": "OCT27-17",
