@@ -6,7 +6,13 @@
 
 If the client cannot connect, check that the intended project is open, the engine's MCP server is enabled and the client uses that running editor's connection settings. Keep the endpoint local. Follow the engine connection guide linked from [installation](installation.md); do not guess a port or reuse credentials from another setup.
 
-If connection works but TurboMCP tools are missing, confirm TurboMCP is enabled and its module loaded in the editor. Refresh tool discovery in the client. When available, `ReadTurboMCPStatus` reports registration state. Inspect Unreal's Output Log for loading or dependency errors.
+If connection works but TurboMCP tools are missing:
+
+1. Confirm the TurboMCP project plugin is enabled and its module loads without dependency errors in Unreal's Output Log.
+2. Open **Edit > Editor Preferences > Plugins > TurboMCP** and check **Enable TurboMCP**. This separate per-user/project preference defaults to **OFF** unless a saved choice overrides it. Do not delete user settings to activate the plugin.
+3. If you change the preference, restart the editor. Changes do not activate or deactivate tools in the current session.
+4. Check the `LogTurboMCP` startup message. When the preference disables TurboMCP, it explicitly reports that no TurboMCP tools, panel or hooks were installed; Unreal's MCP server remains independent.
+5. Refresh tool discovery after restart. `ReadTurboMCPStatus` reports registration state only when TurboMCP is active. Its absence while disabled is expected, so use the preference and startup log for diagnosis.
 
 A client may expose tool search rather than listing every tool upfront. Ask it to discover the TurboMCP toolsets and read the current schemas. Rebuild and restart the editor after changing reflected tool declarations.
 

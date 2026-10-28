@@ -11,9 +11,11 @@ Installed-engine packages and Unreal 5.9 are not validated yet. See [project sta
 ## Install in a project
 
 1. Copy `Plugins/TurboMCP` from this repository into your project's `Plugins` directory.
-2. Enable TurboMCP in the project.
+2. Enable the TurboMCP plugin in the project using Unreal's plugin manager.
 3. Build the project's editor target with the matching engine and toolchain.
 4. Open the project in that editor.
+5. Open **Edit > Editor Preferences > Plugins > TurboMCP**, select **Enable TurboMCP**, and restart the editor. The preference defaults to **OFF** for a user/project without a saved value. Existing saved choices take precedence; upgrading does not reset them.
+6. After restart, connect your client and refresh tool discovery. If TurboMCP tools are absent, check the preference and the `LogTurboMCP` startup message. `ReadTurboMCPStatus` is also unavailable while TurboMCP is disabled.
 
 TurboMCP is editor-only. Only the plugin folder is installed into the project; repository tests, tasks and build tools remain development files. To develop the plugin itself, use [workspace setup](../workspace.md).
 
@@ -33,7 +35,7 @@ For connection, build or result problems, see [Troubleshooting](troubleshooting.
 
 ## Disable TurboMCP for yourself
 
-Open **Edit > Editor Preferences > Plugins > TurboMCP** and clear **Enable TurboMCP**, then restart the editor. To enable it again, select the same checkbox and restart. The preference defaults to enabled and is stored in Unreal's `EditorPerProjectUserSettings` for your user and project. It does not modify the shared project descriptor or `DefaultEditor.ini`.
+Open **Edit > Editor Preferences > Plugins > TurboMCP** and clear **Enable TurboMCP**, then restart the editor. To enable it again, select the same checkbox and restart. The preference defaults to **OFF**; an existing saved preference takes precedence. It is stored in Unreal's `EditorPerProjectUserSettings` for your user and project. It does not modify the shared project descriptor or `DefaultEditor.ini`.
 
 When disabled at startup, TurboMCP does not register its tools, panel, recording/analytics hooks, focus guard or native-tool safety filters. Unreal's MCP server and unrelated toolsets are left alone. This preference does not unload the plugin binary; use Unreal's plugin manager if you need to prevent the module from loading altogether.
 

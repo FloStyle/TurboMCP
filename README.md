@@ -37,10 +37,10 @@ TurboMCP requires engine plugins including `ModelContextProtocol` and `ToolsetRe
 ### Install and connect
 
 1. Obtain this source checkout. Copy `Plugins/TurboMCP` into your project's `Plugins` directory.
-2. Enable TurboMCP and build the project's editor target with the matching engine and toolchain.
-3. Open the project in that editor.
+2. Enable the TurboMCP project plugin and build the project's editor target with the matching engine and toolchain.
+3. Open the project. In **Edit > Editor Preferences > Plugins > TurboMCP**, select **Enable TurboMCP**, then restart the editor. This per-user preference defaults to **OFF**; enabling the project plugin alone does not activate its tools. Existing saved preferences are preserved.
 4. Enable Unreal's local MCP server and configure your client using the engine-generated connection settings.
-5. Have the client discover the available toolsets and schemas.
+5. Have the client discover the available toolsets and schemas. If TurboMCP is disabled, its status tool is absent too; check Editor Preferences and the `LogTurboMCP` startup message.
 
 Follow [Installation and connection](docs/user/installation.md) for the detailed guide and Epic's engine connection instructions. Keep the MCP listener local. TurboMCP runs inside the editor with its permissions; see the [security policy](SECURITY.md).
 
