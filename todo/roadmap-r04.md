@@ -1995,3 +1995,8 @@ Readiness: ready. `oct27-literal-acceptance` supersedes `oct27-literal-consumers
 ## Oct27 data-asset safety reproduction (OCT27-14)
 
 Readiness: ready. Assignment `oct27-data-asset-safety` creates owned reflected fixtures and a bounded native test for stock UToolsetLibrary::SetObjectProperties. Test object-keyed map refusal preservation and instanced-subobject creation/readback; inspect property flags and ownership rather than assuming workplace types. Record both successful and refused results and before/after identity, values and dirty state. No engine edits or workplace assets. Source review: ToolsetLibrary.cpp imports into the live ContainerPtrToValuePtr through ImportPropertyWithNotify; ReferenceConverter.cpp enforces instanced ownership and supports class-path instantiation. These are investigation leads, not a reproduced cause. Test the current pinned engine and retain any difference from field behavior. Integration owner registers/schedules the wrapper and uses evidence to specify plugin containment. No claim of OCT27-14 completion from fixture creation alone.
+
+
+## Approved safe data-asset edit design (2026-10-28)
+
+OCT27-14 now has a reproduced stock bypass-import corruption failure. Implement the bounded read/preview/edit contract in [data-asset edits](../docs/design/data-asset-edits.md). Required map-entry editing, owned child creation/editing, revision checks, independent readback and verified rollback must all be delivered; documentation or choosing non-bypass mode does not close this task. Register exact production files in a new immutable assignment before implementation. Reproduction remains a failing baseline, not a fixed regression.
