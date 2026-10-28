@@ -25,18 +25,25 @@ bool FTurboMCPDataAssetSafetyTest::RunTest(const FString& Parameters)
     const FString PackageName = TEXT("/Game/Tests/TurboMCPDataSafety_") + FGuid::NewGuid().ToString(EGuidFormats::Digits);
     UPackage* Package = CreatePackage(*PackageName);
     TStrongObjectPtr<UTurboMCPDataAssetSafetyFixture> Asset(NewObject<UTurboMCPDataAssetSafetyFixture>(Package, TEXT("Fixture"), RF_Transient));
-    TStrongObjectPtr<UObject> Key(NewObject<UObject>(GetTransientPackage(), NAME_None, RF_Transient));
+    TStrongObjectPtr<UTurboMCPDataAssetSafetyFixture> Key(NewObject<UTurboMCPDataAssetSafetyFixture>(GetTransientPackage(), NAME_None, RF_Transient));
     auto* Value = NewObject<UTurboMCPDataAssetSafetyChild>(Asset.Get());
     Asset->Entries.Add(Key.Get(), Value);
     Package->SetDirtyFlag(false);
-    const FString Before = UToolsetLibrary::GetObjectProperties(Asset.Get(), {TEXT("Entries")});
-    // Reimport the reader's own representation: a no-op must retain key/value identities.
-    const bool bMapAccepted = UToolsetLibrary::SetObjectProperties(Asset.Get(), Before, EBypassContainerCheck::Yes);
-    const FString After = UToolsetLibrary::GetObjectProperties(Asset.Get(), {TEXT("Entries")});
-    const bool bMapPreserved = Asset->Entries.Num() == 1 && Asset->Entries.FindRef(Key.Get()) == Value;
-    FString Evidence = FString::Printf(TEXT("map accepted=%d preserved=%d dirty=%d\nbefore=%s\nafter=%s\n"),
-        bMapAccepted, bMapPreserved, Package->IsDirty(), *Before, *After);
-    TestTrue(TEXT("reader representation preserves the original object-keyed map"), bMapPreserved);
+    FString Evidence;
+    for (const EBypassContainerCheck Mode : { EBypassContainerCheck::No, EBypassContainerCheck::Yes })
+    {
+        Asset->Entries.Reset();
+        Asset->Entries.Add(Key.Get(), Value);
+        Package->SetDirtyFlag(false);
+        const FString Before = UToolsetLibrary::GetObjectProperties(Asset.Get(), {TEXT("Entries")});
+        // Reimport the reader's own representation: a no-op must retain key/value identities.
+        const bool bMapAccepted = UToolsetLibrary::SetObjectProperties(Asset.Get(), Before, Mode);
+        const FString After = UToolsetLibrary::GetObjectProperties(Asset.Get(), {TEXT("Entries")});
+        const bool bMapPreserved = Asset->Entries.Num() == 1 && Asset->Entries.FindRef(Key.Get()) == Value;
+        Evidence += FString::Printf(TEXT("map bypass=%d accepted=%d preserved=%d dirty=%d\nbefore=%s\nafter=%s\n"),
+            Mode == EBypassContainerCheck::Yes, bMapAccepted, bMapPreserved, Package->IsDirty(), *Before, *After);
+        TestTrue(TEXT("reader representation preserves the original object-keyed map"), bMapPreserved);
+    }
 
     const FString Create = FString::Printf(TEXT("{\"Child\":\"%s\"}"), *UTurboMCPDataAssetSafetyChild::StaticClass()->GetPathName());
     const bool bChildAccepted = UToolsetLibrary::SetObjectProperties(Asset.Get(), Create, EBypassContainerCheck::Yes);
