@@ -293,8 +293,10 @@ function Start-EditorAndWait {
     $renderSuites = @('test-graph-append', 'test-vision-workflow', 'test-widget-binding-workflow', 'test-widget-variable-workflow', 'test-override-remove-workflow', 'test-override-workflow', 'test-bind-event-workflow', 'test-common-button-workflow', 'test-call-swap-workflow', 'test-event-connect-workflow', 'test-purchase-workflow', 'test-field-open-diagnostic', 'test-widget-preview', 'test-widget-roundtrip', 'test-layout-output', 'test-layout', 'test-capture', 'test-capture-selectors', 'test-capture-asset', 'test-capture-framing')
     $diagnosticRender = @($Selected | Where-Object { $_ -in $renderSuites }).Count -gt 0
     try {
-        if ($diagnosticRender) { & pwsh -NoProfile -File $StartEditor -LowPriority 2>&1 | Out-Null }
-        else { & pwsh -NoProfile -File $StartEditor -LowPriority -Offscreen 2>&1 | Out-Null }
+        # Keep the editor's parent alive for the duration of the suite. A short-lived
+        # pwsh launcher breaks live-ancestor admission inside native fixtures.
+        if ($diagnosticRender) { & $StartEditor -LowPriority 2>&1 | Out-Null }
+        else { & $StartEditor -LowPriority -Offscreen 2>&1 | Out-Null }
     }
     finally { $env:TURBOMCP_RUNNER_STARTING_EDITOR = $oldStartingEditor }
     $retryDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
