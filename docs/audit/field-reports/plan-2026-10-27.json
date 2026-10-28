@@ -222,7 +222,14 @@
       "source_review": "NodeType already retains engine palette IDs as aliases and searches action keywords; current live append help includes one input-link example. Discovery infers graph-text mappings by title only. Verify self/multiply/input-action search and append using actual discovered IDs, avoid speculative broad resolver changes.",
       "repair_contract": "Prove engine-action aliases and canonical IDs on supported graph contexts; unknown and ambiguous IDs must refuse without mutation. Add self-reference/promotable search terms only from known node classes/stock operator metadata. Remove title-only identity claims unless exact backing identity can be proved. Exercise actual discovery results through append preview, including link syntax to existing endpoints and within new labelled nodes. Integrator owns the two append help blocks in Toolsets.h, the compact append help in AgentHelp.cpp, and shared review/tracking. Tests must use current tool schemas and retain prior failures.",
       "implementation_progress": "Discovery candidate passes internal planning for real self and multiply creation IDs (b9d2b34d501a4c1bb013f6b0139af6e8). Public append regression 0a686b5076984de9ba1dab03af049f1f fails: earlier graph-type validation intercepts the guessed self ID before supported-ID guidance. Failure retained; task remains active.",
-      "remaining": "Repair the public append validation path, complete link-grammar/live-help coverage and correct outdated node-type comments. Do not close on internal discovery evidence alone."
+      "remaining": "Repair the public append validation path, complete link-grammar/live-help coverage and correct outdated node-type comments. Do not close on internal discovery evidence alone.",
+      "integrator_repair_scope": {
+        "files": [
+          "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheck.cpp",
+          "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPNodeType.h"
+        ],
+        "reason": "Public regression 0a686b5076984de9ba1dab03af049f1f proves checker discards BuildProbeNode refusal guidance. Preserve that diagnostic without changing acceptance, retain existing-node suggestions; correct stale identity comments and unused match fields. Existing approved integrator help work remains required."
+      }
     },
     {
       "id": "OCT27-09",
