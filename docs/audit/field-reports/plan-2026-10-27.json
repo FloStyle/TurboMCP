@@ -320,7 +320,13 @@
       "owner": "Codex",
       "dispatch": "Codex oct27-play-activation; DSH paused",
       "source_review": "Focus currently sets Slate user focus without distinguishing inactive application. Hold correctly rejects inactive Slate state. Stock SWindow supports BringToFront and native IsForegroundWindow; activation requests may be refused or delayed by the OS.",
-      "repair_contract": "Extend existing PlayInput Action with explicit activate: resolve the PIE viewport owning window, require empty Key/Value/Seconds and no held input, request stock native activation, report immediate foreground and Slate-active observations without claiming guaranteed success or sending a key. Focus remains Slate-only and says so. Read state includes owning-window foreground separately from application active. Preserve inactive input guard. Help explains activation side effects, delayed/refused fallback, and menu focus preservation. Extend existing CommonPlay workflow with active/inactive state, argument refusal, no-key delivery and live help; record simulated callback controls separately from actual native activation observations. No engine changes or OS focus-policy bypass."
+      "repair_contract": "Extend existing PlayInput Action with explicit activate: resolve the PIE viewport owning window, require empty Key/Value/Seconds and no held input, request stock native activation, report immediate foreground and Slate-active observations without claiming guaranteed success or sending a key. Focus remains Slate-only and says so. Read state includes owning-window foreground separately from application active. Preserve inactive input guard. Help explains activation side effects, delayed/refused fallback, and menu focus preservation. Extend existing CommonPlay workflow with active/inactive state, argument refusal, no-key delivery and live help; record simulated callback controls separately from actual native activation observations. No engine changes or OS focus-policy bypass.",
+      "integrator_test_scope": {
+        "files": [
+          "Tools/test-vision-workflow.py"
+        ],
+        "reason": "Expose existing CommonPlay-only selection with a supervisor-preserved TMCP_COMMON_PLAY_ONLY variable; reuse existing scenario without running unrelated vision workflows. Keep the full default suite unchanged."
+      }
     },
     {
       "id": "OCT27-12",
