@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "tasks": [
+    "OCT27-17"
+  ],
+  "status": "candidate_verification_in_progress",
+  "build": "54bd0341f5824e73b95cc7a02f1d6ed0",
+  "policy_rules_run": "fe15f9146c004edca1646a35683c5eb0",
+  "registered_dispatch_run": "ee8990552fd240789f92b284ce0395de",
+  "retained_failures": [
+    "e09d8d88e26a40edbb0302f64578b5f4 reported PASS but reused one editor: rejected as persistence evidence. Corrected harness requires real supervised launches and distinct PIDs."
+  ],
+  "remaining": [
+    "Real restart persistence and exact config restoration",
+    "Registry discovery filtering proof",
+    "Editor Preferences visual review",
+    "Offline and scope gates",
+    "Integration"
+  ],
+  "limits": [
+    "Settings apply after restart",
+    "Master remains off by default",
+    "Direct internal C++ calls are not a security boundary",
+    "Status remains available for recovery only while master enabled"
+  ]
+}
