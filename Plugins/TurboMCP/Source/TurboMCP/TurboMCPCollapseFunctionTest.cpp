@@ -19,6 +19,7 @@
 #include "K2Node_VariableSet.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet/KismetStringLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "UObject/Package.h"
 #include "UObject/StructOnScope.h"
@@ -126,6 +127,23 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
     TestTrue(TEXT("Comment refusal preserves owner"),Comment->GetGraph()==Graph);
     TestFalse(TEXT("Comment refusal stays clean"),Package->IsDirty());
     TestEqual(TEXT("Refusal preserves runtime"),Evaluate(),FString(TEXT("Order123")));
+    // A latent call is never legal inside the extracted function. Exercise
+    // the public refusal before compiling this intentionally invalid fixture.
+    UK2Node_CallFunction* Latent=NewObject<UK2Node_CallFunction>(Graph);
+    Latent->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("Delay")));
+    Graph->AddNode(Latent,false,false);Latent->CreateNewGuid();Latent->AllocateDefaultPins();
+    Latent->NodePosX=2000;Latent->NodePosY=800;
+    TArray<FString> WithLatent=Ids;WithLatent.Add(TurboMCPNodeId::MakeForNode(Latent,true));
+    Package->SetDirtyFlag(false);
+    const int32 LatentCount=Graph->Nodes.Num();
+    const int32 FunctionCount=BP->FunctionGraphs.Num();
+    const FString LatentRefusal=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),WithLatent,TEXT("InvalidLatent"),TEXT("function"));
+    Transcript+=TEXT("\n")+LatentRefusal;
+    TestTrue(TEXT("Latent selection refused"),LatentRefusal.StartsWith(TEXT("unchanged")) && LatentRefusal.Contains(TEXT("latent")));
+    TestEqual(TEXT("Latent refusal preserves nodes"),Graph->Nodes.Num(),LatentCount);
+    TestEqual(TEXT("Latent refusal creates no function"),BP->FunctionGraphs.Num(),FunctionCount);
+    TestFalse(TEXT("Latent refusal stays clean"),Package->IsDirty());
+    Graph->RemoveNode(Latent);
     const FString Edit=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),Ids,TEXT("AppendSuffix"),TEXT("function"));
     Transcript+=TEXT("\n")+Edit;
     if (!TestTrue(TEXT("Collapse applied"),Edit.StartsWith(TEXT("changed:")))) return false;
