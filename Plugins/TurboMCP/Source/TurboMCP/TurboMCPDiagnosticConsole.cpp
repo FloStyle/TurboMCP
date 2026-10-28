@@ -147,7 +147,11 @@ FString Run(const FString& Target, const FString& Command, const FString& Confir
     if (Request.Variable)
     {
         if (Request.Mutates) Request.Variable->Set(*Request.Value, ECVF_SetByConsole);
-        const FString After = Request.Variable->GetString();
+        // A CVar callback may unregister its own variable. Reacquire before readback.
+        IConsoleVariable* Current = IConsoleManager::Get().FindConsoleVariable(*Request.Name);
+        if (!Current || Current->TestFlags(ECVF_Unregistered))
+            return Scope + TEXT("Assignment/query completed, but the CVar is no longer registered. Effect is unknown; do not retry automatically.");
+        const FString After = Current->GetString();
         if (After.Len() > 2048) return Scope + TEXT("Assignment/query completed, but actual value exceeds the 2048-character response bound. Do not retry automatically.");
         return Scope + TEXT("CVar: ") + Request.Name + TEXT("\nBefore: ") + Request.Before + TEXT("\nActual value: ") + After
             + TEXT("\n") + (Request.Mutates ? TEXT("Assignment requested; actual readback above is authoritative. Callbacks and gameplay effects are not verified.") : TEXT("Query only; no assignment requested."));
