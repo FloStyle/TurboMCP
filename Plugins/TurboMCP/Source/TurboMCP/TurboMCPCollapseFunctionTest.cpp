@@ -85,6 +85,21 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
     TestTrue(TEXT("Preview accepted"),Preview.StartsWith(TEXT("would change")));
     TestTrue(TEXT("Signature shown"),Preview.Contains(TEXT("Input_1"))&&Preview.Contains(TEXT("Output_2")));
     TestEqual(TEXT("Preview node count"),Graph->Nodes.Num(),Count);TestFalse(TEXT("Preview clean"),Package->IsDirty());
+
+    for (const FString& InvalidName:{FString(TEXT("FormatLabel")),FString(TEXT("bad name!"))})
+    {
+        const FString Refused=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),Ids,InvalidName,TEXT("function"));
+        Transcript+=TEXT("\n")+Refused;
+        TestTrue(TEXT("Invalid/conflicting name refused"),Refused.StartsWith(TEXT("unchanged")));
+        TestEqual(TEXT("Name refusal preserves nodes"),Graph->Nodes.Num(),Count);
+        TestFalse(TEXT("Name refusal stays clean"),Package->IsDirty());
+    }
+    TArray<FString> WithEntry=Ids;WithEntry.Add(TurboMCPNodeId::MakeForNode(Entry,true));
+    const FString BoundaryRefusal=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),WithEntry,TEXT("InvalidSelection"),TEXT("function"));
+    Transcript+=TEXT("\n")+BoundaryRefusal;
+    TestTrue(TEXT("Entry selection refused"),BoundaryRefusal.StartsWith(TEXT("unchanged")));
+    TestEqual(TEXT("Boundary refusal preserves nodes"),Graph->Nodes.Num(),Count);
+    TestFalse(TEXT("Boundary refusal stays clean"),Package->IsDirty());
     const FString Edit=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),Ids,TEXT("AppendSuffix"),TEXT("function"));
     Transcript+=TEXT("\n")+Edit;
     if (!TestTrue(TEXT("Collapse applied"),Edit.StartsWith(TEXT("changed:")))) return false;

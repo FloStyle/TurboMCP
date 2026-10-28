@@ -928,11 +928,11 @@ bool ApplyFunctionCollapse(const FTurboMCPGraphStructure::FPlan& Plan, FString& 
         Destination->AddNode(Node,false,false);
         Node->NodePosX=Node->NodePosX-Left+320;Node->NodePosY=Node->NodePosY-Top;
     }
-    Entry->NodePosX=0;Entry->NodePosY=0;
+    Entry->NodePosX=0;Entry->NodePosY=Pure?-160:0;
     int32 Right=320;
     for (UEdGraphNode* Node:Selected)
         Right=FMath::Max(Right,Node->NodePosX+FMath::CeilToInt(SelectedSizes.FindRef(Node).X)+160);
-    Result->NodePosX=Right;Result->NodePosY=0;
+    Result->NodePosX=Right;Result->NodePosY=Entry->NodePosY;
     for (const FBoundary& Boundary:Boundaries)
     {
         const bool Input=Boundary.Inside->Direction==EGPD_Input;
