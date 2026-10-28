@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "e8a3e7440b1bffa60dff487edb6d79c80d130f16",
+  "plugin_tree": "062614a9d26510f2e4972cfb963322aafb78816a",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 158,
@@ -1612,7 +1612,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
-          "line": 233
+          "line": 164
         }
       ],
       "test_references": [
@@ -1638,7 +1638,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
-          "line": 296
+          "line": 227
         }
       ],
       "test_references": [
@@ -1658,13 +1658,16 @@
       "parameters": [
         "Asset",
         "GraphName",
-        "AlignmentTolerance"
+        "AlignmentTolerance",
+        "Scope",
+        "Offset",
+        "Limit"
       ],
       "family": "graph",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
-          "line": 36
+          "line": 35
         }
       ],
       "test_references": [
@@ -3172,13 +3175,16 @@
       "toolset": "UTurboMCPReadToolset",
       "parameters": [
         "Asset",
-        "GraphName"
+        "GraphName",
+        "Scope",
+        "Offset",
+        "Limit"
       ],
       "family": "graph",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComments.cpp",
-          "line": 88
+          "line": 89
         }
       ],
       "test_references": [

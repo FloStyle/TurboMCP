@@ -121,13 +121,14 @@
       "key": "2026-10-27_S3/X-108",
       "title": "Feature: Layout check and comment list overflow on a large graph (low)",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_and_visual_passed",
       "observation": "The layout check output was cut off before the overlap list, so the overlaps caused by a new node could not be identified. The full-graph capture failed because the frame exceeded the zoom range. The comment list was cut off before the boxes of interest.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "resolution": "OCT27-07: docs/audit/scoped-reports-review.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -248,13 +249,14 @@
       "key": "2026-10-27_S3/FT-121",
       "title": "Layout check and comment list filtered by node IDs, box, or region",
       "kind": "reference",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "proposed_not_implemented",
+      "validation": "focused_native_and_visual_passed",
       "duplicate_of": "X-108",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md"
+      "remaining": "",
+      "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
+      "resolution": "OCT27-07: docs/audit/scoped-reports-review.json"
     },
     {
       "report": "2026-10-27_S3",

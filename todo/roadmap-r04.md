@@ -2040,3 +2040,5 @@ OCT27-06 ready/in progress: bounded selection in the existing GraphPositions too
 OCT27-06 complete and OCT27-04 follow-up accepted: targeted geometry and safe forward boundary placement passed native purchase/scoped suites. See docs/audit/targeted-geometry-review.json; prior failures retained. Large report filtering remains OCT27-07.
 
 OCT27-07 ready/in progress: scoped layout/comment reports with complete-record pagination, boundary-inclusive finding rules and existing targeted capture. Exact scope oct27-scoped-reports; contract in Oct27 plan.
+
+OCT27-07 complete: scoped layout/comment reports and dense 390-node/29-box workflow accepted. Final native run e08dbdcb2722444fa8dce6c42abab90e proves oversized-record stop/explicit skip; prior combined purchase/scoped run retained. See docs/audit/scoped-reports-review.json for failures, screenshot and limitations.

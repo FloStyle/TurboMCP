@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "tasks": [
+    "OCT27-07"
+  ],
+  "status": "accepted_bounded_workflows",
+  "candidate": "cb085e9bc53c87548175c5f5efe34fea6b801618",
+  "native_runs": [
+    "dfdc02a9ea634e9d937d67ba9eb2ffb8",
+    "4a4d2f781dc04542ad68c610c3fcd2ca",
+    "e08dbdcb2722444fa8dce6c42abab90e"
+  ],
+  "checks": [
+    "390 ordinary nodes and 29 boxes; node/box/region scoped findings and comments remain bounded",
+    "Findings precede context; complete-record pages expose matched/shown/remaining counts",
+    "Invalid region and missing box refuse; graph count and clean package preserved",
+    "Live help exposes Scope, Offset and Limit for both readers",
+    "Oversized comment record stops automatic paging explicitly; requested skip reaches the next complete box",
+    "Existing purchase workflow passed alongside scoped tidy before the pagination-only correction"
+  ],
+  "prior_failures": [
+    "6e05dfcd7af34b1ab133748b40c975a8: build failed because LexFromString include used Misc rather than stock String path; corrected",
+    "Source review found same-offset pagination for an oversized record; explicit pageBlocked diagnostic and skip guidance added and exercised"
+  ],
+  "images_inspected": [
+    "ScopedTidy_DenseReports_native_1200x800_616C17D04CB5EA67E87CC6A763488408.png"
+  ],
+  "offline": "26/26 passed in 722a177f2e5e47aa9b72b2837d30742c before the narrow pagination follow-up; final structure/language checks recorded separately",
+  "limits": [
+    "Scope filters results; layout measurement still visits the graph",
+    "Comment node membership uses node origins; box/region selection uses strict rectangle intersection, excluding edge-only contact",
+    "Pages reflect live graph state; restart after graph edits",
+    "Oversized individual records are explicitly not printed; automatic paging stops and an explicit skip is offered. No claim of complete output in that case",
+    "Longest-wire context is bounded to ten records; geometric diagnostics are heuristics, not proof of correctness",
+    "Synthetic workflow evidence does not certify every project; no new unique-tool validation count claimed"
+  ]
+}
