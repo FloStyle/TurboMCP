@@ -85,10 +85,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphCollapse(
 		return FTurboMCPToolError::AsError(Error);
 	}
 
-	// THE PLAN RUNS FIRST SO ITS REFUSALS ARE REPORTED, and only an ACCEPTABLE plan reaches `Apply` -
-	// which then refuses with the one question the measurement left open. Reporting the plan's own
-	// refusals before the not-built reason matters: a caller whose selection contains an event should
-	// learn THAT, because it is what they can act on.
+    // Refuse unsupported selections before attempting any extraction.
 	if (!Plan.bAcceptable())
 	{
 		return FTurboMCPGraphStructure::RenderPreview(Plan);

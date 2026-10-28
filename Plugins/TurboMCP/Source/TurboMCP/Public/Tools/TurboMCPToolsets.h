@@ -1366,16 +1366,15 @@ public:
 		const FString& AnchorNodeId);
 
 	/**
-     * Collapse is not implemented: inspect selection boundaries only; may load the Blueprint, but does not extract nodes, create a member, compile or save.
-     * A valid plan is not an executable edit. Use Unreal's Blueprint editor for extraction, then re-read graph and node IDs. No undo transaction is created for an unsupported collapse.
-     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused.
-     * @param GraphName Required existing graph name, e.g. EventGraph; copy the reader's name. Missing graphs are refused.
-     * @param NodeIds Required array of source reader node IDs. Empty means nothing to extract. Entry, event and result nodes are refused; use exact IDs from the named graph. No automatic selection is made.
-     * @param MemberName Required proposed member name, e.g. HandleSelection. Empty is refused. No member is created, and planning does not certify that the name can be used successfully.
-     * @param MemberKind Required exact lowercase function or macro; no whitespace or default. Empty and other values are refused. Example: function.
+     * Extract a supported selection into a new function. Preview lists selected nodes, signature and external connections without changing graphs. Edit repeats planning, moves nodes and replaces them with a call. No automatic compile or save; inspect both graphs and compile before saving. Failed postconditions report partial changes rather than claiming restoration.
+     * @param Asset Required Blueprint path or unique name, for example /Game/BP_Menu.
+     * @param GraphName Required exact source graph name from the reader.
+     * @param NodeIds Required selected reader node IDs. Entry/event/result, latent calls, local captures, macros and unsupported boundary pins refuse. Include all contents of a selected comment.
+     * @param MemberName Required unused valid function name, for example FormatLabel.
+     * @param MemberKind Required function. Macro extraction is not supported. Pure selections retain consumer-driven evaluation; execution selections require one incoming execution boundary and at most one continuation.
      */
     UFUNCTION(meta = (AICallable))
-	static FString PreviewTurboMCPGraphCollapse(
+    static FString PreviewTurboMCPGraphCollapse(
 		const FString& Asset,
 		const FString& GraphName,
 		const TArray<FString>& NodeIds,
@@ -2269,16 +2268,15 @@ public:
 		const FString& AnchorNodeId);
 
 	/**
-     * Collapse is not implemented: inspect selection boundaries only; may load the Blueprint, but does not extract nodes, create a member, compile or save.
-     * A valid plan is not an executable edit. Use Unreal's Blueprint editor for extraction, then re-read graph and node IDs. No undo transaction is created for an unsupported collapse.
-     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused.
-     * @param GraphName Required existing graph name, e.g. EventGraph; copy the reader's name. Missing graphs are refused.
-     * @param NodeIds Required array of source reader node IDs. Empty means nothing to extract. Entry, event and result nodes are refused; use exact IDs from the named graph. No automatic selection is made.
-     * @param MemberName Required proposed member name, e.g. HandleSelection. Empty is refused. No member is created, and planning does not certify that the name can be used successfully.
-     * @param MemberKind Required exact lowercase function or macro; no whitespace or default. Empty and other values are refused. Example: function.
+     * Extract a supported selection into a new function. Preview lists selected nodes, signature and external connections without changing graphs. Edit repeats planning, moves nodes and replaces them with a call. No automatic compile or save; inspect both graphs and compile before saving. Failed postconditions report partial changes rather than claiming restoration.
+     * @param Asset Required Blueprint path or unique name, for example /Game/BP_Menu.
+     * @param GraphName Required exact source graph name from the reader.
+     * @param NodeIds Required selected reader node IDs. Entry/event/result, latent calls, local captures, macros and unsupported boundary pins refuse. Include all contents of a selected comment.
+     * @param MemberName Required unused valid function name, for example FormatLabel.
+     * @param MemberKind Required function. Macro extraction is not supported. Pure selections retain consumer-driven evaluation; execution selections require one incoming execution boundary and at most one continuation.
      */
     UFUNCTION(meta = (AICallable))
-	static FString EditTurboMCPGraphCollapse(
+    static FString EditTurboMCPGraphCollapse(
 		const FString& Asset,
 		const FString& GraphName,
 		const TArray<FString>& NodeIds,
