@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPGraphText.h"
+#include "TurboMCPGraphTextLex.h"
 
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -557,7 +558,7 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 
 		// A string value is quoted so it cannot be mistaken for a variable
 		// reference, which is the engine writer's own rule.
-		return bLooksNumeric ? Value : FString::Printf(TEXT("\"%s\""), *Value);
+		return bLooksNumeric ? Value : TurboMCPGraphTextLex::QuoteLiteral(Value);
 	}
 
 	if (InPin->DefaultObject != nullptr)

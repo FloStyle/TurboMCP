@@ -12,6 +12,7 @@
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPGraphAppend.h"
 #include "TurboMCPGraphTextLex.h"
+#include "Tools/TurboMCPToolsets.h"
 #include "K2Node_VariableGet.h"
 #include "BlueprintActionDatabase.h"
 #include "TurboMCPNodeId.h"
@@ -467,6 +468,28 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 {
+
+    // The graph-text escape layer must preserve Unreal's inner struct syntax exactly.
+    const TArray<FString> LiteralCases = {
+        TEXT("(TagName=\"UI.Menu.Pause\")"),
+        TEXT("quoted \"value; still content\" and C:\\Temp\\file"),
+        TEXT("line one\nline two\tend\r"),
+        TEXT("")
+    };
+    for (const FString& Expected : LiteralCases)
+    {
+        const FString Encoded = TurboMCPGraphTextLex::QuoteLiteral(Expected);
+        FString Name, Value, Decoded, Error;
+        int32 Column = 0;
+        TestTrue(TEXT("parse encoded literal with trailing comment"),
+            TurboMCPGraphTextLex::ParsePinLine(TEXT("Value ") + Encoded + TEXT(" ; in 0)"), Name, Value, Column));
+        TestTrue(TEXT("decode quoted literal"), TurboMCPGraphTextLex::DecodeLiteral(Value, Decoded, Error));
+        TestEqual(TEXT("literal preserves exact content"), Decoded, Expected);
+    }
+    FString InvalidDecoded, InvalidError;
+    TestFalse(TEXT("unknown escape refuses"), TurboMCPGraphTextLex::DecodeLiteral(TEXT("\"bad\\q\""), InvalidDecoded, InvalidError));
+    TestFalse(TEXT("unescaped inner quote refuses"), TurboMCPGraphTextLex::DecodeLiteral(TEXT("\"bad\"quote\""), InvalidDecoded, InvalidError));
+
 	FFixture Fixture;
 	// CLEANUP IS SCOPED, NOT A SUCCESS-ONLY TAIL: every return below, including a partial fixture, runs it.
 	FScopedFixtureCleanup Cleanup(Fixture);
@@ -487,6 +510,80 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 			TEXT("the in-memory fixture does not resolve by its full object path: %s"), *ResolveError));
 		return false;
 	}
+
+
+    // Exercise the public entry points and inspect actual stored defaults independently.
+    for (const FName FunctionName : { FName(TEXT("MakeLiteralString")), FName(TEXT("MakeLiteralGameplayTag")) })
+    {
+        const bool bTag = FunctionName == TEXT("MakeLiteralGameplayTag");
+        UClass* Library = bTag ? LoadObject<UClass>(nullptr, TEXT("/Script/GameplayTags.BlueprintGameplayTagLibrary"))
+            : UKismetSystemLibrary::StaticClass();
+        UFunction* Function = Library ? Library->FindFunctionByName(FunctionName) : nullptr;
+        if (!TestNotNull(TEXT("literal fixture function exists"), Function)) return false;
+        UK2Node_CallFunction* Probe = NewObject<UK2Node_CallFunction>(Fixture.Unique);
+        Probe->SetFromFunction(Function);
+        Probe->CreateNewGuid();
+        Probe->AllocateDefaultPins();
+        const FString TypeId = TurboMCPNodeId::GetNodeTypeId(Probe);
+        const FString Expected = bTag ? TEXT("(TagName=\"UI.Menu.Pause\")") : TEXT("quoted \"value; still content\" and C:\\Temp\\file");
+        const FString Request = FString::Printf(TEXT("(%s\n    Value %s\n)"),
+            *TypeId, *TurboMCPGraphTextLex::QuoteLiteral(Expected));
+        const FString Before = SerializeGraph(Fixture.Unique);
+        const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), Request);
+        TestTrue(FString::Printf(TEXT("literal preview accepted: %s"), *Preview), Preview.StartsWith(TEXT("preview:")));
+        TestEqual(TEXT("literal preview preserves graph"), SerializeGraph(Fixture.Unique), Before);
+        const FString Edited = UTurboMCPEditToolset::EditTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), Request);
+        TestTrue(FString::Printf(TEXT("literal edit accepted: %s"), *Edited), Edited.StartsWith(TEXT("changed:")));
+        int32 MatchingDefaults = 0;
+        for (UEdGraphNode* Node : Fixture.Unique->Nodes)
+            if (UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
+                if (Call->GetTargetFunction() == Function)
+                    if (UEdGraphPin* ValuePin = Call->FindPin(TEXT("Value"), EGPD_Input))
+                        if (ValuePin->DefaultValue == Expected) ++MatchingDefaults;
+        TestEqual(TEXT("one appended node stores the exact decoded value"), MatchingDefaults, 1);
+
+        UK2Node_CallFunction* WrittenCall = nullptr;
+        UK2Node_FunctionResult* ResultNode = nullptr;
+        UK2Node_FunctionEntry* EntryNode = nullptr;
+        for (UEdGraphNode* Node : Fixture.Unique->Nodes)
+        {
+            if (UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
+                if (Call->GetTargetFunction() == Function) WrittenCall = Call;
+            if (auto* Result = Cast<UK2Node_FunctionResult>(Node)) ResultNode = Result;
+            if (auto* Entry = Cast<UK2Node_FunctionEntry>(Node)) EntryNode = Entry;
+        }
+        if (!ResultNode)
+        {
+            ResultNode = NewObject<UK2Node_FunctionResult>(Fixture.Unique);
+            ResultNode->CreateNewGuid();
+            Fixture.Unique->AddNode(ResultNode, false, false);
+            ResultNode->AllocateDefaultPins();
+        }
+        if (!TestNotNull(TEXT("written call available for readback"), WrittenCall)
+            || !TestNotNull(TEXT("fixture return node"), ResultNode)
+            || !TestNotNull(TEXT("fixture entry node"), EntryNode)) return false;
+        UEdGraphPin* ReturnedValue = WrittenCall->FindPin(TEXT("ReturnValue"), EGPD_Output);
+        if (!TestNotNull(TEXT("literal return value"), ReturnedValue)) return false;
+        UEdGraphPin* Output = ResultNode->CreateUserDefinedPin(bTag ? TEXT("TagResult") : TEXT("TextResult"), ReturnedValue->PinType, EGPD_Input, false);
+        const UEdGraphSchema* Schema = Fixture.Unique->GetSchema();
+        TestTrue(TEXT("connect literal to observable return"), Schema->TryCreateConnection(ReturnedValue, Output));
+        TestTrue(TEXT("connect function return execution"), Schema->TryCreateConnection(
+            EntryNode->FindPin(TEXT("then"), EGPD_Output), ResultNode->FindPin(TEXT("execute"), EGPD_Input)));
+        const FString Readback = UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Fixture.AssetPath, Fixture.Unique->GetName(), TEXT("read"), TEXT("full"));
+        TestTrue(FString::Printf(TEXT("reader emits escaped stored literal: %s"), *Readback), Readback.Contains(TurboMCPGraphTextLex::QuoteLiteral(Expected)));
+        const FString PatchedValue = bTag ? TEXT("(TagName=\"UI.Menu.Resume\")") : TEXT("patched \"quoted; text\" C:\\Temp\\next");
+        const FString PatchRequest = FString::Printf(TEXT("(%s ; %s\n    Value %s\n)"),
+            *TypeId, *TurboMCPNodeId::MakeForNode(WrittenCall, true), *TurboMCPGraphTextLex::QuoteLiteral(PatchedValue));
+        const FString PatchResult = UTurboMCPEditToolset::EditTurboMCPGraphPatch(Fixture.AssetPath, Fixture.Unique->GetName(), PatchRequest);
+        TestTrue(FString::Printf(TEXT("patch accepts escaped literal: %s"), *PatchResult), PatchResult.StartsWith(TEXT("changed:")));
+        TestEqual(TEXT("patch stores exact decoded value"), WrittenCall->FindPin(TEXT("Value"), EGPD_Input)->DefaultValue, PatchedValue);
+
+        const FString BeforeRefusal = SerializeGraph(Fixture.Unique);
+        const FString Invalid = FString::Printf(TEXT("(%s\n    Value \"bad\\q\"\n)"), *TypeId);
+        const FString Refused = UTurboMCPEditToolset::EditTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), Invalid);
+        TestTrue(TEXT("unsupported escape reports error"), Refused.StartsWith(TEXT("error:")));
+        TestEqual(TEXT("invalid escape preserves graph"), SerializeGraph(Fixture.Unique), BeforeRefusal);
+    }
 
 	// A variable with a space must round-trip through its exact discovered type ID.
 	FEdGraphPinType SpacedType;

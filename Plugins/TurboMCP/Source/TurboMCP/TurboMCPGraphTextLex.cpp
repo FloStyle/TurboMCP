@@ -12,6 +12,53 @@
 
 namespace TurboMCPGraphTextLex
 {
+
+    FString QuoteLiteral(const FString& Value)
+    {
+        FString Result = TEXT("\"");
+        for (TCHAR Ch : Value)
+        {
+            switch (Ch)
+            {
+            case TEXT('\\'): Result += TEXT("\\\\"); break;
+            case TEXT('"'): Result += TEXT("\\\""); break;
+            case TEXT('\n'): Result += TEXT("\\n"); break;
+            case TEXT('\r'): Result += TEXT("\\r"); break;
+            case TEXT('\t'): Result += TEXT("\\t"); break;
+            default: Result.AppendChar(Ch); break;
+            }
+        }
+        return Result + TEXT("\"");
+    }
+
+    bool DecodeLiteral(const FString& Value, FString& OutValue, FString& OutError)
+    {
+        OutValue.Empty();
+        OutError.Empty();
+        if (!Value.StartsWith(TEXT("\""))) { OutValue = Value; return true; }
+        if (!IsQuoted(Value)) { OutError = TEXT("quoted literal is not closed"); return false; }
+        for (int32 Index = 1; Index < Value.Len() - 1; ++Index)
+        {
+            TCHAR Ch = Value[Index];
+            if (Ch == TEXT('"')) { OutError = TEXT("escape inner quotes with a backslash"); return false; }
+            if (Ch == TEXT('\\'))
+            {
+                if (++Index >= Value.Len() - 1) { OutError = TEXT("quoted literal ends with an incomplete escape"); return false; }
+                switch (Value[Index])
+                {
+                case TEXT('\\'): Ch = TEXT('\\'); break;
+                case TEXT('"'): Ch = TEXT('"'); break;
+                case TEXT('n'): Ch = TEXT('\n'); break;
+                case TEXT('r'): Ch = TEXT('\r'); break;
+                case TEXT('t'): Ch = TEXT('\t'); break;
+                default: OutError = TEXT("unsupported literal escape; use double backslashes for literal backslashes"); return false;
+                }
+            }
+            OutValue.AppendChar(Ch);
+        }
+        return true;
+    }
+
 	TArray<FLine> SplitLines(const FString& InText)
 	{
 		TArray<FLine> Out;
@@ -144,6 +191,11 @@ namespace TurboMCPGraphTextLex
 			int32 Cut = INDEX_NONE;
 			for (int32 Index = 0; Index < Body.Len(); ++Index)
 			{
+                if (bInQuotes && Body[Index] == TEXT('\\'))
+                {
+                    ++Index; // The escaped character cannot open a comment or close the string.
+                    continue;
+                }
 				if (Body[Index] == TEXT('"'))
 				{
 					bInQuotes = !bInQuotes;
