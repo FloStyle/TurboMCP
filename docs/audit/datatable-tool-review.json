@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "updated": "2026-10-28",
+  "status": "bounded_scenario_checked",
+  "tools": [
+    "ReadTurboMCPDataTable",
+    "PreviewTurboMCPDataTableRows",
+    "EditTurboMCPDataTableRows"
+  ],
+  "candidate": "27e677a8338949aef420c6251ca1fab3ccd367aa",
+  "native_evidence": "b85e0b591077419ea0686a16e668c15d",
+  "previous_evidence": "3319bdf908994f9abfe1cc2205e535bd",
+  "fixed": [
+    {
+      "problem": "Default row values falsely displayed as export unavailable",
+      "status": "done",
+      "verification": "native tested",
+      "fix": "Direct reflected value export preserves zero and None rather than mistaking default suppression for export failure."
+    },
+    {
+      "problem": "Completed row edits described as future changes; refusals did not lead with error status",
+      "status": "done",
+      "verification": "native tested",
+      "fix": "Preview/error/written status is explicit; completed output leads with measured readback, followed by a labeled request summary and no-save limit."
+    }
+  ],
+  "checked": [
+    "Live help for every parameter",
+    "Actual English output and asset identity",
+    "Public read, preview, add/update/remove and independent readback",
+    "Unspecified fields preserved",
+    "Preview and unknown-field refusals preserve values and dirty state",
+    "Default float and name values reported explicitly",
+    "Reader and row helper source review: prepared imports, pointer re-resolution, owned transaction, readback, rollback limitations"
+  ],
+  "remaining": [
+    "No persistence acceptance",
+    "No arbitrary callback or user-defined-struct certification",
+    "Registry reader discovery and truncation not executed in this fixture"
+  ],
+  "transcript": "TestProject/Saved/TurboMCP/Workflow/datatable-public-review.txt",
+  "offline_evidence": "db912a603cec4a36b8b71321e0127e44"
+}

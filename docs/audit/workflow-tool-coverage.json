@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-27",
+  "updated": "2026-10-28",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
   "inventory": 155,
   "workflows": [
@@ -126,7 +126,7 @@
     {
       "id": "WF-UI-05-COMMON-BUTTON",
       "title": "Inspect and edit a Common UI button, events and styles",
-      "status": "style_tool_checks_passed_interaction_review_pending",
+      "status": "style_tools_checked_full_interaction_workflow_incomplete",
       "review": "docs/audit/common-button-workflow-review.md",
       "tools_used": [
         "ReadTurboMCPWidgetTree",
@@ -158,8 +158,8 @@
       "scenario": "Inspect an existing Common Button and its assigned style. Make a targeted style and hover/unhover label-behavior change, preserve unrelated state, tidy and verify visually and interactively.",
       "limitations": [
         "Full style/event edit workflow remains incomplete; native fixture setup is not tool editing evidence",
-        "Shared style padding and nested color read/preview/edit, refusals, no-op and compile preservation passed. Real interaction visuals still pending.",
-        "Explicit callback preview passed, not actual pointer/focus/pressed/disabled state testing",
+        "Shared style padding/color read, preview and edit passed, including compile preservation and inspected native normal/hover/pressed/disabled images.",
+        "Native Slate handlers tested; end-to-end pointer routing and focus navigation not established by this style scenario.",
         "Unsaved disposable fixture; no persistence or general external-effect rollback proof"
       ],
       "acceptance": [
@@ -553,6 +553,24 @@
         "acceptance": "Bounded owned-function rename workflow, not universal project refactoring.",
         "development_evidence": "b1a33fba190b494db01373094aa91326 interrupted and recovered after test project default-off; d46fcd5ee7314a3bb73b8a125ff84d0e and 47c2942816184066a47fb7555a6ff484 exposed missing live limits; e5272026ed764f42b7d3201e3cc83be9 confirmed first-sentence truncation. Final focused run passed."
       }
+    },
+    {
+      "id": "WF-DATA-01-ROWS",
+      "title": "Inspect, preview and edit an owned DataTable",
+      "status": "bounded_scenario_checked",
+      "fixture": "TurboMCP.DataTable.OwnedRows",
+      "review": "docs/audit/datatable-tool-review.json",
+      "tools_used": [
+        "ReadTurboMCPDataTable",
+        "PreviewTurboMCPDataTableRows",
+        "EditTurboMCPDataTableRows"
+      ],
+      "evidence": "b85e0b591077419ea0686a16e668c15d",
+      "limitations": [
+        "Unsaved disposable native row struct; no save/reload proof",
+        "Arbitrary user callbacks, reference-valued fields and user-defined row structures are outside this bounded scenario",
+        "Registry reader discovery and large-table truncation were source-reviewed, not exercised here"
+      ]
     }
   ],
   "tool_usage": {
@@ -827,9 +845,18 @@
     ],
     "EditTurboMCPCommonButtonStyle": [
       "WF-UI-05-COMMON-BUTTON"
+    ],
+    "ReadTurboMCPDataTable": [
+      "WF-DATA-01-ROWS"
+    ],
+    "PreviewTurboMCPDataTableRows": [
+      "WF-DATA-01-ROWS"
+    ],
+    "EditTurboMCPDataTableRows": [
+      "WF-DATA-01-ROWS"
     ]
   },
-  "unique_tools_scenario_reviewed": 66,
+  "unique_tools_scenario_reviewed": 69,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
@@ -852,7 +879,7 @@
     "native_run": "e6c1c80f15394c469e7a07b506a34f3e",
     "status": "bounded_style_workflow_accepted",
     "counted_as_fully_reviewed": true,
-    "next": "DataTable public-tool review",
+    "next": "Style tools accepted for this bounded scenario; full CommonUI interaction workflow remains separate.",
     "visual_run": "b2b11644b5d44a6bb346facd68427350"
   }
 }

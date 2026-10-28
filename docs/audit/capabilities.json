@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "8cc31bc7130671fb4d0cc3e11953708b2097f5ef",
+  "plugin_tree": "bc02ac204422623e6e4737c7289c353a7a1079f9",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 155,
@@ -271,7 +271,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp",
-          "line": 173
+          "line": 162
         }
       ],
       "test_references": [
@@ -1881,7 +1881,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp",
-          "line": 165
+          "line": 154
         }
       ],
       "test_references": [
@@ -3651,6 +3651,7 @@
       "test_references": [
         "Tools/test-agent-help.py",
         "Tools/test-common-button-workflow.py",
+        "Tools/test-datatable-quality.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-vision-workflow.py"
       ],

@@ -1,6 +1,6 @@
 # WF-UI-05: Common UI button workflow
 
-Status: reader and preview scenario checked; the full editing and interaction workflow remains incomplete.
+Current status (2026-10-28): shared-style read/preview/edit accepted for the bounded native visual scenario below. Full inherited-event editing and end-to-end interaction workflow remain incomplete. Earlier counts and results are historical.
 Implementation: bec049e. Regression wording update: 3b09a7e. Final build and both suites passed: f7ee45f24a69440fb5ee5dcc3c3654a6.
 
 ## Tested tools and behavior
@@ -23,7 +23,7 @@ Initial run ea5a544faf9748b5bd60cfbb79b718fa exposed missing style context and u
 
 ## Still required for the complete workflow
 
-- Inspect actual style values and establish a targeted style-edit path.
+- Completed: inspect actual shared style values and make targeted edits; see Oct27 evidence below.
 - Discover and perform inherited event edits through tools rather than fixture setup.
 - Test real pointer hover/unhover, focus, pressed and disabled states; explicit callback images prove none of these input routes.
 - Verify the resulting graph visually after tool-driven edits and obtain user acceptance.

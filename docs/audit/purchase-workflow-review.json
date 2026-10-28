@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "workflow": "WF-BP-01-PURCHASE",
-  "updated": "2026-10-26",
+  "updated": "2026-10-27",
   "status": "getter stacking fixed; comment-crossing wire remains open",
   "ready": false,
   "scenario": "Correct a percent conversion in CalculatePurchase, introduce named locals for repeated arithmetic, tidy, comment and inspect the result.",
@@ -919,6 +919,132 @@
       "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
       "workflows": [
         "WF-OCT26-MENU"
+      ]
+    },
+    {
+      "tool": "ReadTurboMCPCommonButtonStyle",
+      "role": "Inspect or change explicit shared CommonUI style defaults.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow only.",
+      "behavior": "Native public-call behavior and relevant refusals passed.",
+      "review": "Live parameter help, actual English results, implementation and helper boundaries reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "reviewed against actual transcript",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "No persistence or end-to-end PIE input proof.",
+      "scenario_evidence": "b2b11644b5d44a6bb346facd68427350",
+      "workflows": [
+        "WF-UI-05-COMMON-BUTTON"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPCommonButtonStyle",
+      "role": "Inspect or change explicit shared CommonUI style defaults.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow only.",
+      "behavior": "Native public-call behavior and relevant refusals passed.",
+      "review": "Live parameter help, actual English results, implementation and helper boundaries reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "reviewed against actual transcript",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "No persistence or end-to-end PIE input proof.",
+      "scenario_evidence": "b2b11644b5d44a6bb346facd68427350",
+      "workflows": [
+        "WF-UI-05-COMMON-BUTTON"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPCommonButtonStyle",
+      "role": "Inspect or change explicit shared CommonUI style defaults.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow only.",
+      "behavior": "Native public-call behavior and relevant refusals passed.",
+      "review": "Live parameter help, actual English results, implementation and helper boundaries reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "reviewed against actual transcript",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "No persistence or end-to-end PIE input proof.",
+      "scenario_evidence": "b2b11644b5d44a6bb346facd68427350",
+      "workflows": [
+        "WF-UI-05-COMMON-BUTTON"
+      ]
+    },
+    {
+      "tool": "ReadTurboMCPDataTable",
+      "role": "Inspect, preview or edit named DataTable row values.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow only.",
+      "behavior": "Native public-call behavior and relevant refusals passed.",
+      "review": "Live parameter help, actual English results, implementation and helper boundaries reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "reviewed against actual transcript",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "No persistence, arbitrary callbacks or user-defined row-struct proof.",
+      "scenario_evidence": "b85e0b591077419ea0686a16e668c15d",
+      "workflows": [
+        "WF-DATA-01-ROWS"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPDataTableRows",
+      "role": "Inspect, preview or edit named DataTable row values.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow only.",
+      "behavior": "Native public-call behavior and relevant refusals passed.",
+      "review": "Live parameter help, actual English results, implementation and helper boundaries reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "reviewed against actual transcript",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "No persistence, arbitrary callbacks or user-defined row-struct proof.",
+      "scenario_evidence": "b85e0b591077419ea0686a16e668c15d",
+      "workflows": [
+        "WF-DATA-01-ROWS"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPDataTableRows",
+      "role": "Inspect, preview or edit named DataTable row values.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Accepted for the documented bounded workflow only.",
+      "behavior": "Native public-call behavior and relevant refusals passed.",
+      "review": "Live parameter help, actual English results, implementation and helper boundaries reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "reviewed against actual transcript",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "No persistence, arbitrary callbacks or user-defined row-struct proof.",
+      "scenario_evidence": "b85e0b591077419ea0686a16e668c15d",
+      "workflows": [
+        "WF-DATA-01-ROWS"
       ]
     }
   ],
