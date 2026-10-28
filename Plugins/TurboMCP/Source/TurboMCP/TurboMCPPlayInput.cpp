@@ -24,6 +24,8 @@
 #include "Framework/Application/SlateUser.h"
 #include "Layout/WidgetPath.h"
 #include "Widgets/SViewport.h"
+#include "Widgets/SWindow.h"
+#include "GenericPlatform/GenericWindow.h"
 #include "HAL/PlatformTime.h"
 #include "Containers/UnrealString.h"
 #include "Framework/Commands/InputBindingManager.h"
@@ -195,15 +197,34 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
         const bool HadInput=Held.Key.IsValid(); CancelPlayHold();
         return HadInput?TEXT("play input: released the tool's held input. Inspect the resulting game/UI state."):TEXT("play input: no tool-held input; nothing changed.");
     }
+    if (Action==TEXT("activate"))
+    {
+        if (!Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: activate requires empty Key, Value and Seconds. No activation was requested.");
+        if (Held.Key.IsValid()) return TEXT("error: Release the tool-held input before requesting activation.");
+        const TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(Resolved.Viewport.ToSharedRef());
+        if (!Window.IsValid() || !Window->GetNativeWindow().IsValid()) return TEXT("error: The PIE viewport has no native owning window. No activation was requested.");
+        // Use the stock window request, without bypassing OS foreground policy or
+        // synthesizing a game key. Activation callbacks may arrive on later ticks.
+        Window->BringToFront();
+        // On Windows BringToFront only uses SetActiveWindow for regular windows.
+        // This stock API requests SetForegroundWindow; OS restrictions still apply.
+        Window->HACK_ForceToFront();
+        const bool Foreground = Window->GetNativeWindow()->IsForegroundWindow();
+        const bool Active = FSlateApplication::Get().IsActive();
+        return FString::Printf(TEXT("play input: requested activation of the PIE viewport's owning window. This may restore or raise the editor window.\nwindow foreground now: %s\napplication active now: %s\nNo key was sent and no explicit Slate focus change was requested. Activation can be delayed or refused by the OS. Read PlayInputState after normal editor ticks; if still inactive, select the editor window manually. Use focus separately only when gameplay viewport focus is intended; it can leave a menu control."),
+            Foreground ? TEXT("yes") : TEXT("no"), Active ? TEXT("yes") : TEXT("no"));
+    }
     if (Action==TEXT("focus"))
     {
         if (!Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: focus requires empty Key, Value and Seconds.");
         if (Held.Key.IsValid()) return TEXT("error: Release the tool-held input before changing focus.");
         FSlateApplication::Get().SetUserFocus(Resolved.User,Resolved.Viewport,EFocusCause::SetDirectly);
         const bool Focused=HasPlayFocus(Resolved);
-        return Focused?TEXT("play input: focused the game viewport. This can leave a focused menu control; use Slate refs to focus/interact with menus. No game key was sent."):TEXT("error: The game viewport did not accept focus.");
+        if (!Focused) return TEXT("error: The game viewport did not accept Slate focus. No key was sent.");
+        return FString::Printf(TEXT("play input: set Slate user focus to the game viewport. OS foreground activation was not requested.\napplication active: %s\nThis can leave a focused menu control; use Slate refs for menus. No game key was sent. If inactive, explicitly request activate, then read PlayInputState before sending input."),
+            FSlateApplication::Get().IsActive() ? TEXT("yes") : TEXT("no"));
     }
-    if (Action!=TEXT("hold")) return TEXT("error: Action must be focus, hold or release. A short bounded hold is a tap; no indefinite key-down is supported.");
+    if (Action!=TEXT("hold")) return TEXT("error: Action must be activate, focus, hold or release. A short bounded hold is a tap; no indefinite key-down is supported.");
     const FKey InputKey(*Key);
     if (!InputKey.IsValid() || InputKey.IsMouseButton() || (InputKey.IsAnalog() && (!InputKey.IsGamepadKey() || !InputKey.IsAxis1D())))
         return TEXT("error: Key must be a keyboard/gamepad button or a one-dimensional gamepad axis. Use native Slate tools for mouse clicks and text entry.");
@@ -293,6 +314,9 @@ FString UTurboMCPReadToolset::ReadTurboMCPPlayInputState(const FString& Target)
     if(Buttons.Num()>64)Out+=FString::Printf(TEXT("\n%d additional buttons omitted; inspect the visible menu with Slate Snapshot."),Buttons.Num()-64);
     Out+=TEXT("\nlast release reason: ")+LastReleaseReason;
     Out+=FSlateApplication::Get().IsActive()?TEXT("\napplication active: yes"):TEXT("\napplication active: no");
+    const TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(Resolved.Viewport.ToSharedRef());
+    Out += !Window.IsValid() || !Window->GetNativeWindow().IsValid() ? TEXT("\nPIE owning window foreground: unavailable")
+        : Window->GetNativeWindow()->IsForegroundWindow() ? TEXT("\nPIE owning window foreground: yes") : TEXT("\nPIE owning window foreground: no");
     if (Cast<UEnhancedPlayerInput>(Resolved.Controller->PlayerInput))
     {
         TArray<FString> Contexts;

@@ -77,7 +77,18 @@ public:
             if (!Test->TestTrue(TEXT("Fixture spawned"),Fixture.IsValid())) return true;
             // Request actual window foreground; do not disable the input tool's
             // inactive-application refusal to make the test pass.
-            if(auto Window=FSlateApplication::Get().GetActiveTopLevelWindow())Window->BringToFront(true);
+            const FString Activation = UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("activate"),TEXT(""),TEXT(""),TEXT(""));
+            Record(Activation);
+            Test->TestTrue(TEXT("Activation reports observed state without promising delivery"), Activation.Contains(TEXT("requested activation"))
+                && Activation.Contains(TEXT("window foreground now:")) && Activation.Contains(TEXT("No key was sent")));
+            Test->TestTrue(TEXT("Activation rejects unexpected key"), UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("activate"),TEXT("P"),TEXT(""),TEXT("")).StartsWith(TEXT("error:")));
+            const FString ActivationState = UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));
+            Record(ActivationState);
+            Test->TestTrue(TEXT("State separates foreground from application activation"), ActivationState.Contains(TEXT("PIE owning window foreground:"))
+                && ActivationState.Contains(TEXT("application active:")) && ActivationState.Contains(TEXT("tool-held input: none")));
+            const FString InputHelp = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCP.TurboMCPEditToolset"),TEXT("EditTurboMCPPlayInput"));
+            Test->TestTrue(TEXT("Help explains activation and separate focus"), InputHelp.Contains(TEXT("activate")) && InputHelp.Contains(TEXT("Slate focus")));
+
             Record(Dispatch(TEXT("EditTurboMCPPlayInput"),TEXT("{\"Target\":\"pie:0\",\"Action\":\"focus\",\"Key\":\"\",\"Value\":\"\",\"Seconds\":\"\"}")));
             const FString Refused=Dispatch(TEXT("EditTurboMCPFunctionAdd"),TEXT("{\"Asset\":\"NotAnAsset\",\"Name\":\"MustNotEditInPIE\",\"Inputs\":\"\",\"Outputs\":\"\"}"));
             Test->TestTrue(TEXT("Asset edits still refused by PIE gate"),Refused.Contains(TEXT("no play session")));
@@ -154,6 +165,10 @@ public:
                     const FString Inactive=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(Inactive);
                     Test->TestTrue(TEXT("Deactivation cancelled held input"),Inactive.Contains(TEXT("tool-held input: none")) && Inactive.Contains(TEXT("last release reason: application deactivated")));
                     Test->TestTrue(TEXT("Inactive input refused"),UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("hold"),TEXT("P"),TEXT(""),TEXT("0.15")).Contains(TEXT("application is inactive")));
+                    const FString InactiveFocus = UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("focus"),TEXT(""),TEXT(""),TEXT(""));
+                    Record(InactiveFocus);
+                    Test->TestTrue(TEXT("Slate focus does not claim OS activation"), InactiveFocus.Contains(TEXT("OS foreground activation was not requested"))
+                        && InactiveFocus.Contains(TEXT("application active: no")));
                     FSlateApplication::Get().OnApplicationActivationChanged(true);SimulatedInactive=false;
                     Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("focus"),TEXT(""),TEXT(""),TEXT("")));
                 }
