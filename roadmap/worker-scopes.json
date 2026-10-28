@@ -2875,6 +2875,18 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlagsTest.cpp",
             "Tools/test-function-flags.py"
           ]
+        },
+        "oct27-collapse-function": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCollapseFunctionTest.cpp",
+            "Tools/test-collapse-function.py"
+          ]
         }
       },
       "preserve_rows": []

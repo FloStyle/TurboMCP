@@ -500,7 +500,7 @@
       "wave": 4,
       "state": "open",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "GC-74"
       ],
@@ -511,7 +511,9 @@
       "acceptance": "Define supported selection and external data/exec boundaries; preview proposed signature and replacements. Preserve semantics, comments and layout; refuse latent or unsupported mixed-entry selections without mutation.",
       "verification": "Small string chain plus external input/output consumers, refusal controls, compile/runtime equivalence and visual review.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-collapse-function; DSH paused; claim required at approved base",
+      "repair_contract": "docs/design/collapse-function.md",
+      "source_review": "Existing GraphCollapse tools plan selection but do not apply collapse. Stock CanCollapseSelectionToFunction creates a temporary function graph, so it must not run on the live asset during preview. Stock collapse is editor-instance based and assumes valid boundaries; plugin must preflight those boundaries and verify preservation."
     },
     {
       "id": "OCT27-19",
