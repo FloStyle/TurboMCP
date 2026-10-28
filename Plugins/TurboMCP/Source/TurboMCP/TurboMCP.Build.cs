@@ -27,6 +27,7 @@ public class TurboMCP : ModuleRules
 				"BlueprintGraph",
 				"KismetCompiler",
 				"DeveloperSettings",
+                "Settings",
 				"EditorFramework",
 				"EditorScriptingUtilities",
 				"EditorSubsystem",
