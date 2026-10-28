@@ -151,6 +151,7 @@ FString UTurboMCPEditToolset::EditTurboMCPAssetUndo(const FString& Asset,const F
 #include "Misc/SecureHash.h"
 #include "Serialization/ObjectWriter.h"
 #include "UObject/UObjectHash.h"
+#include "UObject/UObjectIterator.h"
 #include "Engine/DataAsset.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 
@@ -202,14 +203,32 @@ namespace
    return TEXT("error: no saved package exists; recovery cannot restore an unsaved asset");
   TArray<UObject*> TopLevel;
   GetObjectsWithOuter(Package, TopLevel, EGetObjectsFlags::None);
+  const UBlueprint* TargetBlueprint = Cast<UBlueprint>(Target);
   for (UObject* Object : TopLevel)
-   if (Object != Target && Object->IsAsset())
+   // These classes are saved parts of this Blueprint, not independent assets.
+   if (Object != Target && Object->IsAsset()
+    && !(TargetBlueprint && (Object == TargetBlueprint->GeneratedClass || Object == TargetBlueprint->SkeletonGeneratedClass)))
     return TEXT("error: package contains multiple top-level assets; recovery refuses to discard unrelated asset changes");
   UAssetEditorSubsystem* Editors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
   if (!Editors || Editors->FindEditorForAsset(Target, false))
    return TEXT("error: close the asset editor before previewing recovery; no editor was closed and no reload was attempted");
   // Stock reference collection sees UObject references, not arbitrary raw native pointers.
   // Reject world-backed consumers; persistent asset references may be reinstanced by reload.
+  for (TObjectIterator<UObject> It; It; ++It)
+  {
+   UObject* Consumer = *It;
+   if (!IsValid(Consumer) || Consumer->IsTemplate() || Consumer->GetOutermost() == Package || !Consumer->GetWorld()) continue;
+   // Generated-class identity is not reliably surfaced by the generic reference scan.
+   for (UClass* Class = Consumer->GetClass(); Class; Class = Class->GetSuperClass())
+    if (Class->GetOutermost() == Package)
+     return TEXT("error: a live world object uses a class in this package; remove that use before recovery; no reload was attempted");
+   TArray<UObject*> DirectReferences;
+   FReferenceFinder Finder(DirectReferences, nullptr, false, false, false, false);
+   Finder.FindReferences(Consumer);
+   for (UObject* Reference : DirectReferences)
+    if (Reference && Reference->GetOutermost() == Package)
+     return TEXT("error: a live world object references this package; remove that use before recovery; no reload was attempted");
+  }
   FReferencerInformationList References;
   UObject* ReferenceTarget = Package;
   IsReferenced(ReferenceTarget, RF_NoFlags, EInternalObjectFlags::None, true, &References);
@@ -244,12 +263,13 @@ namespace
   RevertApprovals.Remove(R.ObjectPath);
   TArray<UPackage*> Packages;
   Packages.Add(Package);
+  const TWeakObjectPtr<UPackage> PreviousPackage(Package);
   FText ReloadError;
   const bool Reloaded = UPackageTools::ReloadPackages(Packages, ReloadError, EReloadPackagesInteractionMode::AssumePositive);
   // Reload can destroy/reinstance the original objects. Only use freshly resolved pointers below.
   UObject* Fresh = FindObject<UObject>(nullptr, *R.ObjectPath);
   const FMD5Hash FreshDisk = FMD5Hash::HashFile(*Filename);
-  if (!Reloaded || !Fresh || Fresh->GetClass()->GetPathName() != ExpectedClass
+  if (!Reloaded || PreviousPackage.IsValid() || !Fresh || Fresh->GetClass()->GetPathName() != ExpectedClass
    || Fresh->GetOutermost()->IsDirty() || !FreshDisk.IsValid() || LexToString(FreshDisk) != DiskHash)
    return TEXT("error: recovery verification failed; changed=unknown; inspect the asset before further edits. Confirmation was consumed. Global undo history may have been reset. No save was requested. Engine detail: ") + ReloadError.ToString();
   return TEXT("changed: reloaded saved package; asset=") + R.ObjectPath
