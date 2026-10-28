@@ -2113,7 +2113,13 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 AnchorPreferences.Add(ExecWire ? (SourceMoves ? 32.0 : 0.0) : 64.0);
             }
             if (Boundary.IsEmpty()) continue;
+            // A selected component may already have a valid boundary position.
+            // Include that anchor so improving another component need not displace it.
+            const FNode& SeedNode = OutPlan.Nodes[Seed];
+            Candidates.Add(FVector2D(SeedNode.X - SeedNode.PlannedX, SeedNode.Y - SeedNode.PlannedY));
+            AnchorPreferences.Add(0.0);
             double BestCost = TNumericLimits<double>::Max();
+            int32 BestBackwardCount = MAX_int32;
             FVector2D BestShift = FVector2D::ZeroVector;
             for (int32 CandidateIndex = 0; CandidateIndex < Candidates.Num(); ++CandidateIndex)
                 for (int32 Row = -4; Row <= 4; ++Row)
@@ -2137,18 +2143,35 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     }
                     if (Collision) continue;
                     double Cost = AnchorPreferences[CandidateIndex];
+                    bool BoundarySafe = true;
+                    int32 BackwardCount = 0;
+                    double OriginalTotal = 0.0, CandidateTotal = 0.0, ComponentAllowance = 0.0;
                     for (const FWire* Wire : Boundary)
                     {
                         FVector2D Start = PlannedPin(Wire->OutputPin, Wire->SourceNodeIndex);
                         FVector2D End = PlannedPin(Wire->InputPin, Wire->TargetNodeIndex);
                         if (Members.Contains(Wire->SourceNodeIndex)) Start += Shift; else End += Shift;
-                        Cost += FVector2D::Distance(Start, End);
+                        if (Start.X > End.X) ++BackwardCount;
+                        const double CandidateLength = FVector2D::Distance(Start, End);
+                        const double OriginalLength = FVector2D::Distance(AlignmentPinPosition(Wire->OutputPin), AlignmentPinPosition(Wire->InputPin));
+                        const double Allowance = FMath::Clamp(FMath::Max(OutPlan.Nodes[Wire->SourceNodeIndex].Width,
+                            OutPlan.Nodes[Wire->TargetNodeIndex].Width), 64.0, 256.0);
+                        // Search within the same bounds enforced after planning and application.
+                        // A shorter total cannot compensate for one unsafe boundary wire.
+                        if (CandidateLength > OriginalLength + Allowance + 1.0) { BoundarySafe = false; break; }
+                        OriginalTotal += OriginalLength;
+                        CandidateTotal += CandidateLength;
+                        ComponentAllowance = FMath::Max(ComponentAllowance, Allowance);
+                        Cost += CandidateLength;
                         // Favor forward execution and its existing lane, without
                         // moving either fixed endpoint to make a candidate fit.
                         if (Wire->OutputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
                             Cost += FMath::Abs(Start.Y - End.Y) + 4.0 * FMath::Max(0.0, Start.X - End.X);
                     }
-                    if (Cost < BestCost) { BestCost = Cost; BestShift = Shift; }
+                    if (!BoundarySafe || CandidateTotal > OriginalTotal + ComponentAllowance + 1.0) continue;
+                    // Match the final quality ordering: forward flow precedes shorter wires.
+                    if (BackwardCount < BestBackwardCount || (BackwardCount == BestBackwardCount && Cost < BestCost))
+                    { BestBackwardCount = BackwardCount; BestCost = Cost; BestShift = Shift; }
                 }
             if (BestCost < TNumericLimits<double>::Max())
                 for (int32 I : Component)
