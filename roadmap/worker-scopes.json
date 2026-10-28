@@ -2790,6 +2790,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBindEventWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "oct27-append-discovery": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendAliasTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

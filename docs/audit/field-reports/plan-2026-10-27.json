@@ -205,9 +205,9 @@
       "kind": "bug",
       "priority": "P2",
       "wave": 2,
-      "state": "open",
+      "state": "in_progress",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "GC-65",
         "GC-70",
@@ -218,7 +218,9 @@
       "acceptance": "Resolve supported engine-search IDs consistently, suggest self-reference and promotable operators, and document new-to-existing link syntax with copyable examples. Unknown/ambiguous IDs must not guess.",
       "verification": "Use live help examples and engine-returned IDs in preview; self, input event and multiply controls; clear refusal alternatives.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-append-discovery; DSH paused",
+      "source_review": "NodeType already retains engine palette IDs as aliases and searches action keywords; current live append help includes one input-link example. Discovery infers graph-text mappings by title only. Verify self/multiply/input-action search and append using actual discovered IDs, avoid speculative broad resolver changes.",
+      "repair_contract": "Prove engine-action aliases and canonical IDs on supported graph contexts; unknown and ambiguous IDs must refuse without mutation. Add self-reference/promotable search terms only from known node classes/stock operator metadata. Remove title-only identity claims unless exact backing identity can be proved. Exercise actual discovery results through append preview, including link syntax to existing endpoints and within new labelled nodes. Integrator owns the two append help blocks in Toolsets.h, the compact append help in AgentHelp.cpp, and shared review/tracking. Tests must use current tool schemas and retain prior failures."
     },
     {
       "id": "OCT27-09",
