@@ -642,6 +642,14 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 
 public:
 
+    /** Inspect or execute a bounded diagnostic console command. Log, Slate debugger and CVar effects are process-wide, even with a PIE target. No shell, file operations or arbitrary console commands. Dispatch is not proof of asynchronous effects; use ReadTurboMCPEditorLog.
+     * @param Target Exact editor or pie:<instance number>. Missing or ambiguous worlds refuse.
+     * @param Command One command: Log list [category], Log <exact category> <verbosity>, SlateDebugger.Event.Start/Stop, or an existing CVar name with an optional single value. No chaining or newlines. Preview reads current state without changing it.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPDiagnosticConsole(const FString& Target, const FString& Command);
+
+
     /** Preview one data-asset property using temporary validation. Requires the current reader revision. No implicit save or compile. Preview does not modify live properties or run edit notifications. create_child runs constructors on temporary objects; project constructors can have external effects.
      * @param Asset Exact asset path or uniquely resolved asset name; must resolve to UDataAsset.
      * @param Property Exact reflected property path from ReadTurboMCPDataAssetProperty. External objects are never implicit edit targets.
@@ -1390,6 +1398,15 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+
+    /** Inspect or execute a bounded diagnostic console command. Log, Slate debugger and CVar effects are process-wide, even with a PIE target. No shell, file operations or arbitrary console commands. Dispatch is not proof of asynchronous effects; use ReadTurboMCPEditorLog.
+     * @param Target Exact editor or pie:<instance number>. Missing or ambiguous worlds refuse.
+     * @param Command One command: Log list [category], Log <exact category> <verbosity>, SlateDebugger.Event.Start/Stop, or an existing CVar name with an optional single value. No chaining or newlines. Preview reads current state without changing it.
+     * @param Confirmation Empty for queries. For changes, copy the token from a separate preview within 60 seconds. A changed target, command or current CVar/log value requires a fresh preview. Session changes are not saved; restore the previous value when finished.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPDiagnosticConsole(const FString& Target, const FString& Command, const FString& Confirmation);
+
 
     /** Edit one data-asset property using temporary validation. Requires the current reader revision. No implicit save or compile. Edit notifications may run project code. The tool verifies resulting state and attempts restoration on mismatch; inspect the final result and rollback status.
      * @param Asset Exact asset path or uniquely resolved asset name; must resolve to UDataAsset.
