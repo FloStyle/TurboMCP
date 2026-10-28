@@ -177,6 +177,37 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     const FString RateId = TurboMCPNodeId::Make(Asset, GraphName, RateGuid, true);
     Record(TEXT("ReadTurboMCPNodeContext"), UTurboMCPReadToolset::ReadTurboMCPNodeContext(Asset, GraphName, RateId, 3));
     Record(TEXT("LookTurboMCPGraphPositions before"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName));
+    const FString Geometry = Record(TEXT("GraphPositions selected"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName, RateId));
+    TestTrue(TEXT("Geometry selects one requested node"), Geometry.Contains(RateId) && Geometry.Contains(TEXT("listed 1 of 1 selected nodes")));
+    TestTrue(TEXT("Geometry explains units and rendering limits"), Geometry.Contains(TEXT("graph units")) && Geometry.Contains(TEXT("not screen pixels")));
+    UEdGraphNode* GeometryNode = nullptr;
+    UEdGraphNode* OtherGeometryNode = nullptr;
+    for (UEdGraphNode* Node : Graph->Nodes) if (Node)
+    {
+        if (Node->NodeGuid == RateGuid) GeometryNode = Node;
+        else OtherGeometryNode = Node;
+    }
+    if (!TestNotNull(TEXT("Geometry target survives compile"), GeometryNode)) return false;
+    TestTrue(TEXT("Geometry reports actual stored coordinates"), Geometry.Contains(FString::Printf(TEXT("x=%d y=%d"), GeometryNode->NodePosX, GeometryNode->NodePosY)));
+    TestEqual(TEXT("Unique key and exact ID select same geometry"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName, TurboMCPNodeId::MakeKey(RateGuid, 32)), Geometry);
+    TestEqual(TEXT("Duplicate requested IDs do not duplicate rows"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName, RateId + TEXT("\n") + RateId), Geometry);
+    const FString Limited = UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName, TEXT(""), 1);
+    TestTrue(TEXT("Bounded geometry announces omitted nodes"), Limited.Contains(TEXT("listed 1 of")) && Limited.Contains(TEXT("TRUNCATED:")));
+    TestTrue(TEXT("Missing geometry ID refuses"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName, TEXT("missing")).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Blank geometry entry refuses"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName, TEXT(" ")).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Invalid geometry limit refuses"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName, TEXT(""), 0).StartsWith(TEXT("error:")));
+    if (OtherGeometryNode)
+    {
+        const FGuid OriginalGuid = OtherGeometryNode->NodeGuid;
+        OtherGeometryNode->NodeGuid = RateGuid; // Deliberate malformed identity on this disposable fixture only.
+        const FString Ambiguous = UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName, TurboMCPNodeId::MakeKey(RateGuid, 32));
+        OtherGeometryNode->NodeGuid = OriginalGuid;
+        TestTrue(TEXT("Ambiguous geometry identity refuses"), Ambiguous.StartsWith(TEXT("error:")) && Ambiguous.Contains(TEXT("ambiguous")));
+    }
+    const FString GeometryHelp = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCP.TurboMCPLookToolset"), TEXT("LookTurboMCPGraphPositions"));
+    TestTrue(TEXT("Live geometry help exposes selection"), GeometryHelp.Contains(TEXT("NodeIds"), ESearchCase::IgnoreCase) && GeometryHelp.Contains(TEXT("MaxNodes"), ESearchCase::IgnoreCase));
+    TestEqual(TEXT("Geometry inspection preserves graph content"), ReadGraph(), Before);
+
     Record(TEXT("LookTurboMCPLayoutReport before"), UTurboMCPLookToolset::LookTurboMCPLayoutReport(Asset, GraphName));
     Record(TEXT("LookTurboMCPCapture before"), UTurboMCPLookToolset::LookTurboMCPCapture(Asset, GraphName, TEXT("graph"), TEXT(""), TEXT("1600x900")));
     TestFalse(TEXT("Inspection and scratch capture do not dirty the asset"), Package->IsDirty());

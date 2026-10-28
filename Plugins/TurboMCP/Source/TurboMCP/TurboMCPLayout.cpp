@@ -230,27 +230,66 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 	return Out;
 }
 
-FString UTurboMCPLookToolset::LookTurboMCPGraphPositions(const FString& Asset,const FString& GraphName)
+FString UTurboMCPLookToolset::LookTurboMCPGraphPositions(const FString& Asset, const FString& GraphName,
+    const FString& NodeIds, int32 MaxNodes)
 {
+    if (MaxNodes < 1 || MaxNodes > 256) return TEXT("error: MaxNodes must be between 1 and 256");
     FTurboMCPAssetResolver::FResolved Resolved;
-    const FString Error=FTurboMCPAssetResolver::Resolve(Asset,Resolved);
-    if(!Error.IsEmpty()) return Error;
-    UBlueprint* Blueprint=LoadObject<UBlueprint>(nullptr,*Resolved.ObjectPath);
-    if(!Blueprint || GraphName.IsEmpty()) return TEXT("error: specify a Blueprint and graph name");
-    UEdGraph* Graph=TurboMCPNodeId::FindGraphByName(Blueprint,GraphName);
-    if(!Graph) return TEXT("error: graph not found; read the Blueprint graph list first");
-    FString GeometryError;
-    if(!FTurboMCPGraphTidy::PrepareAlignment(Blueprint,Graph,GeometryError)) return TEXT("error: ")+GeometryError;
-    FString Result=TEXT("node positions (graph units; read-only):\n");
-    int32 Count=0;
-    for(const UEdGraphNode* Node:Graph->Nodes) if(Node)
+    const FString Error = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+    if (!Error.IsEmpty()) return Error;
+    UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+    if (!Blueprint || GraphName.IsEmpty()) return TEXT("error: specify a Blueprint and exact graph name");
+    UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(Blueprint, GraphName);
+    if (!Graph) return TEXT("error: graph not found; read the Blueprint graph list first");
+
+    TArray<UEdGraphNode*> Selected;
+    int32 Total = 0;
+    for (UEdGraphNode* Node : Graph->Nodes) if (Node) ++Total;
+    if (NodeIds.IsEmpty())
     {
-        const FVector2D NodeSize=FTurboMCPGraphTidy::AlignmentNodeSize(Node);
-        const FString Line=FString::Printf(TEXT("%s x=%d y=%d width=%.0f height=%.0f\n"),*TurboMCPNodeId::MakeForNode(Node),Node->NodePosX,Node->NodePosY,NodeSize.X,NodeSize.Y);
-        if(Result.Len()+Line.Len()>MaxResultChars) { Result+=TEXT("TRUNCATED: remaining nodes omitted; do not treat this as a complete inventory.\n"); break; }
-        Result+=Line; ++Count;
+        for (UEdGraphNode* Node : Graph->Nodes) if (Node) Selected.Add(Node);
     }
-    Result+=FString::Printf(TEXT("listed %d of %d graph entries"),Count,Graph->Nodes.Num());
+    else
+    {
+        TArray<FString> Ids;
+        NodeIds.ParseIntoArray(Ids, TEXT("\n"), false);
+        if (Ids.Num() > 256) return TEXT("error: select at most 256 node IDs per call");
+        for (FString Id : Ids)
+        {
+            Id.TrimStartAndEndInline();
+            if (Id.IsEmpty()) return TEXT("error: NodeIds contains a blank entry; use one node ID per line");
+            TArray<UEdGraphNode*> Matches;
+            const FString Key = TurboMCPNodeId::NormaliseKey(Id);
+            if (!Key.IsEmpty()) TurboMCPNodeId::FindNodesByKey(Graph, Key, Matches);
+            else for (UEdGraphNode* Node : Graph->Nodes)
+                if (Node && (TurboMCPNodeId::MakeForNode(Node, true) == Id || TurboMCPNodeId::MakeForNode(Node) == Id)) Matches.Add(Node);
+            if (Matches.Num() != 1)
+                return FString::Printf(TEXT("error: node ID '%s' is %s in the named graph. Use an exact reader ID or a longer unique hexadecimal key."),
+                    *Id, Matches.IsEmpty() ? TEXT("missing") : TEXT("ambiguous"));
+            Selected.AddUnique(Matches[0]);
+        }
+    }
+    // Validate every requested identity before rendering. Selection never silently expands to the graph.
+    Selected.Sort([](const UEdGraphNode& A, const UEdGraphNode& B) {
+        return TurboMCPNodeId::MakeForNode(&A, true) < TurboMCPNodeId::MakeForNode(&B, true);
+    });
+    FString GeometryError;
+    if (!FTurboMCPGraphTidy::PrepareAlignment(Blueprint, Graph, GeometryError)) return TEXT("error: ") + GeometryError;
+    FString Result = TEXT("node positions (graph units; read-only):\nStored top-left positions and rendered node-body sizes; not screen pixels or wire bounds. Rendering measures the graph; NodeIds filters returned rows. No explicit edit, compile or save.\n");
+    int32 Count = 0;
+    for (const UEdGraphNode* Node : Selected)
+    {
+        if (Count >= MaxNodes) break;
+        const FVector2D NodeSize = FTurboMCPGraphTidy::AlignmentNodeSize(Node);
+        const FString Line = FString::Printf(TEXT("%s x=%d y=%d width=%.0f height=%.0f\n"),
+            *TurboMCPNodeId::MakeForNode(Node, true), Node->NodePosX, Node->NodePosY, NodeSize.X, NodeSize.Y);
+        if (Result.Len() + Line.Len() > MaxResultChars - 400) break;
+        Result += Line;
+        ++Count;
+    }
+    Result += FString::Printf(TEXT("listed %d of %d selected nodes; %d graph nodes; omitted %d selected nodes; excluded %d unselected nodes"),
+        Count, Selected.Num(), Total, Selected.Num() - Count, Total - Selected.Num());
+    if (Count < Selected.Num()) Result += TEXT("\nTRUNCATED: request a smaller NodeIds selection; this is not a complete inventory.");
     return Result;
 }
 
