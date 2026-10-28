@@ -17,6 +17,7 @@
 #include "K2Node_FunctionResult.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_VariableSet.h"
+#include "K2Node_ExecutionSequence.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -202,6 +203,26 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
         TestEqual(TEXT("Execution side effect preserved"),Counter->GetPropertyValue_InContainer(Object),7);
     };
     ExecuteWrite();
+    UK2Node_ExecutionSequence* Sequence=NewObject<UK2Node_ExecutionSequence>(ExecGraph);
+    ExecGraph->AddNode(Sequence,false,false);Sequence->CreateNewGuid();Sequence->AllocateDefaultPins();
+    UK2Node_VariableSet* SecondSet=NewObject<UK2Node_VariableSet>(ExecGraph);
+    SecondSet->VariableReference.SetSelfMember(TEXT("Counter"));ExecGraph->AddNode(SecondSet,false,false);SecondSet->CreateNewGuid();SecondSet->AllocateDefaultPins();
+    ExecEntry->FindPin(UEdGraphSchema_K2::PN_Then)->BreakAllPinLinks();
+    TestTrue(TEXT("Mixed fixture entry"),Schema->TryCreateConnection(ExecEntry->FindPin(UEdGraphSchema_K2::PN_Then),Sequence->GetExecPin()));
+    TestTrue(TEXT("Mixed first entry"),Schema->TryCreateConnection(Sequence->GetThenPinGivenIndex(0),Set->FindPin(UEdGraphSchema_K2::PN_Execute)));
+    TestTrue(TEXT("Mixed second entry"),Schema->TryCreateConnection(Sequence->GetThenPinGivenIndex(1),SecondSet->FindPin(UEdGraphSchema_K2::PN_Execute)));
+    Package->SetDirtyFlag(false);
+    const int32 MixedNodeCount=ExecGraph->Nodes.Num();
+    TArray<FString> MixedIds{TurboMCPNodeId::MakeForNode(Set,true),TurboMCPNodeId::MakeForNode(SecondSet,true)};
+    const FString MixedRefusal=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("WriteCounter"),MixedIds,TEXT("MixedFlow"),TEXT("function"));
+    Transcript+=TEXT("\n")+MixedRefusal;
+    TestTrue(TEXT("Mixed entries refused"),MixedRefusal.StartsWith(TEXT("unchanged")) && MixedRefusal.Contains(TEXT("exactly one incoming")));
+    TestEqual(TEXT("Mixed refusal preserves nodes"),ExecGraph->Nodes.Num(),MixedNodeCount);
+    TestTrue(TEXT("First entry link preserved"),Set->FindPin(UEdGraphSchema_K2::PN_Execute)->LinkedTo.Contains(Sequence->GetThenPinGivenIndex(0)));
+    TestTrue(TEXT("Second entry link preserved"),SecondSet->FindPin(UEdGraphSchema_K2::PN_Execute)->LinkedTo.Contains(Sequence->GetThenPinGivenIndex(1)));
+    TestFalse(TEXT("Mixed refusal stays clean"),Package->IsDirty());
+    Sequence->BreakAllNodeLinks();SecondSet->BreakAllNodeLinks();ExecGraph->RemoveNode(Sequence);ExecGraph->RemoveNode(SecondSet);
+    TestTrue(TEXT("Restore single entry fixture"),Schema->TryCreateConnection(ExecEntry->FindPin(UEdGraphSchema_K2::PN_Then),Set->FindPin(UEdGraphSchema_K2::PN_Execute)));
     TArray<FString> ExecIds{TurboMCPNodeId::MakeForNode(Set,true)};
     const FString ExecEdit=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("WriteCounter"),ExecIds,TEXT("AssignCounter"),TEXT("function"));
     Transcript+=TEXT("\n")+ExecEdit;
