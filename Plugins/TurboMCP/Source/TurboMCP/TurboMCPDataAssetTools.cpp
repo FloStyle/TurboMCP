@@ -9,6 +9,8 @@
 #include "Engine/DataAsset.h"
 #include "Misc/SecureHash.h"
 #include "ScopedTransaction.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectHash.h"
 #include "UObject/UnrealType.h"
@@ -161,7 +163,11 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
     if (!Mode) return Result.AppendTo(TEXT("read: Data-asset property.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\ntype: ") + Target.Property->GetCPPType() + TEXT("\nvalue: ") + Before + TEXT("\nformat: Unreal property text for values; exact loaded object paths for references. Map operations take one key and value separately."));
     if (Revision.IsEmpty() || Revision != Baseline.Revision) return Refuse(TEXT("State revision is missing or stale. Read the asset again before previewing or editing."));
     FValue Planned(Target.Property, Target.Address);
-    TStrongObjectPtr<UObject> HeldKey, HeldValue;
+    TStrongObjectPtr<UObject> HeldKey, HeldValue, TemporaryOwner, ProposedChild, CreatedChild;
+    FObjectProperty* ChildProperty = nullptr;
+    FMapProperty* ChildMap = nullptr;
+    TUniquePtr<FValue> ChildKey;
+    FString ChildDescription;
     auto Parse = [&](FProperty* Property, const FString& Input, bool IsKey, void* Out, TStrongObjectPtr<UObject>& Held)
     {
         if (CastField<FObjectPropertyBase>(Property)) return TurboMCPDataAssetValues::ResolveReference(Property, Input, Asset, IsKey, Out, Held, Error);
@@ -183,9 +189,77 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         if (!Remove && !Parse(Map->ValueProp, Value, false, ParsedValue.Get(), HeldValue)) return Refuse(Error);
         TurboMCPDataAssetValues::PlanMapEntry(Map, Target.Address, ParsedKey.Get(), ParsedValue.Get(), Remove, Planned.Get());
     }
-    else return Refuse(TEXT("Operation must be set, map_upsert or map_remove."));
+    else if (Operation == TEXT("create_child"))
+    {
+        ChildMap = CastField<FMapProperty>(Target.Property);
+        ChildProperty = CastField<FObjectProperty>(ChildMap ? ChildMap->ValueProp : Target.Property);
+        if (!ChildProperty || !ChildProperty->HasAnyPropertyFlags(CPF_InstancedReference) || CastField<FClassProperty>(ChildProperty))
+            return Refuse(TEXT("create_child requires an instanced object property or an instanced map value."));
+        if (ChildMap)
+        {
+            if (Key.IsEmpty()) return Refuse(TEXT("Key is required when creating a map value."));
+            ChildKey = MakeUnique<FValue>(ChildMap->KeyProp);
+            if (!Parse(ChildMap->KeyProp, Key, true, ChildKey->Get(), HeldKey)) return Refuse(Error);
+            FScriptMapHelper Existing(ChildMap, Target.Address);
+            const int32 Index = Existing.FindMapIndexWithKey(ChildKey->Get());
+            if (Index != INDEX_NONE && ChildProperty->GetObjectPropertyValue(Existing.GetValuePtr(Index)))
+                return Refuse(TEXT("This map entry already has an object. Edit its owned fields or explicitly remove the entry; create_child never overwrites it."));
+        }
+        else
+        {
+            if (!Key.IsEmpty()) return Refuse(TEXT("Key must be empty for a direct child property."));
+            if (ChildProperty->GetObjectPropertyValue(Target.Address))
+                return Refuse(TEXT("The property already has an object. Edit its fields; create_child never overwrites it."));
+        }
+        TSharedPtr<FJsonObject> Spec;
+        if (Value.Len() > 65536 || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Value), Spec) || !Spec)
+            return Refuse(TEXT("create_child Value must be a JSON object with class and optional fields; maximum 65536 characters."));
+        for (const auto& Item : Spec->Values)
+            if (Item.Key != TEXT("class") && Item.Key != TEXT("fields")) return Refuse(TEXT("Unknown create_child option: ") + Item.Key);
+        FString ClassPath;
+        if (!Spec->TryGetStringField(TEXT("class"), ClassPath)) return Refuse(TEXT("create_child requires a class path string."));
+        UClass* Class = FindObject<UClass>(nullptr, *ClassPath);
+        if (!Class || Class->GetPathName() != ClassPath || !Class->IsChildOf(ChildProperty->PropertyClass) ||
+            !Class->HasAnyClassFlags(CLASS_EditInlineNew) || Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated | CLASS_NewerVersionExists))
+            return Refuse(TEXT("Class must be loaded, exact, concrete, EditInlineNew and compatible with the property."));
+        if (Target.Owner->GetClass()->HasAnyClassFlags(CLASS_Abstract) || !Target.Owner->IsA(Class->ClassWithin))
+            return Refuse(TEXT("The child class cannot be constructed under this property's owner."));
+        // Construct under an isolated owner of the same class. Constructors may execute project
+        // code, but no temporary reference is ever installed into the live asset.
+        TemporaryOwner.Reset(NewObject<UObject>(GetTransientPackage(), Target.Owner->GetClass(), NAME_None, RF_Transient));
+        ProposedChild.Reset(NewObject<UObject>(TemporaryOwner.Get(), Class, NAME_None, RF_Transient));
+        if (!ProposedChild.IsValid()) return Refuse(TEXT("The temporary child could not be constructed."));
+        Result.Effects.Add(TEXT("temporary_object_constructors_executed"));
+        if (Spec->HasField(TEXT("fields")))
+        {
+            const TSharedPtr<FJsonObject>* Fields = nullptr;
+            if (!Spec->TryGetObjectField(TEXT("fields"), Fields)) return Refuse(TEXT("fields must be a JSON object whose values are Unreal property-text strings."));
+            for (const auto& Item : (*Fields)->Values)
+            {
+                FProperty* Field = FindFProperty<FProperty>(Class, *Item.Key);
+                FString Input;
+                if (!Editable(Field) || !Item.Value->TryGetString(Input)) return Refuse(TEXT("Each initial field must be an editable reflected field with a string value: ") + Item.Key);
+                FValue Parsed(Field, Field->ContainerPtrToValuePtr<void>(ProposedChild.Get()));
+                if (!TurboMCPDataAssetValues::ParseValue(Field, Input, Parsed.Get(), Error)) return Refuse(Item.Key + TEXT(": ") + Error);
+                Field->CopyCompleteValue(Field->ContainerPtrToValuePtr<void>(ProposedChild.Get()), Parsed.Get());
+            }
+        }
+        FValue ChildValue(ChildProperty);
+        ChildProperty->SetObjectPropertyValue(ChildValue.Get(), ProposedChild.Get());
+        if (ChildMap) TurboMCPDataAssetValues::PlanMapEntry(ChildMap, Target.Address, ChildKey->Get(), ChildValue.Get(), false, Planned.Get());
+        else ChildProperty->CopyCompleteValue(Planned.Get(), ChildValue.Get());
+        ChildDescription = TEXT("\nchild_class: ") + ClassPath + TEXT("\nchild_owner: ") + Target.Owner->GetPathName() + TEXT("\nThe preview child path is temporary; edit creates a new owned object.");
+        FSnapshot AfterConstruction(Asset);
+        if (!Baseline.Matches() || AfterConstruction.Revision != Baseline.Revision || Asset->GetOutermost()->IsDirty() != WasDirty)
+        {
+            Result.Outcome = ETurboMCPResultOutcome::Failed; Result.Code = TEXT("constructor_changed_live_state");
+            Result.SetChangedUnknown(); Result.bComplete = false;
+            return Result.AppendTo(TEXT("failed: A project constructor changed live state while preparing the child. No planned write was applied. Inspect the asset; do not retry blindly."));
+        }
+    }
+    else return Refuse(TEXT("Operation must be set, map_upsert, map_remove or create_child."));
     const FString Proposed = Export(Target.Property, Planned.Get(), Target.Owner);
-    const FString Detail = Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed;
+    const FString Detail = Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed + ChildDescription;
     if (Mode == 1) { Result.Outcome = ETurboMCPResultOutcome::Planned; return Result.AppendTo(TEXT("preview: Validated temporary values; live properties unchanged.\n") + Detail); }
     if (Target.Property->Identical(Target.Address, Planned.Get(), PPF_None))
     { Result.Outcome = ETurboMCPResultOutcome::Unchanged; return Result.AppendTo(TEXT("unchanged: The requested value is already present.\n") + Detail); }
@@ -198,6 +272,22 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
     bool Verified = false;
     if (Baseline.Matches())
     {
+        if (ProposedChild.IsValid())
+        {
+            CreatedChild.Reset(DuplicateObject(ProposedChild.Get(), Target.Owner));
+            if (CreatedChild.IsValid())
+            {
+                CreatedChild->ClearFlags(RF_Transient);
+                CreatedChild->SetFlags(RF_Transactional);
+                CreatedChild->Modify();
+                FValue FinalChild(ChildProperty);
+                ChildProperty->SetObjectPropertyValue(FinalChild.Get(), CreatedChild.Get());
+                if (ChildMap) TurboMCPDataAssetValues::PlanMapEntry(ChildMap, Target.Address, ChildKey->Get(), FinalChild.Get(), false, Planned.Get());
+                else ChildProperty->CopyCompleteValue(Planned.Get(), FinalChild.Get());
+            }
+        }
+        if (!ProposedChild.IsValid() || (CreatedChild.IsValid() && CreatedChild->GetOuter() == Target.Owner))
+        {
         Target.Property->CopyCompleteValue(Target.Address, Planned.Get());
         FSnapshot Expected(Asset);
         FPropertyChangedEvent Event(Target.NotifyProperty, EPropertyChangeType::ValueSet);
@@ -205,11 +295,13 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         Applied = true;
         FSnapshot Actual(Asset);
         Verified = Expected.Matches() && Actual.Revision == Expected.Revision;
+        }
     }
     Result.Effects.Add(TEXT("edit_notifications_may_execute_project_code"));
     if (!Verified)
     {
         Baseline.Restore();
+        if (CreatedChild.IsValid()) CreatedChild->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_NonTransactional | REN_DoNotDirty);
         FSnapshot Restored(Asset);
         const bool RestoredExactly = Baseline.Matches() && Restored.Revision == Baseline.Revision;
         Transaction.Cancel();
@@ -224,7 +316,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
     Asset->MarkPackageDirty();
     FSnapshot Final(Asset);
     Result.Outcome = ETurboMCPResultOutcome::Changed; Result.SetChanged(true);
-    return Result.AppendTo(TEXT("edited: Property updated and readback verified. Not saved.\n") + Detail + TEXT("\ncurrent_revision: ") + Final.Revision + TEXT("\ndirty: ") + (Asset->GetOutermost()->IsDirty() ? TEXT("true") : TEXT("false")) + TEXT("\nProject edit notifications ran; external callback effects are outside this asset snapshot."));
+    return Result.AppendTo(TEXT("edited: Property updated and readback verified. Not saved.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Export(Target.Property, Target.Address, Target.Owner) + (CreatedChild.IsValid() ? TEXT("\ncreated_object: ") + CreatedChild->GetPathName() : FString()) + TEXT("\ncurrent_revision: ") + Final.Revision + TEXT("\ndirty: ") + (Asset->GetOutermost()->IsDirty() ? TEXT("true") : TEXT("false")) + TEXT("\nProject edit notifications ran; external callback effects are outside this asset snapshot."));
 }
 }
 FString UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(const FString& Asset, const FString& Property)
