@@ -517,9 +517,9 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
                 else if (Bare == TEXT("EditTurboMCPAssetUndo"))
                     Help += TEXT("\neffects: undoes only the latest matching TurboMCP transaction. Requires its preview GUID; never skips unrelated edits. No explicit compile or save. Redo remains available after success.");
                 else if (Bare == TEXT("PreviewTurboMCPAssetRevert"))
-                    Help += TEXT("\neffects: preview only; does not discard edits. Returns confirmation for EditTurboMCPAssetRevert, which discards ALL unsaved edits in the named package and may reset undo.");
+                    Help += TEXT("\neffects: preview only; does not discard edits. Returns a one-use confirmation for EditTurboMCPAssetRevert, valid for 60 seconds and invalidated by memory or disk changes. Supports saved Blueprint and data-asset packages only; refuses open asset editors and detected live-world references. The edit discards ALL unsaved edits in the named package and may reset undo.");
                 else if (Bare == TEXT("EditTurboMCPAssetRevert"))
-                    Help += TEXT("\neffects: discards ALL unsaved edits in the named Blueprint package; may reset undo. Confirm must be the current preview confirmation. This is not a save or a normal undo.");
+                    Help += TEXT("\neffects: discards ALL unsaved edits in the named saved Blueprint or data-asset package; may reset undo. Confirm must be the current preview confirmation, expires after 60 seconds and is consumed before reload. Changes to memory or disk invalidate it. Refuses open asset editors and detected live-world references. Re-read values and references afterward. This is not a save or a normal undo.");
             }
 			Help += FString::Printf(TEXT("\nwhat: %s"),
 				*FirstSentence(Field(Tool, TEXT("description"))));
