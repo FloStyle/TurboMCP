@@ -197,7 +197,47 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         SelectedChild = TEXT("\nselected_child: ") + Child->GetPathName() + TEXT("\nchild_property: ") + ChildPath;
     }
     const FString Before = Export(Target.Property, Target.Address, Target.Owner);
-    if (!Mode) return Respond(TEXT("read: Data-asset property.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\ntype: ") + Target.Property->GetCPPType() + TEXT("\nvalue: ") + Before + TEXT("\nformat: Unreal property text for values; exact loaded object paths for references. Map operations take one key and value separately."));
+    if (!Mode)
+    {
+        FString Body = TEXT("read: Data-asset property.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\ntype: ") + Target.Property->GetCPPType() + TEXT("\nvalue: ") + Before;
+        auto DescribeChild = [&](UObject* Child)
+        {
+            if (!IsValid(Child) || !Child->IsIn(Asset)) return;
+            Body += TEXT("\nowned_child: ") + Child->GetPathName() + TEXT("\nchild_class: ") + Child->GetClass()->GetPathName();
+            for (TFieldIterator<FProperty> It(Child->GetClass()); It; ++It)
+                if (Editable(*It)) Body += TEXT("\n  child_field: ") + It->GetName() + TEXT(" [") + It->GetCPPType() + TEXT("] = ") + Export(*It, It->ContainerPtrToValuePtr<void>(Child), Child);
+        };
+        if (auto* Map = CastField<FMapProperty>(Target.Property))
+        {
+            Body += TEXT("\noperations: map_upsert, map_remove; create_child and child_set require instanced object values.");
+            FScriptMapHelper Entries(Map, Target.Address);
+            for (int32 Index = 0; Index < Entries.GetMaxIndex(); ++Index)
+            {
+                if (!Entries.IsValidIndex(Index)) continue;
+                auto InputText = [&](FProperty* Property, void* Address)
+                {
+                    if (auto* Object = CastField<FObjectProperty>(Property))
+                    {
+                        UObject* Reference = Object->GetObjectPropertyValue(Address);
+                        return IsValid(Reference) ? Reference->GetPathName() : FString(TEXT("[null; not a valid reference input]"));
+                    }
+                    return Export(Property, Address, Target.Owner);
+                };
+                Body += TEXT("\nentry_key_input: ") + InputText(Map->KeyProp, Entries.GetKeyPtr(Index));
+                Body += TEXT("\nentry_value_input: ") + InputText(Map->ValueProp, Entries.GetValuePtr(Index));
+                if (auto* Object = CastField<FObjectProperty>(Map->ValueProp)) DescribeChild(Object->GetObjectPropertyValue(Entries.GetValuePtr(Index)));
+                if (Body.Len() > 32768) { Body += TEXT("\n[Remaining map entries omitted.]"); Result.bTruncated = true; break; }
+            }
+        }
+        else if (auto* Object = CastField<FObjectProperty>(Target.Property))
+        {
+            UObject* Reference = Object->GetObjectPropertyValue(Target.Address);
+            Body += TEXT("\nreference_input: ") + (IsValid(Reference) ? Reference->GetPathName() : FString(TEXT("[empty; use create_child for an instanced property]")));
+            DescribeChild(Reference);
+        }
+        Body += TEXT("\nformat: Unreal property text for values; exact loaded object paths for references. Map operations take one key and value separately. Initial child fields support scalar/value-struct values; containers, delegates and localized text are not writable through this route. Read tool help before editing.");
+        return Respond(Body);
+    }
     if (Revision.IsEmpty() || Revision != Baseline.Revision) return Refuse(TEXT("State revision is missing or stale. Read the asset again before previewing or editing."));
     FValue Planned(Target.Property, Target.Address);
     TStrongObjectPtr<UObject> HeldKey, HeldValue, TemporaryOwner, ProposedChild, CreatedChild;

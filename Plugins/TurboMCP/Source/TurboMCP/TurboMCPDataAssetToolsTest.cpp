@@ -37,6 +37,12 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
         for (const FString& Line : Lines) if (Line.StartsWith(TEXT("revision: "))) return Line.Mid(10);
         AddError(TEXT("Reader did not return a revision.")); return FString();
     };
+    const FString ReaderDetails = UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(Path, TEXT("Entries"));
+    TestTrue(TEXT("map reader gives exact reusable key"), ReaderDetails.Contains(TEXT("entry_key_input: ") + KeyA->GetPathName()));
+    TestTrue(TEXT("map reader describes owned child fields"), ReaderDetails.Contains(TEXT("child_field: Number")));
+    const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCP.TurboMCPPreviewToolset"), TEXT("PreviewTurboMCPDataAssetProperty"));
+    AddInfo(Help);
+    TestTrue(TEXT("live help describes child creation and revision"), Help.Contains(TEXT("create_child")) && Help.Contains(TEXT("Revision")) && Help.Contains(TEXT("property")));
     const FString OriginalRevision = ReadRevision();
     const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("map_upsert"), KeyB->GetPathName(), ChildB->GetPathName(), OriginalRevision);
     AddInfo(Preview);
