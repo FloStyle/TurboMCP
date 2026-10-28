@@ -970,6 +970,39 @@ bool ApplyFunctionCollapse(const FTurboMCPGraphStructure::FPlan& Plan, FString& 
     if (Pure && !Schema->TryCreateConnection(Entry->FindPin(UEdGraphSchema_K2::PN_Then),Result->FindPin(UEdGraphSchema_K2::PN_Execute))) return Fail();
     FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
     Source->NotifyGraphChanged();Destination->NotifyGraphChanged();
+    // Measure the real replacement rather than assuming the old block's first
+    // node has the same size. Keep unrelated nodes fixed and search only the
+    // original selection footprint; a cramped graph must not report success.
+    if (!FTurboMCPGraphTidy::PrepareAlignment(Blueprint,Source,GeometryError)) return Fail();
+    const FVector2D CallSize=FTurboMCPGraphTidy::AlignmentNodeSize(Call);
+    int32 SelectionRight=Left,SelectionBottom=Top;
+    for (UEdGraphNode* Node:Selected)
+    {
+        const FVector2D Size=SelectedSizes.FindRef(Node);
+        SelectionRight=FMath::Max(SelectionRight,Node->NodePosX-320+Left+FMath::CeilToInt(Size.X));
+        SelectionBottom=FMath::Max(SelectionBottom,Node->NodePosY+Top+FMath::CeilToInt(Size.Y));
+    }
+    auto Fits=[&](int32 X,int32 Y)
+    {
+        for (const auto& Pair:FixedPositions)
+        {
+            if (Cast<UEdGraphNode_Comment>(Pair.Key)) continue; // Containing annotations are not solid nodes.
+            const FVector2D Size=FTurboMCPGraphTidy::AlignmentNodeSize(Pair.Key);
+            if (X < Pair.Value.X+Size.X+16 && X+CallSize.X+16 > Pair.Value.X &&
+                Y < Pair.Value.Y+Size.Y+16 && Y+CallSize.Y+16 > Pair.Value.Y) return false;
+        }
+        return true;
+    };
+    bool Placed=false;
+    for (int32 Y=Top;Y<=SelectionBottom && !Placed;Y+=16)
+        for (int32 X=Left;X<=SelectionRight && !Placed;X+=16)
+            if (Fits(X,Y)) {Call->NodePosX=X;Call->NodePosY=Y;Placed=true;}
+    if (!Placed)
+    {
+        Error=TEXT("partial: Function extracted, but the replacement call has no clear position in the original selection region. Nothing saved. Undo or arrange the call before continuing.");
+        return false;
+    }
+    Source->NotifyGraphChanged();
     for (const FOriginalPin& State:OriginalPins)
     {
         if (State.Pin->DefaultValue!=State.Value || State.Pin->DefaultObject!=State.Object || !State.Pin->DefaultTextValue.EqualTo(State.Text)) return Fail();
