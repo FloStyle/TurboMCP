@@ -2034,3 +2034,5 @@ OCT27-09 done: unique graph-local connect/bind IDs, specific refusals and canoni
 OCT27-08 ready/in progress: reconcile existing alias support and help before changing behavior. Exact scope oct27-append-discovery owns NodeType.cpp and GraphAppendAliasTest.cpp. Approved contract in Oct27 plan requires actual discovery-to-preview evidence, no title-only identity inference, self/promotable discovery and copyable link syntax. Integrator owns the two public append help blocks, compact AgentHelp append paragraph, and evidence.
 
 OCT27-08 implemented: discovery identity, actionable public refusals and compact append help verified. See docs/audit/append-discovery-review.json for native evidence, retained failures and reused input-event scenario. No increase to unique reviewed-tool count for reused tools.
+
+OCT27-06 ready/in progress: bounded selection in the existing GraphPositions tool. Exact assignment oct27-targeted-geometry and plan contract cover layout reader, public schema/help and purchase workflow evidence. No graph edits or duplicate geometry tool.

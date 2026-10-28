@@ -163,9 +163,9 @@
       "kind": "feature",
       "priority": "P2",
       "wave": 2,
-      "state": "open",
+      "state": "in_progress",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "X-107",
         "FT-120"
@@ -175,7 +175,9 @@
       "acceptance": "Reuse existing position/size reader. Improve help/discovery and add bounded node-ID selection if needed. State graph units, measurement limits and omitted counts. No duplicate geometry tool.",
       "verification": "Find geometry through live help; exact node selection and ambiguity/refusal; compare values with captured layout.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-targeted-geometry; DSH paused",
+      "source_review": "Existing GraphPositions measures the entire graph, has no selection, truncates by characters and uses graph array length including null entries. Reuse rendering measurement; validate all IDs before opening measurement UI.",
+      "repair_contract": "Extend existing tool with optional newline-separated NodeIds (empty selects all) and MaxNodes default 128, range 1..256. Accept exact reader IDs or graph-local unique hex keys; reject missing/ambiguous/blank entries and excessive selection before measuring. Preserve old two-argument C++ calls with defaults. Sort stable IDs, report selected/listed/omitted counts and explicit measurement bounds/graph units. No new geometry tool, graph edits, compile or save. Test exact/short/wrong/ambiguous selection, limits and live help in existing purchase workflow; inspect its screenshot. Integrator owns generated inventory and tracking."
     },
     {
       "id": "OCT27-07",
