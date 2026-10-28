@@ -5,6 +5,7 @@
 #include "Misc/AutomationTest.h"
 #include "HAL/IConsoleManager.h"
 #include "Logging/LogMacros.h"
+#include "Debugging/SlateDebugging.h"
 DEFINE_LOG_CATEGORY_STATIC(LogTurboMCPConsoleFixture, Log, All);
 namespace
 {
@@ -59,6 +60,11 @@ bool FTurboMCPDiagnosticConsoleTest::RunTest(const FString&)
     {
         const FString Start = TEXT("SlateDebugger.Event.Start"), Stop = TEXT("SlateDebugger.Event.Stop");
         TestTrue(TEXT("Debugger dispatch is handled"), Edit(Start, ConsoleToken(Preview(Start))).Contains(TEXT("Command handled: yes")));
+#if WITH_SLATE_DEBUGGING
+        FSlateDebugging::BroadcastWarning(FText::FromString(TEXT("console-slate-live-marker")), nullptr);
+        const FString DebugLog = UTurboMCPReadToolset::ReadTurboMCPEditorLog(TEXT("LogSlateDebugger"), TEXT("console-slate-live-marker"), TEXT(""), TEXT(""), 10);
+        TestTrue(TEXT("Started debugger emits a real Slate diagnostic event"), DebugLog.Contains(TEXT("console-slate-live-marker")));
+#endif
         TestTrue(TEXT("Debugger stop is handled"), Edit(Stop, ConsoleToken(Preview(Stop))).Contains(TEXT("Command handled: yes")));
     }
     else AddError(TEXT("Stock editor Slate debugger commands unavailable."));
