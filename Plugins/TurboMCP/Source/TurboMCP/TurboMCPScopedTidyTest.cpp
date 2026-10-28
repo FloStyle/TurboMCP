@@ -190,6 +190,46 @@ bool FTurboMCPScopedTidyTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Obstruction preserves box width"), ProtectedBox->NodeWidth, 2400);
     TestEqual(TEXT("Obstruction preserves box height"), ProtectedBox->NodeHeight, 600);
     TestFalse(TEXT("Obstruction preserves clean flag"), Package->IsDirty());
+    // TD-49 shape: a new four-node lane feeds a fixed call inside a comment.
+    // Only the lane is selected; the target's box remains an immutable obstacle.
+    UEdGraph* OriginalGraph = Graph;
+    Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("BoxedTarget"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+    FBlueprintEditorUtils::AddUbergraphPage(BP, Graph);
+    auto* LaneEvent = NewObject<UK2Node_CustomEvent>(Graph);
+    LaneEvent->CustomFunctionName = TEXT("NewLane");
+    Graph->AddNode(LaneEvent, false, false); LaneEvent->CreateNewGuid(); LaneEvent->AllocateDefaultPins();
+    LaneEvent->NodePosX = 6000; LaneEvent->NodePosY = 3000;
+    TArray<FString> LaneIds{TurboMCPNodeId::MakeForNode(LaneEvent, true)};
+    TArray<UEdGraphNode*> LaneNodes{LaneEvent};
+    UEdGraphPin* LaneOutput = LaneEvent->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+    for (int32 I = 0; I < 3; ++I)
+    {
+        auto* Call = MakeCall(6400 + I * 400, 3000);
+        LaneOutput->MakeLinkTo(Call->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+        LaneOutput = Call->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+        LaneIds.Add(TurboMCPNodeId::MakeForNode(Call, true)); LaneNodes.Add(Call);
+    }
+    auto* BoxedCall = MakeCall(2400, 80);
+    LaneOutput->MakeLinkTo(BoxedCall->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+    auto* TargetBox = NewObject<UEdGraphNode_Comment>(Graph);
+    Graph->AddNode(TargetBox, false, false); TargetBox->CreateNewGuid();
+    TargetBox->NodePosX = 2360; TargetBox->NodePosY = 0;
+    TargetBox->NodeWidth = 400; TargetBox->NodeHeight = 350; TargetBox->NodeComment = TEXT("Existing handler");
+    const FString LaneEdit = UTurboMCPEditToolset::EditTurboMCPGraphTidy(BP->GetPathName(), Graph->GetName(), false, LaneIds);
+    AddInfo(LaneEdit);
+    TestTrue(TEXT("Four-node lane moves beside boxed consumer"), LaneEdit.StartsWith(TEXT("changed:")));
+    LastX = -100000;
+    for (const auto* Node : LaneNodes)
+    {
+        TestTrue(TEXT("Box-target lane flows forward"), Node->NodePosX > LastX && Node->NodePosX < TargetBox->NodePosX);
+        TestTrue(TEXT("Box-target lane remains local"), FMath::Abs(Node->NodePosY - BoxedCall->NodePosY) < 500);
+        LastX = Node->NodePosX;
+    }
+    TestEqual(TEXT("Boxed consumer stays fixed"), BoxedCall->NodePosX, 2400);
+    TestEqual(TEXT("Target comment stays fixed"), TargetBox->NodePosX, 2360);
+    TestEqual(TEXT("Target comment is not resized"), TargetBox->NodeWidth, 400);
+    AddInfo(TEXT("Boxed-target capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(), Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("2048x512")));
+    Graph = OriginalGraph;
     BP->ClearFlags(RF_Public | RF_Standalone);
     Package->SetDirtyFlag(false);
     return !HasAnyErrors();
