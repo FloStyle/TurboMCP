@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "tasks": [
+    "OCT27-19"
+  ],
+  "status": "diagnostic_scope_completed_historical_cause_unresolved",
+  "candidate": "fa78525ceba1724275b0369ced29818f952d0546",
+  "native_run": "55209c6322054efe81dab97085f0f4a1",
+  "checks": [
+    "Tools/test-client-retry.py passed real client control flow with mocked loss before and after effects, failed reconnect and no duplicate writes",
+    "Incident exposes UTC, bounded tool/method and exception class, reconnect status and explicit unknown outcome without argument/session/exception-text copying",
+    "Native editor-log suite passed and actual startup log contains engine=5.8.3-0+UE5, loaded module path, binary timestamp and compiler time with sourceRevision=unknown",
+    "Assignment scope, repository structure and language/encoding checks passed"
+  ],
+  "limits": [
+    "X-115 historical server-side cause remains unknown; no original build, server log or crash evidence exists",
+    "Transport tests use controlled mocked transport, not a reproduction of the field failure",
+    "Build/compiler timestamps do not prove source revision",
+    "No claim that diagnostics prevent disconnects. Recurrence collection and asset-state reconciliation are documented."
+  ]
+}

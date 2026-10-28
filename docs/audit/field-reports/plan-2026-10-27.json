@@ -507,8 +507,8 @@
       "kind": "investigation",
       "priority": "P2",
       "wave": 3,
-      "state": "in_progress",
-      "validation": "untested",
+      "state": "done",
+      "validation": "controlled_transport_and_native_startup_passed",
       "readiness": "ready",
       "reports": [
         "X-115"
@@ -520,7 +520,11 @@
       "owner": "Codex",
       "dispatch": "Codex oct27-disconnect-diagnostics; DSH paused",
       "source_review": "Session.rpc already prevents tool-call replay, including read-labelled calls. UnknownOutcomeError lacks timestamped structured evidence and reconnect outcome. Module logs lifecycle without build context; status already reports descriptor/engine/binary time with revision explicitly unknown. Historical field failure has no server log or pinned build.",
-      "repair_contract": "Retain no-replay semantics. Add a bounded structured last_failure record and exception diagnostic with UTC time, tool/method, failure type, reconnect success/failure, replay=false and explicit unknown mutation outcome/server cause. Do not store arguments, credentials or raw session IDs. Provide correlation guidance to capture ReadTurboMCPStatus, editor log window and shutdown/crash evidence; disconnected server cause and historical revision remain unknown unless independently observed. Add module lifecycle identity logging using existing stock engine/module APIs (compiler time is not revision proof). Extend real client-control-flow tests for losses before/after effect, failed reconnect, no duplicate write and bounded safe diagnostic fields. Document recurrence collection and state reconciliation. Native startup evidence verifies identity log; no speculative repair of the historical disconnect."
+      "repair_contract": "Retain no-replay semantics. Add a bounded structured last_failure record and exception diagnostic with UTC time, tool/method, failure type, reconnect success/failure, replay=false and explicit unknown mutation outcome/server cause. Do not store arguments, credentials or raw session IDs. Provide correlation guidance to capture ReadTurboMCPStatus, editor log window and shutdown/crash evidence; disconnected server cause and historical revision remain unknown unless independently observed. Add module lifecycle identity logging using existing stock engine/module APIs (compiler time is not revision proof). Extend real client-control-flow tests for losses before/after effect, failed reconnect, no duplicate write and bounded safe diagnostic fields. Document recurrence collection and state reconciliation. Native startup evidence verifies identity log; no speculative repair of the historical disconnect.",
+      "review": "docs/audit/disconnect-diagnostics-review.json",
+      "resolution": "Completed incident capture, no-replay regression coverage, startup identity logging and reconnect/state-reconciliation guidance. Investigation result: historical cause is unknown, not repaired by assumption.",
+      "remaining": "",
+      "unresolved_cause": "Original X-115 disconnect cannot be attributed without recurrence evidence; retain as an open field observation."
     }
   ],
   "positive_evidence": {

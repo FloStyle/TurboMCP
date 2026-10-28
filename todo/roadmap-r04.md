@@ -2052,3 +2052,7 @@ Implemented bounded filtered editor output history and session cursor paging. Fo
 ### OCT27-13 diagnostic console completion
 
 Preview-confirmed console diagnostics implemented and verified through public MCP during timed PIE. Native run 661fed5899f24806add6025788fc3244 passed. See docs/audit/diagnostic-console-review.json for supported commands, process-wide effects, evidence and limits. FT-123 remains a reference to X-110.
+
+### OCT27-19 interruption diagnostics
+
+Completed timestamped client incident reporting, no-replay coverage and stock-editor startup identity logging. Native run 55209c6322054efe81dab97085f0f4a1 and focused client checks passed. X-115 remains an open historical-cause observation; diagnostics are not represented as a disconnect fix. See docs/audit/disconnect-diagnostics-review.json.

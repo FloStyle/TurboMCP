@@ -528,10 +528,11 @@
       "state": "open",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "diagnostics_tested_historical_cause_unresolved",
       "observation": "The first call failed with a fetch error. The second reported the server unavailable. Neither call changed anything. The user restarted the editor, after which calls worked.",
-      "remaining": "Unknown cause; retain as evidence-needed. Need future timestamped server/editor logs and exact build if it recurs; old evidence may not be recoverable.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "remaining": "Await recurrence with timestamped incident, last build identity and editor/server logs; do not replay uncertain edits.",
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "resolution": "OCT27-19 diagnostic work implemented. This is not a confirmed repair of the original disconnect."
     },
     {
       "report": "2026-10-27_S5",
