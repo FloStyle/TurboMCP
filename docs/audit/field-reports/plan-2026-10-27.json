@@ -119,7 +119,13 @@
       "repair_contract": "docs/design/scoped-tidy-boundaries.md",
       "source_review": "Global unboxed placement starts beyond all fixed content; structural comparator can accept unbounded boundary-wire growth. Repair local component placement plus planned/actual boundary checks and exact rejection reasons.",
       "evidence": "docs/audit/scoped-tidy-review.json",
-      "remaining": "Purchase workflow 265d688a43fd4e8ba08e072981c587a0: mixed getter/return selection rolls back because CanAfford boundary wire grows 205.9 to 377.3 (allowed 148). Distant getter stays 4000 units away. Guard correctly refuses candidate; investigate alternative placement preserving fixed boundary rather than relax guard. Screenshot E832AD2345436267720B60A06AF3099D inspected."
+      "remaining": "Purchase workflow 265d688a43fd4e8ba08e072981c587a0: mixed getter/return selection rolls back because CanAfford boundary wire grows 205.9 to 377.3 (allowed 148). Distant getter stays 4000 units away. Guard correctly refuses candidate; investigate alternative placement preserving fixed boundary rather than relax guard. Screenshot E832AD2345436267720B60A06AF3099D inspected.",
+      "integrator_followup_scope": {
+        "files": [
+          "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
+        ],
+        "contract": "Mixed-selection reproduction 265d688a43fd4e8ba08e072981c587a0: component search does not consider original placement and scores candidates without per-wire boundary feasibility. Include original component-anchor translation and reject unsafe boundary candidates during search using the existing unchanged allowance. Keep final planned/actual guards. No guard relaxation. Verify purchase plus scoped-tidy suite and screenshots."
+      }
     },
     {
       "id": "OCT27-05",
