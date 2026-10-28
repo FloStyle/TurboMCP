@@ -80,6 +80,32 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
     const FString Overwrite = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Child"), TEXT("create_child"), TEXT(""), ChildSpec, ReadRevision());
     TestTrue(TEXT("create_child never overwrites existing child"), Overwrite.StartsWith(TEXT("refused:")));
 
+    TStrongObjectPtr<UTurboMCPDataAssetSafetyFixture> KeyC(NewObject<UTurboMCPDataAssetSafetyFixture>());
+    const FString MapCreate = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("create_child"), KeyC->GetPathName(), ChildSpec, ReadRevision());
+    AddInfo(MapCreate);
+    auto* ChildC = Asset->Entries.FindRef(KeyC.Get());
+    TestTrue(TEXT("map child creation accepted"), MapCreate.StartsWith(TEXT("edited:")));
+    TestTrue(TEXT("map child has correct owner and preserves other entries"), ChildC && ChildC->GetOuter() == Asset.Get() && ChildC->Number == 17 && Asset->Entries.Num() == 3 && Asset->Entries.FindRef(KeyA.Get()) == ChildA);
+    const FString ChildEdit = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("child_set"), KeyC->GetPathName(), TEXT("{\"property\":\"Number\",\"value\":\"23\"}"), ReadRevision());
+    AddInfo(ChildEdit);
+    TestTrue(TEXT("map child field edit accepted"), ChildEdit.StartsWith(TEXT("edited:")));
+    TestTrue(TEXT("map child identity retained during edit"), Asset->Entries.FindRef(KeyC.Get()) == ChildC && ChildC && ChildC->Number == 23);
+    const FString InvalidChild = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("child_set"), KeyC->GetPathName(), TEXT("{\"property\":\"Number\",\"value\":\"23 trailing\"}"), ReadRevision());
+    TestTrue(TEXT("invalid map child value refuses"), InvalidChild.StartsWith(TEXT("refused:")));
+    TestTrue(TEXT("invalid map child value preserves identity and value"), ChildC && ChildC->Number == 23 && Asset->Entries.FindRef(KeyC.Get()) == ChildC);
+    const FString Remove = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("map_remove"), KeyC->GetPathName(), TEXT(""), ReadRevision());
+    TestTrue(TEXT("exact entry removal accepted"), Remove.StartsWith(TEXT("edited:")));
+    TestTrue(TEXT("removal preserves unrelated map entries"), Asset->Entries.Num() == 2 && Asset->Entries.FindRef(KeyA.Get()) == ChildA && Asset->Entries.FindRef(KeyB.Get()) == ChildB);
+    const FString RemoveAgain = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Entries"), TEXT("map_remove"), KeyC->GetPathName(), TEXT(""), ReadRevision());
+    TestTrue(TEXT("absent entry removal is an explicit no-op"), RemoveAgain.StartsWith(TEXT("unchanged:")));
+    if (Asset->Child)
+    {
+        Asset->Child->Label = TEXT("\u4e00");
+        const FString UnicodeRevision = ReadRevision();
+        Asset->Child->Label = TEXT("\u4e01");
+        TestTrue(TEXT("revision distinguishes non-ASCII values"), ReadRevision() != UnicodeRevision);
+    }
+
     TStrongObjectPtr<UInputAction> Action(NewObject<UInputAction>(Package, TEXT("InputAction")));
     UPlayerMappableKeySettings::StaticClass();
     const FString ActionRead = UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(Action->GetPathName(), TEXT("PlayerMappableKeySettings"));

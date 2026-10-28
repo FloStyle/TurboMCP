@@ -70,7 +70,8 @@ struct FSnapshot
                 Fields.Add({Object, *It, MakeUnique<FValue>(*It, Address)});
             }
         }
-        Revision = FMD5::HashAnsiString(*Text);
+        const FTCHARToUTF8 Utf8(*Text);
+        Revision = FMD5::HashBytes(reinterpret_cast<const uint8*>(Utf8.Get()), Utf8.Length());
     }
     bool Matches() const
     {
@@ -98,7 +99,7 @@ struct FTarget
     FProperty* NotifyProperty = nullptr;
     void* Address = nullptr;
 };
-bool ResolveField(UDataAsset* Asset, const FString& Path, FTarget& Target, FString& Error)
+bool ResolveField(UObject* Asset, const FString& Path, FTarget& Target, FString& Error)
 {
     TArray<FString> Parts;
     Path.ParseIntoArray(Parts, TEXT("."), false);
@@ -159,6 +160,34 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
     FTarget Target;
     FString Error;
     if (!ResolveField(Asset, Path, Target, Error)) return Refuse(Error);
+    FString InputValue = Value;
+    FString SelectedChild;
+    if (Mode && Operation == TEXT("child_set"))
+    {
+        auto* Map = CastField<FMapProperty>(Target.Property);
+        auto* ObjectValue = Map ? CastField<FObjectProperty>(Map->ValueProp) : nullptr;
+        if (!Map || !ObjectValue || !ObjectValue->HasAnyPropertyFlags(CPF_InstancedReference) || Key.IsEmpty())
+            return Refuse(TEXT("child_set requires a map with instanced object values and an exact Key."));
+        FValue ParsedKey(Map->KeyProp);
+        TStrongObjectPtr<UObject> RetainedKey;
+        const bool KeyValid = CastField<FObjectPropertyBase>(Map->KeyProp)
+            ? TurboMCPDataAssetValues::ResolveReference(Map->KeyProp, Key, Asset, true, ParsedKey.Get(), RetainedKey, Error)
+            : TurboMCPDataAssetValues::ParseValue(Map->KeyProp, Key, ParsedKey.Get(), Error);
+        if (!KeyValid) return Refuse(Error);
+        FScriptMapHelper Entries(Map, Target.Address);
+        const int32 Index = Entries.FindMapIndexWithKey(ParsedKey.Get());
+        UObject* Child = Index == INDEX_NONE ? nullptr : ObjectValue->GetObjectPropertyValue(Entries.GetValuePtr(Index));
+        if (!IsValid(Child) || !Child->IsIn(Asset)) return Refuse(TEXT("The selected map entry has no owned child to edit."));
+        TSharedPtr<FJsonObject> Spec;
+        FString ChildPath;
+        if (Value.Len() > 65536 || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Value), Spec) || !Spec ||
+            Spec->Values.Num() != 2 || !Spec->TryGetStringField(TEXT("property"), ChildPath) || !Spec->TryGetStringField(TEXT("value"), InputValue))
+            return Refuse(TEXT("child_set Value must contain exactly two JSON strings: property and value."));
+        FTarget ChildTarget;
+        if (!ResolveField(Child, ChildPath, ChildTarget, Error)) return Refuse(Error);
+        Target = ChildTarget;
+        SelectedChild = TEXT("\nselected_child: ") + Child->GetPathName() + TEXT("\nchild_property: ") + ChildPath;
+    }
     const FString Before = Export(Target.Property, Target.Address, Target.Owner);
     if (!Mode) return Result.AppendTo(TEXT("read: Data-asset property.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\ntype: ") + Target.Property->GetCPPType() + TEXT("\nvalue: ") + Before + TEXT("\nformat: Unreal property text for values; exact loaded object paths for references. Map operations take one key and value separately."));
     if (Revision.IsEmpty() || Revision != Baseline.Revision) return Refuse(TEXT("State revision is missing or stale. Read the asset again before previewing or editing."));
@@ -173,10 +202,10 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         if (CastField<FObjectPropertyBase>(Property)) return TurboMCPDataAssetValues::ResolveReference(Property, Input, Asset, IsKey, Out, Held, Error);
         return TurboMCPDataAssetValues::ParseValue(Property, Input, Out, Error);
     };
-    if (Operation == TEXT("set"))
+    if (Operation == TEXT("set") || Operation == TEXT("child_set"))
     {
-        if (!Key.IsEmpty()) return Refuse(TEXT("Key must be empty for set."));
-        if (!Parse(Target.Property, Value, false, Planned.Get(), HeldValue)) return Refuse(Error);
+        if (Operation == TEXT("set") && !Key.IsEmpty()) return Refuse(TEXT("Key must be empty for set."));
+        if (!Parse(Target.Property, InputValue, false, Planned.Get(), HeldValue)) return Refuse(Error);
     }
     else if (Operation == TEXT("map_upsert") || Operation == TEXT("map_remove"))
     {
@@ -260,9 +289,9 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
             return Result.AppendTo(TEXT("failed: A project constructor changed live state while preparing the child. No planned write was applied. Inspect the asset; do not retry blindly."));
         }
     }
-    else return Refuse(TEXT("Operation must be set, map_upsert, map_remove or create_child."));
+    else return Refuse(TEXT("Operation must be set, map_upsert, map_remove, create_child or child_set."));
     const FString Proposed = Export(Target.Property, Planned.Get(), Target.Owner);
-    const FString Detail = Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed + ChildDescription;
+    const FString Detail = Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed + ChildDescription + SelectedChild;
     if (Mode == 1) { Result.Outcome = ETurboMCPResultOutcome::Planned; return Result.AppendTo(TEXT("preview: Validated temporary values; live properties unchanged.\n") + Detail); }
     if (Target.Property->Identical(Target.Address, Planned.Get(), PPF_None))
     { Result.Outcome = ETurboMCPResultOutcome::Unchanged; return Result.AppendTo(TEXT("unchanged: The requested value is already present.\n") + Detail); }
@@ -319,7 +348,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
     Asset->MarkPackageDirty();
     FSnapshot Final(Asset);
     Result.Outcome = ETurboMCPResultOutcome::Changed; Result.SetChanged(true);
-    return Result.AppendTo(TEXT("edited: Property updated and readback verified. Not saved.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Export(Target.Property, Target.Address, Target.Owner) + (CreatedChild.IsValid() ? TEXT("\ncreated_object: ") + CreatedChild->GetPathName() : FString()) + TEXT("\ncurrent_revision: ") + Final.Revision + TEXT("\ndirty: ") + (Asset->GetOutermost()->IsDirty() ? TEXT("true") : TEXT("false")) + TEXT("\nProject edit notifications ran; external callback effects are outside this asset snapshot."));
+    return Result.AppendTo(TEXT("edited: Property updated and readback verified. Not saved.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + SelectedChild + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Export(Target.Property, Target.Address, Target.Owner) + (CreatedChild.IsValid() ? TEXT("\ncreated_object: ") + CreatedChild->GetPathName() : FString()) + TEXT("\ncurrent_revision: ") + Final.Revision + TEXT("\ndirty: ") + (Asset->GetOutermost()->IsDirty() ? TEXT("true") : TEXT("false")) + TEXT("\nProject edit notifications ran; external callback effects are outside this asset snapshot."));
 }
 }
 FString UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(const FString& Asset, const FString& Property)

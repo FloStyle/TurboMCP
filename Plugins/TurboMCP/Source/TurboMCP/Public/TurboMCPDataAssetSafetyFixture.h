@@ -18,6 +18,8 @@ class UTurboMCPDataAssetSafetyChild : public UObject
 public:
     UPROPERTY(EditAnywhere, Category="Test")
     int32 Number = 7;
+    UPROPERTY(EditAnywhere, Category="Test")
+    FString Label;
 #if WITH_EDITOR
     // Deliberate synchronous notification mismatch for owned rollback tests only.
     bool bChangeAfterEdit = false;
