@@ -2060,3 +2060,7 @@ Completed timestamped client incident reporting, no-replay coverage and stock-ed
 ### OCT27-10 custom-event creation
 
 Standalone typed custom-event creation and append workflow passed native run c08a168e837047c8a0b8c4af69e987bb; native screenshot inspected. Initial NullRHI failure and negative-control lookup warnings retained in docs/audit/custom-event-review.json. No disk persistence or all-project certification claimed.
+
+### OCT27-16 function flags
+
+Preview/edit pure and const flags accepted for the bounded helper/caller workflow. Native 94dab3763fb04d7c972470c0eccfb055 and offline 65032c7470f94e1a80ae4a4c6353cfb0 passed. Prior failures and unsupported macro/delegate/map conversion limits remain in docs/audit/function-flags-review.json.

@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "tasks": [
+    "OCT27-16"
+  ],
+  "status": "implemented_focused_native_passed",
+  "native_run": "94dab3763fb04d7c972470c0eccfb055",
+  "prior_passes": [
+    "0abf84cdb62647cc884c70b87514b09e",
+    "072bb17edb194e0bba54dc659c214da8"
+  ],
+  "scope_projection": "e25d2a55ae044b218aec38d53417b06053651b35",
+  "actual_candidate": "cd19c3eaea0dc16b695f7505f4f1862551495f51",
+  "retained_failures": [
+    "259f2bae0fd346d0bb983a22270cbc85: stale inventory and member-qualified null guard not recognized; explicit local guard passes lookup checker.",
+    "Scope check included approved integrator catalog/runner edits; exact source blobs passed separate projection."
+  ],
+  "checks": [
+    "Pure/const helper compile and runtime string return",
+    "Preview/refusal/no-op state preservation and live help",
+    "Connected pure/impure caller refusals; const-only caller link and position preservation",
+    "Disconnected caller reconstruction",
+    "Loaded inherited caller compile and position; inherited edit refusal",
+    "Receiver member-write const refusal"
+  ],
+  "images_inspected": [
+    "BP_FunctionFlags_GetLabel_native_1200x700_30B915684232CCADB0988BBBF2E33297.png: readable aligned entry/return, no overlap"
+  ],
+  "limits": [
+    "No disk save or persistence claim",
+    "Registered dependencies and loaded callers only; native/dynamic references not verified",
+    "Macro-containing const conversion explicitly refuses pending expanded-body analysis",
+    "Partial mutation is reported if postconditions fail; rollback is not promised"
+  ],
+  "offline": "26/26 passed: 65032c7470f94e1a80ae4a4c6353cfb0"
+}

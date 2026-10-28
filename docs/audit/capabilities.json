@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "0f2b8674e3a9f0e1b343dd8cee10a9ef11abbb78",
+  "plugin_tree": "5df40cf2bd49bd9bf235b0c4ae747da6f0a7dffa",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 163,
+    "tools": 165,
     "by_toolset": {
-      "UTurboMCPEditToolset": 67,
+      "UTurboMCPEditToolset": 68,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 54,
+      "UTurboMCPPreviewToolset": 55,
       "UTurboMCPReadToolset": 36
     }
   },
@@ -423,6 +423,29 @@
         "Tools/test-local-vars.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPFunctionFlags",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Function",
+        "Pure",
+        "Const"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlags.cpp",
+          "line": 285
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -2088,6 +2111,29 @@
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
       "investment_decision": "compare-native-before-expanding"
+    },
+    {
+      "id": "PreviewTurboMCPFunctionFlags",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "Function",
+        "Pure",
+        "Const"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlags.cpp",
+          "line": 283
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
       "id": "PreviewTurboMCPFunctionRename",
@@ -3860,6 +3906,7 @@
         "Tools/test-datatable-quality.py",
         "Tools/test-diagnostic-console.py",
         "Tools/test-editor-log.py",
+        "Tools/test-function-flags.py",
         "Tools/test-scoped-tidy.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-vision-workflow.py"

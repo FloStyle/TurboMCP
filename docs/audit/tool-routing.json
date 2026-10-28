@@ -2455,6 +2455,38 @@
       "evidence": [
         "docs/audit/custom-event-review.json"
       ]
+    },
+    {
+      "tool": "PreviewTurboMCPFunctionFlags",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/function-flags-review.json"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPFunctionFlags",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/function-flags-review.json"
+      ]
     }
   ],
   "source_comparison": {

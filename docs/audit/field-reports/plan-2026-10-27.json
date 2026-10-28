@@ -452,8 +452,8 @@
       "kind": "feature",
       "priority": "P2",
       "wave": 4,
-      "state": "in_progress",
-      "validation": "partial_native_workflow_passed",
+      "state": "done",
+      "validation": "focused_native_and_visual_passed",
       "readiness": "ready",
       "reports": [
         "CB-10",
@@ -464,11 +464,13 @@
       "acceptance": "Expose current flags and explicit changes, validate inherited/override constraints and affected call-site execution wiring. Refuse unsafe flag conversion rather than silently disconnecting flow.",
       "verification": "Create pure string helper, edit eligible function, invalid const/purity constraints and preserved callers; live help and compile.",
       "owner": "Codex",
-      "dispatch": "Codex oct27-function-flags; DSH paused; implementation requires claim at approved scope commit",
+      "dispatch": "Integrated by Codex; DSH paused",
       "repair_contract": "docs/design/function-flags.md",
       "source_review": "Stock BlueprintDetailsCustomization changes entry extra flags and UFunction flags, then reconstructs through OnParamsChanged. This can change caller execution pins. Existing function rename inspects registered dependencies and loaded callers; the flags operation must inspect affected references before mutation and preserve connected flow.",
       "implementation_progress": "Candidate preview/edit and help implemented in review worktree. Stock build fc4fd69728754a2b92e658aa36d5ef0c passed. Native workflow 0abf84cdb62647cc884c70b87514b09e proves pure/const string helper compilation, runtime return, preview/refusal/no-op state and live parameter help. Capture inspected: readable aligned entry and return, no overlap.",
-      "remaining": "Connected execution/data callers, disconnected reconstruction, dependent callers, invalid const body and override controls still need focused evidence. Candidate not accepted or integrated."
+      "remaining": "",
+      "review": "docs/audit/function-flags-review.json",
+      "resolution": "Preview/edit function flags implemented with explicit choices, dependency/caller preflight, unsafe conversion refusals and preservation checks. Focused native helper/runtime/caller/const controls and live help passed; screenshot inspected. Offline 26/26 passed. Supported-domain limits retained in review."
     },
     {
       "id": "OCT27-17",

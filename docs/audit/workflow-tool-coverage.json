@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-28",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 163,
+  "inventory": 165,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -717,6 +717,25 @@
         "No save requested; no disk persistence claim",
         "Bounded synthetic actor Blueprint workflow; not every project signature or graph density"
       ]
+    },
+    {
+      "id": "WF-BP-FUNCTION-FLAGS",
+      "title": "Create a pure/const helper while preserving callers",
+      "status": "bounded_scenario_checked",
+      "review": "docs/audit/function-flags-review.json",
+      "fixture": "TurboMCP.Workflow.FunctionFlags",
+      "tools_used": [
+        "PreviewTurboMCPFunctionFlags",
+        "EditTurboMCPFunctionFlags",
+        "EditTurboMCPFunctionAdd",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "No disk save or persistence claim",
+        "Registered dependencies and loaded callers only; native/dynamic references not verified",
+        "Macro-containing const conversion explicitly refuses pending expanded-body analysis",
+        "Partial mutation is reported if postconditions fail; rollback is not promised"
+      ]
     }
   ],
   "tool_usage": {
@@ -785,7 +804,8 @@
       "WF-VISION-04-EDITOR",
       "WF-VISION-05-PLAY",
       "WF-VISION-06-PLAY-MENU",
-      "WF-VISION-07-COMMONUI"
+      "WF-VISION-07-COMMONUI",
+      "WF-BP-FUNCTION-FLAGS"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -1032,9 +1052,18 @@
     ],
     "EditTurboMCPCustomEventAdd": [
       "WF-BP-CUSTOM-EVENT"
+    ],
+    "PreviewTurboMCPFunctionFlags": [
+      "WF-BP-FUNCTION-FLAGS"
+    ],
+    "EditTurboMCPFunctionFlags": [
+      "WF-BP-FUNCTION-FLAGS"
+    ],
+    "EditTurboMCPFunctionAdd": [
+      "WF-BP-FUNCTION-FLAGS"
     ]
   },
-  "unique_tools_scenario_reviewed": 82,
+  "unique_tools_scenario_reviewed": 85,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

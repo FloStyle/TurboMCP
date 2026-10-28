@@ -555,13 +555,14 @@
       "key": "2026-10-27_S5/CB-10",
       "title": "Feature: FunctionAdd has no pure or const option (medium)",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
       "validation": "field_reported_not_locally_reproduced",
       "observation": "FunctionAdd has no flag parameter. No other tool sets function flags. The engine reader could not read the entry node flags.",
       "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "resolution": "Implemented OCT27-16; focused evidence and supported-domain limits in docs/audit/function-flags-review.json."
     },
     {
       "report": "2026-10-27_S5",
@@ -668,13 +669,14 @@
       "key": "2026-10-27_S5/FT-128",
       "title": "Set function flags (pure, const) on create or later",
       "kind": "reference",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
       "validation": "proposed_not_implemented",
       "duplicate_of": "CB-10",
       "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md"
+      "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
+      "resolution": "Implemented OCT27-16; focused evidence and supported-domain limits in docs/audit/function-flags-review.json."
     },
     {
       "report": "2026-10-27_S5",
