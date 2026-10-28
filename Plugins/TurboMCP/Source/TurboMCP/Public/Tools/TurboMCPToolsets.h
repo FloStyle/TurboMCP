@@ -1042,6 +1042,10 @@ public:
 	 * does not guarantee a later edit: the target state and edit guards can change.
      * Local labels name the PRECEDING node form. Prefer `(TypeId) ; label Name` for a pinless node,
      * or put `; label Name` on its own line after the closed form. Never put a label before its node.
+     * Every link is written on its destination INPUT: InputPin (-> SourceId:OutputPin).
+     * To feed an existing node, copy its reader form header with its node ID, then add that input link.
+     * Do not write a reverse link on a source output pin. Discover creation IDs with PreviewTurboMCPNodeType;
+     * use PreviewTurboMCPNodePins for exact pin names. Native engine search IDs are not interchangeable.
      * Reader branch headings (:then/:else) are read-only and are refused. They do not create wires.
      * Instead, label the Branch Choice and write `execute (-> Choice:then)` inside the destination
      * node form (or Choice:else for the false output). Use the exact pin names from discovery.
@@ -1880,6 +1884,10 @@ public:
      * Repeating new node forms creates another set of nodes; this is not idempotent.
      * Local labels name the PRECEDING node form. Prefer `(TypeId) ; label Name` for a pinless node,
      * or put `; label Name` on its own line after the closed form. Never put a label before its node.
+     * Every link is written on its destination INPUT: InputPin (-> SourceId:OutputPin).
+     * To feed an existing node, copy its reader form header with its node ID, then add that input link.
+     * Do not write a reverse link on a source output pin. Discover creation IDs with PreviewTurboMCPNodeType;
+     * use PreviewTurboMCPNodePins for exact pin names. Native engine search IDs are not interchangeable.
      * Reader branch headings (:then/:else) are read-only and are refused. They do not create wires.
      * Instead, label the Branch Choice and write `execute (-> Choice:then)` inside the destination
      * node form (or Choice:else for the false output). Use the exact pin names from discovery.

@@ -556,6 +556,15 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
         TestFalse(TEXT("Discovery never infers identity from matching titles"), FTurboMCPNodeType::Render(Discovery).Contains(TEXT("this graph writes it as")));
     }
 
+    for (const FString Tool : {TEXT("PreviewTurboMCPGraphAppend"), TEXT("EditTurboMCPGraphAppend")})
+    {
+        const FString Toolset = Tool.StartsWith(TEXT("Preview")) ? TEXT("TurboMCP.TurboMCPPreviewToolset") : TEXT("TurboMCP.TurboMCPEditToolset");
+        const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(Toolset, Tool);
+        TestTrue(*(Tool + TEXT(" documents input-side link grammar")), Help.Contains(TEXT("DestinationInput (-> SourceNode:SourceOutput)")));
+        TestTrue(*(Tool + TEXT(" documents existing destination identity")), Help.Contains(TEXT("existing destination node ID")));
+        TestTrue(*(Tool + TEXT(" documents occupied input risk")), Help.Contains(TEXT("Occupied inputs may be rewired")));
+    }
+
     // Exercise the public entry points and inspect actual stored defaults independently.
     for (const FName FunctionName : { FName(TEXT("MakeLiteralString")), FName(TEXT("MakeLiteralGameplayTag")) })
     {
@@ -572,12 +581,27 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
         const FString Expected = bTag ? TEXT("(TagName=\"UI.Menu.Pause\")") : TEXT("quoted \"value; still content\" and C:\\Temp\\file");
         const FString Request = FString::Printf(TEXT("(%s\n    Value %s\n)"),
             *TypeId, *TurboMCPGraphTextLex::QuoteLiteral(Expected));
+        // Exercise the help template's new-to-existing link, not just a detached literal.
+        const FString LinkedRequest = bTag ? Request : Request + FString::Printf(
+            TEXT(" ; label AddedValue\n(%s ; %s\n    InString (-> AddedValue:ReturnValue))"),
+            *TurboMCPNodeId::GetNodeTypeId(Fixture.UniqueNode),
+            *TurboMCPNodeId::MakeForNode(Fixture.UniqueNode, true));
         const FString Before = SerializeGraph(Fixture.Unique);
-        const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), Request);
+        const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), LinkedRequest);
         TestTrue(FString::Printf(TEXT("literal preview accepted: %s"), *Preview), Preview.StartsWith(TEXT("preview:")));
         TestEqual(TEXT("literal preview preserves graph"), SerializeGraph(Fixture.Unique), Before);
-        const FString Edited = UTurboMCPEditToolset::EditTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), Request);
+        const FString Edited = UTurboMCPEditToolset::EditTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), LinkedRequest);
         TestTrue(FString::Printf(TEXT("literal edit accepted: %s"), *Edited), Edited.StartsWith(TEXT("changed:")));
+        if (!bTag)
+        {
+            UEdGraphPin* Destination = Fixture.UniqueNode->FindPin(TEXT("InString"));
+            TestTrue(TEXT("Existing destination receives exactly one new source"), Destination && Destination->LinkedTo.Num() == 1);
+            if (Destination && Destination->LinkedTo.Num() == 1)
+            {
+                TestEqual(TEXT("New source uses the requested output"), Destination->LinkedTo[0]->PinName, FName(TEXT("ReturnValue")));
+                TestEqual(TEXT("Linked source retains intended literal"), Destination->LinkedTo[0]->GetOwningNode()->FindPin(TEXT("Value"))->DefaultValue, Expected);
+            }
+        }
         int32 MatchingDefaults = 0;
         for (UEdGraphNode* Node : Fixture.Unique->Nodes)
             if (UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
@@ -946,7 +970,7 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 
 	// THE FIXTURE IS IN MEMORY ONLY. The scoped cleanup above clears its dirty flag and retires its own
 	// objects after this return, including every early return; nothing is saved or registered as an asset.
-	AddInfo(FString::Printf(TEXT("the fixture %s is transient, was never saved and never called Apply"),
+	AddInfo(FString::Printf(TEXT("the fixture %s is transient, was never saved; scoped cleanup retires its edited in-memory objects"),
 		*Fixture.AssetPath));
 
 	return true;

@@ -523,6 +523,19 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
                 else if (Bare == TEXT("EditTurboMCPAssetRevert"))
                     Help += TEXT("\neffects: discards ALL unsaved edits in the named saved Blueprint or data-asset package; may reset undo. Confirm must be the current preview confirmation, expires after 60 seconds and is consumed before reload. Changes to memory or disk invalidate it. Refuses open asset editors and detected live-world references. Re-read values and references afterward. This is not a save or a normal undo.");
             }
+            // Usage comes from the current tool contract; placeholders are not real asset IDs.
+            if (Entry.Name.StartsWith(TEXT("TurboMCP.")))
+            {
+                if (Bare == TEXT("ReadTurboMCPTrace"))
+                    Help += TEXT("\nusage: Action=status, NodeId empty. This reads trace state; arm/clear require EditTurboMCPTrace.");
+                else if (Bare == TEXT("EditTurboMCPTrace"))
+                    Help += TEXT("\nusage: Action=arm, NodeId=<actual node ID from the reader>; Action=clear, NodeId empty clears the trace registry. Action=status is also accepted. No start/stop action exists. Arming does not itself execute the graph.");
+                else if (Bare == TEXT("PreviewTurboMCPGraphAppend") || Bare == TEXT("EditTurboMCPGraphAppend"))
+                    Help += TEXT("\nusage: choose the existing Asset and exact GraphName. Discover creation IDs with PreviewTurboMCPNodeType and pin names with PreviewTurboMCPNodePins; engine search IDs may differ.\nLink grammar: write DestinationInput (-> SourceNode:SourceOutput). Example template:\n(<creation ID>\n    InputPin (-> <existing source ID>:OutputPin)) ; label Added\n(<existing destination type ID> ; <existing destination node ID>\n    InputPin (-> Added:OutputPin))\nReplace placeholders with exact discovered types, reader IDs and pins. The second form refers to an existing node, not a copy. Labels name preceding forms. Do not write reverse links on output pins. Occupied inputs may be rewired: inspect the preview. Enhanced Input events are supported; unreachable calls are refused. Preview first; edit replans. No compile or save. New forms are not idempotent; do not blindly retry an uncertain edit.");
+                else if (Bare == TEXT("PreviewTurboMCPGraphPatch") || Bare == TEXT("EditTurboMCPGraphPatch"))
+                    Help += TEXT("\nusage template: Asset=<existing Blueprint path>, GraphName=<explicit existing graph>. For an existing PrintString call, replace <full reader node ID> below with that node's actual identity:\n(Development|PrintString ; <full reader node ID>\n    InString \"Hello\")\nPreview first. Patch changes existing literal defaults; this is not an append or an execution-link rewrite. The type and pin must match the target node; placeholders are not accepted IDs.");
+            }
+
 			Help += FString::Printf(TEXT("\nwhat: %s"),
 				*FirstSentence(Field(Tool, TEXT("description"))));
 
@@ -600,18 +613,6 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 				}
 			}
 
-            // Usage comes from the current tool contract; placeholders are not real asset IDs.
-            if (Entry.Name.StartsWith(TEXT("TurboMCP.")))
-            {
-                if (Bare == TEXT("ReadTurboMCPTrace"))
-                    Help += TEXT("\nusage: Action=status, NodeId empty. This reads trace state; arm/clear require EditTurboMCPTrace.");
-                else if (Bare == TEXT("EditTurboMCPTrace"))
-                    Help += TEXT("\nusage: Action=arm, NodeId=<actual node ID from the reader>; Action=clear, NodeId empty clears the trace registry. Action=status is also accepted. No start/stop action exists. Arming does not itself execute the graph.");
-                else if (Bare == TEXT("PreviewTurboMCPGraphAppend") || Bare == TEXT("EditTurboMCPGraphAppend"))
-                    Help += TEXT("\nusage template: Asset=<existing Blueprint path>, GraphName=<explicit existing graph>, Continuation=auto. Text example (connect a new call to an existing event):\n(Development|PrintString\n    InString \"Hello\"\n    Duration 1.5\n    execute (-> <full event node ID>:<execution output pin>))\nReplace both placeholders with the exact reader-derived event ID and output pin. Enhanced Input action events are supported. Use Preview first. Unreachable execution calls are refused. This fragment does not splice an occupied execution wire. For new event nodes, discover the creation ID for the target graph; reader type IDs can differ from creation IDs. A refusal is not permission to retry through a different writer.");
-                else if (Bare == TEXT("PreviewTurboMCPGraphPatch") || Bare == TEXT("EditTurboMCPGraphPatch"))
-                    Help += TEXT("\nusage template: Asset=<existing Blueprint path>, GraphName=<explicit existing graph>. For an existing PrintString call, replace <full reader node ID> below with that node's actual identity:\n(Development|PrintString ; <full reader node ID>\n    InString \"Hello\")\nPreview first. Patch changes existing literal defaults; this is not an append or an execution-link rewrite. The type and pin must match the target node; placeholders are not accepted IDs.");
-            }
 
 			// Traps come from the data file, never from code (D-07).
 			const FTurboMCPTraps::FToolInfo* Info = Traps.Find(Bare);
