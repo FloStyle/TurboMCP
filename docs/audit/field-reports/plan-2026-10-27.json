@@ -73,8 +73,8 @@
       "kind": "bug",
       "priority": "P1",
       "wave": 2,
-      "state": "in_progress",
-      "validation": "untested",
+      "state": "done",
+      "validation": "focused_native_passed",
       "readiness": "ready",
       "reports": [
         "GC-68",
@@ -85,9 +85,11 @@
       "acceptance": "Recognize supported Enhanced Input event nodes and outputs without treating arbitrary orphan nodes as entries. Existing-event and same-batch-event append must agree with compile diagnostics.",
       "verification": "New and existing input event cases, linked call, genuinely unreachable control and unchanged-state refusal.",
       "owner": "Codex",
-      "dispatch": "Codex oct27-input-entries; DSH paused",
+      "dispatch": "Integrated by Codex; DSH paused",
       "source_review": "Enhanced Input nodes derive from UK2Node and implement IK2Node_EventNodeInterface; current shared reachability recognizes UK2Node_Event subclasses only. Use the stock event interface as an additional entry contract, preserving ordinary orphan refusal.",
-      "repair_contract": "docs/design/input-event-reachability.md"
+      "repair_contract": "docs/design/input-event-reachability.md",
+      "evidence": "docs/audit/input-entry-review.json",
+      "remaining": "No remaining implementation in this scope. Runtime input delivery is separate OCT27-11."
     },
     {
       "id": "OCT27-04",

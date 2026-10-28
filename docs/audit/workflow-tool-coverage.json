@@ -608,6 +608,23 @@
         "Raw native references cannot all be detected; normal persistent asset references may be reinstanced.",
         "Recovery may reset global undo history; no selective undo or implicit save."
       ]
+    },
+    {
+      "id": "WF-BP-INPUT-ENTRY",
+      "title": "Append from existing and newly created Enhanced Input events",
+      "status": "bounded_scenario_checked",
+      "review": "docs/audit/input-entry-review.json",
+      "fixture": "TurboMCP.Graph.InputEntry",
+      "tools_used": [
+        "PreviewTurboMCPGraphAppend",
+        "EditTurboMCPGraphAppend",
+        "EditTurboMCPCompile"
+      ],
+      "limitations": [
+        "Static graph reachability only; no runtime input dispatch or mapping-context claim",
+        "Shared reader/dead-node/layout consumers source-reviewed; no independent native certification of each consumer",
+        "Help example corrected by source review; live helper rendering not rerun for this text-only change"
+      ]
     }
   ],
   "tool_usage": {

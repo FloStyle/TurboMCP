@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "updated": "2026-10-28",
+  "workflow": "WF-BP-INPUT-ENTRY",
+  "status": "bounded_scenario_checked",
+  "native_run": "7f814ae8a0984b32add6ec5258ff66bb",
+  "fixture": "TurboMCP.Graph.InputEntry",
+  "source_commit": "769dd092ac6076daa51993e27f157bed5863b66c",
+  "tools": [
+    "PreviewTurboMCPGraphAppend",
+    "EditTurboMCPGraphAppend",
+    "EditTurboMCPCompile"
+  ],
+  "checked": [
+    "Real Enhanced Input event and Triggered call recognized; ordinary disconnected call remains unreachable",
+    "Public append from existing Started output and same-request discovered new input event",
+    "Compile reports one deliberate orphan in first Blueprint and zero in fresh same-batch Blueprint",
+    "Preview and refusal preserve nodes, links, defaults, positions and package dirty state"
+  ],
+  "limitations": [
+    "Static graph reachability only; no runtime input dispatch or mapping-context claim",
+    "Shared reader/dead-node/layout consumers source-reviewed; no independent native certification of each consumer",
+    "Help example corrected by source review; live helper rendering not rerun for this text-only change"
+  ],
+  "prior_failures": [
+    "db3bd42974d94afe8140d0cf1620bf0e: fixture lacked Blueprint ownership; invalid reproduction",
+    "587bee087ac34d0ba207b0e86dd04f2c: valid baseline fails real event and linked-call reachability",
+    "bd63e5b2ee9c4247b860cb5aadf4303a: rendering required and fixture comment swallowed closing parenthesis",
+    "b32d524f80a7402a81e794da27220b73 and 4aaaaa9e61fa4b93bfcc279a0a55e6ab: fixture used reader type ID and duplicate action in same Blueprint; corrected to fresh Blueprint and creation discovery",
+    "dfed5696348440a3bf53f3f4485eeb68: initial focused pass; subsequently strengthened preservation and compile assertions",
+    "ffb22b9ec11a4533b6596d72ecd51ef8: assertion rejected explicit zero-unreachable diagnostic; corrected to require clean compile and count zero"
+  ],
+  "scope": "Worker source commit passed immutable scope gate; catalog, runner, wrapper, AgentHelp and tracking reviewed separately as integrator changes.",
+  "offline": "26/26 passed: 63510acdbae74a12844a278330add3c1"
+}

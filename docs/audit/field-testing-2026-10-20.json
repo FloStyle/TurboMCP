@@ -4293,15 +4293,16 @@
       "key": "2026-10-27_S4/GC-68",
       "title": "Append refuses execution nodes linked from an input action event (medium)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_passed",
       "observation": "Preflight refused with \"newly created execution nodes have no path from recognized entries\". The same happened when the event already existed in the graph. Compile also lists nodes after input action events as not reached from recognized entries.",
-      "remaining": "OCT27-03: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "remaining": "OCT27-03 implemented and checked in bounded native workflow; runtime dispatch not certified.",
       "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
       "planned_task": "OCT27-03",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "evidence": "docs/audit/input-entry-review.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4463,15 +4464,16 @@
       "key": "2026-10-27_S4/FT-125",
       "title": "Treat input action events as entries in append",
       "kind": "reference",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "proposed_not_implemented",
+      "validation": "focused_native_passed",
       "duplicate_of": "GC-68",
-      "remaining": "OCT27-03: Feature request, not a confirmed regression.",
+      "remaining": "OCT27-03 implemented and checked in bounded native workflow; runtime dispatch not certified.",
       "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
       "planned_task": "OCT27-03",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "evidence": "docs/audit/input-entry-review.json"
     },
     {
       "report": "2026-10-27_S5",
