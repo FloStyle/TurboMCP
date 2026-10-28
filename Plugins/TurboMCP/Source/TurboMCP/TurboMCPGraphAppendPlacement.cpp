@@ -378,8 +378,6 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
             // backward connections rather than moving or duplicating those nodes.
             struct FFixedExecBoundary { int64 IdealShift; bool bIncoming; };
             TArray<FFixedExecBoundary> Boundaries;
-            TArray<int64> CandidateShifts;
-            CandidateShifts.Add(0);
             for (const FNewLink& Link : *InLinks)
             {
                 const bool bIncoming = Link.FromFormIndex == INDEX_NONE && IsNew(Link.ToFormIndex)
@@ -395,56 +393,80 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                             ? static_cast<int64>(Node->NodePosX) + (Node->NodeWidth > 0 ? Node->NodeWidth : PlacementWidth)
                                 + PlacementHorizontalGap - X[Link.ToFormIndex]
                             : static_cast<int64>(Node->NodePosX) - PlacementHorizontalGap - X[Link.FromFormIndex] - CellWidth;
-                        Boundaries.Add({IdealShift, bIncoming}); CandidateShifts.AddUnique(IdealShift);
-                        CandidateShifts.AddUnique(IdealShift + (bIncoming ? -PlacementHorizontalGap : PlacementHorizontalGap));
+                        Boundaries.Add({IdealShift, bIncoming});
                         break;
                     }
             }
-            int32 BestBackwardCount = MAX_int32;
-            double BestBoundaryDistance = TNumericLimits<double>::Max();
-            int64 BestShiftX = 0;
-            for (int64 Candidate : CandidateShifts)
+            // Search around each fixed connection instead of pushing the block down
+            // indefinitely. Existing nodes and comment rectangles remain obstacles.
+            struct FLocalAnchor { int64 ShiftX; int64 ShiftY; };
+            TArray<FLocalAnchor> LocalAnchors;
+            for (const FNewLink& Link : *InLinks)
             {
-                bool bFits = true;
-                for (int32 I : Order)
-                    if (!FitsCoordinate(X[I] + Candidate) || !FitsCoordinate(X[I] + Candidate + CellWidth)) { bFits = false; break; }
-                if (!bFits) continue;
-                int32 BackwardCount = 0;
-                double BoundaryDistance = 0.0;
-                for (const FFixedExecBoundary& Boundary : Boundaries)
-                {
-                    if (Boundary.bIncoming ? Candidate < Boundary.IdealShift - PlacementHorizontalGap
-                        : Candidate > Boundary.IdealShift + PlacementHorizontalGap) ++BackwardCount;
-                    BoundaryDistance += FMath::Abs(static_cast<double>(Candidate - Boundary.IdealShift));
-                }
-                if (BackwardCount < BestBackwardCount
-                    || (BackwardCount == BestBackwardCount && BoundaryDistance < BestBoundaryDistance)
-                    || (BackwardCount == BestBackwardCount && BoundaryDistance == BestBoundaryDistance
-                        && FMath::Abs(Candidate) < FMath::Abs(BestShiftX)))
-                { BestBackwardCount = BackwardCount; BestBoundaryDistance = BoundaryDistance; BestShiftX = Candidate; }
-            }
-            for (int32 I : Order) X[I] += BestShiftX;
-            // Translate the whole new block past existing obstacles. Never move
-            // existing nodes or silently expand/capture an existing comment.
-            int64 ShiftY = 0;
-            for (int64 Pass = 0; Pass <= static_cast<int64>(InGraph->Nodes.Num()) * CreatedCount; ++Pass)
-            {
-                int64 NextShift = ShiftY;
-                for (int32 I : Order)
-                    for (const UEdGraphNode* Node : InGraph->Nodes)
+                const bool bIncoming = Link.FromFormIndex == INDEX_NONE && IsNew(Link.ToFormIndex);
+                const bool bOutgoing = IsNew(Link.FromFormIndex) && Link.ToFormIndex == INDEX_NONE;
+                if (!bIncoming && !bOutgoing) continue;
+                const int32 Form = bIncoming ? Link.ToFormIndex : Link.FromFormIndex;
+                const FString& Key = bIncoming ? Link.FromNodeKey : Link.ToNodeKey;
+                for (const UEdGraphNode* Node : InGraph->Nodes)
+                    if (Node && TurboMCPNodeId::MakeForNode(Node, true) == Key)
                     {
-                        if (!Node) continue;
-                        const int64 W = Node->NodeWidth > 0 ? Node->NodeWidth : PlacementWidth;
-                        const int64 H = Node->NodeHeight > 0 ? Node->NodeHeight : PlacementHeight;
-                        if (X[I] < static_cast<int64>(Node->NodePosX) + W + PlacementHorizontalGap
-                            && X[I] + CellWidth + PlacementHorizontalGap > Node->NodePosX
-                            && Y[I] + ShiftY < static_cast<int64>(Node->NodePosY) + H + PlacementVerticalGap
-                            && Y[I] + ShiftY + CellHeight + PlacementVerticalGap > Node->NodePosY)
-                            NextShift = FMath::Max(NextShift, static_cast<int64>(Node->NodePosY) + H + PlacementVerticalGap - Y[I]);
+                        const int64 Width = Node->NodeWidth > 0 ? Node->NodeWidth : PlacementWidth;
+                        const int64 IdealX = bIncoming
+                            ? int64(Node->NodePosX) + Width + PlacementHorizontalGap - X[Form]
+                            : int64(Node->NodePosX) - PlacementHorizontalGap - CellWidth - X[Form];
+                        LocalAnchors.Add({IdealX, int64(Node->NodePosY) - Y[Form]});
+                        break;
                     }
-                if (NextShift == ShiftY) break;
-                ShiftY = NextShift;
             }
+            bool bFoundLocal = false;
+            double BestLocalScore = TNumericLimits<double>::Max();
+            int64 ShiftY = 0;
+            int64 LocalShiftX = 0;
+            // Four footprint-sized rows on either side bound the search to the
+            // attachment's neighbourhood. Failure asks for space, not a remote placement.
+            for (const FLocalAnchor& Anchor : LocalAnchors)
+                for (int32 Column = -1; Column <= 1; ++Column)
+                    for (int32 Row = -4; Row <= 4; ++Row)
+                    {
+                        const int64 DX = Anchor.ShiftX + int64(Column) * (CellWidth + PlacementHorizontalGap);
+                        const int64 DY = Anchor.ShiftY + int64(Row) * CellStride;
+                        bool bClear = true;
+                        for (int32 I : Order)
+                        {
+                            if (!FitsCoordinate(X[I] + DX) || !FitsCoordinate(X[I] + DX + CellWidth)
+                                || !FitsCoordinate(Y[I] + DY) || !FitsCoordinate(Y[I] + DY + CellHeight))
+                            { bClear = false; break; }
+                            for (const UEdGraphNode* Node : InGraph->Nodes)
+                            {
+                                if (!Node) continue;
+                                const int64 W = Node->NodeWidth > 0 ? Node->NodeWidth : PlacementWidth;
+                                const int64 H = Node->NodeHeight > 0 ? Node->NodeHeight : PlacementHeight;
+                                if (X[I] + DX < int64(Node->NodePosX) + W + PlacementHorizontalGap
+                                    && X[I] + DX + CellWidth + PlacementHorizontalGap > Node->NodePosX
+                                    && Y[I] + DY < int64(Node->NodePosY) + H + PlacementVerticalGap
+                                    && Y[I] + DY + CellHeight + PlacementVerticalGap > Node->NodePosY)
+                                { bClear = false; break; }
+                            }
+                            if (!bClear) break;
+                        }
+                        if (!bClear) continue;
+                        double Score = 0.0;
+                        for (const FLocalAnchor& Endpoint : LocalAnchors)
+                            Score += FMath::Abs(double(DX - Endpoint.ShiftX)) + 2.0 * FMath::Abs(double(DY - Endpoint.ShiftY));
+                        for (const FFixedExecBoundary& Boundary : Boundaries)
+                            if (Boundary.bIncoming ? DX < Boundary.IdealShift - PlacementHorizontalGap
+                                : DX > Boundary.IdealShift + PlacementHorizontalGap)
+                                Score += 4.0 * FMath::Abs(double(DX - Boundary.IdealShift));
+                        if (!bFoundLocal || Score < BestLocalScore)
+                        { bFoundLocal = true; BestLocalScore = Score; LocalShiftX = DX; ShiftY = DY; }
+                    }
+            if (!bFoundLocal)
+            {
+                OutRefusal = TEXT("placement: no collision-free local space was found near the fixed connections. Free space around the target flow or append a smaller connected block; existing nodes were not moved.");
+                return false;
+            }
+            for (int32 I : Order) X[I] += LocalShiftX;
             for (int32 I = 0; I < InNodes.Num(); ++I)
                 if (IsNew(I))
                 {

@@ -86,6 +86,28 @@ bool FTurboMCPScopedTidyTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Planning preserves actual Y"), Moving->NodePosY, 3000);
     TestFalse(TEXT("Planning preserves clean flag"), Package->IsDirty());
     const FString MovingId = TurboMCPNodeId::MakeForNode(Moving, true);
+    FTurboMCPGraphTidy::FPlan AnchoredPlan;
+    FString AnchorError;
+    const FString AnchorPath = TurboMCPNodeId::MakeForNode(Event, true) + TEXT(",") + MovingId;
+    TestTrue(TEXT("Explicit MainPath accepts a fixed first predecessor"), FTurboMCPGraphTidy::Plan(BP->GetPathName(), Graph->GetName(), false, false, {MovingId}, AnchoredPlan, AnchorError, AnchorPath));
+    AddInfo(AnchorError);
+    for (const auto& Node : AnchoredPlan.Nodes)
+        if (Node.Node == Event)
+        {
+            TestEqual(TEXT("Explicit anchor planned X remains fixed"), Node.PlannedX, Node.X);
+            TestEqual(TEXT("Explicit anchor planned Y remains fixed"), Node.PlannedY, Node.Y);
+            TestFalse(TEXT("Explicit anchor is not added to the selection"), AnchoredPlan.SelectedNodeKeys.Contains(Node.Key));
+        }
+    FTurboMCPGraphTidy::FPlan InvalidPathPlan;
+    FString InvalidPathError;
+    TestFalse(TEXT("MainPath refuses a fixed node after the first anchor"), FTurboMCPGraphTidy::Plan(BP->GetPathName(), Graph->GetName(), false, false, {MovingId}, InvalidPathPlan, InvalidPathError, AnchorPath + TEXT(",") + TurboMCPNodeId::MakeForNode(Fixed, true)));
+
+    TestFalse(TEXT("A fixed anchor without a selected successor is refused"), FTurboMCPGraphTidy::Plan(BP->GetPathName(), Graph->GetName(), false, false, {MovingId}, InvalidPathPlan, InvalidPathError, TurboMCPNodeId::MakeForNode(Event, true)));
+    TestFalse(TEXT("A disconnected fixed first anchor is refused"), FTurboMCPGraphTidy::Plan(BP->GetPathName(), Graph->GetName(), false, false, {MovingId}, InvalidPathPlan, InvalidPathError, TurboMCPNodeId::MakeForNode(Fixed, true) + TEXT(",") + MovingId));
+    TestEqual(TEXT("Path refusals preserve selected X"), Moving->NodePosX, 6000);
+    TestEqual(TEXT("Path refusals preserve selected Y"), Moving->NodePosY, 3000);
+    TestFalse(TEXT("Path refusals preserve clean package"), Package->IsDirty());
+
     AddInfo(TEXT("Before capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(), Graph->GetName(), TEXT("neighbours"), MovingId, TEXT("1")));
     const FString Edit = UTurboMCPEditToolset::EditTurboMCPGraphTidy(BP->GetPathName(), Graph->GetName(), false, {MovingId});
     AddInfo(Edit);

@@ -11,6 +11,7 @@
 
 #include "TurboMCPGraphAppend.h"
 #include "TurboMCPNodeId.h"
+#include "Tools/TurboMCPToolsets.h"
 
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -22,6 +23,7 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_CustomEvent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -516,6 +518,13 @@ namespace
 			OutError = TEXT("the apply fixture link could not be made");
 			return false;
 		}
+        auto* Entry = NewObject<UK2Node_CustomEvent>(OutFixture.ApplyTarget);
+        Entry->CustomFunctionName = TEXT("PlacementEntry");
+        OutFixture.ApplyTarget->AddNode(Entry, false, false);
+        Entry->CreateNewGuid(); Entry->AllocateDefaultPins();
+        Entry->NodePosX = -600; Entry->NodePosY = 100;
+        if (!Schema->TryCreateConnection(Entry->FindPinChecked(TEXT("then")), OutFixture.ApplyA->FindPinChecked(TEXT("execute"))))
+        { OutError = TEXT("could not connect the placement entry"); return false; }
 		SeedString->DefaultValue = TEXT("seeded");
 		SeedString->DefaultTextValue = FText::FromString(TEXT("seeded text"));
 
@@ -524,6 +533,14 @@ namespace
 			OutError = TEXT("could not build the legacy fixture");
 			return false;
 		}
+
+        auto* LegacyEntry = NewObject<UK2Node_CustomEvent>(OutFixture.Legacy);
+        LegacyEntry->CustomFunctionName = TEXT("LegacyPlacementEntry");
+        OutFixture.Legacy->AddNode(LegacyEntry, false, false);
+        LegacyEntry->CreateNewGuid(); LegacyEntry->AllocateDefaultPins();
+        LegacyEntry->NodePosX = -600; LegacyEntry->NodePosY = 100;
+        if (!OutFixture.Legacy->GetSchema()->TryCreateConnection(LegacyEntry->FindPinChecked(TEXT("then")), OutFixture.Legacy->Nodes[0]->FindPinChecked(TEXT("execute"))))
+        { OutError = TEXT("could not connect the legacy placement entry"); return false; }
 
 		return true;
 	}
@@ -539,14 +556,33 @@ namespace
 			TEXT("(Development|PrintString\n    InString \"two\")");
 	}
 
-	FString ApplyText(const FString& InAKey, const FString& InBKey)
-	{
-		return FString::Printf(
-			TEXT("(Development|PrintString\n    ; label NewA\n    InString \"new a\")\n")
-			TEXT("(Development|PrintString ; %s\n    execute (-> NewA:then))\n")
-			TEXT("(Development|PrintString\n    execute (-> %s:then))"),
-			*InBKey, *InAKey);
-	}
+    FString ConnectedForms(UEdGraph* Graph, int32 Count)
+    {
+        // Resolve the real tail after earlier appends rather than reconnecting an
+        // occupied output. A missing tail deliberately yields an invalid fixture.
+        FString Tail;
+        for (UEdGraphNode* Node : Graph->Nodes)
+            if (Node && Node->IsA<UK2Node_CallFunction>())
+                if (UEdGraphPin* Then = Node->FindPin(TEXT("then"), EGPD_Output))
+                    if (Then->LinkedTo.IsEmpty()) Tail = TurboMCPNodeId::MakeForNode(Node, true);
+        FString Text;
+        for (int32 I = 0; I < Count; ++I)
+        {
+            const FString Source = I == 0 ? Tail : FString::Printf(TEXT("Connected%d"), I - 1);
+            Text += FString::Printf(TEXT("(Development|PrintString\n    ; label Connected%d\n    InString \"connected\"\n    execute (-> %s:then))\n"), I, *Source);
+        }
+        return Text;
+    }
+
+    FString ApplyText(const FString& InAKey, const FString& InBKey)
+    {
+        // One reachable chain: existing A -> new A -> new B -> existing B -> C.
+        return FString::Printf(
+            TEXT("(Development|PrintString\n    ; label NewA\n    InString \"new a\"\n    execute (-> %s:then))\n")
+            TEXT("(Development|PrintString ; %s\n    execute (-> NewB:then))\n")
+            TEXT("(Development|PrintString\n    ; label NewB\n    execute (-> NewA:then))"),
+            *InAKey, *InBKey);
+    }
 
 	UEdGraphNode* FindNodeByKey(UEdGraph* InGraph, const FString& InKey)
 	{
@@ -586,7 +622,7 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		FString Error;
 		TestTrue(TEXT("an empty graph plans one node"),
 			PlanText(Fixture.Blueprint, Fixture.Empty, OneForm(), true, Plan, Error));
-		TestTrue(TEXT("the empty-graph plan is acceptable"), Plan.bAcceptable());
+		TestFalse(TEXT("the empty-graph detached execution plan is refused"), Plan.bAcceptable());
 		TestTrue(TEXT("the plan records that placement was requested"), Plan.bPlacementRequested);
 		TestEqual(TEXT("the empty graph plans one position"), Plan.PlannedPositions.Num(), 1);
 		if (Plan.PlannedPositions.Num() == 1)
@@ -614,7 +650,7 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		FString Error;
 		TestTrue(TEXT("a populated graph plans two nodes"),
 			PlanText(Fixture.Blueprint, Fixture.Populated, TwoForms(), true, Plan, Error));
-		TestTrue(TEXT("the populated plan is acceptable"), Plan.bAcceptable());
+		TestFalse(TEXT("the populated detached execution plan is refused"), Plan.bAcceptable());
 		TestEqual(TEXT("the populated graph plans two positions"), Plan.PlannedPositions.Num(), 2);
 		if (Plan.PlannedPositions.Num() == 2)
 		{
@@ -628,8 +664,8 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		}
 		TestTrue(TEXT("planning leaves every existing position and link unchanged"),
 			SameGraph(Before, CaptureGraph(Fixture.Populated)));
-		TestTrue(TEXT("the populated plan uses stored sizes"),
-			!Plan.bPlacementUsedEstimatedSize);
+		TestTrue(TEXT("the populated plan reports estimated new-node sizes when preflight refuses"),
+			Plan.bPlacementUsedEstimatedSize);
 	}
 
 	// ---- 3. NEGATIVE COORDINATES ----------------------------------------------------------------------
@@ -750,7 +786,7 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		FString BoundaryError;
 		TestTrue(TEXT("the valid boundary plan is built"),
 			PlanText(Fixture.Blueprint, Fixture.Boundary, OneForm(), true, BoundaryPlan, BoundaryError));
-		TestTrue(TEXT("the valid boundary plan is acceptable"), BoundaryPlan.bAcceptable());
+		TestFalse(TEXT("the valid boundary detached execution plan is refused"), BoundaryPlan.bAcceptable());
 		TestEqual(TEXT("the valid boundary plan has one position"), BoundaryPlan.PlannedPositions.Num(), 1);
 		if (BoundaryPlan.PlannedPositions.Num() == 1)
 		{
@@ -765,7 +801,7 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		FString HighError;
 		TestTrue(TEXT("the valid upper-boundary plan is built"),
 			PlanText(Fixture.Blueprint, Fixture.BoundaryHigh, OneForm(), true, HighPlan, HighError));
-		TestTrue(TEXT("the valid upper-boundary plan is acceptable"), HighPlan.bAcceptable());
+		TestFalse(TEXT("the valid upper-boundary detached execution plan is refused"), HighPlan.bAcceptable());
 		TestEqual(TEXT("the valid upper-boundary plan has one position"), HighPlan.PlannedPositions.Num(), 1);
 		if (HighPlan.PlannedPositions.Num() == 1)
 		{
@@ -880,8 +916,9 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the apply plan is built"),
 			PlanText(Fixture.Blueprint, Fixture.ApplyTarget, ApplyText(AKey, BKey), true, Plan, PlanError));
 		TestTrue(TEXT("the apply plan is acceptable"), Plan.bAcceptable());
+        AddInfo(TEXT("Append before capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Fixture.AssetPath, Fixture.ApplyTarget->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900")));
 		TestEqual(TEXT("the apply plan creates two nodes"), Plan.PlannedPositions.Num(), 2);
-		TestEqual(TEXT("the apply text describes two links"), Plan.Links.Num(), 2);
+		TestEqual(TEXT("the apply text describes three links"), Plan.Links.Num(), 3);
 
 		FString Report;
 		FString ApplyError;
@@ -889,8 +926,9 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the apply report starts with changed"), Report.StartsWith(TEXT("changed:")));
 		TestTrue(TEXT("the apply report carries placement evidence"), Report.Contains(TEXT("placement:")));
 		TestTrue(TEXT("the apply report carries the geometry caveat"),
-			Report.Contains(TEXT("not a measured Slate footprint")));
+			Report.Contains(TEXT("missing existing bounds remain estimated")));
 
+        AddInfo(TEXT("Append after capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Fixture.AssetPath, Fixture.ApplyTarget->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900")));
 		const FGraphSnapshot After = CaptureGraph(Fixture.ApplyTarget);
 		TArray<FString> NewGuids;
 		TestTrue(TEXT("apply preserved every existing node, its order, pins, defaults and links"),
@@ -987,7 +1025,7 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		FTurboMCPGraphAppend::FPlan Plan;
 		FString PlanError;
 		TestTrue(TEXT("the malformed-plan fixture plans"),
-			PlanText(Fixture.Blueprint, Fixture.Legacy, TwoForms(), true, Plan, PlanError));
+			PlanText(Fixture.Blueprint, Fixture.Legacy, ConnectedForms(Fixture.Legacy, 2), true, Plan, PlanError));
 		TestEqual(TEXT("the malformed-plan fixture has two positions"),
 			Plan.PlannedPositions.Num(), 2);
 		if (Plan.PlannedPositions.Num() == 2)
@@ -1014,7 +1052,7 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		FTurboMCPGraphAppend::FPlan Plan;
 		FString PlanError;
 		TestTrue(TEXT("the legacy plan is built"),
-			PlanText(Fixture.Blueprint, Fixture.Legacy, OneForm(), false, Plan, PlanError));
+			PlanText(Fixture.Blueprint, Fixture.Legacy, ConnectedForms(Fixture.Legacy, 1), false, Plan, PlanError));
 		TestTrue(TEXT("the legacy plan does not request placement"), !Plan.bPlacementRequested);
 		TestEqual(TEXT("the legacy plan has no positions"), Plan.PlannedPositions.Num(), 0);
 
@@ -1045,12 +1083,12 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		FTurboMCPGraphAppend::FPlan Plan;
 		FString Error;
 		TestTrue(TEXT("the preview plan is built"),
-			PlanText(Fixture.Blueprint, Fixture.Populated, OneForm(), true, Plan, Error));
+			PlanText(Fixture.Blueprint, Fixture.Legacy, ConnectedForms(Fixture.Legacy, 1), true, Plan, Error));
 		const FString Preview = FTurboMCPGraphAppend::RenderPreview(Plan);
 		TestTrue(TEXT("the preview keeps the preview first line"), Preview.StartsWith(TEXT("preview:")));
 		TestTrue(TEXT("the preview reports placement"), Preview.Contains(TEXT("placement:")));
 		TestTrue(TEXT("the preview reports the geometry caveat"),
-			Preview.Contains(TEXT("not a measured Slate footprint")));
+			Preview.Contains(TEXT("scratch-measured")) && Preview.Contains(TEXT("estimated fallback geometry")));
 
 		FTurboMCPGraphAppend::FPlan Refused;
 		FString RefusedError;
@@ -1064,6 +1102,46 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 	}
 
 	AddInfo(FString::Printf(TEXT("the placement fixture %s is transient and never saved"), *Fixture.AssetPath));
+    // Direct geometry regression: a connected chain must use nearby space above
+    // a tall obstruction, never drift thousands of units below it. Supplied sizes
+    // are deliberate geometry inputs; this case does not claim Slate measurement.
+    {
+        UEdGraph* Graph = Fixture.Negative;
+        UK2Node_CallFunction* Anchor = PlacePrintString(Graph, 0x91000001, 0, 0, 200, 100);
+        UEdGraphNode_Comment* Obstacle = PlaceComment(Graph, 0x91000002, -2000, -20, 10000, 4000);
+        TArray<FTurboMCPGraphAppend::FNewNode> Forms;
+        Forms.SetNum(2);
+        for (auto& Form : Forms)
+        {
+            Form.MeasuredWidth = 200; Form.MeasuredHeight = 100;
+            Form.ProbeExecInputs.Add(TEXT("execute"));
+            Form.ProbeExecOutputs.Add(TEXT("then"));
+        }
+        TArray<FTurboMCPGraphAppend::FNewLink> Links;
+        FTurboMCPGraphAppend::FNewLink Incoming;
+        Incoming.FromNodeKey = TurboMCPNodeId::MakeForNode(Anchor, true);
+        Incoming.FromPin = TEXT("then"); Incoming.ToFormIndex = 0; Incoming.ToPin = TEXT("execute");
+        Links.Add(Incoming);
+        FTurboMCPGraphAppend::FNewLink Internal;
+        Internal.FromFormIndex = 0; Internal.FromPin = TEXT("then");
+        Internal.ToFormIndex = 1; Internal.ToPin = TEXT("execute"); Links.Add(Internal);
+        const FGraphSnapshot Before = CaptureGraph(Graph);
+        TArray<FTurboMCPGraphAppend::FPlannedPosition> Positions;
+        bool Estimated = false; FString Error;
+        TestTrue(TEXT("Connected chain finds local space above obstruction"),
+            FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Positions, Estimated, Error, &Links));
+        TestEqual(TEXT("Both chain nodes receive positions"), Positions.Num(), 2);
+        for (const auto& Position : Positions)
+            TestTrue(TEXT("Chain stays above the obstruction and near its anchor"), Position.Y + 100 + VerticalGap <= -20 && Position.Y > -1500);
+        TestTrue(TEXT("Local planning preserves every existing node"), SameGraph(Before, CaptureGraph(Graph)));
+        Obstacle->NodePosX = -20000; Obstacle->NodePosY = -20000;
+        Obstacle->NodeWidth = 40000; Obstacle->NodeHeight = 40000;
+        TestFalse(TEXT("Fully blocked neighbourhood refuses remote fallback"),
+            FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Positions, Estimated, Error, &Links));
+        TestTrue(TEXT("Blocked placement explains how to proceed"), Error.Contains(TEXT("Free space")));
+        TestEqual(TEXT("Refusal emits no partial positions"), Positions.Num(), 0);
+    }
+
 	return true;
 }
 

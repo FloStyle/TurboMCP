@@ -68,7 +68,7 @@ ASSET_FILE = "TurboMCPAcceptance.uasset"
 # THE NODE THE APPENDED BLOCK LINKS INTO, READ FROM THE FIXTURE RATHER THAN PINNED. `SaneProbe` is built by the
 # commandlet, so a hard-coded key would break the moment the fixture is rebuilt with a different order - the
 # "never pin a count on a shared asset" rule applied to an ID.
-LINK_TARGET_TYPE = "Development|PrintString"
+LINK_TARGET_TYPE = "Function|/Script/Engine.KismetSystemLibrary:PrintString"
 LINK_TARGET_PIN = "then"
 
 failures = []
@@ -208,7 +208,8 @@ def node_count(session):
     """The graph's node count, PARSED from `R-GRAPH-LOAD` rather than matched as a sentence."""
     out = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
                        {"asset": ASSET, "graphName": GRAPH, "detail": "manifest",
-                        "format": "", "tokenBudget": ""})
+                        "format": "read", "offset": 0, "maxChars": 24000,
+                        "revision": "", "entryFilter": ""})
     found = re.search(r"(\d+)\s+node\(s\)", out)
     return (int(found.group(1)) if found else None), out
 
@@ -217,7 +218,8 @@ def node_ids(session):
     """Every node id `R-GRAPH-LOAD` prints, which is the INDEPENDENT record of the graph's contents."""
     out = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
                        {"asset": ASSET, "graphName": GRAPH, "detail": "full",
-                        "format": "", "tokenBudget": ""})
+                        "format": "read", "offset": 0, "maxChars": 24000,
+                        "revision": "", "entryFilter": ""})
     # The long form is `Object:Graph:Key`, and the reader prints it inside a node's first comment.
     return set(re.findall(r"%s:%s:([0-9a-f]{6})" % (re.escape(ASSET), re.escape(GRAPH)), out)), out
 
@@ -253,7 +255,13 @@ def refusal_pair(session, label, asset, graph, text, expected_prefix="unchanged:
     edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend", request)
     print("    %s preview: %s" % (label, preview.split("\n", 1)[0][:140]))
     check(label + ": the preview refuses", preview.startswith(expected_prefix), preview[:220])
-    check(label + ": the edit returns the identical answer", edit == preview, edit[:220])
+    # The edit recorder adds an observation that preview does not carry. Accept
+    # only its exact zero-change form; retain all other text in the comparison.
+    observation = re.search(r"\ndirty_packages: before=(\d+) after=(\d+) newly_dirty=0 no_longer_dirty=0$", edit)
+    check(label + ": refusal preserves observed dirty state",
+          observation is not None and observation.group(1) == observation.group(2), edit[-220:])
+    edit_reason = edit[:observation.start()] if observation else edit
+    check(label + ": preview and edit return the same refusal reason", edit_reason == preview, edit_reason[:220])
     after_count, _ = node_count(session)
     after_ids, _ = node_ids(session)
     check(label + ": the node count is unchanged", after_count == before_count,
@@ -387,9 +395,10 @@ def link_target_id(session):
     """
     out = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
                        {"asset": ASSET, "graphName": GRAPH, "detail": "full",
-                        "format": "", "tokenBudget": ""})
-    found = re.search(r"\(%s ; [^:]+:%s:([0-9a-f]{6})" % (re.escape(LINK_TARGET_TYPE), re.escape(GRAPH)), out)
-    return (found.group(1) if found else None), out
+                        "format": "read", "offset": 0, "maxChars": 24000,
+                        "revision": "", "entryFilter": ""})
+    found = re.findall(r"\(%s ; [^:]+:%s:([0-9a-f]{6})" % (re.escape(LINK_TARGET_TYPE), re.escape(GRAPH)), out)
+    return (found[-1] if found else None), out
 
 
 def linked_text_for(marker, target_key):
@@ -403,15 +412,16 @@ def linked_text_for(marker, target_key):
             % (marker, ASSET, GRAPH, target_key, LINK_TARGET_PIN))
 
 
-def local_label_text(marker):
+def local_label_text(marker, target_key):
     """Two new forms, where the second targets the first by a block-local label."""
     return ('(Development|PrintString\n'
             '    ; label First\n'
-            '    InString "%s source")\n'
+            '    InString "%s source"\n'
+            '    execute (-> %s:%s:%s:then))\n'
             '(Development|PrintString\n'
             '    ; label Second\n'
             '    InString "%s target"\n'
-            '    execute (-> First:then))') % (marker, marker)
+            '    execute (-> First:then))') % (marker, ASSET, GRAPH, target_key, marker)
 
 
 def report_result():
@@ -452,6 +462,13 @@ def main():
         return 1
     check("the fixture was REBUILT on the way in, so this suite is re-runnable from any state", True)
 
+    initial_target, initial_read = link_target_id(session)
+    if initial_target is None:
+        print(initial_read)
+        check("connected fixture exposes its execution predecessor", False, initial_read)
+        return report_result()
+
+    initial_disk = asset_fingerprint()
     before_count, before_text = node_count(session)
     before_ids, _ = node_ids(session)
     print("=== the graph has %s node(s) before anything is appended ===" % before_count)
@@ -462,7 +479,7 @@ def main():
     print()
     print("=== 1. the PREVIEW resolves a type id and writes nothing ===")
     preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
-                           {"asset": ASSET, "graphName": GRAPH, "text": text_for("PROBE-PREVIEW")})
+                           {"asset": ASSET, "graphName": GRAPH, "text": linked_text_for("PROBE-PREVIEW", initial_target)})
     print(preview[:600])
     print()
     check("the preview answers rather than erroring", not preview.startswith("error:"), preview[:160])
@@ -472,7 +489,7 @@ def main():
     # happen is a first line claiming a change the preview will not make.
     check("the preview of a valid text summarises rather than claiming it already changed",
           preview.split("\n", 1)[0].startswith("preview:"), preview[:100])
-    check("IT SAYS IT CHANGES NOTHING", "changes NOTHING" in preview, preview[:240])
+    check("IT SAYS IT CHANGES NOTHING", "No append was applied to the target graph." in preview, preview[:240])
 
     count_after_preview, _ = node_count(session)
     check("THE PREVIEW DID NOT ADD A NODE", count_after_preview == before_count,
@@ -482,7 +499,7 @@ def main():
     print("=== 2. the EDIT writes, and the write is proved from OUTSIDE ===")
     marker = "PROBE-APPEND-REAL"
     edited = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend",
-                          {"asset": ASSET, "graphName": GRAPH, "text": text_for(marker)})
+                          {"asset": ASSET, "graphName": GRAPH, "text": linked_text_for(marker, initial_target)})
     print(edited[:600])
     print()
     check("the edit answers rather than erroring", not edited.startswith("error:"), edited[:160])
@@ -502,14 +519,8 @@ def main():
     check("THE GRAPH REALLY GREW, read back through a DIFFERENT tool",
           (after_count or 0) > (before_count or 0),
           "before %s, after %s" % (before_count, after_count))
-    # THE READER PRINTS ONLY AN ID AND A CLASS FOR A NODE THAT IS NOT REACHABLE FROM AN ENTRY POINT, and an
-    # appended node has no exec wire yet, so ITS PINS ARE NOT IN THE READ BACK. Asserting the pin text here
-    # would be asserting what the reader cannot show - so what is asserted is what IS observable: the count
-    # grew and a node of the resolved class is present. THE GAP IS STATED rather than papered over, and the
-    # tool reports its own written-pin count separately below.
-    # THE CLASS IS IN THE `full` READ, NOT THE MANIFEST. Measured: the manifest prints a count and entry
-    # points only, so `after_text` - which is the manifest - cannot answer this. The full read is what names
-    # the class of every node, including the ones not reachable from an entry.
+    # The appended call is reachable, so full readback must expose its literal value.
+    check("reader confirms the appended literal", marker in full_after, full_after[-500:])
     check("a node of the resolved class is now in the graph",
           "PrintString" in full_after, full_after[:200])
     check("the tool reports a non-zero pin count, parsed rather than assumed",
@@ -536,7 +547,7 @@ def main():
                             {"asset": ASSET, "graphName": GRAPH, "text": bad})
     print(bad_edit[:400])
     print()
-    check("the preview REFUSES an unresolvable type id", "refused" in bad_preview, bad_preview[:240])
+    check("the preview REFUSES an unresolvable type id", bad_preview.startswith("unchanged:") and "refusal(s)" in bad_preview, bad_preview[:240])
     check("the preview's refusal names the line it is about", "line 1" in bad_preview, bad_preview[:240])
     check("the EDIT refuses the same input", not bad_edit.startswith("changed:"), bad_edit[:160])
     check("the edit's first line is unchanged, so a caller reading only that learns nothing was written",
@@ -596,16 +607,17 @@ def main():
 
         print()
         print("=== 5b. a local label links two new nodes in the same block ===")
+        label_target, _ = link_target_id(session)
         labelled_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend", {
-            "asset": ASSET, "graphName": GRAPH, "text": local_label_text("PROBE-LOCAL-LABEL")})
+            "asset": ASSET, "graphName": GRAPH, "text": local_label_text("PROBE-LOCAL-LABEL", label_target)})
         print(labelled_preview[:500])
         check("the preview accepts the local-label link", "wire  line" in labelled_preview,
               labelled_preview[:300])
         before_label_count, _ = node_count(session)
         labelled_edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend", {
-            "asset": ASSET, "graphName": GRAPH, "text": local_label_text("PROBE-LOCAL-LABEL")})
+            "asset": ASSET, "graphName": GRAPH, "text": local_label_text("PROBE-LOCAL-LABEL", label_target)})
         print(labelled_edit[:500])
-        check("the edit makes the local-label wire", "1 wire(s) made, of 1" in labelled_edit,
+        check("the edit makes the local-label wire", "2 wire(s) made, of 2" in labelled_edit,
               labelled_edit[:300])
         check("the local-label block creates both nodes", (node_count(session)[0] or 0) >=
               (before_label_count or 0) + 2,
@@ -617,7 +629,7 @@ def main():
         ghost_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
                                      {"asset": ASSET, "graphName": GRAPH, "text": ghost})
         print(ghost_preview[:400])
-        check("a link whose SOURCE is not in the graph is refused", "refused" in ghost_preview,
+        check("a link whose SOURCE is not in the graph is refused", ghost_preview.startswith("unchanged:") and "refusal(s)" in ghost_preview,
               ghost_preview[:300])
         check("and the refusal names the line", "line 2" in ghost_preview, ghost_preview[:300])
         check("and it names what could not be resolved", "ffffff" in ghost_preview, ghost_preview[:300])
@@ -629,7 +641,7 @@ def main():
         pin_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
                                    {"asset": ASSET, "graphName": GRAPH, "text": bad_pin})
         print(pin_preview[:500])
-        check("a link to a pin that does not exist is refused", "refused" in pin_preview,
+        check("a link to a pin that does not exist is refused", pin_preview.startswith("unchanged:") and "refusal(s)" in pin_preview,
               pin_preview[:300])
         # THE REAL NAMES ARE THE POINT. A refusal that only says "no such pin" leaves the caller guessing, and
         # the spec asks for the real names.
@@ -723,9 +735,9 @@ def main():
 
     truncated_literal = '(Development|PrintString\n    InString "unterminated)'
     refused, _ = refusal_pair(session, "truncated quoted literal", ASSET, GRAPH,
-                              truncated_literal)
-    check("the truncated literal refusal names the pin's line and the pin",
-          "line 2" in refused and "InString" in refused, refused[:500])
+                              truncated_literal, expected_prefix="error:")
+    check("the truncated literal refusal names its line and lexical error",
+          "line 2" in refused and "quoted value is not closed" in refused, refused[:500])
 
     # MISSING TARGET, TWO FORMS: an absent graph on a real asset, and an absent
     # asset. Both are `error:` lines, so the same helper runs with that prefix.
@@ -756,8 +768,7 @@ def main():
     print("=== 7. the asset on disk is untouched, because nothing saved it ===")
     # `E-SAVE` was never called, so the FILE must be exactly as it was. This is the check that a write to
     # MEMORY did not silently become a write to DISK - a claim no tool's own report can settle.
-    print("    (the fingerprint is taken now and compared after a save cycle is NOT part of this suite;")
-    print("     what is asserted here is that the tool reported the change as in-memory)")
+    check("all successful appends and refusals preserved saved bytes", asset_fingerprint() == initial_disk, str(asset_fingerprint()))
     check("the edit did NOT claim to have saved", "saved" not in edited.lower(), edited[:200])
 
     print()

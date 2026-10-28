@@ -976,7 +976,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         OutPlan.WrapAfterNodes.Add(Found);
     }
     TArray<FString> MainIds; MainPath.ParseIntoArray(MainIds,TEXT(","),true);
-    if(MainPath.TrimStartAndEnd().Equals(TEXT("auto"),ESearchCase::IgnoreCase))
+    const bool bAutoMainPath = MainPath.TrimStartAndEnd().Equals(TEXT("auto"),ESearchCase::IgnoreCase);
+    if(bAutoMainPath)
     {
         MainIds.Reset();
         TMap<int32,TArray<int32>> Paths; TSet<int32> Visiting;
@@ -1007,9 +1008,12 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
     {
         int32 Current=INDEX_NONE;
         for(int32 I=0;I<OutPlan.Nodes.Num();++I) if(NodeAnswersToId(OutPlan.Nodes[I].Node,Id)) { Current=I; break; }
+        // An explicit path may start at an immovable predecessor. It supplies direction,
+        // not selection ownership; every subsequent node must belong to the selection.
+        const bool bFixedFirstAnchor = !bAutoMainPath && Previous == INDEX_NONE && MainIds.Num() > 1;
         if(Current==INDEX_NONE || MainSeen.Contains(Current) || OutPlan.Nodes[Current].bIsPure || OutPlan.Nodes[Current].bIsComment
-            || (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[Current].Key)))
-        { OutError=TEXT("MainPath requires distinct execution nodes within the selected scope"); return false; }
+            || (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[Current].Key) && !bFixedFirstAnchor))
+        { OutError=TEXT("MainPath requires distinct execution nodes in the selected scope. Only the first explicit node may be a fixed predecessor connected to the next selected node."); return false; }
         if(Previous!=INDEX_NONE)
         {
             bool Connected=false;
