@@ -8,6 +8,8 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "UObject/FieldIterator.h"
+#include "ToolsetRegistry/ToolsetRegistrySubsystem.h"
+#include "ToolsetRegistry/Toolset.h"
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPToolPolicyTest,"TurboMCP.Workflow.ToolControls",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FTurboMCPToolPolicyTest::RunTest(const FString&)
 {
@@ -35,6 +37,17 @@ bool FTurboMCPToolPolicyTest::RunTest(const FString&)
     TurboMCPToolPolicy::Initialize(*TestSettings,Names);
     TestFalse(TEXT("Disabled preview blocks explicitly enabled edit"),TurboMCPToolPolicy::IsAllowed(TEXT("EditTurboMCPGraphCollapse"),Reason));
     TestTrue(TEXT("Dependency reason is clear"),Reason.Contains(TEXT("matching preview")));
+    auto Registry=UToolsetRegistrySubsystem::Get();
+    if (Registry.HasError()) {AddError(Registry.GetError());return false;}
+    auto EditToolset=Registry.GetValue()->ToolsetRegistry.Find(TEXT("TurboMCP.TurboMCPEditToolset"));
+    if (!EditToolset) {AddError(TEXT("Registered edit toolset is unavailable."));return false;}
+    auto Denied=EditToolset->ExecuteTool(TEXT("EditTurboMCPGraphCollapse"),TEXT("{\"Asset\":\"/Game/DoesNotExist\",\"GraphName\":\"EventGraph\",\"NodeIds\":[],\"MemberName\":\"Blocked\",\"MemberKind\":\"function\"}"));
+    if (!TestTrue(TEXT("Denied dispatch completes synchronously"),Denied.IsReady())) return false;
+    auto DeniedResult=Denied.Get();
+    TestTrue(TEXT("Disabled dispatch returns error"),DeniedResult.HasError());
+    if (DeniedResult.HasError())
+        TestTrue(TEXT("Policy refuses before asset lookup"),DeniedResult.GetError().Contains(TEXT("matching preview")) && DeniedResult.GetError().Contains(TEXT("did not execute")));
+
     TestTrue(TEXT("Status override cannot lock out recovery"),TurboMCPToolPolicy::IsAllowed(TEXT("ReadTurboMCPStatus"),Reason));
     TestSettings->ToolOverrides.Add(TEXT("NoSuchTurboTool"),true);
     TestSettings->DisabledToolDomains.Add(TEXT("UnknownDomain"));
