@@ -2038,3 +2038,5 @@ OCT27-08 implemented: discovery identity, actionable public refusals and compact
 OCT27-06 ready/in progress: bounded selection in the existing GraphPositions tool. Exact assignment oct27-targeted-geometry and plan contract cover layout reader, public schema/help and purchase workflow evidence. No graph edits or duplicate geometry tool.
 
 OCT27-06 complete and OCT27-04 follow-up accepted: targeted geometry and safe forward boundary placement passed native purchase/scoped suites. See docs/audit/targeted-geometry-review.json; prior failures retained. Large report filtering remains OCT27-07.
+
+OCT27-07 ready/in progress: scoped layout/comment reports with complete-record pagination, boundary-inclusive finding rules and existing targeted capture. Exact scope oct27-scoped-reports; contract in Oct27 plan.

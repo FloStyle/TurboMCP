@@ -196,9 +196,9 @@
       "kind": "feature",
       "priority": "P2",
       "wave": 2,
-      "state": "open",
+      "state": "in_progress",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "X-108",
         "FT-121"
@@ -210,7 +210,9 @@
       "acceptance": "Support a bounded node/box/region scope with explicit overlap inclusion rules. Put actionable scoped problems before verbose details and expose truncation/paging. Do not force oversized full-graph capture.",
       "verification": "390-node/29-box equivalent synthetic graph; scoped overlap and comment remain visible within output budget.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-scoped-reports; DSH paused",
+      "source_review": "Layout report measures full graph and puts boxes/longest wires before findings; final text truncation can hide relevant findings. Findings already carry node IDs. CommentList computes relationships against all boxes but caps output without scoped selection. Capture already supports targeted node/box views; reuse it.",
+      "repair_contract": "Extend existing layout report and comment list with optional Scope and bounded Offset/Limit. Scope empty means whole graph; node:<exact ID or unique hex>, box:<exact comment ID or unique hex>, region:x,y,width,height with finite positive dimensions. Strict overlap selects touching rectangles, not mere edge contact; box scope includes the box plus intersecting nodes. Layout findings included when any involved node is selected, retaining external endpoints. Comment scope includes requested/intersecting boxes; compute nesting/overlap against full graph. Put actionable finding records before verbose context. Page complete records with explicit matched/shown/omitted/next offset; state pages are live and restart after edits. Require explicit graph for scoped comments. No silent expansion, arbitrary selection guesses or automatic whole-graph capture. Verify a synthetic 390-node/29-box graph, scoped overlap, comments, caps, invalid scopes and help; inspect targeted screenshot. Existing behavior and no-mutation controls retained."
     },
     {
       "id": "OCT27-08",
