@@ -2836,6 +2836,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEditorLogTest.cpp",
             "Tools/test-editor-log.py"
           ]
+        },
+        "oct27-diagnostic-console": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDiagnosticConsole.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDiagnosticConsoleTest.cpp",
+            "Tools/test-diagnostic-console.py"
+          ]
         }
       },
       "preserve_rows": []
