@@ -24,6 +24,14 @@ class TURBOMCP_API UTurboMCPSettings : public UDeveloperSettings
 public:
 	UTurboMCPSettings();
 
+    /** Domains disabled after restart. Valid names: Blueprint, Widget, Assets, Play, Vision, Diagnostics, Other. Exact tool overrides take precedence. */
+    UPROPERTY(EditAnywhere, config, Category = "Tool controls", meta = (ConfigRestartRequired = true))
+    TArray<FString> DisabledToolDomains;
+
+    /** Exact bare tool name to enabled/disabled override. Remove an entry to inherit its domain setting. A disabled preview also disables its matching edit. Status remains available for recovery. Restart required. */
+    UPROPERTY(EditAnywhere, config, Category = "Tool controls", meta = (ConfigRestartRequired = true))
+    TMap<FString, bool> ToolOverrides;
+
     /** Enable TurboMCP tools, panel and hooks for this user. Off by default; saved user preferences take precedence. Restart the editor after changing this preference. Unreal MCP and other toolsets are unaffected. */
     UPROPERTY(EditAnywhere, config, Category = "Activation", meta = (DisplayName = "Enable TurboMCP", ConfigRestartRequired = true))
     bool bEnableTurboMCP = false;
