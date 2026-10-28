@@ -9,9 +9,28 @@
 #include "Misc/ScopeExit.h"
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
+#include "ISettingsModule.h"
+#include "Modules/ModuleManager.h"
+#include "HAL/PlatformTime.h"
+#include "Misc/FileHelper.h"
 #include "UObject/FieldIterator.h"
 #include "ToolsetRegistry/ToolsetRegistrySubsystem.h"
 #include "ToolsetRegistry/Toolset.h"
+class FToolPreferencesCapture : public IAutomationLatentCommand
+{
+    double ReadyAt=FPlatformTime::Seconds()+2;
+    FAutomationTestBase* Test;
+public:
+    explicit FToolPreferencesCapture(FAutomationTestBase* InTest):Test(InTest) {}
+    bool Update() override
+    {
+        if (FPlatformTime::Seconds()<ReadyAt) return false;
+        const FString Result=UTurboMCPLookToolset::LookTurboMCPCapture(TEXT(""),TEXT(""),TEXT("screen"),TEXT(""),TEXT(""));
+        FFileHelper::SaveStringToFile(Result,*FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("TurboMCP/Workflow/tool-preferences-capture.txt")));
+        Test->TestFalse(TEXT("Preferences capture did not return an error"),Result.StartsWith(TEXT("error")));
+        return true;
+    }
+};
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPToolPolicyTest,"TurboMCP.Workflow.ToolControls",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FTurboMCPToolPolicyTest::RunTest(const FString&)
 {
@@ -67,6 +86,8 @@ bool FTurboMCPToolPolicyTest::RunTest(const FString&)
     TestSettings->bEnableTurboMCP=false;
     TurboMCPToolPolicy::Initialize(*TestSettings,Names);
     TestFalse(TEXT("Master off wins over recovery"),TurboMCPToolPolicy::IsAllowed(TEXT("ReadTurboMCPStatus"),Reason));
+    FModuleManager::LoadModuleChecked<ISettingsModule>(TEXT("Settings")).ShowViewer(TEXT("Editor"),TEXT("Plugins"),TEXT("TurboMCP"));
+    ADD_LATENT_AUTOMATION_COMMAND(FToolPreferencesCapture(this));
     return true;
 }
 #endif
