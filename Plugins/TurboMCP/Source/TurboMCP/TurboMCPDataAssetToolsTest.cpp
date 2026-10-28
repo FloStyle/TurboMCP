@@ -7,6 +7,8 @@
 #include "Misc/AutomationTest.h"
 #include "UObject/Package.h"
 #include "UObject/StrongObjectPtr.h"
+#include "InputAction.h"
+#include "PlayerMappableKeySettings.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPDataAssetToolsTest,
     "TurboMCP.DataAsset.PropertyWorkflow", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -63,6 +65,34 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("verified rollback restores clean package flag"), Package->IsDirty());
     TestTrue(TEXT("rollback preserves map identities"), Asset->Entries.Num() == 2 && Asset->Entries.FindRef(KeyA.Get()) == ChildA);
     ChildA->bChangeAfterEdit = false;
+    Asset->Child = nullptr;
+    Package->SetDirtyFlag(false);
+    const FString ChildSpec = TEXT("{\"class\":\"/Script/TurboMCP.TurboMCPDataAssetSafetyChild\",\"fields\":{\"Number\":\"17\"}}");
+    const FString ChildRevision = ReadRevision();
+    const FString ChildPreview = UTurboMCPPreviewToolset::PreviewTurboMCPDataAssetProperty(Path, TEXT("Child"), TEXT("create_child"), TEXT(""), ChildSpec, ChildRevision);
+    AddInfo(ChildPreview);
+    TestTrue(TEXT("child creation preview accepted"), ChildPreview.StartsWith(TEXT("preview:")));
+    TestTrue(TEXT("child preview leaves destination and dirty flag unchanged"), !Asset->Child && !Package->IsDirty());
+    const FString Create = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Child"), TEXT("create_child"), TEXT(""), ChildSpec, ChildRevision);
+    AddInfo(Create);
+    TestTrue(TEXT("child creation edit accepted"), Create.StartsWith(TEXT("edited:")));
+    TestTrue(TEXT("new child has correct outer and initial value"), Asset->Child && Asset->Child->GetOuter() == Asset.Get() && Asset->Child->Number == 17);
+    const FString Overwrite = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Child"), TEXT("create_child"), TEXT(""), ChildSpec, ReadRevision());
+    TestTrue(TEXT("create_child never overwrites existing child"), Overwrite.StartsWith(TEXT("refused:")));
+
+    TStrongObjectPtr<UInputAction> Action(NewObject<UInputAction>(Package, TEXT("InputAction")));
+    UPlayerMappableKeySettings::StaticClass();
+    const FString ActionRead = UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(Action->GetPathName(), TEXT("PlayerMappableKeySettings"));
+    FString ActionRevision;
+    TArray<FString> ActionLines; ActionRead.ParseIntoArrayLines(ActionLines);
+    for (const FString& Line : ActionLines) if (Line.StartsWith(TEXT("revision: "))) ActionRevision = Line.Mid(10);
+    const FString SettingsSpec = TEXT("{\"class\":\"/Script/EnhancedInput.PlayerMappableKeySettings\",\"fields\":{\"Name\":\"TurboMCPJump\"}}");
+    const FString SettingsCreate = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Action->GetPathName(), TEXT("PlayerMappableKeySettings"), TEXT("create_child"), TEXT(""), SettingsSpec, ActionRevision);
+    AddInfo(SettingsCreate);
+    TestTrue(TEXT("InputAction key settings creation accepted"), SettingsCreate.StartsWith(TEXT("edited:")));
+    const auto* Settings = Action->GetPlayerMappableKeySettings().Get();
+    TestTrue(TEXT("real InputAction settings independently verified"), Settings && Settings->GetOuter() == Action.Get() && Settings->GetMappingName() == FName(TEXT("TurboMCPJump")));
+    Action->MarkAsGarbage();
     Package->SetDirtyFlag(false);
     Asset->MarkAsGarbage();
     return true;

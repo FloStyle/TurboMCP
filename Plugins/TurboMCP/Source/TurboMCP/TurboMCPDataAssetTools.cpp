@@ -64,7 +64,7 @@ struct FSnapshot
                 void* Address = It->ContainerPtrToValuePtr<void>(Object);
                 for (int32 ArrayIndex = 0; ArrayIndex < It->ArrayDim; ++ArrayIndex)
                 {
-                    const FString Encoded = Export(*It, static_cast<const uint8*>(Address) + ArrayIndex * It->ElementSize, Object);
+                    const FString Encoded = Export(*It, static_cast<const uint8*>(Address) + ArrayIndex * It->GetElementSize(), Object);
                     Text += FString::Printf(TEXT("%s[%d]:%d:"), *It->GetName(), ArrayIndex, Encoded.Len()) + Encoded + TEXT("\n");
                 }
                 Fields.Add({Object, *It, MakeUnique<FValue>(*It, Address)});
@@ -79,7 +79,7 @@ struct FSnapshot
             if (!IsValid(Field.Owner)) return false;
             for (int32 ArrayIndex = 0; ArrayIndex < Field.Property->ArrayDim; ++ArrayIndex)
                 if (!Field.Property->Identical(
-                    static_cast<const uint8*>(Field.Value->Get()) + ArrayIndex * Field.Property->ElementSize,
+                    static_cast<const uint8*>(Field.Value->Get()) + ArrayIndex * Field.Property->GetElementSize(),
                     Field.Property->ContainerPtrToValuePtr<void>(Field.Owner, ArrayIndex), PPF_None)) return false;
         }
         return true;
@@ -215,7 +215,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         if (Value.Len() > 65536 || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Value), Spec) || !Spec)
             return Refuse(TEXT("create_child Value must be a JSON object with class and optional fields; maximum 65536 characters."));
         for (const auto& Item : Spec->Values)
-            if (Item.Key != TEXT("class") && Item.Key != TEXT("fields")) return Refuse(TEXT("Unknown create_child option: ") + Item.Key);
+            if (Item.Key != TEXT("class") && Item.Key != TEXT("fields")) return Refuse(TEXT("Unknown create_child option: ") + FString(*Item.Key));
         FString ClassPath;
         if (!Spec->TryGetStringField(TEXT("class"), ClassPath)) return Refuse(TEXT("create_child requires a class path string."));
         UClass* Class = FindObject<UClass>(nullptr, *ClassPath);
@@ -224,12 +224,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
             return Refuse(TEXT("Class must be loaded, exact, concrete, EditInlineNew and compatible with the property."));
         if (Target.Owner->GetClass()->HasAnyClassFlags(CLASS_Abstract) || !Target.Owner->IsA(Class->ClassWithin))
             return Refuse(TEXT("The child class cannot be constructed under this property's owner."));
-        // Construct under an isolated owner of the same class. Constructors may execute project
-        // code, but no temporary reference is ever installed into the live asset.
-        TemporaryOwner.Reset(NewObject<UObject>(GetTransientPackage(), Target.Owner->GetClass(), NAME_None, RF_Transient));
-        ProposedChild.Reset(NewObject<UObject>(TemporaryOwner.Get(), Class, NAME_None, RF_Transient));
-        if (!ProposedChild.IsValid()) return Refuse(TEXT("The temporary child could not be constructed."));
-        Result.Effects.Add(TEXT("temporary_object_constructors_executed"));
+        TArray<FStoredField> InitialFields;
         if (Spec->HasField(TEXT("fields")))
         {
             const TSharedPtr<FJsonObject>* Fields = nullptr;
@@ -238,12 +233,20 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
             {
                 FProperty* Field = FindFProperty<FProperty>(Class, *Item.Key);
                 FString Input;
-                if (!Editable(Field) || !Item.Value->TryGetString(Input)) return Refuse(TEXT("Each initial field must be an editable reflected field with a string value: ") + Item.Key);
-                FValue Parsed(Field, Field->ContainerPtrToValuePtr<void>(ProposedChild.Get()));
-                if (!TurboMCPDataAssetValues::ParseValue(Field, Input, Parsed.Get(), Error)) return Refuse(Item.Key + TEXT(": ") + Error);
-                Field->CopyCompleteValue(Field->ContainerPtrToValuePtr<void>(ProposedChild.Get()), Parsed.Get());
+                if (!Editable(Field) || !Item.Value->TryGetString(Input)) return Refuse(TEXT("Each initial field must be an editable reflected field with a string value: ") + FString(*Item.Key));
+                FValue Parsed(Field);
+                if (!TurboMCPDataAssetValues::ParseValue(Field, Input, Parsed.Get(), Error)) return Refuse(FString(*Item.Key) + TEXT(": ") + Error);
+                InitialFields.Add({nullptr, Field, MakeUnique<FValue>(Field, Parsed.Get())});
             }
         }
+        // Construct under an isolated owner of the same class. Constructors may execute project
+        // code, but no temporary reference is ever installed into the live asset.
+        TemporaryOwner.Reset(NewObject<UObject>(GetTransientPackage(), Target.Owner->GetClass(), NAME_None, RF_Transient));
+        ProposedChild.Reset(NewObject<UObject>(TemporaryOwner.Get(), Class, NAME_None, RF_Transient));
+        if (!ProposedChild.IsValid()) return Refuse(TEXT("The temporary child could not be constructed."));
+        Result.Effects.Add(TEXT("temporary_object_constructors_executed"));
+        for (const FStoredField& Field : InitialFields)
+            Field.Property->CopyCompleteValue(Field.Property->ContainerPtrToValuePtr<void>(ProposedChild.Get()), Field.Value->Get());
         FValue ChildValue(ChildProperty);
         ChildProperty->SetObjectPropertyValue(ChildValue.Get(), ProposedChild.Get());
         if (ChildMap) TurboMCPDataAssetValues::PlanMapEntry(ChildMap, Target.Address, ChildKey->Get(), ChildValue.Get(), false, Planned.Get());
