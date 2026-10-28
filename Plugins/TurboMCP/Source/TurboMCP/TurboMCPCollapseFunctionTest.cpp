@@ -108,6 +108,16 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
     TestTrue(TEXT("Entry selection refused"),BoundaryRefusal.StartsWith(TEXT("unchanged")));
     TestEqual(TEXT("Boundary refusal preserves nodes"),Graph->Nodes.Num(),Count);
     TestFalse(TEXT("Boundary refusal stays clean"),Package->IsDirty());
+    // A comment cannot be moved while one of its annotated nodes stays behind.
+    TArray<FString> PartialComment=Ids;
+    PartialComment.RemoveAt(1);
+    const FString CommentRefusal=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),PartialComment,TEXT("PartialComment"),TEXT("function"));
+    Transcript+=TEXT("\n")+CommentRefusal;
+    TestTrue(TEXT("Partial comment refused with explanation"),CommentRefusal.StartsWith(TEXT("unchanged")) && CommentRefusal.Contains(TEXT("unselected node")));
+    TestEqual(TEXT("Comment refusal preserves node count"),Graph->Nodes.Num(),Count);
+    TestTrue(TEXT("Comment refusal preserves owner"),Comment->GetGraph()==Graph);
+    TestFalse(TEXT("Comment refusal stays clean"),Package->IsDirty());
+    TestEqual(TEXT("Refusal preserves runtime"),Evaluate(),FString(TEXT("Order123")));
     const FString Edit=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),Ids,TEXT("AppendSuffix"),TEXT("function"));
     Transcript+=TEXT("\n")+Edit;
     if (!TestTrue(TEXT("Collapse applied"),Edit.StartsWith(TEXT("changed:")))) return false;
@@ -154,6 +164,8 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
     Transcript+=TEXT("\n")+ExecEdit;
     TestTrue(TEXT("Execution selection extracted"),ExecEdit.StartsWith(TEXT("changed:")));
     ExecuteWrite();
+    for (const FString& Name:{FString(TEXT("WriteCounter")),FString(TEXT("AssignCounter"))})
+        Transcript+=TEXT("\n")+UTurboMCPLookToolset::LookTurboMCPCapture(Asset,Name,TEXT("graph"),TEXT(""),TEXT("1200x700"));
     return true;
 }
 #endif
