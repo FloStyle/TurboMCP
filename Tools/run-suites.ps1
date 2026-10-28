@@ -290,7 +290,7 @@ function Start-EditorAndWait {
     $oldStartingEditor = $env:TURBOMCP_RUNNER_STARTING_EDITOR
     $env:TURBOMCP_RUNNER_STARTING_EDITOR = '1'
     # Use resolved names so comma-separated batches and 'all' honor rendering requirements.
-    $renderSuites = @('test-function-flags', 'test-custom-event', 'test-scoped-tidy', 'test-input-entry', 'test-graph-append', 'test-vision-workflow', 'test-widget-binding-workflow', 'test-widget-variable-workflow', 'test-override-remove-workflow', 'test-override-workflow', 'test-bind-event-workflow', 'test-common-button-workflow', 'test-call-swap-workflow', 'test-event-connect-workflow', 'test-purchase-workflow', 'test-field-open-diagnostic', 'test-widget-preview', 'test-widget-roundtrip', 'test-layout-output', 'test-layout', 'test-capture', 'test-capture-selectors', 'test-capture-asset', 'test-capture-framing')
+    $renderSuites = @('test-collapse-function', 'test-function-flags', 'test-custom-event', 'test-scoped-tidy', 'test-input-entry', 'test-graph-append', 'test-vision-workflow', 'test-widget-binding-workflow', 'test-widget-variable-workflow', 'test-override-remove-workflow', 'test-override-workflow', 'test-bind-event-workflow', 'test-common-button-workflow', 'test-call-swap-workflow', 'test-event-connect-workflow', 'test-purchase-workflow', 'test-field-open-diagnostic', 'test-widget-preview', 'test-widget-roundtrip', 'test-layout-output', 'test-layout', 'test-capture', 'test-capture-selectors', 'test-capture-asset', 'test-capture-framing')
     $diagnosticRender = @($Selected | Where-Object { $_ -in $renderSuites }).Count -gt 0
     try {
         # Keep the editor's parent alive for the duration of the suite. A short-lived
