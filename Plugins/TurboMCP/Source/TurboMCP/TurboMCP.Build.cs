@@ -37,6 +37,7 @@ public class TurboMCP : ModuleRules
 
 				"InputCore",
                 "EnhancedInput",
+                "InputBlueprintNodes",
 				"Slate",
 				"SlateCore",
 				"ToolMenus",

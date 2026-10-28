@@ -13,6 +13,7 @@
 #include "EdGraphSchema_K2.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
+#include "K2Node_EventNodeInterface.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_Tunnel.h"
 
@@ -20,7 +21,10 @@ namespace
 {
 	bool IsEntryNode(const UEdGraphNode* InNode)
 	{
-		return Cast<UK2Node_Event>(InNode) != nullptr
+		// Enhanced Input events implement the stock event interface without deriving
+		// from UK2Node_Event. Do not infer entry status from pins or display names.
+		return (InNode && InNode->GetClass()->ImplementsInterface(UK2Node_EventNodeInterface::StaticClass()))
+			|| Cast<UK2Node_Event>(InNode) != nullptr
 			|| Cast<UK2Node_CustomEvent>(InNode) != nullptr
 			|| Cast<UK2Node_FunctionEntry>(InNode) != nullptr
 			|| Cast<UK2Node_Tunnel>(InNode) != nullptr;

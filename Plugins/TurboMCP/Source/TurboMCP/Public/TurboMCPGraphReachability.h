@@ -17,6 +17,8 @@ namespace TurboMCPGraphReachability
 {
 	/**
 	 * Marks nodes live from graph entries using Blueprint execution and value rules.
+     * Stock event-interface nodes (including Enhanced Input) are entries; merely
+     * having an execution output does not make an ordinary node an entry.
 	 *
 	 * Exec-capable nodes are reached only through exec output wires. Pure nodes are
 	 * reached backwards through the input links of an already-live node, because a
