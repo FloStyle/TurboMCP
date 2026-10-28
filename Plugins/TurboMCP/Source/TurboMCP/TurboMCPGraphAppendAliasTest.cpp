@@ -541,6 +541,36 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
                     if (UEdGraphPin* ValuePin = Call->FindPin(TEXT("Value"), EGPD_Input))
                         if (ValuePin->DefaultValue == Expected) ++MatchingDefaults;
         TestEqual(TEXT("one appended node stores the exact decoded value"), MatchingDefaults, 1);
+
+        UK2Node_CallFunction* WrittenCall = nullptr;
+        UK2Node_FunctionResult* ResultNode = nullptr;
+        UK2Node_FunctionEntry* EntryNode = nullptr;
+        for (UEdGraphNode* Node : Fixture.Unique->Nodes)
+        {
+            if (UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
+                if (Call->GetTargetFunction() == Function) WrittenCall = Call;
+            if (auto* Result = Cast<UK2Node_FunctionResult>(Node)) ResultNode = Result;
+            if (auto* Entry = Cast<UK2Node_FunctionEntry>(Node)) EntryNode = Entry;
+        }
+        if (!TestNotNull(TEXT("written call available for readback"), WrittenCall)
+            || !TestNotNull(TEXT("fixture return node"), ResultNode)
+            || !TestNotNull(TEXT("fixture entry node"), EntryNode)) return false;
+        UEdGraphPin* ReturnedValue = WrittenCall->FindPin(TEXT("ReturnValue"), EGPD_Output);
+        if (!TestNotNull(TEXT("literal return value"), ReturnedValue)) return false;
+        UEdGraphPin* Output = ResultNode->CreateUserDefinedPin(bTag ? TEXT("TagResult") : TEXT("TextResult"), ReturnedValue->PinType, EGPD_Input, false);
+        const UEdGraphSchema* Schema = Fixture.Unique->GetSchema();
+        TestTrue(TEXT("connect literal to observable return"), Schema->TryCreateConnection(ReturnedValue, Output));
+        TestTrue(TEXT("connect function return execution"), Schema->TryCreateConnection(
+            EntryNode->FindPin(TEXT("then"), EGPD_Output), ResultNode->FindPin(TEXT("execute"), EGPD_Input)));
+        const FString Readback = UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Fixture.AssetPath, Fixture.Unique->GetName(), TEXT("read"), TEXT("full"));
+        TestTrue(FString::Printf(TEXT("reader emits escaped stored literal: %s"), *Readback), Readback.Contains(TurboMCPGraphTextLex::QuoteLiteral(Expected)));
+        const FString PatchedValue = bTag ? TEXT("(TagName=\"UI.Menu.Resume\")") : TEXT("patched \"quoted; text\" C:\\Temp\\next");
+        const FString PatchRequest = FString::Printf(TEXT("(%s ; %s\n    Value %s\n)"),
+            *TypeId, *TurboMCPNodeId::MakeForNode(WrittenCall, true), *TurboMCPGraphTextLex::QuoteLiteral(PatchedValue));
+        const FString PatchResult = UTurboMCPEditToolset::EditTurboMCPGraphPatch(Fixture.AssetPath, Fixture.Unique->GetName(), PatchRequest);
+        TestTrue(FString::Printf(TEXT("patch accepts escaped literal: %s"), *PatchResult), PatchResult.StartsWith(TEXT("changed:")));
+        TestEqual(TEXT("patch stores exact decoded value"), WrittenCall->FindPin(TEXT("Value"), EGPD_Input)->DefaultValue, PatchedValue);
+
         const FString BeforeRefusal = SerializeGraph(Fixture.Unique);
         const FString Invalid = FString::Printf(TEXT("(%s\n    Value \"bad\\q\"\n)"), *TypeId);
         const FString Refused = UTurboMCPEditToolset::EditTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), Invalid);
