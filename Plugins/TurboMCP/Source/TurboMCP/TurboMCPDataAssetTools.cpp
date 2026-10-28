@@ -60,8 +60,11 @@ struct FSnapshot
             {
                 if (It->HasAnyPropertyFlags(CPF_Transient)) continue;
                 void* Address = It->ContainerPtrToValuePtr<void>(Object);
-                const FString Encoded = Export(*It, Address, Object);
-                Text += FString::Printf(TEXT("%s:%d:"), *It->GetName(), Encoded.Len()) + Encoded + TEXT("\n");
+                for (int32 ArrayIndex = 0; ArrayIndex < It->ArrayDim; ++ArrayIndex)
+                {
+                    const FString Encoded = Export(*It, static_cast<const uint8*>(Address) + ArrayIndex * It->ElementSize, Object);
+                    Text += FString::Printf(TEXT("%s[%d]:%d:"), *It->GetName(), ArrayIndex, Encoded.Len()) + Encoded + TEXT("\n");
+                }
                 Fields.Add({Object, *It, MakeUnique<FValue>(*It, Address)});
             }
         }
@@ -70,8 +73,13 @@ struct FSnapshot
     bool Matches() const
     {
         for (const FStoredField& Field : Fields)
-            if (!IsValid(Field.Owner) || !Field.Property->Identical(
-                Field.Value->Get(), Field.Property->ContainerPtrToValuePtr<void>(Field.Owner), PPF_None)) return false;
+        {
+            if (!IsValid(Field.Owner)) return false;
+            for (int32 ArrayIndex = 0; ArrayIndex < Field.Property->ArrayDim; ++ArrayIndex)
+                if (!Field.Property->Identical(
+                    static_cast<const uint8*>(Field.Value->Get()) + ArrayIndex * Field.Property->ElementSize,
+                    Field.Property->ContainerPtrToValuePtr<void>(Field.Owner, ArrayIndex), PPF_None)) return false;
+        }
         return true;
     }
     void Restore() const
@@ -216,7 +224,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
     Asset->MarkPackageDirty();
     FSnapshot Final(Asset);
     Result.Outcome = ETurboMCPResultOutcome::Changed; Result.SetChanged(true);
-    return Result.AppendTo(TEXT("edited: Property updated and readback verified. Not saved.\n") + Detail + TEXT("\ncurrent_revision: ") + Final.Revision + TEXT("\ndirty: true\nProject edit notifications ran; external callback effects are outside this asset snapshot."));
+    return Result.AppendTo(TEXT("edited: Property updated and readback verified. Not saved.\n") + Detail + TEXT("\ncurrent_revision: ") + Final.Revision + TEXT("\ndirty: ") + (Asset->GetOutermost()->IsDirty() ? TEXT("true") : TEXT("false")) + TEXT("\nProject edit notifications ran; external callback effects are outside this asset snapshot."));
 }
 }
 FString UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(const FString& Asset, const FString& Property)

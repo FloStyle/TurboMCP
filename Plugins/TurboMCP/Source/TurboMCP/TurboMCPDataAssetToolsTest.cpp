@@ -22,6 +22,9 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
     Asset->Entries.Add(KeyA.Get(), ChildA);
     Asset->Child = ChildA;
     Package->SetDirtyFlag(false);
+    // The class is transient for safety by default. This owned unsaved fixture must
+    // explicitly allow normal package dirty tracking for the public edit check.
+    Asset->ClearFlags(RF_Transient);
     const FString Path = Asset->GetPathName();
     auto ReadRevision = [&]()
     {
