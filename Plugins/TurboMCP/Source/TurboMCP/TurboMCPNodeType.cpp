@@ -28,6 +28,7 @@
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "K2Node.h"
+#include "K2Node_Self.h"
 #include "K2Node_BaseAsyncTask.h"
 #include "K2Node_CallFunction.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -524,7 +525,19 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 		return Spawned;
 	}
 
-	OutNote = FString::Printf(TEXT("no node type this graph can hold has the id '%s'. PreviewTurboMCPNodeType lists the real ones and names the closest."), *InTypeId);
+    OutNote = FString::Printf(TEXT("No supported creation ID in this graph matches '%s'. Use PreviewTurboMCPNodeType to discover a valid ID; nothing was created."), *InTypeId);
+    // Guidance only: a familiar word never authorizes a fuzzy creation match.
+    // Suggest self only when the filtered stock action actually supports it here.
+    if (InTypeId.Contains(TEXT("self"), ESearchCase::IgnoreCase))
+    {
+        TArray<FString> Suggestions;
+        for (const FEntry& Entry : Entries)
+            if (Entry.Spawner && Entry.Spawner->NodeClass == UK2Node_Self::StaticClass())
+                Suggestions.AddUnique(Entry.TypeId);
+        Suggestions.Sort();
+        if (!Suggestions.IsEmpty())
+            OutNote += TEXT(" Supported self-reference creation ID(s): ") + FString::Join(Suggestions, TEXT(", ")) + TEXT(".");
+    }
 	return nullptr;
 }
 
@@ -611,7 +624,19 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 		return ESpawnResult::Spawned;
 	}
 
-	OutNote = FString::Printf(TEXT("no node type this graph can hold has the id '%s'. PreviewTurboMCPNodeType lists the real ones and names the closest."), *InTypeId);
+    OutNote = FString::Printf(TEXT("No supported creation ID in this graph matches '%s'. Use PreviewTurboMCPNodeType to discover a valid ID; nothing was created."), *InTypeId);
+    // Guidance only: a familiar word never authorizes a fuzzy creation match.
+    // Suggest self only when the filtered stock action actually supports it here.
+    if (InTypeId.Contains(TEXT("self"), ESearchCase::IgnoreCase))
+    {
+        TArray<FString> Suggestions;
+        for (const FEntry& Entry : Entries)
+            if (Entry.Spawner && Entry.Spawner->NodeClass == UK2Node_Self::StaticClass())
+                Suggestions.AddUnique(Entry.TypeId);
+        Suggestions.Sort();
+        if (!Suggestions.IsEmpty())
+            OutNote += TEXT(" Supported self-reference creation ID(s): ") + FString::Join(Suggestions, TEXT(", ")) + TEXT(".");
+    }
 	return ESpawnResult::NoSuchTypeId;
 }
 
@@ -749,34 +774,9 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 		}
 	}
 
-	// The canonical ids of nodes that ALREADY EXIST in this graph, keyed by their title. This
-	// is what makes the two generators comparable: the database form is the engine's, the
-	// canonical form is this plugin's writer, and where a node is present both are known.
-	TMap<FString, FString> CanonicalByTitle;
-	TSet<FString> AmbiguousTitles;
-	for (const UEdGraphNode* Node : Graph->Nodes)
-	{
-		if (Node == nullptr)
-		{
-			continue;
-		}
-		const FString Canonical = CanonicalIdOf(Node);
-		if (!Canonical.IsEmpty())
-		{
-			const FString Title = TitleOf(Canonical);
-			if (AmbiguousTitles.Contains(Title)) continue;
-			if (const FString* Existing = CanonicalByTitle.Find(Title))
-			{
-				if (*Existing != Canonical)
-				{
-					CanonicalByTitle.Remove(Title);
-					AmbiguousTitles.Add(Title);
-				}
-			}
-			else CanonicalByTitle.Add(Title, Canonical);
-		}
-	}
-
+    // A display title is not a type identity: different owners and spawners
+    // can share one title. Do not infer reader IDs from unrelated live nodes.
+    // Returned TypeId values come from the same filtered entries used by append.
 	struct FRanked
 	{
 		FMatch Match;
@@ -864,12 +864,6 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 		Scored.Match.bPure = Entry.bPure;
 		Scored.Match.Reason = Reason;
 
-		if (const FString* Canonical = CanonicalByTitle.Find(Scored.Match.Title))
-		{
-			Scored.Match.GraphTextId = *Canonical;
-			Scored.Match.bIdsDiffer = !Canonical->Equals(Entry.TypeId, ESearchCase::CaseSensitive);
-		}
-
 		Ranked.Add(MoveTemp(Scored));
 	}
 
@@ -951,15 +945,7 @@ FString FTurboMCPNodeType::Render(const FPlan& InPlan)
 		}
 		Out += FString::Printf(TEXT("\n  why: %s"), *Match.Reason);
 
-		if (Match.bIdsDiffer)
-		{
-			// `03_TOOLS.md` requires both when they differ: one matches the graph text and the
-			// other is what the engine's creation tool takes.
-			Out += FString::Printf(
-				TEXT("\n  ; this graph writes it as '%s' while the engine creates it as '%s'. ")
-				TEXT("Use the first to match graph text, the second to create the node."),
-				*Match.GraphTextId, *Match.TypeId);
-		}
+
 	}
 
 	if (InPlan.bCompileRecommended)
@@ -968,7 +954,7 @@ FString FTurboMCPNodeType::Render(const FPlan& InPlan)
 			TEXT("accept an id this session added, even though the id is correct.");
 	}
 
-	Out += TEXT("\n; PreviewTurboMCPNodePins gives the pins of one of these ids.");
+	Out += TEXT("\nUse the listed IDs with PreviewTurboMCPNodePins or PreviewTurboMCPGraphAppend in this graph. Reader type IDs and native engine search IDs can differ; do not invent a conversion from a node title.");
 	Out += TEXT("\nPromotable Utilities|Operators nodes acquire their operand type from the first typed link; connect that link before setting typed defaults.");
 	return Out;
 }

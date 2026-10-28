@@ -16,6 +16,9 @@
 #include "K2Node_VariableGet.h"
 #include "BlueprintActionDatabase.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPNodeType.h"
+#include "K2Node_Self.h"
+#include "K2Node_PromotableOperator.h"
 
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -511,6 +514,47 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
+
+    // Discover real creation IDs, then feed those exact IDs to append planning.
+    // A readable match alone is insufficient: the supported node must be constructible.
+    for (const FString Guess : {TEXT("self"), TEXT("multiply")})
+    {
+        FTurboMCPNodeType::FPlan Discovery;
+        FString DiscoveryError;
+        const int32 NodesBefore = Fixture.Unique->Nodes.Num();
+        TestTrue(TEXT("Discovery resolves the requested graph"), FTurboMCPNodeType::Plan(
+            Fixture.AssetPath, Fixture.Unique->GetName(), Guess, TEXT("40"), Discovery, DiscoveryError));
+        bool FoundExpectedClass = false;
+        for (const auto& Match : Discovery.Matches)
+        {
+            FString Note;
+            UEdGraphNode* Probe = FTurboMCPNodeType::BuildProbeNode(Fixture.Blueprint, Fixture.Unique, Match.TypeId, Note);
+            const bool Expected = Probe && (Guess == TEXT("self") ? Probe->IsA<UK2Node_Self>() : Probe->IsA<UK2Node_PromotableOperator>());
+            if (!Expected) continue;
+            FoundExpectedClass = true;
+            AddInfo(TEXT("Discovered creation ID: ") + Match.TypeId);
+            if (Guess == TEXT("self"))
+            {
+                FString RefusalNote;
+                TestNull(TEXT("Guessed self type never silently creates a node"), FTurboMCPNodeType::BuildProbeNode(
+                    Fixture.Blueprint, Fixture.Unique, TEXT("MissingCategory|SelfReference"), RefusalNote));
+                TestTrue(TEXT("Self refusal suggests the actual supported creation ID"), RefusalNote.Contains(Match.TypeId));
+                const FString BeforeRefusal = SerializeGraph(Fixture.Unique);
+                const bool DirtyBeforeRefusal = Fixture.Blueprint->GetOutermost()->IsDirty();
+                const FString PublicRefusal = UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
+                    Fixture.AssetPath, Fixture.Unique->GetName(), TEXT("(MissingCategory|SelfReference)"));
+                TestTrue(*(TEXT("Public append refusal provides supported self ID: ") + PublicRefusal), PublicRefusal.Contains(Match.TypeId));
+                TestEqual(TEXT("Unknown type preview preserves graph"), SerializeGraph(Fixture.Unique), BeforeRefusal);
+                TestEqual(TEXT("Unknown type preview preserves dirty state"), Fixture.Blueprint->GetOutermost()->IsDirty(), DirtyBeforeRefusal);
+            }
+            const FPlanResult Append = PlanText(Fixture.Blueprint, Fixture.Unique, TEXT("(") + Match.TypeId + TEXT(")"));
+            TestTrue(TEXT("Discovered pure type is accepted by append planning"), Append.bPlanned && Append.Plan.Refusals.IsEmpty());
+            break;
+        }
+        TestTrue(*(TEXT("Discovery returns expected node class for ") + Guess), FoundExpectedClass);
+        TestEqual(TEXT("Discovery and append preview preserve node count"), Fixture.Unique->Nodes.Num(), NodesBefore);
+        TestFalse(TEXT("Discovery never infers identity from matching titles"), FTurboMCPNodeType::Render(Discovery).Contains(TEXT("this graph writes it as")));
+    }
 
     // Exercise the public entry points and inspect actual stored defaults independently.
     for (const FName FunctionName : { FName(TEXT("MakeLiteralString")), FName(TEXT("MakeLiteralGameplayTag")) })
