@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "tasks": [
+    "OCT27-06",
+    "OCT27-04"
+  ],
+  "status": "accepted_bounded_workflows",
+  "native_run": "688a751f5d31483599e95f1933d75975",
+  "checks": [
+    "Exact and unique-key selection agree; duplicate requests list once",
+    "Missing, ambiguous and blank IDs and invalid limit refuse",
+    "Row cap reports omission; live help exposes NodeIds/MaxNodes",
+    "Stored coordinates agree with fixture; graph content/dirty state preserved",
+    "Mixed getter/return selection remains local and aligned",
+    "Purchase-rule data links flow forward; runtime calculation cases preserved",
+    "Dedicated scoped-tidy suite passes with fixed-boundary/refusal controls"
+  ],
+  "images_inspected": [
+    "BP_PurchaseReview_CalculatePurchase_native_2048x1152_6D80C4744964FBBB0D180CAFA5DD1BC9.png",
+    "BP_PurchaseReview_CalculatePurchase_native_1600x900_DA57B3804490DA7F609D49BEA5121FCA.png"
+  ],
+  "prior_failures": [
+    "265d688a43fd4e8ba08e072981c587a0: geometry passes; mixed selected return moves beyond boundary allowance, rolls back distant getter",
+    "4e5f161716a345efb56bc3386d2ed3b7: mixed placement and scoped suite pass; later purchase rule retains backward wire. Candidate scoring corrected without relaxing final guard."
+  ],
+  "limits": [
+    "Selection filters output; native measurement still measures the graph",
+    "Graph units and node-body bounds, not screenshot pixels or wire extents",
+    "Synthetic workflow evidence, not all-project certification; large report filtering remains OCT27-07"
+  ],
+  "offline": "26/26 passed: 907e3f219bc2499db84b94ab27eff489"
+}

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "6378955f348daeb4b25bcfbef2a3c2228ebac751",
+  "plugin_tree": "e8a3e7440b1bffa60dff487edb6d79c80d130f16",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 158,
@@ -1604,7 +1604,9 @@
       "toolset": "UTurboMCPLookToolset",
       "parameters": [
         "Asset",
-        "GraphName"
+        "GraphName",
+        "NodeIds",
+        "MaxNodes"
       ],
       "family": "graph",
       "definitions": [
@@ -1636,7 +1638,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
-          "line": 257
+          "line": 296
         }
       ],
       "test_references": [

@@ -2036,3 +2036,5 @@ OCT27-08 ready/in progress: reconcile existing alias support and help before cha
 OCT27-08 implemented: discovery identity, actionable public refusals and compact append help verified. See docs/audit/append-discovery-review.json for native evidence, retained failures and reused input-event scenario. No increase to unique reviewed-tool count for reused tools.
 
 OCT27-06 ready/in progress: bounded selection in the existing GraphPositions tool. Exact assignment oct27-targeted-geometry and plan contract cover layout reader, public schema/help and purchase workflow evidence. No graph edits or duplicate geometry tool.
+
+OCT27-06 complete and OCT27-04 follow-up accepted: targeted geometry and safe forward boundary placement passed native purchase/scoped suites. See docs/audit/targeted-geometry-review.json; prior failures retained. Large report filtering remains OCT27-07.

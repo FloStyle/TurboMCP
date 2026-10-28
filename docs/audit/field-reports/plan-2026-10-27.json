@@ -101,7 +101,7 @@
       "kind": "bug",
       "priority": "P1",
       "wave": 2,
-      "state": "reopened",
+      "state": "done",
       "validation": "focused_native_and_visual_passed",
       "readiness": "ready",
       "reports": [
@@ -118,14 +118,15 @@
       "dispatch": "Integrated by Codex; DSH paused",
       "repair_contract": "docs/design/scoped-tidy-boundaries.md",
       "source_review": "Global unboxed placement starts beyond all fixed content; structural comparator can accept unbounded boundary-wire growth. Repair local component placement plus planned/actual boundary checks and exact rejection reasons.",
-      "evidence": "docs/audit/scoped-tidy-review.json",
-      "remaining": "Purchase workflow 265d688a43fd4e8ba08e072981c587a0: mixed getter/return selection rolls back because CanAfford boundary wire grows 205.9 to 377.3 (allowed 148). Distant getter stays 4000 units away. Guard correctly refuses candidate; investigate alternative placement preserving fixed boundary rather than relax guard. Screenshot E832AD2345436267720B60A06AF3099D inspected.",
+      "evidence": "docs/audit/targeted-geometry-review.json",
+      "remaining": "",
       "integrator_followup_scope": {
         "files": [
           "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
         ],
         "contract": "Mixed-selection reproduction 265d688a43fd4e8ba08e072981c587a0: component search does not consider original placement and scores candidates without per-wire boundary feasibility. Include original component-anchor translation and reject unsafe boundary candidates during search using the existing unchanged allowance. Keep final planned/actual guards. No guard relaxation. Verify purchase plus scoped-tidy suite and screenshots."
-      }
+      },
+      "resolution": "Bounded geometry selection and live help verified; scoped candidate search now enforces unchanged boundary limits and prefers forward flow before shorter wires. Purchase and scoped tidy suites passed; screenshots inspected. See review for retained failures and measurement limits."
     },
     {
       "id": "OCT27-05",
@@ -169,8 +170,8 @@
       "kind": "feature",
       "priority": "P2",
       "wave": 2,
-      "state": "in_progress",
-      "validation": "untested",
+      "state": "done",
+      "validation": "focused_native_and_visual_passed",
       "readiness": "ready",
       "reports": [
         "X-107",
@@ -181,11 +182,13 @@
       "acceptance": "Reuse existing position/size reader. Improve help/discovery and add bounded node-ID selection if needed. State graph units, measurement limits and omitted counts. No duplicate geometry tool.",
       "verification": "Find geometry through live help; exact node selection and ambiguity/refusal; compare values with captured layout.",
       "owner": "Codex",
-      "dispatch": "Codex oct27-targeted-geometry; DSH paused",
+      "dispatch": "Integrated by Codex; DSH paused",
       "source_review": "Existing GraphPositions measures the entire graph, has no selection, truncates by characters and uses graph array length including null entries. Reuse rendering measurement; validate all IDs before opening measurement UI.",
       "repair_contract": "Extend existing tool with optional newline-separated NodeIds (empty selects all) and MaxNodes default 128, range 1..256. Accept exact reader IDs or graph-local unique hex keys; reject missing/ambiguous/blank entries and excessive selection before measuring. Preserve old two-argument C++ calls with defaults. Sort stable IDs, report selected/listed/omitted counts and explicit measurement bounds/graph units. No new geometry tool, graph edits, compile or save. Test exact/short/wrong/ambiguous selection, limits and live help in existing purchase workflow; inspect its screenshot. Integrator owns generated inventory and tracking.",
       "implementation_progress": "Candidate adds bounded targeted geometry and live help. Native run 265d688a43fd4e8ba08e072981c587a0 passes new geometry controls but full purchase workflow fails two scoped-getter placement assertions. Screenshot inspected: distant getter persists after tidy rollback.",
-      "remaining": "Investigate scoped mixed-selection tidy refusal found during workflow; retain full failure before accepting geometry batch."
+      "remaining": "",
+      "evidence": "docs/audit/targeted-geometry-review.json",
+      "resolution": "Bounded geometry selection and live help verified; scoped candidate search now enforces unchanged boundary limits and prefers forward flow before shorter wires. Purchase and scoped tidy suites passed; screenshots inspected. See review for retained failures and measurement limits."
     },
     {
       "id": "OCT27-07",
