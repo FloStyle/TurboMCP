@@ -364,8 +364,8 @@
       "kind": "feature",
       "priority": "P1",
       "wave": 3,
-      "state": "in_progress",
-      "validation": "untested",
+      "state": "done",
+      "validation": "focused_native_and_public_pie_passed",
       "readiness": "ready",
       "reports": [
         "X-110",
@@ -381,7 +381,10 @@
       "dispatch": "Codex oct27-diagnostic-console; DSH paused",
       "source_review": "Stock IConsoleManager exposes registered CVar lookup and world-aware ProcessUserConsoleInput. Log suppression handles Log list/category verbosity through Exec; SlateCore registers SlateDebugger.Event.Start/Stop. Existing TurboMCP has no console execution tool. No engine changes needed.",
       "repair_contract": "Add PreviewTurboMCPDiagnosticConsole and EditTurboMCPDiagnosticConsole. Require Target=editor or pie:<instance>; reject absent, invalid or duplicate world targets. Support Log list [category], Log <exact-existing-category> <verbosity>, SlateDebugger.Event.Start/Stop, and registered CVar queries or single-value assignments. Parse a single bounded command; refuse command chaining, multiline text, arbitrary exec commands, global log changes and destructive commands. CVar writes refuse read-only/unregistered variables and require separate preview plus an exact confirmation token tied to target, command and current value. Log verbosity and debugger changes also require preview confirmation. Preview does not execute. Describe that log, Slate debugger and ordinary CVars affect the process even when a PIE world is selected; do not imply world isolation. Use a bounded output device, label synchronous output, return handled/dispatch status separately from effect verification. CVar readback reports actual before/after and failure to take effect; log category readback reports actual level. Debugger dispatch alone is not proof of event capture: direct the caller to ReadTurboMCPEditorLog. Explain persistent session effects and how to restore prior values. No config save, file access, shell execution or custom engine. Tests cover live help and public calls, exact world selection, stale confirmation, unknown/read-only CVar, malformed/chained/destructive commands, logging and CVar readback, debugger dispatch and subsequent log evidence. Tests restore settings they change. Integrator owns suite/catalog and routing/coverage registration.",
-      "integration_review": "The call recorder blocks most Edit tools during PIE. Integrator explicitly permits only EditTurboMCPDiagnosticConsole through that gate; its own target/command/confirmation validation remains mandatory. Public MCP verification during a timed PIE session is required, not direct native calls alone."
+      "integration_review": "The call recorder blocks most Edit tools during PIE. Integrator explicitly permits only EditTurboMCPDiagnosticConsole through that gate; its own target/command/confirmation validation remains mandatory. Public MCP verification during a timed PIE session is required, not direct native calls alone.",
+      "review": "docs/audit/diagnostic-console-review.json",
+      "resolution": "Implemented preview-confirmed diagnostic console operations with explicit world selection, process-wide effect descriptions, bounded output and actual CVar/log readback. Public MCP dispatch verified in editor and timed PIE.",
+      "remaining": ""
     },
     {
       "id": "OCT27-14",

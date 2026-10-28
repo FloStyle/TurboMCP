@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-28",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 159,
+  "inventory": 161,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -678,6 +678,26 @@
         "Truncated message tails are unavailable and cannot be searched",
         "Bounded fixture evidence does not certify every project or logging producer"
       ]
+    },
+    {
+      "id": "WF-DEBUG-CONSOLE",
+      "title": "Preview and run diagnostics, read back values and inspect logs during editor and PIE operation",
+      "status": "bounded_scenario_checked",
+      "review": "docs/audit/diagnostic-console-review.json",
+      "fixture": "TurboMCP.Diagnostics.Console plus public timed PIE",
+      "tools_used": [
+        "PreviewTurboMCPDiagnosticConsole",
+        "EditTurboMCPDiagnosticConsole",
+        "ReadTurboMCPEditorLog",
+        "ReadTurboMCPPlayCheck"
+      ],
+      "limitations": [
+        "No arbitrary commands, config saves or shell execution. Supported surface is Log list/category verbosity, Slate event debugger start/stop and registered CVar query/single-token assignment.",
+        "CVar/log/Slate effects are process-wide, not isolated to selected PIE world. CVar callbacks may execute project code.",
+        "Debugger dispatch is not a guarantee of future events. Readback proves current values, not gameplay correctness.",
+        "Focused PIE evidence uses one world. Ambiguous matching worlds are refused by source contract; multi-client gameplay has not been certified.",
+        "Synchronous command output is capped at 8000 characters; CVar readback at 2048."
+      ]
     }
   ],
   "tool_usage": {
@@ -861,7 +881,8 @@
     ],
     "ReadTurboMCPPlayCheck": [
       "WF-VISION-06-PLAY-MENU",
-      "WF-VISION-07-COMMONUI"
+      "WF-VISION-07-COMMONUI",
+      "WF-DEBUG-CONSOLE"
     ],
     "EditTurboMCPPlayInput": [
       "WF-VISION-07-COMMONUI"
@@ -978,10 +999,17 @@
       "WF-DATA-03-RECOVERY"
     ],
     "ReadTurboMCPEditorLog": [
-      "WF-DEBUG-EDITOR-LOG"
+      "WF-DEBUG-EDITOR-LOG",
+      "WF-DEBUG-CONSOLE"
+    ],
+    "PreviewTurboMCPDiagnosticConsole": [
+      "WF-DEBUG-CONSOLE"
+    ],
+    "EditTurboMCPDiagnosticConsole": [
+      "WF-DEBUG-CONSOLE"
     ]
   },
-  "unique_tools_scenario_reviewed": 78,
+  "unique_tools_scenario_reviewed": 80,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

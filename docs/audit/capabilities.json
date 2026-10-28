@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "e9d13d55df1d2a501e0bd21117603f49c1452432",
+  "plugin_tree": "f624da026fb5949df62b984024d250ca14acc56f",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 159,
+    "tools": 161,
     "by_toolset": {
-      "UTurboMCPEditToolset": 65,
+      "UTurboMCPEditToolset": 66,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 52,
+      "UTurboMCPPreviewToolset": 53,
       "UTurboMCPReadToolset": 36
     }
   },
@@ -302,6 +302,30 @@
       ],
       "test_references": [
         "Tools/test-datatable-rows.py"
+      ],
+      "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPDiagnosticConsole",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Target",
+        "Command",
+        "Confirmation"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDiagnosticConsole.cpp",
+          "line": 172
+        }
+      ],
+      "test_references": [
+        "Tools/test-diagnostic-console.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1944,6 +1968,29 @@
       ],
       "test_references": [
         "Tools/test-datatable-rows.py"
+      ],
+      "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPDiagnosticConsole",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Target",
+        "Command"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDiagnosticConsole.cpp",
+          "line": 168
+        }
+      ],
+      "test_references": [
+        "Tools/test-diagnostic-console.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -3642,6 +3689,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-diagnostic-console.py",
         "Tools/test-play-check.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-trace.py"
@@ -3763,6 +3811,7 @@
         "Tools/test-asset-recovery.py",
         "Tools/test-common-button-workflow.py",
         "Tools/test-datatable-quality.py",
+        "Tools/test-diagnostic-console.py",
         "Tools/test-editor-log.py",
         "Tools/test-scoped-tidy.py",
         "Tools/test-tool-text-inventory.py",

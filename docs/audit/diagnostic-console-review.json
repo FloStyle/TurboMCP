@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "tasks": [
+    "OCT27-13"
+  ],
+  "status": "implemented_focused_native_passed",
+  "native_run": "661fed5899f24806add6025788fc3244",
+  "prior_runs": [
+    "466b4cd4b108406a80348156099def67",
+    "26ec574fb88d4314bda0a5c814a941b4",
+    "2ccce96c7d724c94b606e2801829c248"
+  ],
+  "checks": [
+    "Preview does not change the fixture CVar; separate single-use confirmation applies a change",
+    "Changed current value invalidates the token; missing confirmation, replay, read-only CVar and destructive/chained input refuse",
+    "Log category verbosity readback and emitted verbose marker captured through editor log reader",
+    "Stock Slate debugger start emits a real diagnostic event; stop dispatched afterward",
+    "Both live tool help parameter descriptions and public query output inspected",
+    "Public MCP query succeeds in a real owned 12-second PIE session; session finishes with zero warnings/errors"
+  ],
+  "retained_findings": [
+    "Initial direct native coverage could not prove public PIE dispatch. Source review found the call-recorder guard would block it; explicit integrator change 736827b adds only this diagnostic tool exception. Final public PIE run covers it.",
+    "Initial live summary used identical wording for preview and edit. Final build distinguishes non-executing preview from execution.",
+    "CVar callback can unregister the variable; implementation reacquires it before readback and reports unknown effect if unavailable."
+  ],
+  "limits": [
+    "No arbitrary commands, config saves or shell execution. Supported surface is Log list/category verbosity, Slate event debugger start/stop and registered CVar query/single-token assignment.",
+    "CVar/log/Slate effects are process-wide, not isolated to selected PIE world. CVar callbacks may execute project code.",
+    "Debugger dispatch is not a guarantee of future events. Readback proves current values, not gameplay correctness.",
+    "Focused PIE evidence uses one world. Ambiguous matching worlds are refused by source contract; multi-client gameplay has not been certified.",
+    "Synchronous command output is capped at 8000 characters; CVar readback at 2048."
+  ],
+  "offline": "26/26 passed: cbed0062c5e744229507241c3680a726"
+}

@@ -16,6 +16,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPCompile | [TurboMCPCompile.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPDataAssetProperty | [TurboMCPDataAssetTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPDataTableRows | [TurboMCPDataTableRowsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPDiagnosticConsole | [TurboMCPDiagnosticConsole.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDiagnosticConsole.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPDispatcherAdd | [TurboMCPMergeTransferTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPEnumAdd | [TurboMCPEnumAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
 | EditTurboMCPFunctionAdd | [TurboMCPFunctionTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
@@ -83,6 +84,7 @@ Generated from declarations, definitions and static test references. All runtime
 | PreviewTurboMCPCommonButtonStyle | [TurboMCPCommonStyleTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPDataAssetProperty | [TurboMCPDataAssetTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPDataTableRows | [TurboMCPDataTableRowsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPDiagnosticConsole | [TurboMCPDiagnosticConsole.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDiagnosticConsole.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPDispatcherAdd | [TurboMCPMergeTransferTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPEnumAdd | [TurboMCPEnumAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
 | PreviewTurboMCPFunctionRename | [TurboMCPFunctionRenameTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionRenameTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |

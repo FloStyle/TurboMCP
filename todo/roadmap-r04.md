@@ -2048,3 +2048,7 @@ OCT27-11 implemented: explicit activation request, separate Slate/foreground dia
 ### OCT27-12 editor log completion
 
 Implemented bounded filtered editor output history and session cursor paging. Focused native run 0bb9580c42824795857a2407ad012687 passed. Earlier wrapper failure and capture limits remain recorded in docs/audit/editor-log-review.json. FT-124 remains a reference to X-111, not an additional issue.
+
+### OCT27-13 diagnostic console completion
+
+Preview-confirmed console diagnostics implemented and verified through public MCP during timed PIE. Native run 661fed5899f24806add6025788fc3244 passed. See docs/audit/diagnostic-console-review.json for supported commands, process-wide effects, evidence and limits. FT-123 remains a reference to X-110.

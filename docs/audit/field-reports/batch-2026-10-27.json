@@ -280,13 +280,14 @@
       "key": "2026-10-27_S4/X-110",
       "title": "Feature: No tool runs a console command (medium)",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_and_public_pie_passed",
       "observation": "No TurboMCP or engine tool executes a console command. The user typed every command. One typed command had a typo and the debug capture was lost for one repro.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "resolution": "Implemented supported diagnostic console preview/edit tools. See docs/audit/diagnostic-console-review.json for evidence and limits."
     },
     {
       "report": "2026-10-27_S4",
@@ -451,13 +452,14 @@
       "key": "2026-10-27_S4/FT-123",
       "title": "Run a console command in the editor or play world",
       "kind": "reference",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "proposed_not_implemented",
+      "validation": "focused_native_and_public_pie_passed",
       "duplicate_of": "X-110",
-      "remaining": "Feature request, not a confirmed regression.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "resolution": "Implemented supported diagnostic console preview/edit tools. See docs/audit/diagnostic-console-review.json for evidence and limits."
     },
     {
       "report": "2026-10-27_S4",
