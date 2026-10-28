@@ -9,6 +9,8 @@
 #include "UObject/StrongObjectPtr.h"
 #include "InputAction.h"
 #include "Editor.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
 #include "PlayerMappableKeySettings.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPDataAssetToolsTest,
@@ -139,8 +141,15 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
         Asset->Child->bSpawnAfterEdit = true;
         const FString IncompleteRestore = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path, TEXT("Child.Number"), TEXT("set"), TEXT(""), TEXT("24"), ReadRevision());
         AddInfo(IncompleteRestore);
-        TestTrue(TEXT("unrestored callback object reports failure"), IncompleteRestore.StartsWith(TEXT("failed:")) && IncompleteRestore.Contains(TEXT("\"rollback\":\"failed\"")));
-        TestTrue(TEXT("incomplete restoration reports unknown changed state"), IncompleteRestore.Contains(TEXT("\"changed\":null")));
+        const FString Marker = TEXT("; tmcp-result-v1: ");
+        const int32 ResultOffset = IncompleteRestore.Find(Marker, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+        TSharedPtr<FJsonObject> Metadata;
+        const bool Parsed = ResultOffset != INDEX_NONE && FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(IncompleteRestore.Mid(ResultOffset + Marker.Len())), Metadata) && Metadata.IsValid();
+        FString Rollback;
+        if (Parsed) Metadata->TryGetStringField(TEXT("rollback"), Rollback);
+        const TSharedPtr<FJsonValue> Changed = Parsed ? Metadata->TryGetField(TEXT("changed")) : nullptr;
+        TestTrue(TEXT("unrestored callback object reports failure"), IncompleteRestore.StartsWith(TEXT("failed:")) && Rollback == TEXT("failed"));
+        TestTrue(TEXT("incomplete restoration reports unknown changed state"), Changed.IsValid() && Changed->Type == EJson::Null);
         TestTrue(TEXT("incomplete restoration does not clear dirty state"), Package->IsDirty());
         TestEqual(TEXT("known prior field restored despite extra callback object"), Asset->Child->Number, PriorNumber);
         Asset->Child->bSpawnAfterEdit = false;
