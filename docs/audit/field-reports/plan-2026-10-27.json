@@ -226,9 +226,9 @@
       "kind": "bug",
       "priority": "P2",
       "wave": 2,
-      "state": "open",
+      "state": "in_progress",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "GC-72",
         "GC-75"
@@ -238,7 +238,9 @@
       "acceptance": "Accept a uniquely matching supported short ID or explicitly require a full ID. Never bind/connect an ambiguous match. Preserve displaced-node cleanup reporting.",
       "verification": "Unique, ambiguous, missing and full ID cases through public connect/bind tools; refusal preserves links.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-unique-edit-ids; DSH paused",
+      "source_review": "GraphRefactorTools ResolveNode uses exact GraphScratch::Find; shortened GUID keys are not accepted. BindNewEvent collapses missing node and wrong pin into one delegate error. Scope local resolver and existing connect/bind workflow tests; do not alter all GraphScratch consumers.",
+      "repair_contract": "Accept exact reader IDs or a unique hexadecimal key of at least six digits in the explicitly named graph. Qualified IDs must retain asset/graph identity checks; never discard a mismatched qualifier. Refuse missing/ambiguous identities and duplicate GUID remapping before live mutation. Distinguish node-resolution errors from pin/type errors. Preserve cleanup reporting. Verify public preview/edit unique short, exact full, missing and collision controls; compare original links on every refusal. Shared tool help updates are integrator-owned."
     },
     {
       "id": "OCT27-10",

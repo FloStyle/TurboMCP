@@ -2024,3 +2024,5 @@ OCT27-05 done: local append placement, fixed first MainPath anchor and full appe
 OCT27-01 ready: source-reviewed documentation correction under oct27-opt-in-docs. Match default OFF, saved per-user preference, project enablement, restart and disabled startup diagnostics to TurboMCPSettings.h and TurboMCPModule.cpp. No behavior change or setting reset.
 
 OCT27-01 done: three setup documents corrected in 3b5d91e and immutable scope passed. Source comparison verifies OFF default, saved preferences, restart and disabled diagnostics. Fresh-user walkthrough remains untested; no runtime changes.
+
+OCT27-09 ready/in progress: source review confirms exact-only graph refactor identity lookup and misleading bind pin refusal. Approved oct27-unique-edit-ids scope covers GraphRefactorTools and existing event-connect/bind workflow tests. Contract is recorded in the Oct27 task plan. Require unique short keys within the named graph, qualified identity checks, ambiguity refusal and unchanged links; help is integrator-owned.

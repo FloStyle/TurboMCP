@@ -2782,6 +2782,14 @@
             "docs/user/troubleshooting.md"
           ],
           "new_files": []
+        },
+        "oct27-unique-edit-ids": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEventConnectWorkflowTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBindEventWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
