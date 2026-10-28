@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "b17e5cf9879ad4a57fdb7eb5bf3b35e5d0d76849",
+  "plugin_tree": "0f2b8674e3a9f0e1b343dd8cee10a9ef11abbb78",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 161,
+    "tools": 163,
     "by_toolset": {
-      "UTurboMCPEditToolset": 66,
+      "UTurboMCPEditToolset": 67,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 53,
+      "UTurboMCPPreviewToolset": 54,
       "UTurboMCPReadToolset": 36
     }
   },
@@ -256,6 +256,29 @@
         "Tools/test-widgets-as-vars.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPCustomEventAdd",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Name",
+        "Inputs"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCustomEvent.cpp",
+          "line": 113
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1918,6 +1941,29 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp",
           "line": 117
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPCustomEventAdd",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Name",
+        "Inputs"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCustomEvent.cpp",
+          "line": 111
         }
       ],
       "test_references": [],
@@ -3810,6 +3856,7 @@
         "Tools/test-agent-help.py",
         "Tools/test-asset-recovery.py",
         "Tools/test-common-button-workflow.py",
+        "Tools/test-custom-event.py",
         "Tools/test-datatable-quality.py",
         "Tools/test-diagnostic-console.py",
         "Tools/test-editor-log.py",

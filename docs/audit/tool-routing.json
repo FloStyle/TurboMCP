@@ -2423,6 +2423,38 @@
       "evidence": [
         "docs/audit/diagnostic-console-review.json"
       ]
+    },
+    {
+      "tool": "PreviewTurboMCPCustomEventAdd",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/custom-event-review.json"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPCustomEventAdd",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/custom-event-review.json"
+      ]
     }
   ],
   "source_comparison": {

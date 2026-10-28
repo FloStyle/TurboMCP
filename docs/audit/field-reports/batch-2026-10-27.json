@@ -338,13 +338,14 @@
       "key": "2026-10-27_S4/GC-69",
       "title": "Feature: Append has no custom event form (low)",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_and_visual_passed",
       "observation": "A guessed custom event form was refused as an unknown type. The tool help gives no custom event syntax. The engine node-type search returned a custom event entry that append did not offer.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "resolution": "Dedicated CustomEventAdd preview/edit route implemented and validated; see docs/audit/custom-event-review.json."
     },
     {
       "report": "2026-10-27_S4",

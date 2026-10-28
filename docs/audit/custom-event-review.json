@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "tasks": [
+    "OCT27-10"
+  ],
+  "status": "implemented_focused_native_passed",
+  "native_run": "c08a168e837047c8a0b8c4af69e987bb",
+  "checks": [
+    "Typed standalone event creation, append from exec and Label pins, compile and graph readback",
+    "Preview preserves nodes and dirty flag; duplicate event/parameter, None parameter, invalid type and inherited-name refusals",
+    "Second event creation preserves positions of existing logic",
+    "Public live help includes each parameter"
+  ],
+  "images_inspected": [
+    "BP_CustomEventReview_ReviewEvents_native_1200x700_8D0198D8434D689A603ACCB6BCCDCA20.png: readable event, typed pins and connected call; no overlap"
+  ],
+  "retained_evidence": [
+    "15d49a8cf204411581ed2940646c2fc6 failed: runner NullRHI mode prevented append measurement and capture. Rendering admission corrected in ace6c5b.",
+    "Invalid unknown-type negative control emits two engine lookup warnings; preserved in native report, not claimed warning-free.",
+    "c7564d200de14352a7d9fe44f9625fef passed rendered workflow; final run adds fixed-existing-logic and inherited-name checks."
+  ],
+  "limits": [
+    "Local non-replicated custom events only; not delegate binding or override creation",
+    "No save requested; no disk persistence claim",
+    "Bounded synthetic actor Blueprint workflow; not every project signature or graph density"
+  ],
+  "offline": "26/26 passed: 557d31b110eb449cbf8082206161631a"
+}

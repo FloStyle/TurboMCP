@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-28",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 161,
+  "inventory": 163,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -698,6 +698,25 @@
         "Focused PIE evidence uses one world. Ambiguous matching worlds are refused by source contract; multi-client gameplay has not been certified.",
         "Synchronous command output is capped at 8000 characters; CVar readback at 2048."
       ]
+    },
+    {
+      "id": "WF-BP-CUSTOM-EVENT",
+      "title": "Create typed custom event, append its body and inspect compiled graph",
+      "status": "bounded_scenario_checked",
+      "review": "docs/audit/custom-event-review.json",
+      "fixture": "TurboMCP.Workflow.CustomEvent",
+      "tools_used": [
+        "PreviewTurboMCPCustomEventAdd",
+        "EditTurboMCPCustomEventAdd",
+        "EditTurboMCPGraphAppend",
+        "ReadTurboMCPGraphLoad",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "Local non-replicated custom events only; not delegate binding or override creation",
+        "No save requested; no disk persistence claim",
+        "Bounded synthetic actor Blueprint workflow; not every project signature or graph density"
+      ]
     }
   ],
   "tool_usage": {
@@ -1007,9 +1026,15 @@
     ],
     "EditTurboMCPDiagnosticConsole": [
       "WF-DEBUG-CONSOLE"
+    ],
+    "PreviewTurboMCPCustomEventAdd": [
+      "WF-BP-CUSTOM-EVENT"
+    ],
+    "EditTurboMCPCustomEventAdd": [
+      "WF-BP-CUSTOM-EVENT"
     ]
   },
-  "unique_tools_scenario_reviewed": 80,
+  "unique_tools_scenario_reviewed": 82,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

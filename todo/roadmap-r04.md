@@ -2056,3 +2056,7 @@ Preview-confirmed console diagnostics implemented and verified through public MC
 ### OCT27-19 interruption diagnostics
 
 Completed timestamped client incident reporting, no-replay coverage and stock-editor startup identity logging. Native run 55209c6322054efe81dab97085f0f4a1 and focused client checks passed. X-115 remains an open historical-cause observation; diagnostics are not represented as a disconnect fix. See docs/audit/disconnect-diagnostics-review.json.
+
+### OCT27-10 custom-event creation
+
+Standalone typed custom-event creation and append workflow passed native run c08a168e837047c8a0b8c4af69e987bb; native screenshot inspected. Initial NullRHI failure and negative-control lookup warnings retained in docs/audit/custom-event-review.json. No disk persistence or all-project certification claimed.
