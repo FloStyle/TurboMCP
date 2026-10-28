@@ -642,6 +642,16 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 
 public:
 
+    /** Validate creation of a standalone typed custom event in an existing event graph. Local, non-replicated; not an override or delegate binding. No compile or save. Duplicate names refuse. Loading assets can run engine load hooks.
+     * @param Asset Blueprint object path or unique asset name.
+     * @param GraphName Exact existing event graph name. Function and macro graphs refuse.
+     * @param Name New event identifier, at most 128 characters; must not collide with existing or inherited callables.
+     * @param Inputs Empty for no inputs, otherwise comma-separated Name:type pairs, for example Amount:float, Label:string. Container type commas stay inside angle brackets. At most 32 unique data parameters; no execution, delegate or wildcard types. Event parameters become output pins for subsequent append links.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPCustomEventAdd(const FString& Asset, const FString& GraphName, const FString& Name, const FString& Inputs);
+
+
     /** Preview a diagnostic query or process-wide change without executing it; obtain a single-use confirmation for changes. Log, Slate debugger and CVar effects are process-wide, even with a PIE target. No shell, file operations or arbitrary console commands. Dispatch is not proof of asynchronous effects; use ReadTurboMCPEditorLog.
      * @param Target Exact editor or pie:<instance number>. Missing or ambiguous worlds refuse.
      * @param Command One command: Log list [category], Log <exact category> <verbosity>, SlateDebugger.Event.Start/Stop, or an existing CVar name with an optional single value. No chaining or newlines. Preview reads current state without changing it.
@@ -1398,6 +1408,16 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+
+    /** Create a standalone typed custom event in an existing event graph. Local, non-replicated; not an override or delegate binding. No compile or save. Duplicate names refuse. Loading assets can run engine load hooks.
+     * @param Asset Blueprint object path or unique asset name.
+     * @param GraphName Exact existing event graph name. Function and macro graphs refuse.
+     * @param Name New event identifier, at most 128 characters; must not collide with existing or inherited callables.
+     * @param Inputs Empty for no inputs, otherwise comma-separated Name:type pairs, for example Amount:float, Label:string. Container type commas stay inside angle brackets. At most 32 unique data parameters; no execution, delegate or wildcard types. Event parameters become output pins for subsequent append links.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPCustomEventAdd(const FString& Asset, const FString& GraphName, const FString& Name, const FString& Inputs);
+
 
     /** Run a diagnostic query or a separately confirmed process-wide change; dispatch alone does not verify later effects. Log, Slate debugger and CVar effects are process-wide, even with a PIE target. No shell, file operations or arbitrary console commands. Dispatch is not proof of asynchronous effects; use ReadTurboMCPEditorLog.
      * @param Target Exact editor or pie:<instance number>. Missing or ambiguous worlds refuse.
