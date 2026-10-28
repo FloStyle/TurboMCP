@@ -278,9 +278,9 @@ function Start-EditorAndWait {
     $oldAllowStop = $env:TURBOMCP_RUNNER_ALLOW_STOP
     $env:TURBOMCP_RUNNER_ALLOW_STOP = '1'
     try {
-        & pwsh -NoProfile -File $StartEditor -Stop
+        & pwsh -NoProfile -File $StartEditor -Stop 2>&1 | Out-Host
         if ($LASTEXITCODE -ne 0) {
-            Write-Output 'RESULT: REFUSED (editor recovery could not establish ownership)'
+            Write-Host 'RESULT: REFUSED (editor recovery could not establish ownership)'
             return $false
         }
     } finally { $env:TURBOMCP_RUNNER_ALLOW_STOP = $oldAllowStop }
