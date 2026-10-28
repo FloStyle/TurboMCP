@@ -27,6 +27,8 @@
 #include "Kismet2/Kismet2NameValidators.h"
 #include "EdGraphSchema_K2.h"
 #include "K2Node_MacroInstance.h"
+#include "K2Node_FunctionEntry.h"
+#include "K2Node_FunctionResult.h"
 #include "ScopedTransaction.h"
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
@@ -805,6 +807,99 @@ bool FTurboMCPGraphStructure::PlanCollapse(const FString& InAsset, const FString
 	return true;
 }
 
+
+namespace
+{
+bool ApplyFunctionCollapse(const FTurboMCPGraphStructure::FPlan& Plan, FString& Report, FString& Error)
+{
+    FTurboMCPAssetResolver::FResolved Resolved;
+    Error=FTurboMCPAssetResolver::Resolve(Plan.SourceAsset,Resolved);
+    if (!Error.IsEmpty()) return false;
+    UBlueprint* Blueprint=LoadObject<UBlueprint>(nullptr,*Resolved.ObjectPath);
+    if (!Blueprint) { Error=TEXT("unchanged: Blueprint is unavailable."); return false; }
+    UEdGraph* Source=FindGraph(Blueprint,Plan.SourceGraph);
+    if (!Source) { Error=TEXT("unchanged: Source graph is unavailable."); return false; }
+    TArray<FString> Keys;
+    for (const auto& Node:Plan.Nodes) Keys.Add(Node.SourceKey);
+    TArray<UEdGraphNode*> Selected;
+    TArray<FString> Refusals;
+    if (!CollectSelected(Source,Keys,Selected,Refusals)) { Error=TEXT("unchanged: Selection no longer resolves."); return false; }
+    TSet<UEdGraphNode*> Set;
+    for (UEdGraphNode* Node:Selected) Set.Add(Node);
+    struct FBoundary { UEdGraphPin* Inside; UEdGraphPin* Outside; FName Parameter; };
+    TArray<FBoundary> Boundaries;
+    TMap<UEdGraphPin*,FName> ParameterNames;
+    bool Pure=true;
+    int32 ParameterIndex=0;
+    int32 Left=MAX_int32,Top=MAX_int32;
+    for (UEdGraphNode* Node:Selected)
+    {
+        Left=FMath::Min(Left,Node->NodePosX);Top=FMath::Min(Top,Node->NodePosY);
+        for (UEdGraphPin* Pin:Node->Pins) if (Pin)
+        {
+            const bool Exec=Pin->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec;
+            if (Exec) Pure=false;
+            for (UEdGraphPin* Other:Pin->LinkedTo) if (Other && !Set.Contains(Other->GetOwningNode()))
+            {
+                FName Name=Exec ? (Pin->Direction==EGPD_Input?UEdGraphSchema_K2::PN_Execute:UEdGraphSchema_K2::PN_Then) : ParameterNames.FindRef(Pin);
+                if (!Exec && Name.IsNone())
+                {
+                    Name=FName(*FString::Printf(TEXT("%s_%d"),Pin->Direction==EGPD_Input?TEXT("Input"):TEXT("Output"),++ParameterIndex));
+                    ParameterNames.Add(Pin,Name);
+                }
+                Boundaries.Add({Pin,Other,Name});
+            }
+        }
+    }
+    FScopedTransaction Transaction(NSLOCTEXT("TurboMCP","CollapseFunction","Collapse nodes to function"));
+    Blueprint->Modify();Source->Modify();
+    for (UEdGraphNode* Node:Source->Nodes) if(Node) Node->Modify();
+    UEdGraph* Destination=FBlueprintEditorUtils::CreateNewGraph(Blueprint,FName(*Plan.MemberName),UEdGraph::StaticClass(),UEdGraphSchema_K2::StaticClass());
+    FBlueprintEditorUtils::AddFunctionGraph<UClass>(Blueprint,Destination,true,nullptr);
+    UK2Node_FunctionEntry* Entry=nullptr;
+    for (UEdGraphNode* Node:Destination->Nodes) if(auto* Found=Cast<UK2Node_FunctionEntry>(Node)) Entry=Found;
+    auto Fail=[&]() { Error=TEXT("partial: Function extraction failed after mutation. Nothing saved. Undo and inspect the source and new function before continuing."); return false; };
+    if (!Entry) return Fail();
+    if (Pure) Entry->SetExtraFlags(Entry->GetExtraFlags()|FUNC_BlueprintPure);
+    UK2Node_FunctionResult* Result=NewObject<UK2Node_FunctionResult>(Destination);
+    Destination->AddNode(Result,false,false);Result->CreateNewGuid();Result->AllocateDefaultPins();
+    for (const auto& Pair:ParameterNames)
+    {
+        UK2Node_EditablePinBase* Endpoint=Pair.Key->Direction==EGPD_Input?static_cast<UK2Node_EditablePinBase*>(Entry):static_cast<UK2Node_EditablePinBase*>(Result);
+        if (!Endpoint->CreateUserDefinedPin(Pair.Value,Pair.Key->PinType,Pair.Key->Direction==EGPD_Input?EGPD_Output:EGPD_Input)) return Fail();
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+    UK2Node_CallFunction* Call=NewObject<UK2Node_CallFunction>(Source);
+    Call->FunctionReference.SetSelfMember(FName(*Plan.MemberName));Source->AddNode(Call,false,false);Call->CreateNewGuid();Call->AllocateDefaultPins();
+    Call->NodePosX=Left;Call->NodePosY=Top;
+    const UEdGraphSchema_K2* Schema=GetDefault<UEdGraphSchema_K2>();
+    for (UEdGraphNode* Node:Selected)
+    {
+        Source->Nodes.Remove(Node);
+        if (!Node->Rename(nullptr,Destination,REN_DontCreateRedirectors)) return Fail();
+        Destination->AddNode(Node,false,false);
+        Node->NodePosX=Node->NodePosX-Left+320;Node->NodePosY=Node->NodePosY-Top;
+    }
+    Entry->NodePosX=0;Entry->NodePosY=0;
+    Result->NodePosX=640;Result->NodePosY=0;
+    for (const FBoundary& Boundary:Boundaries)
+    {
+        const bool Input=Boundary.Inside->Direction==EGPD_Input;
+        const bool Exec=Boundary.Inside->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec;
+        UEdGraphPin* Gateway=Call->FindPin(Boundary.Parameter,Input?EGPD_Input:EGPD_Output);
+        UEdGraphPin* Endpoint=Input?Entry->FindPin(Exec?UEdGraphSchema_K2::PN_Then:Boundary.Parameter,EGPD_Output):Result->FindPin(Exec?UEdGraphSchema_K2::PN_Execute:Boundary.Parameter,EGPD_Input);
+        if (!Gateway || !Endpoint) return Fail();
+        Boundary.Inside->BreakLinkTo(Boundary.Outside);
+        if (!Schema->TryCreateConnection(Boundary.Outside,Gateway) || !Schema->TryCreateConnection(Boundary.Inside,Endpoint)) return Fail();
+    }
+    if (Pure && !Schema->TryCreateConnection(Entry->FindPin(UEdGraphSchema_K2::PN_Then),Result->FindPin(UEdGraphSchema_K2::PN_Execute))) return Fail();
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+    Source->NotifyGraphChanged();Destination->NotifyGraphChanged();
+    Report=FString::Printf(TEXT("changed: Extracted %d nodes into function '%s'; replacement call: %s. Nothing saved. Compile and inspect both graphs before saving."),Selected.Num(),*Plan.MemberName,*KeyOf(Call));
+    return true;
+}
+}
+
 bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FString& OutError)
 {
 	OutReport.Empty();
@@ -829,10 +924,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 
 	if (InPlan.Verb == EVerb::Collapse)
 	{
-		// Planning is available, but extraction is not implemented.
-		OutError = TEXT("unchanged: graph collapse is not implemented. No nodes were extracted and no member was created. ")
-			TEXT("Use Unreal's Blueprint editor to extract the selection, then read the graph again before further tool edits. Compilation and save were not requested.");
-		return false;
+        return ApplyFunctionCollapse(InPlan,OutReport,OutError);
 	}
 
 	FTurboMCPAssetResolver::FResolved SourceResolved;
@@ -1139,7 +1231,7 @@ FString FTurboMCPGraphStructure::RenderPreview(const FPlan& InPlan)
 {
 	TArray<FString> Lines;
 	const bool bAcceptable = InPlan.bAcceptable();
-	Lines.Add(InPlan.Verb == EVerb::Collapse ? TEXT("unchanged: collapse is not implemented; selection analysis only") : (bAcceptable ? TEXT("would change") : TEXT("unchanged")));
+	Lines.Add(bAcceptable ? TEXT("would change") : TEXT("unchanged"));
 
 	if (InPlan.Verb == EVerb::Copy)
 	{
