@@ -56,6 +56,7 @@ bool FTurboMCPCustomEventTest::RunTest(const FString&)
     {
         TestTrue(TEXT("Duplicate event refused"),Run(Apply,TEXT("HandlePurchase"),TEXT("")).StartsWith(TEXT("unchanged:")));
         TestTrue(TEXT("Duplicate parameters refused"),Run(Apply,TEXT("Other"),TEXT("Value:int, value:float")).StartsWith(TEXT("unchanged:")));
+        TestTrue(TEXT("None parameter refused"),Run(Apply,TEXT("Other"),TEXT("None:int")).StartsWith(TEXT("unchanged:")));
         TestTrue(TEXT("Invalid type refused"),Run(Apply,TEXT("Other"),TEXT("Value:unknown-type")).StartsWith(TEXT("unchanged:")));
         TestEqual(TEXT("Refusals preserve nodes"),Graph->Nodes.Num(),BeforeCount);
         TestEqual(TEXT("Refusals preserve position"),FIntPoint(Event->NodePosX,Event->NodePosY),Position);

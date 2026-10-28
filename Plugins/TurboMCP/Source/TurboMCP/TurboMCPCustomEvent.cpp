@@ -5,6 +5,7 @@
 #include "TurboMCPFunction.h"
 #include "TurboMCPTypeParser.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPGraphTidy.h"
 #include "Editor.h"
 #include "Engine/Blueprint.h"
 #include "EdGraph/EdGraph.h"
@@ -19,7 +20,7 @@ namespace
 struct FEventParameter { FString Name; FEdGraphPinType Type; };
 bool EventIdentifier(const FString& Name)
 {
-    if (Name.IsEmpty() || Name.Len()>128 || (!FChar::IsAlpha(Name[0]) && Name[0]!=TCHAR('_'))) return false;
+    if (Name.Equals(TEXT("None"),ESearchCase::IgnoreCase) || Name.IsEmpty() || Name.Len()>128 || (!FChar::IsAlpha(Name[0]) && Name[0]!=TCHAR('_'))) return false;
     for (TCHAR C:Name) if (!FChar::IsAlnum(C) && C!=TCHAR('_')) return false;
     return true;
 }
@@ -72,6 +73,16 @@ FString CustomEvent(const FString& Asset, const FString& GraphName, const FStrin
         return TEXT("unchanged: GraphName must identify exactly one existing K2 event graph.");
     const auto Check=FTurboMCPFunction::CheckName(Blueprint,Name);
     if (!Check.bCanAdd) return TEXT("unchanged: ")+Check.Reason;
+    int64 Right=0;
+    if (!Graph->Nodes.IsEmpty())
+    {
+        FString GeometryError;
+        if (!FTurboMCPGraphTidy::PrepareAlignment(Blueprint,Graph,GeometryError))
+            return TEXT("unchanged: cannot measure existing nodes for safe placement: ")+GeometryError;
+        for (UEdGraphNode* Node:Graph->Nodes)
+            if (Node) Right=FMath::Max(Right,int64(Node->NodePosX)+int64(FMath::CeilToDouble(FTurboMCPGraphTidy::AlignmentNodeSize(Node).X))+128);
+    }
+    if (Right>MAX_int32-1024) return TEXT("unchanged: no safe horizontal placement range remains.");
     if (!Apply) return FString::Printf(TEXT("preview: create local custom event %s in %s with %d input(s). Existing nodes stay fixed. No graph edits, compile or save."),*Name,*GraphName,Parameters.Num());
     const bool WasDirty=Blueprint->GetOutermost()->IsDirty();
     FScopedTransaction Transaction(NSLOCTEXT("TurboMCP","CustomEventAdd","Add custom event"));
@@ -88,15 +99,7 @@ FString CustomEvent(const FString& Asset, const FString& GraphName, const FStrin
             return TEXT("unchanged: event pin creation failed; the new node was removed.");
         }
     }
-    // Place beyond existing node rectangles; never move or tidy unrelated logic.
-    int64 Right=0;
-    for (UEdGraphNode* Node:Graph->Nodes)
-        if (Node && Node!=Event) Right=FMath::Max(Right,int64(Node->NodePosX)+FMath::Max(512,Node->NodeWidth)+128);
-    if (Right>MAX_int32-1024)
-    {
-        Event->DestroyNode(); Transaction.Cancel(); Blueprint->GetOutermost()->SetDirtyFlag(WasDirty);
-        return TEXT("unchanged: no safe horizontal placement range remains.");
-    }
+    // Use preflight geometry; never move unrelated existing logic.
     Event->NodePosX=int32(Right); Event->NodePosY=0;
     FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
     Graph->NotifyGraphChanged();
