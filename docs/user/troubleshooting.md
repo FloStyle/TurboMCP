@@ -48,3 +48,37 @@ Use the repository's bug-report template and include:
 - The smallest reproduction you ran, relevant log excerpts and whether it repeats.
 
 A suspected cause is optional. State which observations are confirmed and which are guesses. Avoid uploading proprietary assets, tokens or full logs containing private data. For vulnerabilities, use [the security policy](../../SECURITY.md) instead of a public issue.
+
+
+## Interrupted MCP requests
+
+A timeout, fetch failure or unavailable server does not prove that an edit failed.
+Do not repeat the edit. Reconnecting restores communication; it does not determine
+what the original request changed.
+
+The bundled client reports an UNKNOWN outcome and a bounded Incident record:
+UTC time, tool, failure class, HTTP status when available, and reconnect result.
+It does not include arguments or raw session IDs. Python callers can retain
+UnknownOutcomeError.diagnostic or Session.last_failure; the CLI prints the record.
+A failed reconnect does not erase the original uncertainty.
+
+Before a debugging session, retain ReadTurboMCPStatus so the loaded engine and
+plugin binary identity are available if communication stops. On recurrence:
+
+1. Preserve the Incident record and the editor log window around its UTC time,
+   including engine MCP/server messages, shutdown lines and any crash report.
+   A client transport error alone does not identify the server-side cause.
+2. Compare the startup build-identity line with the last status output. Compiler
+   and binary timestamps are identifiers, not source-revision proof.
+3. Once connected, inspect the exact asset or operation and ReadTurboMCPDirtyList.
+   Compare with the intended change before deciding whether another edit is needed.
+4. Retain any partial changes or uncertain outcome in the issue report. Do not
+   infer success from a later successful call or clear evidence by saving first.
+
+ReadTurboMCPEditorLog reads only the current enabled session's retained memory.
+After an editor restart, use the previous editor log rather than expecting the
+old records in the new session. Review logs before sharing proprietary information.
+
+The Oct27 X-115 field disconnect remains unexplained: no pinned build, server log
+or crash evidence was supplied. These diagnostics support a future recurrence;
+they are not a claim that its historical cause has been repaired.

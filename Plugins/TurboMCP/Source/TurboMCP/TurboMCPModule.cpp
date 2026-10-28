@@ -11,6 +11,8 @@
 #include "TurboMCPEditorLog.h"
 
 #include "Misc/CoreDelegates.h"
+#include "Misc/EngineVersion.h"
+#include "HAL/FileManager.h"
 #include "Modules/ModuleManager.h"
 
 #include "ToolsetRegistry/UToolsetRegistry.h"
@@ -54,7 +56,11 @@ void FTurboMCPModule::StartupModule()
 	// unattended, so a human launching the editor to work in it is unaffected.
 	FTurboMCPFocusGuard::Install();
 
-	UE_LOG(LogTurboMCP, Log, TEXT("TurboMCP module started"));
+	// Persist loaded-build context in the editor log for later disconnect correlation.
+    // File/compiler times are diagnostic identifiers, not proof of a Git revision.
+    const FString ModuleBinary = FModuleManager::Get().GetModuleFilename(TEXT("TurboMCP"));
+    UE_LOG(LogTurboMCP, Log, TEXT("TurboMCP module started; engine=%s; binary=%s; binaryTimestamp=%s; compiled=" __DATE__ " " __TIME__ "; sourceRevision=unknown"),
+        *FEngineVersion::Current().ToString(), *ModuleBinary, *IFileManager::Get().GetTimeStamp(*ModuleBinary).ToIso8601());
 }
 
 void FTurboMCPModule::ShutdownModule()
@@ -75,7 +81,7 @@ void FTurboMCPModule::ShutdownModule()
 	// Removed after the panel, because the guard needs Slate to unhook itself.
 	FTurboMCPFocusGuard::Remove();
 
-	UE_LOG(LogTurboMCP, Log, TEXT("TurboMCP module shut down"));
+	UE_LOG(LogTurboMCP, Log, TEXT("TurboMCP module shut down normally; this is a module lifecycle event, not a diagnosis of an earlier MCP disconnect"));
 }
 
 void FTurboMCPModule::RegisterToolsets()

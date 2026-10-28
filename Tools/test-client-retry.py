@@ -183,6 +183,28 @@ def main():
            isinstance(raised3, tmcp.UnknownOutcomeError),
            type(raised3).__name__ if raised3 else "no exception")
 
+    # Loss before dispatch and loss after application are both uncertain to the client.
+    class BeforeDispatchProbe(DroppingMutationProbe):
+        def _rpc_once(self, method, params=None, request_id=1):
+            self.requests += 1
+            raise ConnectionError("secret-test-value must not be copied")
+        def connect(self):
+            self.reconnects += 1
+            raise TimeoutError("private-reconnect-detail")
+    before = BeforeDispatchProbe()
+    try:
+        before.call(tmcp.EDIT_TOOLSET, "EditTurboMCPGraphRepoint", {"secret": "private-argument"})
+    except tmcp.UnknownOutcomeError as error:
+        incident = error.diagnostic
+        record("C03 before-dispatch loss is not replayed", before.requests == 1 and before.effects == 0)
+        record("C03 failed reconnect retained without guessing outcome", incident["reconnect"] == "failed" and incident["outcome"] == "unknown")
+        record("C03 UTC incident retained on session", incident["utc"].endswith("+00:00") and before.last_failure == incident)
+        record("C03 diagnostic excludes private input", all(text not in str(error) for text in ("secret-test-value", "private-reconnect-detail", "private-argument")))
+    else:
+        record("C03 unknown outcome exception required", False)
+    record("C03 after-effect evidence retains successful reconnect",
+           raised.diagnostic["reconnect"] == "succeeded" and raised.diagnostic["replayed"] is False)
+
     # --- the CLI's exit code for an unknown outcome ----------------------------------------------
     record("C02 the CLI exit code for an unknown outcome is 2 and is distinct from failure",
            tmcp.EXIT_UNKNOWN == 2)

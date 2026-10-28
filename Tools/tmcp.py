@@ -31,6 +31,7 @@ only when they have established that replay is safe for that exact request.
 """
 
 import argparse
+import datetime
 import json
 import re
 import sys
@@ -173,7 +174,8 @@ class UnknownOutcomeError(RuntimeError):
         transport: the transport failure that made the outcome ambiguous.
     """
 
-    def __init__(self, tool, transport):
+    def __init__(self, tool, transport, diagnostic=None):
+        self.diagnostic = dict(diagnostic or {})
         super().__init__(
             "the request for '%s' failed after it may have been applied (%s). The outcome is UNKNOWN and the "
             "request was NOT repeated. Establish the outcome independently: read the asset or the dirty "
@@ -182,6 +184,8 @@ class UnknownOutcomeError(RuntimeError):
         )
         self.tool = tool
         self.transport = transport
+        if self.diagnostic:
+            self.args = (str(self) + "\nIncident: " + json.dumps(self.diagnostic, sort_keys=True) + "\nPreserve editor logs around this UTC time and the last ReadTurboMCPStatus build identity. Reconnect success does not establish the original result or disconnect cause.",)
 
 
 def is_mutation(tool, override=None):
@@ -215,6 +219,7 @@ def tier_of_return(value):
 class Session:
     def __init__(self):
         self.id = None
+        self.last_failure = None
         # TRUE WHILE A RE-CONNECT IS IN PROGRESS, SO A FAILURE INSIDE IT PROPAGATES INSTEAD OF RE-ENTERING THE
         # RETRY. `connect()` calls `rpc()` and `rpc()` calls `connect()` on failure, so without this flag an
         # unreachable server recurses - each level waiting out a full request timeout - which is what made
@@ -253,16 +258,33 @@ class Session:
             # The reconnect still happens, because leaving the session id pointing at an editor that no
             # longer exists would break every later call. What does NOT happen is the second `_rpc_once`.
             if mutation:
+                # Record only bounded identifiers and failure classes, never arguments,
+                # raw session IDs or exception text that might contain credentials.
+                incident = {
+                    "utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "tool": str(tool or method)[:160],
+                    "method": str(method)[:64],
+                    "failure_type": type(transport).__name__[:80],
+                    "outcome": "unknown",
+                    "replayed": False,
+                    "server_cause": "unknown; correlate editor/server logs",
+                    "build_identity": "not inferred; retain last ReadTurboMCPStatus",
+                    "reconnect": "not_attempted",
+                }
+                if isinstance(transport, urllib.error.HTTPError):
+                    incident["http_status"] = transport.code
+                self.last_failure = incident
                 self.id = None
                 self._connecting = True
                 try:
                     self.connect()
-                except Exception:
-                    # The reconnect failing is not a new outcome; the request's outcome was already unknown.
-                    pass
+                    incident["reconnect"] = "succeeded"
+                except Exception as reconnect_error:
+                    incident["reconnect"] = "failed"
+                    incident["reconnect_failure_type"] = type(reconnect_error).__name__[:80]
                 finally:
                     self._connecting = False
-                raise UnknownOutcomeError(tool or method, "%s: %s" % (type(transport).__name__, transport))
+                raise UnknownOutcomeError(incident["tool"], incident["failure_type"], incident)
 
             # Only protocol discovery or an explicitly replay-safe request reaches here.
             self.id = None
