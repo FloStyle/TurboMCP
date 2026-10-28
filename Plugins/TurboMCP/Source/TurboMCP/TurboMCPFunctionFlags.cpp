@@ -51,9 +51,10 @@ FString PrepareDefinition(const FString& Asset, const FString& Function,
     FTurboMCPAssetResolver::FResolved Resolved;
     FString Error = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
     if (!Error.IsEmpty()) return Error;
-    Plan.Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
-    if (!Plan.Blueprint || Plan.Blueprint->BlueprintType == BPTYPE_Interface)
+    UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+    if (!Blueprint || Blueprint->BlueprintType == BPTYPE_Interface)
         return TEXT("error: Choose a Blueprint-owned function, not an interface declaration. Nothing changed.");
+    Plan.Blueprint = Blueprint;
     for (UEdGraph* Candidate : Plan.Blueprint->FunctionGraphs)
     {
         if (!Candidate || Candidate->GetFName() != FName(*Function)) continue;
