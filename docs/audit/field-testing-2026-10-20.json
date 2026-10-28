@@ -4367,15 +4367,17 @@
       "key": "2026-10-27_S4/GC-72",
       "title": "GraphConnect refuses short node IDs (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_passed",
       "observation": "Short IDs were refused with \"pins must resolve uniquely\". Full IDs worked. Other tools in the session accepted short IDs.",
-      "remaining": "OCT27-09: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "remaining": "",
       "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
       "planned_task": "OCT27-09",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "resolution": "OCT27-09: unique graph-local short keys accepted; missing/ambiguous IDs refused without graph changes. Exact IDs and cleanup reports retained.",
+      "evidence": "docs/audit/unique-edit-ids-review.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4593,15 +4595,17 @@
       "key": "2026-10-27_S5/GC-75",
       "title": "BindNewEvent refuses short node IDs (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_passed",
       "observation": "Short IDs were refused with \"target must be an exact delegate input pin\". The full ID worked.",
-      "remaining": "OCT27-09: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "remaining": "",
       "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
       "planned_task": "OCT27-09",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "resolution": "OCT27-09: unique graph-local short keys accepted; missing/ambiguous IDs refused without graph changes. Exact IDs and cleanup reports retained.",
+      "evidence": "docs/audit/unique-edit-ids-review.json"
     },
     {
       "report": "2026-10-27_S5",

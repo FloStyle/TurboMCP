@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "task": "OCT27-09",
+  "updated": "2026-10-28",
+  "status": "accepted_bounded_workflow",
+  "source_commit": "f41212da099be1d3172211c0265866115fcd4eff",
+  "scope_gate": "PASS against 39aa7eaafc730f331e74f4090026cd6b40440b38; integrator help scope recorded in 592849f",
+  "native_runs": [
+    "9c36dc2b27f74bff9fbf92917e419d7e",
+    "a560d06ecc4f4ee2927340d0c02e41fe"
+  ],
+  "prior_failures": [
+    "14c1c43f56004a8b901e55c091f0c004: new help assertion called two-argument API with one argument; corrected toolset argument, no production behavior weakened"
+  ],
+  "checks": [
+    "Unique short-key GraphConnect edit and exact-ID preview/repeat",
+    "Unique short-key BindNewEvent edit and exact-ID preview",
+    "Ambiguous duplicate identities refuse preview/edit with links and dirty state unchanged",
+    "Missing/wrong-graph ID and invalid pin controls retained",
+    "Canonical full IDs in results; displaced-node cleanup reporting preserved",
+    "Live parameter help for six preview/edit connect/bind tools",
+    "Final graph screenshots inspected: handler execution aligned and distinct event flows retained"
+  ],
+  "limitations": [
+    "Synthetic owned fixtures, not arbitrary project certification",
+    "BindFunction endpoint resolver and help updated; its complete signature/object matrix was not exercised by these two workflows",
+    "No save/reload claim; focused in-memory workflow evidence"
+  ],
+  "images_inspected": [
+    "WBP_Parent_ParentEvents_native_1200x700_EAEC07AF483BEA1F82DA04908A000873.png",
+    "BP_EventConnectReview_PurchaseEvents_native_1600x900_867076C94FE9B67352CFF3A1E4610EAA.png"
+  ]
+}

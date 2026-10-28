@@ -226,8 +226,8 @@
       "kind": "bug",
       "priority": "P2",
       "wave": 2,
-      "state": "in_progress",
-      "validation": "untested",
+      "state": "done",
+      "validation": "focused_native_and_visual_passed",
       "readiness": "ready",
       "reports": [
         "GC-72",
@@ -238,9 +238,12 @@
       "acceptance": "Accept a uniquely matching supported short ID or explicitly require a full ID. Never bind/connect an ambiguous match. Preserve displaced-node cleanup reporting.",
       "verification": "Unique, ambiguous, missing and full ID cases through public connect/bind tools; refusal preserves links.",
       "owner": "Codex",
-      "dispatch": "Codex oct27-unique-edit-ids; DSH paused",
+      "dispatch": "Integrated by Codex; DSH paused",
       "source_review": "GraphRefactorTools ResolveNode uses exact GraphScratch::Find; shortened GUID keys are not accepted. BindNewEvent collapses missing node and wrong pin into one delegate error. Scope local resolver and existing connect/bind workflow tests; do not alter all GraphScratch consumers.",
-      "repair_contract": "Accept exact reader IDs or a unique hexadecimal key of at least six digits in the explicitly named graph. Qualified IDs must retain asset/graph identity checks; never discard a mismatched qualifier. Refuse missing/ambiguous identities and duplicate GUID remapping before live mutation. Distinguish node-resolution errors from pin/type errors. Preserve cleanup reporting. Verify public preview/edit unique short, exact full, missing and collision controls; compare original links on every refusal. Shared tool help updates are integrator-owned."
+      "repair_contract": "Accept exact reader IDs or a unique hexadecimal key of at least six digits in the explicitly named graph. Qualified IDs must retain asset/graph identity checks; never discard a mismatched qualifier. Refuse missing/ambiguous identities and duplicate GUID remapping before live mutation. Distinguish node-resolution errors from pin/type errors. Preserve cleanup reporting. Verify public preview/edit unique short, exact full, missing and collision controls; compare original links on every refusal. Shared tool help updates are integrator-owned.",
+      "evidence": "docs/audit/unique-edit-ids-review.json",
+      "remaining": "",
+      "resolution": "Connect and bind resolve unique graph-local hexadecimal keys or exact reader IDs; ambiguous and missing identities have distinct refusals. Successful endpoints are canonical; live help and focused workflows passed."
     },
     {
       "id": "OCT27-10",

@@ -32,6 +32,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPBindEventWorkflowTest,
     "TurboMCP.Workflow.BindEvent", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPBindEventWorkflowTest::RunTest(const FString& Parameters)
 {
+    for (const FString Tool : {TEXT("PreviewTurboMCPGraphConnect"), TEXT("EditTurboMCPGraphConnect"),
+        TEXT("PreviewTurboMCPBindNewEvent"), TEXT("EditTurboMCPBindNewEvent"),
+        TEXT("PreviewTurboMCPBindFunction"), TEXT("EditTurboMCPBindFunction")})
+    {
+        const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(
+            Tool.StartsWith(TEXT("Preview")) ? TEXT("TurboMCP.TurboMCPPreviewToolset") : TEXT("TurboMCP.TurboMCPEditToolset"), Tool);
+        TestTrue(TEXT("Live help explains graph-local unique keys"), Help.Contains(TEXT("unique hexadecimal node key")) && Help.Contains(TEXT("ambiguous")));
+    }
     FModuleManager::Get().LoadModule(TEXT("CommonUI"));
     UClass* ButtonClass=LoadClass<UUserWidget>(nullptr,TEXT("/Script/CommonUI.CommonButtonBase"));
     if(!TestNotNull(TEXT("Common UI available"),ButtonClass))return false;

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "7e850f4c3fa379213f0fcf6ee99348436b28d0b8",
+  "plugin_tree": "d0d712040aa67e1d4b71f475ed51956ccc36c6f5",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 158,
@@ -97,7 +97,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 513
+          "line": 557
         }
       ],
       "test_references": [],
@@ -121,7 +121,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 519
+          "line": 563
         }
       ],
       "test_references": [],
@@ -494,7 +494,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 493
+          "line": 537
         }
       ],
       "test_references": [],
@@ -687,7 +687,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 507
+          "line": 551
         }
       ],
       "test_references": [],
@@ -767,7 +767,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 501
+          "line": 545
         }
       ],
       "test_references": [],
@@ -789,7 +789,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 497
+          "line": 541
         }
       ],
       "test_references": [],
@@ -1813,7 +1813,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 510
+          "line": 554
         }
       ],
       "test_references": [],
@@ -1837,7 +1837,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 516
+          "line": 560
         }
       ],
       "test_references": [],
@@ -2107,7 +2107,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 491
+          "line": 535
         }
       ],
       "test_references": [],
@@ -2300,7 +2300,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 504
+          "line": 548
         }
       ],
       "test_references": [],
@@ -2377,7 +2377,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 499
+          "line": 543
         }
       ],
       "test_references": [],
@@ -2399,7 +2399,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 495
+          "line": 539
         }
       ],
       "test_references": [],
