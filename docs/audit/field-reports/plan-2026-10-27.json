@@ -480,7 +480,7 @@
       "wave": 5,
       "state": "open",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "FT-126",
         "FT-127"
@@ -490,7 +490,9 @@
       "acceptance": "Retain master default OFF. Define domain presets and per-tool overrides, dependency/preview-edit pairing, restart versus live behavior and recovery discovery. Persist per-user/project without changing shared project settings.",
       "verification": "Individual disable, preset disable, explicit override precedence, restart persistence, no callable disabled tool and accurate diagnostics.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-tool-controls; DSH paused; claim at approved base required",
+      "repair_contract": "docs/design/tool-controls.md",
+      "source_review": "Master preference already uses per-user project config and startup sampling. Registry supports blocked-name filters; call recorder wraps all plugin handlers and can reject before execution. Policy must be shared by discovery, execution and status."
     },
     {
       "id": "OCT27-18",

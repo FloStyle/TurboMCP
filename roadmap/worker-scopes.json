@@ -2887,6 +2887,22 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCollapseFunctionTest.cpp",
             "Tools/test-collapse-function.py"
           ]
+        },
+        "oct27-tool-controls": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPSettings.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSettings.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPModule.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPModule.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolPolicy.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolPolicy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolPolicyTest.cpp",
+            "Tools/test-tool-controls.py"
+          ]
         }
       },
       "preserve_rows": []
