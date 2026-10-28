@@ -3,7 +3,7 @@
   "tasks": [
     "OCT27-18"
   ],
-  "status": "candidate_acceptance_incomplete",
+  "status": "implemented_focused_native_passed",
   "actual_candidate": "c11853bcdca44827af44e389b11bccb0e9ebb5d3",
   "native_run": "12a970dd05514d0599a7a39e3a5f8386",
   "checks": [
@@ -28,15 +28,13 @@
     "cf75be887d8c4348b0e29a8e248394f7: offline gate reported stale capability inventory.",
     "14932913eb3e48e19c36b0acb6312f1f: inventory hash stale because generator reads committed plugin tree; regenerated after source commit, validate-repo passes."
   ],
-  "remaining": [
-    "Full offline gate currently running",
-    "Final integration and coverage ledger update"
-  ],
+  "remaining": [],
   "limits": [
     "No automatic save",
     "Post-mutation failure reports partial and requires undo/inspection; automatic restoration is not promised",
     "Macro extraction and local-variable captures unsupported",
     "Placement search bounded to 4096 positions"
   ],
-  "scope_projection": "3607e52eb75a3432a4736678174593e89fe87907"
+  "scope_projection": "3607e52eb75a3432a4736678174593e89fe87907",
+  "offline": "26/26 passed: b63c3d6f506d4b40a9d3299a13bcad39"
 }

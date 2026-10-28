@@ -736,6 +736,24 @@
         "Macro-containing const conversion explicitly refuses pending expanded-body analysis",
         "Partial mutation is reported if postconditions fail; rollback is not promised"
       ]
+    },
+    {
+      "id": "WF-BP-COLLAPSE-FUNCTION",
+      "title": "Extract a connected string chain or execution block into a function",
+      "status": "bounded_scenario_checked",
+      "review": "docs/audit/collapse-function-review.json",
+      "fixture": "TurboMCP.Workflow.CollapseFunction",
+      "tools_used": [
+        "PreviewTurboMCPGraphCollapse",
+        "EditTurboMCPGraphCollapse",
+        "EditTurboMCPFunctionAdd",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "No disk persistence claim",
+        "Macro extraction and local-variable captures unsupported",
+        "Partial failures require undo/inspection; automatic rollback not promised"
+      ]
     }
   ],
   "tool_usage": {
@@ -805,7 +823,8 @@
       "WF-VISION-05-PLAY",
       "WF-VISION-06-PLAY-MENU",
       "WF-VISION-07-COMMONUI",
-      "WF-BP-FUNCTION-FLAGS"
+      "WF-BP-FUNCTION-FLAGS",
+      "WF-BP-COLLAPSE-FUNCTION"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -1060,10 +1079,17 @@
       "WF-BP-FUNCTION-FLAGS"
     ],
     "EditTurboMCPFunctionAdd": [
-      "WF-BP-FUNCTION-FLAGS"
+      "WF-BP-FUNCTION-FLAGS",
+      "WF-BP-COLLAPSE-FUNCTION"
+    ],
+    "PreviewTurboMCPGraphCollapse": [
+      "WF-BP-COLLAPSE-FUNCTION"
+    ],
+    "EditTurboMCPGraphCollapse": [
+      "WF-BP-COLLAPSE-FUNCTION"
     ]
   },
-  "unique_tools_scenario_reviewed": 85,
+  "unique_tools_scenario_reviewed": 87,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
