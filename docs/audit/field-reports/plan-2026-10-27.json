@@ -97,9 +97,9 @@
       "kind": "bug",
       "priority": "P1",
       "wave": 2,
-      "state": "open",
+      "state": "in_progress",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "TD-43",
         "TD-44",
@@ -111,7 +111,9 @@
       "acceptance": "Use a dense boxed fixture with distant selected nodes. Bound fixed-neighbour wire growth, retain untouched nodes/boxes, and report the precise failing criterion. Shorter total wires alone do not guarantee a valid layout. Roll back rejected candidates.",
       "verification": "Inspect before/after captures and distances for small scope in large graph, single spliced log and seven-node function. Preserve passing whole-graph layout.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-scoped-tidy; DSH paused",
+      "repair_contract": "docs/design/scoped-tidy-boundaries.md",
+      "source_review": "Global unboxed placement starts beyond all fixed content; structural comparator can accept unbounded boundary-wire growth. Repair local component placement plus planned/actual boundary checks and exact rejection reasons."
     },
     {
       "id": "OCT27-05",

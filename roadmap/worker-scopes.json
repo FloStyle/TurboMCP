@@ -2755,6 +2755,15 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPInputEntryTest.cpp"
           ]
+        },
+        "oct27-scoped-tidy": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphTidy.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPScopedTidyTest.cpp"
+          ]
         }
       },
       "preserve_rows": []

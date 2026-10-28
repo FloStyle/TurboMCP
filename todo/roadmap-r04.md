@@ -2014,3 +2014,5 @@ Implement [confirmed package recovery](../docs/design/asset-recovery.md) under o
 OCT27-15 completed: saved Blueprint/data-asset recovery native workflow and live help passed e6bf90f5ccc3459899e4b379c595cf90. State-bound approvals, live-world guards and fresh reload checks are implemented. Prior failures, source-only guards and project callback limits are retained in docs/audit/asset-recovery-review.json. Offline 25/26 d06ec29ec06943c6ba929f681bb2e911 plus regenerated-inventory structure/language recheck passed. R04 overall remains open.
 
 OCT27-03 done: stock event-interface reachability implemented. Native existing-event and same-batch append/compile plus unchanged-state refusal passed 7f814ae8a0984b32add6ec5258ff66bb. See docs/audit/input-entry-review.json for baseline failure, fixture corrections and runtime limits.
+
+OCT27-04 ready/in progress: scoped tidy local placement and fixed-boundary safety; contract docs/design/scoped-tidy-boundaries.md, assignment oct27-scoped-tidy. Native dense/inserted/function/refusal cases and visual evidence pending.
