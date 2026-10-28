@@ -334,7 +334,7 @@
       "priority": "P1",
       "wave": 1,
       "state": "in_progress",
-      "validation": "untested",
+      "validation": "partial_native_evidence",
       "readiness": "ready",
       "reports": [
         "X-114",
@@ -348,7 +348,10 @@
       "verification": "Owned data-asset fixture, cancelled/stale confirmation, unsaved loss preview, disk restoration and refusal; inspect reference/undo side effects.",
       "owner": "Codex",
       "dispatch": "Codex oct27-asset-recovery; DSH paused",
-      "source_review": "Existing Blueprint revert tokens bind only path/time, not state. Stock ReloadPackages may reset undo and reinstance references. Approved saved single-asset Blueprint/UDataAsset domain with memory/disk-bound confirmation and fresh readback."
+      "source_review": "Existing Blueprint revert tokens bind only path/time, not state. Stock ReloadPackages may reset undo and reinstance references. Approved saved single-asset Blueprint/UDataAsset domain with memory/disk-bound confirmation and fresh readback.",
+      "implementation_progress": "Unmerged candidate compiles on stock engine. Saved InputAction recovery assertions passed in 1ecf347dbbe24f4da6fdd65bb66c0c0b, but fixture deletion failed on an open linker; cleanup repair is under test. Includes memory/disk-bound confirmation, data-asset eligibility, open-editor/live-world guards and fresh readback. Strict native admission exposed a short-lived runner parent; launcher now preserves ancestry in the candidate.",
+      "remaining": "Complete cleanup and refusal coverage, review public help, run offline gates, then integrate. Task remains in progress; no full pass claimed.",
+      "evidence_run": "1ecf347dbbe24f4da6fdd65bb66c0c0b"
     },
     {
       "id": "OCT27-16",
