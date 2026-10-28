@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-28",
   "source_batch": "docs/audit/field-reports/batch-2026-10-27.json",
-  "scope": "All 47 observations/proposals in five Oct27 reports; 19 work packages plus nine positive observations. Planning only, not completed implementation.",
+  "scope": "All 47 observations/proposals in five Oct27 reports; 19 work packages plus nine positive observations. Per-task implementation and validation are recorded separately.",
   "rules": [
     "Task is a problem or feature. Tested/untested is a separate flag.",
     "Close only implemented scope; partial fixes retain explicit remaining work.",
@@ -306,8 +306,8 @@
       "kind": "investigation",
       "priority": "P1",
       "wave": 1,
-      "state": "in_progress",
-      "validation": "reproduced_failure",
+      "state": "done",
+      "validation": "focused_native_passed",
       "readiness": "ready",
       "reports": [
         "X-113",
@@ -319,12 +319,13 @@
       "acceptance": "Reproduce object-keyed map failure and instanced-subobject false success on owned assets. Document engine defect separately. Specify plugin temporary import, identity validation, readback and rollback; never apply unvalidated imports to live properties. No engine patch requirement.",
       "verification": "Controlled refusal preserves original map and dirty state; new instanced object ownership correct; successful writes independently read back. No claim until reproduced.",
       "owner": "Codex",
-      "dispatch": "Codex owned-asset reproduction: oct27-data-asset-safety; DSH paused",
+      "dispatch": "Integrated by Codex; DSH paused",
       "source_review": "Pinned stock engine: corrected concrete-key fixture preserves the map with container checks enabled, but bypass mode returns false and replaces its key with None. Class-path child creation succeeds with the correct outer. This isolates a stock writer failure; it does not prove the exact historical input or all instanced-object failures.",
-      "evidence_run": "88c27e3e88834583af0e4d8420911842",
-      "candidate": "f2b1ccfc1633f5e3188a986919fe968d9b093d98",
-      "remaining": "Complete map-child editing and map-child creation/refusal coverage, stale/invalid/no-op/undo cases, help/output review and integration gates. Preserve stock corruption and prior candidate failures. X-116 historical input remains unknown; supported InputAction creation now has direct evidence.",
-      "implementation_progress": "Temporary planner integrated after focused native pass 8e45f02d522c45d19c5508517369150d and offline checks. Public reader/preview/editor with revision checks and snapshot rollback implemented in isolated candidate; initial build passed a1338bd2ee674310b20171203de93fc3. Public workflow a5ee3aff28614bcfaa3424841073fc75 exposed hardcoded dirty-state reporting on a transient fixture; corrected in 685af38, repeat run pending. No public writer acceptance yet. Corrected focused public workflow passed in 754f9752d2af4aceb7a6347cd2bfbbb3: preview preservation, map addition, stale/missing-key refusal, owned child scalar edit and deliberate notification mismatch restoration. This does not cover child creation or full task acceptance. Owned-child creation added and native workflow c0d5dc275b504034aefb15d7b68a930d passed: temporary preview, correct final outer/initial value, no overwrite, and real InputAction PlayerMappableKeySettings Name readback. Candidate 3283f51; pinned JSON-key build failure 1f71e22e77854b15b00e67f5745244f0 corrected and retained."
+      "evidence_run": "d7f1fd0ee7894a1b815145397527418a",
+      "candidate": "565e2a71b0178b0968e4677385dc4f08905aebc2",
+      "remaining": "",
+      "implementation_progress": "Implemented and integrated. Offline 26/26 b8d0bfca63a44ba5982b7d1986a71e78; later fixture-only controls passed native d7f1fd0ee7894a1b815145397527418a and current structure/language checks.",
+      "resolution": "Stock bypass-map corruption reproduced and retained as an external engine defect/proposal. Safe plugin read/preview/edit tools now validate temporary values, target exact entries/owned children, require Unicode-safe revisions, verify actual results and report complete or failed restoration honestly. Native workflow covers real InputAction settings, map identities, preview, refusal, no-op, undo, callback mismatch, failed restoration and live help. Historical X-116 input formats remain unknown; no claim that the stock engine was repaired. See docs/audit/data-asset-tool-review.json for scope and limitations."
     },
     {
       "id": "OCT27-15",

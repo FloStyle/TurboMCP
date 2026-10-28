@@ -2000,3 +2000,8 @@ Readiness: ready. Assignment `oct27-data-asset-safety` creates owned reflected f
 ## Approved safe data-asset edit design (2026-10-28)
 
 OCT27-14 now has a reproduced stock bypass-import corruption failure. Implement the bounded read/preview/edit contract in [data-asset edits](../docs/design/data-asset-edits.md). Required map-entry editing, owned child creation/editing, revision checks, independent readback and verified rollback must all be delivered; documentation or choosing non-bypass mode does not close this task. Register exact production files in a new immutable assignment before implementation. Reproduction remains a failing baseline, not a fixed regression.
+
+
+## OCT27-14 accepted bounded workflow (2026-10-28)
+
+Data-asset property read/preview/edit tools integrated with native run d7f1fd0ee7894a1b815145397527418a. See [review](../docs/audit/data-asset-tool-review.json). Temporary imports, stable map identities, owned child creation including InputAction settings, stale refusals, Unicode revisions, undo and truthful failed-restoration reporting are covered. Offline 26/26 passed in b8d0bfca63a44ba5982b7d1986a71e78, followed by current structure/language checks after final fixture controls. Source files match the immutable assignment; catalog/wrapper registration was explicitly integrator-owned commit 564c8e9. Stock bypass writer remains defective and tracked upstream; historical false-success inputs remain unknown. R04 remains open. Next data-safety work is OCT27-15 recovery.

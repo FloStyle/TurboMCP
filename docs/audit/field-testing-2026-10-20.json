@@ -4482,13 +4482,14 @@
       "state": "open",
       "priority": "P1",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "stock_failure_reproduced_plugin_alternative_tested",
       "observation": "The writer refused every key (\"is not a subobject of the property owner\") and reported that the property could not be set. A read-back then showed the map reduced to one entry with a None key. The asset was dirty in memory.",
-      "remaining": "OCT27-14: Reported engine object-writer corruption, not a TurboMCP writer regression. Track stock-engine proposal and safe recovery separately; never save the corrupted in-memory map.",
+      "remaining": "Stock engine bypass writer remains affected; proposed upstream follow-up is in docs/audit/engine-issues-ue59-proposal.md. Use the validated TurboMCPDataAssetProperty tools instead. Recovery is OCT27-15; no custom engine patch was made.",
       "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
       "component": "Unreal engine tool",
       "planned_task": "OCT27-14",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "resolution": "Reproduced at pinned stock revision in 88c27e3e88834583af0e4d8420911842. Plugin alternative passed d7f1fd0ee7894a1b815145397527418a."
     },
     {
       "report": "2026-10-27_S5",
@@ -4528,15 +4529,16 @@
       "key": "2026-10-27_S5/X-116",
       "title": "Feature: Engine object writer cannot create an instanced sub-object (medium)",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_passed",
       "observation": "Both writes returned success. A read-back showed the property still None.",
-      "remaining": "OCT27-14: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "remaining": "Historical stock-writer false-success inputs remain unknown; the requested supported plugin workflow is implemented. No arbitrary callback or persistence certification.",
       "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
       "planned_task": "OCT27-14",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "resolution": "Read/Preview/EditTurboMCPDataAssetProperty support validated property/map editing and owned child creation. Real InputAction PlayerMappableKeySettings creation and independent readback passed d7f1fd0ee7894a1b815145397527418a."
     },
     {
       "report": "2026-10-27_S5",
@@ -4701,15 +4703,16 @@
       "key": "2026-10-27_S5/FT-130",
       "title": "Create and edit instanced sub-objects and object-keyed maps on data assets safely",
       "kind": "reference",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "proposed_not_implemented",
+      "validation": "focused_native_passed",
       "duplicate_of": "X-116",
-      "remaining": "OCT27-14: Feature request, not a confirmed regression.",
+      "remaining": "Historical stock-writer false-success inputs remain unknown; the requested supported plugin workflow is implemented. No arbitrary callback or persistence certification.",
       "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
       "planned_task": "OCT27-14",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "resolution": "Read/Preview/EditTurboMCPDataAssetProperty support validated property/map editing and owned child creation. Real InputAction PlayerMappableKeySettings creation and independent readback passed d7f1fd0ee7894a1b815145397527418a."
     }
   ],
   "prototype": {
