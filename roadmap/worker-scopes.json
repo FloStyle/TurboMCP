@@ -2736,6 +2736,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetToolsTest.cpp"
           ]
+        },
+        "oct27-asset-recovery": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetRecoveryTest.cpp"
+          ]
         }
       },
       "preserve_rows": []

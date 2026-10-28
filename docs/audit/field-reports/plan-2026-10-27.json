@@ -333,9 +333,9 @@
       "kind": "feature",
       "priority": "P1",
       "wave": 1,
-      "state": "open",
+      "state": "in_progress",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "X-114",
         "FT-129"
@@ -347,7 +347,8 @@
       "acceptance": "Design supported asset classes first; do not promise every asset. Preview exact package/assets and unsaved loss, bind confirmation to current state, reject unsafe live references/PIE. Keep transaction undo distinct from disk reload. Extend destructive confirmation only under applicable user authorization.",
       "verification": "Owned data-asset fixture, cancelled/stale confirmation, unsaved loss preview, disk restoration and refusal; inspect reference/undo side effects.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-asset-recovery; DSH paused",
+      "source_review": "Existing Blueprint revert tokens bind only path/time, not state. Stock ReloadPackages may reset undo and reinstance references. Approved saved single-asset Blueprint/UDataAsset domain with memory/disk-bound confirmation and fresh readback."
     },
     {
       "id": "OCT27-16",
