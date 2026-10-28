@@ -467,6 +467,28 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 {
+
+    // The graph-text escape layer must preserve Unreal's inner struct syntax exactly.
+    const TArray<FString> LiteralCases = {
+        TEXT("(TagName=\"UI.Menu.Pause\")"),
+        TEXT("quoted \"value; still content\" and C:\\Temp\\file"),
+        TEXT("line one\nline two\tend\r"),
+        TEXT("")
+    };
+    for (const FString& Expected : LiteralCases)
+    {
+        const FString Encoded = TurboMCPGraphTextLex::QuoteLiteral(Expected);
+        FString Name, Value, Decoded, Error;
+        int32 Column = 0;
+        TestTrue(TEXT("parse encoded literal with trailing comment"),
+            TurboMCPGraphTextLex::ParsePinLine(TEXT("Value ") + Encoded + TEXT(" ; in 0)"), Name, Value, Column));
+        TestTrue(TEXT("decode quoted literal"), TurboMCPGraphTextLex::DecodeLiteral(Value, Decoded, Error));
+        TestEqual(TEXT("literal preserves exact content"), Decoded, Expected);
+    }
+    FString InvalidDecoded, InvalidError;
+    TestFalse(TEXT("unknown escape refuses"), TurboMCPGraphTextLex::DecodeLiteral(TEXT("\"bad\\q\""), InvalidDecoded, InvalidError));
+    TestFalse(TEXT("unescaped inner quote refuses"), TurboMCPGraphTextLex::DecodeLiteral(TEXT("\"bad\"quote\""), InvalidDecoded, InvalidError));
+
 	FFixture Fixture;
 	// CLEANUP IS SCOPED, NOT A SUCCESS-ONLY TAIL: every return below, including a partial fixture, runs it.
 	FScopedFixtureCleanup Cleanup(Fixture);

@@ -104,14 +104,12 @@ namespace
 		return InValue.StartsWith(TEXT("("));
 	}
 
-	/** Strips the quotes the format writes around text and structs. */
+	/** Plan validates the graph-text escape layer before any live mutation. */
 	FString Unquote(const FString& InValue)
 	{
-		if (InValue.Len() >= 2 && InValue.StartsWith(TEXT("\"")) && InValue.EndsWith(TEXT("\"")))
-		{
-			return InValue.Mid(1, InValue.Len() - 2);
-		}
-		return InValue;
+        FString Literal, Error;
+        TurboMCPGraphTextLex::DecodeLiteral(InValue, Literal, Error);
+        return Literal;
 	}
 
 	/** A connection counts only when both pin records agree. */
@@ -328,6 +326,12 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		int32 PinColumn = 0;
 		if (CurrentIndex != INDEX_NONE && TurboMCPGraphTextLex::ParsePinLine(Line.Text, PinName, PinValue, PinColumn))
 		{
+            FString DecodedLiteral, LiteralError;
+            if (!TurboMCPGraphTextLex::DecodeLiteral(PinValue, DecodedLiteral, LiteralError))
+            {
+                OutError = FString::Printf(TEXT("line %d: %s; nothing was written"), Line.Number, *LiteralError);
+                return false;
+            }
 			TurboMCPGraphTextLex::FPinForm Pin;
 			Pin.Name = PinName;
 			Pin.Value = PinValue;

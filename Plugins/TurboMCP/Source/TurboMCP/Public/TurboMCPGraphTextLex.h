@@ -41,6 +41,12 @@
  */
 namespace TurboMCPGraphTextLex
 {
+    /** Quote a literal for graph text. This escapes the transport layer, not Unreal struct syntax. */
+    FString QuoteLiteral(const FString& Value);
+
+    /** Decode one graph-text literal. Unknown escapes and unescaped inner quotes are refused. */
+    bool DecodeLiteral(const FString& Value, FString& OutValue, FString& OutError);
+
 	/**
 	 * One line of submitted text, with the number a reader starts at.
 	 *
