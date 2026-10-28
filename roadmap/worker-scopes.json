@@ -2824,6 +2824,18 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "oct27-editor-log": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPModule.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEditorLog.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEditorLog.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEditorLogTest.cpp",
+            "Tools/test-editor-log.py"
+          ]
         }
       },
       "preserve_rows": []
