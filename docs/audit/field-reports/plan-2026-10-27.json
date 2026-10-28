@@ -307,7 +307,7 @@
       "priority": "P1",
       "wave": 1,
       "state": "in_progress",
-      "validation": "untested",
+      "validation": "reproduced_failure",
       "readiness": "ready",
       "reports": [
         "X-113",
@@ -320,7 +320,10 @@
       "verification": "Controlled refusal preserves original map and dirty state; new instanced object ownership correct; successful writes independently read back. No claim until reproduced.",
       "owner": "Codex",
       "dispatch": "Codex owned-asset reproduction: oct27-data-asset-safety; DSH paused",
-      "source_review": "Stock 396c9f05990: SetObjectProperties passes live property memory into ImportPropertyWithNotify. ReferenceConverter enforces instanced ownership and supports class-path instantiation. Reproduction required before attributing the field cause."
+      "source_review": "Pinned stock engine: corrected concrete-key fixture preserves the map with container checks enabled, but bypass mode returns false and replaces its key with None. Class-path child creation succeeds with the correct outer. This isolates a stock writer failure; it does not prove the exact historical input or all instanced-object failures.",
+      "evidence_run": "88c27e3e88834583af0e4d8420911842",
+      "candidate": "f2b1ccfc1633f5e3188a986919fe968d9b093d98",
+      "remaining": "Implement and verify plugin-side validated data-asset editing; preserve map identity and dirty state on refusal. Investigate false-success input forms separately. Stock reproduction intentionally fails and is not a passing regression."
     },
     {
       "id": "OCT27-15",

@@ -45,3 +45,18 @@ Evidence: `.local/executions/f616e04a3382410e96dd713a2f25635f/report.json` and `
 ## Off-screen SVG icons - confirmed capture boundary, 2026-10-25
 
 On stock 5.8.3, FWidgetRenderer graph captures requested SVG icons at their final zoom without updating Slate's shared vector cache. Function/local-variable glyphs and resize handles appeared as white squares. PNG icons rendered correctly; missing assets, alpha readback and simple warm-up at a different zoom were ruled out. TurboMCP now paints at the final scale, runs the renderer resource update with an empty window buffer, and repaints. Actual purchase captures confirm visible icons (9e1cc0a; final build/scenario c8735a8f289248269dad165ce361fd5d). Future 5.9 proposal: document or provide a public off-screen SVG resource preparation path. This is distinct from unproven live graph contrast issue CP-14; no engine patch is required by the plugin fix.
+
+
+## Object-keyed map corruption after rejected stock writer import (Oct27 X-113)
+
+Status: reproduced on pinned stock 5.8.3; not tested on 5.9. No engine changes.
+
+Corrected fixture commit: `f2b1ccfc1633f5e3188a986919fe968d9b093d98`. Native run: `88c27e3e88834583af0e4d8420911842`. Doctor and build passed; `test-data-asset-safety` failed its preservation assertion, as recorded. The initial abstract-UObject fixture was invalid; its earlier failure is not the proof.
+
+The owned data asset contains a map from a concrete external UObject reference to an owned instanced child. Feed the reader JSON back to `UToolsetLibrary::SetObjectProperties`. With `EBypassContainerCheck::No`, the call succeeds and preserves the original entry. With `Yes`, it returns false and changes the key to `None`, retaining the child value. The package dirty flag remains false in both cases, so dirty-state checks alone miss the corruption. No fixture package is saved.
+
+The same run creates a child from its class path successfully and confirms the correct owning outer. X-116's historical false-success inputs remain unavailable; do not label all instanced creation broken.
+
+Engine investigation targets: ToolsetLibrary passes live property memory to ImportPropertyWithNotify; the bypass path imports directly, while ReferenceConverter enforces subobject ownership. Proposed engine acceptance: rejected container imports leave every key/value and dirty state unchanged, with errors captured at the public call boundary. Confirm the fix independently on a specific 5.9 revision before submission.
+
+Plugin work remains OCT27-14: validate on temporary owned state, preserve external identities, independently read back, and commit only validated changes with rollback. Simply selecting non-bypass mode is not proof of atomic safety for arbitrary input. This is an engine defect record, not an implemented plugin fix.
