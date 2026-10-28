@@ -17,11 +17,11 @@ class UEdGraphNode;
 class UEdGraphPin;
 
 /**
- * Plan graph copies and inspect possible collapse selections.
+ * Plan graph copies and supported same-Blueprint function extractions.
  * Copy preserves existing pin trees, recreates supported links and reports links
  * that cannot be recreated. Apply rechecks eligibility and uses an owned undo
  * transaction; it does not compile or save. Failed undo is not proof of restoration.
- * Collapse extraction is not implemented; Apply refuses it without extracting nodes.
+ * Collapse moves the selected nodes into a function and reconnects their boundaries through a replacement call. Unsupported selections are refused before mutation.
  */
 class FTurboMCPGraphStructure
 {
@@ -160,15 +160,15 @@ public:
 		const FString& InAnchorNodeKey, FPlan& OutPlan, FString& OutError);
 
 	/**
-	 * Plans extracting the named nodes into a function or a macro of the same Blueprint. WRITES NOTHING.
+	 * Plans extracting the named nodes into a function of the same Blueprint without changing it.
 	 *
-	 * @param InMemberKind  `function` or `macro`. Anything else is refused by name.
+	 * @param InMemberKind  `function`. Macro extraction is explicitly unsupported.
 	 */
 	static bool PlanCollapse(const FString& InAsset, const FString& InGraphName,
 		const TArray<FString>& InNodeKeys, const FString& InMemberName, const FString& InMemberKind,
 		FPlan& OutPlan, FString& OutError);
 
-	/** Apply a copy with current-state guards and read-back; compile/save are separate.
+	/** Apply a copy or function extraction with current-state guards and read-back; compile/save are separate.
 	 * Failure diagnostics distinguish refusal from potentially partial changes.
 	 */
 	static bool Apply(const FPlan& InPlan, FString& OutReport, FString& OutError);

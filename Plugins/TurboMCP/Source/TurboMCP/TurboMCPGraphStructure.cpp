@@ -996,7 +996,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 	OutError.Empty();
 
     if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
-    { OutError = TEXT("unchanged: graph copy requires an idle editor with undo available, outside an active transaction"); return false; }
+    { OutError = TEXT("unchanged: graph editing requires an idle editor with undo available, outside an active transaction"); return false; }
 
 	if (InPlan.Verb == EVerb::Copy && !InPlan.TargetAnchorNodeKey.IsEmpty())
 	{
