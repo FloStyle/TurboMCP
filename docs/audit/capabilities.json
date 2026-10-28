@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "4485a9e864ed75096056661107e1df3bf174a004",
+  "plugin_tree": "046c3c9d7f5acc17cefadc313df56bea42d64e90",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 158,
@@ -849,7 +849,8 @@
       ],
       "test_references": [
         "Tools/test-graph-tidy-scope.py",
-        "Tools/test-graph-tidy.py"
+        "Tools/test-graph-tidy.py",
+        "Tools/test-scoped-tidy.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2458,7 +2459,8 @@
       ],
       "test_references": [
         "Tools/test-graph-tidy-scope.py",
-        "Tools/test-graph-tidy.py"
+        "Tools/test-graph-tidy.py",
+        "Tools/test-scoped-tidy.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -3726,6 +3728,7 @@
         "Tools/test-asset-recovery.py",
         "Tools/test-common-button-workflow.py",
         "Tools/test-datatable-quality.py",
+        "Tools/test-scoped-tidy.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-vision-workflow.py"
       ],

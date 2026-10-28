@@ -21,3 +21,5 @@ Use disposable owned Blueprints with real native measurements. Cover a dense gra
 ## Ownership
 
 Assignment oct27-scoped-tidy owns GraphTidy implementation/header plus a dedicated native fixture. The integrator separately owns catalog, wrapper, help, audit and tracking. DSH remains paused; engine source remains stock. OCT27-05 append placement remains a separate dependent task.
+
+Implemented clearance rule: each crossing wire may grow by the larger native endpoint width clamped to 64..256 graph units, with a 1-unit rounding tolerance. Aggregate growth is limited to the largest individual allowance, not the sum. Planned and actual checks use the same rule, including getter-copy endpoints. Force does not bypass it.

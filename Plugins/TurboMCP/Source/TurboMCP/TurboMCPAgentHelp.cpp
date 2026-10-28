@@ -514,6 +514,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
                     Help += TEXT("\neffects: writes packages without thumbnail drawing; save callbacks still run. Partial saves are not rolled back; inspect each result. No explicit compile. Thumbnails may remain stale.");
                 else if (Bare == TEXT("EditTurboMCPCompile"))
                     Help += TEXT("\neffects: compilation can reinstance classes and affect dependents. Does not save; inspect each asset's diagnostics before saving.");
+                else if (Bare == TEXT("PreviewTurboMCPGraphTidy") || Bare == TEXT("EditTurboMCPGraphTidy"))
+                    Help += TEXT("\nscope: unselected nodes stay fixed. Scoped groups are placed near their connections. Force does not bypass collision, comment membership or fixed-boundary wire-growth limits (64..256 graph units of clearance per wire; aggregate allowance is the largest individual allowance). Preview does not move graph nodes. Edit rechecks the current graph and rolls back rejected geometry; no compile or save.");
                 else if (Bare == TEXT("EditTurboMCPAssetUndo"))
                     Help += TEXT("\neffects: undoes only the latest matching TurboMCP transaction. Requires its preview GUID; never skips unrelated edits. No explicit compile or save. Redo remains available after success.");
                 else if (Bare == TEXT("PreviewTurboMCPAssetRevert"))

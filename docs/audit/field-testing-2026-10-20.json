@@ -3953,9 +3953,9 @@
       "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "tested",
-      "evidence": "Supervised build and event-connect workflow passed: 5baad9279e9d4b4883b2b20362e382e8. Native screenshot AADF9B7241927C71A00F1D9019A8EBE1 reviewed: guard in Purchase row, separate from Refund.",
-      "remaining": "Crowded gaps retain general fallback. Original field confirmation pending; no global layout certification.",
+      "validation": "focused_native_and_visual_passed",
+      "evidence": "docs/audit/scoped-tidy-review.json",
+      "remaining": "OCT27-04 implemented: local scoped placement, boundary limits and exact quality rejection reasons. Native synthetic workflow and screenshots passed; exact private historical graph not reproduced.",
       "implementation": "5a313f4: single-node execution insertions first seek a collision-free local gap between existing endpoints; no existing nodes move."
     },
     {
@@ -4028,15 +4028,16 @@
       "key": "2026-10-27_S2/TD-43",
       "title": "Tidy rolled back for small appended nodes in two event graphs (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_and_visual_passed",
       "observation": "Both scoped tidies predicted longer wires and rolled back. The new nodes stay where append placed them.",
-      "remaining": "OCT27-04: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "remaining": "OCT27-04 implemented: local scoped placement, boundary limits and exact quality rejection reasons. Native synthetic workflow and screenshots passed; exact private historical graph not reproduced.",
       "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md",
       "planned_task": "OCT27-04",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "evidence": "docs/audit/scoped-tidy-review.json"
     },
     {
       "report": "2026-10-27_S2",
@@ -4092,15 +4093,16 @@
       "key": "2026-10-27_S3/TD-44",
       "title": "Scoped tidy in a large graph made the layout worse while reporting improvement (medium)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_and_visual_passed",
       "observation": "The result said \"longer wires; structural quality improved\". Total wire length grew by about 30,000 units. Captures showed both groups still spread over thousands of units.",
-      "remaining": "OCT27-04: Related earlier bounded layout fixes do not cover this large boxed graph case. Reproduce fixed-neighbour distance and local insertion behavior; do not mark fixed from prior simple fixtures.",
+      "remaining": "OCT27-04 implemented: local scoped placement, boundary limits and exact quality rejection reasons. Native synthetic workflow and screenshots passed; exact private historical graph not reproduced.",
       "source": "docs/audit/field-reports/2026-10-27_S3_TurboMCP_finding-and-tidying-in-large-graphs.md",
       "planned_task": "OCT27-04",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "evidence": "docs/audit/scoped-tidy-review.json"
     },
     {
       "report": "2026-10-27_S3",
@@ -4388,15 +4390,16 @@
       "key": "2026-10-27_S4/TD-47",
       "title": "Whole-graph tidy rolled back while wire length went down (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_and_visual_passed",
       "observation": "The result said no acceptable layout and rolled back. The reported total wire length fell by about a fifth.",
-      "remaining": "OCT27-04: Reconcile against current source and reproduce before claiming a cause or fix.",
+      "remaining": "OCT27-04 implemented: local scoped placement, boundary limits and exact quality rejection reasons. Native synthetic workflow and screenshots passed; exact private historical graph not reproduced.",
       "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
       "planned_task": "OCT27-04",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "evidence": "docs/audit/scoped-tidy-review.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -4613,16 +4616,17 @@
       "key": "2026-10-27_S5/TD-49",
       "title": "Scoped tidy placed a new four-node lane about 3,000 units from its target (medium)",
       "kind": "reference",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_and_visual_passed",
       "observation": "The tidy reported improved structure. A capture showed the lane far from the chain it feeds, with a long backward wire across boxes.",
-      "remaining": "OCT27-04: Same scoped fixed-neighbour placement problem as TD-44; preserve this occurrence without a duplicate work item.",
+      "remaining": "OCT27-04 implemented: local scoped placement, boundary limits and exact quality rejection reasons. Native synthetic workflow and screenshots passed; exact private historical graph not reproduced.",
       "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
       "duplicate_of": "TD-44",
       "planned_task": "OCT27-04",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "evidence": "docs/audit/scoped-tidy-review.json"
     },
     {
       "report": "2026-10-27_S5",

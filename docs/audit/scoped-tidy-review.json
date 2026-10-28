@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "updated": "2026-10-28",
+  "workflow": "WF-BP-SCOPED-TIDY",
+  "status": "bounded_scenario_checked",
+  "source_commit": "ca13a4e1520a1846dcd8e21605e8843ca9369903",
+  "native_run": "a7695fbdac1a40f6b140df272704ceeb",
+  "fixture": "TurboMCP.Graph.ScopedTidy",
+  "tools": [
+    "PreviewTurboMCPGraphTidy",
+    "EditTurboMCPGraphTidy"
+  ],
+  "support_tools": [
+    "LookTurboMCPCapture"
+  ],
+  "checked": [
+    "Baseline accepted a selected call beyond fixed neighbours; repaired placement stays between them and prefers the incoming execution anchor",
+    "63-node graph with 20 populated distant boxes: fixed positions preserved; connected call returns locally",
+    "Seven-node function: five selected calls placed in forward execution order while entry/result remain fixed",
+    "Public edit preserves upstream/downstream connections; public partial-comment refusal preserves position, box size and clean state",
+    "Post-edit fault injection grows boundary wire by 5000 units; Force cannot bypass the guard; rollback restores position, connections and clean state",
+    "Whole-graph control still organizes a scrambled seven-node function",
+    "Native images inspected: single selected call and seven-node function have forward aligned execution without overlap",
+    "Four-node selected lane placed beside fixed boxed handler; target and comment geometry preserved; screenshot inspected",
+    "Live compact help for both tidy tools explicitly reports fixed nodes, Force limits, clearance allowance and no compile/save"
+  ],
+  "images_inspected": [
+    "ScopedTidy_LocalEvents_native_2047x256_E127A5A7490E19C40160A0814D487EF1.png",
+    "ScopedTidy_SevenNodeFunction_native_2048x512_FA2E0DD74F49B533457000BB87DE2CD7.png",
+    "ScopedTidy_BoxedTarget_native_2048x512_64E17F744C28F28E62AB32B312010FFA.png"
+  ],
+  "limitations": [
+    "Owned synthetic fixtures; not an exact copy of the private 390-node field graph",
+    "Post-edit guard failure is deliberate plan fault injection, not a naturally reproduced planner race",
+    "No new runtime gameplay claim; reused capture tool does not gain broad new certification"
+  ],
+  "prior_runs": [
+    "34ad8c5643054490bbfea8d205f793e3: valid baseline failure, accepted placement outside fixed neighbours",
+    "995823bf67044520b4e6ba3b6eff519c: local component placement passes initial case",
+    "d007b3574cbb4f2c904486dfe2581ca8: boundary guards pass initial case",
+    "2ae4a8d3725a4346b48f167a6b6932fc: public edit passes; screenshot exposed downstream anchor preference",
+    "3b3918a2e09f4383889985ea6355c5f8: incoming-anchor preference passes and screenshot inspected",
+    "48bb0276bba5469682e112a9e70926dc: multi-node function and fault-injected rollback pass; function screenshot inspected",
+    "b46693b538214653a904550f4e79baf1: focused workflow and general agent-help suite passed",
+    "95be8729beb848a3868e342632b88358: targeted live tidy help and workflow passed"
+  ],
+  "scope": "Source commit passed immutable oct27-scoped-tidy scope. Shared helper text, catalog, wrapper, audit and task status are integrator-owned.",
+  "offline": "26/26 passed: 893ab3d9f49b4821a0dd9729ed6742df"
+}

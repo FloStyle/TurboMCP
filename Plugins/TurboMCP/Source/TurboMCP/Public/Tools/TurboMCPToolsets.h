@@ -945,7 +945,7 @@ public:
 
 	/**
      * Plan a layout for one graph without committing graph changes. Measures native node geometry.
-     * Structural quality takes priority over wire length. Unsupported graphs or unavailable measured
+     * Within safety limits, structural quality takes priority over total wire length. Unsupported graphs or unavailable measured
      * geometry are refused rather than estimated. The edit recomputes its plan against current state.
      * Tidy may duplicate variable getters near their consumers; it does not create local variables.
      * Inspect the preview and resulting capture: numeric layout scores do not prove human readability.
@@ -962,7 +962,7 @@ public:
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
-	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope or collision checks.
+	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope, collision or fixed-boundary wire-growth limits.
 	 * @param NodeIds Array of reader node IDs; [] selects the whole graph. Unselected nodes remain fixed. ["@unboxed"] selects unboxed nodes; combine it with IDs to restrict those IDs to unboxed nodes.
 	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode.
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
@@ -1783,15 +1783,18 @@ public:
      * Recompute and apply a layout using the same options as PreviewTurboMCPGraphTidy.
      * A previous preview is not a reservation: the current graph is checked again before editing.
      * Reports measured results, preserves comment corners, and may duplicate variable getters.
-     * Structural quality takes priority over wire length. Force permits a non-improving score,
-     * but does not bypass scope or collision checks. Changes are undoable and are not compiled or saved.
+     * Within safety limits, structural quality takes priority over total wire length. Force permits a non-improving score,
+     * but does not bypass scope, collision or fixed-boundary wire-growth limits. Changes are undoable and are not compiled or saved.
+     * Scoped groups are placed near their fixed connections. Boundary growth is checked before and after editing.
+     * Each boundary wire may grow by at most its larger endpoint width clamped to 64..256 graph units;
+     * aggregate boundary growth may not exceed the largest such allowance. Rejected edits are rolled back.
      * NodeIds uses the same fixed-anchor scope as the preview.
 	 * Include "@unboxed" to leave boxed nodes fixed (alone: all unboxed; with IDs: only unboxed IDs).
 	 * WrapAfter is the same comma-separated execution-node row-break option as the preview; links remain unchanged.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
-	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope or collision checks.
+	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope, collision or fixed-boundary wire-growth limits.
 	 * @param NodeIds Array of reader node IDs; [] selects the whole graph. Unselected nodes remain fixed. ["@unboxed"] selects unboxed nodes; combine it with IDs to restrict those IDs to unboxed nodes.
 	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode.
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.

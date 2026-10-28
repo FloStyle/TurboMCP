@@ -625,6 +625,23 @@
         "Shared reader/dead-node/layout consumers source-reviewed; no independent native certification of each consumer",
         "Help example corrected by source review; live helper rendering not rerun for this text-only change"
       ]
+    },
+    {
+      "id": "WF-BP-SCOPED-TIDY",
+      "title": "Tidy selected nodes beside fixed connections and boxed handlers",
+      "status": "bounded_scenario_checked",
+      "review": "docs/audit/scoped-tidy-review.json",
+      "fixture": "TurboMCP.Graph.ScopedTidy",
+      "tools_used": [
+        "PreviewTurboMCPGraphTidy",
+        "EditTurboMCPGraphTidy",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "Owned synthetic fixtures; not an exact copy of the private 390-node field graph",
+        "Post-edit guard failure is deliberate plan fault injection, not a naturally reproduced planner race",
+        "No new runtime gameplay claim; reused capture tool does not gain broad new certification"
+      ]
     }
   ],
   "tool_usage": {

@@ -918,6 +918,13 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-scoped-tidy",
+      "path": "Tools/test-scoped-tidy.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
     }
   ]
 }

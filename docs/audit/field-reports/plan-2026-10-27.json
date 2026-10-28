@@ -97,8 +97,8 @@
       "kind": "bug",
       "priority": "P1",
       "wave": 2,
-      "state": "in_progress",
-      "validation": "untested",
+      "state": "done",
+      "validation": "focused_native_and_visual_passed",
       "readiness": "ready",
       "reports": [
         "TD-43",
@@ -111,9 +111,11 @@
       "acceptance": "Use a dense boxed fixture with distant selected nodes. Bound fixed-neighbour wire growth, retain untouched nodes/boxes, and report the precise failing criterion. Shorter total wires alone do not guarantee a valid layout. Roll back rejected candidates.",
       "verification": "Inspect before/after captures and distances for small scope in large graph, single spliced log and seven-node function. Preserve passing whole-graph layout.",
       "owner": "Codex",
-      "dispatch": "Codex oct27-scoped-tidy; DSH paused",
+      "dispatch": "Integrated by Codex; DSH paused",
       "repair_contract": "docs/design/scoped-tidy-boundaries.md",
-      "source_review": "Global unboxed placement starts beyond all fixed content; structural comparator can accept unbounded boundary-wire growth. Repair local component placement plus planned/actual boundary checks and exact rejection reasons."
+      "source_review": "Global unboxed placement starts beyond all fixed content; structural comparator can accept unbounded boundary-wire growth. Repair local component placement plus planned/actual boundary checks and exact rejection reasons.",
+      "evidence": "docs/audit/scoped-tidy-review.json",
+      "remaining": "No remaining implementation in this scope. Append initial placement is separate OCT27-05. Private historical graph is unavailable; exact historical rejection cause is not claimed."
     },
     {
       "id": "OCT27-05",
