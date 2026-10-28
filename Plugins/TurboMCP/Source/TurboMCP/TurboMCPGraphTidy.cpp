@@ -178,18 +178,79 @@ namespace
         }
         return Q;
     }
-    bool BetterLayout(const FStructuralQuality& Before,const FStructuralQuality& After,double OldLength,double NewLength)
+    bool BetterLayout(const FStructuralQuality& Before, const FStructuralQuality& After,
+        double OldLength, double NewLength, FString* OutReason = nullptr)
     {
-        if(After.Overlaps!=Before.Overlaps) return After.Overlaps<Before.Overlaps;
-        if(After.UnwrappedBreaks!=Before.UnwrappedBreaks) return After.UnwrappedBreaks<Before.UnwrappedBreaks;
-        if(!FMath::IsNearlyEqual(After.LinearExecDrift,Before.LinearExecDrift,1.0)) return After.LinearExecDrift<Before.LinearExecDrift;
-        if(After.FanOutRowConflicts!=Before.FanOutRowConflicts) return After.FanOutRowConflicts<Before.FanOutRowConflicts;
-        if(After.BackwardExec!=Before.BackwardExec) return After.BackwardExec<Before.BackwardExec;
-        if(After.BackwardData!=Before.BackwardData) return After.BackwardData<Before.BackwardData;
-        if(After.PureInputRowConflicts!=Before.PureInputRowConflicts) return After.PureInputRowConflicts<Before.PureInputRowConflicts;
-        if(!FMath::IsNearlyEqual(After.InputPinDrift,Before.InputPinDrift,1.0)) return After.InputPinDrift<Before.InputPinDrift;
-        return NewLength<OldLength;
+        // This ordered table is also the source of the refusal explanation.
+        // Never describe a different quality order from the one used to decide.
+        struct FCriterion { const TCHAR* Name; double Before; double After; double Tolerance; };
+        const FCriterion Criteria[] = {
+            {TEXT("node overlaps"), double(Before.Overlaps), double(After.Overlaps), 0.0},
+            {TEXT("requested row breaks not respected"), double(Before.UnwrappedBreaks), double(After.UnwrappedBreaks), 0.0},
+            {TEXT("linear execution alignment drift"), Before.LinearExecDrift, After.LinearExecDrift, 1.0},
+            {TEXT("fan-out row conflicts"), double(Before.FanOutRowConflicts), double(After.FanOutRowConflicts), 0.0},
+            {TEXT("backward execution wires"), double(Before.BackwardExec), double(After.BackwardExec), 0.0},
+            {TEXT("backward data wires"), double(Before.BackwardData), double(After.BackwardData), 0.0},
+            {TEXT("pure input row conflicts"), double(Before.PureInputRowConflicts), double(After.PureInputRowConflicts), 0.0},
+            {TEXT("input pin alignment drift"), Before.InputPinDrift, After.InputPinDrift, 1.0},
+            {TEXT("total wire length"), OldLength, NewLength, 0.0}
+        };
+        for (const FCriterion& Criterion : Criteria)
+            if (FMath::Abs(Criterion.After - Criterion.Before) > Criterion.Tolerance)
+            {
+                if (OutReason && Criterion.After > Criterion.Before)
+                    *OutReason = FString::Printf(TEXT("candidate worsens %s: %.1f -> %.1f; earlier quality criteria are unchanged"), Criterion.Name, Criterion.Before, Criterion.After);
+                return Criterion.After < Criterion.Before;
+            }
+        if (OutReason) *OutReason = TEXT("candidate does not improve any structural criterion or total wire length");
+        return false;
     }
+    // Boundary safety is independent of structural scoring and Force. A small
+    // clearance allowance accommodates native node widths, but cannot justify
+    // moving a selected group thousands of units from its fixed neighbours.
+    bool CheckBoundaryGrowth(const FTurboMCPGraphTidy::FPlan& Plan, int32 Mode, FString& Reason,
+        const TArray<FTurboMCPGraphTidy::FGetterCopy>* ActualCopies = nullptr)
+    {
+        if (Plan.SelectedNodeKeys.IsEmpty()) return true;
+        double BeforeTotal = 0.0, AfterTotal = 0.0, TotalAllowance = 0.0;
+        for (const auto& Wire : Plan.Wires)
+        {
+            const auto& Source = Plan.Nodes[Wire.SourceNodeIndex];
+            const auto& Target = Plan.Nodes[Wire.TargetNodeIndex];
+            if (!Wire.OutputPin || !Wire.InputPin || !Source.Node || !Target.Node
+                || Plan.SelectedNodeKeys.Contains(Source.Key) == Plan.SelectedNodeKeys.Contains(Target.Key)) continue;
+            auto PinAt = [](const UEdGraphPin* Pin, const FTurboMCPGraphTidy::FNode& Node, int32 PositionMode)
+            {
+                const FVector2D Current(Node.Node->NodePosX, Node.Node->NodePosY);
+                const FVector2D Position = PositionMode == 2 ? Current : PositionMode == 1
+                    ? FVector2D(Node.PlannedX, Node.PlannedY) : FVector2D(Node.X, Node.Y);
+                return FTurboMCPGraphTidy::AlignmentPinPosition(Pin) + Position - Current;
+            };
+            const double Before = FVector2D::Distance(PinAt(Wire.OutputPin, Source, 0), PinAt(Wire.InputPin, Target, 0));
+            FVector2D Output = PinAt(Wire.OutputPin, Source, Mode);
+            const auto& Copies = ActualCopies ? *ActualCopies : Plan.GetterCopies;
+            for (const auto& Copy : Copies)
+                if (Copy.OriginalValuePin == Wire.OutputPin && Copy.ConsumerPin == Wire.InputPin && (Mode != 2 || Copy.Copy))
+                    Output = (Mode == 2 ? FVector2D(Copy.Copy->NodePosX, Copy.Copy->NodePosY)
+                        : FVector2D(Copy.PlannedX, Copy.PlannedY)) + Copy.OutputOffset;
+            const double After = FVector2D::Distance(Output, PinAt(Wire.InputPin, Target, Mode));
+            const double Allowance = FMath::Clamp(FMath::Max(Source.Width, Target.Width), 64.0, 256.0);
+            BeforeTotal += Before; AfterTotal += After; TotalAllowance = FMath::Max(TotalAllowance, Allowance);
+            if (After > Before + Allowance + 1.0)
+            {
+                Reason = FString::Printf(TEXT("fixed-boundary wire %s:%s -> %s:%s grows from %.1f to %.1f px; allowed growth %.1f px (native node width, clamped to 64-256). Include the connected chain or choose a local position. Force does not bypass this limit"),
+                    *Source.Key, *Wire.OutputPin->PinName.ToString(), *Target.Key, *Wire.InputPin->PinName.ToString(), Before, After, Allowance);
+                return false;
+            }
+        }
+        if (AfterTotal > BeforeTotal + TotalAllowance + 1.0)
+        {
+            Reason = FString::Printf(TEXT("fixed-boundary total grows from %.1f to %.1f px; allowed aggregate growth %.1f px. Include the connected chain or choose a local position. Force does not bypass this limit"), BeforeTotal, AfterTotal, TotalAllowance);
+            return false;
+        }
+        return true;
+    }
+
     TMap<const UEdGraphNode*, FVector2D> CachedAlignmentNodeSizes;
     TMap<const UEdGraphPin*, FVector2D> MeasuredPinOffsets;
     TWeakObjectPtr<UEdGraph> AlignmentGraph;
@@ -1993,6 +2054,104 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		}
 	}
 
+    // Re-anchor each unboxed selected component at its own boundary connections.
+    // The row planner establishes internal order; unrelated distant sections must
+    // not determine the component's final position. All translations are planned.
+    if (!OutPlan.SelectedNodeKeys.IsEmpty())
+    {
+        TSet<int32> Pending;
+        for (int32 I = 0; I < OutPlan.Nodes.Num(); ++I)
+            if (!OutPlan.Nodes[I].bIsComment && !OutPlan.Nodes[I].bUnreachable
+                && OwnerOfNode[I] == INDEX_NONE && OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[I].Key)) Pending.Add(I);
+        while (!Pending.IsEmpty())
+        {
+            // Stable seed order keeps identical previews deterministic.
+            int32 Seed = MAX_int32;
+            for (int32 I : Pending) Seed = FMath::Min(Seed, I);
+            TArray<int32> Component{Seed};
+            TSet<int32> Members{Seed};
+            Pending.Remove(Seed);
+            for (int32 Cursor = 0; Cursor < Component.Num(); ++Cursor)
+                for (const FWire& Wire : OutPlan.Wires)
+                {
+                    const int32 Other = Wire.SourceNodeIndex == Component[Cursor] ? Wire.TargetNodeIndex
+                        : Wire.TargetNodeIndex == Component[Cursor] ? Wire.SourceNodeIndex : INDEX_NONE;
+                    if (Pending.Contains(Other))
+                    { Pending.Remove(Other); Members.Add(Other); Component.Add(Other); }
+                }
+            TArray<const FWire*> Boundary;
+            TArray<FVector2D> Candidates;
+            TArray<double> AnchorPreferences;
+            auto PlannedPin = [&](const UEdGraphPin* Pin, int32 Index)
+            {
+                const FNode& Node = OutPlan.Nodes[Index];
+                return AlignmentPinPosition(Pin) + FVector2D(Node.PlannedX - Node.X, Node.PlannedY - Node.Y);
+            };
+            for (const FWire& Wire : OutPlan.Wires)
+            {
+                const bool SourceMoves = Members.Contains(Wire.SourceNodeIndex);
+                const bool TargetMoves = Members.Contains(Wire.TargetNodeIndex);
+                if (SourceMoves == TargetMoves || !Wire.OutputPin || !Wire.InputPin) continue;
+                const int32 FixedIndex = SourceMoves ? Wire.TargetNodeIndex : Wire.SourceNodeIndex;
+                if (OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[FixedIndex].Key)) continue;
+                Boundary.Add(&Wire);
+                const FNode& Source = OutPlan.Nodes[Wire.SourceNodeIndex];
+                const FNode& Target = OutPlan.Nodes[Wire.TargetNodeIndex];
+                const FVector2D Start = PlannedPin(Wire.OutputPin, Wire.SourceNodeIndex);
+                const FVector2D End = PlannedPin(Wire.InputPin, Wire.TargetNodeIndex);
+                const double ShiftX = SourceMoves ? Target.X - SpacingX - Source.Width - Source.PlannedX
+                    : Source.X + Source.Width + SpacingX - Target.PlannedX;
+                const double ShiftY = SourceMoves ? End.Y - Start.Y : Start.Y - End.Y;
+                Candidates.Add(FVector2D(ShiftX, ShiftY));
+                // Break near-ties in favour of the incoming execution anchor.
+                // Large distance differences still dominate this small preference.
+                const bool ExecWire = Wire.OutputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec;
+                AnchorPreferences.Add(ExecWire ? (SourceMoves ? 32.0 : 0.0) : 64.0);
+            }
+            if (Boundary.IsEmpty()) continue;
+            double BestCost = TNumericLimits<double>::Max();
+            FVector2D BestShift = FVector2D::ZeroVector;
+            for (int32 CandidateIndex = 0; CandidateIndex < Candidates.Num(); ++CandidateIndex)
+                for (int32 Row = -4; Row <= 4; ++Row)
+                {
+                    const FVector2D& Base = Candidates[CandidateIndex];
+                    const FVector2D Shift(FMath::RoundToDouble(Base.X), FMath::RoundToDouble(Base.Y + Row * SpacingY));
+                    bool Collision = false;
+                    for (int32 I : Component)
+                    {
+                        const FNode& Node = OutPlan.Nodes[I];
+                        const double X = Node.PlannedX + Shift.X, Y = Node.PlannedY + Shift.Y;
+                        for (int32 J = 0; J < OutPlan.Nodes.Num(); ++J)
+                        {
+                            if (Members.Contains(J)) continue;
+                            const FNode& Other = OutPlan.Nodes[J];
+                            if (X < Other.PlannedX + Other.Width + 16.0 && X + Node.Width + 16.0 > Other.PlannedX
+                                && Y < Other.PlannedY + Other.Height + 16.0 && Y + Node.Height + 16.0 > Other.PlannedY)
+                            { Collision = true; break; }
+                        }
+                        if (Collision) break;
+                    }
+                    if (Collision) continue;
+                    double Cost = AnchorPreferences[CandidateIndex];
+                    for (const FWire* Wire : Boundary)
+                    {
+                        FVector2D Start = PlannedPin(Wire->OutputPin, Wire->SourceNodeIndex);
+                        FVector2D End = PlannedPin(Wire->InputPin, Wire->TargetNodeIndex);
+                        if (Members.Contains(Wire->SourceNodeIndex)) Start += Shift; else End += Shift;
+                        Cost += FVector2D::Distance(Start, End);
+                        // Favor forward execution and its existing lane, without
+                        // moving either fixed endpoint to make a candidate fit.
+                        if (Wire->OutputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                            Cost += FMath::Abs(Start.Y - End.Y) + 4.0 * FMath::Max(0.0, Start.X - End.X);
+                    }
+                    if (Cost < BestCost) { BestCost = Cost; BestShift = Shift; }
+                }
+            if (BestCost < TNumericLimits<double>::Max())
+                for (int32 I : Component)
+                { OutPlan.Nodes[I].PlannedX += BestShift.X; OutPlan.Nodes[I].PlannedY += BestShift.Y; }
+        }
+    }
+
     // Retain the execution lane when a selected terminal follows a fixed node.
     // The scoped row layout must not introduce a diagonal wire across data nodes.
     if (!OutPlan.SelectedNodeKeys.IsEmpty())
@@ -2522,13 +2681,18 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 	const FStructuralQuality OriginalQuality = StructuralQuality(OutPlan,0);
     const FStructuralQuality PlannedQuality = StructuralQuality(OutPlan,1);
+    FString QualityReason;
     OutPlan.bWouldApply = PlannedQuality.Overlaps <= OriginalQuality.Overlaps
-        && (BetterLayout(OriginalQuality,PlannedQuality,OutPlan.WireLengthBefore,OutPlan.WireLengthAfter) || bInForce);
-	if (!OutPlan.bWouldApply)
+        && (BetterLayout(OriginalQuality, PlannedQuality, OutPlan.WireLengthBefore, OutPlan.WireLengthAfter, &QualityReason) || bInForce);
+    FString BoundaryReason;
+    if (!CheckBoundaryGrowth(OutPlan, 1, BoundaryReason))
+    {
+        OutPlan.bWouldApply = false;
+        OutPlan.RollbackReason = BoundaryReason;
+    }
+	if (!OutPlan.bWouldApply && OutPlan.RollbackReason.IsEmpty())
 	{
-		OutPlan.RollbackReason = FString::Printf(
-			TEXT("candidate rejected by structural quality order: overlaps, backward exec wires, linear exec alignment, pure input row conflicts, then total wire length (%.1f versus %.1f). Force does not bypass collision or membership guards."),
-			OutPlan.WireLengthAfter, OutPlan.WireLengthBefore);
+        OutPlan.RollbackReason = QualityReason.IsEmpty() ? TEXT("candidate introduces node overlaps") : QualityReason;
 	}
 
 	return true;
@@ -2940,7 +3104,11 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 
 	const FStructuralQuality OriginalQuality = StructuralQuality(InPlan,0);
     const FStructuralQuality ActualQuality = StructuralQuality(InPlan,2,&Created);
-    const bool bBetter = BetterLayout(OriginalQuality,ActualQuality,InPlan.WireLengthBefore,MeasuredAfter);
+    FString ActualQualityReason;
+    const bool bBetter = BetterLayout(OriginalQuality, ActualQuality, InPlan.WireLengthBefore, MeasuredAfter, &ActualQualityReason);
+    FString BoundaryReason;
+    if (!CheckBoundaryGrowth(InPlan, 2, BoundaryReason, &Created) && CopyFailure.IsEmpty())
+        CopyFailure = BoundaryReason;
     if (ActualQuality.Overlaps > OriginalQuality.Overlaps && CopyFailure.IsEmpty())
         CopyFailure = TEXT("post-edit geometry introduced overlaps, including getter copies");
 	if (!CopyFailure.IsEmpty() || (!bBetter && !InPlan.bForce))
@@ -3033,7 +3201,8 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 				TEXT("came back but those readers were left severed, which is a defect in this tool and not ")
 				TEXT("a clean rollback. ***"), RestorationFailed);
 		}
-		if (!CopyFailure.IsEmpty()) Out += TEXT(" Cause: ") + CopyFailure + TEXT(". Force does not bypass split failures.");
+		if (!bBetter && !InPlan.bForce) Out += TEXT(" Quality: ") + ActualQualityReason + TEXT(".");
+		if (!CopyFailure.IsEmpty()) Out += TEXT(" Cause: ") + CopyFailure + TEXT(". Force does not bypass safety failures.");
 		if (!bRollbackComplete) Out += TEXT(" rollback=incomplete; package remains dirty; inspect before retrying or saving.");
         else if (CopyFailure.IsEmpty()) Out += TEXT(" ") + TidyRecoveryGuidance(InPlan.SelectedNodeKeys.Num() > 0);
         const auto CrossBoxRestored = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
