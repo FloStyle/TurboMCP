@@ -2846,6 +2846,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDiagnosticConsoleTest.cpp",
             "Tools/test-diagnostic-console.py"
           ]
+        },
+        "oct27-disconnect-diagnostics": {
+          "files": [
+            "Tools/tmcp.py",
+            "Tools/test-client-retry.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPModule.cpp",
+            "docs/user/troubleshooting.md"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

@@ -507,9 +507,9 @@
       "kind": "investigation",
       "priority": "P2",
       "wave": 3,
-      "state": "open",
+      "state": "in_progress",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "X-115"
       ],
@@ -518,7 +518,9 @@
       "acceptance": "Collect timestamped server/editor disconnect reason and build identity on recurrence. Never assume a fetch failure means no mutation or automatically replay writes. Provide reconnect and state-reconciliation guidance.",
       "verification": "Controlled transport loss before/after mutation; ambiguous result explicitly reported and no duplicate write. Historical field cause remains unknown.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation"
+      "dispatch": "Codex oct27-disconnect-diagnostics; DSH paused",
+      "source_review": "Session.rpc already prevents tool-call replay, including read-labelled calls. UnknownOutcomeError lacks timestamped structured evidence and reconnect outcome. Module logs lifecycle without build context; status already reports descriptor/engine/binary time with revision explicitly unknown. Historical field failure has no server log or pinned build.",
+      "repair_contract": "Retain no-replay semantics. Add a bounded structured last_failure record and exception diagnostic with UTC time, tool/method, failure type, reconnect success/failure, replay=false and explicit unknown mutation outcome/server cause. Do not store arguments, credentials or raw session IDs. Provide correlation guidance to capture ReadTurboMCPStatus, editor log window and shutdown/crash evidence; disconnected server cause and historical revision remain unknown unless independently observed. Add module lifecycle identity logging using existing stock engine/module APIs (compiler time is not revision proof). Extend real client-control-flow tests for losses before/after effect, failed reconnect, no duplicate write and bounded safe diagnostic fields. Document recurrence collection and state reconciliation. Native startup evidence verifies identity log; no speculative repair of the historical disconnect."
     }
   ],
   "positive_evidence": {
