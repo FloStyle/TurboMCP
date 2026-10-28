@@ -642,7 +642,7 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 
 public:
 
-    /** Inspect or execute a bounded diagnostic console command. Log, Slate debugger and CVar effects are process-wide, even with a PIE target. No shell, file operations or arbitrary console commands. Dispatch is not proof of asynchronous effects; use ReadTurboMCPEditorLog.
+    /** Preview a diagnostic query or process-wide change without executing it; obtain a single-use confirmation for changes. Log, Slate debugger and CVar effects are process-wide, even with a PIE target. No shell, file operations or arbitrary console commands. Dispatch is not proof of asynchronous effects; use ReadTurboMCPEditorLog.
      * @param Target Exact editor or pie:<instance number>. Missing or ambiguous worlds refuse.
      * @param Command One command: Log list [category], Log <exact category> <verbosity>, SlateDebugger.Event.Start/Stop, or an existing CVar name with an optional single value. No chaining or newlines. Preview reads current state without changing it.
      */
@@ -1399,10 +1399,10 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 
 public:
 
-    /** Inspect or execute a bounded diagnostic console command. Log, Slate debugger and CVar effects are process-wide, even with a PIE target. No shell, file operations or arbitrary console commands. Dispatch is not proof of asynchronous effects; use ReadTurboMCPEditorLog.
+    /** Run a diagnostic query or a separately confirmed process-wide change; dispatch alone does not verify later effects. Log, Slate debugger and CVar effects are process-wide, even with a PIE target. No shell, file operations or arbitrary console commands. Dispatch is not proof of asynchronous effects; use ReadTurboMCPEditorLog.
      * @param Target Exact editor or pie:<instance number>. Missing or ambiguous worlds refuse.
      * @param Command One command: Log list [category], Log <exact category> <verbosity>, SlateDebugger.Event.Start/Stop, or an existing CVar name with an optional single value. No chaining or newlines. Preview reads current state without changing it.
-     * @param Confirmation Empty for queries. For changes, copy the token from a separate preview within 60 seconds. A changed target, command or current CVar/log value requires a fresh preview. Session changes are not saved; restore the previous value when finished.
+     * @param Confirmation Empty for queries. For changes, copy the token from the latest separate preview within 60 seconds; each preview replaces the previous token. A changed target, command or current CVar/log value requires a fresh preview. Session changes are not saved; restore the previous value when finished.
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPDiagnosticConsole(const FString& Target, const FString& Command, const FString& Confirmation);
