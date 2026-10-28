@@ -2032,3 +2032,5 @@ OCT27-09 integration step approved: source candidate f41212da099be1d3172211c0265
 OCT27-09 done: unique graph-local connect/bind IDs, specific refusals and canonical results implemented. Native workflows and six live-help checks passed a560d06ecc4f4ee2927340d0c02e41fe; screenshots inspected. See docs/audit/unique-edit-ids-review.json for retained compile-test failure and scope limits.
 
 OCT27-08 ready/in progress: reconcile existing alias support and help before changing behavior. Exact scope oct27-append-discovery owns NodeType.cpp and GraphAppendAliasTest.cpp. Approved contract in Oct27 plan requires actual discovery-to-preview evidence, no title-only identity inference, self/promotable discovery and copyable link syntax. Integrator owns the two public append help blocks, compact AgentHelp append paragraph, and evidence.
+
+OCT27-08 implemented: discovery identity, actionable public refusals and compact append help verified. See docs/audit/append-discovery-review.json for native evidence, retained failures and reused input-event scenario. No increase to unique reviewed-tool count for reused tools.

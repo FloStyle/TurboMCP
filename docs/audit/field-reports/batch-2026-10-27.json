@@ -63,13 +63,14 @@
       "key": "2026-10-27_S2/GC-65",
       "title": "Append does not accept the self-reference node by an intuitive type ID (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_passed",
       "observation": "Refused with no close match. The engine node-type search returned the real type ID, and append then accepted it.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md"
+      "remaining": "",
+      "source": "docs/audit/field-reports/2026-10-27_S2_TurboMCP_pie-input-inactive-and-debug-logs.md",
+      "resolution": "OCT27-08; see docs/audit/append-discovery-review.json"
     },
     {
       "report": "2026-10-27_S2",
@@ -343,13 +344,14 @@
       "key": "2026-10-27_S4/GC-70",
       "title": "Append type IDs differ from the engine node-type search (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_passed",
       "observation": "The engine search returned short IDs. Append created nodes whose reported IDs used a different form. A guessed long form for an input event was refused. A float multiply operator was not found in either form. Append link ends need the long form of the same type.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "resolution": "OCT27-08; see docs/audit/append-discovery-review.json"
     },
     {
       "report": "2026-10-27_S4",
@@ -357,13 +359,14 @@
       "key": "2026-10-27_S4/GC-71",
       "title": "The append link grammar is not in the tool help (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_passed",
       "observation": "The help shows a node example only. Two link syntaxes were refused before the correct form was found from an earlier session.",
-      "remaining": "Reconcile against current source and reproduce before claiming a cause or fix.",
-      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md"
+      "remaining": "",
+      "source": "docs/audit/field-reports/2026-10-27_S4_TurboMCP_assisted-log-debugging-and-input-event-wiring.md",
+      "resolution": "OCT27-08; see docs/audit/append-discovery-review.json"
     },
     {
       "report": "2026-10-27_S4",

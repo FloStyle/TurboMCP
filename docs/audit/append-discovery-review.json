@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "OCT27-08",
+  "status": "accepted_bounded_workflow",
+  "source_commits": [
+    "bcb976ce135790a36a2e6268524da32bb99819d0",
+    "c72c546",
+    "1828e94"
+  ],
+  "native_run": "452a388a498144fbbafb47664221aa02",
+  "checks": [
+    "Real self and multiply discovery IDs accepted by append planning",
+    "Guessed self ID refuses through public preview with actual supported ID and unchanged graph/dirty state",
+    "Actual new-to-existing literal link and source value verified",
+    "Live preview/edit help contains link template, destination identity and occupied-input warning",
+    "Existing alias collision, malformed input and preservation controls retained"
+  ],
+  "reused_evidence": {
+    "input_event": "docs/audit/input-entry-review.json; 7f814ae8a0984b32add6ec5258ff66bb, same-request discovered Enhanced Input creation ID"
+  },
+  "prior_failures": [
+    "0a686b5076984de9ba1dab03af049f1f: checker discarded creation resolver guidance",
+    "0377353d300744ccb9c43155991b8c37: old lowercase wording assertion; replaced by explicit mismatch and discovery requirements",
+    "39a5eda9c5cf42879cd26b901a858643: help examples truncated after parameter detail; shortened and moved before parameters",
+    "e869949fc664444097058284c6ac0e35: offline 25/26; generated inventory stale, regenerate and rerun structure gate"
+  ],
+  "limitations": [
+    "Synthetic in-memory append workflow; no arbitrary palette or asset certification",
+    "No new layout algorithm; prior geometry evidence unchanged",
+    "Input-event scenario reused, not rerun for this diagnostic/help-only repair"
+  ]
+}

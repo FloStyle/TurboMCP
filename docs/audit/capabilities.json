@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "5c23cab181bb45fe9f8fae559039d220be3c78cc",
+  "plugin_tree": "6378955f348daeb4b25bcfbef2a3c2228ebac751",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 158,
@@ -2715,6 +2715,7 @@
       ],
       "test_references": [
         "Tools/test-batch-tools.py",
+        "Tools/test-graph-append.py",
         "Tools/test-node-pins-owner.py",
         "Tools/test-tool-text-inventory.py"
       ],
