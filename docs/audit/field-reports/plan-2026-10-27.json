@@ -333,8 +333,8 @@
       "kind": "feature",
       "priority": "P1",
       "wave": 1,
-      "state": "in_progress",
-      "validation": "partial_native_evidence",
+      "state": "done",
+      "validation": "focused_native_passed",
       "readiness": "ready",
       "reports": [
         "X-114",
@@ -347,11 +347,12 @@
       "acceptance": "Design supported asset classes first; do not promise every asset. Preview exact package/assets and unsaved loss, bind confirmation to current state, reject unsafe live references/PIE. Keep transaction undo distinct from disk reload. Extend destructive confirmation only under applicable user authorization.",
       "verification": "Owned data-asset fixture, cancelled/stale confirmation, unsaved loss preview, disk restoration and refusal; inspect reference/undo side effects.",
       "owner": "Codex",
-      "dispatch": "Codex oct27-asset-recovery; DSH paused",
+      "dispatch": "Integrated by Codex; DSH paused",
       "source_review": "Existing Blueprint revert tokens bind only path/time, not state. Stock ReloadPackages may reset undo and reinstance references. Approved saved single-asset Blueprint/UDataAsset domain with memory/disk-bound confirmation and fresh readback.",
-      "implementation_progress": "Unmerged candidate compiles on stock engine. Saved InputAction recovery assertions passed in 1ecf347dbbe24f4da6fdd65bb66c0c0b, but fixture deletion failed on an open linker; cleanup repair is under test. Includes memory/disk-bound confirmation, data-asset eligibility, open-editor/live-world guards and fresh readback. Strict native admission exposed a short-lived runner parent; launcher now preserves ancestry in the candidate.",
-      "remaining": "Complete cleanup and refusal coverage, review public help, run offline gates, then integrate. Task remains in progress; no full pass claimed.",
-      "evidence_run": "1ecf347dbbe24f4da6fdd65bb66c0c0b"
+      "implementation_progress": "Saved recovery and live help passed; source-only guard limits retained in docs/audit/asset-recovery-review.json.",
+      "remaining": "",
+      "evidence_run": "e6bf90f5ccc3459899e4b379c595cf90",
+      "resolution": "Saved Blueprint/UDataAsset recovery now uses single-use memory/disk-bound confirmation, live-world/editor guards and fresh post-reload checks. No engine changes or automatic save. Prior failures and bounded evidence retained."
     },
     {
       "id": "OCT27-16",

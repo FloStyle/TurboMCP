@@ -4497,15 +4497,18 @@
       "key": "2026-10-27_S5/X-114",
       "title": "Feature: TurboMCP undo and revert do not cover non-Blueprint assets (high)",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
-      "validation": "field_reported_not_locally_reproduced",
+      "validation": "focused_native_passed",
       "observation": "PreviewTurboMCPAssetUndo refused: undo supports Blueprint assets only. PreviewTurboMCPAssetRevert refused: revert requires a Blueprint.",
       "remaining": "OCT27-15: Reconcile against current source and reproduce before claiming a cause or fix.",
       "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
       "planned_task": "OCT27-15",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "status": "done",
+      "resolution": "Implemented bounded saved Blueprint/data-asset recovery; see docs/audit/asset-recovery-review.json.",
+      "evidence_run": "e6bf90f5ccc3459899e4b379c595cf90"
     },
     {
       "report": "2026-10-27_S5",
@@ -4687,15 +4690,18 @@
       "key": "2026-10-27_S5/FT-129",
       "title": "Reload or revert any dirty asset from disk, not only Blueprints",
       "kind": "reference",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "proposed_not_implemented",
+      "validation": "focused_native_passed",
       "duplicate_of": "X-114",
       "remaining": "OCT27-15: Feature request, not a confirmed regression.",
       "source": "docs/audit/field-reports/2026-10-27_S5_TurboMCP_function-flags-asset-writes-and-tool-toggles.md",
       "planned_task": "OCT27-15",
-      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json"
+      "task_plan": "docs/audit/field-reports/plan-2026-10-27.json",
+      "status": "done",
+      "resolution": "Implemented bounded saved Blueprint/data-asset recovery; see docs/audit/asset-recovery-review.json.",
+      "evidence_run": "e6bf90f5ccc3459899e4b379c595cf90"
     },
     {
       "report": "2026-10-27_S5",

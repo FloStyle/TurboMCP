@@ -1109,6 +1109,48 @@
       "workflows": [
         "WF-DATA-02-ASSET-PROPERTIES"
       ]
+    },
+    {
+      "tool": "PreviewTurboMCPAssetRevert",
+      "role": "Preview or confirm recovery of a saved Blueprint or data-asset package.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Bounded saved asset recovery workflow only.",
+      "behavior": "Saved restoration, dirty state, disk preservation, stale approvals and live-world refusal verified.",
+      "review": "Code, comments, exact state binding and compact live English help reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "checked against native observations",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "Bounded saved InputAction and actor Blueprint scenarios; not all project PostLoad implementations.; Open-editor, expiry, unsupported and multi-asset refusal branches source-reviewed; not all exercised natively.; Raw native references cannot all be detected; normal persistent asset references may be reinstanced.; Recovery may reset global undo history; no selective undo or implicit save.",
+      "scenario_evidence": "e6bf90f5ccc3459899e4b379c595cf90",
+      "workflows": [
+        "WF-DATA-03-RECOVERY"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPAssetRevert",
+      "role": "Preview or confirm recovery of a saved Blueprint or data-asset package.",
+      "status": "scenario checked",
+      "ready": true,
+      "readiness_scope": "Bounded saved asset recovery workflow only.",
+      "behavior": "Saved restoration, dirty state, disk preservation, stale approvals and live-world refusal verified.",
+      "review": "Code, comments, exact state binding and compact live English help reviewed.",
+      "quality": {
+        "english": "reviewed",
+        "parameter_help": "live verified",
+        "outputs": "checked against native observations",
+        "code_and_helpers": "reviewed within scenario",
+        "workflow": "passed"
+      },
+      "remaining": "Bounded saved InputAction and actor Blueprint scenarios; not all project PostLoad implementations.; Open-editor, expiry, unsupported and multi-asset refusal branches source-reviewed; not all exercised natively.; Raw native references cannot all be detected; normal persistent asset references may be reinstanced.; Recovery may reset global undo history; no selective undo or implicit save.",
+      "scenario_evidence": "e6bf90f5ccc3459899e4b379c595cf90",
+      "workflows": [
+        "WF-DATA-03-RECOVERY"
+      ]
     }
   ],
   "evidence": [

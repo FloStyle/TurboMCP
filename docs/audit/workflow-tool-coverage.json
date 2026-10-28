@@ -590,6 +590,24 @@
         "Scalar/value-struct initial fields only; no localized text, delegate or container import.",
         "Historical X-116 input formats remain unavailable; real InputAction key-settings creation is independently verified."
       ]
+    },
+    {
+      "id": "WF-DATA-03-RECOVERY",
+      "title": "Recover a saved asset after unwanted unsaved edits",
+      "status": "bounded_scenario_checked",
+      "fixture": "TurboMCP.DataAsset.SavedRecovery",
+      "review": "docs/audit/asset-recovery-review.json",
+      "tools_used": [
+        "PreviewTurboMCPAssetRevert",
+        "EditTurboMCPAssetRevert"
+      ],
+      "evidence": "e6bf90f5ccc3459899e4b379c595cf90",
+      "limitations": [
+        "Bounded saved InputAction and actor Blueprint scenarios; not all project PostLoad implementations.",
+        "Open-editor, expiry, unsupported and multi-asset refusal branches source-reviewed; not all exercised natively.",
+        "Raw native references cannot all be detected; normal persistent asset references may be reinstanced.",
+        "Recovery may reset global undo history; no selective undo or implicit save."
+      ]
     }
   ],
   "tool_usage": {
@@ -882,9 +900,15 @@
     ],
     "EditTurboMCPDataAssetProperty": [
       "WF-DATA-02-ASSET-PROPERTIES"
+    ],
+    "PreviewTurboMCPAssetRevert": [
+      "WF-DATA-03-RECOVERY"
+    ],
+    "EditTurboMCPAssetRevert": [
+      "WF-DATA-03-RECOVERY"
     ]
   },
-  "unique_tools_scenario_reviewed": 72,
+  "unique_tools_scenario_reviewed": 77,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

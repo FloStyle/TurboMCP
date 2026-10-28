@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "23fc2e979346ca680ddfc9bfb561e2acb86f17ff",
+  "plugin_tree": "bb0ba290220ee59ebfd2152f293be988995b808f",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 158,
@@ -23,10 +23,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 187
+          "line": 282
         }
       ],
       "test_references": [
+        "Tools/test-asset-recovery.py",
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "name_reference_only",
@@ -592,7 +593,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 441
+          "line": 536
         }
       ],
       "test_references": [],
@@ -1738,10 +1739,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 186
+          "line": 281
         }
       ],
       "test_references": [
+        "Tools/test-asset-recovery.py",
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "name_reference_only",
@@ -2205,7 +2207,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 440
+          "line": 535
         }
       ],
       "test_references": [],
@@ -2227,7 +2229,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 443
+          "line": 538
         }
       ],
       "test_references": [],
@@ -3721,6 +3723,7 @@
       ],
       "test_references": [
         "Tools/test-agent-help.py",
+        "Tools/test-asset-recovery.py",
         "Tools/test-common-button-workflow.py",
         "Tools/test-datatable-quality.py",
         "Tools/test-tool-text-inventory.py",

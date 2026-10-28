@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "updated": "2026-10-28",
+  "workflow": "WF-DATA-03-RECOVERY",
+  "status": "bounded_scenario_checked",
+  "native_run": "e6bf90f5ccc3459899e4b379c595cf90",
+  "fixture": "TurboMCP.DataAsset.SavedRecovery",
+  "tools": [
+    "PreviewTurboMCPAssetRevert",
+    "EditTurboMCPAssetRevert"
+  ],
+  "checked": [
+    "Saved data-asset and Blueprint values restored, clean package, unchanged disk hash",
+    "Preview preserves unsaved value/dirty flag",
+    "Empty, wrong, replaced, memory-stale and disk-stale confirmation refusals",
+    "Active transaction and live actor-class dependency refusals",
+    "Consumed token refusal and old-package purge verification",
+    "Exact owned fixture cleanup and live compact tool help"
+  ],
+  "limitations": [
+    "Bounded saved InputAction and actor Blueprint scenarios; not all project PostLoad implementations.",
+    "Open-editor, expiry, unsupported and multi-asset refusal branches source-reviewed; not all exercised natively.",
+    "Raw native references cannot all be detected; normal persistent asset references may be reinstanced.",
+    "Recovery may reset global undo history; no selective undo or implicit save."
+  ],
+  "prior_failures": [
+    "2f728f2576c448ecaa9f6993314e9bdb: wrong fixture project name; admission refused before mutation",
+    "c185e471c8e74d5381741c051511fe6e: short-lived launcher broke ancestor verification; retained live launcher parent",
+    "1ecf347dbbe24f4da6fdd65bb66c0c0b: open fixture linker prevented cleanup; close exact owned linker",
+    "338a73eae3244bbeb6834c85c19b19e2: generated Blueprint classes misclassified as unrelated assets; exact own classes exempted",
+    "812797fb46924f5796189f37c664ec37: generic reference scan missed live actor dependency; explicit class hierarchy and direct world references checked",
+    "c8bdd5740c0b40d1aeb0775760011955: fixture collected during actor cleanup; retain only through GC, release before reload",
+    "d43c6ece77c44869a43fcb2baa1937dc: compact preview help omitted expiry; explicit helper text corrected"
+  ],
+  "offline": "25/26 passed d06ec29ec06943c6ba929f681bb2e911; sole stale capability inventory regenerated, then current structure and language checks passed.",
+  "scope": "Initial worker commit 4553e56 passed immutable scope gate. Later source changes remain in same declared files. AgentHelp and runner/catalog/wrapper are separately reviewed integrator changes."
+}
