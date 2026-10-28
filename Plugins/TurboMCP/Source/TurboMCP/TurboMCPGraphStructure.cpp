@@ -24,6 +24,9 @@
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Kismet2/Kismet2NameValidators.h"
+#include "EdGraphSchema_K2.h"
+#include "K2Node_MacroInstance.h"
 #include "ScopedTransaction.h"
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
@@ -671,6 +674,18 @@ bool FTurboMCPGraphStructure::PlanCollapse(const FString& InAsset, const FString
 		return false;
 	}
 
+    if (InMemberKind == TEXT("macro"))
+    {
+        OutPlan.Refusals.Add(TEXT("Macro extraction is not supported. Choose function for the supported collapse workflow."));
+        return true;
+    }
+    FKismetNameValidator NameValidator(Blueprint);
+    if (NameValidator.IsValid(InMemberName) != EValidatorResult::Ok)
+    {
+        OutPlan.Refusals.Add(TEXT("The proposed function name is invalid or conflicts with an existing member."));
+        return true;
+    }
+
 	TArray<UEdGraphNode*> Selected;
 	if (!CollectSelected(Graph, InNodeKeys, Selected, OutPlan.Refusals))
 	{
@@ -751,17 +766,41 @@ bool FTurboMCPGraphStructure::PlanCollapse(const FString& InAsset, const FString
 		}
 	}
 
-	// ---- A SELECTION WITH NO EXEC BOUNDARY IS REFUSED, NAMING WHY --------------------------------------
-	//
-	// THE SPEC SAYS A FUNCTION NEEDS ONE ENTRY AND ONE RESULT. A selection whose crossing links are all
-	// data wires has no exec edge to become that entry, so the collapse is refused HERE rather than at apply
-	// time - which is what keeps the Preview and the Edit refusing the same input.
-	if (OutPlan.Refusals.Num() == 0 && OutPlan.ReLinkable.Num() == 0)
-	{
-		OutPlan.Refusals.Add(
-			TEXT("the selection has no link crossing it, so there is no exec boundary to become the new ")
-			TEXT("member's entry and result"));
-	}
+    // Data-only selections become pure functions. Execution selections need
+    // one incoming selected pin and at most one external continuation.
+    TSet<UEdGraphPin*> ExecutionInputs;
+    TSet<UEdGraphPin*> ExecutionContinuations;
+    bool HasExecution = false;
+    for (UEdGraphNode* Node : Selected)
+    {
+        if (UK2Node_Variable* Variable = Cast<UK2Node_Variable>(Node))
+            if (Variable->VariableReference.IsLocalScope())
+                OutPlan.Refusals.Add(TEXT("Local-variable captures require explicit parameters; select the value-producing nodes without local variable nodes."));
+        if (Cast<UK2Node_MacroInstance>(Node))
+            OutPlan.Refusals.Add(TEXT("Macro instances require expanded-body analysis and cannot be collapsed by this tool yet."));
+        if (UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
+        {
+            UFunction* Function = Call->GetTargetFunction();
+            if (!Function || Function->HasMetaData(TEXT("Latent")))
+                OutPlan.Refusals.Add(TEXT("The selection contains an unresolved or latent function call."));
+        }
+        for (UEdGraphPin* Pin : Node->Pins)
+        {
+            if (!Pin) continue;
+            if (Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec) continue;
+            HasExecution = true;
+            for (UEdGraphPin* Linked : Pin->LinkedTo)
+            {
+                if (!Linked || SelectedSet.Contains(Linked->GetOwningNode())) continue;
+                if (Pin->Direction == EGPD_Input) ExecutionInputs.Add(Pin);
+                else ExecutionContinuations.Add(Linked);
+            }
+        }
+    }
+    if (HasExecution && (ExecutionInputs.Num() != 1 || ExecutionContinuations.Num() > 1))
+        OutPlan.Refusals.Add(TEXT("Execution collapse requires exactly one incoming execution pin and at most one external continuation. Select a single connected flow."));
+    if (OutPlan.ReLinkable.IsEmpty())
+        OutPlan.Refusals.Add(TEXT("The selection has no external input or output connections. There is no connected behavior to replace."));
 
 	return true;
 }
