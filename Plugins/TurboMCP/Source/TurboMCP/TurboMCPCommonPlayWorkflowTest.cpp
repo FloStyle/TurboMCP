@@ -1,3 +1,4 @@
+#include "TurboMCPFocusGuard.h"
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 #include "Tools/TurboMCPToolsets.h"
@@ -15,6 +16,9 @@
 #include "HAL/PlatformTime.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SWindow.h"
+#include "Widgets/SViewport.h"
+#include "GenericPlatform/GenericWindow.h"
+#include "Engine/GameViewportClient.h"
 #include "Widgets/Input/SButton.h"
 #include "GameFramework/PlayerController.h"
 
@@ -30,6 +34,7 @@ class FCommonPlayLoop : public IAutomationLatentCommand
     int32 FocusStep=0;
     int32 DeactivationStep=0;
     bool SimulatedInactive=false;
+    bool RestoreFocusGuard=false;
     int32 Step=0;
     double Next=FPlatformTime::Seconds()+2;
     double Deadline=FPlatformTime::Seconds()+65;
@@ -63,11 +68,26 @@ class FCommonPlayLoop : public IAutomationLatentCommand
     }
 public:
     explicit FCommonPlayLoop(FAutomationTestBase* InTest):Test(InTest) {}
-    ~FCommonPlayLoop() {if (SimulatedInactive && FSlateApplication::IsInitialized()) FSlateApplication::Get().OnApplicationActivationChanged(true);if (FocusWindow.IsValid()) FocusWindow->RequestDestroyWindow();}
+    ~FCommonPlayLoop() {if (RestoreFocusGuard) FTurboMCPFocusGuard::Install();if (SimulatedInactive && FSlateApplication::IsInitialized()) FSlateApplication::Get().OnApplicationActivationChanged(true);if (FocusWindow.IsValid()) FocusWindow->RequestDestroyWindow();}
     virtual bool Update() override
     {
         double Now=FPlatformTime::Seconds();if (Now<Next) return false;Next=Now+1;
         if (Now>Deadline) {Test->AddError(TEXT("CommonUI workflow timed out."));if (Fixture.IsValid()) Fixture->Destroy();return true;}
+        if (Step==1 && RestoreFocusGuard)
+        {
+            const FString SettledState = UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));
+            Record(TEXT("Native activation state after normal ticks (guard suspended):\n") + SettledState);
+            const auto Viewport = GEditor->PlayWorld->GetGameViewport()->GetGameViewportWidget();
+            const auto Window = FSlateApplication::Get().FindWidgetWindow(Viewport.ToSharedRef());
+            const bool NativeForeground = Window.IsValid() && Window->GetNativeWindow().IsValid()
+                && Window->GetNativeWindow()->IsForegroundWindow();
+            Test->TestTrue(TEXT("Activation readback matches actual native foreground result"),
+                SettledState.Contains(NativeForeground ? TEXT("PIE owning window foreground: yes") : TEXT("PIE owning window foreground: no")));
+            Record(NativeForeground ? TEXT("OS granted native foreground activation.")
+                : TEXT("OS did not grant foreground activation in this run; manual fallback is required. This is not a successful activation."));
+            FTurboMCPFocusGuard::Install();
+            RestoreFocusGuard = false;
+        }
         if (Step==0)
         {
             if (!GEditor || !GEditor->PlayWorld) return false;
@@ -77,10 +97,19 @@ public:
             if (!Test->TestTrue(TEXT("Fixture spawned"),Fixture.IsValid())) return true;
             // Request actual window foreground; do not disable the input tool's
             // inactive-application refusal to make the test pass.
+            RestoreFocusGuard = FTurboMCPFocusGuard::IsActive();
+            if (RestoreFocusGuard)
+            {
+                Test->TestTrue(TEXT("Unattended guard refuses activation explicitly"),
+                    UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("activate"),TEXT(""),TEXT(""),TEXT("")).Contains(TEXT("unattended focus guard")));
+                FTurboMCPFocusGuard::Remove();
+            }
             const FString Activation = UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("activate"),TEXT(""),TEXT(""),TEXT(""));
             Record(Activation);
+
             Test->TestTrue(TEXT("Activation reports observed state without promising delivery"), Activation.Contains(TEXT("requested activation"))
-                && Activation.Contains(TEXT("window foreground now:")) && Activation.Contains(TEXT("No key was sent")));
+                && Activation.Contains(TEXT("window foreground now:")) && Activation.Contains(TEXT("No key was sent")) && Activation.Contains(TEXT("owning window is still not foreground"))
+                && Activation.Contains(TEXT("select the editor window manually")));
             Test->TestTrue(TEXT("Activation rejects unexpected key"), UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("activate"),TEXT("P"),TEXT(""),TEXT("")).StartsWith(TEXT("error:")));
             const FString ActivationState = UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));
             Record(ActivationState);
@@ -162,6 +191,9 @@ public:
                 }
                 else if (DeactivationStep==2)
                 {
+                    // Keep this callback-level assertion in the same tick as the
+                    // simulated deactivation; real OS events can reactivate between ticks.
+                    FSlateApplication::Get().OnApplicationActivationChanged(false);
                     const FString Inactive=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(Inactive);
                     Test->TestTrue(TEXT("Deactivation cancelled held input"),Inactive.Contains(TEXT("tool-held input: none")) && Inactive.Contains(TEXT("last release reason: application deactivated")));
                     Test->TestTrue(TEXT("Inactive input refused"),UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("hold"),TEXT("P"),TEXT(""),TEXT("0.15")).Contains(TEXT("application is inactive")));

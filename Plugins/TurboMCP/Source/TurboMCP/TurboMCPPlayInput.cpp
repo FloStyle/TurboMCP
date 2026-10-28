@@ -1,6 +1,7 @@
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 #include "TurboMCPPlayInput.h"
+#include "TurboMCPFocusGuard.h"
 #include "Tools/TurboMCPToolsets.h"
 #include "Containers/Ticker.h"
 #include "Editor.h"
@@ -201,6 +202,7 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
     {
         if (!Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: activate requires empty Key, Value and Seconds. No activation was requested.");
         if (Held.Key.IsValid()) return TEXT("error: Release the tool-held input before requesting activation.");
+        if (FTurboMCPFocusGuard::IsActive()) return TEXT("error: Native activation is disabled by the unattended focus guard. No activation was requested and no input was sent. Use an attended editor session; this tool does not disable the guard.");
         const TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(Resolved.Viewport.ToSharedRef());
         if (!Window.IsValid() || !Window->GetNativeWindow().IsValid()) return TEXT("error: The PIE viewport has no native owning window. No activation was requested.");
         // Use the stock window request, without bypassing OS foreground policy or
@@ -210,9 +212,13 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
         // This stock API requests SetForegroundWindow; OS restrictions still apply.
         Window->HACK_ForceToFront();
         const bool Foreground = Window->GetNativeWindow()->IsForegroundWindow();
+        const FString WindowDescription = FString::Printf(TEXT("window: %s; regular: %s; virtual: %s; visible: %s; parent: %s"),
+            *Window->GetTitle().ToString(), Window->IsRegularWindow() ? TEXT("yes") : TEXT("no"),
+            Window->IsVirtualWindow() ? TEXT("yes") : TEXT("no"), Window->GetNativeWindow()->IsVisible() ? TEXT("yes") : TEXT("no"),
+            Window->GetParentWindow().IsValid() ? *Window->GetParentWindow()->GetTitle().ToString() : TEXT("none"));
         const bool Active = FSlateApplication::Get().IsActive();
-        return FString::Printf(TEXT("play input: requested activation of the PIE viewport's owning window. This may restore or raise the editor window.\nwindow foreground now: %s\napplication active now: %s\nNo key was sent and no explicit Slate focus change was requested. Activation can be delayed or refused by the OS. Read PlayInputState after normal editor ticks; if still inactive, select the editor window manually. Use focus separately only when gameplay viewport focus is intended; it can leave a menu control."),
-            Foreground ? TEXT("yes") : TEXT("no"), Active ? TEXT("yes") : TEXT("no"));
+        return FString::Printf(TEXT("play input: requested activation of the PIE viewport's owning window. This may restore or raise the editor window.\n%s\nwindow foreground now: %s\napplication active now: %s\nNo key was sent and no explicit Slate focus change was requested. Activation can be delayed or refused by the OS. Read PlayInputState after normal editor ticks; if the owning window is still not foreground or the application is inactive, select the editor window manually. Use focus separately only when gameplay viewport focus is intended; it can leave a menu control."),
+            *WindowDescription, Foreground ? TEXT("yes") : TEXT("no"), Active ? TEXT("yes") : TEXT("no"));
     }
     if (Action==TEXT("focus"))
     {
@@ -314,6 +320,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPPlayInputState(const FString& Target)
     if(Buttons.Num()>64)Out+=FString::Printf(TEXT("\n%d additional buttons omitted; inspect the visible menu with Slate Snapshot."),Buttons.Num()-64);
     Out+=TEXT("\nlast release reason: ")+LastReleaseReason;
     Out+=FSlateApplication::Get().IsActive()?TEXT("\napplication active: yes"):TEXT("\napplication active: no");
+    Out += FTurboMCPFocusGuard::IsActive() ? TEXT("\nunattended focus guard: active; activation requests refuse") : TEXT("\nunattended focus guard: inactive");
     const TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(Resolved.Viewport.ToSharedRef());
     Out += !Window.IsValid() || !Window->GetNativeWindow().IsValid() ? TEXT("\nPIE owning window foreground: unavailable")
         : Window->GetNativeWindow()->IsForegroundWindow() ? TEXT("\nPIE owning window foreground: yes") : TEXT("\nPIE owning window foreground: no");
