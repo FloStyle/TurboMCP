@@ -11,6 +11,7 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
 #include "EdGraph/EdGraph.h"
+#include "EdGraphNode_Comment.h"
 #include "EdGraphSchema_K2.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
@@ -79,6 +80,11 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
         BP->GeneratedClass->GetDefaultObject()->ProcessEvent(Function,Parameters.GetStructMemory());
         return Output->GetPropertyValue_InContainer(Parameters.GetStructMemory());
     };
+    UEdGraphNode_Comment* Comment=NewObject<UEdGraphNode_Comment>(Graph);
+    Graph->AddNode(Comment,false,false);Comment->CreateNewGuid();
+    Comment->NodeComment=TEXT("Append the three label suffixes");
+    Comment->NodePosX=280;Comment->NodePosY=120;Comment->NodeWidth=1000;Comment->NodeHeight=220;
+    Ids.Add(TurboMCPNodeId::MakeForNode(Comment,true));
     TestEqual(TEXT("Baseline runtime"),Evaluate(),FString(TEXT("Order123")));
     Package->SetDirtyFlag(false);
     const int32 Count=Graph->Nodes.Num();
@@ -105,8 +111,10 @@ bool FTurboMCPCollapseFunctionTest::RunTest(const FString&)
     const FString Edit=UTurboMCPEditToolset::EditTurboMCPGraphCollapse(Asset,TEXT("FormatLabel"),Ids,TEXT("AppendSuffix"),TEXT("function"));
     Transcript+=TEXT("\n")+Edit;
     if (!TestTrue(TEXT("Collapse applied"),Edit.StartsWith(TEXT("changed:")))) return false;
-    TestEqual(TEXT("One replacement for three nodes"),Graph->Nodes.Num(),Count-2);
+    TestEqual(TEXT("One replacement for three nodes"),Graph->Nodes.Num(),Count-Ids.Num()+1);
     TestEqual(TEXT("Runtime preserved"),Evaluate(),FString(TEXT("Order123")));
+    TestEqual(TEXT("Comment moved into function"),Comment->GetGraph()->GetName(),FString(TEXT("AppendSuffix")));
+    TestEqual(TEXT("Comment text preserved"),Comment->NodeComment,FString(TEXT("Append the three label suffixes")));
     TestEqual(TEXT("Entry position preserved"),Entry->NodePosX,0);TestEqual(TEXT("Return position preserved"),Result->NodePosX,1500);
     for (const FString& Name:{FString(TEXT("FormatLabel")),FString(TEXT("AppendSuffix"))})
         Transcript+=TEXT("\n")+UTurboMCPLookToolset::LookTurboMCPCapture(Asset,Name,TEXT("graph"),TEXT(""),TEXT("1200x700"));

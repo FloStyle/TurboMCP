@@ -908,6 +908,21 @@ bool ApplyFunctionCollapse(const FTurboMCPGraphStructure::FPlan& Plan, FString& 
         if (Set.Contains(Node)) SelectedSizes.Add(Node,FTurboMCPGraphTidy::AlignmentNodeSize(Node));
         else FixedPositions.Add(Node,FIntPoint(Node->NodePosX,Node->NodePosY));
     }
+    struct FOriginalPin
+    {
+        UEdGraphPin* Pin;
+        FString Value;
+        UObject* Object;
+        FText Text;
+        TArray<UEdGraphPin*> Internal;
+    };
+    TArray<FOriginalPin> OriginalPins;
+    for (UEdGraphNode* Node:Selected) for (UEdGraphPin* Pin:Node->Pins) if (Pin)
+    {
+        FOriginalPin State{Pin,Pin->DefaultValue,Pin->DefaultObject,Pin->DefaultTextValue,{}};
+        for (UEdGraphPin* Other:Pin->LinkedTo) if (Other && Set.Contains(Other->GetOwningNode())) State.Internal.Add(Other);
+        OriginalPins.Add(MoveTemp(State));
+    }
     FScopedTransaction Transaction(NSLOCTEXT("TurboMCP","CollapseFunction","Collapse nodes to function"));
     Blueprint->Modify();Source->Modify();
     for (UEdGraphNode* Node:Source->Nodes) if(Node) Node->Modify();
@@ -955,6 +970,12 @@ bool ApplyFunctionCollapse(const FTurboMCPGraphStructure::FPlan& Plan, FString& 
     if (Pure && !Schema->TryCreateConnection(Entry->FindPin(UEdGraphSchema_K2::PN_Then),Result->FindPin(UEdGraphSchema_K2::PN_Execute))) return Fail();
     FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
     Source->NotifyGraphChanged();Destination->NotifyGraphChanged();
+    for (const FOriginalPin& State:OriginalPins)
+    {
+        if (State.Pin->DefaultValue!=State.Value || State.Pin->DefaultObject!=State.Object || !State.Pin->DefaultTextValue.EqualTo(State.Text)) return Fail();
+        for (UEdGraphPin* Other:State.Internal)
+            if (!State.Pin->LinkedTo.Contains(Other) || !Other->LinkedTo.Contains(State.Pin)) return Fail();
+    }
     for (const auto& Pair:FixedPositions)
         if (!IsValid(Pair.Key) || Pair.Key->GetGraph()!=Source || Pair.Key->NodePosX!=Pair.Value.X || Pair.Key->NodePosY!=Pair.Value.Y) return Fail();
     for (const FBoundary& Boundary:Boundaries)
