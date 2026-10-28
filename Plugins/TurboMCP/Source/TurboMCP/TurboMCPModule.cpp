@@ -8,6 +8,7 @@
 #include "TurboMCPModule.h"
 #include "TurboMCPSettings.h"
 #include "TurboMCPPlayInput.h"
+#include "TurboMCPEditorLog.h"
 
 #include "Misc/CoreDelegates.h"
 #include "Modules/ModuleManager.h"
@@ -32,6 +33,8 @@ void FTurboMCPModule::StartupModule()
         UE_LOG(LogTurboMCP, Log, TEXT("TurboMCP disabled by this user's Editor Preferences. No tools, panel, recording hooks or native-tool filters installed. Enable TurboMCP in Editor Preferences > Plugins > TurboMCP and restart the editor to activate it. Unreal MCP is unchanged."));
         return;
     }
+
+    FTurboMCPEditorLog::Get().Start();
 
 	// The registry is not ready yet, so wait for every loading phase to finish.
 	// Registering in StartupModule would leave the class unregistered with no
@@ -58,6 +61,7 @@ void FTurboMCPModule::ShutdownModule()
 {
     if (!bEnabledForSession) return;
     TurboMCPPlayInput::Shutdown();
+    FTurboMCPEditorLog::Get().Stop();
 	if (LoadingPhasesCompleteHandle.IsValid())
 	{
 		FCoreDelegates::OnAllModuleLoadingPhasesComplete.Remove(LoadingPhasesCompleteHandle);

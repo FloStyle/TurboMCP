@@ -35,6 +35,16 @@ class UTurboMCPReadToolset : public UToolsetDefinition
 
 public:
 
+    /** Read bounded editor/PIE output captured during this enabled plugin session, not tool-call history or a disk file. Returns UTC timestamps, categories, severity, cursor and explicit retention/message truncation. Does not run commands or change assets.
+     * @param Category Empty for all categories, otherwise exact case-insensitive category name, such as LogBlueprintUserMessages.
+     * @param Contains Empty for all messages, otherwise a case-insensitive substring of stored text (at most 2048 characters).
+     * @param Since Empty for all retained times, otherwise inclusive ISO-8601 UTC time ending in Z, such as 2026-10-27T10:00:00Z.
+     * @param Cursor Empty starts at oldest retained record. Otherwise copy nextCursor from the previous response and keep filters unchanged. Another-session or future cursor refuses; expired retained records report loss.
+     * @param Limit Maximum returned records, 1..100, default 50. Whole records also have a 24000-character response budget. Messages are stored up to 2048 UTF-16 characters; truncated tails are not searchable.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString ReadTurboMCPEditorLog(const FString& Category, const FString& Contains, const FString& Since, const FString& Cursor, int32 Limit = 50);
+
     /** Inspect an existing data asset's reflected property and obtain its state revision. Empty Property lists editable fields. Loading an asset may execute its load hooks; no property write, save or compile is requested.
      * @param Asset Exact asset path or uniquely resolved asset name; must resolve to UDataAsset.
      * @param Property Exact reflected path, for example Metadata or Settings.Number. Paths may traverse structs and owned instanced objects, never external referenced assets.
