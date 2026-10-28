@@ -18,6 +18,15 @@ class UTurboMCPDataAssetSafetyChild : public UObject
 public:
     UPROPERTY(EditAnywhere, Category="Test")
     int32 Number = 7;
+#if WITH_EDITOR
+    // Deliberate synchronous notification mismatch for owned rollback tests only.
+    bool bChangeAfterEdit = false;
+    virtual void PostEditChangeProperty(FPropertyChangedEvent& Event) override
+    {
+        Super::PostEditChangeProperty(Event);
+        if (bChangeAfterEdit) Number = 99;
+    }
+#endif
 };
 
 /** Exercises external map keys alongside owned instanced values. */

@@ -41,7 +41,7 @@ struct FSnapshot
     explicit FSnapshot(UObject* Asset)
     {
         TArray<UObject*> Objects;
-        GetObjectsWithOuter(Asset, Objects, true);
+        GetObjectsWithOuter(Asset, Objects, EGetObjectsFlags::IncludeNestedObjects);
         Objects.Add(Asset);
         Objects.Sort([](const UObject& A, const UObject& B) { return A.GetPathName() < B.GetPathName(); });
         FString Text;
