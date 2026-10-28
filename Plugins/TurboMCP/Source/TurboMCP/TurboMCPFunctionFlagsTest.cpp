@@ -13,6 +13,9 @@
 #include "EdGraph/EdGraph.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
+#include "K2Node_CallFunction.h"
+#include "EdGraphSchema_K2.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "UObject/Package.h"
 #include "UObject/StructOnScope.h"
@@ -74,6 +77,45 @@ bool FTurboMCPFunctionFlagsTest::RunTest(const FString&)
     Package->SetDirtyFlag(false);
     TestTrue(TEXT("No-op"),Run(true,TEXT("keep"),TEXT("keep")).StartsWith(TEXT("unchanged:")));
     TestFalse(TEXT("No-op stays clean"),Package->IsDirty());
+
+    Transcript+=UTurboMCPEditToolset::EditTurboMCPFunctionAdd(Asset,TEXT("Caller"),TEXT(""),TEXT("ReturnValue:string"));
+    UEdGraph* CallerGraph=nullptr;
+    for (UEdGraph* Candidate:BP->FunctionGraphs) if (Candidate && Candidate->GetName()==TEXT("Caller")) CallerGraph=Candidate;
+    if (!TestNotNull(TEXT("Caller graph"),CallerGraph)) return false;
+    UK2Node_FunctionEntry* CallerEntry=nullptr;
+    UK2Node_FunctionResult* CallerResult=nullptr;
+    for (UEdGraphNode* Node:CallerGraph->Nodes)
+    {
+        if (auto* Found=Cast<UK2Node_FunctionEntry>(Node)) CallerEntry=Found;
+        if (auto* Found=Cast<UK2Node_FunctionResult>(Node)) CallerResult=Found;
+    }
+    if (!TestNotNull(TEXT("Caller entry"),CallerEntry) || !TestNotNull(TEXT("Caller return"),CallerResult)) return false;
+    UK2Node_CallFunction* Call=NewObject<UK2Node_CallFunction>(CallerGraph);
+    Call->FunctionReference.SetSelfMember(TEXT("GetLabel"));
+    CallerGraph->AddNode(Call,false,false); Call->CreateNewGuid(); Call->AllocateDefaultPins();
+    Call->NodePosX=256; Call->NodePosY=160;
+    const UEdGraphSchema_K2* Schema=GetDefault<UEdGraphSchema_K2>();
+    if (!TestTrue(TEXT("Connect pure consumer"),Schema->TryCreateConnection(Call->FindPin(TEXT("ReturnValue")),CallerResult->FindPin(TEXT("ReturnValue"))))) return false;
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    TestTrue(TEXT("Caller compiles"),BP->Status!=BS_Error);
+    TestTrue(TEXT("Connected pure-to-impure refused"),Run(true,TEXT("false"),TEXT("keep")).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Refused consumer remains connected"),Call->FindPin(TEXT("ReturnValue"))->LinkedTo.Contains(CallerResult->FindPin(TEXT("ReturnValue"))));
+    TestTrue(TEXT("Const-only conversion preserves caller"),Run(true,TEXT("keep"),TEXT("false")).StartsWith(TEXT("edited:")));
+    TestTrue(TEXT("Consumer survives const change"),Call->FindPin(TEXT("ReturnValue"))->LinkedTo.Contains(CallerResult->FindPin(TEXT("ReturnValue"))));
+    TestEqual(TEXT("Caller remains positioned"),FIntPoint(Call->NodePosX,Call->NodePosY),FIntPoint(256,160));
+    Call->FindPin(TEXT("ReturnValue"))->BreakAllPinLinks();
+    TestTrue(TEXT("Disconnected conversion accepted"),Run(true,TEXT("false"),TEXT("keep")).StartsWith(TEXT("edited:")));
+    UEdGraphPin* Execute=Call->FindPin(UEdGraphSchema_K2::PN_Execute);
+    UEdGraphPin* Then=Call->FindPin(UEdGraphSchema_K2::PN_Then);
+    if (!TestNotNull(TEXT("Impure execute added"),Execute) || !TestNotNull(TEXT("Impure then added"),Then)) return false;
+    CallerEntry->FindPin(UEdGraphSchema_K2::PN_Then)->BreakAllPinLinks();
+    TestTrue(TEXT("Connect execution input"),Schema->TryCreateConnection(CallerEntry->FindPin(UEdGraphSchema_K2::PN_Then),Execute));
+    TestTrue(TEXT("Connect execution output"),Schema->TryCreateConnection(Then,CallerResult->FindPin(UEdGraphSchema_K2::PN_Execute)));
+    TestTrue(TEXT("Connected impure-to-pure refused"),Run(true,TEXT("true"),TEXT("keep")).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Execution input retained"),Execute->LinkedTo.Contains(CallerEntry->FindPin(UEdGraphSchema_K2::PN_Then)));
+    TestTrue(TEXT("Execution output retained"),Then->LinkedTo.Contains(CallerResult->FindPin(UEdGraphSchema_K2::PN_Execute)));
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    TestTrue(TEXT("Preserved caller compiles"),BP->Status!=BS_Error);
     Transcript+=TEXT("\n")+UTurboMCPLookToolset::LookTurboMCPCapture(Asset,TEXT("GetLabel"),TEXT("graph"),TEXT(""),TEXT("1200x700"));
     return true;
 }
