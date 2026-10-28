@@ -2016,3 +2016,5 @@ OCT27-15 completed: saved Blueprint/data-asset recovery native workflow and live
 OCT27-03 done: stock event-interface reachability implemented. Native existing-event and same-batch append/compile plus unchanged-state refusal passed 7f814ae8a0984b32add6ec5258ff66bb. See docs/audit/input-entry-review.json for baseline failure, fixture corrections and runtime limits.
 
 OCT27-04 done: scoped connected components stay near fixed neighbours; planned/actual boundary checks cannot be bypassed by Force; rejection states the actual failing criterion. Native, live-help and inspected screenshots passed a7695fbdac1a40f6b140df272704ceeb. See docs/audit/scoped-tidy-review.json for baseline, controls and limits.
+
+OCT27-05 ready/in progress: docs/design/append-local-anchor.md approves local placement search, fixed MainPath predecessor and retained full append-suite debt. Assignment oct27-append-local; native acceptance pending.

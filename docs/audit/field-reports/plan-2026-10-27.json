@@ -123,9 +123,9 @@
       "kind": "bug",
       "priority": "P1",
       "wave": 2,
-      "state": "open",
+      "state": "in_progress",
       "validation": "untested",
-      "readiness": "needs_scoped_source_review",
+      "readiness": "ready",
       "reports": [
         "GC-66",
         "TD-45",
@@ -138,8 +138,10 @@
       "acceptance": "Try collision-free placement beside predecessor/consumer. Support an explicit fixed anchor for a new chain. Never silently move unselected downstream nodes; any wider shift must be previewed and explicitly scoped.",
       "verification": "Dense and sparse graph insertions, fixed anchor outside movable scope, overlap refusal/fallback, preserved external coordinates and links.",
       "owner": "Codex",
-      "dispatch": "DSH paused; exact file assignment and base required before implementation",
-      "acceptance_debt": "Retain and repair full test-graph-append wrapper schema/connected-positive assertions and GraphAppend.Placement fixture assumptions. Failed evidence d9f1bd67c21747adb8f78a725cad4627 is not superseded by the focused literal pass."
+      "dispatch": "Codex oct27-append-local; DSH paused",
+      "acceptance_debt": "Retain and repair full test-graph-append wrapper schema/connected-positive assertions and GraphAppend.Placement fixture assumptions. Failed evidence d9f1bd67c21747adb8f78a725cad4627 is not superseded by the focused literal pass.",
+      "repair_contract": "docs/design/append-local-anchor.md",
+      "source_review": "Existing relative placement fallback starts below the anchor and searches only downward; MainPath rejects a fixed first predecessor. Full append wrapper retains obsolete reader/positive-fixture assumptions."
     },
     {
       "id": "OCT27-06",

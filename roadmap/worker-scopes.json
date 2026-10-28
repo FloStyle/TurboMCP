@@ -2764,6 +2764,16 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPScopedTidyTest.cpp"
           ]
+        },
+        "oct27-append-local": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacement.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacementTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPScopedTidyTest.cpp",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
