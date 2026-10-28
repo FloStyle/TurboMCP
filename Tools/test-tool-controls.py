@@ -6,6 +6,7 @@ import subprocess
 import shutil
 import uuid
 import os
+import json
 from tmcp import Session, READ_TOOLSET
 support = runpy.run_path(str(Path(__file__).with_name("test-widget-roundtrip.py")))
 session = Session()
@@ -71,6 +72,13 @@ try:
             raise RuntimeError("Explicit reader enable did not override domain disable")
         if "Unknown tool override" in status or "Unknown tool domain" in status:
             raise RuntimeError("Persisted fixture contains invalid controls")
+        discovery = live.rpc("tools/call", {"name": "describe_toolset", "arguments": {"toolset_name": READ_TOOLSET}})
+        discovery_text = json.dumps(discovery)
+        if "ReadTurboMCPGraphLoad" in discovery_text:
+            raise RuntimeError("Disabled graph reader remains in discovery")
+        if "ReadTurboMCPNodeFind" not in discovery_text or "ReadTurboMCPStatus" not in discovery_text:
+            raise RuntimeError("Override or recovery tool is missing from discovery")
+        print("Discovery verified: graph reader hidden; node finder and status available")
         try:
             denied = live.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", {"Asset": "/Game/DoesNotExist", "GraphName": "EventGraph"})
         except RuntimeError as exc:

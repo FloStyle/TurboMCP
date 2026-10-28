@@ -54,6 +54,15 @@ FString TurboMCPToolPolicy::Describe(const UTurboMCPSettings& Settings)
 {
     const bool Pending=Enabled!=Settings.bEnableTurboMCP || ActiveDomains!=Settings.DisabledToolDomains || !ActiveOverrides.OrderIndependentCompareEqual(Settings.ToolOverrides);
     FString Text=FString::Printf(TEXT("tool policy: %d enabled, %d disabled; preference changes require restart: %s\n"),Known.Num()-Denials.Num(),Denials.Num(),Pending?TEXT("yes"):TEXT("no"));
+    TMap<FString,int32> DomainTotals, DomainDisabled;
+    for (const FString& Name:Known)
+    {
+        ++DomainTotals.FindOrAdd(Domain(Name));
+        if (Denials.Contains(Name)) ++DomainDisabled.FindOrAdd(Domain(Name));
+    }
+    TArray<FString> DomainNames;DomainTotals.GetKeys(DomainNames);DomainNames.Sort();
+    for (const FString& Name:DomainNames)
+        Text+=FString::Printf(TEXT("domain %s: %d enabled, %d disabled\n"),*Name,DomainTotals[Name]-DomainDisabled.FindRef(Name),DomainDisabled.FindRef(Name));
     for (const FString& Name:DisabledNames()) Text+=Name+TEXT(" [")+Domain(Name)+TEXT("]: ")+Denials[Name]+TEXT("\n");
     for (const auto& Pair:Settings.ToolOverrides) if (!Known.Contains(Pair.Key)) Text+=TEXT("Unknown tool override: ")+Pair.Key+TEXT(". Use an exact bare tool name.\n");
     for (const FString& Value:Settings.DisabledToolDomains)
