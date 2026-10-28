@@ -2012,3 +2012,5 @@ Data-asset property read/preview/edit tools integrated with native run d7f1fd0ee
 Implement [confirmed package recovery](../docs/design/asset-recovery.md) under oct27-asset-recovery. Existing Blueprint confirmation permits changes after preview; bind confirmation to memory and disk state before extending to supported saved data assets. Validate only owned saved fixtures through the serialized supervisor. No engine changes or general asset guarantee.
 
 OCT27-15 completed: saved Blueprint/data-asset recovery native workflow and live help passed e6bf90f5ccc3459899e4b379c595cf90. State-bound approvals, live-world guards and fresh reload checks are implemented. Prior failures, source-only guards and project callback limits are retained in docs/audit/asset-recovery-review.json. Offline 25/26 d06ec29ec06943c6ba929f681bb2e911 plus regenerated-inventory structure/language recheck passed. R04 overall remains open.
+
+OCT27-03 ready/in progress: approved stock event-interface reachability repair in docs/design/input-event-reachability.md; assignment oct27-input-entries. Real Enhanced Input and public append/compile evidence required.
