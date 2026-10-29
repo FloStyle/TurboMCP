@@ -1,4 +1,4 @@
-"""Focused personal tool-policy rules; restart and dispatch checks are separate."""
+"""Verify personal tool controls, routed refusals, discovery and real restarts."""
 import runpy
 from pathlib import Path
 import re
@@ -9,21 +9,8 @@ import os
 import json
 from tmcp import Session, READ_TOOLSET
 support = runpy.run_path(str(Path(__file__).with_name("test-widget-roundtrip.py")))
-session = Session()
-session.connect()
-name = "TurboMCP.Workflow.ToolControls"
-session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
-raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})
-print(raw)
-support["parse_run_tests_report"](raw, name)
 # Test only this checkout's supervised project, never another running editor.
 root = Path(__file__).resolve().parents[1]
-fixture = root / "TestProject/Saved/TurboMCP/Workflow/tool-policy-fixture.ini"
-section = "/Script/TurboMCP.TurboMCPSettings"
-pattern = re.compile(r"(?ms)^\[" + re.escape(section) + r"\]\r?\n.*?(?=^\[|\Z)")
-match = pattern.search(fixture.read_text(encoding="utf-8-sig"))
-if not match:
-    raise RuntimeError("Unreal did not serialize the policy fixture section")
 config = root / "TestProject/Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini"
 pwsh = shutil.which("pwsh")
 if not pwsh:
@@ -46,13 +33,26 @@ def editor(stop=False):
         if not pid:
             raise RuntimeError("New editor PID was not reported")
         return int(pid.group(1))
-editor(stop=True)
 original = config.read_bytes() if config.exists() else None
 backup = root / ".local" / ("tool-controls-preferences-" + uuid.uuid4().hex + ".backup")
 backup.parent.mkdir(parents=True, exist_ok=True)
 if original is not None:
     backup.write_bytes(original)
 try:
+    session = Session()
+    session.connect()
+    name = "TurboMCP.Workflow.ToolControls"
+    session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
+    raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})
+    print(raw)
+    support["parse_run_tests_report"](raw, name)
+    fixture = root / "TestProject/Saved/TurboMCP/Workflow/tool-policy-fixture.ini"
+    section = "/Script/TurboMCP.TurboMCPSettings"
+    pattern = re.compile(r"(?ms)^\[" + re.escape(section) + r"\]\r?\n.*?(?=^\[|\Z)")
+    match = pattern.search(fixture.read_text(encoding="utf-8-sig"))
+    if not match:
+        raise RuntimeError("Unreal did not serialize the policy fixture section")
+    editor(stop=True)
     old = original.decode("utf-8-sig") if original is not None else ""
     config.parent.mkdir(parents=True, exist_ok=True)
     config.write_text(pattern.sub("", old).rstrip() + "\n\n" + match.group(0) + "\n", encoding="utf-8")

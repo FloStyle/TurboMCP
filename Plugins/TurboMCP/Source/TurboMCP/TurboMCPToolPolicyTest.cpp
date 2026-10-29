@@ -40,7 +40,8 @@ bool FTurboMCPToolPolicyTest::RunTest(const FString&)
             if (Function->HasMetaData(TEXT("AICallable"))) Names.AddUnique(Function->GetName());
     ON_SCOPE_EXIT {TurboMCPToolPolicy::Initialize(*UTurboMCPSettings::Get(),Names);};
     UTurboMCPSettings* TestSettings=NewObject<UTurboMCPSettings>();
-    // This object is never saved: personal preferences are not test scratch space.
+    // Serialize this object only to the dedicated fixture file below. The outer
+    // workflow backs up personal preferences before starting this native test.
     TestSettings->bEnableTurboMCP=true;TestSettings->DisabledToolDomains={TEXT("Blueprint")};TestSettings->ToolOverrides.Reset();
     TurboMCPToolPolicy::Initialize(*TestSettings,Names);
     FString Reason;
