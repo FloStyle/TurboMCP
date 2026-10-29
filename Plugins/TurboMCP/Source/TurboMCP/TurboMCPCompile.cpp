@@ -477,18 +477,6 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		// Explicit save requests also write packages whose dirty flag is clear.
         // Native pin setters can change memory without setting that flag.
 
-		UPackage* Package = FindPackage(nullptr, *Resolved.PackagePath);
-		if (Package == nullptr)
-		{
-			// The package reports unsaved changes but cannot be found by name,
-			// which is a real contradiction worth naming rather than hiding.
-			Errors += FString::Printf(
-				TEXT("\nerror: %s reports unsaved changes but its package could not be opened."),
-				*Resolved.ObjectPath);
-			++FailedCount;
-			continue;
-		}
-
 		const int32 MarkBeforeSave = Capture.Mark();
 		const int32 ErrorMarkBeforeSave = Capture.ErrorMark();
 
@@ -506,6 +494,16 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			++FailedCount;
 			continue;
 		}
+
+        // Resolve the owning package after loading the requested asset. Registry
+        // resolution alone does not make an unloaded package available in memory.
+        UPackage* Package = AssetObject->GetOutermost();
+        if (!Package || Package->GetName() != Resolved.PackagePath)
+        {
+            Errors += FString::Printf(TEXT("\nerror: %s resolved to an unexpected package; save not attempted."), *Resolved.ObjectPath);
+            ++FailedCount;
+            continue;
+        }
 
         // Widget thumbnail rendering runs design-time Blueprint code inside the MCP
         // exception handler. Its script errors can hide a successful save result.
