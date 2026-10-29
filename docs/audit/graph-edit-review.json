@@ -13,19 +13,20 @@
   "counted_as_reviewed": false,
   "contract": "docs/design/graph-edit-review.json",
   "remaining": [
-    "Source and shared-helper review",
-    "Implement focused workflow and repair confirmed defects",
-    "Live help and editor workflow evidence",
-    "Visual inspection, scope/offline gates and integration"
+    "Complete six-tool source, helper and help review",
+    "Extend workflow to Replace and Repoint plus refusal/failure cases",
+    "Visual inspection and final offline/scope gates",
+    "Integrate and update coverage"
   ],
   "findings": [
     {
       "tool": "EditTurboMCPGraphPatch",
       "problem": "Identical defaults reported unchanged but Apply unconditionally modified Blueprint/graph and marked Blueprint modified.",
-      "state": "implemented_pending_test",
+      "state": "implemented_native_regression_passed",
       "candidate": "37dc07d",
       "fix": "Validate requested defaults before opening the transaction; identical requests return without mutation.",
-      "verification_needed": "Assert dirty flag, transaction count, node defaults and unrelated graph state remain unchanged for an identical patch."
+      "verification_needed": "Assert dirty flag, transaction count, node defaults and unrelated graph state remain unchanged for an identical patch.",
+      "native_run": "de619bcd680140d0b92045bd7cb11d4b"
     }
   ],
   "contract_clarification": "Current Patch supports literal defaults only and refuses links; use Repoint or connection tools for rewiring. Workflow must test this refusal rather than assume Patch supports links."
