@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "workflow": "WF-BP-GRAPH-EDITS",
+  "status": "source_review_in_progress",
+  "focus_tools": [
+    "PreviewTurboMCPGraphPatch",
+    "EditTurboMCPGraphPatch",
+    "PreviewTurboMCPGraphReplace",
+    "EditTurboMCPGraphReplace",
+    "PreviewTurboMCPGraphRepoint",
+    "EditTurboMCPGraphRepoint"
+  ],
+  "counted_as_reviewed": false,
+  "contract": "docs/design/graph-edit-review.json",
+  "remaining": [
+    "Source and shared-helper review",
+    "Implement focused workflow and repair confirmed defects",
+    "Live help and editor workflow evidence",
+    "Visual inspection, scope/offline gates and integration"
+  ]
+}

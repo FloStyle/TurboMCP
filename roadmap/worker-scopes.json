@@ -2916,6 +2916,25 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSaveUndoWorkflowTest.cpp",
             "Tools/test-save-undo-workflow.py"
           ]
+        },
+        "tool-review-graph-edits": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatch.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatchTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplaceTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepoint.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepointTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphPatch.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphReplace.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphRepoint.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphEditWorkflowTest.cpp",
+            "Tools/test-graph-edit-workflow.py"
+          ]
         }
       },
       "preserve_rows": []
