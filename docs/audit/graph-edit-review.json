@@ -13,20 +13,47 @@
   "counted_as_reviewed": false,
   "contract": "docs/design/graph-edit-review.json",
   "remaining": [
-    "Source and shared-helper review",
-    "Implement focused workflow and repair confirmed defects",
-    "Live help and editor workflow evidence",
-    "Visual inspection, scope/offline gates and integration"
+    "Complete six-tool source, helper and help review",
+    "Extend workflow to Replace and Repoint plus refusal/failure cases",
+    "Visual inspection and final offline/scope gates",
+    "Integrate and update coverage"
   ],
   "findings": [
     {
       "tool": "EditTurboMCPGraphPatch",
       "problem": "Identical defaults reported unchanged but Apply unconditionally modified Blueprint/graph and marked Blueprint modified.",
-      "state": "implemented_pending_test",
+      "state": "implemented_native_regression_passed",
       "candidate": "37dc07d",
       "fix": "Validate requested defaults before opening the transaction; identical requests return without mutation.",
-      "verification_needed": "Assert dirty flag, transaction count, node defaults and unrelated graph state remain unchanged for an identical patch."
+      "verification_needed": "Assert dirty flag, transaction count, node defaults and unrelated graph state remain unchanged for an identical patch.",
+      "native_run": "de619bcd680140d0b92045bd7cb11d4b"
+    },
+    {
+      "tool": "PreviewTurboMCPGraphReplace",
+      "problem": "Preview does not run append scratch validation, so it offers plans that Edit later rejects. Edit can open its transaction before that refusal.",
+      "state": "open",
+      "evidence": "2ffb6835fb034cd7bf34d23c60d8aed9",
+      "next": "Share scratch preflight before presenting or starting the live edit; retain disconnected fixture as negative control."
     }
   ],
-  "contract_clarification": "Current Patch supports literal defaults only and refuses links; use Repoint or connection tools for rewiring. Workflow must test this refusal rather than assume Patch supports links."
+  "contract_clarification": "Current Patch supports literal defaults only and refuses links; use Repoint or connection tools for rewiring. Workflow must test this refusal rather than assume Patch supports links.",
+  "retained_failures": [
+    {
+      "run": "2ffb6835fb034cd7bf34d23c60d8aed9",
+      "result": "failed",
+      "detail": "Replacement fixture supplied an unconnected PrintString without a recognized entry. Preview listed removals; edit rejected during append scratch preflight. Actual node count remained three; positive replacement assertion failed.",
+      "follow_up": "Fixture now supplies a connected custom-event entry. Preview/edit disagreement and conservative partial-result wording remain review findings, not erased by a passing rerun."
+    }
+  ],
+  "latest_native_run": {
+    "id": "6ede8932a23b468bb0756472827ffd7f",
+    "candidate": "f587940",
+    "result": "passed",
+    "checks": [
+      "Patch no-op dirty flag and undo history",
+      "Patch real default edit with node/link/position preservation",
+      "Repoint existing execution source while retaining original node",
+      "Replace connected body, retain custom-event entry and sibling graph"
+    ]
+  }
 }
