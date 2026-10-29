@@ -86,7 +86,7 @@ bool FTurboMCPToolPolicyTest::RunTest(const FString&)
     TestSettings->bEnableTurboMCP=false;
     TurboMCPToolPolicy::Initialize(*TestSettings,Names);
     TestFalse(TEXT("Master off wins over recovery"),TurboMCPToolPolicy::IsAllowed(TEXT("ReadTurboMCPStatus"),Reason));
-    FModuleManager::LoadModuleChecked<ISettingsModule>(TEXT("Settings")).ShowViewer(TEXT("Editor"),TEXT("Plugins"),TEXT("TurboMCP"));
+    FModuleManager::LoadModuleChecked<ISettingsModule>(TEXT("Settings")).ShowViewer(UTurboMCPSettings::Get()->GetContainerName(),UTurboMCPSettings::Get()->GetCategoryName(),UTurboMCPSettings::Get()->GetSectionName());
     ADD_LATENT_AUTOMATION_COMMAND(FToolPreferencesCapture(this));
     return true;
 }
