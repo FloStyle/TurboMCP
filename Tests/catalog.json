@@ -967,6 +967,13 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-save-undo-workflow",
+      "path": "Tools/test-save-undo-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
     }
   ]
 }

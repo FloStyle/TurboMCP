@@ -14,7 +14,8 @@
   "findings": [
     "DirtyList zero-result wording overstates GetDirtyContentPackages coverage.",
     "Save contains obsolete/unreachable Widget thumbnail guidance and historical comments; reconcile with current direct Widget save path.",
-    "Check unloaded target handling, transaction identity/replay and transient cross-object effects before accepting behavior."
+    "Check unloaded target handling, transaction identity/replay and transient cross-object effects before accepting behavior.",
+    "Save looked up package before loading registry-resolved asset; candidate now obtains the package after load. Pending native verification."
   ],
   "remaining": [
     "Implement focused fixture and repair confirmed issues",
@@ -22,5 +23,6 @@
     "Focused native workflow including saved readback",
     "Offline and source-scope gates",
     "Integrate and update unique coverage"
-  ]
+  ],
+  "candidate_progress": "Initial supervised undo/refusal and direct-save fixture added. Independent disk readback, unrelated controls, normal save path and live help remain required."
 }
