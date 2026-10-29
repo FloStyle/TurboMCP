@@ -15,15 +15,16 @@
     "DirtyList zero-result wording overstates GetDirtyContentPackages coverage.",
     "Save contains obsolete/unreachable Widget thumbnail guidance and historical comments; reconcile with current direct Widget save path.",
     "Check unloaded target handling, transaction identity/replay and transient cross-object effects before accepting behavior.",
-    "Save looked up the package before loading a registry-resolved asset. Candidate now obtains the package after load; unloaded-target native regression passed in b95c322d6026403cb2f023369006560d."
+    "Save looked up the package before loading a registry-resolved asset. Candidate now obtains the package after load; unloaded-target native regression passed in b95c322d6026403cb2f023369006560d.",
+    "Undo previously exempted all transient-package objects from the cross-package check. Candidate now refuses unrelated transient state because global undo replays every recorded object; native regression passed."
   ],
   "remaining": [
-    "Final source/helper/comment and output review, including transient transaction object boundaries",
+    "Finish source/helper/comment and output review; transient transaction boundary regression now passes",
     "Confirm Widget thumbnail-avoidance evidence and explicitly document scenario limits",
     "Offline and source-scope gates",
     "Integrate accepted code and update unique coverage and dashboard"
   ],
-  "candidate_progress": "Native workflow passed at f7ebf9ff0225c9c9c44a554ca51647ef2f7542e3; full review and integration remain pending. Unique coverage remains 87/165.",
+  "candidate_progress": "Native safety regression passed at d1a399b, including unrelated transient state. Successful undo output now names the asset and distinguishes memory undo from disk recovery. Full review and integration remain pending; unique coverage stays 87/165.",
   "initial_native_run": "f3356ba1f7ed446fb43e8926fe842e1b",
   "initial_checks": [
     "Confirmed undo restores Blueprint description",
@@ -38,8 +39,8 @@
     "Run 14988f871d09423aadcf407cb5a7c381 failed compilation because the fixture reused Args for incompatible types. Corrected to ControlSaveArgs; runs 86b9ba2fa2d6429f90203110935be394 and b95c322d6026403cb2f023369006560d passed. This was a fixture defect, not evidence of a product failure."
   ],
   "latest_native_run": {
-    "id": "b95c322d6026403cb2f023369006560d",
-    "commit": "f7ebf9ff0225c9c9c44a554ca51647ef2f7542e3",
+    "id": "814a4b79cde1440998a54458f20e42d5",
+    "commit": "d1a399b",
     "result": "passed",
     "native_errors": 0,
     "native_warnings": 0,
@@ -50,7 +51,8 @@
       "Human and cross-package transactions refused",
       "Mixed valid/invalid save reports partial success",
       "Registry-known unloaded Blueprint loads and saves successfully",
-      "Live help exposes parameters, effects and relevant limits for all five tools"
+      "Live help exposes parameters, effects and relevant limits for all five tools",
+      "Transaction containing unrelated transient Blueprint state refuses undo without changing that state"
     ]
   }
 }
