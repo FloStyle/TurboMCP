@@ -17,5 +17,16 @@
     "Implement focused workflow and repair confirmed defects",
     "Live help and editor workflow evidence",
     "Visual inspection, scope/offline gates and integration"
-  ]
+  ],
+  "findings": [
+    {
+      "tool": "EditTurboMCPGraphPatch",
+      "problem": "Identical defaults reported unchanged but Apply unconditionally modified Blueprint/graph and marked Blueprint modified.",
+      "state": "implemented_pending_test",
+      "candidate": "37dc07d",
+      "fix": "Validate requested defaults before opening the transaction; identical requests return without mutation.",
+      "verification_needed": "Assert dirty flag, transaction count, node defaults and unrelated graph state remain unchanged for an identical patch."
+    }
+  ],
+  "contract_clarification": "Current Patch supports literal defaults only and refuses links; use Repoint or connection tools for rewiring. Workflow must test this refusal rather than assume Patch supports links."
 }

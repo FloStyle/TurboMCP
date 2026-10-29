@@ -13,7 +13,7 @@
   ],
   "baseline_reviewed": 92,
   "contract": [
-    "Patch existing node values and links without adding or deleting unrelated nodes. Check no-op and malformed or missing identities.",
+    "Patch existing literal defaults without adding or deleting nodes. Current tool refuses link requests; verify that refusal, no-op, malformed input and missing identities.",
     "Replace a bounded function body with explicit removal preview; preserve entries, results, comments, sibling graphs and protected nodes. Verify failures without claiming unproven rollback.",
     "Repoint multiple consumers from one output to an existing or created compatible source. Verify keep/remove-source behavior, pin compatibility, compile/save options and failure results.",
     "Inspect actual live parameter help, output English, implementation, helpers and comments for all six tools.",
