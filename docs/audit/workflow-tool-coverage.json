@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-28",
+  "updated": "2026-10-29",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
   "inventory": 165,
   "workflows": [
@@ -754,6 +754,27 @@
         "Macro extraction and local-variable captures unsupported",
         "Partial failures require undo/inspection; automatic rollback not promised"
       ]
+    },
+    {
+      "id": "WF-DATA-04-SAVE-UNDO",
+      "title": "Save explicit Blueprint targets and safely undo the latest asset transaction",
+      "status": "bounded_scenario_checked",
+      "review": "docs/audit/save-undo-review.json",
+      "fixture": "TurboMCP.Workflow.SaveUndo",
+      "tools_used": [
+        "ReadTurboMCPDirtyList",
+        "EditTurboMCPSave",
+        "EditTurboMCPSaveWithoutThumbnail",
+        "PreviewTurboMCPAssetUndo",
+        "EditTurboMCPAssetUndo"
+      ],
+      "limitations": [
+        "Bounded synthetic Blueprint workflow, not certification of every asset class or editor extension.",
+        "Widget thumbnail avoidance retained by source review: both save entry points select direct serialization for UWidgetBlueprint; no new Widget persistence run claimed.",
+        "No injected disk I/O failure, source-control-provider matrix, process crash or arbitrary project callback coverage.",
+        "Undo eligibility relies on the latest transaction title and recorded object packages; arbitrary callback side effects are not proven isolated.",
+        "Save callbacks can run and partial batches are not rolled back."
+      ]
     }
   ],
   "tool_usage": {
@@ -1087,9 +1108,24 @@
     ],
     "EditTurboMCPGraphCollapse": [
       "WF-BP-COLLAPSE-FUNCTION"
+    ],
+    "ReadTurboMCPDirtyList": [
+      "WF-DATA-04-SAVE-UNDO"
+    ],
+    "EditTurboMCPSave": [
+      "WF-DATA-04-SAVE-UNDO"
+    ],
+    "EditTurboMCPSaveWithoutThumbnail": [
+      "WF-DATA-04-SAVE-UNDO"
+    ],
+    "PreviewTurboMCPAssetUndo": [
+      "WF-DATA-04-SAVE-UNDO"
+    ],
+    "EditTurboMCPAssetUndo": [
+      "WF-DATA-04-SAVE-UNDO"
     ]
   },
-  "unique_tools_scenario_reviewed": 87,
+  "unique_tools_scenario_reviewed": 92,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

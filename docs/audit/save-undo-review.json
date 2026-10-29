@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "workflow": "WF-DATA-04-SAVE-UNDO",
-  "status": "source_review_in_progress",
+  "status": "bounded_scenario_accepted",
   "focus_tools": [
     "ReadTurboMCPDirtyList",
     "EditTurboMCPSave",
@@ -10,7 +10,7 @@
     "EditTurboMCPAssetUndo"
   ],
   "contract": "docs/design/save-undo-review.json",
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "findings": [
     "DirtyList zero-result wording overstates GetDirtyContentPackages coverage.",
     "Save contains obsolete/unreachable Widget thumbnail guidance and historical comments; reconcile with current direct Widget save path.",
@@ -18,13 +18,8 @@
     "Save looked up the package before loading a registry-resolved asset. Candidate now obtains the package after load; unloaded-target native regression passed in b95c322d6026403cb2f023369006560d.",
     "Undo previously exempted all transient-package objects from the cross-package check. Candidate now refuses unrelated transient state because global undo replays every recorded object; native regression passed."
   ],
-  "remaining": [
-    "Finish source/helper/comment and output review; transient transaction boundary regression now passes",
-    "Confirm Widget thumbnail-avoidance evidence and explicitly document scenario limits",
-    "Offline and source-scope gates",
-    "Integrate accepted code and update unique coverage and dashboard"
-  ],
-  "candidate_progress": "Native safety regression passed at d1a399b, including unrelated transient state. Successful undo output now names the asset and distinguishes memory undo from disk recovery. Full review and integration remain pending; unique coverage stays 87/165.",
+  "remaining": [],
+  "candidate_progress": "Accepted after source, live-help, native workflow, offline and scope review.",
   "initial_native_run": "f3356ba1f7ed446fb43e8926fe842e1b",
   "initial_checks": [
     "Confirmed undo restores Blueprint description",
@@ -39,8 +34,8 @@
     "Run 14988f871d09423aadcf407cb5a7c381 failed compilation because the fixture reused Args for incompatible types. Corrected to ControlSaveArgs; runs 86b9ba2fa2d6429f90203110935be394 and b95c322d6026403cb2f023369006560d passed. This was a fixture defect, not evidence of a product failure."
   ],
   "latest_native_run": {
-    "id": "814a4b79cde1440998a54458f20e42d5",
-    "commit": "d1a399b",
+    "id": "8cc7ac608fdb48d991c93a427d891b5d",
+    "commit": "aa7d6e73a5b4dd3d35bad7891a05636f2e301969",
     "result": "passed",
     "native_errors": 0,
     "native_warnings": 0,
@@ -54,5 +49,30 @@
       "Live help exposes parameters, effects and relevant limits for all five tools",
       "Transaction containing unrelated transient Blueprint state refuses undo without changing that state"
     ]
-  }
+  },
+  "offline_gate": {
+    "run": "c15265a71f5f40ff807e4ece17f0f533",
+    "result": "passed",
+    "checks": 26
+  },
+  "scope_gate": {
+    "projection": "004370e4e6bbc437531a756a80975aa68e99a7c8",
+    "result": "passed",
+    "note": "Scoped source projection; catalog and inventory reviewed separately as integrator changes."
+  },
+  "review_aspects": {
+    "behavior": "Native Blueprint undo, refusals, save/readback, partial and unloaded-save controls passed.",
+    "preservation": "Unrelated dirty asset memory and disk unchanged; transient cross-object undo refused.",
+    "help": "Live help inspected for all five tools: roles, parameters, limits and side effects.",
+    "english": "Corrected DirtyList coverage, explicit save outcomes, callback wording and asset-specific undo result.",
+    "code": "Reviewed save path, resolver/package ownership, retry/result handling, dirty enumeration and global undo transaction boundary. Removed obsolete comments and unreachable save summaries.",
+    "visual": "No layout or image output in this scenario; screenshots not applicable."
+  },
+  "limitations": [
+    "Bounded synthetic Blueprint workflow, not certification of every asset class or editor extension.",
+    "Widget thumbnail avoidance retained by source review: both save entry points select direct serialization for UWidgetBlueprint; no new Widget persistence run claimed.",
+    "No injected disk I/O failure, source-control-provider matrix, process crash or arbitrary project callback coverage.",
+    "Undo eligibility relies on the latest transaction title and recorded object packages; arbitrary callback side effects are not proven isolated.",
+    "Save callbacks can run and partial batches are not rolled back."
+  ]
 }
