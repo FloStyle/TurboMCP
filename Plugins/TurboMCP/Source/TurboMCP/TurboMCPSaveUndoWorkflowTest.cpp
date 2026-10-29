@@ -91,6 +91,19 @@ bool FTurboMCPSaveUndoWorkflowTest::RunTest(const FString& Parameters)
     }
     TestTrue(TEXT("Cross-package undo refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPAssetUndo(Asset).Contains(TEXT("another package")));
     TestEqual(TEXT("Refusal preserves control value"),Control->BlueprintDescription,FString(TEXT("control unsaved")));
+    // A transient object is not necessarily disposable state belonging to the
+    // target. Undo must refuse instead of restoring an unrelated object's data.
+    TStrongObjectPtr<UBlueprint> TransientControl(NewObject<UBlueprint>(GetTransientPackage(), NAME_None, RF_Transactional));
+    TransientControl->BlueprintDescription = TEXT("transient before");
+    {
+        FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP transient control")));
+        BP->Modify(); TransientControl->Modify();
+        BP->BlueprintDescription = TEXT("transient transaction target");
+        TransientControl->BlueprintDescription = TEXT("transient after");
+    }
+    TestTrue(TEXT("Unrelated transient state refuses global undo"),
+        UTurboMCPPreviewToolset::PreviewTurboMCPAssetUndo(Asset).StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Transient state remains untouched"),TransientControl->BlueprintDescription,FString(TEXT("transient after")));
     {
         FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP stale preview fixture")));
         BP->Modify(); BP->BlueprintDescription = TEXT("first newer edit");
@@ -149,7 +162,6 @@ bool FTurboMCPSaveUndoWorkflowTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Mixed batch preserves unrelated memory"),Control->BlueprintDescription,FString(TEXT("control unsaved")));
     TestTrue(TEXT("Mixed batch preserves unrelated disk"),ControlHash == FMD5Hash::HashFile(*ControlFile));
     FAssetRegistryModule::AssetCreated(BP);
-    const FString PackageName = BP->GetOutermost()->GetName();
     Packages = {BP->GetOutermost()};
     BP = nullptr; Package = nullptr;
     FText UnloadError;
