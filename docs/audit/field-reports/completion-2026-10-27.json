@@ -1,0 +1,441 @@
+{
+  "schema": 1,
+  "date": "2026-10-29",
+  "scope": "Oct27 plan: 19 work packages, not universal plugin certification",
+  "tasks": [
+    {
+      "id": "OCT27-01",
+      "acceptance": "Document default OFF, project plugin enable versus per-user opt-in, exact preferences path, restart, absent status tool and startup-log diagnosis. Preserve saved settings.",
+      "implementation": "done",
+      "validation": "source_reviewed_fresh_user_walkthrough_untested",
+      "resolution": "README, installation and troubleshooting now match default OFF, existing saved preferences, per-user opt-in, restart and unavailable disabled status tool. Compared with Settings.h and Module.cpp; no settings or runtime changes.",
+      "review": null,
+      "remaining": "",
+      "verified_execution_reports": []
+    },
+    {
+      "id": "OCT27-02",
+      "acceptance": "Reproduce nested quotes/backslashes in gameplay-tag struct literals. Preserve the intended canonical value or refuse before mutation. Compare actual readback, not compile success alone.",
+      "implementation": "done",
+      "validation": "focused_native_passed",
+      "resolution": "Shared quote encoding/decoding preserves literal content in append, reader and patch. Malformed escapes refuse during planning. Rendered public preview/edit/readback/patch checks passed for escaped strings and gameplay-tag structs; fixture compilation passed. Offline checks: 25 passed in 30038d07334448e5ac1eb6cf22a1a382; stale generated inventory corrected and validate-repo then passed.",
+      "review": null,
+      "remaining": "",
+      "verified_execution_reports": [
+        {
+          "run": "57488220f6db4e0a8b033bb691694a5d",
+          "status": "passed",
+          "commit": "1de4c0fa348499b5afdac908f7a7e5b92befc70e",
+          "suites": [
+            "test-graph-append"
+          ],
+          "sha256": "c91e4df535f47d3a7648ae67a9ed969656c96e8561f9398a4372ec35141187b3"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-03",
+      "acceptance": "Recognize supported Enhanced Input event nodes and outputs without treating arbitrary orphan nodes as entries. Existing-event and same-batch-event append must agree with compile diagnostics.",
+      "implementation": "done",
+      "validation": "focused_native_passed",
+      "resolution": null,
+      "review": "docs/audit/input-entry-review.json",
+      "remaining": "No remaining implementation in this scope. Runtime input delivery is separate OCT27-11.",
+      "review_sha256": "ce64f3665ce9c60308f4d227530be8a61a8864339482660cc80d743d582f8354",
+      "verified_execution_reports": [
+        {
+          "run": "7f814ae8a0984b32add6ec5258ff66bb",
+          "status": "passed",
+          "commit": "bb952beae19b829cf2ffc6d703c3ded477b72c64",
+          "suites": [
+            "test-input-entry"
+          ],
+          "sha256": "80a28fbc7fdc8f2278850d67d48dc2816353d66e0275a4e6dcdc0f5fd5f349bc"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-04",
+      "acceptance": "Use a dense boxed fixture with distant selected nodes. Bound fixed-neighbour wire growth, retain untouched nodes/boxes, and report the precise failing criterion. Shorter total wires alone do not guarantee a valid layout. Roll back rejected candidates.",
+      "implementation": "done",
+      "validation": "focused_native_and_visual_passed",
+      "resolution": "Bounded geometry selection and live help verified; scoped candidate search now enforces unchanged boundary limits and prefers forward flow before shorter wires. Purchase and scoped tidy suites passed; screenshots inspected. See review for retained failures and measurement limits.",
+      "review": "docs/audit/targeted-geometry-review.json",
+      "remaining": "",
+      "review_sha256": "1d65ec3e72e488deb74629783b0900656f2717f272423959a1508006d24d4ac3",
+      "verified_execution_reports": [
+        {
+          "run": "688a751f5d31483599e95f1933d75975",
+          "status": "passed",
+          "commit": "ec16a739c2d88bc65e024df4390024997c9d8ba0",
+          "suites": [
+            "test-purchase-workflow",
+            "test-scoped-tidy"
+          ],
+          "sha256": "d7eadac7a4f9e363cd91664c5ca6e1dabdcdd403f26b09c0e36e65b148d9585d"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-05",
+      "acceptance": "Try collision-free placement beside predecessor/consumer. Support an explicit fixed anchor for a new chain. Never silently move unselected downstream nodes; any wider shift must be previewed and explicitly scoped.",
+      "implementation": "done",
+      "validation": "focused_native_and_visual_passed",
+      "resolution": null,
+      "review": "docs/audit/append-local-review.json",
+      "remaining": "",
+      "review_sha256": "ea04171339b1cb8f547c353dbd6779ad2af40fdaa7826cb9285186fca1a56a16",
+      "verified_execution_reports": [
+        {
+          "run": "ec88df5e8d51455197b0630e950ab918",
+          "status": "passed",
+          "commit": "f39549cf35d9173ffb0c2516f1808d0a1e11466b",
+          "suites": [
+            "test-graph-append",
+            "test-scoped-tidy"
+          ],
+          "sha256": "6f99123060de770fcc54ecfde50ee49b4be6b71e1b356d8542f39f8f818625cd"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-06",
+      "acceptance": "Reuse existing position/size reader. Improve help/discovery and add bounded node-ID selection if needed. State graph units, measurement limits and omitted counts. No duplicate geometry tool.",
+      "implementation": "done",
+      "validation": "focused_native_and_visual_passed",
+      "resolution": "Bounded geometry selection and live help verified; scoped candidate search now enforces unchanged boundary limits and prefers forward flow before shorter wires. Purchase and scoped tidy suites passed; screenshots inspected. See review for retained failures and measurement limits.",
+      "review": "docs/audit/targeted-geometry-review.json",
+      "remaining": "",
+      "review_sha256": "1d65ec3e72e488deb74629783b0900656f2717f272423959a1508006d24d4ac3",
+      "verified_execution_reports": [
+        {
+          "run": "688a751f5d31483599e95f1933d75975",
+          "status": "passed",
+          "commit": "ec16a739c2d88bc65e024df4390024997c9d8ba0",
+          "suites": [
+            "test-purchase-workflow",
+            "test-scoped-tidy"
+          ],
+          "sha256": "d7eadac7a4f9e363cd91664c5ca6e1dabdcdd403f26b09c0e36e65b148d9585d"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-07",
+      "acceptance": "Support a bounded node/box/region scope with explicit overlap inclusion rules. Put actionable scoped problems before verbose details and expose truncation/paging. Do not force oversized full-graph capture.",
+      "implementation": "done",
+      "validation": "focused_native_and_visual_passed",
+      "resolution": "Node/box/region scopes and complete-record paging expose relevant findings before bounded context. Invalid scopes refuse; oversized records stop automatic paging with honest omission and explicit skip guidance. Targeted capture avoids giant graph capture. Failures and measurement limits retained in review.",
+      "review": "docs/audit/scoped-reports-review.json",
+      "remaining": "",
+      "review_sha256": "d5f02b600bd854962aba2d307cadb6ae3208aaf23339e574635d947e2431fa7e",
+      "verified_execution_reports": [
+        {
+          "run": "dfdc02a9ea634e9d937d67ba9eb2ffb8",
+          "status": "passed",
+          "commit": "06c1bb15e580fe95dc6b8c57283a286afdfe8d41",
+          "suites": [
+            "test-scoped-tidy",
+            "test-purchase-workflow"
+          ],
+          "sha256": "92cfd34255b0673148e6dda238566d116acec4e6bf99d327d8df5d1ccebdfb66"
+        },
+        {
+          "run": "4a4d2f781dc04542ad68c610c3fcd2ca",
+          "status": "passed",
+          "commit": "23406fdd3df4404904244a1573eba4dd6f445c16",
+          "suites": [
+            "test-scoped-tidy"
+          ],
+          "sha256": "823936b685fa3f995b2b9902510f1729907c1374226f13a31dd7fb70dfa05749"
+        },
+        {
+          "run": "e08dbdcb2722444fa8dce6c42abab90e",
+          "status": "passed",
+          "commit": "23406fdd3df4404904244a1573eba4dd6f445c16",
+          "suites": [
+            "test-scoped-tidy"
+          ],
+          "sha256": "f482b2d7f840aeb9536f53c4b0b019fe9bb6893191d64281e56e301fcdfad490"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-08",
+      "acceptance": "Resolve supported engine-search IDs consistently, suggest self-reference and promotable operators, and document new-to-existing link syntax with copyable examples. Unknown/ambiguous IDs must not guess.",
+      "implementation": "done",
+      "validation": "focused_native_passed",
+      "resolution": "Creation IDs retain exact identity; supported self-reference guidance reaches public append refusal. Compact help now preserves input-side link examples before parameter detail. Real new-to-existing linking and live help pass; input-event discovery evidence reused explicitly.",
+      "review": "docs/audit/append-discovery-review.json",
+      "remaining": "",
+      "review_sha256": "35bd88b94e251f8a9ec5b3ccad6fb580ed0d283e194ac1d1202030054a7fcf15",
+      "verified_execution_reports": [
+        {
+          "run": "452a388a498144fbbafb47664221aa02",
+          "status": "passed",
+          "commit": "67050d5d4470a2090736b94efa9938d2519499ab",
+          "suites": [
+            "test-graph-append"
+          ],
+          "sha256": "c6c63c51972ac82137d5f50e2bf964c7d1ab593aec2fc55fcee08ae8b4674853"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-09",
+      "acceptance": "Accept a uniquely matching supported short ID or explicitly require a full ID. Never bind/connect an ambiguous match. Preserve displaced-node cleanup reporting.",
+      "implementation": "done",
+      "validation": "focused_native_and_visual_passed",
+      "resolution": "Connect and bind resolve unique graph-local hexadecimal keys or exact reader IDs; ambiguous and missing identities have distinct refusals. Successful endpoints are canonical; live help and focused workflows passed.",
+      "review": "docs/audit/unique-edit-ids-review.json",
+      "remaining": "",
+      "review_sha256": "b4b636259458044ccbed4650d6e92555f8669215c0f1246fa4b6d9b3f2ebe6cf",
+      "verified_execution_reports": [
+        {
+          "run": "9c36dc2b27f74bff9fbf92917e419d7e",
+          "status": "passed",
+          "commit": "39aa7eaafc730f331e74f4090026cd6b40440b38",
+          "suites": [
+            "test-event-connect-workflow",
+            "test-bind-event-workflow"
+          ],
+          "sha256": "593302625e2c170fafe19c8345249e46653be9c8b1a7e0651769869fd3448dad"
+        },
+        {
+          "run": "a560d06ecc4f4ee2927340d0c02e41fe",
+          "status": "passed",
+          "commit": "4abae18f11b600f73045afe7e55e310229fd4b95",
+          "suites": [
+            "test-event-connect-workflow",
+            "test-bind-event-workflow"
+          ],
+          "sha256": "e27885cd3eaf4184d251d142a7fd640d24e2a5d8f0ca78aec222fc0188b98283"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-10",
+      "acceptance": "Reconcile existing support first; provide one documented creation route with name/signature rules and duplicate-name refusal. Ensure entry reachability and help match supported syntax.",
+      "implementation": "done",
+      "validation": "focused_native_and_visual_passed",
+      "resolution": "Standalone preview/edit creation route documents comma-separated typed inputs, validates names and refuses collisions. Native event-to-append-to-compile workflow passed; screenshot inspected and existing positions preserved.",
+      "review": "docs/audit/custom-event-review.json",
+      "remaining": "",
+      "review_sha256": "a4d5c905226d18dda51a857020e0f4fb0da0818e104c50da572d471986b3d2f7",
+      "verified_execution_reports": [
+        {
+          "run": "c08a168e837047c8a0b8c4af69e987bb",
+          "status": "passed",
+          "commit": "c38dcb4551c10f81f12d7bba3a42290ceef2d478",
+          "suites": [
+            "test-custom-event"
+          ],
+          "sha256": "cec31332a957d4f8930b43e4a53edb26f362c19e2d35f40ea1461b309fee9fa3"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-11",
+      "acceptance": "Distinguish Slate focus from OS foreground activation. Report inactive application honestly; design explicit activation request with verified outcome and fallback when OS refuses. Keep inactive-input guard.",
+      "implementation": "done",
+      "validation": "focused_native_passed_os_activation_not_granted",
+      "resolution": "Implemented the requested activation/focus contract, including refusal and manual fallback. This does not claim successful unattended foreground acquisition: Windows foreground remained no in the observed run. Failure evidence and simulation limits are retained.",
+      "review": "docs/audit/play-activation-review.json",
+      "remaining": "",
+      "review_sha256": "870e7b509ff2eaf81a69730730cbd92a4be21b2cff6a3a42774f80a720cb977c",
+      "verified_execution_reports": [
+        {
+          "run": "1c2e0df66d624fc0a56475097ec24145",
+          "status": "passed",
+          "commit": "fc4a465674a1d8dc232cda7a673cb90c8b768013",
+          "suites": [
+            "test-vision-workflow"
+          ],
+          "sha256": "4690e3d037fddc0db6e31bf4621c14c30a4111457842845d09dd09cb6ee84835"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-12",
+      "acceptance": "Return category/text/time or cursor filtered records with bounded output, timestamps, dropped-count and session identity. Distinguish output log from tool-call log. Avoid arbitrary filesystem read capability.",
+      "implementation": "done",
+      "validation": "focused_native_passed",
+      "resolution": "Implemented ReadTurboMCPEditorLog with bounded session history, category/text/time filters, exclusive cursor paging, retention-loss and truncation reporting. Public tool and live help verified in a focused native workflow.",
+      "review": "docs/audit/editor-log-review.json",
+      "remaining": "",
+      "review_sha256": "e2bf75e1c63f627ae677f25ae4cf886ec8643f7b73f32c677acd5e50791f3b81",
+      "verified_execution_reports": [
+        {
+          "run": "0bb9580c42824795857a2407ad012687",
+          "status": "passed",
+          "commit": "7c97856c0a8cac92e56f7d5386cd62831ee40c28",
+          "suites": [
+            "test-editor-log"
+          ],
+          "sha256": "35f752f67bbca8ad48b60b7c61e74ba2f4b92b91c20c8015738d24ca78d5a516"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-13",
+      "acceptance": "Define supported diagnostic command surface before implementation. Explicit world target and side-effect description; reject ambiguous targets. Do not treat command dispatch as verified effect or captured output. Confirm risky operations separately.",
+      "implementation": "done",
+      "validation": "focused_native_and_public_pie_passed",
+      "resolution": "Implemented preview-confirmed diagnostic console operations with explicit world selection, process-wide effect descriptions, bounded output and actual CVar/log readback. Public MCP dispatch verified in editor and timed PIE.",
+      "review": "docs/audit/diagnostic-console-review.json",
+      "remaining": "",
+      "review_sha256": "2b817fe01744255551183979ddeeda8dae7a3c0262848fdc59f68b6bc91e4091",
+      "verified_execution_reports": [
+        {
+          "run": "661fed5899f24806add6025788fc3244",
+          "status": "passed",
+          "commit": "648dccd99f034a7f91b7ee143ae98f7d5a6e67a1",
+          "suites": [
+            "test-diagnostic-console"
+          ],
+          "sha256": "a159ac4259cf656c42205d08629aa22c575fdb27d0c16ad98ef56a735d323d08"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-14",
+      "acceptance": "Reproduce object-keyed map failure and instanced-subobject false success on owned assets. Document engine defect separately. Specify plugin temporary import, identity validation, readback and rollback; never apply unvalidated imports to live properties. No engine patch requirement.",
+      "implementation": "done",
+      "validation": "focused_native_passed",
+      "resolution": "Stock bypass-map corruption reproduced and retained as an external engine defect/proposal. Safe plugin read/preview/edit tools now validate temporary values, target exact entries/owned children, require Unicode-safe revisions, verify actual results and report complete or failed restoration honestly. Native workflow covers real InputAction settings, map identities, preview, refusal, no-op, undo, callback mismatch, failed restoration and live help. Historical X-116 input formats remain unknown; no claim that the stock engine was repaired. See docs/audit/data-asset-tool-review.json for scope and limitations.",
+      "review": null,
+      "remaining": "",
+      "verified_execution_reports": [
+        {
+          "run": "d7f1fd0ee7894a1b815145397527418a",
+          "status": "passed",
+          "commit": "324186b4e8a09ff54b9192d5c260bb95019a4f69",
+          "suites": [
+            "test-data-asset-tools"
+          ],
+          "sha256": "4c2d41e50ba2d0a4813f44e1e1bbf5a3ce2fb9c601f0f629ec6d3c7f5a21e9cb"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-15",
+      "acceptance": "Design supported asset classes first; do not promise every asset. Preview exact package/assets and unsaved loss, bind confirmation to current state, reject unsafe live references/PIE. Keep transaction undo distinct from disk reload. Extend destructive confirmation only under applicable user authorization.",
+      "implementation": "done",
+      "validation": "focused_native_passed",
+      "resolution": "Saved Blueprint/UDataAsset recovery now uses single-use memory/disk-bound confirmation, live-world/editor guards and fresh post-reload checks. No engine changes or automatic save. Prior failures and bounded evidence retained.",
+      "review": null,
+      "remaining": "",
+      "verified_execution_reports": [
+        {
+          "run": "e6bf90f5ccc3459899e4b379c595cf90",
+          "status": "passed",
+          "commit": "018e288a7e3ae02fa26e106ed72fbb04476a969b",
+          "suites": [
+            "test-asset-recovery"
+          ],
+          "sha256": "96a750895b9a9f6593174acb311af13a660dc27791269c0c6a91ff87d0a3dced"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-16",
+      "acceptance": "Expose current flags and explicit changes, validate inherited/override constraints and affected call-site execution wiring. Refuse unsafe flag conversion rather than silently disconnecting flow.",
+      "implementation": "done",
+      "validation": "focused_native_and_visual_passed",
+      "resolution": "Preview/edit function flags implemented with explicit choices, dependency/caller preflight, unsafe conversion refusals and preservation checks. Focused native helper/runtime/caller/const controls and live help passed; screenshot inspected. Offline 26/26 passed. Supported-domain limits retained in review.",
+      "review": "docs/audit/function-flags-review.json",
+      "remaining": "",
+      "review_sha256": "b753b4dab36903afa8c880950ee71f0d844c97ea45ce56f8e94a598e9356042c",
+      "verified_execution_reports": [
+        {
+          "run": "94dab3763fb04d7c972470c0eccfb055",
+          "status": "passed",
+          "commit": "0337225ac451f9dc9e2b09f14d89770efd4610cd",
+          "suites": [
+            "test-function-flags"
+          ],
+          "sha256": "f85026fe2bce66d12586305e13d2d639242b0c64719e83224bdcd7c7460647d8"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-17",
+      "acceptance": "Retain master default OFF. Define domain presets and per-tool overrides, dependency/preview-edit pairing, restart versus live behavior and recovery discovery. Persist per-user/project without changing shared project settings.",
+      "implementation": "done",
+      "validation": "focused_native_restart_visual_and_offline_passed",
+      "resolution": "Personal domain and exact-tool controls implemented with restart snapshot, discovery filtering, dispatch refusal, preview/edit dependency and status recovery. Master remains off by default. Focused restart, visual, offline and scope checks passed; retained failures and limits are in the review.",
+      "review": "docs/audit/tool-controls-review.json",
+      "remaining": "",
+      "review_sha256": "2d717dae2a9567d7dfd0639e3a18f9949bec45348623bd008d109559430f4ad9",
+      "verified_execution_reports": [
+        {
+          "run": "0d6de057bc2c413094b7fc03b909639d",
+          "status": "passed",
+          "commit": "aa77f063ad5ead9a903816a3ae5627a904545fd7",
+          "suites": [
+            "test-tool-controls"
+          ],
+          "sha256": "83cfe2ab05b0acc9706f90776785d6462cbf6e7e6f9481896834ee54515c19bd"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-18",
+      "acceptance": "Define supported selection and external data/exec boundaries; preview proposed signature and replacements. Preserve semantics, comments and layout; refuse latent or unsupported mixed-entry selections without mutation.",
+      "implementation": "done",
+      "validation": "focused_native_and_offline_passed",
+      "resolution": "Implemented supported collapse-to-function. Unsupported selections refuse; post-mutation failures explicitly report partial changes, never automatic saving. See review for scope and evidence.",
+      "review": "docs/audit/collapse-function-review.json",
+      "remaining": "",
+      "review_sha256": "eece261a1be2d963b1a324fe76fb3955385ecb133dd0823c3da5706bca57f920",
+      "verified_execution_reports": [
+        {
+          "run": "12a970dd05514d0599a7a39e3a5f8386",
+          "status": "passed",
+          "commit": "c11853bcdca44827af44e389b11bccb0e9ebb5d3",
+          "suites": [
+            "test-collapse-function"
+          ],
+          "sha256": "a2a4a6bdaea08d6c9e78a88a4e77a1ddaffb528dd86c2f1fac8735a3797cb81f"
+        }
+      ]
+    },
+    {
+      "id": "OCT27-19",
+      "acceptance": "Collect timestamped server/editor disconnect reason and build identity on recurrence. Never assume a fetch failure means no mutation or automatically replay writes. Provide reconnect and state-reconciliation guidance.",
+      "implementation": "done",
+      "validation": "controlled_transport_and_native_startup_passed",
+      "resolution": "Completed incident capture, no-replay regression coverage, startup identity logging and reconnect/state-reconciliation guidance. Investigation result: historical cause is unknown, not repaired by assumption.",
+      "review": "docs/audit/disconnect-diagnostics-review.json",
+      "remaining": "",
+      "review_sha256": "fea567c29fab72be58c59cb37a5f7fffb05cfefce5638e23f37a9eb2a0b2a82d",
+      "verified_execution_reports": [
+        {
+          "run": "55209c6322054efe81dab97085f0f4a1",
+          "status": "passed",
+          "commit": "fa78525ceba1724275b0369ced29818f952d0546",
+          "suites": [
+            "test-editor-log"
+          ],
+          "sha256": "d96aa8051901ebc6d69c477d340e163608b859704c7a2a579e0519c618f9ff6e"
+        }
+      ]
+    }
+  ],
+  "coverage": {
+    "observations": 47,
+    "mapped_observations": 38,
+    "positive_observations": 9,
+    "unique_work_packages": 19
+  },
+  "final_tool_controls_offline": "faa451915c3642ae93ac660b954251ad: 26/26",
+  "retained_limits": [
+    "OCT27-01 fresh-user walkthrough remains untested; documentation compared to actual default-off code.",
+    "OCT27-11 OS foreground success was not observed; honest refusal/fallback is the accepted contract.",
+    "OCT27-14 stock engine writer baseline still fails. Plugin safe alternative implemented; historical X-116 input unknown.",
+    "OCT27-19 historical disconnect cause remains unresolved; diagnostic/no-replay task complete.",
+    "All workflow results are bounded scenarios; unsupported cases and failures remain in individual reviews."
+  ],
+  "engine": "No tracked Engine/Source diff from HEAD; no custom engine edits in this batch.",
+  "dsh": "No dispatch performed; remains paused."
+}

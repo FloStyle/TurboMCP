@@ -478,8 +478,8 @@
       "kind": "feature",
       "priority": "P1",
       "wave": 5,
-      "state": "in_progress",
-      "validation": "restart_discovery_and_visual_passed_final_backup_check_running",
+      "state": "done",
+      "validation": "focused_native_restart_visual_and_offline_passed",
       "readiness": "ready",
       "reports": [
         "FT-126",
@@ -490,11 +490,14 @@
       "acceptance": "Retain master default OFF. Define domain presets and per-tool overrides, dependency/preview-edit pairing, restart versus live behavior and recovery discovery. Persist per-user/project without changing shared project settings.",
       "verification": "Individual disable, preset disable, explicit override precedence, restart persistence, no callable disabled tool and accurate diagnostics.",
       "owner": "Codex",
-      "dispatch": "Codex oct27-tool-controls; DSH paused; claim at approved base required",
+      "dispatch": "Integrated by Codex; DSH paused",
       "repair_contract": "docs/design/tool-controls.md",
       "source_review": "Master preference already uses per-user project config and startup sampling. Registry supports blocked-name filters; call recorder wraps all plugin handlers and can reject before execution. Policy must be shared by discovery, execution and status.",
-      "implementation_progress": "Policy, discovery, disabled dispatch, distinct-process restart persistence and TurboMCP preferences screenshot verified. Final review corrected test backup ordering; rerun in progress. Offline and integration remain.",
-      "review": "docs/audit/tool-controls-review.json"
+      "implementation_progress": "Integrated into main after final focused checks.",
+      "review": "docs/audit/tool-controls-review.json",
+      "remaining": "",
+      "candidate": "a6085c6b53edc6f506d4033d62123a78945cbfcd",
+      "resolution": "Personal domain and exact-tool controls implemented with restart snapshot, discovery filtering, dispatch refusal, preview/edit dependency and status recovery. Master remains off by default. Focused restart, visual, offline and scope checks passed; retained failures and limits are in the review."
     },
     {
       "id": "OCT27-18",

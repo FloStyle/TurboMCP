@@ -42,3 +42,11 @@ When disabled at startup, TurboMCP does not register its tools, panel, recording
 Changes require an editor restart. Until then the current session keeps its previous activation state. While enabled, `ReadTurboMCPStatus` reports both the current state and the saved preference, including a pending restart. When disabled, that tool is absent too; use Editor Preferences or the `LogTurboMCP` startup message to identify the reason.
 
 **Record every tool call** is now a personal preference on the same page, shared with the panel checkbox. Old project-wide call-log configuration no longer controls this per-user setting; check the checkbox after upgrading. Logging still defaults to enabled.
+
+## Choose which TurboMCP tools are available
+
+In **Editor Preferences > Plugins > TurboMCP > Tool Controls**, expand **Disabled Tool Domains** and add any of these exact names: `Blueprint`, `Widget`, `Assets`, `Play`, `Vision`, `Diagnostics`, or `Other`. This disables the tools assigned to those domains after the next editor restart.
+
+Expand **Tool Overrides** to set an exact bare tool name, such as `ReadTurboMCPNodeFind`. A checked value enables that tool; an unchecked value disables it. Remove the entry to inherit the domain setting. An explicit choice overrides the domain, but disabling a matching preview also disables its edit tool. The master **Enable TurboMCP** checkbox overrides everything.
+
+Restart the editor and refresh client discovery. While TurboMCP is enabled, `ReadTurboMCPStatus` remains available for recovery and reports active counts, disabled tools and their domains, unknown entries, and pending preference changes. Disabled tools are hidden from discovery and refused before execution. These settings affect your user and project only; they do not disable Unreal's other MCP toolsets.
