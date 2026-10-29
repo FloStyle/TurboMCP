@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "9e32ef6ff4970fa1229e4303fa54b826b748065f",
+  "plugin_tree": "19b43643f2710de434950b7f5282771b050d1e01",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -1765,7 +1765,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 236
+          "line": 238
         }
       ],
       "test_references": [
@@ -2948,7 +2948,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 281
+          "line": 283
         }
       ],
       "test_references": [
@@ -3438,7 +3438,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 329
+          "line": 331
         }
       ],
       "test_references": [
@@ -3518,6 +3518,7 @@
         "Tools/test-graph-text-guards.py",
         "Tools/test-graph-tidy-scope.py",
         "Tools/test-monday-disk-loop.py",
+        "Tools/test-tool-controls.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-trace.py",
         "Tools/test-uncovered-tools.py"
@@ -3709,6 +3710,7 @@
         "Tools/test-capture.py",
         "Tools/test-monday-disk-loop.py",
         "Tools/test-node-reader-output.py",
+        "Tools/test-tool-controls.py",
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -3868,7 +3870,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 193
+          "line": 194
         }
       ],
       "test_references": [
@@ -3876,7 +3878,8 @@
         "Tools/test-call-cost.py",
         "Tools/test-call-log.py",
         "Tools/test-client-retry.py",
-        "Tools/test-graph-text-guards.py"
+        "Tools/test-graph-text-guards.py",
+        "Tools/test-tool-controls.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
