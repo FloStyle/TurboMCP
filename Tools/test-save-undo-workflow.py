@@ -13,6 +13,23 @@ if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") != "1":
 support = runpy.run_path(str(Path(__file__).with_name("test-widget-roundtrip.py")))
 session = Session()
 session.connect()
+# Each focused tool must expose its actual parameters through live discovery.
+for toolset, tool, parameters in (
+    (READ_TOOLSET, "ReadTurboMCPDirtyList", ("Limit",)),
+    (EDIT_TOOLSET, "EditTurboMCPSave", ("Assets",)),
+    (EDIT_TOOLSET, "EditTurboMCPSaveWithoutThumbnail", ("Assets",)),
+    (PREVIEW_TOOLSET, "PreviewTurboMCPAssetUndo", ("Asset",)),
+    (EDIT_TOOLSET, "EditTurboMCPAssetUndo", ("Asset", "Confirm")),
+):
+    help_text = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolset": toolset, "tool": tool})
+    print(help_text)
+    for parameter in parameters:
+        if parameter.lower() not in help_text.lower():
+            raise RuntimeError(f"{tool} help omits {parameter}")
+    if tool == "ReadTurboMCPDirtyList" and "maps" not in help_text.lower():
+        raise RuntimeError("DirtyList help does not explain its map exclusion")
+    if tool == "EditTurboMCPAssetUndo" and "confirmation" not in help_text.lower():
+        raise RuntimeError("Undo help does not explain confirmation")
 name = "TurboMCP.Workflow.SaveUndo"
 session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
 raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})

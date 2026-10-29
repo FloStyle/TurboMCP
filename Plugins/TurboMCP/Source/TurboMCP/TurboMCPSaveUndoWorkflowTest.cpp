@@ -56,8 +56,8 @@ bool FTurboMCPSaveUndoWorkflowTest::RunTest(const FString& Parameters)
     Control->BlueprintDescription = TEXT("control saved");
     FKismetEditorUtilities::CompileBlueprint(Control);
     const FString ControlFile = FPackageName::LongPackageNameToFilename(ControlPackage->GetName(),FPackageName::GetAssetPackageExtension());
-    FSavePackageArgs Args; Args.TopLevelFlags = RF_Public | RF_Standalone;
-    if (!TestTrue(TEXT("Control baseline saved"),UPackage::SavePackage(ControlPackage,Control,*ControlFile,Args))) return false;
+    FSavePackageArgs ControlSaveArgs; ControlSaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+    if (!TestTrue(TEXT("Control baseline saved"),UPackage::SavePackage(ControlPackage,Control,*ControlFile,ControlSaveArgs))) return false;
     const FMD5Hash ControlHash = FMD5Hash::HashFile(*ControlFile);
     Control->BlueprintDescription = TEXT("control unsaved"); ControlPackage->SetDirtyFlag(true);
     {
