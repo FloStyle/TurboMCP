@@ -96,6 +96,16 @@ bool FTurboMCPGraphEditWorkflowTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Repoint preserves patched default"),Consumer->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("corrected")));
     TestEqual(TEXT("Repoint preserves consumer position"),Consumer->NodePosX,300);
 
+    const FString InvalidRepoint = UTurboMCPEditToolset::EditTurboMCPGraphRepoint(
+        Blueprint->GetPathName(),Graph->GetName(),TargetKey,TEXT("then"),SourceKey,TEXT(""),TEXT("execute"),TEXT("true"));
+    AddInfo(InvalidRepoint);
+    TestTrue(TEXT("Invalid target input preserves existing edge"),Consumer->FindPinChecked(TEXT("execute"))->LinkedTo.Contains(Target->FindPinChecked(TEXT("then"))));
+    TestFalse(TEXT("Invalid target does not report changed"),InvalidRepoint.StartsWith(TEXT("changed:")));
+    const FString InvalidPatch = UTurboMCPEditToolset::EditTurboMCPGraphPatch(
+        Blueprint->GetPathName(),Graph->GetName(),Patch.Replace(TEXT("InString"),TEXT("MissingPin")));
+    AddInfo(InvalidPatch);
+    TestEqual(TEXT("Invalid patch preserves value"),Consumer->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("corrected")));
+    TestFalse(TEXT("Invalid patch does not report changed"),InvalidPatch.StartsWith(TEXT("changed:")));
     UEdGraph* Sibling = NewObject<UEdGraph>(Blueprint,TEXT("UnrelatedGraph"),RF_Transactional);
     Sibling->Schema = UEdGraphSchema_K2::StaticClass();
     Blueprint->UbergraphPages.Add(Sibling);
@@ -133,6 +143,12 @@ bool FTurboMCPGraphEditWorkflowTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Exactly one replacement call"),ReplacementCount,1);
     TestTrue(TEXT("Sibling graph retained"),Blueprint->UbergraphPages.Contains(Sibling));
     TestTrue(TEXT("Sibling remains empty"),Sibling->Nodes.IsEmpty());
+    const FString Compile = UTurboMCPEditToolset::EditTurboMCPCompile(Blueprint->GetPathName());
+    AddInfo(Compile);
+    TestTrue(TEXT("Edited Blueprint compiles"),Blueprint->Status != BS_Error);
+    const FString Capture = UTurboMCPLookToolset::LookTurboMCPCapture(Blueprint->GetPathName(),Graph->GetName(),TEXT("graph"),TEXT(""),TEXT("1200x700"));
+    AddInfo(Capture);
+    TestFalse(TEXT("Graph capture succeeds"),Capture.StartsWith(TEXT("error:")));
     return !HasAnyErrors();
 }
 #endif
