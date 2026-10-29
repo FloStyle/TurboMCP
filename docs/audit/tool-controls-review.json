@@ -13,7 +13,8 @@
     "d97bc5ceacc2450f814ea746db090ec5: screenshot showed All Settings rather than TurboMCP; rejected visual proof and corrected section selection.",
     "e9a2efa14d1b4f2b833f7b6ea8d1568c: final editor health recovery was required; suite itself passed and runner recovered.",
     "Review found preference backup occurred after native fixture serialization. aa77f06 moves backup before native calls and covers failures with restoration.",
-    "Offline 7cdc493634834afc968ebe39f536ecfc passed, but source changed before completion; not accepted as final candidate evidence."
+    "Offline 7cdc493634834afc968ebe39f536ecfc passed, but source changed before completion; not accepted as final candidate evidence.",
+    "Follow-up save/undo build f3356ba1f7ed446fb43e8926fe842e1b emitted Expected TurboMCPCallRecorder.h to be first header included. Corrected include order; prior passing exit codes did not prove absence of build diagnostics."
   ],
   "remaining": [],
   "limits": [
