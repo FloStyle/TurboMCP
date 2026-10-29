@@ -29,5 +29,13 @@
       "native_run": "de619bcd680140d0b92045bd7cb11d4b"
     }
   ],
-  "contract_clarification": "Current Patch supports literal defaults only and refuses links; use Repoint or connection tools for rewiring. Workflow must test this refusal rather than assume Patch supports links."
+  "contract_clarification": "Current Patch supports literal defaults only and refuses links; use Repoint or connection tools for rewiring. Workflow must test this refusal rather than assume Patch supports links.",
+  "retained_failures": [
+    {
+      "run": "2ffb6835fb034cd7bf34d23c60d8aed9",
+      "result": "failed",
+      "detail": "Replacement fixture supplied an unconnected PrintString without a recognized entry. Preview listed removals; edit rejected during append scratch preflight. Actual node count remained three; positive replacement assertion failed.",
+      "follow_up": "Fixture now supplies a connected custom-event entry. Preview/edit disagreement and conservative partial-result wording remain review findings, not erased by a passing rerun."
+    }
+  ]
 }
