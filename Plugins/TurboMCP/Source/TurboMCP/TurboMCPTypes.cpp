@@ -421,14 +421,14 @@ FString UTurboMCPReadToolset::ReadTurboMCPDirtyList(const FString& Limit)
 	TArray<UPackage*> DirtyPackages;
 	FEditorFileUtils::GetDirtyContentPackages(DirtyPackages);
 
-	FString Result = FString::Printf(TEXT("read: unsaved assets, %d package(s) dirty"),
+	FString Result = FString::Printf(TEXT("read: unsaved content, %d content package(s) dirty"),
 		DirtyPackages.Num());
 
 	if (DirtyPackages.Num() == 0)
 	{
 		// P1: a zero says the check ran and found nothing, which is different
 		// from a check that did not run.
-		Result += TEXT("\nNothing has unsaved changes.");
+		Result += TEXT("\nNo dirty content packages were found. This does not check unsaved maps or other editor state.");
 		return Result;
 	}
 
