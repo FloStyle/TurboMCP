@@ -77,7 +77,7 @@ bool FTurboMCPGraphReplace::Plan(const FString& InAsset, const FString& InGraphN
 	// names of nodes it will create. REPLACE needs all of it and adds only the old-graph question below. A second
 	// parser or a second factory would be a second dialect and a second opinion about the same format, and this
 	// project has recorded that bug twice.
-	if (!FTurboMCPGraphAppend::Plan(InAsset, InGraphName, InText, OutPlan.Append, OutError))
+	if (!FTurboMCPGraphAppend::Plan(InAsset, InGraphName, InText, OutPlan.Append, OutError, /*bRequestPlacement=*/true))
 	{
 		return false;
 	}

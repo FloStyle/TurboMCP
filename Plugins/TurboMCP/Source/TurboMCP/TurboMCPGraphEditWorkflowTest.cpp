@@ -138,6 +138,8 @@ bool FTurboMCPGraphEditWorkflowTest::RunTest(const FString& Parameters)
         if (Node != Entry && Node->FindPin(TEXT("InString")))
         {
             ++ReplacementCount;
+            TestTrue(TEXT("Replacement does not stack on retained entry"),
+                FMath::Abs(Node->NodePosX-Entry->NodePosX)>=240 || FMath::Abs(Node->NodePosY-Entry->NodePosY)>=160);
             TestEqual(TEXT("Replacement content independently read back"),Node->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("replacement body")));
             TestTrue(TEXT("Replacement connected to retained entry"),Node->FindPinChecked(TEXT("execute"))->LinkedTo.Contains(Entry->FindPinChecked(TEXT("then"))));
         }
