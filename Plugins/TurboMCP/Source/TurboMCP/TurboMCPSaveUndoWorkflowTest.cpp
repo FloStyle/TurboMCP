@@ -14,6 +14,8 @@
 #include "ScopedTransaction.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "UObject/Package.h"
+#include "PackageTools.h"
+#include "Misc/SecureHash.h"
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPSaveUndoWorkflowTest,
     "TurboMCP.Workflow.SaveUndo", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPSaveUndoWorkflowTest::RunTest(const FString& Parameters)
@@ -74,8 +76,22 @@ bool FTurboMCPSaveUndoWorkflowTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Direct package save reports write"), Saved.Contains(TEXT("package write: saved")));
     TestFalse(TEXT("Successful save clears dirty flag"), Package->IsDirty());
     TestTrue(TEXT("Saved file exists"), FPaths::FileExists(FPackageName::LongPackageNameToFilename(Package->GetName(),FPackageName::GetAssetPackageExtension())));
-    // Disk readback and cross-asset controls are separate acceptance checks;
-    // this initial fixture does not establish complete save/undo certification.
-    return true;
+    const FString File = FPackageName::LongPackageNameToFilename(Package->GetName(),FPackageName::GetAssetPackageExtension());
+    const FMD5Hash SavedHash = FMD5Hash::HashFile(*File);
+    // Deliberately diverge memory, then use the stock package reload API, not
+    // the save tool's status or another TurboMCP tool, to verify persisted data.
+    BP->BlueprintDescription = TEXT("not saved");
+    Package->SetDirtyFlag(true);
+    TArray<UPackage*> Packages{Package};
+    FText ReloadError;
+    if (!TestTrue(TEXT("Independent stock reload succeeds"), UPackageTools::ReloadPackages(Packages,ReloadError,EReloadPackagesInteractionMode::AssumePositive)))
+    { AddError(ReloadError.ToString()); return false; }
+    BP = FindObject<UBlueprint>(nullptr,*Asset);
+    if (!TestNotNull(TEXT("Reloaded target exists"),BP)) return false;
+    TestEqual(TEXT("Disk contains saved value, not later memory value"),BP->BlueprintDescription,FString(TEXT("human change")));
+    TestTrue(TEXT("Reload did not rewrite disk"),SavedHash == FMD5Hash::HashFile(*File));
+    // Remaining acceptance checks include normal save, unloaded save targets,
+    // unrelated dirty assets and cross-package/stale undo boundary controls.
+    return !HasAnyErrors();
 }
 #endif

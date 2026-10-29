@@ -184,17 +184,11 @@ public:
 	static FString ReadTurboMCPTypeFind(const FString& Words, const FString& Kind);
 
 	/**
-	 * Read every asset with unsaved changes.
+	 * List loaded content packages marked dirty; does not include unsaved maps or other editor state.
 	 *
-	 * One line per unsaved asset: its package path and its class. Reads the
-	 * package's own unsaved flag rather than a save call's return value, because
-	 * `D-33` records that an engine save once reported an error when it worked.
-	 *
-	 * The class is read from the asset registry, so listing unsaved work never
-	 * forces an asset to load. Pass a number to raise the default cap of 50.
-	 *
-	 * When nothing is unsaved it says so, because a zero that names its reason is
-	 * different from a check that did not run (`P1`).
+	 * Reports package paths and registry classes without loading assets. A clean dirty
+	 * flag is not proof that memory matches disk. The result reports omitted packages
+	 * when the requested limit is reached; empty Limit defaults to 50.
 	 *
 	 * @param Limit Positive decimal maximum number of listed packages, e.g. 100. Empty uses 50; zero, non-digits and values above 2147483647 are refused.
 	*/
