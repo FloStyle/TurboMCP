@@ -133,13 +133,15 @@ namespace
 			if (!Object) continue;
 			UPackage* Owner = Object->GetOutermost();
 			if (Owner == BP->GetOutermost()) Found=true;
-			else if (Owner && Owner != GetTransientPackage()) return TEXT("error: latest transaction touches another package; unchanged");
+			// Transient objects can carry unrelated editor state too. Global undo
+			// replays the entire transaction; it cannot undo just this package.
+			else return TEXT("error: latest transaction touches another package or unrelated transient state; unchanged");
 		}
 		if (!Found) return TEXT("error: latest transaction does not touch the named asset; unchanged");
 		const FString Id = Transaction->GetId().ToString();
 		if (!Edit) return TEXT("preview: undo ") + Transaction->GetTitle().ToString() + TEXT(" on ") + R.ObjectPath + TEXT("; Confirm=") + Id;
 		if (Confirm != Id) return TEXT("error: undo transaction changed or confirmation absent; preview again");
-		return GEditor->UndoTransaction(false) ? TEXT("changed: latest TurboMCP transaction undone; editor Redo remains available") : TEXT("error: editor refused undo");
+		return GEditor->UndoTransaction(false) ? FString::Printf(TEXT("changed: latest TurboMCP transaction undone for %s; editor Redo remains available; compile=not_run; save=not_requested; saved disk contents were not reverted"), *R.ObjectPath) : TEXT("error: editor refused undo");
 	}
 }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPAssetUndo(const FString& Asset) { return AssetUndo(Asset, FString(), false); }

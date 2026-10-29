@@ -413,22 +413,19 @@ FString UTurboMCPReadToolset::ReadTurboMCPDirtyList(const FString& Limit)
 	if (WantedLimit == 0)
 		return TEXT("error: limit must be positive; leave empty for the default.");
 
-	// The dirty package list is the authoritative source, not a scan of every
-	// asset: an asset with unsaved changes has a dirty package, and asking the
-	// package is how `D-33` says to report the unsaved state. The content
-	// variant is used so engine and transient packages do not appear as project
-	// work a person could have edited.
+	// Enumerate loaded content packages with dirty flags. This excludes maps
+	// and transient/PIE state; it does not compare memory with disk contents.
 	TArray<UPackage*> DirtyPackages;
 	FEditorFileUtils::GetDirtyContentPackages(DirtyPackages);
 
-	FString Result = FString::Printf(TEXT("read: unsaved assets, %d package(s) dirty"),
+	FString Result = FString::Printf(TEXT("read: unsaved content, %d content package(s) dirty"),
 		DirtyPackages.Num());
 
 	if (DirtyPackages.Num() == 0)
 	{
 		// P1: a zero says the check ran and found nothing, which is different
 		// from a check that did not run.
-		Result += TEXT("\nNothing has unsaved changes.");
+		Result += TEXT("\nNo dirty content packages were found. This does not check unsaved maps or other editor state.");
 		return Result;
 	}
 

@@ -392,16 +392,7 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 	return Result;
 }
 
-/**
- * The save itself, shared by `E-SAVE` and `E-SAVE-WITHOUT-THUMBNAIL`.
- *
- * *** ONE BODY, TWO TOOLS, AND THE MECHANISM IS THE ONLY DIFFERENCE. *** A retry that quietly went back
- * to the other mechanism would defeat the tool the caller chose, and the caller would have no way to
- * see it, so the choice is made once and used by both attempts.
- *
- * A file-scope function rather than a member: the toolset's public surface is the two declared tools,
- * and a third entry point on the class would be published as one.
- */
+// Both save tools share result handling and retry the same serialization path.
 static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 {
 	const TArray<FString> Parts = FTurboMCPAssetResolver::SplitList(Assets);
@@ -429,26 +420,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 	}
 
 
-	// =============================================================================================
-	// ROW 10.2 / D-57: THE AUTOMATIC CHECKOUT THIS WRITE TOOL PERFORMS BEFORE IT WRITES.
-	//
-	// WHY HERE AND NOT IN THE SAVE LOOP. `E-SAVE` IS THE TOOL THAT ACTUALLY WRITES A FILE, so it is the
-	// one place where taking a lock can matter - and the engine's own save path ALREADY issues a
-	// checkout on every call without reading either fact that says whether one can mean anything:
-	// `UEditorAssetLibrary::SaveLoadedAsset` -> `UEditorLoadingAndSavingUtils::SavePackages` ->
-	// `FileHelpers.cpp:6019-6023` -> `InternalCheckoutAndSavePackages`, whose `:5925-5929` calls
-	// `FEditorFileUtils::CheckoutPackages` whenever `ISourceControlModule::Get().IsEnabled()`, ignoring
-	// the operation's result. THIS DOES THE SAME OPERATION EARLIER, AND RECORDS THE ANSWER. That is why
-	// row 10.2 exists, and it is why the block below is printed rather than acted on silently.
-	//
-	// IT IS PLACED AFTER THE THREE REFUSALS ABOVE, so a call that will not write anything asks no
-	// provider anything, and BEFORE the loop, because every asset the caller named is one the caller
-	// declared an intent to write - the engine's own path checks out every package it is handed too.
-	//
-	// *** THE ANSWER IS A REPORT AND NEVER A GATE. *** D-57's own reason for the ordering is that an
-	// automatic checkout must not turn a source control problem into an "every tool reports failure"
-	// problem. On Git (and on an editor with no provider) a gate would refuse every save in this project.
-	// =============================================================================================
+    // Report checkout separately from persistence. Providers may not support
+    // locking, and a checkout result alone proves neither a write nor a lock.
 	const FString CheckoutReport = FTurboMCPSourceControlWrite::EnsureCheckedOut(
 		FTurboMCPSourceControlWrite::Plan(Parts), TEXT("E-SAVE"));
 
@@ -458,7 +431,6 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 	FString Result = FString::Printf(TEXT("saving %d asset(s)"), Parts.Num());
 
 	int32 SavedCount = 0;
-	int32 NoChangeCount = 0;
 	int32 FailedCount = 0;
 	FString Lines;
 	FString Errors;
@@ -477,23 +449,11 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		// Explicit save requests also write packages whose dirty flag is clear.
         // Native pin setters can change memory without setting that flag.
 
-		UPackage* Package = FindPackage(nullptr, *Resolved.PackagePath);
-		if (Package == nullptr)
-		{
-			// The package reports unsaved changes but cannot be found by name,
-			// which is a real contradiction worth naming rather than hiding.
-			Errors += FString::Printf(
-				TEXT("\nerror: %s reports unsaved changes but its package could not be opened."),
-				*Resolved.ObjectPath);
-			++FailedCount;
-			continue;
-		}
-
 		const int32 MarkBeforeSave = Capture.Mark();
 		const int32 ErrorMarkBeforeSave = Capture.ErrorMark();
 
 		// The asset object is needed for the save call, so it is loaded when it
-		// is not already in memory. Loading is not an edit.
+		// is not already in memory. Asset loading may run engine load callbacks.
 		UObject* AssetObject = FindObject<UObject>(nullptr, *Resolved.ObjectPath);
 		if (AssetObject == nullptr)
 		{
@@ -506,6 +466,16 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			++FailedCount;
 			continue;
 		}
+
+        // Resolve the owning package after loading the requested asset. Registry
+        // resolution alone does not make an unloaded package available in memory.
+        UPackage* Package = AssetObject->GetOutermost();
+        if (!Package || Package->GetName() != Resolved.PackagePath)
+        {
+            Errors += FString::Printf(TEXT("\nerror: %s resolved to an unexpected package; save not attempted."), *Resolved.ObjectPath);
+            ++FailedCount;
+            continue;
+        }
 
         // Widget thumbnail rendering runs design-time Blueprint code inside the MCP
         // exception handler. Its script errors can hide a successful save result.
@@ -541,32 +511,15 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			{
 				if (!bSkipThumbnail)
 				{
-					// UEditorAssetLibrary::SaveLoadedAsset is the same save path the
-					// engine's own editor toolset uses. FEditorFileUtils was tried first
-					// and fails in a headless editor because it goes through source
-					// control checkout, which reported failure on every attempt while
-					// nothing was written. That is the D-33 trap from the other side: a
-					// save call's own answer is not the truth.
-					//
-					// One asset at a time, so a failure cannot be blamed on its
-					// neighbour: D-33 records that saving several at once silently saved
-					// only some of them.
+					// Save each explicit target even when its dirty flag is clear.
 					return UEditorAssetLibrary::SaveLoadedAsset(AssetObject, /*bOnlyIfIsDirty=*/false);
 				}
 
-				// *** THE OBJECT MUST CARRY THESE FLAGS BEFORE THE CALL, OR THE ENGINE REFUSES AND
-				// REPORTS DATA LOSS. *** `TurboMCPTestMapCommandlet.cpp:350-361` records the engine's own
-				// warning and the silent non-write that followed it: `TopLevelFlags` describe what the
-				// TOP-LEVEL ASSET must carry, so they have to be ON that asset.
+				// The serialized top-level asset must carry the requested flags.
 				AssetObject->SetFlags(RF_Public | RF_Standalone);
 				FSavePackageArgs SaveArgs;
 				SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
-				// NO `SAVE_NoError`: a failure must surface through the return value, which is checked. The
-				// commandlet sets it and can afford to, because its next line logs an error; a tool that
-				// reports to an agent cannot.
-				//
-				// `bSlowTask` is off because a tool call must not raise the editor's progress dialog. The
-				// engine's own exec path passes `SILENT=true` for the same reason (`FileHelpers.cpp:1332`).
+				// Keep save diagnostics enabled and avoid a progress dialog.
 				SaveArgs.bSlowTask = false;
 				return UPackage::SavePackage(Package, AssetObject, *WithoutThumbnailFileName, SaveArgs);
 			};
@@ -593,8 +546,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			Lines += FString::Printf(TEXT("\n%s  package write: saved"), *Resolved.ObjectPath);
 			++SavedCount;
 			Lines += bSkipThumbnail
-				? TEXT("\n    thumbnail/design-time work: skipped (written without the thumbnail draw)")
-				: TEXT("\n    thumbnail/design-time work: ran through the editor's save path (written by the editor's save)");
+				? TEXT("\n    thumbnail drawing: skipped; package save callbacks still run")
+				: TEXT("\n    save path: editor asset save; thumbnail and save callbacks may run");
 		}
 		else
 		{
@@ -611,43 +564,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 				*Resolved.ObjectPath,
 				CallOutcome,
 				*Capture.SummariseSince(MarkBeforeSave, /*InMax=*/1));
-            if (!bSkipThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr)
-            {
-                Errors += TEXT("\n    Widget save may execute thumbnail/design-time code. Use EditTurboMCPSaveWithoutThumbnail with the same asset to save without drawing a new thumbnail; inspect its result before retrying again.");
-            }
             ++FailedCount;
         }
-
-        // *** SV-03, AND IT IS THE BRANCH THAT NEEDS NO NEW PARAMETER. *** The report's design is an OR:
-		// "add an option to save without a new thumbnail, OR SAY IN THE RESULT THAT THE THUMBNAIL DRAW
-		// RUNS WIDGET CODE." This is the second half, said for the mechanism that actually ran, so a
-		// caller who sees a warning during this save knows what drew the asset's own code.
-		//
-		// WHY IT IS TRUE OF THE EDITOR'S SAVE: it is an `OBJ SAVEPACKAGE` exec (`FileHelpers.cpp:1332`),
-		// which runs the engine's thumbnail step (`UnrealEdSrv.cpp:680-682`) and renders when the cached
-		// thumbnail is missing or stale (`:439-446`, `:478-485`); for a Widget Blueprint the renderer
-		// instantiates the widget with `Designing | ExecutePreConstruct`
-		// (`WidgetBlueprintThumbnailRenderer.cpp:189-191`). The direct write calls none of it.
-		if (bSaved && !bStillDirty && Cast<UWidgetBlueprint>(AssetObject) != nullptr)
-		{
-			Lines += bSkipThumbnail
-				? TEXT("\n    ; the package was written directly, so the engine's thumbnail step did not")
-					TEXT(" run for this save, and this widget's design-time code did not run for a draw.")
-				: TEXT("\n    ; the editor's save runs the engine's thumbnail step before it writes, and a")
-					TEXT(" thumbnail draw for a Widget Blueprint instantiates the widget and runs its")
-					TEXT(" design-time code (`WidgetBlueprintThumbnailRenderer.cpp:189-191`, frequency")
-					TEXT(" `OnAssetSave` at `:216`). No option on this tool skips that draw;")
-					TEXT(" `EditTurboMCPSaveWithoutThumbnail` writes the package without it.");
-		}
-
-		if (bSaved && !bStillDirty && !bSkipThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr && ErrorsHere > 0)
-		{
-			// The write is already proven above. A widget thumbnail may execute design-time script, so report
-			// that work as a warning instead of allowing its error to obscure the saved package.
-			Lines += FString::Printf(
-				TEXT("\n    warning: package write succeeded, but thumbnail/design-time work raised %d engine error(s)"),
-				ErrorsHere);
-		}
 
 		if (WarningsHere > 0)
 		{
@@ -658,16 +576,11 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		}
 	}
 
-	// P4: the opening word states what actually happened. Nothing saved means
-	// nothing changed, whatever the caller asked for, so it must not claim a
-	// change.
+	// Summarize confirmed writes separately from failed or unknown outcomes.
+	// A failed save can still have changed the file; never imply rollback.
 	if (SavedCount == 0)
 	{
-		Result = FailedCount > 0
-			? FString::Printf(TEXT("unconfirmed: no successful saves confirmed, %d failed; disk may have changed"), FailedCount)
-			: FString::Printf(
-				TEXT("unchanged: nothing to save, all %d asset(s) already had no changes"),
-				NoChangeCount);
+		Result = FString::Printf(TEXT("unconfirmed: no successful saves confirmed, %d failed; disk may have changed"), FailedCount);
 	}
 	else
 	{
@@ -675,8 +588,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			SavedCount, Parts.Num());
 	}
 
-	Result += FString::Printf(TEXT("\n%d saved, %d had no changes, %d failed"),
-		SavedCount, NoChangeCount, FailedCount);
+	Result += FString::Printf(TEXT("\n%d saved, %d failed"),
+		SavedCount, FailedCount);
 	Result += Lines;
 	Result += Errors;
 
@@ -686,9 +599,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			Capture.ErrorCount());
 	}
 
-	// APPENDED, NEVER PREPENDED: this tool's answer opens with "changed:" or "unchanged:", and callers
-	// and suites read that first word. The block also never uses the word "saved", so it cannot be
-	// mistaken for, or confused with, this tool's own "N saved" count.
+	// Keep source-control details separate from the persistence result.
 	Result += TEXT("\n\n");
 	Result += CheckoutReport;
 

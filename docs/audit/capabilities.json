@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "1443acb9dd9620f5c285ca9ac88e2f630b19ec2c",
+  "plugin_tree": "c52386c50c34f6b3c49d3027daf03ea955b5d90d",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -23,7 +23,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 282
+          "line": 284
         }
       ],
       "test_references": [
@@ -47,10 +47,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 146
+          "line": 148
         }
       ],
       "test_references": [
+        "Tools/test-save-undo-workflow.py",
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "name_reference_only",
@@ -663,7 +664,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 536
+          "line": 538
         }
       ],
       "test_references": [],
@@ -1282,7 +1283,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
-          "line": 698
+          "line": 609
         }
       ],
       "test_references": [
@@ -1292,6 +1293,7 @@
         "Tools/test-local-vars.py",
         "Tools/test-override-add.py",
         "Tools/test-save-thumbnail-option.py",
+        "Tools/test-save-undo-workflow.py",
         "Tools/test-struct.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-vars-add.py",
@@ -1315,12 +1317,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
-          "line": 705
+          "line": 616
         }
       ],
       "test_references": [
         "Tools/test-monday-disk-loop.py",
         "Tools/test-save-thumbnail-option.py",
+        "Tools/test-save-undo-workflow.py",
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -1815,7 +1818,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 281
+          "line": 283
         }
       ],
       "test_references": [
@@ -1838,10 +1841,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 145
+          "line": 147
         }
       ],
       "test_references": [
+        "Tools/test-save-undo-workflow.py",
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "name_reference_only",
@@ -2352,7 +2356,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 535
+          "line": 537
         }
       ],
       "test_references": [],
@@ -2374,7 +2378,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 538
+          "line": 540
         }
       ],
       "test_references": [],
@@ -3422,6 +3426,7 @@
         "Tools/test-capture-framing.py",
         "Tools/test-field-open-diagnostic.py",
         "Tools/test-save-thumbnail-option.py",
+        "Tools/test-save-undo-workflow.py",
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -3911,6 +3916,7 @@
         "Tools/test-diagnostic-console.py",
         "Tools/test-editor-log.py",
         "Tools/test-function-flags.py",
+        "Tools/test-save-undo-workflow.py",
         "Tools/test-scoped-tidy.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-vision-workflow.py"
