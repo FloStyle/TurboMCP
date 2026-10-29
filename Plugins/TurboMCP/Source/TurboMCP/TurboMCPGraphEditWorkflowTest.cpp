@@ -81,6 +81,35 @@ bool FTurboMCPGraphEditWorkflowTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Consumer position preserved"),Consumer->NodePosX,300);
     TestTrue(TEXT("Execution link preserved"),Source->FindPinChecked(TEXT("then"))->LinkedTo.Contains(Consumer->FindPinChecked(TEXT("execute"))));
     TestEqual(TEXT("Unrelated default preserved"),Target->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("Hello")));
+    const FString SourceKey = TurboMCPNodeId::MakeForNode(Source, true);
+    const FString TargetKey = TurboMCPNodeId::MakeForNode(Target, true);
+    const FString RepointPreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphRepoint(
+        Blueprint->GetPathName(),Graph->GetName(),SourceKey,TEXT("then"),TargetKey,TEXT(""),TEXT("then"),TEXT("true"));
+    AddInfo(RepointPreview);
+    TestTrue(TEXT("Repoint preview preserves original edge"),Source->FindPinChecked(TEXT("then"))->LinkedTo.Contains(Consumer->FindPinChecked(TEXT("execute"))));
+    const FString Repoint = UTurboMCPEditToolset::EditTurboMCPGraphRepoint(
+        Blueprint->GetPathName(),Graph->GetName(),SourceKey,TEXT("then"),TargetKey,TEXT(""),TEXT("then"),TEXT("true"));
+    AddInfo(Repoint);
+    TestTrue(TEXT("Repoint moves consumer to target"),Consumer->FindPinChecked(TEXT("execute"))->LinkedTo.Contains(Target->FindPinChecked(TEXT("then"))));
+    TestTrue(TEXT("Old source no longer feeds consumer"),Source->FindPinChecked(TEXT("then"))->LinkedTo.IsEmpty());
+    TestEqual(TEXT("Repoint keeps source when requested"),Graph->Nodes.Num(),3);
+    TestEqual(TEXT("Repoint preserves patched default"),Consumer->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("corrected")));
+    TestEqual(TEXT("Repoint preserves consumer position"),Consumer->NodePosX,300);
+
+    UEdGraph* Sibling = NewObject<UEdGraph>(Blueprint,TEXT("UnrelatedGraph"),RF_Transactional);
+    Sibling->Schema = UEdGraphSchema_K2::StaticClass();
+    Blueprint->UbergraphPages.Add(Sibling);
+    const FString Replacement = TEXT("(Development|PrintString\n InString \"replacement body\"\n)");
+    const FString ReplacePreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphReplace(Blueprint->GetPathName(),Graph->GetName(),Replacement);
+    AddInfo(ReplacePreview);
+    TestEqual(TEXT("Replace preview does not remove nodes"),Graph->Nodes.Num(),3);
+    const FString Replace = UTurboMCPEditToolset::EditTurboMCPGraphReplace(Blueprint->GetPathName(),Graph->GetName(),Replacement);
+    AddInfo(Replace);
+    TestEqual(TEXT("Replace installs exactly one body node"),Graph->Nodes.Num(),1);
+    if (Graph->Nodes.Num()==1)
+        TestEqual(TEXT("Replacement content independently read back"),Graph->Nodes[0]->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("replacement body")));
+    TestTrue(TEXT("Sibling graph retained"),Blueprint->UbergraphPages.Contains(Sibling));
+    TestTrue(TEXT("Sibling remains empty"),Sibling->Nodes.IsEmpty());
     return !HasAnyErrors();
 }
 #endif
