@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "workflow": "WF-DATA-04-SAVE-UNDO",
+  "readiness": "ready",
+  "owner": "Codex",
+  "baseline_reviewed": 87,
+  "inventory": 165,
+  "focus_tools": [
+    "ReadTurboMCPDirtyList",
+    "EditTurboMCPSave",
+    "EditTurboMCPSaveWithoutThumbnail",
+    "PreviewTurboMCPAssetUndo",
+    "EditTurboMCPAssetUndo"
+  ],
+  "contract": [
+    "DirtyList describes actual content-package coverage, omissions and limits without implying all editor state is clean. Listing must not load or mutate assets.",
+    "Explicit save targets only named packages; report partial failures and unknown disk outcomes honestly. Do not imply compile or reload verification. Preserve unrelated assets.",
+    "Both save paths exercise owned Blueprint fixtures; widget saves retain thumbnail avoidance. Verify on-disk readback independently, not dirty flag alone.",
+    "Undo supports the latest eligible Blueprint transaction only. Preview does not mutate. Missing/stale confirmation, wrong asset, non-TurboMCP transaction, cross-package transaction and active play/transaction refuse. Successful undo restores intended values and leaves unrelated assets unchanged; disk is not reverted.",
+    "Review all five tools and shared helpers for behavior, code, comments, clear English output and complete live parameter help.",
+    "Reuse existing supporting-tool evidence. Do not increase unique coverage before all five review aspects have evidence. Preserve failures and limitations."
+  ],
+  "test_scenario": "Create two owned assets. Edit the target in a named transaction, list dirty content, preview/refuse/confirm undo, then edit and explicitly save through each path. Independently reload/read back the saved target. Keep an unrelated dirty control unchanged in memory and on disk. Exercise invalid/mixed targets and exact undo boundary controls. Use the serialized runner and restore fixtures.",
+  "investigation_findings": [
+    "DirtyList zero-result wording overstates GetDirtyContentPackages coverage.",
+    "Save contains obsolete/unreachable Widget thumbnail guidance and historical comments; reconcile with current direct Widget save path.",
+    "Check unloaded target handling, transaction identity/replay and transient cross-object effects before accepting behavior."
+  ],
+  "integrator_owned": [
+    "Tests/catalog.json",
+    "Tools/run-suites.ps1",
+    "docs/audit/workflow-tool-coverage.json",
+    "docs/audit/capabilities.json",
+    "review records and dashboard tracking"
+  ]
+}

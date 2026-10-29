@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "workflow": "WF-DATA-04-SAVE-UNDO",
+  "status": "source_review_in_progress",
+  "focus_tools": [
+    "ReadTurboMCPDirtyList",
+    "EditTurboMCPSave",
+    "EditTurboMCPSaveWithoutThumbnail",
+    "PreviewTurboMCPAssetUndo",
+    "EditTurboMCPAssetUndo"
+  ],
+  "contract": "docs/design/save-undo-review.json",
+  "counted_as_reviewed": false,
+  "findings": [
+    "DirtyList zero-result wording overstates GetDirtyContentPackages coverage.",
+    "Save contains obsolete/unreachable Widget thumbnail guidance and historical comments; reconcile with current direct Widget save path.",
+    "Check unloaded target handling, transaction identity/replay and transient cross-object effects before accepting behavior."
+  ],
+  "remaining": [
+    "Implement focused fixture and repair confirmed issues",
+    "Review live help and actual results",
+    "Focused native workflow including saved readback",
+    "Offline and source-scope gates",
+    "Integrate and update unique coverage"
+  ]
+}
