@@ -67,6 +67,7 @@ bool FTurboMCPGraphEditWorkflowTest::RunTest(const FString& Parameters)
     const int32 UndoCount = Buffer->GetQueueLength();
     const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphPatch(Blueprint->GetPathName(),Graph->GetName(),Patch);
     AddInfo(Preview);
+    TestTrue(TEXT("Identical preview reports zero changes"),Preview.Contains(TEXT("0 node(s) would change")));
     TestFalse(TEXT("Preview preserves clean package"),Package->IsDirty());
     const FString Same = UTurboMCPEditToolset::EditTurboMCPGraphPatch(Blueprint->GetPathName(),Graph->GetName(),Patch);
     AddInfo(Same);

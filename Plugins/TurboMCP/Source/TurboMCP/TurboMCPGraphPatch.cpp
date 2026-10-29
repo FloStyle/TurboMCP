@@ -222,6 +222,14 @@ bool FTurboMCPGraphPatch::Plan(const FString& InAsset, const FString& InGraphNam
 				continue;
 			}
 
+            bool bDifferent = false;
+            FString ValidationError;
+            if (!SetLiteral(Graph, Target, Unquote(Pin.Value), bDifferent, ValidationError, true))
+            {
+                OutPlan.Refusals.Add(FString::Printf(TEXT("line %d: pin '%s': %s"), Pin.Line, *Pin.Name, *ValidationError));
+                continue;
+            }
+            Update.bWouldChange |= bDifferent;
 			Update.Pins.Add(Pin);
 		}
 
@@ -268,15 +276,18 @@ FString FTurboMCPGraphPatch::RenderPreview(const FPlan& InPlan)
 
 	// THE COUNT THAT MATTERS FOR `T-WRITE-5`, STATED IN THE PREVIEW SO A CALLER CAN SEE IT BEFORE WRITING:
 	// a patch that would touch more nodes than the caller intended is visible here rather than after the fact.
-	Out += FString::Printf(TEXT("\n%d node(s) would change, and every OTHER node is left alone"),
-		InPlan.Updates.Num());
+    int32 ChangedNodes = 0;
+    if (InPlan.AllRefusals().IsEmpty())
+        for (const FUpdate& Update : InPlan.Updates) ChangedNodes += Update.bWouldChange ? 1 : 0;
+    Out += FString::Printf(TEXT("\n%d node(s) would change"), ChangedNodes);
 
 	for (const FUpdate& Update : InPlan.Updates)
 	{
-		Out += FString::Printf(TEXT("\n    would CHANGE  %s  %s  %d pin value(s)"),
+		if (!Update.bWouldChange || !InPlan.AllRefusals().IsEmpty()) continue;
+		Out += FString::Printf(TEXT("\n    would CHANGE  %s  %s  %d submitted pin value(s)"),
 			*Update.Key, *Update.ClassName, Update.Pins.Num());
 	}
-	if (InPlan.Updates.Num() == 0)
+	if (ChangedNodes == 0)
 	{
 		Out += TEXT("\n    no node would change.");
 	}
