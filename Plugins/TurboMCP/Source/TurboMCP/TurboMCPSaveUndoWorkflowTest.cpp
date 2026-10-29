@@ -18,6 +18,7 @@
 #include "Misc/SecureHash.h"
 #include "UObject/SavePackage.h"
 #include "UObject/StrongObjectPtr.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPSaveUndoWorkflowTest,
     "TurboMCP.Workflow.SaveUndo", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPSaveUndoWorkflowTest::RunTest(const FString& Parameters)
@@ -140,7 +141,29 @@ bool FTurboMCPSaveUndoWorkflowTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Unrelated memory preserved"),Control->BlueprintDescription,FString(TEXT("control unsaved")));
     TestTrue(TEXT("Unrelated dirty flag preserved"),ControlPackage->IsDirty());
     TestTrue(TEXT("Unrelated disk bytes preserved"),ControlHash == FMD5Hash::HashFile(*ControlFile));
-    // Unloaded-target and mixed valid/invalid save results remain separate checks.
+    BP->BlueprintDescription = TEXT("partial batch saved value"); BP->GetOutermost()->SetDirtyFlag(true);
+    const FString Partial = UTurboMCPEditToolset::EditTurboMCPSaveWithoutThumbnail(Asset + TEXT("|/Game/Tests/DefinitelyMissingSaveUndoAsset"));
+    AddInfo(Partial);
+    TestTrue(TEXT("Mixed batch reports successful item"),Partial.Contains(TEXT("saved 1 of 2")));
+    TestTrue(TEXT("Mixed batch reports failed item"),Partial.Contains(TEXT("1 failed")));
+    TestEqual(TEXT("Mixed batch preserves unrelated memory"),Control->BlueprintDescription,FString(TEXT("control unsaved")));
+    TestTrue(TEXT("Mixed batch preserves unrelated disk"),ControlHash == FMD5Hash::HashFile(*ControlFile));
+    FAssetRegistryModule::AssetCreated(BP);
+    const FString PackageName = BP->GetOutermost()->GetName();
+    Packages = {BP->GetOutermost()};
+    BP = nullptr; Package = nullptr;
+    FText UnloadError;
+    if (!TestTrue(TEXT("Owned saved target unloads"),UPackageTools::UnloadPackages(Packages,UnloadError)))
+    { AddError(UnloadError.ToString()); return false; }
+    Packages.Reset();
+    TestNull(TEXT("Target really is unloaded before save"),FindObject<UBlueprint>(nullptr,*Asset));
+    const FString UnloadedSave = UTurboMCPEditToolset::EditTurboMCPSaveWithoutThumbnail(Asset);
+    AddInfo(UnloadedSave);
+    TestTrue(TEXT("Registry-known unloaded asset saves"),UnloadedSave.Contains(TEXT("package write: saved")));
+    BP = FindObject<UBlueprint>(nullptr,*Asset);
+    if (TestNotNull(TEXT("Save loaded the requested target"),BP))
+        TestEqual(TEXT("Loaded target retains persisted data"),BP->BlueprintDescription,FString(TEXT("partial batch saved value")));
+    TestTrue(TEXT("Final control disk unchanged"),ControlHash == FMD5Hash::HashFile(*ControlFile));
     return !HasAnyErrors();
 }
 #endif

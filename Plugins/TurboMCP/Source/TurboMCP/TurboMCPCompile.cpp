@@ -429,26 +429,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 	}
 
 
-	// =============================================================================================
-	// ROW 10.2 / D-57: THE AUTOMATIC CHECKOUT THIS WRITE TOOL PERFORMS BEFORE IT WRITES.
-	//
-	// WHY HERE AND NOT IN THE SAVE LOOP. `E-SAVE` IS THE TOOL THAT ACTUALLY WRITES A FILE, so it is the
-	// one place where taking a lock can matter - and the engine's own save path ALREADY issues a
-	// checkout on every call without reading either fact that says whether one can mean anything:
-	// `UEditorAssetLibrary::SaveLoadedAsset` -> `UEditorLoadingAndSavingUtils::SavePackages` ->
-	// `FileHelpers.cpp:6019-6023` -> `InternalCheckoutAndSavePackages`, whose `:5925-5929` calls
-	// `FEditorFileUtils::CheckoutPackages` whenever `ISourceControlModule::Get().IsEnabled()`, ignoring
-	// the operation's result. THIS DOES THE SAME OPERATION EARLIER, AND RECORDS THE ANSWER. That is why
-	// row 10.2 exists, and it is why the block below is printed rather than acted on silently.
-	//
-	// IT IS PLACED AFTER THE THREE REFUSALS ABOVE, so a call that will not write anything asks no
-	// provider anything, and BEFORE the loop, because every asset the caller named is one the caller
-	// declared an intent to write - the engine's own path checks out every package it is handed too.
-	//
-	// *** THE ANSWER IS A REPORT AND NEVER A GATE. *** D-57's own reason for the ordering is that an
-	// automatic checkout must not turn a source control problem into an "every tool reports failure"
-	// problem. On Git (and on an editor with no provider) a gate would refuse every save in this project.
-	// =============================================================================================
+    // Report checkout separately from persistence. Providers may not support
+    // locking, and a checkout result alone proves neither a write nor a lock.
 	const FString CheckoutReport = FTurboMCPSourceControlWrite::EnsureCheckedOut(
 		FTurboMCPSourceControlWrite::Plan(Parts), TEXT("E-SAVE"));
 
@@ -609,43 +591,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 				*Resolved.ObjectPath,
 				CallOutcome,
 				*Capture.SummariseSince(MarkBeforeSave, /*InMax=*/1));
-            if (!bSkipThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr)
-            {
-                Errors += TEXT("\n    Widget save may execute thumbnail/design-time code. Use EditTurboMCPSaveWithoutThumbnail with the same asset to save without drawing a new thumbnail; inspect its result before retrying again.");
-            }
             ++FailedCount;
         }
-
-        // *** SV-03, AND IT IS THE BRANCH THAT NEEDS NO NEW PARAMETER. *** The report's design is an OR:
-		// "add an option to save without a new thumbnail, OR SAY IN THE RESULT THAT THE THUMBNAIL DRAW
-		// RUNS WIDGET CODE." This is the second half, said for the mechanism that actually ran, so a
-		// caller who sees a warning during this save knows what drew the asset's own code.
-		//
-		// WHY IT IS TRUE OF THE EDITOR'S SAVE: it is an `OBJ SAVEPACKAGE` exec (`FileHelpers.cpp:1332`),
-		// which runs the engine's thumbnail step (`UnrealEdSrv.cpp:680-682`) and renders when the cached
-		// thumbnail is missing or stale (`:439-446`, `:478-485`); for a Widget Blueprint the renderer
-		// instantiates the widget with `Designing | ExecutePreConstruct`
-		// (`WidgetBlueprintThumbnailRenderer.cpp:189-191`). The direct write calls none of it.
-		if (bSaved && !bStillDirty && Cast<UWidgetBlueprint>(AssetObject) != nullptr)
-		{
-			Lines += bSkipThumbnail
-				? TEXT("\n    ; the package was written directly, so the engine's thumbnail step did not")
-					TEXT(" run for this save, and this widget's design-time code did not run for a draw.")
-				: TEXT("\n    ; the editor's save runs the engine's thumbnail step before it writes, and a")
-					TEXT(" thumbnail draw for a Widget Blueprint instantiates the widget and runs its")
-					TEXT(" design-time code (`WidgetBlueprintThumbnailRenderer.cpp:189-191`, frequency")
-					TEXT(" `OnAssetSave` at `:216`). No option on this tool skips that draw;")
-					TEXT(" `EditTurboMCPSaveWithoutThumbnail` writes the package without it.");
-		}
-
-		if (bSaved && !bStillDirty && !bSkipThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr && ErrorsHere > 0)
-		{
-			// The write is already proven above. A widget thumbnail may execute design-time script, so report
-			// that work as a warning instead of allowing its error to obscure the saved package.
-			Lines += FString::Printf(
-				TEXT("\n    warning: package write succeeded, but thumbnail/design-time work raised %d engine error(s)"),
-				ErrorsHere);
-		}
 
 		if (WarningsHere > 0)
 		{
@@ -656,9 +603,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		}
 	}
 
-	// P4: the opening word states what actually happened. Nothing saved means
-	// nothing changed, whatever the caller asked for, so it must not claim a
-	// change.
+	// Summarize confirmed writes separately from failed or unknown outcomes.
+	// A failed save can still have changed the file; never imply rollback.
 	if (SavedCount == 0)
 	{
 		Result = FailedCount > 0
