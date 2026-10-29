@@ -187,6 +187,14 @@ bool FTurboMCPGraphReplace::Plan(const FString& InAsset, const FString& InGraphN
 		OutPlan.Removals.Add(Removal);
 	}
 
+    // Both public entry points must reject append failures before a live
+    // replacement transaction starts. Scratch success is not compile proof.
+    if (OutPlan.Append.Refusals.IsEmpty())
+    {
+        FString ScratchReport, ScratchError;
+        if (!FTurboMCPGraphAppend::Preflight(OutPlan.Append, ScratchReport, ScratchError))
+            OutPlan.Append.Refusals.Add(TEXT("replacement preflight refused: ") + ScratchError);
+    }
 	return true;
 }
 
