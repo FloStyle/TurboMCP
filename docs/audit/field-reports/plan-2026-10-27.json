@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-28",
+  "updated": "2026-10-29",
   "source_batch": "docs/audit/field-reports/batch-2026-10-27.json",
   "scope": "All 47 observations/proposals in five Oct27 reports; 19 work packages plus nine positive observations. Per-task implementation and validation are recorded separately.",
   "rules": [
@@ -479,7 +479,7 @@
       "priority": "P1",
       "wave": 5,
       "state": "in_progress",
-      "validation": "policy_and_registered_dispatch_passed_restart_pending",
+      "validation": "restart_discovery_and_visual_passed_final_backup_check_running",
       "readiness": "ready",
       "reports": [
         "FT-126",
@@ -493,7 +493,7 @@
       "dispatch": "Codex oct27-tool-controls; DSH paused; claim at approved base required",
       "repair_contract": "docs/design/tool-controls.md",
       "source_review": "Master preference already uses per-user project config and startup sampling. Registry supports blocked-name filters; call recorder wraps all plugin handlers and can reject before execution. Policy must be shared by discovery, execution and status.",
-      "implementation_progress": "Candidate policy settings, discovery filters, dispatch guard and diagnostics compile on stock Unreal. Native policy workflow added; actual disabled dispatch and restart persistence remain unverified.",
+      "implementation_progress": "Policy, discovery, disabled dispatch, distinct-process restart persistence and TurboMCP preferences screenshot verified. Final review corrected test backup ordering; rerun in progress. Offline and integration remain.",
       "review": "docs/audit/tool-controls-review.json"
     },
     {

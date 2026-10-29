@@ -8,19 +8,29 @@
   "policy_rules_run": "fe15f9146c004edca1646a35683c5eb0",
   "registered_dispatch_run": "ee8990552fd240789f92b284ce0395de",
   "retained_failures": [
-    "e09d8d88e26a40edbb0302f64578b5f4 reported PASS but reused one editor: rejected as persistence evidence. Corrected harness requires real supervised launches and distinct PIDs."
+    "e09d8d88e26a40edbb0302f64578b5f4 reported PASS but reused one editor: rejected as persistence evidence. Corrected harness requires real supervised launches and distinct PIDs.",
+    "2cc70c45881148c8b82140a0124d33a4: runner restoration Boolean polluted by helper output; fixed in 0fd0e6f.",
+    "d97bc5ceacc2450f814ea746db090ec5: screenshot showed All Settings rather than TurboMCP; rejected visual proof and corrected section selection.",
+    "e9a2efa14d1b4f2b833f7b6ea8d1568c: final editor health recovery was required; suite itself passed and runner recovered.",
+    "Review found preference backup occurred after native fixture serialization. aa77f06 moves backup before native calls and covers failures with restoration.",
+    "Offline 7cdc493634834afc968ebe39f536ecfc passed, but source changed before completion; not accepted as final candidate evidence."
   ],
   "remaining": [
-    "Real restart persistence and exact config restoration",
-    "Registry discovery filtering proof",
-    "Editor Preferences visual review",
-    "Offline and scope gates",
-    "Integration"
+    "Verify corrected preference backup workflow",
+    "Refresh inventory and run offline gate on final immutable candidate",
+    "Refresh scope projection",
+    "Integration and final 19-task acceptance audit"
   ],
   "limits": [
     "Settings apply after restart",
     "Master remains off by default",
     "Direct internal C++ calls are not a security boundary",
     "Status remains available for recovery only while master enabled"
-  ]
+  ],
+  "restart_discovery_run": "e9a2efa14d1b4f2b833f7b6ea8d1568c",
+  "restart_pids": [
+    44016,
+    44808
+  ],
+  "visual_review": "screen_1670x911_7680DF864C7DDD9A52FEB29EB819E449.png inspected: TurboMCP section displays Tool Controls, Disabled Tool Domains, Tool Overrides, Activation and Call Log."
 }
