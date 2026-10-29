@@ -99,15 +99,27 @@ bool FTurboMCPGraphEditWorkflowTest::RunTest(const FString& Parameters)
     UEdGraph* Sibling = NewObject<UEdGraph>(Blueprint,TEXT("UnrelatedGraph"),RF_Transactional);
     Sibling->Schema = UEdGraphSchema_K2::StaticClass();
     Blueprint->UbergraphPages.Add(Sibling);
-    const FString Replacement = TEXT("(Development|PrintString\n InString \"replacement body\"\n)");
+    UK2Node_CustomEvent* Entry = NewObject<UK2Node_CustomEvent>(Graph,NAME_None,RF_Transactional);
+    Entry->CustomFunctionName = TEXT("ReviewEntry"); Graph->AddNode(Entry,false,false);
+    Entry->CreateNewGuid(); Entry->AllocateDefaultPins();
+    Entry->FindPinChecked(TEXT("then"))->MakeLinkTo(Target->FindPinChecked(TEXT("execute")));
+    const FString Replacement = FString::Printf(TEXT("(Development|PrintString\n InString \"replacement body\"\n execute (-> %s:then)\n)"), *TurboMCPNodeId::MakeForNode(Entry,true));
     const FString ReplacePreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphReplace(Blueprint->GetPathName(),Graph->GetName(),Replacement);
     AddInfo(ReplacePreview);
-    TestEqual(TEXT("Replace preview does not remove nodes"),Graph->Nodes.Num(),3);
+    TestEqual(TEXT("Replace preview does not remove nodes"),Graph->Nodes.Num(),4);
     const FString Replace = UTurboMCPEditToolset::EditTurboMCPGraphReplace(Blueprint->GetPathName(),Graph->GetName(),Replacement);
     AddInfo(Replace);
-    TestEqual(TEXT("Replace installs exactly one body node"),Graph->Nodes.Num(),1);
-    if (Graph->Nodes.Num()==1)
-        TestEqual(TEXT("Replacement content independently read back"),Graph->Nodes[0]->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("replacement body")));
+    TestEqual(TEXT("Replace retains entry and installs one body node"),Graph->Nodes.Num(),2);
+    TestTrue(TEXT("Entry retained"),Graph->Nodes.Contains(Entry));
+    int32 ReplacementCount = 0;
+    for (UEdGraphNode* Node : Graph->Nodes)
+        if (Node != Entry && Node->FindPin(TEXT("InString")))
+        {
+            ++ReplacementCount;
+            TestEqual(TEXT("Replacement content independently read back"),Node->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("replacement body")));
+            TestTrue(TEXT("Replacement connected to retained entry"),Node->FindPinChecked(TEXT("execute"))->LinkedTo.Contains(Entry->FindPinChecked(TEXT("then"))));
+        }
+    TestEqual(TEXT("Exactly one replacement call"),ReplacementCount,1);
     TestTrue(TEXT("Sibling graph retained"),Blueprint->UbergraphPages.Contains(Sibling));
     TestTrue(TEXT("Sibling remains empty"),Sibling->Nodes.IsEmpty());
     return !HasAnyErrors();

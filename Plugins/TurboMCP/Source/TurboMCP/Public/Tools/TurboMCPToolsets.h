@@ -2180,8 +2180,8 @@ public:
 	 * claim about WHICH nodes changed: a patch that touches a third node has failed even when
 	 * the graph still compiles.
 	 *
-	 * One transaction, rolled back on any new compile error, and the first line is `changed` or
-	 * `unchanged`.
+	 * One transaction for changed defaults; an identical request creates no transaction. Does not
+	 * compile or save. Apply failures attempt undo and report its outcome; inspect failures before retrying.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
