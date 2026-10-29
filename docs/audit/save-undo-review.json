@@ -18,11 +18,23 @@
     "Save looked up package before loading registry-resolved asset; candidate now obtains the package after load. Pending native verification."
   ],
   "remaining": [
-    "Implement focused fixture and repair confirmed issues",
-    "Review live help and actual results",
-    "Focused native workflow including saved readback",
-    "Offline and source-scope gates",
-    "Integrate and update unique coverage"
+    "Independent stock reload run 43d6115cc43f4a50a6396a73c44fbcbe in progress",
+    "Normal save and unloaded-target verification",
+    "Unrelated asset disk/memory preservation and cross-package/stale undo controls",
+    "Live help and final output/comment review",
+    "Offline/scope gates and integration"
   ],
-  "candidate_progress": "Initial supervised undo/refusal and direct-save fixture added. Independent disk readback, unrelated controls, normal save path and live help remain required."
+  "candidate_progress": "Initial supervised undo/refusal and direct-save fixture added. Independent disk readback, unrelated controls, normal save path and live help remain required.",
+  "initial_native_run": "f3356ba1f7ed446fb43e8926fe842e1b",
+  "initial_checks": [
+    "Confirmed undo restores Blueprint description",
+    "Missing confirmation and replay refuse",
+    "Human transaction is not undone",
+    "Invalid DirtyList limit refuses",
+    "Direct save reports write, clears dirty flag and creates fixture file"
+  ],
+  "retained_findings": [
+    "First run emitted a first-header diagnostic despite build success. Corrected call recorder include order on main; next build includes correction.",
+    "DirtyList uses stock content-package enumeration: maps, transient/PIE packages and other editor state are excluded. Prior wording overstated coverage."
+  ]
 }
