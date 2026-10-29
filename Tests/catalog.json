@@ -974,6 +974,13 @@
       "tier": "engine",
       "timeout_seconds": 300,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-edit-workflow",
+      "path": "Tools/test-graph-edit-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
     }
   ]
 }
