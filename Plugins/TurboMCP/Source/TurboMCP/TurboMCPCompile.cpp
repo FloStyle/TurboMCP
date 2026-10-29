@@ -392,16 +392,7 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 	return Result;
 }
 
-/**
- * The save itself, shared by `E-SAVE` and `E-SAVE-WITHOUT-THUMBNAIL`.
- *
- * *** ONE BODY, TWO TOOLS, AND THE MECHANISM IS THE ONLY DIFFERENCE. *** A retry that quietly went back
- * to the other mechanism would defeat the tool the caller chose, and the caller would have no way to
- * see it, so the choice is made once and used by both attempts.
- *
- * A file-scope function rather than a member: the toolset's public surface is the two declared tools,
- * and a third entry point on the class would be published as one.
- */
+// Both save tools share result handling and retry the same serialization path.
 static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 {
 	const TArray<FString> Parts = FTurboMCPAssetResolver::SplitList(Assets);
@@ -440,7 +431,6 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 	FString Result = FString::Printf(TEXT("saving %d asset(s)"), Parts.Num());
 
 	int32 SavedCount = 0;
-	int32 NoChangeCount = 0;
 	int32 FailedCount = 0;
 	FString Lines;
 	FString Errors;
@@ -463,7 +453,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		const int32 ErrorMarkBeforeSave = Capture.ErrorMark();
 
 		// The asset object is needed for the save call, so it is loaded when it
-		// is not already in memory. Loading is not an edit.
+		// is not already in memory. Asset loading may run engine load callbacks.
 		UObject* AssetObject = FindObject<UObject>(nullptr, *Resolved.ObjectPath);
 		if (AssetObject == nullptr)
 		{
@@ -521,32 +511,15 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			{
 				if (!bSkipThumbnail)
 				{
-					// UEditorAssetLibrary::SaveLoadedAsset is the same save path the
-					// engine's own editor toolset uses. FEditorFileUtils was tried first
-					// and fails in a headless editor because it goes through source
-					// control checkout, which reported failure on every attempt while
-					// nothing was written. That is the D-33 trap from the other side: a
-					// save call's own answer is not the truth.
-					//
-					// One asset at a time, so a failure cannot be blamed on its
-					// neighbour: D-33 records that saving several at once silently saved
-					// only some of them.
+					// Save each explicit target even when its dirty flag is clear.
 					return UEditorAssetLibrary::SaveLoadedAsset(AssetObject, /*bOnlyIfIsDirty=*/false);
 				}
 
-				// *** THE OBJECT MUST CARRY THESE FLAGS BEFORE THE CALL, OR THE ENGINE REFUSES AND
-				// REPORTS DATA LOSS. *** `TurboMCPTestMapCommandlet.cpp:350-361` records the engine's own
-				// warning and the silent non-write that followed it: `TopLevelFlags` describe what the
-				// TOP-LEVEL ASSET must carry, so they have to be ON that asset.
+				// The serialized top-level asset must carry the requested flags.
 				AssetObject->SetFlags(RF_Public | RF_Standalone);
 				FSavePackageArgs SaveArgs;
 				SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
-				// NO `SAVE_NoError`: a failure must surface through the return value, which is checked. The
-				// commandlet sets it and can afford to, because its next line logs an error; a tool that
-				// reports to an agent cannot.
-				//
-				// `bSlowTask` is off because a tool call must not raise the editor's progress dialog. The
-				// engine's own exec path passes `SILENT=true` for the same reason (`FileHelpers.cpp:1332`).
+				// Keep save diagnostics enabled and avoid a progress dialog.
 				SaveArgs.bSlowTask = false;
 				return UPackage::SavePackage(Package, AssetObject, *WithoutThumbnailFileName, SaveArgs);
 			};
@@ -573,8 +546,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			Lines += FString::Printf(TEXT("\n%s  package write: saved"), *Resolved.ObjectPath);
 			++SavedCount;
 			Lines += bSkipThumbnail
-				? TEXT("\n    thumbnail/design-time work: skipped (written without the thumbnail draw)")
-				: TEXT("\n    thumbnail/design-time work: ran through the editor's save path (written by the editor's save)");
+				? TEXT("\n    thumbnail drawing: skipped; package save callbacks still run")
+				: TEXT("\n    save path: editor asset save; thumbnail and save callbacks may run");
 		}
 		else
 		{
@@ -607,11 +580,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 	// A failed save can still have changed the file; never imply rollback.
 	if (SavedCount == 0)
 	{
-		Result = FailedCount > 0
-			? FString::Printf(TEXT("unconfirmed: no successful saves confirmed, %d failed; disk may have changed"), FailedCount)
-			: FString::Printf(
-				TEXT("unchanged: nothing to save, all %d asset(s) already had no changes"),
-				NoChangeCount);
+		Result = FString::Printf(TEXT("unconfirmed: no successful saves confirmed, %d failed; disk may have changed"), FailedCount);
 	}
 	else
 	{
@@ -619,8 +588,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			SavedCount, Parts.Num());
 	}
 
-	Result += FString::Printf(TEXT("\n%d saved, %d had no changes, %d failed"),
-		SavedCount, NoChangeCount, FailedCount);
+	Result += FString::Printf(TEXT("\n%d saved, %d failed"),
+		SavedCount, FailedCount);
 	Result += Lines;
 	Result += Errors;
 
@@ -630,9 +599,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			Capture.ErrorCount());
 	}
 
-	// APPENDED, NEVER PREPENDED: this tool's answer opens with "changed:" or "unchanged:", and callers
-	// and suites read that first word. The block also never uses the word "saved", so it cannot be
-	// mistaken for, or confused with, this tool's own "N saved" count.
+	// Keep source-control details separate from the persistence result.
 	Result += TEXT("\n\n");
 	Result += CheckoutReport;
 

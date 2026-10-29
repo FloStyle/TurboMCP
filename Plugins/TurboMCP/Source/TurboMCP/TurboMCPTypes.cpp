@@ -413,11 +413,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPDirtyList(const FString& Limit)
 	if (WantedLimit == 0)
 		return TEXT("error: limit must be positive; leave empty for the default.");
 
-	// The dirty package list is the authoritative source, not a scan of every
-	// asset: an asset with unsaved changes has a dirty package, and asking the
-	// package is how `D-33` says to report the unsaved state. The content
-	// variant is used so engine and transient packages do not appear as project
-	// work a person could have edited.
+	// Enumerate loaded content packages with dirty flags. This excludes maps
+	// and transient/PIE state; it does not compare memory with disk contents.
 	TArray<UPackage*> DirtyPackages;
 	FEditorFileUtils::GetDirtyContentPackages(DirtyPackages);
 
