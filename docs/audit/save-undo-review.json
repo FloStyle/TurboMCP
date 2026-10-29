@@ -15,16 +15,15 @@
     "DirtyList zero-result wording overstates GetDirtyContentPackages coverage.",
     "Save contains obsolete/unreachable Widget thumbnail guidance and historical comments; reconcile with current direct Widget save path.",
     "Check unloaded target handling, transaction identity/replay and transient cross-object effects before accepting behavior.",
-    "Save looked up package before loading registry-resolved asset; candidate now obtains the package after load. Pending native verification."
+    "Save looked up the package before loading a registry-resolved asset. Candidate now obtains the package after load; unloaded-target native regression passed in b95c322d6026403cb2f023369006560d."
   ],
   "remaining": [
-    "Independent stock reload run 43d6115cc43f4a50a6396a73c44fbcbe in progress",
-    "Normal save and unloaded-target verification",
-    "Unrelated asset disk/memory preservation and cross-package/stale undo controls",
-    "Live help and final output/comment review",
-    "Offline/scope gates and integration"
+    "Final source/helper/comment and output review, including transient transaction object boundaries",
+    "Confirm Widget thumbnail-avoidance evidence and explicitly document scenario limits",
+    "Offline and source-scope gates",
+    "Integrate accepted code and update unique coverage and dashboard"
   ],
-  "candidate_progress": "Initial supervised undo/refusal and direct-save fixture added. Independent disk readback, unrelated controls, normal save path and live help remain required.",
+  "candidate_progress": "Native workflow passed at f7ebf9ff0225c9c9c44a554ca51647ef2f7542e3; full review and integration remain pending. Unique coverage remains 87/165.",
   "initial_native_run": "f3356ba1f7ed446fb43e8926fe842e1b",
   "initial_checks": [
     "Confirmed undo restores Blueprint description",
@@ -35,6 +34,23 @@
   ],
   "retained_findings": [
     "First run emitted a first-header diagnostic despite build success. Corrected call recorder include order on main; next build includes correction.",
-    "DirtyList uses stock content-package enumeration: maps, transient/PIE packages and other editor state are excluded. Prior wording overstated coverage."
-  ]
+    "DirtyList uses stock content-package enumeration: maps, transient/PIE packages and other editor state are excluded. Prior wording overstated coverage.",
+    "Run 14988f871d09423aadcf407cb5a7c381 failed compilation because the fixture reused Args for incompatible types. Corrected to ControlSaveArgs; runs 86b9ba2fa2d6429f90203110935be394 and b95c322d6026403cb2f023369006560d passed. This was a fixture defect, not evidence of a product failure."
+  ],
+  "latest_native_run": {
+    "id": "b95c322d6026403cb2f023369006560d",
+    "commit": "f7ebf9ff0225c9c9c44a554ca51647ef2f7542e3",
+    "result": "passed",
+    "native_errors": 0,
+    "native_warnings": 0,
+    "checks": [
+      "Both save paths followed by independent stock package reload and value readback",
+      "Unrelated dirty asset preserved in memory and on disk",
+      "Missing, stale and replayed undo confirmation refused",
+      "Human and cross-package transactions refused",
+      "Mixed valid/invalid save reports partial success",
+      "Registry-known unloaded Blueprint loads and saves successfully",
+      "Live help exposes parameters, effects and relevant limits for all five tools"
+    ]
+  }
 }
