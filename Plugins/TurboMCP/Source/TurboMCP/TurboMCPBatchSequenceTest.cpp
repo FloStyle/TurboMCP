@@ -20,6 +20,8 @@
 #include "BlueprintEditorSettings.h"
 #include "Misc/PackageName.h"
 #include "HAL/FileManager.h"
+#include "Editor.h"
+#include "Editor/Transactor.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPBatchSequenceTest,
     "TurboMCP.Batch.Sequential",
@@ -50,6 +52,7 @@ bool FTurboMCPBatchSequenceTest::RunTest(const FString& Parameters)
         Node->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
         Graph->AddNode(Node, false, false);
         Node->CreateNewGuid();
+        Node->PostPlacedNewNode();
         Node->AllocateDefaultPins();
         Node->NodePosX = X;
         return Node;
@@ -79,6 +82,25 @@ bool FTurboMCPBatchSequenceTest::RunTest(const FString& Parameters)
     };
     UTurboMCPPreviewToolset* Preview = GetMutableDefault<UTurboMCPPreviewToolset>();
     UTurboMCPEditToolset* Edit = GetMutableDefault<UTurboMCPEditToolset>();
+    const int32 UndoBeforePreview = GEditor->Trans->GetQueueLength();
+    const bool DirtyBeforePreview = Package->IsDirty();
+    const TArray<FString> RefusedPayloads = {
+        TEXT("not JSON"), TEXT("[]"),
+        TEXT("[") + First.Replace(TEXT("\"id\":\"first\""), TEXT("\"kind\":\"unsupported\"")) + TEXT("]"),
+        TEXT("[") + First.Replace(TEXT("\"id\":\"first\""), TEXT("\"unknownField\":\"value\"")) + TEXT("]"),
+        TEXT("[") + First + TEXT(",") + First + TEXT("]"),
+        TEXT("[") + First.Replace(TEXT("\"graphName\":"), TEXT("\"graph\":\"FailureGraph\",\"graphName\":")) + TEXT("]")
+    };
+    for (const FString& Payload : RefusedPayloads)
+    {
+        const FString PreviewResult = Preview->PreviewTurboMCPBatchEdit(Payload);
+        const FString EditResult = Edit->EditTurboMCPBatchEdit(Payload);
+        TestTrue(TEXT("Invalid shape refused by preview"), PreviewResult.StartsWith(TEXT("unchanged\nrefused:")));
+        TestTrue(TEXT("Invalid shape refused by edit"), EditResult.StartsWith(TEXT("unchanged\nrefused:")));
+        TestTrue(TEXT("Invalid shape preserves original links"), OriginalEdge());
+        TestEqual(TEXT("Invalid shape preserves dirty flag"), Package->IsDirty(), DirtyBeforePreview);
+        TestEqual(TEXT("Invalid shape creates no undo"), GEditor->Trans->GetQueueLength(), UndoBeforePreview);
+    }
     FString Result = Preview->PreviewTurboMCPBatchEdit(TEXT("[null]"));
     TestTrue(TEXT("First malformed operation uses one-based numbering"), Result.Contains(TEXT("Operation 1 must be a JSON object.")));
     TestTrue(TEXT("Malformed preview preserves original edge"), OriginalEdge());
@@ -95,6 +117,8 @@ bool FTurboMCPBatchSequenceTest::RunTest(const FString& Parameters)
     Result = Preview->PreviewTurboMCPBatchEdit(Valid);
     TestTrue(TEXT("Sequential preview accepts moved readers"), Result.Contains(TEXT("planned")) && !Result.Contains(TEXT("refused:")));
     TestTrue(TEXT("Successful preview preserves original edge"), OriginalEdge());
+    TestEqual(TEXT("Preview preserves dirty flag"), Package->IsDirty(), DirtyBeforePreview);
+    TestEqual(TEXT("Preview creates no undo"), GEditor->Trans->GetQueueLength(), UndoBeforePreview);
     Result = Edit->EditTurboMCPBatchEdit(Valid);
     AddInfo(TEXT("Live batch result: ") + Result);
     TestTrue(TEXT("Both sequential operations apply"), Result.StartsWith(TEXT("changed")) && Result.Contains(TEXT("applied=first,second")));
@@ -106,6 +130,11 @@ bool FTurboMCPBatchSequenceTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("All nodes retained"), Graph->Nodes.Num(), 4);
     TestEqual(TEXT("Unrelated default retained"), Consumer->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("preserve-me")));
     TestEqual(TEXT("Unrelated position retained"), Consumer->NodePosX, 300);
+    TestEqual(TEXT("Successful batch creates exactly one undo record"), GEditor->Trans->GetQueueLength(), UndoBeforePreview + 1);
+    TestTrue(TEXT("One user undo succeeds"), GEditor->UndoTransaction(false));
+    TestTrue(TEXT("One user undo restores original links"), OriginalEdge());
+    TestEqual(TEXT("User undo preserves unrelated default"), Consumer->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("preserve-me")));
+
     // Explicit compilation must not inherit Save on Compile from user settings.
     // Use only this unsaved fixture and restore the preference even on failure.
     UBlueprintEditorSettings* Settings = GetMutableDefault<UBlueprintEditorSettings>();
