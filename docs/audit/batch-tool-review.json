@@ -46,6 +46,12 @@
       "problem": "Legacy discovery test truncated Function IDs and expected an obsolete graph node count. Corrected exact ID selection and full readback preservation assertion.",
       "failed_evidence": "28921bc1353349aa85b247bc566642f9",
       "candidate": "00faebf"
+    },
+    {
+      "id": "BATCH-REVIEW-COMPILE-SAVE",
+      "state": "open",
+      "problem": "Explicit Compile passes default engine options while its response says compile did not save. Stock engine provides SkipSave to suppress configured SaveOnCompile.",
+      "repair": "Use SkipSave and assert no package file or save callback for a disposable Blueprint with SaveOnCompile always enabled. Restore the setting after the fixture."
     }
   ],
   "limitations": [
@@ -72,7 +78,12 @@
       "state": "passed",
       "suite": "test-batch-tools"
     },
-    "limits": "Passing native checks do not satisfy final compilation or verified restoration release requirements."
+    "limits": "Passing native checks do not satisfy final compilation or verified restoration release requirements.",
+    "offline": {
+      "run": "163afd85edb54624b11733971d9ca0a9",
+      "state": "failed_stale_inventory",
+      "note": "Other checks passed; generated capability inventory refreshed on main and validate-repo passed. Full offline rerun pending."
+    }
   },
   "next_repair": {
     "priority": "compile_baseline_and_restoration",
