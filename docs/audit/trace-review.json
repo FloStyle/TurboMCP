@@ -20,7 +20,12 @@
     "candidate": "cdfff38361f39a3f93bff8e343ccf6bcb9e1fcf7",
     "state": "passed",
     "checks": 30,
-    "observed": "One PrintString hit in the owned PIE fixture with instance path; controls, refusals, clear and disk fingerprint passed."
+    "observed": "One PrintString hit in the owned PIE fixture with instance path; controls, refusals, clear and disk fingerprint passed.",
+    "offline": {
+      "run": "fa8ac97168614b58bab1a95f2dbb7d28",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "remaining": [
     {
