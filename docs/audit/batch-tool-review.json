@@ -30,10 +30,10 @@
     },
     {
       "id": "BATCH-REVIEW-RESTORATION",
-      "state": "open",
+      "state": "partial_source_verification_implemented",
       "problem": "Post-mutation failure requests owned undo but returns restoration=unverified; the release repair contract requires independent whole-state and dirty-flag verification and handling failed restoration.",
       "contract": "docs/audit/repair-contracts.md#restricted-batch",
-      "next": "Extend restoration evidence and failure controls before acceptance."
+      "next": "Add failed-restoration mutation blocking and broaden failure controls before accepting batch tools."
     },
     {
       "id": "BATCH-REVIEW-LEGACY-DOC",
@@ -109,12 +109,31 @@
     "independent_work": "Verified restoration and truthful output review remain required under either choice."
   },
   "restoration_candidate": {
-    "state": "in_progress_native_failure_retained",
-    "candidate": "b66d64e",
-    "failed_run": "00ded6aa6a704dbe897ef4d6f6fb2a9c",
-    "finding": "Existing narrow links/default/position assertions pass after undo, but full source object serialization differs. Tool conservatively reports partial, not verified. Do not accept or weaken assertion.",
-    "followup_candidate": "af16cdd",
-    "followup_session": 44935,
-    "next": "Identify differing serialized source object, explain state mismatch, then repair or use a justified semantic-state comparison with negative controls."
+    "state": "implemented_bounded_native_passed",
+    "candidate": "fbb3a33ec2156101525479d1d6883b6222817f41",
+    "run": "17ca2131667e4b25aacf3b025af59a11",
+    "failed_runs": [
+      "00ded6aa6a704dbe897ef4d6f6fb2a9c",
+      "ca50117cf93e406ea2ac7ecdb3f07d9b",
+      "211550c4ac214e159606685019064ff8",
+      "9a5d862f3ada493a8c1522386f2ef012",
+      "b0679b71a24a4b52b8d2b0eca4bf736a"
+    ],
+    "diagnosis": [
+      "Synthetic PrintString fixture omitted PostPlacedNewNode; undo applied DevelopmentOnly metadata. Fixture now follows stock placement. Strict mismatch detection was correct.",
+      "Undo invalidates UBlueprint.Status, documented transient compiler state. Source comparison excludes only that field; returned result explicitly does not certify compilation."
+    ],
+    "checks": [
+      "Full captured Blueprint and nested source-object serialization compared after owned undo.",
+      "Dirty flag restored only after source matches.",
+      "Negative control changes pin default and must fail comparison; resetting it must pass.",
+      "Sequential batch and explicit no-save compile regression passed."
+    ],
+    "remaining": [
+      "Failed-restoration mutation blocking is not yet implemented or verified.",
+      "No deletion/create-target rollback variant or already-dirty fixture acceptance in this batch.",
+      "Automatic compilation product decision remains pending."
+    ],
+    "privacy": "Temporary textual value diagnostics removed before integration; mismatch output names object only."
   }
 }
