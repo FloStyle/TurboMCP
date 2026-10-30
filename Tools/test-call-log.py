@@ -418,6 +418,11 @@ def main():
           large[:250])
 
     print()
+    excerpt = read_log(session, filter_text="excerpt_probe_" + "x" * 220)
+    check("long arguments explicitly report truncation", "[truncated; see disk log]" in excerpt, excerpt[:700])
+    check("start records do not claim a successful outcome", "outcome not observed in this record" in excerpt, excerpt[:700])
+    check("session inference is explained", "not necessarily one script" in excerpt, excerpt[-600:])
+
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1

@@ -1,6 +1,5 @@
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
-//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -15,36 +14,27 @@
 #include "TurboMCPCallTimeline.h"
 #include "TurboMCPTokenEstimate.h"
 
-/**
- * `R-CALL-LOG`, `E-CALL-LOG` and `E-CALL-LOG-CLEAR`.
- *
- * The log is written by two sources — the analytics provider for engine tool calls and
- * `FTurboMCPCallLog::FScopedCall` inside this plugin's own tools — and read through one tool, so a
- * reader does not have to know which source a line came from. The `source` field says it.
- *
- * *** AND THE OBSERVER IS PART OF THE LOG, WHICH NOW INCLUDES THE FILTER ITSELF. *** Every call to one
- * of this plugin's own tools writes a `start` record carrying its arguments BEFORE the tool body runs,
- * so this tool's own `start` record is in memory while it reads - and a `filter` matches
- * `Arguments` (which `T02`'s item 4c asks for, so an agent can find a call by the asset it touched).
- * MEASURED CONSEQUENCE: `filter=zzz_no_such_tool` answers `showing 1 newest of 1 matching`, and the one
- * row is this call. A caller who wants the emptiness message uses `since` instead, and the suite
- * asserts both, because a surprise that is only in a comment is a surprise again next time.
- */
+namespace
+{
+	// Keep each record field on one line and explicitly mark omitted text.
+	FString CallLogExcerpt(const FString& Text)
+	{
+		FString Escaped = Text.Replace(TEXT("\\"), TEXT("\\\\"));
+		Escaped.ReplaceInline(TEXT("\r"), TEXT("\\r"));
+		Escaped.ReplaceInline(TEXT("\n"), TEXT("\\n"));
+		Escaped.ReplaceInline(TEXT("\t"), TEXT("\\t"));
+		return Escaped.Len() > 200 ? Escaped.Left(200) + TEXT(" [truncated; see disk log]") : Escaped;
+	}
+}
 
 FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 	const FString& Filter, const FString& Limit, const FString& Since)
 {
 	FTurboMCPCallLog& Log = FTurboMCPCallLog::Get();
 
-	// *** THE SESSION IN EFFECT, SO ONE CALL CANNOT SPLIT A BATCH SCRIPT'S GROUP IN TWO. *** This
-	// plugin's own records carry no session id - the seam they are written at is the engine's toolset
-	// registry, which is below the MCP session and knows nothing about it - so without this fill a
-	// plugin tool's `start` and `end` would each print `; session (none)` between the engine's own two
-	// events for the same call. `FTurboMCPCallTimeline` owns the rule and the timeline uses it too.
 	const TArray<FTurboMCPCallLog::FEntry> All =
 		FTurboMCPCallTimeline::WithSessionsInEffect(Log.GetEntries());
 
-	// Validate every digit and saturate at the display cap without integer overflow.
 	const FString LimitText = Limit.TrimStartAndEnd();
 	int32 Cap = LimitText.IsEmpty() ? 50 : 0;
 	for (TCHAR Digit : LimitText)
@@ -56,8 +46,6 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 	if (Cap == 0)
 		return TEXT("error: Limit must be greater than zero. Leave it empty for 50 entries; the maximum is 500.");
 
-	// `since` is matched against the ISO-8601 timestamp, which sorts lexically because it is
-	// fixed-width UTC. A caller resumes from the last time it saw rather than re-reading.
 	const FString SinceText = Since.TrimStartAndEnd();
 	const FString FilterText = Filter.TrimStartAndEnd();
 
@@ -70,17 +58,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 		}
 		if (!FilterText.IsEmpty())
 		{
-			// The filter matches the toolset, the tool or the source, so one word finds either a
-			// toolset's calls or the engine's.
 			const bool bMatch =
 				Entry.Toolset.Contains(FilterText, ESearchCase::IgnoreCase)
 				|| Entry.Tool.Contains(FilterText, ESearchCase::IgnoreCase)
 				|| Entry.Source.Contains(FilterText, ESearchCase::IgnoreCase)
-			// *** THE ASSET AND THE STATUS TOO, WHICH `03_TOOLS.md` ASKS FOR AND WHICH THE FILTER DID NOT REACH: an
-			// asset only ever appears inside the arguments, and a status is `bError` rather than a text field, so
-			// neither could be found by the three fields above. ONE WORD STILL FINDS EITHER. ***
 			|| Entry.Arguments.Contains(FilterText, ESearchCase::IgnoreCase)
-			|| FString(Entry.bError ? TEXT("error") : TEXT("ok")).Contains(FilterText, ESearchCase::IgnoreCase);
+			|| FString(Entry.Phase == TEXT("start") ? TEXT("incomplete") : (Entry.bError ? TEXT("error") : TEXT("ok"))).Contains(FilterText, ESearchCase::IgnoreCase);
 			if (!bMatch)
 			{
 				continue;
@@ -89,7 +72,6 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 		Selected.Add(Entry);
 	}
 
-	// Newest first, because the newest is what a reader usually wants, then the cap takes the top.
 	Algo::Reverse(Selected);
 	const int32 Total = Selected.Num();
 	if (Selected.Num() > Cap)
@@ -106,7 +88,6 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 
 	if (Selected.Num() == 0)
 	{
-		// `P1`: never return nothing. Saying WHY it is empty is the answer.
 		if (All.Num() == 0)
 		{
 			Out += Log.IsEnabled()
@@ -124,16 +105,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 		return Out;
 	}
 
-	// ONE GROUP PER BATCH SCRIPT: the session id is the same for every call of one script, so a change of id starts a
-	// new group and is stated once, ahead of its rows.
 	FString PreviousSession;
 	bool bFirstGroup = true;
 
 	for (const FTurboMCPCallLog::FEntry& Entry : Selected)
 	{
-		// *** GROUPED BY BATCH, WHICH `03_TOOLS.md` ASKS FOR: THE CALLS OF ONE SCRIPT SHARE A SESSION ID, SO A CHANGE
-		// OF ID IS THE START OF A NEW GROUP AND IS STATED ONCE, AHEAD OF ITS ROWS. A COLUMN WOULD REPEAT IT ON EVERY
-		// LINE, WHICH IS THE ONE THING A GROUPING IS FOR. ***
 		if (bFirstGroup || Entry.SessionId != PreviousSession)
 		{
 			bFirstGroup = false;
@@ -146,12 +122,16 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 			*Entry.Timestamp, *Entry.Phase, *Entry.Source,
 			*FString::Printf(TEXT("%s.%s"), *Entry.Toolset, *Entry.Tool));
 
-		if (Entry.DurationMs > 0.0)
+		if (Entry.Phase == TEXT("end"))
 		{
 			Out += FString::Printf(TEXT("  %.1fms  "), Entry.DurationMs)
 			+ FTurboMCPCallLog::FEntry::DescribeSize(Entry.ResultChars) + TEXT(" chars  ~")
 			+ FTurboMCPCallLog::FEntry::DescribeSize(Entry.TokenEstimate) + TEXT(" tokens");
 				
+		}
+		if (Entry.Phase == TEXT("start"))
+		{
+			Out += TEXT("  outcome not observed in this record");
 		}
 		if (Entry.bError)
 		{
@@ -160,13 +140,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 		if (!Entry.Arguments.IsEmpty())
 		{
 			Out += FString::Printf(TEXT("\n      args: %s"),
-				Entry.Arguments.Len() > 200
-					? *Entry.Arguments.Left(200) : *Entry.Arguments);
+				*CallLogExcerpt(Entry.Arguments));
 		}
 		if (!Entry.Result.IsEmpty())
 		{
 			Out += FString::Printf(TEXT("\n      result: %s"),
-				Entry.Result.Len() > 200 ? *Entry.Result.Left(200) : *Entry.Result);
+				*CallLogExcerpt(Entry.Result));
 		}
 	}
 
@@ -177,11 +156,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 			Total - Selected.Num(), *Selected[0].Timestamp);
 	}
 
+	Out += TEXT("\n; Sessions group connection activity, not necessarily one script. Missing session IDs are inferred from nearby records.");
 	Out += TEXT("\n; Token counts are approximate, not measured with a model tokenizer.");
-	// *** A COUNT OF RECORDS IS NOT A COUNT OF CALLS, AND SAYING SO IS THE WHOLE POINT. *** A call to
-	// one of this plugin's own tools writes a `plugin start`, a `plugin end` AND the engine's own event
-	// for the same call, so the list below is longer than the number of calls made. `R-CALL-COST` and
-	// the panel's timeline both assemble those records into calls; this tool is the raw log.
 	Out += TEXT("\n; one call can leave several records: this plugin writes a start and an end, and ");
 	Out += TEXT("the engine writes its own event for the same call. `source` says which wrote a line.");
 	return Out;
@@ -192,9 +168,6 @@ FString UTurboMCPEditToolset::EditTurboMCPCallLog(const FString& Enabled)
 	FTurboMCPCallLog& Log = FTurboMCPCallLog::Get();
 	const bool bWas = Log.IsEnabled();
 
-	// The value is parsed strictly rather than through `ToBool`, because `FString::ToBool`
-	// answers false for anything it does not recognise and a caller who typed `on` would silently
-	// turn the log OFF instead of being told their word was not understood.
 	const FString Text = Enabled.TrimStartAndEnd().ToLower();
 	bool bWanted = false;
 	if (Text == TEXT("true") || Text == TEXT("on") || Text == TEXT("yes") || Text == TEXT("1"))

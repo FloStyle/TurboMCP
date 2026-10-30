@@ -318,8 +318,8 @@ public:
 
 	/**
 	 * Read retained call-log records, newest first. Does not clear the log or change recording settings; this request may itself be recorded.
-	 * Engine records may lack arguments or resolved names. Unknown sizes are not zero. Records are not the same as completed calls; use ReadTurboMCPCallCost for call totals.
-	 * @param Filter Required string. Case-insensitive substring of toolset, tool, source, arguments or status (ok/error). Empty matches all records; e.g. BP_NodeTest. This call can match its own recorded filter argument.
+	 * Engine records may lack arguments or resolved names. Unknown sizes are not zero. Arguments and results are escaped single-line excerpts capped at 200 characters with an explicit truncation marker. Records are not the same as completed calls; use ReadTurboMCPCallCost for call totals.
+	 * @param Filter Required string. Case-insensitive substring of toolset, tool, source, arguments or status (ok/error/incomplete). Empty matches all records; e.g. BP_NodeTest. This call can match its own recorded filter argument.
 	 * @param Limit Required string of positive decimal digits, e.g. 50. Empty uses 50; values above 500 are capped at 500. Zero, signs and fractions are refused.
 	 * @param Since Required timestamp string copied exactly from a log entry, e.g. 2026-10-24T09:30:00.000Z. Empty has no lower bound. Returns records strictly after this timestamp, using text comparison; other date formats are not normalized or validated.
 	 */

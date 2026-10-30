@@ -353,6 +353,11 @@ def main():
           zero_cap.startswith("error:") and "cap must be positive" in zero_cap, zero_cap[:200])
 
     print()
+    coverage = cost(session, cap="50")
+    check("cost totals report measurement coverage", "measured)" in coverage and "/" in coverage and "completed" in coverage, coverage)
+    check("cost estimates do not claim billing", "not model billing" in coverage, coverage[-700:])
+    check("asset attribution limitations are explicit", "not a complete list of assets touched" in coverage, coverage[-700:])
+
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1
