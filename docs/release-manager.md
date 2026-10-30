@@ -1,6 +1,6 @@
 # Release manager
 
-[Documentation](README.md)
+[Documentation](README.md) | [Public preparation pipeline](public-preparation.md) | [Public preparation checklist](../release/public-preparation.json)
 
 The release manager is a local, fail-closed verification and export process. It never pushes or publishes. Run `python Tools/validate.py`, then build and execute mapped product acceptance against the candidate commit. Keep reports and binaries under ignored .local. Commit documentation, version, acceptance mapping and owner approval before collecting final evidence so the evidence identifies the exact final commit.
 

@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "status": "open",
+  "updated": "2026-10-30",
+  "publication_authorized": false,
+  "workflow": "docs/public-preparation.md",
+  "tasks": [
+    {
+      "id": "PUB-01",
+      "title": "Complete remaining tool reviews",
+      "state": "open",
+      "verification": "not_verified",
+      "acceptance": "Tool coverage records identify accepted workflows and limitations; currently 98/165, 67 remaining."
+    },
+    {
+      "id": "PUB-02",
+      "title": "Map and execute release acceptance",
+      "state": "open",
+      "verification": "not_verified",
+      "acceptance": "Map all 97 acceptance cases; retain failures and collect final source, engine, binary and log identities."
+    },
+    {
+      "id": "PUB-03",
+      "title": "Verify clean stock-engine installation",
+      "state": "open",
+      "verification": "not_verified",
+      "acceptance": "Build the installable package and test fresh Blueprint-only and C++ projects on each claimed engine distribution."
+    },
+    {
+      "id": "PUB-04",
+      "title": "Audit all exported files for safety",
+      "state": "open",
+      "verification": "not_verified",
+      "acceptance": "Scan the complete tracked tree for secrets, personal paths, proprietary content, generated files and caches; manually review binary fixtures and images. Never print matching secrets."
+    },
+    {
+      "id": "PUB-05",
+      "title": "Resolve asset ownership notices",
+      "state": "open",
+      "verification": "not_verified",
+      "acceptance": "Resolve or replace Icon128.png and EngineToolTraps.json provenance; review third-party notices and licenses."
+    },
+    {
+      "id": "PUB-06",
+      "title": "Reconcile public documentation",
+      "state": "open",
+      "verification": "not_verified",
+      "acceptance": "Update stale tool counts, setup, support limits, links and known limitations; review tracked reports for private project details."
+    },
+    {
+      "id": "PUB-07",
+      "title": "Harden and rehearse export pipeline",
+      "state": "open",
+      "verification": "not_verified",
+      "acceptance": "Verify fail-closed controls, manifest equality, case/path safety and fresh-root history. Record source commit and tree alongside the manifest. Audit scanner coverage; pattern scans alone are insufficient."
+    },
+    {
+      "id": "PUB-08",
+      "title": "Separate local evidence and caches",
+      "state": "open",
+      "verification": "not_verified",
+      "acceptance": "Inventory local reports, captures, caches and machine settings. Keep reusable source tools tracked; exclude generated data and credentials. Verify the exported checkout works without private local state."
+    },
+    {
+      "id": "PUB-09",
+      "title": "Verify GitHub controls",
+      "state": "open",
+      "verification": "not_verified",
+      "acceptance": "Enable and verify CI, branch protections, publication permissions and private vulnerability reporting; do not infer settings from policy files."
+    },
+    {
+      "id": "PUB-10",
+      "title": "Approve and publish reviewed snapshot",
+      "state": "open",
+      "verification": "not_verified",
+      "acceptance": "Require release gates and explicit owner publication authorization. Publish a fresh root with no private ancestors; record artifact hashes and private-to-public version mapping."
+    }
+  ]
+}
