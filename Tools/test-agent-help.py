@@ -151,6 +151,35 @@ def main():
     check("accepts the short toolset name", summary.startswith("read:"))
     check("summarises every tool", summary.count("\n") >= 3)
 
+    print("=== paged help and search ===")
+    expected = set(re.findall(r"^  Read (ReadTurboMCP\w+) - TurboMCP -", index, re.M))
+    expected.add("ReadTurboMCPPlayCheck")
+    seen = set()
+    cursor = ""
+    for page_number in range(100):
+        page = s.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": READ_TOOLSET, "toolName": cursor})
+        check("page stays within help budget", len(page) <= HELP_BUDGET)
+        names = re.findall(r"^(?:Read|Execute[^\n]*?\)) (ReadTurboMCP\w+) -", page, re.M)
+        check("page makes progress without duplicates", bool(names) and not seen.intersection(names))
+        seen.update(names)
+        next_page = re.search(r'ToolName="(list:\d+)"', page)
+        if not next_page:
+            check("pagination ends explicitly", "End of toolset." in page)
+            break
+        cursor = next_page.group(1)
+    else:
+        check("pagination terminates", False)
+    check("all read-tool entries are reachable", seen == expected, str(sorted(seen.symmetric_difference(expected))))
+    for cursor in ("list:-1", "list:99999999", "find:-1:graph", "find:0:"):
+        refused = s.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": READ_TOOLSET, "toolName": cursor})
+        check("invalid cursor/query refused: " + cursor, refused.startswith("error:"))
+    search = s.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": "", "toolName": "find:0:TurboMCP"})
+    print(search)
+    check("search obeys compact budget", len(search) <= HELP_BUDGET)
+    check("search provides exact names and continuation", "TurboMCP." in search and "next:" in search)
+    absent = s.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": "", "toolName": "find:0:NoSuchToolUnique987"})
+    check("empty search is explicit", "no registered tools match" in absent)
+
     print("=== status, schema and window metadata ===")
     status = s.call(READ_TOOLSET, "ReadTurboMCPStatus")
     print(status)
