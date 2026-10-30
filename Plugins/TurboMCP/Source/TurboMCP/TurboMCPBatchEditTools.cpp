@@ -134,23 +134,37 @@ namespace
 // Capture source objects only. Batch operations do not compile or save, so this
 // verification does not claim to restore generated instances or persisted data.
 // Strong references keep deleted source nodes available for the owned undo.
+// Unreal invalidates the transient Blueprint compile-status cache during undo.
+// Keep that invalidation: verifying source restoration must not certify compiled code.
+class FBatchSourceWriter : public FObjectWriter
+{
+ bool bBlueprint = false;
+public:
+ FBatchSourceWriter(UObject* Object, TArray<uint8>& Bytes) : FObjectWriter(Bytes)
+ {
+  bBlueprint = Object->IsA<UBlueprint>();
+  ArNoDelta = true;
+  ArPortFlags |= PPF_DuplicateVerbatim;
+  Object->Serialize(*this);
+ }
+ virtual bool ShouldSkipProperty(const FProperty* Property) const override
+ {
+  if (bBlueprint && Property && Property->GetFName() == GET_MEMBER_NAME_CHECKED(UBlueprint, Status)
+      && Property->GetOwnerClass() == UBlueprint::StaticClass()) return true;
+  return FObjectWriter::ShouldSkipProperty(Property);
+ }
+};
+
 struct FBatchSnapshot
 {
  struct FEntry
  {
   TStrongObjectPtr<UObject> Object;
   TArray<uint8> Bytes;
-  TMap<FName, FString> Fields;
   explicit FEntry(UObject* Value) : Object(Value)
   {
    // Verbatim duplication avoids creating a localization namespace while reading.
-   FObjectWriter Writer(Value, Bytes, false, false, false, PPF_DuplicateVerbatim);
-   for (TFieldIterator<FProperty> It(Value->GetClass()); It; ++It)
-   {
-    FString Text;
-    It->ExportText_InContainer(0, Text, Value, nullptr, Value, PPF_None);
-    Fields.Add(It->GetFName(), MoveTemp(Text));
-   }
+   FBatchSourceWriter Writer(Value, Bytes);
   }
  };
  TArray<TUniquePtr<FEntry>> Entries;
@@ -170,16 +184,10 @@ struct FBatchSnapshot
   {
    if (!IsValid(Entry->Object.Get())) { Difference = TEXT("A captured source object is no longer valid."); return false; }
    TArray<uint8> Current;
-   FObjectWriter Writer(Entry->Object.Get(), Current, false, false, false, PPF_DuplicateVerbatim);
+   FBatchSourceWriter Writer(Entry->Object.Get(), Current);
    if (Current != Entry->Bytes)
    {
     Difference = TEXT("Serialized source state differs: ") + Entry->Object->GetPathName();
-    for (TFieldIterator<FProperty> It(Entry->Object->GetClass()); It; ++It)
-    {
-     FString Text;
-     It->ExportText_InContainer(0, Text, Entry->Object.Get(), nullptr, Entry->Object.Get(), PPF_None);
-     if (Entry->Fields.FindRef(It->GetFName()) != Text) Difference += TEXT("; property=") + It->GetName();
-    }
     return false;
    }
   }
@@ -226,11 +234,11 @@ static FString ExecuteBatch(TArray<FBatchOperation>& Ops)
    const bool bVerified = bSourceRestored && Blueprint->GetOutermost()->IsDirty() == Snapshot.bDirtyBefore;
    TArray<FString> Attempted = Applied;
    Attempted.Add(Op.Id);
-   return FString::Printf(TEXT("%s\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollbackScope=%s\nrollback=%s\nrestoration=%s\nrestorationDetail=%s\ncompile=not_run\nsave=not_requested\nretry=inspect_graph_before_retry\nerror=%s"),
+   return FString::Printf(TEXT("%s\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollbackScope=%s\nrollback=%s\nrestoration=%s\nrestorationDetail=%s\ncompile=not_run\nsave=not_requested\ncompileStatus=not_certified_by_undo\nretry=inspect_graph_before_retry\noperationErrorBeforeRollback=%s"),
     bVerified ? TEXT("unchanged") : TEXT("partial"), *Op.Id, *Op.Kind,
     *FString::Join(Applied, TEXT(",")), *FString::Join(Attempted, TEXT(",")),
     bRolledBack ? TEXT("undo_applied") : TEXT("not_confirmed"),
-    bVerified ? TEXT("source_objects_and_dirty_flag_verified") : TEXT("not_verified"), *RestorationDifference, *Error);
+    bVerified ? TEXT("source_state_and_dirty_flag_verified") : TEXT("not_verified"), *RestorationDifference, *Error);
   }
   Applied.Add(Op.Id);
  }
@@ -337,7 +345,7 @@ bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
         && Result.Contains(TEXT("appliedBeforeFailure=first")));
     TestTrue(TEXT("Both operations included in undo"), Result.Contains(TEXT("rollbackScope=first,second"))
         && Result.Contains(TEXT("rollback=undo_applied")));
-    TestTrue(TEXT("Restoration verified independently"), Result.StartsWith(TEXT("unchanged")) && Result.Contains(TEXT("restoration=source_objects_and_dirty_flag_verified")));
+    TestTrue(TEXT("Restoration verified independently"), Result.StartsWith(TEXT("unchanged")) && Result.Contains(TEXT("restoration=source_state_and_dirty_flag_verified")));
     TestFalse(TEXT("Original clean flag restored"), Package->IsDirty());
     TestFalse(TEXT("No active transaction remains"), GEditor->IsTransactionActive());
     TestEqual(TEXT("Original nodes retained"), Graph->Nodes.Num(), 4);
