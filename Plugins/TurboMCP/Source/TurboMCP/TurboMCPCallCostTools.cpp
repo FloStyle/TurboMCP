@@ -16,7 +16,7 @@
 
 namespace
 {
-	
+
 	FString LastSegment(const FString& InName)
 	{
 		if (InName.StartsWith(TEXT("("), ESearchCase::CaseSensitive))
