@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "workflow": "WF-ASSET-DISCOVERY",
+  "status": "in_progress",
+  "readiness": "ready",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPAssetSearch",
+    "ReadTurboMCPAssetDescribe",
+    "ReadTurboMCPAssetCost"
+  ],
+  "findings": [
+    {
+      "id": "ASSET-SEARCH-TIE",
+      "state": "open",
+      "problem": "Same-named results in different folders lack stable final tie-break."
+    },
+    {
+      "id": "ASSET-SEARCH-SCAN",
+      "state": "open",
+      "problem": "Incomplete registry scan is not distinguished from complete search."
+    }
+  ],
+  "acceptance": [
+    "Search returns full identities and deterministic ordering with truthful completeness.",
+    "Describe remains unloaded and deterministic for Blueprint/Widget fixtures.",
+    "Invalid filters and missing targets provide actionable errors.",
+    "Cost separates direct dependency categories and unknown sizes from runtime memory claims.",
+    "Review help, comments and English outputs; retain unverified cases."
+  ]
+}
