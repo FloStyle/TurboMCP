@@ -28,7 +28,12 @@
       "Non-hex, short and missing keys refuse",
       "26-ID limit refuses",
       "Live parameter help and full English output inspected"
-    ]
+    ],
+    "offline": {
+      "run": "3cd7e0cda39b4c38abdd3f1194e64ce9",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "limitations": [
     "Bounded event-node fixture, not exhaustive node or pin-family coverage.",
