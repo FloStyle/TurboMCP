@@ -963,6 +963,26 @@
         "Static findings do not exclude external/dynamic uses or certify deletion safety.",
         "Fixture disk bytes preserved; no blanket claim about load-time effects or all custom node families."
       ]
+    },
+    {
+      "id": "WF-CALL-LOG-COST",
+      "title": "Record, inspect, clear and summarize tool calls",
+      "status": "scenario_accepted",
+      "review": "docs/audit/call-log-cost-review.json",
+      "evidence": "22228826cb3e4e9f81014a437ab533e6",
+      "tools_used": [
+        "ReadTurboMCPCallLog",
+        "EditTurboMCPCallLog",
+        "EditTurboMCPCallLogClear",
+        "ReadTurboMCPCallCost"
+      ],
+      "limitations": [
+        "Zero-duration completed-call handling source-reviewed; no deterministic zero-duration fixture in this run.",
+        "No crash recovery or settings persistence across editor restarts claimed.",
+        "Session inference and call grouping reuse the existing timeline; not a concurrency proof.",
+        "Since remains a documented exact UTC timestamp text comparison, not a general date parser.",
+        "Asset attribution is heuristic and token estimates are not billing measurements."
+      ]
     }
   ],
   "tool_usage": {
@@ -1386,9 +1406,21 @@
     ],
     "ReadTurboMCPBPLint": [
       "WF-BP-LINT"
+    ],
+    "ReadTurboMCPCallLog": [
+      "WF-CALL-LOG-COST"
+    ],
+    "EditTurboMCPCallLog": [
+      "WF-CALL-LOG-COST"
+    ],
+    "EditTurboMCPCallLogClear": [
+      "WF-CALL-LOG-COST"
+    ],
+    "ReadTurboMCPCallCost": [
+      "WF-CALL-LOG-COST"
     ]
   },
-  "unique_tools_scenario_reviewed": 117,
+  "unique_tools_scenario_reviewed": 121,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

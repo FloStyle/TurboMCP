@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "workflow": "WF-CALL-LOG-COST",
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
+  "focus_tools": [
+    "ReadTurboMCPCallLog",
+    "EditTurboMCPCallLog",
+    "EditTurboMCPCallLogClear",
+    "ReadTurboMCPCallCost"
+  ],
+  "fixes": [
+    "Start records no longer receive ok status from the status matcher.",
+    "Zero-duration completed records retain measurement output.",
+    "Escaped excerpts explicitly mark truncation.",
+    "Cost totals distinguish unknown measurements and include coverage denominators.",
+    "Zero-valued measurements remain valid ranking observations.",
+    "Output explains session inference, billing limits and incomplete asset attribution.",
+    "Removed historical debugging commentary from tool implementations."
+  ],
+  "evidence": {
+    "run": "22228826cb3e4e9f81014a437ab533e6",
+    "candidate": "3a31612e43ab4035acaec995c441524e5aa841cd",
+    "state": "passed",
+    "suites": [
+      "test-call-log",
+      "test-call-cost"
+    ],
+    "cost_checks": 35,
+    "post_test_change": "34dfc8a is whitespace only"
+  },
+  "limitations": [
+    "Zero-duration completed-call handling source-reviewed; no deterministic zero-duration fixture in this run.",
+    "No crash recovery or settings persistence across editor restarts claimed.",
+    "Session inference and call grouping reuse the existing timeline; not a concurrency proof.",
+    "Since remains a documented exact UTC timestamp text comparison, not a general date parser.",
+    "Asset attribution is heuristic and token estimates are not billing measurements."
+  ]
+}
