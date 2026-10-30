@@ -1615,16 +1615,12 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPPlayInput(const FString& Target, const FString& Action, const FString& Key, const FString& Value, const FString& Seconds);
 
-	/**
-	 * Read whether the editor can accept a write right now.
-	 *
-	 * Every Edit tool must be one transaction, and an Edit must not run during
-	 * play or simulate (`D-34`). This reports the current state so a caller
-	 * knows before it plans a write, and it writes nothing itself.
-	 *
-	 * Returns whether play or simulate is running, and whether a transaction
-	 * could be opened.
-	 */
+    /**
+     * Inspect editor readiness for ordinary transactional asset edits; does not edit, compile or save.
+     * Reports play/simulation, active transactions, transaction availability and recovery blocks.
+     * This is a snapshot, not a queue, permission grant or reservation. Each edit still checks its
+     * preferences, asset and safety requirements. Play-control tools have separate rules.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPEditQueue();
 

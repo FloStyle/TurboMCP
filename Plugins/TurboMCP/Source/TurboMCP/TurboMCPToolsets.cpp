@@ -321,48 +321,25 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPToolset()
 
 FString UTurboMCPEditToolset::ReadTurboMCPEditQueue()
 {
-	// D-34 refuses a save during play or simulate, because saves made then failed
-	// or half worked. Every Edit tool needs the same guard, and a caller should
-	// be able to ask before it plans anything.
-	FString Result = TEXT("read: editor write readiness");
-
-	if (!GIsEditor)
-	{
-		Result += TEXT("\nNot in the editor, so no tool can write. TurboMCP is editor only.");
-		return Result;
-	}
-
-	// GEditor is null while the editor starts or shuts down.
-	if (GEditor == nullptr)
-	{
-		Result += TEXT("\nThe editor is not available right now, so nothing can be written. ")
-			TEXT("Try again once the editor has finished loading.");
-		return Result;
-	}
-
-	// 06_ACCEPTANCE.md T-STRUCT-7 and T-STRUCT-8 depend on this distinction.
-	// IsPlaySessionInProgress is used rather than IsPlayingSessionInEditor so a
-	// session that is queued for the next tick also counts as "not now": a write
-	// started in that gap would land in a world that is about to be replaced.
-	// Both are the engine's own public checks on UEditorEngine, rather than
-	// reading PlayInEditorSessionInfo from outside.
-	const bool bPlaySessionInProgress = GEditor->IsPlaySessionInProgress();
-	const bool bSimulating = GEditor->IsSimulateInEditorInProgress();
-
-	Result += bPlaySessionInProgress
-		? TEXT("\nplay in editor: running or queued, so a write would be refused (D-34)")
-		: TEXT("\nplay in editor: not running");
-	Result += bSimulating
-		? TEXT("\nsimulate in editor: running, so a write would be refused (D-34)")
-		: TEXT("\nsimulate in editor: not running");
-
-	// Say which condition decided it, rather than only the verdict.
-	const bool bCanOpenTransaction = !bPlaySessionInProgress && !bSimulating;
-	Result += bCanOpenTransaction
-		? TEXT("\nwrites allowed: yes, an Edit could open one transaction now")
-		: TEXT("\nwrites allowed: no. Stop play or simulate, then ask again.");
-
-	return Result;
+    FString Result = TEXT("read: editor write readiness (snapshot, not a task queue)");
+    if (!IsInGameThread()) return Result + TEXT("\nreadiness: unavailable; query must run on the game thread.");
+    if (!GIsEditor || !GEditor) return Result + TEXT("\nreadiness: blocked; the editor is unavailable.");
+    const bool bPlaying = GEditor->IsPlaySessionInProgress();
+    const bool bSimulating = GEditor->IsSimulateInEditorInProgress();
+    const bool bActiveTransaction = GEditor->IsTransactionActive();
+    const bool bCanTransact = GEditor->CanTransact();
+    FString RecoveryReason;
+    const bool bRecovery = TurboMCPToolPolicy::IsRecoveryRequired(RecoveryReason);
+    Result += FString::Printf(TEXT("\nplay session: %s\nsimulation: %s\nactive transaction: %s\ntransaction system available: %s\nrecovery required: %s"),
+        bPlaying ? TEXT("running or queued") : TEXT("not running"), bSimulating ? TEXT("running") : TEXT("not running"),
+        bActiveTransaction ? TEXT("yes") : TEXT("no"), bCanTransact ? TEXT("yes") : TEXT("no"), bRecovery ? TEXT("yes") : TEXT("no"));
+    if (bRecovery) Result += TEXT("\n") + RecoveryReason;
+    const bool bReady = !bPlaying && !bSimulating && !bActiveTransaction && bCanTransact && !bRecovery;
+    Result += bReady
+        ? TEXT("\nreadiness: ready for tool-specific checks; this is not permission to edit.")
+        : TEXT("\nreadiness: blocked for ordinary transactional asset edits; resolve the conditions above before retrying.");
+    Result += TEXT("\nThis snapshot does not reserve a transaction or inspect assets. Per-tool preferences, source control, asset validity and each tool's own safety checks still apply. Play-control tools have separate rules. No edits, compilation or save were performed.");
+    return Result;
 }
 
 void RegisterTurboMCPToolsets()
@@ -404,3 +381,31 @@ void UnregisterTurboMCPToolsets()
 	// module unload.
 	RemoveTurboMCPCallRecording();
 }
+
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Misc/AutomationTest.h"
+#include "Misc/ScopeExit.h"
+#include "ScopedTransaction.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPEditReadinessTest, "TurboMCP.Tools.EditReadiness",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPEditReadinessTest::RunTest(const FString& Parameters)
+{
+    FString Reason;
+    if (!TestFalse(TEXT("No pre-existing recovery block"), TurboMCPToolPolicy::IsRecoveryRequired(Reason))) return false;
+    ON_SCOPE_EXIT { TurboMCPToolPolicy::ResetRecoveryForTest(); };
+    const FString Idle = UTurboMCPEditToolset::ReadTurboMCPEditQueue();
+    TestTrue(TEXT("Idle snapshot permits checks only"), Idle.Contains(TEXT("readiness: ready for tool-specific checks")));
+    TestTrue(TEXT("No blanket permission"), Idle.Contains(TEXT("not permission to edit")) && !Idle.Contains(TEXT("writes allowed: yes")));
+    {
+        FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "ReadinessProbe", "Readiness test"));
+        const FString Active = UTurboMCPEditToolset::ReadTurboMCPEditQueue();
+        TestTrue(TEXT("Active transaction blocks readiness"), Active.Contains(TEXT("active transaction: yes")) && Active.Contains(TEXT("readiness: blocked")));
+        Transaction.Cancel(); // No objects were modified.
+    }
+    TurboMCPToolPolicy::RequireRecovery(TEXT("/Game/Tests/ReadinessProbe"));
+    const FString Recovery = UTurboMCPEditToolset::ReadTurboMCPEditQueue();
+    TestTrue(TEXT("Recovery blocks readiness"), Recovery.Contains(TEXT("recovery required: yes")) && Recovery.Contains(TEXT("readiness: blocked")));
+    TestTrue(TEXT("Recovery explains safe next step"), Recovery.Contains(TEXT("Do not save"), ESearchCase::IgnoreCase));
+    return !HasAnyErrors();
+}
+#endif
