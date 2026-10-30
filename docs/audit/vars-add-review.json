@@ -36,6 +36,11 @@
       "prior_failure": {
         "run": "39b7e6d0ac50441188328bcf77794f68",
         "reason": "Two live-help assertions failed: second description paragraph was absent. Fixed exposed parameter help; unchanged assertions then passed."
+      },
+      "offline": {
+        "run": "a2b00d368ed641f6a57b53bc889be265",
+        "state": "passed",
+        "checks": 26
       }
     }
   },
