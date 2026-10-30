@@ -2976,6 +2976,17 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp"
           ],
           "new_files": []
+        },
+        "tool-review-discovery": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchema.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchemaTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-agent-help.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

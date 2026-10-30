@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "workflow": "WF-DISCOVERY-01",
+  "status": "in_progress",
+  "readiness": "ready",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPStatus",
+    "ReadTurboMCPToolIndex",
+    "ReadTurboMCPToolHelp",
+    "ReadTurboMCPToolSchema",
+    "LookTurboMCPToolset",
+    "PreviewTurboMCPToolset"
+  ],
+  "scope": "Discover registered tools, select an exact tool, read help/schema and inspect registration/window metadata without editing assets.",
+  "findings": [
+    {
+      "id": "DISC-KIND",
+      "state": "open",
+      "problem": "Substring classification can label third-party toolsets as TurboMCP read/edit kinds."
+    },
+    {
+      "id": "DISC-COUNT",
+      "state": "open",
+      "problem": "Index describes declared toolset count as registered count."
+    },
+    {
+      "id": "DISC-WINDOWS",
+      "state": "open",
+      "problem": "Window sample capped at six is reported as total visible windows; unavailable Slate appears as zero."
+    },
+    {
+      "id": "DISC-NEXT",
+      "state": "open",
+      "problem": "Unknown-tool guidance names obsolete R-TOOL-INDEX instead of callable tool."
+    }
+  ],
+  "acceptance": [
+    "Runtime index counts match printed registry entries.",
+    "Engine tools are not classified as TurboMCP effect categories.",
+    "Exact, joined, short and invalid help lookups have accurate actionable responses.",
+    "Status, schema and schema-size preview have truthful effects and limitations.",
+    "Window result distinguishes total, shown and unavailable; no screenshot claim."
+  ],
+  "limitations": [
+    "No acceptance until focused runtime evidence and source review complete."
+  ]
+}
