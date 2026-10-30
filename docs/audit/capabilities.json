@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "690395fd3f10893c5e7f4539b14b0651d918f412",
+  "plugin_tree": "3e1e2c79224777a933e5353b0c88c7a9c8fd4299",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -3449,6 +3449,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-edit-readiness.py",
         "Tools/test-uncovered-tools.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -3916,6 +3917,7 @@
         "Tools/test-custom-event.py",
         "Tools/test-datatable-quality.py",
         "Tools/test-diagnostic-console.py",
+        "Tools/test-edit-readiness.py",
         "Tools/test-editor-log.py",
         "Tools/test-function-flags.py",
         "Tools/test-graph-dead.py",
