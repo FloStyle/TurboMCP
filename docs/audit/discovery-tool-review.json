@@ -16,22 +16,22 @@
   "findings": [
     {
       "id": "DISC-KIND",
-      "state": "open",
+      "state": "implemented_focused_runtime_passed",
       "problem": "Substring classification can label third-party toolsets as TurboMCP read/edit kinds."
     },
     {
       "id": "DISC-COUNT",
-      "state": "open",
+      "state": "implemented_focused_runtime_passed",
       "problem": "Index describes declared toolset count as registered count."
     },
     {
       "id": "DISC-WINDOWS",
-      "state": "open",
+      "state": "implemented_runtime_sample_passed_large_window_case_untested",
       "problem": "Window sample capped at six is reported as total visible windows; unavailable Slate appears as zero."
     },
     {
       "id": "DISC-NEXT",
-      "state": "open",
+      "state": "implemented_focused_runtime_passed",
       "problem": "Unknown-tool guidance names obsolete R-TOOL-INDEX instead of callable tool."
     }
   ],
@@ -44,5 +44,27 @@
   ],
   "limitations": [
     "No acceptance until focused runtime evidence and source review complete."
+  ],
+  "evidence": {
+    "candidate": "e96467ea1fc912ba8a512c0ecc4319264cce5fba",
+    "runs": [
+      "035af39237d749b7a1156f9903bb1664",
+      "1eb69a8b3b9e4a0cbf9a5794c4dbf18c"
+    ],
+    "passed": [
+      "Stock-engine build",
+      "Index counts match emitted entries; engine kinds remain Engine",
+      "Exact, short and joined help, traps, invalid names",
+      "Read-tool pagination complete without duplicate entries; invalid cursors refused",
+      "Search names, continuation, budget and empty result",
+      "Status provenance disclaimer, schema exact/refusal and schema-size preview",
+      "Current window enumeration count agrees with sample"
+    ]
+  },
+  "remaining": [
+    "Complete schema renderer and parameter-description review, including truncation constraints.",
+    "Exercise or explicitly limit more-than-six window enumeration and unavailable Slate branches.",
+    "Review long search queries and names against help budget before accepting the entire tool.",
+    "Record individual tool acceptance only after these boundaries are resolved."
   ]
 }
