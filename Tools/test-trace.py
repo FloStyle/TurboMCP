@@ -1,49 +1,7 @@
 #!/usr/bin/env python3
-# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-DBG-2
-#
-# NAMED HERE SO Spec/06_ACCEPTANCE.md CAN BE ANSWERED MECHANICALLY. Spec/WORKING_PLAN.md section 1.3 says a
-# capability is done when its acceptance row PASSES, WHICH MAKES THAT DOCUMENT THE DEFINITION OF DONE - and a
-# script over the tree measured 64 OF ITS 122 ROWS CITED BY NO SUITE AT ALL, so nothing could answer
-# 'is this row passing?' without a human reading it.
-#
-# *** AND THE SCRIPT IS NAMED NOW, BECAUSE A SCRIPT OVER THE TREE IS NOT A REFERENCE: ***
-#   python Tools/checks/count-acceptance-citations.py
-# IT STATES ITS CRITERION - a literal occurrence of the id in a Tools/test-*.py file - AND REPORTS 64. FOUR
-# EARLIER ATTEMPTS GAVE 91, 64, 66 AND 56 BECAUSE NONE OF THEM SAID WHAT CITED MEANT, AND THIS LINE CARRIED
-# THE 91. *** A NUMBER WITHOUT ITS CRITERION IS NOT A MEASUREMENT; IT IS A NUMBER. ***
-#
-# THE ID IS READ FROM THE DOCUMENT, NOT GUESSED. VERIFIED FOR THIS ONE:
-#   
-#   | T-DBG-2 | Trace point | One line per tick in play with pin values; clear stops it; panel lists it |
-
-"""
-`E-TRACE` and `R-TRACE`: arming a trace point, reading it, and clearing it.
-
-WHAT THIS SUITE CAN AND CANNOT PROVE, STATED AT THE TOP BECAUSE IT IS THE MOST IMPORTANT THING ABOUT IT.
-
-**IT CANNOT PROVE A TRACE HIT.** MEASURED, and recorded rather than hidden: the test project contains NO MAP -
-`TestProject/Content` holds no `.umap` - so a Play-In-Editor session runs the engine's empty
-`/Temp/UEDPIE_0_Untitled_1` world, NOTHING in it executes Blueprint code, and `E-TRACE`'s subscriber is never
-called. Asked directly, the tool answers `0 script exception(s) have reached this module`.
-
-So the honest state of the mechanism is: THE SUBSCRIPTION REGISTERS (it reports `SUBSCRIBED` and the handle is
-valid, and the editor log carries `TRACE SUBSCRIBED to FBlueprintCoreDelegates::OnScriptException`), AND IT HAS
-NEVER BEEN OBSERVED TO FIRE. Producing a hit needs a level with an actor whose BeginPlay runs - a fixture this
-suite does not have. SECTION 6s OF TestRecord.md OPENED THAT RISK AND THIS SUITE DOES NOT CLOSE IT.
-
-**WHAT IT DOES PROVE, AND EACH IS A REAL CLAIM ABOUT THE TOOL:**
-
-  1. ARMING CHANGES NO ASSET. The claim is checked from OUTSIDE the tool - the asset's size, mtime and MD5
-     before and after - because a tool reporting its own innocence is not evidence. This is the claim that
-     matters most, since `Spec/03_TOOLS.md` has arming look like an edit.
-  2. THE READ TOOL CANNOT ARM OR CLEAR. `R-TRACE` is in the Read toolset and refuses a mutating action BY NAME
-     rather than performing it, so the separation a caller relies on is enforced and not merely intended.
-  3. THE REFUSALS NAME WHAT IS WRONG, each asserting its OWN sentence and not just an `error:` prefix - a tool
-     that refused everything with one generic message would pass a prefix-only check.
-  4. ARM IS IDEMPOTENT AND CLEAR IS EXACT, including that clearing a point takes ITS hits and leaves another
-     point's hits alone.
-  5. THE SUBSCRIPTION STATE IS REPORTED, so a zero is never left ambiguous between "nothing ran" and "the trace
-     is off".
+# Acceptance: T-DBG-2 is partial; pin-value capture is not implemented.
+"""Exercise trace controls, disk preservation and an observed hit in the owned PIE fixture.
+Does not prove all Blueprint instrumentation, worker-thread delivery or buffer overflow behavior.
 """
 
 import os
@@ -330,11 +288,13 @@ def main():
 
         after = status(session)
         hits = parsed_hits(after)
-        check("THE ARMED NODE RAN, so the subscriber fires", hits > 0,
+        check("THE ARMED NODE RAN, so the subscriber fires", hits is not None and hits > 0,
               "hit count parsed as %s from: %s" % (hits, after[:220]))
         check("the hit names the node it matched", probe_node in after, after[:300])
         check("a tracepoint exception reached this module", "Tracepoint" in after, after[:300])
 
+        check("hits identify the executing instance", "context=" in after and "BP_TurboMCPTestLog" in after, after)
+        check("trace output names measurement limits", "pin values are not captured" in after and "not UTC" in after, after)
         clear(session)
 
     print()

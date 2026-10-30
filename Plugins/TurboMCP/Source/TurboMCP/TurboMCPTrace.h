@@ -13,38 +13,10 @@
 
 class UEdGraphNode;
 
-/**
- * `P/E-TRACE`'s engine side: a non-pausing trace of the nodes a caller marked.
- *
- * `Spec/03_TOOLS.md` asks that marking a node by ID records time, node, pin values and named variables every
- * time it runs in a play session, and that it NEVER PAUSES. Those two requirements rule out the obvious
- * implementations and are the whole reason this module is shaped the way it is.
- *
- * WHY NOT A BREAKPOINT. A Blueprint breakpoint sets `bShouldBreakExecution = true`
- * (Editor/UnrealEd/Private/Kismet2/KismetDebugUtilities.cpp:301-302) and therefore STOPS THE GAME. The engine
- * itself distinguishes the two paths at `:299-306`: `Breakpoint` breaks unconditionally while `Tracepoint`
- * breaks ONLY while already single-stepping. A trace built on breakpoints would be a different capability
- * wearing this one's name.
- *
- * WHY THE SUBSCRIPTION IS THE WHOLE MECHANISM, AND WHY THERE IS NO GRAPH EDIT. `EX_Tracepoint` is already in
- * the bytecode of every normally-compiled Blueprint: Editor/KismetCompiler/Private/KismetCompilerVMBackend.cpp
- * :1969-1971 emits it for `KCST_DebugSite`, and the only thing that suppresses it is
- * `Kismet.bSuppressInstrumentation` (`:1961`), which this project does not set. The VM raises it through
- * `FBlueprintCoreDelegates::OnScriptException` in `execTracepoint`
- * (Runtime/CoreUObject/Private/UObject/ScriptCore.cpp:2529-2537), and `IsDebuggingEnabled()` returns `GIsEditor`
- * (`:290-297`), so in an editor build the trace points are ALWAYS LIVE and need no opt-in.
- *
- * SO ARMING A POINT IS AN IN-MEMORY REGISTRY ENTRY AND NOTHING ELSE. NO node is inserted, NO Blueprint is
- * recompiled, and `AllocateDefaultPins` - the call whose omission has already crashed this project once and
- * silently corrupted a graph once - is never reached, because this module never creates a node.
- *
- * THE ONE THING THIS CLASS DELIBERATELY DOES NOT COPY FROM THE ENGINE. `FKismetDebugUtilities::OnScriptException`
- * records a sample only when `ObjectBeingDebugged == ActiveObject`
- * (Editor/UnrealEd/Private/Kismet2/KismetDebugUtilities.cpp:411), because it is driving the debugger and cares
- * about the object the USER put in the debugger. A trace tool must record every hit for a marked node whatever
- * is being debugged, so that gate is NOT reproduced here. Copying it would make this capability silently
- * produce nothing whenever the Blueprint editor was not watching the running object - the exact failure mode
- * that looks like "the game never reached that node" rather than like a bug.
+/** In-memory subscription to existing Blueprint tracepoint events.
+ * Arming does not instrument, compile or save assets and does not request a debugger pause.
+ * Delivery depends on executed bytecode and available debug information. IDs are not resolved here.
+ * Records node identity, instance path, monotonic time and thread; no pin values are captured.
  */
 namespace TurboMCPTrace
 {
