@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "0be6ba00f15aaaa6b068d54f1c22b63e1e974a94",
+  "plugin_tree": "182e639bf03e511c9cd3f2f5da77dedecae008a1",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -74,9 +74,9 @@
         }
       ],
       "test_references": [
-        "Tools/test-batch-edit.py"
+        "Tools/test-batch-sequence.py"
       ],
-      "static_call_evidence": "parsed_call",
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1868,9 +1868,9 @@
         }
       ],
       "test_references": [
-        "Tools/test-batch-edit.py"
+        "Tools/test-batch-sequence.py"
       ],
-      "static_call_evidence": "parsed_call",
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -3502,7 +3502,6 @@
         }
       ],
       "test_references": [
-        "Tools/test-batch-edit.py",
         "Tools/test-batch-tools.py",
         "Tools/test-bp-lint.py",
         "Tools/test-c09-success.py",
@@ -3909,6 +3908,7 @@
       "test_references": [
         "Tools/test-agent-help.py",
         "Tools/test-asset-recovery.py",
+        "Tools/test-batch-sequence.py",
         "Tools/test-collapse-function.py",
         "Tools/test-common-button-workflow.py",
         "Tools/test-custom-event.py",
