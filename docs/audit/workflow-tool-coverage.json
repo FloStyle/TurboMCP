@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-29",
+  "updated": "2026-10-30",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
   "inventory": 165,
   "workflows": [
@@ -775,6 +775,28 @@
         "Undo eligibility relies on the latest transaction title and recorded object packages; arbitrary callback side effects are not proven isolated.",
         "Save callbacks can run and partial batches are not rolled back."
       ]
+    },
+    {
+      "id": "WF-BP-GRAPH-EDITS",
+      "title": "Patch defaults, repoint consumers and replace a connected graph body",
+      "status": "bounded_scenario_checked",
+      "review": "docs/audit/graph-edit-review.json",
+      "fixture": "TurboMCP.Workflow.GraphEdits",
+      "tools_used": [
+        "PreviewTurboMCPGraphPatch",
+        "EditTurboMCPGraphPatch",
+        "PreviewTurboMCPGraphReplace",
+        "EditTurboMCPGraphReplace",
+        "PreviewTurboMCPGraphRepoint",
+        "EditTurboMCPGraphRepoint"
+      ],
+      "limitations": [
+        "Synthetic event graph with PrintString nodes, not every node type or project callback.",
+        "No disk save/persistence claim; compilation is explicit and separate.",
+        "Repoint fan-out exercised with one consumer; arbitrary multi-consumer/type combinations remain outside this scenario.",
+        "No injected post-mutation failure in this new workflow; existing RepointFailureTest source reviewed, not claimed rerun.",
+        "Replacement placement avoids existing content conservatively, including nodes scheduled for deletion; compact final layout is not guaranteed."
+      ]
     }
   ],
   "tool_usage": {
@@ -1123,9 +1145,27 @@
     ],
     "EditTurboMCPAssetUndo": [
       "WF-DATA-04-SAVE-UNDO"
+    ],
+    "PreviewTurboMCPGraphPatch": [
+      "WF-BP-GRAPH-EDITS"
+    ],
+    "EditTurboMCPGraphPatch": [
+      "WF-BP-GRAPH-EDITS"
+    ],
+    "PreviewTurboMCPGraphReplace": [
+      "WF-BP-GRAPH-EDITS"
+    ],
+    "EditTurboMCPGraphReplace": [
+      "WF-BP-GRAPH-EDITS"
+    ],
+    "PreviewTurboMCPGraphRepoint": [
+      "WF-BP-GRAPH-EDITS"
+    ],
+    "EditTurboMCPGraphRepoint": [
+      "WF-BP-GRAPH-EDITS"
     ]
   },
-  "unique_tools_scenario_reviewed": 92,
+  "unique_tools_scenario_reviewed": 98,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

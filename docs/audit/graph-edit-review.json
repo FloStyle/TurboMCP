@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "workflow": "WF-BP-GRAPH-EDITS",
-  "status": "source_review_in_progress",
+  "status": "bounded_scenario_accepted",
   "focus_tools": [
     "PreviewTurboMCPGraphPatch",
     "EditTurboMCPGraphPatch",
@@ -10,14 +10,9 @@
     "PreviewTurboMCPGraphRepoint",
     "EditTurboMCPGraphRepoint"
   ],
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "contract": "docs/design/graph-edit-review.json",
-  "remaining": [
-    "Complete six-tool source, helper and help review",
-    "Extend workflow to Replace and Repoint plus refusal/failure cases",
-    "Visual inspection and final offline/scope gates",
-    "Integrate and update coverage"
-  ],
+  "remaining": [],
   "findings": [
     {
       "tool": "EditTurboMCPGraphPatch",
@@ -31,9 +26,21 @@
     {
       "tool": "PreviewTurboMCPGraphReplace",
       "problem": "Preview does not run append scratch validation, so it offers plans that Edit later rejects. Edit can open its transaction before that refusal.",
-      "state": "open",
+      "state": "implemented_native_regression_passed",
       "evidence": "2ffb6835fb034cd7bf34d23c60d8aed9",
       "next": "Share scratch preflight before presenting or starting the live edit; retain disconnected fixture as negative control."
+    },
+    {
+      "tool": "PreviewTurboMCPGraphPatch",
+      "problem": "Preview counted all submitted nodes as changes even for identical defaults.",
+      "state": "implemented_native_regression_passed",
+      "fix": "Validate literal defaults and count actual differences during planning."
+    },
+    {
+      "tool": "EditTurboMCPGraphReplace",
+      "problem": "Screenshot showed new replacement call overlapping retained event.",
+      "state": "implemented_native_and_visual_checked",
+      "fix": "Enable shared placement planning for replacement nodes."
     }
   ],
   "contract_clarification": "Current Patch supports literal defaults only and refuses links; use Repoint or connection tools for rewiring. Workflow must test this refusal rather than assume Patch supports links.",
@@ -43,17 +50,55 @@
       "result": "failed",
       "detail": "Replacement fixture supplied an unconnected PrintString without a recognized entry. Preview listed removals; edit rejected during append scratch preflight. Actual node count remained three; positive replacement assertion failed.",
       "follow_up": "Fixture now supplies a connected custom-event entry. Preview/edit disagreement and conservative partial-result wording remain review findings, not erased by a passing rerun."
+    },
+    {
+      "run": "f9019d8d337b45d1ab9f8fcd419ce9b4",
+      "result": "failed",
+      "detail": "Two text assertions expected replacement-specific prefix; shared placement now refuses earlier with append preflight prefix. State-preservation assertions passed. Assertion corrected to shared preflight refusal; subsequent run passed."
     }
   ],
   "latest_native_run": {
-    "id": "6ede8932a23b468bb0756472827ffd7f",
-    "candidate": "f587940",
+    "id": "732fef5d24294c58872d34fc434f09e8",
+    "candidate": "d505714",
     "result": "passed",
     "checks": [
-      "Patch no-op dirty flag and undo history",
-      "Patch real default edit with node/link/position preservation",
-      "Repoint existing execution source while retaining original node",
-      "Replace connected body, retain custom-event entry and sibling graph"
+      "Patch identical preview counts, dirty flag and undo history",
+      "Patch real edit and invalid pin preservation",
+      "Repoint existing target, invalid target refusal, new target creation and source deletion",
+      "Replace disconnected preflight refusal without undo/dirty mutation",
+      "Connected replacement, retained entry and sibling graph",
+      "Live help for six tools",
+      "Explicit compile and native capture"
     ]
-  }
+  },
+  "offline_gate": {
+    "id": "47324b11256f4ff59b987ce121c72d27",
+    "result": "26 checks passed",
+    "final_extension": "Subsequent test-only Repoint create/remove extension passed native workflow, repository and language checks."
+  },
+  "scope_projection": "241c068d02a28f363ef01f97e82104797a0a5430",
+  "visual": {
+    "inspected": "TestProject/Saved/TurboMCP/Captures/ReplaceFixture_FailureGraph_native_1200x700_D598F96A4B69BFB48243909DEC099D48.png",
+    "result": "Retained event and replacement call separated; readable nodes, visible connected execution wire; no overlap.",
+    "limit": "Simple event graph only; not a dense-layout or general tidy certification."
+  },
+  "supplemental_checker_issue": {
+    "state": "open_housekeeping",
+    "tool": "Tools/check-plugin.py",
+    "problem": "check_includes indexes only Engine/Source and Engine/Plugins, then flags project-local includes as unknown. Supplemental check failed; actual UBT build passed.",
+    "scope": "Checker repair remains separate from tool acceptance; do not report this check as passing."
+  },
+  "review_aspects": [
+    "Source/helpers: reviewed planning, schema default validation, transaction boundaries, source/target guards, replacement removal protection and shared append placement/preflight.",
+    "Help/output: inspected all six live parameter descriptions and templates; corrected false Patch compile rollback promise and preview difference counts.",
+    "Behavior/preservation: focused native workflow with independent pin/link/node checks; compile/capture are supporting tools, not double-counted.",
+    "Failures: retained initial disconnected input and later wording assertion failures; unknown restoration remains explicit."
+  ],
+  "limitations": [
+    "Synthetic event graph with PrintString nodes, not every node type or project callback.",
+    "No disk save/persistence claim; compilation is explicit and separate.",
+    "Repoint fan-out exercised with one consumer; arbitrary multi-consumer/type combinations remain outside this scenario.",
+    "No injected post-mutation failure in this new workflow; existing RepointFailureTest source reviewed, not claimed rerun.",
+    "Replacement placement avoids existing content conservatively, including nodes scheduled for deletion; compact final layout is not guaranteed."
+  ]
 }
