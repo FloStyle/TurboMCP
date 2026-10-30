@@ -59,7 +59,12 @@
       "Search names, continuation, budget and empty result",
       "Status provenance disclaimer, schema exact/refusal and schema-size preview",
       "Current window enumeration count agrees with sample"
-    ]
+    ],
+    "offline": {
+      "run": "2e54514f2eb444e59f528c252f06b6a7",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "remaining": [
     "Complete schema renderer and parameter-description review, including truncation constraints.",
