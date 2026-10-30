@@ -293,7 +293,7 @@ namespace
 		{
 			// `float` is the name a caller writes; the engine's menu calls it `real`.
 			PinType = UBlueprintEditorLibrary::GetBasicTypeByName(
-				FName(*(Lower == TEXT("float") ? TEXT("real") : Lower)));
+				FName(*((Lower == TEXT("float") || Lower == TEXT("double")) ? TEXT("real") : Lower)));
 		}
 		else if (StructNames.Contains(Lower))
 		{
@@ -395,7 +395,7 @@ namespace
 				}
 
 				const FEdGraphPinType ValueType = UBlueprintEditorLibrary::GetBasicTypeByName(
-					FName(*(ValueLower == TEXT("float") ? TEXT("real") : ValueLower)));
+					FName(*((ValueLower == TEXT("float") || ValueLower == TEXT("double")) ? TEXT("real") : ValueLower)));
 				PinType = UBlueprintEditorLibrary::GetMapType(PinType, ValueType);
 			}
 		}

@@ -58,7 +58,7 @@ bool FTurboMCPVariableFlagsTest::RunTest(const FString& Parameters)
         TestFalse(FString(TEXT("Invalid default refuses: ")) + Declaration,
             FTurboMCPVarsAdd::Plan(Blueprint->GetPathName(), Declaration, ReusedPlan, Error));
     }
-    for (const TCHAR* Declaration : {TEXT("Good: int default=12"), TEXT("Good: float default=1.25"), TEXT("Good: double default=-0.5"), TEXT("Good: int default=-2147483648"), TEXT("Good: Vector default=(X=1,Y=2,Z=3)"), TEXT("Good: Array<int> default=(1,2,3)"), TEXT("Good: Set<int> default=(1,2)"), TEXT("Good: Map<int,int> default=((1,2),(3,4))")})
+    for (const TCHAR* Declaration : {TEXT("Good: int default=12"), TEXT("Good: float default=1.25"), TEXT("Good: double default=-0.5"), TEXT("Good: int default=-2147483648"), TEXT("Good: Vector default=(X=1,Y=2,Z=3)"), TEXT("Good: Array<int> default=(1,2,3)"), TEXT("Good: Set<int> default=(1,2)"), TEXT("Good: Map<int,int> default=((1,2),(3,4))"), TEXT("Good: Map<int,double> default=((1,2.5))")})
     {
         TestTrue(FString(TEXT("Valid default accepts: ")) + Declaration,
             FTurboMCPVarsAdd::Plan(Blueprint->GetPathName(), Declaration, ReusedPlan, Error));
