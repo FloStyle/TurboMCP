@@ -30,7 +30,12 @@
       "Deterministic repetition and bounded rows",
       "Empty input, invalid kind, missing type and default kind",
       "Live help required parameters and support limitation"
-    ]
+    ],
+    "offline": {
+      "run": "1229aa7275da4f8888629fec9120fc0c",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "limitations": [
     "Registry scanning/unavailable branches and class/interface filters source-reviewed only.",
