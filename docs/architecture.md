@@ -152,6 +152,8 @@ Canceling a transaction record is not restoration.
 
 ## ARC04 — Compile baseline and diagnostics
 
+Current restricted batch workflow (2026-10-30): ARC09 uses explicit compilation after the edit transaction, following the owner-requested single robust current workflow. The compile-coupled requirements below do not make BatchEdit compile implicitly. A later compile failure does not roll back a prior batch.
+
 Do not compile the real asset in Read or non-executing Preview.
 Use an explicit Compile operation to establish a baseline when no valid baseline exists.
 Extend that operation to existing supported compilable asset families when necessary.
@@ -308,10 +310,15 @@ Refuse cross-asset or cross-graph batches before mutation.
 Refuse unknown operation kinds and unknown fields.
 Require unique operation IDs.
 
-The batch owns one transaction and one final compile.
+The batch owns one edit transaction. Compilation and saving are separate explicit operations.
+Use preview, edit, source read-back (and visual review where needed), explicit Compile, then explicit Save.
+Compilation may reinstance objects and is not covered by the earlier edit undo transaction.
+A successful edit reports compile=not_run and save=not_requested; a later compile failure never implies automatic rollback.
 Each operation core must not start, end, undo, compile, or save independently.
 Re-resolve and revalidate each operation against the state produced by preceding operations.
-Abort and restore the entire batch when any operation fails.
+Abort and attempt to restore the entire batch when any operation fails.
+Verify captured source state and the previous dirty flag after owned undo. Unreal may invalidate transient compile status; source restoration does not certify compiled behavior.
+If restoration cannot be verified, report partial and block subsequent TurboMCP Edit dispatch for the editor session. Keep enabled read/status tools available for inspection. Recover the asset before restarting; never save unverified changes.
 A result records every attempted operation, including a partially applied failing operation.
 Do not save from the batch.
 

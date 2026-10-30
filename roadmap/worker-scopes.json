@@ -2967,6 +2967,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "tool-review-batch-final": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchSequenceTest.cpp",
+            "Tools/test-batch-edit.py",
+            "Tools/test-batch-sequence.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

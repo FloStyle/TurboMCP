@@ -1313,7 +1313,7 @@
       "step": "S16",
       "level": "L3",
       "action": "Three graphRepoint operations in one graph",
-      "expected": "One transaction, one final compile, exact state, no save",
+      "expected": "One edit transaction, exact source state, compile and save not run; explicit compile/read-back/save are separate workflow steps",
       "status": "not_mapped",
       "existingEquivalent": null,
       "command": null,
