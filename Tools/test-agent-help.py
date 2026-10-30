@@ -14,6 +14,7 @@ Exits non-zero if a check fails.
 
 import json
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -39,7 +40,15 @@ def main():
     index = s.call(READ_TOOLSET, "ReadTurboMCPToolIndex")
     check("names the server state", "server:" in index)
     check("states tool search mode", "tool search:" in index)
-    check("lists every toolset", index.count("(source:") >= 5, "%d toolset lines" % index.count("(source:"))
+    toolset_lines = re.findall(r"^([^\n]+) \(source: (TurboMCP|Unreal MCP)\)$", index, re.M)
+    totals = re.search(r"(\d+) toolsets in total, (\d+) of them TurboMCP, (\d+) tools", index)
+    tool_lines = re.findall(r"^  .+ - (?:TurboMCP|Unreal MCP) - .+$", index, re.M)
+    check("counts match emitted registry entries", totals is not None and
+          tuple(map(int, totals.groups())) == (len(toolset_lines),
+          sum(source == "TurboMCP" for _, source in toolset_lines), len(tool_lines)))
+    engine_lines = [line for line in index.splitlines() if " - Unreal MCP - " in line]
+    check("engine kinds are not guessed from names", bool(engine_lines) and
+          all(line.startswith("  Engine ") for line in engine_lines))
     check("lists our read tools", "ReadTurboMCPToolIndex" in index)
     check("flags our tools as TurboMCP", "TurboMCP -" in index)
     check("prints counts even at zero", "toolsets in total" in index)
@@ -117,6 +126,7 @@ def main():
     print(bad2)
     print()
     check("refuses rather than guessing", bad2.startswith("error:"))
+    check("unknown tool gives callable next step", "ReadTurboMCPToolIndex" in bad2 and "R-TOOL-INDEX" not in bad2)
 
     print()
     print("=== the joined name form tools/list prints ===")
@@ -140,6 +150,27 @@ def main():
     print()
     check("accepts the short toolset name", summary.startswith("read:"))
     check("summarises every tool", summary.count("\n") >= 3)
+
+    print("=== status, schema and window metadata ===")
+    status = s.call(READ_TOOLSET, "ReadTurboMCPStatus")
+    print(status)
+    check("status distinguishes declaration from registration", "declared toolsets" in status and "registered:" in status)
+    check("status does not invent revision provenance", "source revision: unknown" in status)
+    schema = s.call(READ_TOOLSET, "ReadTurboMCPToolSchema", {"toolset": "Read", "tool": "ReadTurboMCPStatus"})
+    print(schema)
+    check("schema resolves exact tool with short toolset", "ReadTurboMCPStatus" in schema and not schema.startswith("error:"))
+    refused = s.call(READ_TOOLSET, "ReadTurboMCPToolSchema", {"toolset": "Read", "tool": "NoSuchTool"})
+    check("schema refuses unknown tool", refused.startswith("error:"))
+    preview = s.call(PREVIEW_TOOLSET, "PreviewTurboMCPToolset")
+    print(preview)
+    check("preview explains whole-schema size", "whole-toolset schema sizes" in preview and "would change: nothing" in preview)
+    windows = s.call("TurboMCP.TurboMCPLookToolset", "LookTurboMCPToolset")
+    print(windows)
+    counts = re.search(r"(\d+) visible, showing (\d+) \(limit (\d+)\)", windows)
+    check("window count is explicit or unavailable", "visible count unavailable" in windows or counts is not None)
+    if counts:
+        total, shown, limit = map(int, counts.groups())
+        check("window sample agrees with listed titles", shown == windows.count("\nwindow:") and shown == min(total, limit))
 
     print()
     if failures:

@@ -29,14 +29,7 @@
 #include "Logging.h"
 #include "TurboMCPCallRecorder.h"
 
-/**
- * Toolset name an agent and the panel use, in the engine's own format.
- *
- * The engine builds `<Module>.<ClassName>` in
- * FFunctionLibraryToolset::GetToolsetClassName and does not strip the `U`, so
- * the same rule is repeated here. `07_ENGINE_NOTES.md` section 2.1 shows the
- * full name in `call_tool`, which is why a tool must be able to print it.
- */
+// Shared registration and diagnostic text for tools and the editor panel.
 namespace TurboMCPToolsets
 {
 	/** Every toolset class this plugin owns, in kind order: Read, Look, Preview, Edit. */
@@ -169,8 +162,10 @@ namespace TurboMCPToolsets
 	 * answer in a commandlet rather than an empty list that reads like "no
 	 * windows exist".
 	 */
-	bool GetLiveWindowNames(TArray<FString>& OutNames, int32 InLimit)
+	bool GetLiveWindowNames(TArray<FString>& OutNames, int32 InLimit, int32& OutTotal)
 	{
+		OutNames.Reset();
+        OutTotal = 0;
 		if (!FSlateApplication::IsInitialized())
 		{
 			return false;
@@ -178,6 +173,7 @@ namespace TurboMCPToolsets
 
 		TArray<TSharedRef<SWindow>> Windows;
 		FSlateApplication::Get().GetAllVisibleWindowsOrdered(Windows);
+        OutTotal = Windows.Num();
 
 		for (const TSharedRef<SWindow>& Window : Windows)
 		{
@@ -199,7 +195,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPStatus()
 	const int32 ToolsetCount = TurboMCPToolsets::GetToolsetClasses().Num();
 
 	FString Result = FString::Printf(
-		TEXT("read: TurboMCP status, %d toolsets\n"), ToolsetCount);
+		TEXT("read: TurboMCP status, %d declared toolsets (registration checked below)\n"), ToolsetCount);
 
     const FTurboMCPModule* Module = FModuleManager::GetModulePtr<FTurboMCPModule>(TEXT("TurboMCP"));
     const bool Active = Module && Module->IsEnabledForSession();
@@ -247,20 +243,15 @@ FString UTurboMCPLookToolset::LookTurboMCPToolset()
 	constexpr int32 MaxWindowLines = 6;
 
 	TArray<FString> WindowNames;
-	const bool bHasApplication = TurboMCPToolsets::GetLiveWindowNames(WindowNames, MaxWindowLines);
+	int32 TotalWindows = 0;
+	const bool bHasApplication = TurboMCPToolsets::GetLiveWindowNames(WindowNames, MaxWindowLines, TotalWindows);
 
-	// P1: the count is printed with its reason, so "no windows" never reads the
-	// same as "the check did not run".
-	FString Result = FString::Printf(
-		TEXT("look: editing windows, %d visible, showing at most %d"),
-		WindowNames.Num(), MaxWindowLines);
+    if (!bHasApplication)
+        return TEXT("look: editing windows, visible count unavailable\nSlate is not initialized; window enumeration did not run. This tool lists titles only and captures no image.");
 
-	if (!bHasApplication)
-	{
-		Result += TEXT("\nNo live Slate application, so there is nothing to capture. ")
-			TEXT("This is what a commandlet sees, where no editor window exists.");
-		return Result;
-	}
+    FString Result = FString::Printf(
+        TEXT("look: editing windows, %d visible, showing %d (limit %d)"),
+        TotalWindows, WindowNames.Num(), MaxWindowLines);
 
 	if (WindowNames.Num() == 0)
 	{

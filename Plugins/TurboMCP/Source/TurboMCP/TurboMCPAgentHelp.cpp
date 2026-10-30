@@ -43,31 +43,17 @@ namespace
 	/** Where a too-long single description is cut when it has no sentence stop. */
 	constexpr int32 MaxSentenceFallbackChars = 160;
 
-	/**
-	 * The kind of a tool.
-	 *
-	 * A toolset holds one kind, which is why a Read toolset cannot write. Our own
-	 * toolset names embed their kind, for example `TurboMCP.TurboMCPReadToolset`,
-	 * so the kind is read from the toolset name rather than guessed from a tool.
-	 *
-	 * The match is a substring search, not a prefix test, because the name starts
-	 * with the module rather than the kind. Kind words are checked in the fixed
-	 * order Read, Look, Preview, Edit so the answer does not depend on map order.
-	 *
-	 * For an engine toolset no kind can be proven, so "Engine" is printed instead
-	 * of a guess. A confident but wrong kind is what `P1` and `D-05` forbid.
-	 */
-	FString KindOf(const FString& InToolsetName)
-	{
-		for (const TCHAR* Kind : KindNames)
-		{
-			if (InToolsetName.Contains(Kind, ESearchCase::IgnoreCase))
-			{
-				return Kind;
-			}
-		}
-		return TEXT("Engine");
-	}
+    // Kinds describe only our four declared toolsets. Never infer effects from
+    // a third-party name containing words such as Read or Edit.
+    FString KindOf(const FString& InToolsetName)
+    {
+        for (const TCHAR* Kind : KindNames)
+        {
+            if (InToolsetName == FString::Printf(TEXT("TurboMCP.TurboMCP%sToolset"), Kind))
+                return Kind;
+        }
+        return TEXT("Engine");
+    }
 
 	FString KindForTool(const FString& Toolset, const FString& Bare)
 	{
@@ -272,10 +258,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolIndex()
 	}
 
 	int32 ToolCount = 0;
+    int32 RegisteredTurboMCPCount = 0;
 	FString Lines;
 
 	for (const FToolsetEntry& Toolset : Toolsets)
 	{
+        if (Toolset.Name.StartsWith(TEXT("TurboMCP."))) ++RegisteredTurboMCPCount;
 		Lines += FString::Printf(TEXT("\n%s (source: %s)"),
 			*Toolset.Name, *SourceOf(Toolset.Name));
 
@@ -293,13 +281,10 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolIndex()
 		}
 	}
 
-	// The counts print even at zero, so "nothing registered" never reads the
-	// same as "the check did not run". Our own toolset count comes from the class
-	// list rather than the registry, so a toolset the registry silently refused
-	// shows up as a gap between the two numbers.
+    // Count registry entries, not classes that might have failed registration.
 	Result += FString::Printf(TEXT("\n%d toolsets in total, %d of them TurboMCP, %d tools"),
 		Toolsets.Num(),
-		TurboMCPToolsets::GetToolsetClasses().Num(),
+		RegisteredTurboMCPCount,
 		ToolCount);
 	Result += Lines;
 	Result += TEXT("\nOrder is Read, Look, Preview, Edit. ")
@@ -678,7 +663,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 		Error += FString::Printf(TEXT(" in toolset '%s'"), *WantedToolset);
 	}
 	Error += TEXT(". Real toolsets: ") + FString::Join(KnownToolsetNames, TEXT(", "));
-	Error += TEXT(". Use R-TOOL-INDEX for every tool name.");
+	Error += TEXT(". Use ReadTurboMCPToolIndex for registered tool names.");
 
 	// Name close toolset matches, which is the usual mistake: the module prefix
 	// is easy to drop.
