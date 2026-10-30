@@ -43,7 +43,12 @@
       "Native actual Actor Tick and unrelated Tick-named event control",
       "All six lint sections, filters, node identity comparisons and budget controls",
       "Disk fixture unchanged"
-    ]
+    ],
+    "offline": {
+      "run": "be0bdb2efdc04af99962730ebb8626e9",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "fixes": [
     "Actual engine function identity instead of Tick title substring.",
