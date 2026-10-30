@@ -25,7 +25,7 @@
 
 namespace
 {
-    bool SetLiteral(UEdGraph* Graph, UEdGraphPin* Pin, const FString& Value, bool& Changed, FString& Error)
+    bool SetLiteral(UEdGraph* Graph, UEdGraphPin* Pin, const FString& Value, bool& Changed, FString& Error, bool bValidateOnly = false)
     {
         Changed = false;
         const UEdGraphSchema_K2* Schema = Graph ? Cast<UEdGraphSchema_K2>(Graph->GetSchema()) : nullptr;
@@ -38,6 +38,7 @@ namespace
         Error = Schema->IsPinDefaultValid(Pin, Parsed, Object, Text);
         if (!Error.IsEmpty()) return false;
         if (Pin->DefaultValue == Parsed && Pin->DefaultObject == Object && Pin->DefaultTextValue.EqualTo(Text)) return true;
+        if (bValidateOnly) { Changed = true; return true; }
         const FGuid NodeGuid = Pin->GetOwningNode()->NodeGuid;
         const FName PinName = Pin->PinName;
         Pin->GetOwningNode()->Modify();
@@ -221,6 +222,14 @@ bool FTurboMCPGraphPatch::Plan(const FString& InAsset, const FString& InGraphNam
 				continue;
 			}
 
+            bool bDifferent = false;
+            FString ValidationError;
+            if (!SetLiteral(Graph, Target, Unquote(Pin.Value), bDifferent, ValidationError, true))
+            {
+                OutPlan.Refusals.Add(FString::Printf(TEXT("line %d: pin '%s': %s"), Pin.Line, *Pin.Name, *ValidationError));
+                continue;
+            }
+            Update.bWouldChange |= bDifferent;
 			Update.Pins.Add(Pin);
 		}
 
@@ -267,15 +276,18 @@ FString FTurboMCPGraphPatch::RenderPreview(const FPlan& InPlan)
 
 	// THE COUNT THAT MATTERS FOR `T-WRITE-5`, STATED IN THE PREVIEW SO A CALLER CAN SEE IT BEFORE WRITING:
 	// a patch that would touch more nodes than the caller intended is visible here rather than after the fact.
-	Out += FString::Printf(TEXT("\n%d node(s) would change, and every OTHER node is left alone"),
-		InPlan.Updates.Num());
+    int32 ChangedNodes = 0;
+    if (InPlan.AllRefusals().IsEmpty())
+        for (const FUpdate& Update : InPlan.Updates) ChangedNodes += Update.bWouldChange ? 1 : 0;
+    Out += FString::Printf(TEXT("\n%d node(s) would change"), ChangedNodes);
 
 	for (const FUpdate& Update : InPlan.Updates)
 	{
-		Out += FString::Printf(TEXT("\n    would CHANGE  %s  %s  %d pin value(s)"),
+		if (!Update.bWouldChange || !InPlan.AllRefusals().IsEmpty()) continue;
+		Out += FString::Printf(TEXT("\n    would CHANGE  %s  %s  %d submitted pin value(s)"),
 			*Update.Key, *Update.ClassName, Update.Pins.Num());
 	}
-	if (InPlan.Updates.Num() == 0)
+	if (ChangedNodes == 0)
 	{
 		Out += TEXT("\n    no node would change.");
 	}
@@ -365,6 +377,36 @@ bool FTurboMCPGraphPatch::Apply(const FPlan& InPlan, FString& OutReport, FString
 			KeysBefore.Add(TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true));
 		}
 	}
+
+    // Validate every requested default before opening a transaction. A repeated
+    // patch must not dirty a clean package or add an empty undo entry.
+    bool bNeedsWrite = false;
+    for (const FUpdate& Update : InPlan.Updates)
+    {
+        UEdGraphNode* Node = NodeByKey(Graph, Update.Key);
+        if (!Node)
+        {
+            OutError = TEXT("patch target is missing; no write attempted");
+            return false;
+        }
+        for (const TurboMCPGraphTextLex::FPinForm& Pin : Update.Pins)
+        {
+            bool bDifferent = false;
+            FString ValidationError;
+            if (!SetLiteral(Graph, PinByName(Node, Pin.Name), Unquote(Pin.Value), bDifferent, ValidationError, true))
+            {
+                OutError = FString::Printf(TEXT("line %d: pin '%s': %s; no write attempted"), Pin.Line, *Pin.Name, *ValidationError);
+                return false;
+            }
+            bNeedsWrite |= bDifferent;
+        }
+    }
+    if (!bNeedsWrite)
+    {
+        OutReport = FString::Printf(TEXT("unchanged: all requested defaults already match in %s on %s; no transaction created; compile=not_run; save=not_requested"),
+            *InPlan.Append.GraphName, *InPlan.Append.Asset);
+        return true;
+    }
 
 	// ---- 2. ONE TRANSACTION ---------------------------------------------------------------------------
 	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "GraphPatch", "TurboMCP patch a graph"));

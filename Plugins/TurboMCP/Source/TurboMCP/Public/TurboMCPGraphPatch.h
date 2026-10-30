@@ -59,6 +59,9 @@ public:
 		/** The node's key, in the long form `FTurboMCPNodeId` produces. */
 		FString Key;
 
+        /** True when at least one validated literal differs at planning time. */
+        bool bWouldChange = false;
+
 		/** The class the graph reports, for the report. */
 		FString ClassName;
 

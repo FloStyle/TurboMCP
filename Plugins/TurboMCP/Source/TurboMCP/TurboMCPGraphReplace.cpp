@@ -77,7 +77,7 @@ bool FTurboMCPGraphReplace::Plan(const FString& InAsset, const FString& InGraphN
 	// names of nodes it will create. REPLACE needs all of it and adds only the old-graph question below. A second
 	// parser or a second factory would be a second dialect and a second opinion about the same format, and this
 	// project has recorded that bug twice.
-	if (!FTurboMCPGraphAppend::Plan(InAsset, InGraphName, InText, OutPlan.Append, OutError))
+	if (!FTurboMCPGraphAppend::Plan(InAsset, InGraphName, InText, OutPlan.Append, OutError, /*bRequestPlacement=*/true))
 	{
 		return false;
 	}
@@ -187,6 +187,14 @@ bool FTurboMCPGraphReplace::Plan(const FString& InAsset, const FString& InGraphN
 		OutPlan.Removals.Add(Removal);
 	}
 
+    // Both public entry points must reject append failures before a live
+    // replacement transaction starts. Scratch success is not compile proof.
+    if (OutPlan.Append.Refusals.IsEmpty())
+    {
+        FString ScratchReport, ScratchError;
+        if (!FTurboMCPGraphAppend::Preflight(OutPlan.Append, ScratchReport, ScratchError))
+            OutPlan.Append.Refusals.Add(TEXT("replacement preflight refused: ") + ScratchError);
+    }
 	return true;
 }
 
