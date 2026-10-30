@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "workflow": "WF-BP-BATCH-REVIEW",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPBatchEdit",
+    "EditTurboMCPBatchEdit"
+  ],
+  "scope": "Sequential graphRepoint operations on one disposable Blueprint graph; no arbitrary tool batching.",
+  "checks": [
+    "Read help and parameter contracts; clarify supported operations and ordering.",
+    "Verify preview and invalid later operations leave live graph, dirty state and undo history unchanged.",
+    "Verify sequential live rewiring preserves unrelated nodes, defaults and positions.",
+    "Run existing post-mutation failure control and inspect truthful partial/rollback output.",
+    "Review English, comments and error attribution; preserve existing failures."
+  ],
+  "initial_findings": [
+    {
+      "state": "open",
+      "problem": "Non-object operation error uses zero-based Index, while other operation diagnostics use Index+1.",
+      "source": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp"
+    }
+  ],
+  "limitations": [
+    "No acceptance claimed; runtime checks pending."
+  ],
+  "readiness": "ready",
+  "owner": "codex-integrator"
+}
