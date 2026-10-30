@@ -814,6 +814,27 @@
         "Batch supports ordered graphRepoint on one asset and graph, not arbitrary tool batching.",
         "Release acceptance B01-B05 remains separately tracked; this bounded review does not certify every release case."
       ]
+    },
+    {
+      "id": "WF-DISCOVERY-01",
+      "title": "Discover tools and inspect their parameters before acting",
+      "status": "scenario_accepted",
+      "review": "docs/audit/discovery-tool-review.json",
+      "evidence": "ef2a0192874642d4ab61fc9751bfd914",
+      "tools_used": [
+        "ReadTurboMCPStatus",
+        "ReadTurboMCPToolIndex",
+        "ReadTurboMCPToolHelp",
+        "ReadTurboMCPToolSchema",
+        "LookTurboMCPToolset",
+        "PreviewTurboMCPToolset"
+      ],
+      "limitations": [
+        "Bounded live-registry discovery scenario; not certification of every third-party schema.",
+        "More-than-six windows and unavailable Slate paths source-reviewed only; current editor sample passed. No screenshot acceptance claimed.",
+        "Extreme-length external tool names and missing inputSchema branches source-reviewed, not injected in runtime.",
+        "ReadTurboMCPToolSchema remains a compact summary; full constraints require describe_toolset. Short-name matching can be ambiguous, so help directs models to full registry names."
+      ]
     }
   ],
   "tool_usage": {
@@ -1186,9 +1207,27 @@
     ],
     "EditTurboMCPBatchEdit": [
       "WF-BP-BATCH-REVIEW"
+    ],
+    "ReadTurboMCPStatus": [
+      "WF-DISCOVERY-01"
+    ],
+    "ReadTurboMCPToolIndex": [
+      "WF-DISCOVERY-01"
+    ],
+    "ReadTurboMCPToolHelp": [
+      "WF-DISCOVERY-01"
+    ],
+    "ReadTurboMCPToolSchema": [
+      "WF-DISCOVERY-01"
+    ],
+    "LookTurboMCPToolset": [
+      "WF-DISCOVERY-01"
+    ],
+    "PreviewTurboMCPToolset": [
+      "WF-DISCOVERY-01"
     ]
   },
-  "unique_tools_scenario_reviewed": 100,
+  "unique_tools_scenario_reviewed": 106,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

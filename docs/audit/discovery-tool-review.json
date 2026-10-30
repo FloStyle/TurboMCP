@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "workflow": "WF-DISCOVERY-01",
-  "status": "in_progress",
+  "status": "scenario_accepted",
   "readiness": "ready",
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPStatus",
     "ReadTurboMCPToolIndex",
@@ -33,6 +33,30 @@
       "id": "DISC-NEXT",
       "state": "implemented_focused_runtime_passed",
       "problem": "Unknown-tool guidance names obsolete R-TOOL-INDEX instead of callable tool."
+    },
+    {
+      "id": "DISC-SCHEMA",
+      "state": "implemented_focused_runtime_passed",
+      "problem": "Compact schema silently omits detailed descriptions and constraints.",
+      "fix": "Always disclose compact-summary limits and route to describe_toolset."
+    },
+    {
+      "id": "DISC-METADATA",
+      "state": "implemented_source_reviewed",
+      "problem": "Missing properties or inputSchema could look like no arguments.",
+      "fix": "Report unavailable parameter metadata rather than inventing zero parameters."
+    },
+    {
+      "id": "DISC-SEARCH-BUDGET",
+      "state": "implemented_runtime_normal_page_passed",
+      "problem": "Twenty long tool names plus continuation could exceed compact budget.",
+      "fix": "Fit complete identities within budget and reserve query/footer space."
+    },
+    {
+      "id": "DISC-DESCRIPTIONS",
+      "state": "implemented_focused_runtime_passed",
+      "problem": "Legacy preview description incorrectly claimed oversized toolset flags.",
+      "fix": "Document actual schema-size inspection and limits."
     }
   ],
   "acceptance": [
@@ -43,13 +67,18 @@
     "Window result distinguishes total, shown and unavailable; no screenshot claim."
   ],
   "limitations": [
-    "No acceptance until focused runtime evidence and source review complete."
+    "Bounded live-registry discovery scenario; not certification of every third-party schema.",
+    "More-than-six windows and unavailable Slate paths source-reviewed only; current editor sample passed. No screenshot acceptance claimed.",
+    "Extreme-length external tool names and missing inputSchema branches source-reviewed, not injected in runtime.",
+    "ReadTurboMCPToolSchema remains a compact summary; full constraints require describe_toolset. Short-name matching can be ambiguous, so help directs models to full registry names."
   ],
   "evidence": {
-    "candidate": "e96467ea1fc912ba8a512c0ecc4319264cce5fba",
+    "candidate": "faee6b9be8c3954f870b112f9340d3c2edd4521f",
     "runs": [
       "035af39237d749b7a1156f9903bb1664",
-      "1eb69a8b3b9e4a0cbf9a5794c4dbf18c"
+      "1eb69a8b3b9e4a0cbf9a5794c4dbf18c",
+      "d725a4f54e0a4745ab51f866a20947af",
+      "ef2a0192874642d4ab61fc9751bfd914"
     ],
     "passed": [
       "Stock-engine build",
@@ -58,7 +87,10 @@
       "Read-tool pagination complete without duplicate entries; invalid cursors refused",
       "Search names, continuation, budget and empty result",
       "Status provenance disclaimer, schema exact/refusal and schema-size preview",
-      "Current window enumeration count agrees with sample"
+      "Current window enumeration count agrees with sample",
+      "Compact schema explicitly discloses shortened descriptions and omitted constraints.",
+      "Published preview help agrees with metadata-only behavior.",
+      "Search reserves continuation/query budget without splitting tool names."
     ],
     "offline": {
       "run": "2e54514f2eb444e59f528c252f06b6a7",
@@ -66,10 +98,5 @@
       "checks": 26
     }
   },
-  "remaining": [
-    "Complete schema renderer and parameter-description review, including truncation constraints.",
-    "Exercise or explicitly limit more-than-six window enumeration and unavailable Slate branches.",
-    "Review long search queries and names against help budget before accepting the entire tool.",
-    "Record individual tool acceptance only after these boundaries are resolved."
-  ]
+  "remaining": []
 }
