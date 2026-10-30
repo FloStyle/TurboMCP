@@ -16,6 +16,11 @@
 #include "Editor.h"
 #include "Editor/Transactor.h"
 #include "Editor/TransBuffer.h"
+#include "Serialization/ObjectWriter.h"
+#include "UObject/StrongObjectPtr.h"
+#include "UObject/UObjectHash.h"
+#include "UObject/Package.h"
+#include "UObject/UnrealType.h"
 
 namespace
 {
@@ -126,11 +131,82 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPBatchEdit(const FString& Operati
 }
 namespace
 {
+// Capture source objects only. Batch operations do not compile or save, so this
+// verification does not claim to restore generated instances or persisted data.
+// Strong references keep deleted source nodes available for the owned undo.
+// Unreal invalidates the transient Blueprint compile-status cache during undo.
+// Keep that invalidation: verifying source restoration must not certify compiled code.
+class FBatchSourceWriter : public FObjectWriter
+{
+ bool bBlueprint = false;
+public:
+ FBatchSourceWriter(UObject* Object, TArray<uint8>& Bytes) : FObjectWriter(Bytes)
+ {
+  bBlueprint = Object->IsA<UBlueprint>();
+  ArNoDelta = true;
+  ArPortFlags |= PPF_DuplicateVerbatim;
+  Object->Serialize(*this);
+ }
+ virtual bool ShouldSkipProperty(const FProperty* Property) const override
+ {
+  if (bBlueprint && Property && Property->GetFName() == GET_MEMBER_NAME_CHECKED(UBlueprint, Status)
+      && Property->GetOwnerClass() == UBlueprint::StaticClass()) return true;
+  return FObjectWriter::ShouldSkipProperty(Property);
+ }
+};
+
+struct FBatchSnapshot
+{
+ struct FEntry
+ {
+  TStrongObjectPtr<UObject> Object;
+  TArray<uint8> Bytes;
+  explicit FEntry(UObject* Value) : Object(Value)
+  {
+   // Verbatim duplication avoids creating a localization namespace while reading.
+   FBatchSourceWriter Writer(Value, Bytes);
+  }
+ };
+ TArray<TUniquePtr<FEntry>> Entries;
+ bool bDirtyBefore = false;
+ explicit FBatchSnapshot(UBlueprint* Blueprint)
+ {
+  bDirtyBefore = Blueprint->GetOutermost()->IsDirty();
+  TArray<UObject*> Objects;
+  GetObjectsWithOuter(Blueprint, Objects, EGetObjectsFlags::IncludeNestedObjects);
+  Objects.Add(Blueprint);
+  for (UObject* Object : Objects)
+   if (IsValid(Object)) Entries.Add(MakeUnique<FEntry>(Object));
+ }
+ bool Matches(FString& Difference) const
+ {
+  for (const TUniquePtr<FEntry>& Entry : Entries)
+  {
+   if (!IsValid(Entry->Object.Get())) { Difference = TEXT("A captured source object is no longer valid."); return false; }
+   TArray<uint8> Current;
+   FBatchSourceWriter Writer(Entry->Object.Get(), Current);
+   if (Current != Entry->Bytes)
+   {
+    Difference = TEXT("Serialized source state differs: ") + Entry->Object->GetPathName();
+    return false;
+   }
+  }
+  return true;
+ }
+};
+
 // The public entry point validates all operations before entering this shared executor.
 static FString ExecuteBatch(TArray<FBatchOperation>& Ops)
 {
  if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress()) return Refusal(TEXT("requires an idle editor outside an active transaction"));
  FString Error;
+ if (Ops.IsEmpty()) return Refusal(TEXT("The batch contains no operations."));
+ FTurboMCPAssetResolver::FResolved Resolved;
+ Error = FTurboMCPAssetResolver::Resolve(Ops[0].Repoint.Asset, Resolved);
+ if (!Error.IsEmpty()) return Refusal(Error);
+ UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+ if (!Blueprint) return Refusal(TEXT("The batch Blueprint could not be loaded."));
+ const FBatchSnapshot Snapshot(Blueprint);
  UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
  if (!Buffer) return Refusal(TEXT("requires an editor transaction buffer"));
  TUniquePtr<FScopedTransaction> Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "BatchEdit", "TurboMCP batch edit"));
@@ -150,12 +226,19 @@ static FString ExecuteBatch(TArray<FBatchOperation>& Ops)
    const FTransaction* Current = CurrentIndex >= 0 ? Buffer->GetTransaction(CurrentIndex) : nullptr;
    const bool bRolledBack = OwnedId.IsValid() && Buffer->ActiveCount == 0
     && Current && Current->GetId() == OwnedId && GEditor->UndoTransaction(false);
-   // The failing operation may have changed the graph before returning false.
-   // Include it in the attempted rollback scope; UndoTransaction alone is not
-   // a graph read-back verification, so never promise unchanged state here.
+   // Undo success is not proof. Compare all captured source objects before
+   // restoring the dirty flag; never hide a mismatch by clearing that flag.
+   FString RestorationDifference;
+   const bool bSourceRestored = bRolledBack && Snapshot.Matches(RestorationDifference);
+   if (bSourceRestored) Blueprint->GetOutermost()->SetDirtyFlag(Snapshot.bDirtyBefore);
+   const bool bVerified = bSourceRestored && Blueprint->GetOutermost()->IsDirty() == Snapshot.bDirtyBefore;
    TArray<FString> Attempted = Applied;
    Attempted.Add(Op.Id);
-   return FString::Printf(TEXT("partial\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollbackScope=%s\nrollback=%s\nrestoration=unverified\nretry=inspect_graph_before_retry\nerror=%s"), *Op.Id, *Op.Kind, *FString::Join(Applied, TEXT(",")), *FString::Join(Attempted, TEXT(",")), bRolledBack ? TEXT("undo_applied") : TEXT("not_confirmed"), *Error);
+   return FString::Printf(TEXT("%s\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollbackScope=%s\nrollback=%s\nrestoration=%s\nrestorationDetail=%s\ncompile=not_run\nsave=not_requested\ncompileStatus=not_certified_by_undo\nretry=inspect_graph_before_retry\noperationErrorBeforeRollback=%s"),
+    bVerified ? TEXT("unchanged") : TEXT("partial"), *Op.Id, *Op.Kind,
+    *FString::Join(Applied, TEXT(",")), *FString::Join(Attempted, TEXT(",")),
+    bRolledBack ? TEXT("undo_applied") : TEXT("not_confirmed"),
+    bVerified ? TEXT("source_state_and_dirty_flag_verified") : TEXT("not_verified"), *RestorationDifference, *Error);
   }
   Applied.Add(Op.Id);
  }
@@ -222,6 +305,7 @@ bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
         Node->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
         Graph->AddNode(Node, false, false);
         Node->CreateNewGuid();
+        Node->PostPlacedNewNode(); // Match editor placement, including DevelopmentOnly metadata.
         Node->AllocateDefaultPins();
         Node->NodePosX = X;
         return Node;
@@ -242,6 +326,13 @@ bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
 
     const FString Payload = TEXT("[") + Operation(TEXT("first"), Source, Target, TEXT("then")) + TEXT(",")
         + Operation(TEXT("second"), Target, FinalTarget, TEXT("then")) + TEXT("]");
+    const FBatchSnapshot ControlSnapshot(Blueprint);
+    FString Difference;
+    TestTrue(TEXT("Snapshot matches unchanged source objects"), ControlSnapshot.Matches(Difference));
+    Consumer->FindPinChecked(TEXT("InString"))->DefaultValue = TEXT("detect-this-change");
+    TestFalse(TEXT("Snapshot rejects an unrelated default change"), ControlSnapshot.Matches(Difference));
+    Consumer->FindPinChecked(TEXT("InString"))->DefaultValue = TEXT("preserve-me");
+    TestTrue(TEXT("Snapshot matches restored default"), ControlSnapshot.Matches(Difference));
     TArray<FBatchOperation> Ops;
     FString Error;
     if (!TestTrue(TEXT("Production batch planning succeeds"), ParseBatch(Payload, Ops, Error))) { AddError(Error); return false; }
@@ -254,7 +345,8 @@ bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
         && Result.Contains(TEXT("appliedBeforeFailure=first")));
     TestTrue(TEXT("Both operations included in undo"), Result.Contains(TEXT("rollbackScope=first,second"))
         && Result.Contains(TEXT("rollback=undo_applied")));
-    TestTrue(TEXT("Unverified restoration stated"), Result.StartsWith(TEXT("partial")) && Result.Contains(TEXT("restoration=unverified")));
+    TestTrue(TEXT("Restoration verified independently"), Result.StartsWith(TEXT("unchanged")) && Result.Contains(TEXT("restoration=source_state_and_dirty_flag_verified")));
+    TestFalse(TEXT("Original clean flag restored"), Package->IsDirty());
     TestFalse(TEXT("No active transaction remains"), GEditor->IsTransactionActive());
     TestEqual(TEXT("Original nodes retained"), Graph->Nodes.Num(), 4);
     UEdGraphPin* Input = Consumer->FindPinChecked(TEXT("execute"));
