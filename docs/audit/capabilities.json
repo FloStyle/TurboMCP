@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "21d89e59d0bb4fd05f2e8a82959e866438b33ccc",
+  "plugin_tree": "7dab9da0df27887d4873da3026b1abdbb38fb39f",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -3144,6 +3144,7 @@
       ],
       "test_references": [
         "Tools/test-asset-cost.py",
+        "Tools/test-asset-describe-metadata.py",
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -3911,6 +3912,7 @@
       ],
       "test_references": [
         "Tools/test-agent-help.py",
+        "Tools/test-asset-describe-metadata.py",
         "Tools/test-asset-recovery.py",
         "Tools/test-batch-sequence.py",
         "Tools/test-collapse-function.py",
