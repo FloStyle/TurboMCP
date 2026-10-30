@@ -797,6 +797,23 @@
         "No injected post-mutation failure in this new workflow; existing RepointFailureTest source reviewed, not claimed rerun.",
         "Replacement placement avoids existing content conservatively, including nodes scheduled for deletion; compact final layout is not guaranteed."
       ]
+    },
+    {
+      "id": "WF-BP-BATCH-REVIEW",
+      "title": "Preview and apply ordered repoints with verified failure recovery",
+      "status": "scenario_accepted",
+      "review": "docs/audit/batch-tool-review.json",
+      "fixture": "TurboMCP.Batch.Sequential",
+      "evidence": "187246575ebf45e2944f3c1361429bc4",
+      "tools_used": [
+        "PreviewTurboMCPBatchEdit",
+        "EditTurboMCPBatchEdit"
+      ],
+      "limitations": [
+        "Synthetic PrintString graphs only; no project-specific node callbacks, saved Widget persistence or compiled-instance restoration claims.",
+        "Batch supports ordered graphRepoint on one asset and graph, not arbitrary tool batching.",
+        "Release acceptance B01-B05 remains separately tracked; this bounded review does not certify every release case."
+      ]
     }
   ],
   "tool_usage": {
@@ -1163,9 +1180,15 @@
     ],
     "EditTurboMCPGraphRepoint": [
       "WF-BP-GRAPH-EDITS"
+    ],
+    "PreviewTurboMCPBatchEdit": [
+      "WF-BP-BATCH-REVIEW"
+    ],
+    "EditTurboMCPBatchEdit": [
+      "WF-BP-BATCH-REVIEW"
     ]
   },
-  "unique_tools_scenario_reviewed": 98,
+  "unique_tools_scenario_reviewed": 100,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

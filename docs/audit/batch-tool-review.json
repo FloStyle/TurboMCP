@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-BP-BATCH-REVIEW",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPBatchEdit",
     "EditTurboMCPBatchEdit"
@@ -23,22 +23,23 @@
     },
     {
       "id": "BATCH-REVIEW-COMPILE",
-      "state": "open",
+      "state": "resolved_contract_standardized",
       "problem": "ExecuteBatch disables compilation for every operation and returns compile=not_run; ARC09 requires one final compile.",
       "contract": "docs/architecture.md#arc09--batch-release-scope",
-      "next": "Implement baseline-aware final compilation and regression controls without changing the release contract."
+      "next": "Explicit Compile then explicit Save after inspecting edits; legacy automatic compilation superseded in ARC09."
     },
     {
       "id": "BATCH-REVIEW-RESTORATION",
       "state": "implemented_bounded_native_passed",
       "problem": "Post-mutation failure requests owned undo but returns restoration=unverified; the release repair contract requires independent whole-state and dirty-flag verification and handling failed restoration.",
       "contract": "docs/audit/repair-contracts.md#restricted-batch",
-      "next": "Retain explicit limits; compile product decision and legacy test documentation still open."
+      "next": "Implemented with bounded recovery evidence below."
     },
     {
       "id": "BATCH-REVIEW-LEGACY-DOC",
-      "state": "open",
-      "problem": "test-batch-edit.py describes missing sequential planning and rollback that now partially exist; retain baseline history but reconcile current test documentation."
+      "state": "implemented_native_passed",
+      "problem": "test-batch-edit.py describes missing sequential planning and rollback that now partially exist; retain baseline history but reconcile current test documentation.",
+      "evidence": "1550c47cff6e4ec2a2e45c966afd77e0"
     },
     {
       "id": "BATCH-REVIEW-DISCOVERY-PARSER",
@@ -58,13 +59,15 @@
     }
   ],
   "limitations": [
-    "No acceptance claimed; runtime checks pending."
+    "Synthetic PrintString graphs only; no project-specific node callbacks, saved Widget persistence or compiled-instance restoration claims.",
+    "Batch supports ordered graphRepoint on one asset and graph, not arbitrary tool batching.",
+    "Release acceptance B01-B05 remains separately tracked; this bounded review does not certify every release case."
   ],
   "readiness": "ready",
   "owner": "codex-integrator",
   "candidate": "40773fd",
   "testing": {
-    "state": "partial_pass",
+    "state": "bounded_pass_with_retained_failures",
     "run": "28921bc1353349aa85b247bc566642f9",
     "candidate": "40773fd",
     "passed": [
@@ -81,7 +84,7 @@
       "state": "passed",
       "suite": "test-batch-tools"
     },
-    "limits": "Passing native checks do not satisfy final compilation or verified restoration release requirements.",
+    "limits": "See final_acceptance and limitations; historical failed runs retained.",
     "offline": {
       "run": "163afd85edb54624b11733971d9ca0a9",
       "state": "failed_stale_inventory",
@@ -91,22 +94,23 @@
       "run": "d7461cf78e4f4fb4b13072f4cb708822",
       "state": "passed",
       "scope": "26 offline checks on integrated numbering, discovery parser and compile no-save changes; excludes later restoration candidate."
+    },
+    "offline_followup_recovery": {
+      "run": "1be52cc82a574946a48de4ed1facb95f",
+      "state": "passed",
+      "scope": "26 offline checks before final help changes"
     }
   },
   "next_repair": {
-    "priority": "compile_baseline_and_restoration",
+    "state": "none_for_bounded_batch_review",
     "details": [
-      "ARC04 requires a session baseline keyed by asset and semantic fingerprint, established by explicit Compile. No implemented baseline store was found; do not add a hidden baseline compile to preview.",
-      "Use stock EBlueprintCompileOptions::SkipSave for batch compilation; default options may honor SaveOnCompile.",
-      "Extend shared compile/baseline scope before implementation, then test stale or absent baseline refusal, diagnostic identity changes, final compilation, verified rollback and failed-restoration refusal.",
-      "Keep preview and edit open; existing test successes are limited to sequential rewiring, malformed input, and the injected undo path."
+      "Continue with unreviewed discovery/help tools; broader release acceptance stays separately tracked."
     ]
   },
   "product_decision": {
-    "state": "awaiting_owner",
-    "question": "Keep compile explicit, matching current tools and reinstancing safety, or require automatic batch compilation as in legacy ARC09?",
-    "reason": "Explicit Compile refuses active editor transactions because reinstancing is not reliably undoable. Do not silently weaken ARC09 or bypass that guard.",
-    "independent_work": "Verified restoration and truthful output review remain required under either choice."
+    "state": "resolved",
+    "decision": "Preview, edit, inspect readback/layout, explicit Compile, explicit Save. Compilation uses SkipSave.",
+    "basis": "Current safety behavior and focused native evidence; legacy ARC09 automatic compilation contract superseded. Not an assertion of universal field coverage."
   },
   "restoration_candidate": {
     "state": "implemented_bounded_native_passed",
@@ -130,8 +134,9 @@
       "Sequential batch and explicit no-save compile regression passed."
     ],
     "remaining": [
-      "Automatic compilation product decision remains pending; runtime evidence covers current explicit-compile behavior.",
-      "Synthetic PrintString graphs only; no project-specific node callbacks or disk persistence claims."
+      "Synthetic PrintString graphs only; no project-specific node callbacks, saved Widget persistence or compiled-instance restoration claims.",
+      "Batch supports ordered graphRepoint on one asset and graph, not arbitrary tool batching.",
+      "Release acceptance B01-B05 remains separately tracked; this bounded review does not certify every release case."
     ],
     "privacy": "Temporary textual value diagnostics removed before integration; mismatch output names object only.",
     "followup": "recovery_contract records created/deleted node undo, already-dirty preservation, unverified-undo dispatch denial and policy refresh retention."
@@ -150,5 +155,19 @@
     "candidate": "3304c98ae21a30b775c9c47ce05cc6a65665060f",
     "run": "2a13331d22ae458ab24375d1a13b815a",
     "prior_run": "160d61ed75e747f39dd8146bc9aae886"
+  },
+  "final_acceptance": {
+    "state": "passed",
+    "run": "187246575ebf45e2944f3c1361429bc4",
+    "prior_preservation_run": "1550c47cff6e4ec2a2e45c966afd77e0",
+    "failed_help_run": "ff66a20780e34595929e0399e8a48656",
+    "help_diagnosis": "Compact help retained only the first description sentence, dropping scope and recovery restrictions. Batch descriptions are now retained in full within the 2000-character budget. Test matches the compilation word stem rather than requiring one grammatical form.",
+    "checks": [
+      "Live help for both tools includes parameters, scope and recovery guidance.",
+      "Malformed input and preview preserve live source, dirty state and undo history.",
+      "Sequential edit creates one undo record; user undo restores source links and defaults.",
+      "Earlier recovery tests verify created/deleted nodes, already-dirty state, unverified restoration and blocked subsequent edits."
+    ],
+    "visual_limit": "No layout algorithm changed in this batch; no new screenshot acceptance claimed."
   }
 }
