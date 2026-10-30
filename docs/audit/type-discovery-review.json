@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "workflow": "WF-TYPE-DISCOVERY",
-  "status": "in_progress",
+  "status": "scenario_accepted",
   "readiness": "ready",
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPTypeFind"
   ],
@@ -18,7 +18,29 @@
     "ParseIntoArray uses a delimiter string instead of whitespace tokenization.",
     "Help does not disclose loaded-only class coverage; comments promise pin usability beyond actual filters."
   ],
-  "remaining": [
-    "Implement and run focused native workflow."
+  "remaining": [],
+  "evidence": {
+    "run": "286703d81b974396b73c88442f5b92e5",
+    "candidate": "06e8a10da488a5038c3b753b2ceb7898326b9e5a",
+    "state": "passed",
+    "checks": [
+      "Stock engine build",
+      "Spaces, tabs and newlines match each word independently",
+      "Exact native struct identity and project enum registry path",
+      "Deterministic repetition and bounded rows",
+      "Empty input, invalid kind, missing type and default kind",
+      "Live help required parameters and support limitation"
+    ]
+  },
+  "limitations": [
+    "Registry scanning/unavailable branches and class/interface filters source-reviewed only.",
+    "No native unloaded user-struct fixture or malformed registry-class injection.",
+    "No mutation or pin-creation acceptance; discovery does not guarantee writer support."
+  ],
+  "fixes": [
+    "Use whitespace tokenization instead of a literal delimiter string.",
+    "Report registry incompleteness and exact supported scope.",
+    "Use exact registry class paths for user structs/enums.",
+    "Remove unsupported pin-compatibility claims and clarify comments/help."
   ]
 }

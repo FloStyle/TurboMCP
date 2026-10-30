@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "7dab9da0df27887d4873da3026b1abdbb38fb39f",
+  "plugin_tree": "fcfaa869d079f59234b6fd2977ab6c5785beb5d2",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -3422,7 +3422,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp",
-          "line": 389
+          "line": 387
         }
       ],
       "test_references": [
@@ -3928,6 +3928,7 @@
         "Tools/test-save-undo-workflow.py",
         "Tools/test-scoped-tidy.py",
         "Tools/test-tool-text-inventory.py",
+        "Tools/test-type-discovery.py",
         "Tools/test-vision-workflow.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -4019,13 +4020,14 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp",
-          "line": 185
+          "line": 177
         }
       ],
       "test_references": [
         "Tools/test-asset-tools.py",
         "Tools/test-struct.py",
-        "Tools/test-tool-text-inventory.py"
+        "Tools/test-tool-text-inventory.py",
+        "Tools/test-type-discovery.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",

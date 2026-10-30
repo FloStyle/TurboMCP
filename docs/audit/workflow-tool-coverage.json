@@ -885,6 +885,21 @@
         "Registry dependencies are direct, may overlap and may omit unsaved or dynamic references; disk size is not runtime memory.",
         "Bounded Blueprint and Widget fixtures; not exhaustive project or asset-class certification."
       ]
+    },
+    {
+      "id": "WF-TYPE-DISCOVERY",
+      "title": "Discover exact types before planning graph edits",
+      "status": "scenario_accepted",
+      "review": "docs/audit/type-discovery-review.json",
+      "evidence": "286703d81b974396b73c88442f5b92e5",
+      "tools_used": [
+        "ReadTurboMCPTypeFind"
+      ],
+      "limitations": [
+        "Registry scanning/unavailable branches and class/interface filters source-reviewed only.",
+        "No native unloaded user-struct fixture or malformed registry-class injection.",
+        "No mutation or pin-creation acceptance; discovery does not guarantee writer support."
+      ]
     }
   ],
   "tool_usage": {
@@ -1293,9 +1308,12 @@
     ],
     "ReadTurboMCPAssetCost": [
       "WF-ASSET-DISCOVERY"
+    ],
+    "ReadTurboMCPTypeFind": [
+      "WF-TYPE-DISCOVERY"
     ]
   },
-  "unique_tools_scenario_reviewed": 112,
+  "unique_tools_scenario_reviewed": 113,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
