@@ -20,11 +20,41 @@
       "state": "open",
       "problem": "Non-object operation error uses zero-based Index, while other operation diagnostics use Index+1.",
       "source": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp"
+    },
+    {
+      "id": "BATCH-REVIEW-COMPILE",
+      "state": "open",
+      "problem": "ExecuteBatch disables compilation for every operation and returns compile=not_run; ARC09 requires one final compile.",
+      "contract": "docs/architecture.md#arc09--batch-release-scope",
+      "next": "Implement baseline-aware final compilation and regression controls without changing the release contract."
+    },
+    {
+      "id": "BATCH-REVIEW-RESTORATION",
+      "state": "open",
+      "problem": "Post-mutation failure requests owned undo but returns restoration=unverified; the release repair contract requires independent whole-state and dirty-flag verification and handling failed restoration.",
+      "contract": "docs/audit/repair-contracts.md#restricted-batch",
+      "next": "Extend restoration evidence and failure controls before acceptance."
+    },
+    {
+      "id": "BATCH-REVIEW-LEGACY-DOC",
+      "state": "open",
+      "problem": "test-batch-edit.py describes missing sequential planning and rollback that now partially exist; retain baseline history but reconcile current test documentation."
     }
   ],
   "limitations": [
     "No acceptance claimed; runtime checks pending."
   ],
   "readiness": "ready",
-  "owner": "codex-integrator"
+  "owner": "codex-integrator",
+  "candidate": "40773fd",
+  "testing": {
+    "state": "running",
+    "supervisor_session": 2946,
+    "suites": [
+      "test-batch-sequence",
+      "test-batch-rollback",
+      "test-batch-tools"
+    ],
+    "note": "Build passed. Supervisor reported an unresponsive owned editor and initiated its bounded startup retry; runtime outcome pending. test-batch-tools covers discovery rather than batch mutation and must not be counted as batch acceptance."
+  }
 }
