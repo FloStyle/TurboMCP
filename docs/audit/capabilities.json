@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "182e639bf03e511c9cd3f2f5da77dedecae008a1",
+  "plugin_tree": "647a897d6b8d51d2b81128038e54d4e72cdcc4fb",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -1768,10 +1768,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 238
+          "line": 234
         }
       ],
       "test_references": [
+        "Tools/test-agent-help.py",
         "Tools/test-uncovered-tools.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -2952,10 +2953,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 283
+          "line": 274
         }
       ],
       "test_references": [
+        "Tools/test-agent-help.py",
         "Tools/test-uncovered-tools.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -3443,7 +3445,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 331
+          "line": 322
         }
       ],
       "test_references": [
@@ -3787,6 +3789,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-agent-help.py",
         "Tools/test-diagnostic-console.py",
         "Tools/test-play-check.py",
         "Tools/test-tool-text-inventory.py",
@@ -3874,7 +3877,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 194
+          "line": 190
         }
       ],
       "test_references": [
@@ -3902,7 +3905,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
-          "line": 312
+          "line": 297
         }
       ],
       "test_references": [
@@ -3936,7 +3939,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
-          "line": 253
+          "line": 239
         }
       ],
       "test_references": [
@@ -3963,6 +3966,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-agent-help.py",
         "Tools/test-batch-tools.py",
         "Tools/test-graph-check.py",
         "Tools/test-panel-reach.py",
