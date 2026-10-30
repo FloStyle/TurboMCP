@@ -42,7 +42,7 @@
     },
     {
       "id": "BATCH-REVIEW-DISCOVERY-PARSER",
-      "state": "implemented_retest_pending",
+      "state": "implemented_focused_runtime_passed",
       "problem": "Legacy discovery test truncated Function IDs and expected an obsolete graph node count. Corrected exact ID selection and full readback preservation assertion.",
       "failed_evidence": "28921bc1353349aa85b247bc566642f9",
       "candidate": "00faebf"
@@ -67,11 +67,20 @@
       "test-batch-tools: truncated type-ID parsing and obsolete node-count parsing"
     ],
     "followup": {
-      "candidate": "00faebf",
-      "session": 56608,
-      "state": "running",
+      "candidate": "00faebf958af0e57a806f3700e022e577d047c28",
+      "run": "118f66d467f14e0aa0a40afc805f878e",
+      "state": "passed",
       "suite": "test-batch-tools"
     },
     "limits": "Passing native checks do not satisfy final compilation or verified restoration release requirements."
+  },
+  "next_repair": {
+    "priority": "compile_baseline_and_restoration",
+    "details": [
+      "ARC04 requires a session baseline keyed by asset and semantic fingerprint, established by explicit Compile. No implemented baseline store was found; do not add a hidden baseline compile to preview.",
+      "Use stock EBlueprintCompileOptions::SkipSave for batch compilation; default options may honor SaveOnCompile.",
+      "Extend shared compile/baseline scope before implementation, then test stale or absent baseline refusal, diagnostic identity changes, final compilation, verified rollback and failed-restoration refusal.",
+      "Keep preview and edit open; existing test successes are limited to sequential rewiring, malformed input, and the injected undo path."
+    ]
   }
 }
