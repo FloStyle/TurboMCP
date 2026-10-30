@@ -28,7 +28,12 @@
       "Multiline toolset and extracted-key display folding",
       "Original argument length preserved",
       "Live help and explicit heuristic limitation"
-    ]
+    ],
+    "offline": {
+      "run": "dd5794f4a7e44e58b292503f4262a786",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "limitations": [
     "Does not validate call-log attribution wiring or execute named tools.",

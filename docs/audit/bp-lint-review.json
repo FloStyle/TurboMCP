@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "workflow": "WF-BP-LINT",
+  "status": "in_progress",
+  "readiness": "source_review",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPBPLint"
+  ],
+  "findings": [
+    {
+      "id": "LINT-TICK-IDENTITY",
+      "state": "open_source_confirmed",
+      "problem": "RunExpensiveTick uses node title substring Tick; unrelated function titles can be misclassified. Use actual event identity and a negative-control fixture."
+    },
+    {
+      "id": "LINT-LEGACY-COMMENTS",
+      "state": "open",
+      "problem": "Heavy-reference comment says AssetCost does not exist; review obsolete explanations and exact findings."
+    }
+  ],
+  "remaining": [
+    "Approve repair scope, implement and run focused workflow; inspect all six check semantics."
+  ]
+}
