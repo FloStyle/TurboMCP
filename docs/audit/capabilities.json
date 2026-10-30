@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "ef74530ee690377effaf56b78ff116f32592c8c6",
+  "plugin_tree": "a58465527ef16e06b4c9cb2ba94e7ddb7d79f378",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -3933,6 +3933,7 @@
         "Tools/test-scoped-tidy.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-type-discovery.py",
+        "Tools/test-vars-add.py",
         "Tools/test-vision-workflow.py"
       ],
       "static_call_evidence": "parsed_call",

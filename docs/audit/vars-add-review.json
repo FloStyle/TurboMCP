@@ -10,7 +10,10 @@
   "fixes": [
     "Reset reused plans before parsing a new request.",
     "Store tooltip metadata without additional literal quotes.",
-    "Missing variable description reports partial metadata application rather than silently continuing."
+    "Missing variable description reports partial metadata application rather than silently continuing.",
+    "MCP workflow requires fresh unique variables, not already-existing success.",
+    "Same-editor post-save readback no longer claims reload durability.",
+    "Essential limits moved into parameter help after live metadata omitted the second description paragraph."
   ],
   "evidence": {
     "run": "e1bf1e9b59c048de9bfc35c7f2597670",
@@ -25,15 +28,24 @@
       "run": "9d20023bb6414136a08ea60231a59304",
       "state": "passed",
       "checks": 26
+    },
+    "followup": {
+      "run": "d4affd38ddae4e2693a034ca022b8411",
+      "candidate": "fd139bbc3efc853fa27caae769126570d3a97f87",
+      "state": "passed",
+      "prior_failure": {
+        "run": "39b7e6d0ac50441188328bcf77794f68",
+        "reason": "Two live-help assertions failed: second description paragraph was absent. Fixed exposed parameter help; unchanged assertions then passed."
+      }
     }
   },
   "remaining": [
-    "Replace the legacy MCP test acceptance of already-existing variables with mandatory fresh creation.",
-    "Correct persistence claims: save followed by reading the same loaded object is not reload evidence.",
-    "Finish parser/default/container edge review and live help checks before counting this tool pair."
+    "Implement type-aware default preflight before mutation; stock AddMemberVariable stores DefaultValue without validating it. Do not substitute pin validation that rejects valid container defaults.",
+    "Finish malformed grouping/container checks and default rejection/positive controls before accepting the pair."
   ],
   "limitations": [
     "No rollback or full compile is provided by variable creation; skeleton regeneration and editor callbacks may run.",
-    "Preview validates declarations and referenced types, not target existence or name conflicts."
+    "Preview validates declarations and referenced types, not target existence or name conflicts.",
+    "No reload durability proved by this workflow."
   ]
 }
