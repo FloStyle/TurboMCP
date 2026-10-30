@@ -430,7 +430,7 @@ bool FTurboMCPGraphDead::Plan(const FString& InAsset, const FString& InGraphName
 		}
 
 		// Does it repeat live logic? A group that calls something live code also calls, or touches
-		// a variable live code touches, is very likely a copy of it â€” which is what a reader needs
+		// a variable live code touches, is very likely a copy of it — which is what a reader needs
 		// to know before agreeing to delete it.
 		for (const FName& Call : GroupCalls)
 		{
@@ -494,7 +494,7 @@ FString FTurboMCPGraphDead::RenderPreview(const FPlan& InPlan)
 		if (Group.bHoldsEntry)
 		{
 			Out += TEXT("\n    KEPT: it holds an event, a custom event or a function entry. An ")
-				TEXT("entry is never removed, even when nothing reaches it â€” a hook the user made ")
+				TEXT("entry is never removed, even when nothing reaches it — a hook the user made ")
 				TEXT("on purpose looks the same as one nothing calls.");
 		}
 		if (!Group.bWritesAreUnread)
@@ -625,3 +625,61 @@ FString FTurboMCPGraphDead::Apply(const FPlan& InPlan)
     Out += TEXT("\nChanges are in memory in one undo transaction. No compilation or save was performed. Inspect the graph, compile explicitly, then save if correct. Static reachability does not prove runtime behavior.");
     return Out;
 }
+
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Misc/AutomationTest.h"
+#include "Misc/ScopeExit.h"
+#include "Kismet2/KismetEditorUtilities.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "GameFramework/Actor.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "EdGraphSchema_K2.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "UObject/Package.h"
+#include "Editor/Transactor.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPDeadCleanupTest, "TurboMCP.Graph.DeadCleanup",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPDeadCleanupTest::RunTest(const FString& Parameters)
+{
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/DeadCleanup_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    UBlueprint* BP = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("DeadFixture"),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass(), TEXT("TurboMCPDeadTest"));
+    if (!TestNotNull(TEXT("Fixture created"), BP)) return false;
+    FAssetRegistryModule::AssetCreated(BP);
+    ON_SCOPE_EXIT { FAssetRegistryModule::AssetDeleted(BP); BP->ClearFlags(RF_Public | RF_Standalone); BP->MarkAsGarbage(); Package->SetDirtyFlag(false); Package->MarkAsGarbage(); };
+    UEdGraph* Graph = NewObject<UEdGraph>(BP, TEXT("CleanupGraph"), RF_Transactional);
+    Graph->Schema = UEdGraphSchema_K2::StaticClass(); BP->UbergraphPages.Add(Graph);
+    auto Add = [&](UEdGraphNode* N) { Graph->AddNode(N, false, false); N->CreateNewGuid(); N->PostPlacedNewNode(); N->AllocateDefaultPins(); };
+    auto* Entry = NewObject<UK2Node_CustomEvent>(Graph, NAME_None, RF_Transactional);
+    Entry->CustomFunctionName = TEXT("KeepEvent"); Add(Entry);
+    auto Call = [&]() { auto* N = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional); N->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString"))); Add(N); return N; };
+    auto* Live = Call(); auto* Dead = Call();
+    Entry->FindPinChecked(TEXT("then"))->MakeLinkTo(Live->FindPinChecked(TEXT("execute")));
+    Live->FindPinChecked(TEXT("InString"))->DefaultValue = TEXT("preserve me");
+    auto* Unknown = NewObject<UEdGraphNode>(Graph, NAME_None, RF_Transactional); Add(Unknown);
+    auto* Comment = NewObject<UEdGraphNode_Comment>(Graph, NAME_None, RF_Transactional); Add(Comment);
+    Package->SetDirtyFlag(false); // Disposable unsaved fixture only.
+    const int32 Before = Graph->Nodes.Num(), UndoBefore = GEditor->Trans->GetQueueLength();
+    FTurboMCPGraphDead::FPlan Plan; FString Error;
+    if (!TestTrue(TEXT("Plan succeeds"), FTurboMCPGraphDead::Plan(BP->GetPathName(), Graph->GetName(), Plan, Error))) return false;
+    TestEqual(TEXT("Only disconnected call selected"), Plan.CandidateIndices.Num(), 1);
+    TestTrue(TEXT("Unknown group kept"), FTurboMCPGraphDead::RenderPreview(Plan).Contains(TEXT("Kept: this group")));
+    TestFalse(TEXT("Preview leaves package clean"), Package->IsDirty());
+    TestEqual(TEXT("Preview leaves undo history"), GEditor->Trans->GetQueueLength(), UndoBefore);
+    Live->FindPinChecked(TEXT("then"))->MakeLinkTo(Dead->FindPinChecked(TEXT("execute")));
+    TestTrue(TEXT("Stale plan refuses"), FTurboMCPGraphDead::Apply(Plan).StartsWith(TEXT("unchanged:")));
+    TestEqual(TEXT("Stale refusal preserves count"), Graph->Nodes.Num(), Before);
+    Live->FindPinChecked(TEXT("then"))->BreakLinkTo(Dead->FindPinChecked(TEXT("execute")));
+    const FString Result = FTurboMCPGraphDead::Apply(Plan);
+    TestTrue(TEXT("One node removed"), Result.StartsWith(TEXT("changed: removed 1")));
+    TestEqual(TEXT("Exact count delta"), Graph->Nodes.Num(), Before - 1);
+    TestTrue(TEXT("Unknown and comment preserved"), Graph->Nodes.Contains(Unknown) && Graph->Nodes.Contains(Comment));
+    TestTrue(TEXT("Live link preserved"), Entry->FindPinChecked(TEXT("then"))->LinkedTo.Contains(Live->FindPinChecked(TEXT("execute"))));
+    TestEqual(TEXT("One undo record"), GEditor->Trans->GetQueueLength(), UndoBefore + 1);
+    GEditor->UndoTransaction();
+    TestEqual(TEXT("Undo restores count"), Graph->Nodes.Num(), Before);
+    TestTrue(TEXT("Undo restores identity"), Graph->Nodes.Contains(Dead));
+    TestEqual(TEXT("Default preserved"), Live->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("preserve me")));
+    return !HasAnyErrors();
+}
+#endif
