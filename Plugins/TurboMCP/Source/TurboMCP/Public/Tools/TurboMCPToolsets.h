@@ -62,8 +62,8 @@ public:
 	 * Read the MCP server state and this plugin's registration state.
 	 *
 	 * Use this first in a session to find out whether the server is running, on
-	 * which address, and whether this plugin registered its toolsets. It costs
-	 * nothing and changes nothing.
+	 * which address, and whether this plugin registered its toolsets. It does not
+	 * edit assets, start the server or change preferences.
 	 *
 	 * Returns one line for the server and one line per TurboMCP toolset, or a
 	 * line saying why a toolset is missing.
@@ -80,7 +80,7 @@ public:
 	 * source and the first sentence of its description.
 	 *
 	 * Use this once at the start of a session instead of guessing tool names.
-	 * Pass a tool name to R-TOOL-SCHEMA for its parameters and known traps.
+	 * Use ReadTurboMCPToolHelp for parameters and known traps; use describe_toolset for the complete schema.
 	 *
 	 * Returns the counts even when zero, and says why the list is empty when the
 	 * toolset registry is unavailable.
@@ -514,11 +514,10 @@ public:
 	 * Look for a live editor window that a capture could use.
 	 *
 	 * Answers one question: is there an editor window to look at right now. It
-	 * reads the live Slate window list and names the windows a future capture
-	 * could frame. It costs nothing and changes nothing.
+	 * reads the live Slate window list without capturing images or changing assets.
 	 *
-	 * Returns the window count, one line per window, and says so in words when
-	 * the list is empty. It does not capture an image yet.
+	 * Returns the total visible count and up to six titles. An unavailable Slate
+	 * application is reported separately from zero windows. No image is captured.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPToolset();
@@ -852,19 +851,13 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPLocalVariableAdd(const FString& Asset, const FString& Function, const FString& Name, const FString& Type, const FString& Default);
 
-	/**
-	 * Preview the size of this plugin's own tool help.
-	 *
-	 * Reads every toolset schema from the registry and reports its size, so a
-	 * toolset that is too large to help anyone is visible before an agent pays
-	 * to read it. R-TOOL-SCHEMA sets a 2000 character budget for help output,
-	 * and this flags any toolset over it. It works out the numbers and reports
-	 * them, and writes nothing.
-	 *
-	 * Returns the total characters across all toolsets, then one line per
-	 * TurboMCP toolset with its size and whether it is over the budget, or a
-	 * line naming a toolset the registry refused.
-	 */
+    /**
+     * Report registered schema sizes without invoking tools or changing assets.
+     * Returns the total schema characters across all registered toolsets, then
+     * the size of each registered TurboMCP toolset or its missing-registration notice.
+     * Whole-toolset sizes are not compared with the 2000-character compact-help
+     * budget. This is metadata inspection, not an edit preview or image capture.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPToolset();
 

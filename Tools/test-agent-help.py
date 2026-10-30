@@ -192,6 +192,8 @@ def main():
     check("schema resolves exact tool with short toolset", "ReadTurboMCPStatus" in schema and not schema.startswith("error:"))
     refused = s.call(READ_TOOLSET, "ReadTurboMCPToolSchema", {"toolset": "Read", "tool": "NoSuchTool"})
     check("schema refuses unknown tool", refused.startswith("error:"))
+    preview_help = s.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": PREVIEW_TOOLSET, "toolName": "PreviewTurboMCPToolset"})
+    check("preview help describes schema sizes accurately", "Report registered schema sizes" in preview_help and "flags any toolset" not in preview_help)
     preview = s.call(PREVIEW_TOOLSET, "PreviewTurboMCPToolset")
     print(preview)
     check("preview explains whole-schema size", "whole-toolset schema sizes" in preview and "would change: nothing" in preview)
