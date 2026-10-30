@@ -50,7 +50,12 @@
       "Preview preserves clean flag and undo history.",
       "Stale liveness selection refuses before deletion.",
       "One undo record restores removed identity and count; live links/defaults preserved."
-    ]
+    ],
+    "offline": {
+      "run": "3a4d813c34084f5a8a64986c3bef3858",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "remaining": [
     "Complete published help and code-comment review; remove stale no-undo descriptions.",
