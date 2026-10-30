@@ -30,10 +30,10 @@
     },
     {
       "id": "BATCH-REVIEW-RESTORATION",
-      "state": "partial_source_verification_implemented",
+      "state": "implemented_bounded_native_passed",
       "problem": "Post-mutation failure requests owned undo but returns restoration=unverified; the release repair contract requires independent whole-state and dirty-flag verification and handling failed restoration.",
       "contract": "docs/audit/repair-contracts.md#restricted-batch",
-      "next": "Add failed-restoration mutation blocking and broaden failure controls before accepting batch tools."
+      "next": "Retain explicit limits; compile product decision and legacy test documentation still open."
     },
     {
       "id": "BATCH-REVIEW-LEGACY-DOC",
@@ -130,11 +130,11 @@
       "Sequential batch and explicit no-save compile regression passed."
     ],
     "remaining": [
-      "Failed-restoration mutation blocking is not yet implemented or verified.",
-      "No deletion/create-target rollback variant or already-dirty fixture acceptance in this batch.",
-      "Automatic compilation product decision remains pending."
+      "Automatic compilation product decision remains pending; runtime evidence covers current explicit-compile behavior.",
+      "Synthetic PrintString graphs only; no project-specific node callbacks or disk persistence claims."
     ],
-    "privacy": "Temporary textual value diagnostics removed before integration; mismatch output names object only."
+    "privacy": "Temporary textual value diagnostics removed before integration; mismatch output names object only.",
+    "followup": "recovery_contract records created/deleted node undo, already-dirty preservation, unverified-undo dispatch denial and policy refresh retention."
   },
   "recovery_contract": {
     "readiness": "ready",
@@ -145,6 +145,10 @@
       "Verify policy reinitialization does not silently clear the recovery denial.",
       "Verify normal rollback also preserves a pre-existing dirty flag."
     ],
-    "limits": "This gate controls TurboMCP public dispatch; native Unreal tools and direct C++ callers are not sandboxed. Batch internal executor checks the latch too."
+    "limits": "This gate controls TurboMCP public dispatch; native Unreal tools and direct C++ callers are not sandboxed. Batch internal executor checks the latch too.",
+    "state": "implemented_native_passed",
+    "candidate": "3304c98ae21a30b775c9c47ce05cc6a65665060f",
+    "run": "2a13331d22ae458ab24375d1a13b815a",
+    "prior_run": "160d61ed75e747f39dd8146bc9aae886"
   }
 }

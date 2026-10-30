@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "97cbf12960285361617bccd5e1a93800135b8139",
+  "plugin_tree": "0be6ba00f15aaaa6b068d54f1c22b63e1e974a94",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -70,7 +70,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
-          "line": 250
+          "line": 253
         }
       ],
       "test_references": [
@@ -1864,7 +1864,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
-          "line": 128
+          "line": 129
         }
       ],
       "test_references": [
