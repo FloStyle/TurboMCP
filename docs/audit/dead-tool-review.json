@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "workflow": "WF-GRAPH-DEAD-REVIEW",
+  "status": "in_progress",
+  "readiness": "ready",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPGraphDead",
+    "EditTurboMCPGraphDead"
+  ],
+  "findings": [
+    {
+      "id": "DEAD-KEEP",
+      "state": "open",
+      "problem": "Preview says unrecognized groups are kept while candidate selection still includes them."
+    },
+    {
+      "id": "DEAD-UNDO",
+      "state": "open",
+      "problem": "Destructive removal lacks tool-owned undo and idle-editor guard."
+    },
+    {
+      "id": "DEAD-PREFLIGHT",
+      "state": "open",
+      "problem": "Apply removes nodes while resolving IDs, permitting avoidable partial deletion."
+    },
+    {
+      "id": "DEAD-TEST",
+      "state": "open",
+      "problem": "Legacy test exercises no deletion, uses outdated writer assumptions and obsolete output parsing."
+    }
+  ],
+  "acceptance": [
+    "Unsaved synthetic fixture: preserve entry, live call, comment and unknown node; remove recognized disconnected call only.",
+    "Preview leaves source and dirty flag unchanged.",
+    "One undo restores removed node and preserves live links/defaults.",
+    "Invalid or stale selection refuses before mutation.",
+    "Help and output accurately describe heuristic limits, undo, compile and save."
+  ],
+  "limitations": [
+    "Static reachability is not runtime proof. No acceptance until native evidence."
+  ]
+}

@@ -2987,6 +2987,16 @@
             "Tools/test-agent-help.py"
           ],
           "new_files": []
+        },
+        "tool-review-dead": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDead.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphDead.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-graph-dead.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
