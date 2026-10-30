@@ -156,14 +156,14 @@ struct FBatchSnapshot
   for (UObject* Object : Objects)
    if (IsValid(Object)) Entries.Add(MakeUnique<FEntry>(Object));
  }
- bool Matches() const
+ bool Matches(FString& Difference) const
  {
   for (const TUniquePtr<FEntry>& Entry : Entries)
   {
-   if (!IsValid(Entry->Object.Get())) return false;
+   if (!IsValid(Entry->Object.Get())) { Difference = TEXT("A captured source object is no longer valid."); return false; }
    TArray<uint8> Current;
    FObjectWriter Writer(Entry->Object.Get(), Current, false, false, false, PPF_DuplicateVerbatim);
-   if (Current != Entry->Bytes) return false;
+   if (Current != Entry->Bytes) { Difference = TEXT("Serialized source state differs: ") + Entry->Object->GetPathName(); return false; }
   }
   return true;
  }
@@ -202,16 +202,17 @@ static FString ExecuteBatch(TArray<FBatchOperation>& Ops)
     && Current && Current->GetId() == OwnedId && GEditor->UndoTransaction(false);
    // Undo success is not proof. Compare all captured source objects before
    // restoring the dirty flag; never hide a mismatch by clearing that flag.
-   const bool bSourceRestored = bRolledBack && Snapshot.Matches();
+   FString RestorationDifference;
+   const bool bSourceRestored = bRolledBack && Snapshot.Matches(RestorationDifference);
    if (bSourceRestored) Blueprint->GetOutermost()->SetDirtyFlag(Snapshot.bDirtyBefore);
    const bool bVerified = bSourceRestored && Blueprint->GetOutermost()->IsDirty() == Snapshot.bDirtyBefore;
    TArray<FString> Attempted = Applied;
    Attempted.Add(Op.Id);
-   return FString::Printf(TEXT("%s\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollbackScope=%s\nrollback=%s\nrestoration=%s\ncompile=not_run\nsave=not_requested\nretry=inspect_graph_before_retry\nerror=%s"),
+   return FString::Printf(TEXT("%s\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollbackScope=%s\nrollback=%s\nrestoration=%s\nrestorationDetail=%s\ncompile=not_run\nsave=not_requested\nretry=inspect_graph_before_retry\nerror=%s"),
     bVerified ? TEXT("unchanged") : TEXT("partial"), *Op.Id, *Op.Kind,
     *FString::Join(Applied, TEXT(",")), *FString::Join(Attempted, TEXT(",")),
     bRolledBack ? TEXT("undo_applied") : TEXT("not_confirmed"),
-    bVerified ? TEXT("source_objects_and_dirty_flag_verified") : TEXT("not_verified"), *Error);
+    bVerified ? TEXT("source_objects_and_dirty_flag_verified") : TEXT("not_verified"), *RestorationDifference, *Error);
   }
   Applied.Add(Op.Id);
  }
