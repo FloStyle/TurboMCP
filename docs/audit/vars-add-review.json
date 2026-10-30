@@ -20,7 +20,12 @@
       "test-variable-flags",
       "test-vars-add"
     ],
-    "scope": "Native transient fresh creation, metadata flags, tooltip readback and plan reuse; existing MCP workflow also passes."
+    "scope": "Native transient fresh creation, metadata flags, tooltip readback and plan reuse; existing MCP workflow also passes.",
+    "offline": {
+      "run": "9d20023bb6414136a08ea60231a59304",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "remaining": [
     "Replace the legacy MCP test acceptance of already-existing variables with mandatory fresh creation.",
