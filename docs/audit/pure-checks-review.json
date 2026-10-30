@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "workflow": "WF-CALL-STRING-DIAGNOSTICS",
-  "status": "in_progress",
+  "status": "scenario_accepted",
   "readiness": "ready",
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPPureChecks"
   ],
@@ -16,7 +16,23 @@
   "findings": [
     "Toolset and extracted-key echoes do not honor single-line output promise."
   ],
-  "remaining": [
-    "Fix output and validate literal diagnostic workflow."
+  "remaining": [],
+  "evidence": {
+    "run": "07beaf1ad56f45af839c8c175d78a546",
+    "candidate": "a7ea69bfa8dd89bb65ce6791f25cbfc8c30e349b",
+    "state": "passed",
+    "checks": 27,
+    "coverage": [
+      "Stock engine build",
+      "Literal normalization and empty/no-key controls",
+      "Multiline toolset and extracted-key display folding",
+      "Original argument length preserved",
+      "Live help and explicit heuristic limitation"
+    ]
+  },
+  "limitations": [
+    "Does not validate call-log attribution wiring or execute named tools.",
+    "Heuristic extraction is not JSON parsing or asset resolution.",
+    "Large arbitrary input has no dedicated stress test."
   ]
 }

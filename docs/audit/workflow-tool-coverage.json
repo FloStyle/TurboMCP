@@ -932,6 +932,21 @@
         "Saved registry edges are not exhaustive dynamic or unsaved change-impact evidence.",
         "No delete/edit acceptance claimed from this read-only scenario."
       ]
+    },
+    {
+      "id": "WF-CALL-STRING-DIAGNOSTICS",
+      "title": "Diagnose literal call-cost keys without executing tools",
+      "status": "scenario_accepted",
+      "review": "docs/audit/pure-checks-review.json",
+      "evidence": "07beaf1ad56f45af839c8c175d78a546",
+      "tools_used": [
+        "ReadTurboMCPPureChecks"
+      ],
+      "limitations": [
+        "Does not validate call-log attribution wiring or execute named tools.",
+        "Heuristic extraction is not JSON parsing or asset resolution.",
+        "Large arbitrary input has no dedicated stress test."
+      ]
     }
   ],
   "tool_usage": {
@@ -1349,9 +1364,12 @@
     ],
     "ReadTurboMCPRefs": [
       "WF-ASSET-REFERENCES"
+    ],
+    "ReadTurboMCPPureChecks": [
+      "WF-CALL-STRING-DIAGNOSTICS"
     ]
   },
-  "unique_tools_scenario_reviewed": 115,
+  "unique_tools_scenario_reviewed": 116,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "997daeba8e035791c5a80c7ab9432de64c7d9e22",
+  "plugin_tree": "cfd39f785ef7f66e2309dc108bd7ee2c05ecb341",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -3926,6 +3926,7 @@
         "Tools/test-graph-dead.py",
         "Tools/test-graph-edit-workflow.py",
         "Tools/test-node-reader-output.py",
+        "Tools/test-pure-checks.py",
         "Tools/test-refs.py",
         "Tools/test-save-undo-workflow.py",
         "Tools/test-scoped-tidy.py",
