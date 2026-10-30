@@ -30,6 +30,11 @@
       "Active transaction blocks readiness",
       "Recovery gate blocks readiness and explains next step"
     ],
-    "effects": "No assets edited, compiled or saved by this fixture; temporary test transaction is cancelled and fixture recovery latch reset."
+    "effects": "No assets edited, compiled or saved by this fixture; temporary test transaction is cancelled and fixture recovery latch reset.",
+    "offline": {
+      "run": "1b1be9fd44644b69bcfe83d6c11e922e",
+      "state": "passed",
+      "checks": 26
+    }
   }
 }
