@@ -219,6 +219,31 @@ namespace
                     : TEXT("^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?[fF]?$");
                 FRegexMatcher Matcher(FRegexPattern(Pattern), Default);
                 if (!Matcher.FindNext()) return TEXT("provide a numeric literal for this numeric variable, not an enum name or malformed number.");
+                if (Numeric->IsInteger())
+                {
+                    int32 Index = (Default[0] == TEXT('+') || Default[0] == TEXT('-')) ? 1 : 0;
+                    const bool Negative = Default[0] == TEXT('-');
+                    const bool Hex = Default.Mid(Index).StartsWith(TEXT("0x"), ESearchCase::IgnoreCase);
+                    if (Hex) Index += 2;
+                    const uint64 Base = Hex ? 16 : 10;
+                    uint64 Magnitude = 0;
+                    for (; Index < Default.Len(); ++Index)
+                    {
+                        const TCHAR C = FChar::ToLower(Default[Index]);
+                        const uint64 Digit = C >= TEXT('a') ? C - TEXT('a') + 10 : C - TEXT('0');
+                        if (Magnitude > (MAX_uint64 - Digit) / Base)
+                            return TEXT("integer default exceeds the supported numeric range.");
+                        Magnitude = Magnitude * Base + Digit;
+                    }
+                    if (Negative)
+                    {
+                        if (Magnitude > static_cast<uint64>(MAX_int64) + 1)
+                            return TEXT("integer default exceeds the supported numeric range.");
+                        const int64 Signed = Magnitude == static_cast<uint64>(MAX_int64) + 1 ? MIN_int64 : -static_cast<int64>(Magnitude);
+                        if (!Numeric->CanHoldValue(Signed)) return TEXT("integer default is outside the declared type's range.");
+                    }
+                    else if (!Numeric->CanHoldValue(Magnitude)) return TEXT("integer default is outside the declared type's range.");
+                }
             }
         }
         FArchiveUObject Archive;
@@ -228,6 +253,9 @@ namespace
         const TCHAR* End = Property->ImportText_Direct(*Default, Temporary.GetObjAddress(), nullptr, PPF_None, &ImportMessages);
         if (!End || !FString(End).TrimStartAndEnd().IsEmpty() || !ImportMessages.Text.IsEmpty())
             return TEXT("provide complete Unreal property text with no trailing characters. ") + ImportMessages.Text;
+        if (const FNumericProperty* Numeric = CastField<FNumericProperty>(Property.Get()))
+            if (Numeric->IsFloatingPoint() && !FMath::IsFinite(Numeric->GetFloatingPointPropertyValue(Temporary.GetObjAddress())))
+                return TEXT("floating-point default must be finite and fit the declared type.");
         return FString();
     }
 
