@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "5324a813b8562b89cd304807fc13d334d59e81fb",
+  "plugin_tree": "ea210020dff6a681d36026f1b032cfd3524544d7",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -616,10 +616,8 @@
           "line": 30
         }
       ],
-      "test_references": [
-        "Tools/test-graph-dead.py"
-      ],
-      "static_call_evidence": "parsed_call",
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -2309,7 +2307,6 @@
       ],
       "test_references": [
         "Tools/test-bp-lint.py",
-        "Tools/test-graph-dead.py",
         "Tools/test-graph-roundtrip.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -3511,7 +3508,6 @@
         "Tools/test-graph-append-chain.py",
         "Tools/test-graph-append.py",
         "Tools/test-graph-check.py",
-        "Tools/test-graph-dead.py",
         "Tools/test-graph-fix-backward.py",
         "Tools/test-graph-knots.py",
         "Tools/test-graph-patch.py",

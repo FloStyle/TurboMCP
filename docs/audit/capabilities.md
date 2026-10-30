@@ -28,7 +28,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPGraphCollapse | [TurboMCPGraphStructureTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphConnect | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphCopy | [TurboMCPGraphStructureTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
-| EditTurboMCPGraphDead | [TurboMCPGraphDeadTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPGraphDead | [TurboMCPGraphDeadTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphFixBackward | [TurboMCPGraphFixBackwardTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackwardTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphGroupMove | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphKnots | [TurboMCPGraphKnotsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnotsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
