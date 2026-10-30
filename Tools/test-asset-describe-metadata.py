@@ -3,6 +3,16 @@ import re
 from tmcp import Session, READ_TOOLSET
 s = Session()
 s.connect()
+for tool, parameters in (("ReadTurboMCPAssetSearch", ("query",)),
+                         ("ReadTurboMCPAssetDescribe", ("assets",)),
+                         ("ReadTurboMCPAssetCost", ("asset", "cap"))):
+    help_text = s.call(READ_TOOLSET, "ReadTurboMCPToolHelp",
+                       {"toolsetName": READ_TOOLSET, "toolName": tool})
+    print(help_text, flush=True)
+    assert tool in help_text and not help_text.startswith("error:"), help_text
+    for parameter in parameters:
+        assert parameter in help_text.lower(), help_text
+
 for asset in ("/Game/Tests/BP_NodeTest", "/Game/Tests/WBP_NodeTest"):
     query = "path:/Game/Tests " + asset.rsplit("/", 1)[-1]
     found = s.call(READ_TOOLSET, "ReadTurboMCPAssetSearch", {"query": query})
