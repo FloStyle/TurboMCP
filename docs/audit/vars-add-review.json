@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "workflow": "WF-VARS-ADD",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPVarsAdd",
+    "EditTurboMCPVarsAdd"
+  ],
+  "fixes": [
+    "Reset reused plans before parsing a new request.",
+    "Store tooltip metadata without additional literal quotes.",
+    "Missing variable description reports partial metadata application rather than silently continuing."
+  ],
+  "evidence": {
+    "run": "e1bf1e9b59c048de9bfc35c7f2597670",
+    "candidate": "f84b0b21ee0965eea0f826eead7a27829e96a8e5",
+    "state": "passed",
+    "suites": [
+      "test-variable-flags",
+      "test-vars-add"
+    ],
+    "scope": "Native transient fresh creation, metadata flags, tooltip readback and plan reuse; existing MCP workflow also passes."
+  },
+  "remaining": [
+    "Replace the legacy MCP test acceptance of already-existing variables with mandatory fresh creation.",
+    "Correct persistence claims: save followed by reading the same loaded object is not reload evidence.",
+    "Finish parser/default/container edge review and live help checks before counting this tool pair."
+  ],
+  "limitations": [
+    "No rollback or full compile is provided by variable creation; skeleton regeneration and editor callbacks may run.",
+    "Preview validates declarations and referenced types, not target existence or name conflicts."
+  ]
+}
