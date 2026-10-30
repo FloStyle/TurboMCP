@@ -1000,6 +1000,25 @@
         "No buffer-overflow or all Blueprint instrumentation coverage.",
         "Node IDs are registered without graph resolution; zero hits do not prove non-execution."
       ]
+    },
+    {
+      "id": "WF-VARS-ADD",
+      "title": "Preview and add typed Blueprint member variables",
+      "status": "scenario_accepted",
+      "review": "docs/audit/vars-add-review.json",
+      "evidence": "706ccb4d97b34d0e91d2dc549b3b3fd9",
+      "tools_used": [
+        "PreviewTurboMCPVarsAdd",
+        "EditTurboMCPVarsAdd"
+      ],
+      "limitations": [
+        "No rollback or full compile is provided by variable creation; skeleton regeneration and editor callbacks may run.",
+        "Preview validates declarations and referenced types, not target existence or name conflicts.",
+        "No reload durability proved by this workflow.",
+        "Container positive controls validate preflight import, not container creation or disk reload.",
+        "Arbitrary custom struct, object and enum defaults are not exhaustively covered; nested values use stock Unreal import semantics.",
+        "Engine failures can leave partial additions; this tool does not provide automatic rollback."
+      ]
     }
   ],
   "tool_usage": {
@@ -1441,9 +1460,15 @@
     ],
     "EditTurboMCPTrace": [
       "WF-TRACE"
+    ],
+    "PreviewTurboMCPVarsAdd": [
+      "WF-VARS-ADD"
+    ],
+    "EditTurboMCPVarsAdd": [
+      "WF-VARS-ADD"
     ]
   },
-  "unique_tools_scenario_reviewed": 123,
+  "unique_tools_scenario_reviewed": 125,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

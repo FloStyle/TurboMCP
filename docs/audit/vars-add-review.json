@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-VARS-ADD",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPVarsAdd",
     "EditTurboMCPVarsAdd"
@@ -13,7 +13,10 @@
     "Missing variable description reports partial metadata application rather than silently continuing.",
     "MCP workflow requires fresh unique variables, not already-existing success.",
     "Same-editor post-save readback no longer claims reload durability.",
-    "Essential limits moved into parameter help after live metadata omitted the second description paragraph."
+    "Essential limits moved into parameter help after live metadata omitted the second description paragraph.",
+    "Validate all declared defaults in temporary Unreal property storage before adding any variables.",
+    "Reject malformed scalar numeric text and integer overflow rather than accepting engine coercions.",
+    "Resolve scalar and map-value double aliases to the engine real type instead of falling back to int."
   ],
   "evidence": {
     "run": "e1bf1e9b59c048de9bfc35c7f2597670",
@@ -42,15 +45,42 @@
         "state": "passed",
         "checks": 26
       }
+    },
+    "default_validation": {
+      "run": "706ccb4d97b34d0e91d2dc549b3b3fd9",
+      "candidate": "b5269df4e9b7d0926ff58f568523a42962955baa",
+      "state": "passed",
+      "suites": [
+        "test-variable-flags",
+        "test-vars-add"
+      ],
+      "scope": "Fresh creation, flags, tooltip, plan reset, live help, malformed declarations and defaults; scalar, Vector, array, set and map default preflight controls.",
+      "prior_runs": [
+        {
+          "run": "831475ecb40f457b9947b17cdf1c9fbb",
+          "state": "failed",
+          "reason": "Integer banana was accepted by engine enum-name coercion; added strict numeric validation."
+        },
+        {
+          "run": "04d059ff78214b7a919d1ba65c90fd19",
+          "state": "passed",
+          "limit": "Preceded fractional double and range coverage expansion."
+        },
+        {
+          "run": "3b56b0142a644a0a9528669eb0b7f6ab",
+          "state": "failed",
+          "reason": "Valid double -0.5 fell back to int; corrected scalar and map-value type mapping."
+        }
+      ]
     }
   },
-  "remaining": [
-    "Implement type-aware default preflight before mutation; stock AddMemberVariable stores DefaultValue without validating it. Do not substitute pin validation that rejects valid container defaults.",
-    "Finish malformed grouping/container checks and default rejection/positive controls before accepting the pair."
-  ],
+  "remaining": [],
   "limitations": [
     "No rollback or full compile is provided by variable creation; skeleton regeneration and editor callbacks may run.",
     "Preview validates declarations and referenced types, not target existence or name conflicts.",
-    "No reload durability proved by this workflow."
+    "No reload durability proved by this workflow.",
+    "Container positive controls validate preflight import, not container creation or disk reload.",
+    "Arbitrary custom struct, object and enum defaults are not exhaustively covered; nested values use stock Unreal import semantics.",
+    "Engine failures can leave partial additions; this tool does not provide automatic rollback."
   ]
 }
