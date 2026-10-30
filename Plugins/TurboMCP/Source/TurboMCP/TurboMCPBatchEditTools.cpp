@@ -268,6 +268,8 @@ FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
 #include "Misc/ScopeExit.h"
 #include "ToolsetRegistry/ToolsetRegistrySubsystem.h"
 #include "ToolsetRegistry/Toolset.h"
+#include "TurboMCPSettings.h"
+#include "TurboMCPToolsetsInternal.h"
 #include "Tools/TurboMCPToolsets.h"
 #include "TurboMCPNodeId.h"
 #include "Engine/Blueprint.h"
@@ -373,6 +375,19 @@ bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Dirty baseline restoration verified"), DirtyResult.StartsWith(TEXT("unchanged")));
     TestTrue(TEXT("Pre-existing dirty flag retained"), Package->IsDirty());
 
+    const FString CreateAndDelete = FString::Printf(
+        TEXT("[{\"id\":\"replace-source\",\"asset\":\"%s\",\"graphName\":\"%s\",\"sourceNodeId\":\"%s\",\"sourcePin\":\"then\",\"targetNodeId\":\"\",\"targetTypeId\":\"Function|/Script/Engine.KismetSystemLibrary:PrintString\",\"targetPin\":\"then\",\"keepSource\":false}]"),
+        *Blueprint->GetPathName(), *Graph->GetName(), *TurboMCPNodeId::MakeForNode(Source, true));
+    Ops.Reset();
+    if (!TestTrue(TEXT("Create/delete rollback control plans"), ParseBatch(CreateAndDelete, Ops, Error))) return false;
+    ++Ops[0].Repoint.NodeCountBefore;
+    const FString CreateDeleteResult = ExecuteBatch(Ops);
+    AddInfo(TEXT("Create/delete rollback: ") + CreateDeleteResult);
+    TestTrue(TEXT("Created target removed and deleted source restored"), CreateDeleteResult.StartsWith(TEXT("unchanged")));
+    TestTrue(TEXT("Original source belongs to graph after undo"), Graph->Nodes.Contains(Source));
+    TestEqual(TEXT("Creation/deletion rollback preserves node count"), Graph->Nodes.Num(), 4);
+    TestTrue(TEXT("Creation/deletion rollback preserves dirty flag"), Package->IsDirty());
+
     // A legacy node missing normal placement metadata changes during Unreal undo.
     // This is a real source mismatch: the tool must report partial and block edits.
     Source->SetEnabledState(ENodeEnabledState::Enabled, false);
@@ -383,6 +398,12 @@ bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Unverified restoration is partial"), MismatchResult.StartsWith(TEXT("partial"))
         && MismatchResult.Contains(TEXT("recoveryRequired=true")));
     TestTrue(TEXT("Recovery latch set"), TurboMCPToolPolicy::IsRecoveryRequired(Error));
+    TArray<FString> ToolNames;
+    for (const auto& Class : TurboMCPToolsets::GetToolsetClasses())
+        for (TFieldIterator<UFunction> Function(Class.Get()); Function; ++Function)
+            if (Function->HasMetaData(TEXT("AICallable"))) ToolNames.AddUnique(Function->GetName());
+    TurboMCPToolPolicy::Initialize(*UTurboMCPSettings::Get(), ToolNames);
+    TestTrue(TEXT("Policy refresh does not clear recovery latch"), TurboMCPToolPolicy::IsRecoveryRequired(Error));
     const FString Retry = UTurboMCPEditToolset::EditTurboMCPBatchEdit(Payload);
     TestTrue(TEXT("Direct batch retry refused"), Retry.StartsWith(TEXT("unchanged")) && Retry.Contains(TEXT("blocked")));
     TestTrue(TEXT("Read status remains allowed"), TurboMCPToolPolicy::IsAllowed(TEXT("ReadTurboMCPStatus"), Error));
