@@ -983,6 +983,23 @@
         "Since remains a documented exact UTC timestamp text comparison, not a general date parser.",
         "Asset attribution is heuristic and token estimates are not billing measurements."
       ]
+    },
+    {
+      "id": "WF-TRACE",
+      "title": "Arm a node and observe execution in PIE",
+      "status": "scenario_accepted",
+      "review": "docs/audit/trace-review.json",
+      "evidence": "9ca99520ad844b859733d7609c87f809",
+      "tools_used": [
+        "ReadTurboMCPTrace",
+        "EditTurboMCPTrace"
+      ],
+      "limitations": [
+        "No pin-value capture: historical T-DBG-2 acceptance remains partial.",
+        "Counter locking source-reviewed; no concurrent VM stress test.",
+        "No buffer-overflow or all Blueprint instrumentation coverage.",
+        "Node IDs are registered without graph resolution; zero hits do not prove non-execution."
+      ]
     }
   ],
   "tool_usage": {
@@ -1418,9 +1435,15 @@
     ],
     "ReadTurboMCPCallCost": [
       "WF-CALL-LOG-COST"
+    ],
+    "ReadTurboMCPTrace": [
+      "WF-TRACE"
+    ],
+    "EditTurboMCPTrace": [
+      "WF-TRACE"
     ]
   },
-  "unique_tools_scenario_reviewed": 121,
+  "unique_tools_scenario_reviewed": 123,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

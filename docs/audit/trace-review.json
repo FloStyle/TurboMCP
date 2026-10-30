@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "workflow": "WF-TRACE",
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
+  "focus_tools": [
+    "ReadTurboMCPTrace",
+    "EditTurboMCPTrace"
+  ],
+  "fixes": [
+    "Protect exception counters with the same mutex used by readers.",
+    "Log hit text before moving it into retained storage.",
+    "Edit status requests no longer subscribe as a side effect.",
+    "Collapse duplicate IDs in each request.",
+    "Show executing instance path and explain monotonic time and missing pin values.",
+    "Remove obsolete claims that instrumentation always delivers events or the test cannot observe hits."
+  ],
+  "evidence": {
+    "run": "9ca99520ad844b859733d7609c87f809",
+    "candidate": "cdfff38361f39a3f93bff8e343ccf6bcb9e1fcf7",
+    "state": "passed",
+    "checks": 30,
+    "observed": "One PrintString hit in the owned PIE fixture with instance path; controls, refusals, clear and disk fingerprint passed."
+  },
+  "remaining": [
+    {
+      "id": "TRACE-PIN-VALUES",
+      "state": "open",
+      "kind": "feature",
+      "description": "Historical acceptance requests pin values; current trace only records execution identity, time, instance and thread."
+    }
+  ],
+  "limitations": [
+    "No pin-value capture: historical T-DBG-2 acceptance remains partial.",
+    "Counter locking source-reviewed; no concurrent VM stress test.",
+    "No buffer-overflow or all Blueprint instrumentation coverage.",
+    "Node IDs are registered without graph resolution; zero hits do not prove non-execution."
+  ]
+}
