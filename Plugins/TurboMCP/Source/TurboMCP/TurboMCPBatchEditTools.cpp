@@ -9,6 +9,7 @@
 #include "TurboMCPNodeId.h"
 #include "EdGraph/EdGraphPin.h"
 #include "TurboMCPRollback.h"
+#include "TurboMCPToolPolicy.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -200,6 +201,7 @@ static FString ExecuteBatch(TArray<FBatchOperation>& Ops)
 {
  if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress()) return Refusal(TEXT("requires an idle editor outside an active transaction"));
  FString Error;
+ if (TurboMCPToolPolicy::IsRecoveryRequired(Error)) return Refusal(Error);
  if (Ops.IsEmpty()) return Refusal(TEXT("The batch contains no operations."));
  FTurboMCPAssetResolver::FResolved Resolved;
  Error = FTurboMCPAssetResolver::Resolve(Ops[0].Repoint.Asset, Resolved);
@@ -232,13 +234,14 @@ static FString ExecuteBatch(TArray<FBatchOperation>& Ops)
    const bool bSourceRestored = bRolledBack && Snapshot.Matches(RestorationDifference);
    if (bSourceRestored) Blueprint->GetOutermost()->SetDirtyFlag(Snapshot.bDirtyBefore);
    const bool bVerified = bSourceRestored && Blueprint->GetOutermost()->IsDirty() == Snapshot.bDirtyBefore;
+   if (!bVerified) TurboMCPToolPolicy::RequireRecovery(Resolved.ObjectPath);
    TArray<FString> Attempted = Applied;
    Attempted.Add(Op.Id);
-   return FString::Printf(TEXT("%s\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollbackScope=%s\nrollback=%s\nrestoration=%s\nrestorationDetail=%s\ncompile=not_run\nsave=not_requested\ncompileStatus=not_certified_by_undo\nretry=inspect_graph_before_retry\noperationErrorBeforeRollback=%s"),
+   return FString::Printf(TEXT("%s\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollbackScope=%s\nrollback=%s\nrestoration=%s\nrestorationDetail=%s\ncompile=not_run\nsave=not_requested\ncompileStatus=not_certified_by_undo\nrecoveryRequired=%s\nretry=inspect_graph_before_retry\noperationErrorBeforeRollback=%s"),
     bVerified ? TEXT("unchanged") : TEXT("partial"), *Op.Id, *Op.Kind,
     *FString::Join(Applied, TEXT(",")), *FString::Join(Attempted, TEXT(",")),
     bRolledBack ? TEXT("undo_applied") : TEXT("not_confirmed"),
-    bVerified ? TEXT("source_state_and_dirty_flag_verified") : TEXT("not_verified"), *RestorationDifference, *Error);
+    bVerified ? TEXT("source_state_and_dirty_flag_verified") : TEXT("not_verified"), *RestorationDifference, bVerified ? TEXT("false") : TEXT("true"), *Error);
   }
   Applied.Add(Op.Id);
  }
@@ -253,6 +256,7 @@ FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
   return Refusal(TEXT("requires an idle editor outside an active transaction"));
  TArray<FBatchOperation> Ops;
  FString Error;
+ if (TurboMCPToolPolicy::IsRecoveryRequired(Error)) return Refusal(Error);
  if (!ParseBatch(Operations, Ops, Error)) return Refusal(Error);
  return ExecuteBatch(Ops);
 }
@@ -262,6 +266,8 @@ FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
+#include "ToolsetRegistry/ToolsetRegistrySubsystem.h"
+#include "ToolsetRegistry/Toolset.h"
 #include "Tools/TurboMCPToolsets.h"
 #include "TurboMCPNodeId.h"
 #include "Engine/Blueprint.h"
@@ -282,6 +288,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPBatchRollbackTest,
 
 bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
 {
+    ON_SCOPE_EXIT { TurboMCPToolPolicy::ResetRecoveryForTest(); };
     const FString PackageName = TEXT("/Game/Tests/BatchRollback_") + FGuid::NewGuid().ToString(EGuidFormats::Digits);
     UPackage* Package = CreatePackage(*PackageName);
     UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("BatchRollbackFixture"),
@@ -357,6 +364,37 @@ bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
         && FinalTarget->FindPinChecked(TEXT("then"))->LinkedTo.IsEmpty());
     TestEqual(TEXT("Unrelated default preserved"), Consumer->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("preserve-me")));
     TestEqual(TEXT("Unrelated position preserved"), Consumer->NodePosX, 300);
+    // Repeat against an already dirty asset: restoration must not erase prior work.
+    Package->SetDirtyFlag(true);
+    Ops.Reset();
+    if (!TestTrue(TEXT("Dirty baseline plans"), ParseBatch(Payload, Ops, Error))) return false;
+    ++Ops[1].Repoint.NodeCountBefore;
+    const FString DirtyResult = ExecuteBatch(Ops);
+    TestTrue(TEXT("Dirty baseline restoration verified"), DirtyResult.StartsWith(TEXT("unchanged")));
+    TestTrue(TEXT("Pre-existing dirty flag retained"), Package->IsDirty());
+
+    // A legacy node missing normal placement metadata changes during Unreal undo.
+    // This is a real source mismatch: the tool must report partial and block edits.
+    Source->SetEnabledState(ENodeEnabledState::Enabled, false);
+    Ops.Reset();
+    if (!TestTrue(TEXT("Mismatch control plans"), ParseBatch(Payload, Ops, Error))) return false;
+    ++Ops[1].Repoint.NodeCountBefore;
+    const FString MismatchResult = ExecuteBatch(Ops);
+    TestTrue(TEXT("Unverified restoration is partial"), MismatchResult.StartsWith(TEXT("partial"))
+        && MismatchResult.Contains(TEXT("recoveryRequired=true")));
+    TestTrue(TEXT("Recovery latch set"), TurboMCPToolPolicy::IsRecoveryRequired(Error));
+    const FString Retry = UTurboMCPEditToolset::EditTurboMCPBatchEdit(Payload);
+    TestTrue(TEXT("Direct batch retry refused"), Retry.StartsWith(TEXT("unchanged")) && Retry.Contains(TEXT("blocked")));
+    TestTrue(TEXT("Read status remains allowed"), TurboMCPToolPolicy::IsAllowed(TEXT("ReadTurboMCPStatus"), Error));
+    auto Registry = UToolsetRegistrySubsystem::Get();
+    if (!TestFalse(TEXT("Tool registry is available"), Registry.HasError())) return false;
+    auto EditTools = Registry.GetValue()->ToolsetRegistry.Find(TEXT("TurboMCP.TurboMCPEditToolset"));
+    if (!TestTrue(TEXT("Edit toolset registered"), EditTools != nullptr)) return false;
+    auto Denied = EditTools->ExecuteTool(TEXT("EditTurboMCPCompile"), TEXT("{\"Assets\":\"/Game/NoSuchAsset\"}"));
+    if (!TestTrue(TEXT("Blocked dispatch completes synchronously"), Denied.IsReady())) return false;
+    auto DeniedResult = Denied.Get();
+    TestTrue(TEXT("Public edit denied before lookup"), DeniedResult.HasError());
+    if (DeniedResult.HasError()) TestTrue(TEXT("Public denial explains recovery"), DeniedResult.GetError().Contains(TEXT("batch restoration")));
     return !HasAnyErrors();
 }
 #endif

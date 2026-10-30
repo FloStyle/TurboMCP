@@ -9,6 +9,7 @@ namespace
     TArray<FString> ActiveDomains;
     TMap<FString,bool> ActiveOverrides;
     bool Enabled=false;
+    FString RecoveryAsset;
 }
 FString TurboMCPToolPolicy::Domain(const FString& Name)
 {
@@ -40,8 +41,23 @@ void TurboMCPToolPolicy::Initialize(const UTurboMCPSettings& Settings,const TArr
             Denials.Add(Name,TEXT("Its matching preview tool is disabled. Enable the preview before enabling this edit."));
     }
 }
+void TurboMCPToolPolicy::RequireRecovery(const FString& Asset)
+{
+    if (RecoveryAsset.IsEmpty()) RecoveryAsset = Asset;
+}
+bool TurboMCPToolPolicy::IsRecoveryRequired(FString& Reason)
+{
+    if (RecoveryAsset.IsEmpty()) { Reason.Empty(); return false; }
+    Reason = TEXT("TurboMCP edit calls are blocked for this editor session because batch restoration could not be verified for ")
+        + RecoveryAsset + TEXT(". Inspect and recover the affected asset using Unreal or source control before restarting the editor. Do not save unverified changes. Read and status tools remain available if enabled.");
+    return true;
+}
+#if WITH_DEV_AUTOMATION_TESTS
+void TurboMCPToolPolicy::ResetRecoveryForTest() { RecoveryAsset.Empty(); }
+#endif
 bool TurboMCPToolPolicy::IsAllowed(const FString& Name,FString& Reason)
 {
+    if (Name.StartsWith(TEXT("EditTurboMCP")) && IsRecoveryRequired(Reason)) return false;
     if (!Known.Contains(Name)) {Reason=TEXT("Tool policy is unavailable for this tool; restart the editor.");return false;}
     if (const FString* Why=Denials.Find(Name)) {Reason=*Why;return false;}
     Reason.Empty();return true;
@@ -54,6 +70,8 @@ FString TurboMCPToolPolicy::Describe(const UTurboMCPSettings& Settings)
 {
     const bool Pending=Enabled!=Settings.bEnableTurboMCP || ActiveDomains!=Settings.DisabledToolDomains || !ActiveOverrides.OrderIndependentCompareEqual(Settings.ToolOverrides);
     FString Text=FString::Printf(TEXT("tool policy: %d enabled, %d disabled; preference changes require restart: %s\n"),Known.Num()-Denials.Num(),Denials.Num(),Pending?TEXT("yes"):TEXT("no"));
+    FString RecoveryReason;
+    if (IsRecoveryRequired(RecoveryReason)) Text += TEXT("recovery required: ") + RecoveryReason + TEXT("\n");
     TMap<FString,int32> DomainTotals, DomainDisabled;
     for (const FString& Name:Known)
     {
