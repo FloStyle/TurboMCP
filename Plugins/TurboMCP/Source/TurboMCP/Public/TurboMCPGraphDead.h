@@ -16,28 +16,14 @@ class UEdGraph;
 class UEdGraphNode;
 
 /**
- * Dead copies, behind `P-GRAPH-DEAD` and `E-GRAPH-DEAD`.
- *
- * `03_TOOLS.md` names the shape precisely, and each clause is a way to be wrong:
- *
- *  - candidates are DISCONNECTED GROUPS that cannot be reached from any entry AND whose writes are
- *    never read;
- *  - NEVER a group that holds an event, a custom event or a function entry;
- *  - the Preview says for each group whether it REPEATS LIVE LOGIC;
- *  - the Edit removes them and then reports node counts.
- *
- * WHY "REACHABLE" MEANS BOTH EXEC AND DATA, AND WHY THAT IS THE SAFE READING
- * -------------------------------------------------------------------------
- * A node with no exec wire reaching it can still be live if the value it computes is read by a node
- * that IS live: pulling a pure node into a graph is how a Blueprint computes anything. So a group is
- * reachable when ANY of its nodes is reachable by any wire, exec or data. Judging liveness on exec
- * alone would delete pure nodes that live code depends on, which is the worst outcome this tool can
- * produce. The stricter reading is the only safe one, and the cost is that this tool errs toward
- * keeping things.
- *
- * "WHOSE WRITES ARE NEVER READ" IS CHECKED ACROSS THE WHOLE BLUEPRINT, not only inside the group.
- * A group that writes a variable another graph reads is live, because removing it would change what
- * that other graph sees. The earlier plan of looking only inside the group would have deleted it.
+ * Conservative static cleanup of disconnected Blueprint node groups.
+ * Candidates contain a recognized call or variable write, contain no entry,
+ * and write no variable used by reachable nodes anywhere in the Blueprint.
+ * Comments and wire knots are excluded. Execution and data dependencies both
+ * contribute to reachability; this heuristic does not prove runtime behavior
+ * or that a user wants a disconnected group removed.
+ * Preview reports selection reasons. Apply revalidates the selection before
+ * mutation, removes nodes in one undo transaction, and never compiles or saves.
  */
 class FTurboMCPGraphDead
 {
@@ -91,7 +77,7 @@ public:
 		int32 NodeCountBefore = 0;
 	};
 
-	/** Reads the graph and works out which groups are safe to remove. */
+	/** Reads the graph and selects groups matching the conservative removal heuristic. */
 	static bool Plan(const FString& InAsset, const FString& InGraphName,
 		FPlan& OutPlan, FString& OutError);
 
