@@ -10,22 +10,46 @@
   "findings": [
     {
       "id": "LINT-TICK-IDENTITY",
-      "state": "open_source_confirmed",
+      "state": "implemented_native_control_passed",
       "problem": "RunExpensiveTick uses node title substring Tick; unrelated function titles can be misclassified. Use actual event identity and a negative-control fixture."
     },
     {
       "id": "LINT-LEGACY-COMMENTS",
-      "state": "open",
+      "state": "partial_cpp_comment_repaired_public_header_pending",
       "problem": "Heavy-reference comment says AssetCost does not exist; review obsolete explanations and exact findings."
     }
   ],
   "remaining": [
-    "Approve repair scope, implement and run focused workflow; inspect all six check semantics."
+    "Finish public header/help and remaining six-check diagnostic wording review.",
+    "Record unsupported Tick variants and registry-failure injection limits; do not count tool accepted yet."
   ],
   "acceptance": [
     "Identify real engine Tick events, not title substrings; use positive and negative controls.",
     "Heavy-reference query failures/scanning are not zero findings.",
     "Static findings explain their actual scope and do not promise safe removal.",
     "Run focused lint workflow and review all check output/help."
+  ],
+  "evidence": {
+    "run": "bf674dd5af9a487298e173e700f5e6ee",
+    "candidate": "8ff4ba3c74ec32532af69f819c0938b77fa98383",
+    "state": "passed",
+    "checks": 51,
+    "prior_failure": {
+      "run": "08ff62583bee45bf90278df9b92b9ba0",
+      "reason": "Legacy assertion counted only error-severity dead findings; nonexistent edit call was intercepted by tool policy. Updated warning contract and used help discovery, retaining node identity controls."
+    },
+    "coverage": [
+      "Stock engine build",
+      "Native actual Actor Tick and unrelated Tick-named event control",
+      "All six lint sections, filters, node identity comparisons and budget controls",
+      "Disk fixture unchanged"
+    ]
+  },
+  "fixes": [
+    "Actual engine function identity instead of Tick title substring.",
+    "No unconditional every-frame claim.",
+    "Incomplete registry query marks check not run.",
+    "Reset reused reports before collecting checks.",
+    "Static dead-node finding is a warning, not unconditional runtime failure."
   ]
 }
