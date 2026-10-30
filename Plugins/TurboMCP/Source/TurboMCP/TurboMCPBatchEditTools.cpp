@@ -20,6 +20,7 @@
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/UObjectHash.h"
 #include "UObject/Package.h"
+#include "UObject/UnrealType.h"
 
 namespace
 {
@@ -139,10 +140,17 @@ struct FBatchSnapshot
  {
   TStrongObjectPtr<UObject> Object;
   TArray<uint8> Bytes;
+  TMap<FName, FString> Fields;
   explicit FEntry(UObject* Value) : Object(Value)
   {
    // Verbatim duplication avoids creating a localization namespace while reading.
    FObjectWriter Writer(Value, Bytes, false, false, false, PPF_DuplicateVerbatim);
+   for (TFieldIterator<FProperty> It(Value->GetClass()); It; ++It)
+   {
+    FString Text;
+    It->ExportText_InContainer(0, Text, Value, nullptr, Value, PPF_None);
+    Fields.Add(It->GetFName(), MoveTemp(Text));
+   }
   }
  };
  TArray<TUniquePtr<FEntry>> Entries;
@@ -166,6 +174,12 @@ struct FBatchSnapshot
    if (Current != Entry->Bytes)
    {
     Difference = TEXT("Serialized source state differs: ") + Entry->Object->GetPathName();
+    for (TFieldIterator<FProperty> It(Entry->Object->GetClass()); It; ++It)
+    {
+     FString Text;
+     It->ExportText_InContainer(0, Text, Entry->Object.Get(), nullptr, Entry->Object.Get(), PPF_None);
+     if (Entry->Fields.FindRef(It->GetFName()) != Text) Difference += TEXT("; property=") + It->GetName();
+    }
     return false;
    }
   }
