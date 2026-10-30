@@ -46,7 +46,12 @@
     "limits": [
       "Same-name duplicate-folder tie and active-scan branches are source-reviewed only.",
       "No full cost acceptance claimed from legacy suite alone."
-    ]
+    ],
+    "offline": {
+      "run": "e6dbc83f2cfe4b0fa3f2eee1efed4086",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "remaining": [
     "Review complete help/parameter text and code comments for the trio.",
