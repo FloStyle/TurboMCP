@@ -86,6 +86,11 @@
       "run": "163afd85edb54624b11733971d9ca0a9",
       "state": "failed_stale_inventory",
       "note": "Other checks passed; generated capability inventory refreshed on main and validate-repo passed. Full offline rerun pending."
+    },
+    "offline_followup": {
+      "run": "d7461cf78e4f4fb4b13072f4cb708822",
+      "state": "passed",
+      "scope": "26 offline checks on integrated numbering, discovery parser and compile no-save changes; excludes later restoration candidate."
     }
   },
   "next_repair": {
@@ -102,5 +107,14 @@
     "question": "Keep compile explicit, matching current tools and reinstancing safety, or require automatic batch compilation as in legacy ARC09?",
     "reason": "Explicit Compile refuses active editor transactions because reinstancing is not reliably undoable. Do not silently weaken ARC09 or bypass that guard.",
     "independent_work": "Verified restoration and truthful output review remain required under either choice."
+  },
+  "restoration_candidate": {
+    "state": "in_progress_native_failure_retained",
+    "candidate": "b66d64e",
+    "failed_run": "00ded6aa6a704dbe897ef4d6f6fb2a9c",
+    "finding": "Existing narrow links/default/position assertions pass after undo, but full source object serialization differs. Tool conservatively reports partial, not verified. Do not accept or weaken assertion.",
+    "followup_candidate": "af16cdd",
+    "followup_session": 44935,
+    "next": "Identify differing serialized source object, explain state mismatch, then repair or use a justified semantic-state comparison with negative controls."
   }
 }
