@@ -135,5 +135,16 @@
       "Automatic compilation product decision remains pending."
     ],
     "privacy": "Temporary textual value diagnostics removed before integration; mismatch output names object only."
+  },
+  "recovery_contract": {
+    "readiness": "ready",
+    "scope": "On unverified batch restoration, latch a session-wide denial of TurboMCP Edit calls in the shared dispatcher policy. Leave read/status access available subject to user preferences. No automatic reset or persistent user setting changes. Test-only reset exists only for native fixtures.",
+    "acceptance": [
+      "Trigger the real unverified-undo path using a synthetic inconsistent PrintString enabled-state fixture.",
+      "Prove subsequent registered Edit calls refuse before their body and reads remain available.",
+      "Verify policy reinitialization does not silently clear the recovery denial.",
+      "Verify normal rollback also preserves a pre-existing dirty flag."
+    ],
+    "limits": "This gate controls TurboMCP public dispatch; native Unreal tools and direct C++ callers are not sandboxed. Batch internal executor checks the latch too."
   }
 }
