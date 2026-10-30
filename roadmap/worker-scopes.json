@@ -3026,6 +3026,13 @@
           "new_files": [
             "Tools/test-type-discovery.py"
           ]
+        },
+        "tool-review-node-resolve": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+            "Tools/test-node-reader-output.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

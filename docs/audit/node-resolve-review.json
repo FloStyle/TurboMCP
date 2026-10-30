@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "workflow": "WF-NODE-RESOLVE",
+  "status": "in_progress",
+  "readiness": "ready",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPNodeResolve"
+  ],
+  "acceptance": [
+    "Exact reader identities resolve with pin and type context.",
+    "Mixed batches count individual refusals; malformed, oversized and missing keys refuse.",
+    "Pin container types use readable names; numeric addressing remains explicitly labelled.",
+    "Comments and output do not imply writer support or identity equivalence for suggested keys.",
+    "Focused live workflow and help checked without mutation."
+  ],
+  "remaining": [
+    "Review and repair output, then run native workflow."
+  ]
+}
