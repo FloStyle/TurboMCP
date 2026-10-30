@@ -1,63 +1,4 @@
-# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-HELP-6 - it exercises the two PURE functions BEHIND R-CALL-COST with literal inputs, which is the same capability T-HELP-6 names, proved a level down. A row may be claimed by MORE THAN ONE SUITE, and one already is.
-"""Exercise the two PURE functions behind `R-CALL-COST`, with LITERAL inputs.
-
-WHY THIS SUITE EXISTS, AND ONE HALF OF THE GAP IS MEASURED RATHER THAN ASSUMED
-----------------------------------------------------------------------------
-`R-CALL-COST` totals calls by `FTurboMCPCallCost::NormaliseToolset` and attributes them by
-`FTurboMCPCallCost::AssetFromArguments`.
-
-*** THE HALF THAT WAS UNREACHABLE IS `AssetFromArguments`, AND IT IS NO LONGER - WHICH IS WHY THE
-LITERAL INPUTS BELOW STILL MATTER. *** Measured on 2026-10-11 from the log itself
-(`TestProject/Saved/Logs/TurboMCPCalls.jsonl`, 252 lines): every entry was `source=engine`, and an
-engine event carries NO `arguments` field at all, so no suite could hand that function a non-empty
-input and the only thing watching it was the sentence `R-CALL-COST` prints when the per-asset section
-cannot fill. *** THAT SENTENCE IS NOW REACHED ONLY BY AN ENGINE-ONLY CALL: the plugin's own tools
-record their arguments at the registry boundary (`TurboMCPCallRecorder.h`), so `test-call-cost.py` now
-asserts the per-asset totals FILL and name the asset it asked about. A live check that bites is
-better than a literal one, and it is also the check that would go vacuous the day the recorder stops
-running - a literal input cannot drift, which is what this suite is for.
-
-THE OTHER HALF IS REACHABLE, AND SAYING SO CORRECTS AN EARLIER RECORD RATHER THAN FLATTERING THIS
-SUITE. `NormaliseToolset` IS watched by `Tools/test-call-cost.py`: against a build that demonstrably
-compiled `return Trimmed;` in its body (`[1/5] Compile [x64] TurboMCPCallCost.cpp`, DLL relinked),
-that suite reports `RESULT: FAIL (1) -> no tool row contains the engine's qualification path`. The log
-really does carry the qualified spelling - 116 of its 252 lines do. A previously reported break test
-that still passed is NOT reproducible, and the most likely cause is the stale-binary trap this project
-has recorded seven times: the registration of the qualified form landed on 2026-10-09 (`08dda6e`) and
-the caller's spelling constant has only ever held the qualified value (`2b643ad`, same day), so the
-log's shape at that break test was the shape it has now. That run cannot be observed from here and is
-not claimed to be.
-
-SO WHAT THIS SUITE ADDS FOR THE NORMALISER IS NOT "A CHECK THAT CANNOT OTHERWISE FAIL" BUT "A CHECK
-THAT CANNOT GO VACUOUS". The existing check bites only while the log happens to carry a QUALIFIED
-name, which is a fact about the engine's hash resolver rather than about this code: an engine that
-resolved the bare name, or a log holding only `(top-level)` rows, would leave it green with the
-normaliser broken again. A literal input cannot drift, and it is the only shape that can ask for the
-DOUBLY-qualified path a join applied twice produces, which is the shape the observed defect had.
-
-THE COMMANDLET THAT WOULD HAVE DONE THIS WITHOUT A SUITE CANNOT RUN, and that is the ENGINE's
-constraint, not this project's: `TurboMCP.Build.cs:61` depends on `Kismet`, so the process reaches
-`FBlueprintEditorModule::StartupModule()` and dies on its first statement, `check(GEditor);`
-(`Editor/Kismet/Private/BlueprintEditorModule.cpp:214`) - before any commandlet's `Main` is reached.
-So the assertions run where every other check in this project runs: OVER MCP, FROM A SUITE.
-
-WHAT THIS SUITE DOES, AND WHAT IT DOES NOT
-------------------------------------------
-It calls `R-PURE-CHECKS` with LITERAL toolset spellings and LITERAL arguments blobs, parses the values
-back OUT of the answer, and compares them with literals of its own. It decides nothing from the shape
-of a sentence: the collapse is read off a COUNT (`toolset distinct keys | 1`) and the asset answer is
-read off a LENGTH (`asset length | N`), because a number beside a sentence is exactly what this
-project has been burned by.
-
-WHAT IT CANNOT PROVE, STATED RATHER THAN IMPLIED: it proves that the two FUNCTIONS implement the rule.
-It does not prove that `R-CALL-COST` CALLS them on the fields the log actually carries, because that is
-a fact about a different tool's body. `Tools/test-call-cost.py` remains the suite that watches that
-wiring, and this one does not claim to replace it.
-
-IT TOGGLES NOTHING AND RESTORES NOTHING, because `R-PURE-CHECKS` reads no log, loads no asset and
-writes nothing. That is worth stating: it cannot race another suite, and it needs no fixture rebuild,
-which is what stops the editor.
-"""
+"""Literal call-cost helper diagnostics; does not certify real call-log attribution."""
 
 import os
 import re
@@ -127,6 +68,15 @@ def main():
     # meaningless - so this is checked first and the failure names the input that produced it.
     # ---------------------------------------------------------------------------------------------
     print("=== the tool answers, and names the two functions it actually exercised ===")
+    multiline = pure(session, "Example\nInjected", '{"asset":"BP_One\nForged"}')
+    print(multiline)
+    check("toolset echo stays on one line", "  in | Example Injected" in multiline, multiline)
+    check("extracted key echo stays on one line", "asset key | BP_One Forged" in multiline, multiline)
+    check("raw argument length is preserved", value(multiline, "arguments length") == str(len('{"asset":"BP_One\nForged"}')), multiline)
+    check("key is not an existence claim", "not proof that an asset exists" in multiline, multiline)
+    help_text = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": READ_TOOLSET, "toolName": "ReadTurboMCPPureChecks"})
+    print(help_text)
+    check("live help names literal parameters", "toolsets:" in help_text and "arguments:" in help_text and "literal" in help_text, help_text)
     base = pure(session, "TurboMCP.TurboMCPReadToolset,TurboMCPReadToolset", "")
     print(base)
     print()

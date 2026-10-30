@@ -15,18 +15,10 @@
 
 #include "TurboMCPCallCost.h"
 
+// Fold display values only; normalization and extraction use the original inputs.
 namespace
 {
-	/**
-	 * The text with line breaks and tabs folded to spaces, so ONE value stays on ONE line.
-	 *
-	 * THE ECHO IS FOLDED; THE MEASUREMENT IS NOT. `Report` echoes the arguments a caller passed, and
-	 * `arguments` is free text written by a caller in the real log - so it can contain anything,
-	 * including the line breaks that would cut the report's line shape in half. The string handed to
-	 * `AssetFromArguments` is the caller's ORIGINAL string, so the answer this tool reports is the
-	 * answer the real function gives; only what is printed back for a human to read is folded, and
-	 * the caller is told so in the answer's own header.
-	 */
+	
 	FString FoldedToLines(const FString& InText)
 	{
 		FString Out = InText;
@@ -36,14 +28,7 @@ namespace
 		return Out;
 	}
 
-	/**
-	 * A string that could be empty, written so an empty one is VISIBLE rather than absent.
-	 *
-	 * A line that ends after its separator is indistinguishable from a line that failed to print,
-	 * and this project has recorded that confusion as its most expensive one. `(empty)` is a
-	 * statement about the value; the length is printed beside it as a NUMBER, so a caller that does
-	 * not want to trust the word does not have to.
-	 */
+	
 	FString ShownOrEmpty(const FString& InValue, const TCHAR* InWhenEmpty)
 	{
 		return InValue.IsEmpty() ? FString(InWhenEmpty) : InValue;
@@ -55,12 +40,9 @@ FString FTurboMCPPureChecks::Report(const FString& InToolsets, const FString& In
 	FString Out = TEXT("read: call-cost string diagnostics for literal inputs");
 	Out += TEXT("\nThis does not invoke tools, resolve assets or read the call log. Tool-call recording may record this invocation.");
 	Out += TEXT("\nEchoed line breaks and tabs are shown as spaces; extraction uses the original input.");
+	Out += TEXT("\nAn extracted key is a heuristic string, not proof that an asset exists or that the input is valid JSON.");
 	Out += TEXT("\nfunctions | FTurboMCPCallCost::NormaliseToolset, FTurboMCPCallCost::AssetFromArguments");
 
-	// ---------------------------------------------------------------------------------------------
-	// THE TOOLSET SPELLINGS. Commas and pipes both separate, because the project's list convention
-	// admits either and a caller who uses the other one should not get a silent single spelling.
-	// ---------------------------------------------------------------------------------------------
 	TArray<FString> Pieces;
 	InToolsets.ParseIntoArray(Pieces, TEXT(","), true);
 
@@ -71,9 +53,6 @@ FString FTurboMCPPureChecks::Report(const FString& InToolsets, const FString& In
 		Piece.ParseIntoArray(Sub, TEXT("|"), true);
 		for (const FString& One : Sub)
 		{
-			// Trimmed around the separators only. `NormaliseToolset` trims its own argument already,
-			// so this changes no key; it keeps the ECHO free of the whitespace a caller typed after
-			// a comma, which would otherwise land in the middle of a value a reader parses.
 			const FString Trimmed = One.TrimStartAndEnd();
 			if (!Trimmed.IsEmpty())
 			{
@@ -90,36 +69,25 @@ FString FTurboMCPPureChecks::Report(const FString& InToolsets, const FString& In
 		const FString Key = FTurboMCPCallCost::NormaliseToolset(Spelling);
 		DistinctKeys.Add(Key);
 
-		const FString KeyShown = ShownOrEmpty(Key, TEXT("(empty)"));
-		Out += FString::Printf(TEXT("\n  in | %s"), *Spelling);
+		const FString KeyShown = ShownOrEmpty(FoldedToLines(Key), TEXT("(empty)"));
+		Out += FString::Printf(TEXT("\n  in | %s"), *FoldedToLines(Spelling));
 		Out += FString::Printf(TEXT("\n  key | %s"), *KeyShown);
 	}
 
 	if (Spellings.Num() == 0)
 	{
-		// `P1`: NO SPELLING IS NOT ONE KEY. A report that printed only `toolset distinct keys | 0`
-		// would read as a normaliser that collapsed everything, which is the opposite of what an
-		// empty input says. The empty input is the one shape this tool cannot reach through its
-		// list argument, so it is named here rather than left to the count.
 		Out += TEXT("\n  No toolset spelling was supplied; no normalization was performed.");
 		Out += TEXT("\n  The count below describes the empty input, not a normalization result.");
 	}
 
-	// THE COUNT IS THE ANSWER TO "DO THE TWO SPELLINGS COLLAPSE": a caller reads a NUMBER rather
-	// than deciding whether a sentence sounds like agreement.
 	Out += FString::Printf(TEXT("\ntoolset distinct keys | %d"), DistinctKeys.Num());
 
-	// ---------------------------------------------------------------------------------------------
-	// THE ASSET EXTRACTION, which is the pure function that fails SILENTLY when it is wrong: an
-	// asset name that comes back empty makes the per-asset totals quietly short, with no error
-	// anywhere. So the answer and its length are both printed, and the length is a NUMBER.
-	// ---------------------------------------------------------------------------------------------
 	const FString ArgumentsShown = ShownOrEmpty(FoldedToLines(InArguments), TEXT("(none)"));
 	Out += FString::Printf(TEXT("\narguments given | %s"), *ArgumentsShown);
 	Out += FString::Printf(TEXT("\narguments length | %d"), InArguments.Len());
 
 	const FString Asset = FTurboMCPCallCost::AssetFromArguments(InArguments);
-	const FString AssetShown = ShownOrEmpty(Asset, TEXT("(empty)"));
+	const FString AssetShown = ShownOrEmpty(FoldedToLines(Asset), TEXT("(empty)"));
 	const FString NamesOne = Asset.IsEmpty() ? FString(TEXT("no")) : FString(TEXT("yes"));
 
 	Out += FString::Printf(TEXT("\nasset key | %s"), *AssetShown);
