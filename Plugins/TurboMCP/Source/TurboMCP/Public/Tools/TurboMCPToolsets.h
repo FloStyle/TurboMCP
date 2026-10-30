@@ -1829,7 +1829,7 @@ public:
 		const FString& Size = TEXT(""));
 
 	/**
-	 * Delete statically selected node groups and their links; no tool-owned undo transaction, compilation or save is performed.
+	 * Delete statically selected node groups and their links in one undo transaction; requires an idle editor outside PIE; does not compile or save.
 	 * Selection uses recognized entries and variable/call heuristics, not proof that nodes are unwanted or behaviorally irrelevant. Inspect the preview before editing; edit recomputes candidates.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
 	 * @param GraphName Required event, function or macro graph name; case-insensitive and trimmed. Empty selects EventGraph or the first available graph. Example: EventGraph. Specify a name to avoid fallback selection.

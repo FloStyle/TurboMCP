@@ -210,8 +210,8 @@ namespace
 
 			for (const UEdGraphNode* Node : Reachable)
 			{
-				// A read OR a write counts: another graph writing a variable is also a use of it,
-				// because the value this group would have written is what that graph would see.
+				// Conservatively retain writes to any variable used by reachable code,
+                // including another writer; this does not prove execution order.
 				const FName Read = ReadOf(Node);
 				if (!Read.IsNone()) { OutReads.Add(Read); }
 				const FName Write = WriteOf(Node);
@@ -270,6 +270,7 @@ bool FTurboMCPGraphDead::Plan(const FString& InAsset, const FString& InGraphName
 	FPlan& OutPlan, FString& OutError)
 {
 	OutError.Empty();
+    OutPlan = FPlan();
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
 	OutPlan.GraphName = InGraphName.TrimStartAndEnd();
 
@@ -292,7 +293,7 @@ bool FTurboMCPGraphDead::Plan(const FString& InAsset, const FString& InGraphName
 	if (Blueprint == nullptr)
 	{
 		OutError = FString::Printf(
-			TEXT("%s is not a Blueprint, so it has no dead nodes."), *Resolved.ObjectPath);
+			TEXT("%s is not a Blueprint; no node analysis was performed."), *Resolved.ObjectPath);
 		return false;
 	}
 
@@ -658,11 +659,33 @@ bool FTurboMCPDeadCleanupTest::RunTest(const FString& Parameters)
     Live->FindPinChecked(TEXT("InString"))->DefaultValue = TEXT("preserve me");
     auto* Unknown = NewObject<UEdGraphNode>(Graph, NAME_None, RF_Transactional); Add(Unknown);
     auto* Comment = NewObject<UEdGraphNode_Comment>(Graph, NAME_None, RF_Transactional); Add(Comment);
+    FEdGraphPinType StringType; StringType.PinCategory = UEdGraphSchema_K2::PC_String;
+    if (!TestTrue(TEXT("Member added"), FBlueprintEditorUtils::AddMemberVariable(BP, TEXT("SharedText"), StringType))) return false;
+    auto* Write = NewObject<UK2Node_VariableSet>(Graph, NAME_None, RF_Transactional);
+    Write->VariableReference.SetSelfMember(TEXT("SharedText")); Add(Write);
+    UEdGraph* Other = NewObject<UEdGraph>(BP, TEXT("OtherGraph"), RF_Transactional);
+    Other->Schema = UEdGraphSchema_K2::StaticClass(); BP->UbergraphPages.Add(Other);
+    auto AddOther = [&](UEdGraphNode* N) { Other->AddNode(N, false, false); N->CreateNewGuid(); N->PostPlacedNewNode(); N->AllocateDefaultPins(); };
+    auto* OtherEntry = NewObject<UK2Node_CustomEvent>(Other, NAME_None, RF_Transactional);
+    OtherEntry->CustomFunctionName = TEXT("ReadSharedText"); AddOther(OtherEntry);
+    auto* OtherCall = NewObject<UK2Node_CallFunction>(Other, NAME_None, RF_Transactional);
+    OtherCall->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString"))); AddOther(OtherCall);
+    auto* Read = NewObject<UK2Node_VariableGet>(Other, NAME_None, RF_Transactional);
+    Read->VariableReference.SetSelfMember(TEXT("SharedText")); AddOther(Read);
+    OtherEntry->FindPinChecked(TEXT("then"))->MakeLinkTo(OtherCall->FindPinChecked(TEXT("execute")));
+    Read->FindPinChecked(TEXT("SharedText"))->MakeLinkTo(OtherCall->FindPinChecked(TEXT("InString")));
     Package->SetDirtyFlag(false); // Disposable unsaved fixture only.
     const int32 Before = Graph->Nodes.Num(), UndoBefore = GEditor->Trans->GetQueueLength();
     FTurboMCPGraphDead::FPlan Plan; FString Error;
     if (!TestTrue(TEXT("Plan succeeds"), FTurboMCPGraphDead::Plan(BP->GetPathName(), Graph->GetName(), Plan, Error))) return false;
     TestEqual(TEXT("Only disconnected call selected"), Plan.CandidateIndices.Num(), 1);
+    TestTrue(TEXT("Reusing plan succeeds"), FTurboMCPGraphDead::Plan(BP->GetPathName(), Graph->GetName(), Plan, Error));
+    TestEqual(TEXT("Reusing plan does not accumulate candidates"), Plan.CandidateIndices.Num(), 1);
+    TestTrue(TEXT("Cross-graph variable protection explained"), FTurboMCPGraphDead::RenderPreview(Plan).Contains(TEXT("which live code reads")));
+    FTurboMCPGraphDead::FPlan Invalid;
+    TestFalse(TEXT("Missing graph refused"), FTurboMCPGraphDead::Plan(BP->GetPathName(), TEXT("MissingGraph"), Invalid, Error));
+    TestFalse(TEXT("Empty asset refused"), FTurboMCPGraphDead::Plan(TEXT(""), Graph->GetName(), Invalid, Error));
+
     TestTrue(TEXT("Unknown group kept"), FTurboMCPGraphDead::RenderPreview(Plan).Contains(TEXT("Kept: this group")));
     TestFalse(TEXT("Preview leaves package clean"), Package->IsDirty());
     TestEqual(TEXT("Preview leaves undo history"), GEditor->Trans->GetQueueLength(), UndoBefore);
@@ -673,9 +696,15 @@ bool FTurboMCPDeadCleanupTest::RunTest(const FString& Parameters)
     const FString Result = FTurboMCPGraphDead::Apply(Plan);
     TestTrue(TEXT("One node removed"), Result.StartsWith(TEXT("changed: removed 1")));
     TestEqual(TEXT("Exact count delta"), Graph->Nodes.Num(), Before - 1);
-    TestTrue(TEXT("Unknown and comment preserved"), Graph->Nodes.Contains(Unknown) && Graph->Nodes.Contains(Comment));
+    TestTrue(TEXT("Unknown, comment and shared variable write preserved"), Graph->Nodes.Contains(Unknown) && Graph->Nodes.Contains(Comment) && Graph->Nodes.Contains(Write));
     TestTrue(TEXT("Live link preserved"), Entry->FindPinChecked(TEXT("then"))->LinkedTo.Contains(Live->FindPinChecked(TEXT("execute"))));
     TestEqual(TEXT("One undo record"), GEditor->Trans->GetQueueLength(), UndoBefore + 1);
+    FTurboMCPGraphDead::FPlan Empty;
+    TestTrue(TEXT("Post-cleanup planning succeeds"), FTurboMCPGraphDead::Plan(BP->GetPathName(), Graph->GetName(), Empty, Error));
+    TestEqual(TEXT("No remaining candidates"), Empty.CandidateIndices.Num(), 0);
+    const int32 UndoAfterEdit = GEditor->Trans->GetQueueLength();
+    TestTrue(TEXT("No-candidate edit unchanged"), FTurboMCPGraphDead::Apply(Empty).StartsWith(TEXT("unchanged:")));
+    TestEqual(TEXT("No-candidate edit adds no undo"), GEditor->Trans->GetQueueLength(), UndoAfterEdit);
     GEditor->UndoTransaction();
     TestEqual(TEXT("Undo restores count"), Graph->Nodes.Num(), Before);
     TestTrue(TEXT("Undo restores identity"), Graph->Nodes.Contains(Dead));
