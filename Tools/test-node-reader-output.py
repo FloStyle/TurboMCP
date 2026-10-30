@@ -7,7 +7,7 @@ session.connect()
 asset = "/Game/Tests/BP_NodeTest"
 def call(name, **args):
     result = session.call(READ_TOOLSET, name, args)
-    print(name + ": " + result[:500], flush=True)
+    print(name + ": " + result, flush=True)
     return result
 
 def check(ok, message):
@@ -30,6 +30,8 @@ check("1 resolved, 1 refused" in mixed and "All three parts" in mixed, mixed)
 for key in ("xyzxyz", "12345"):
     bad = call("ReadTurboMCPNodeResolve", nodeIds=node.rsplit(":", 1)[0] + ":" + key)
     check("0 resolved, 1 refused" in bad and "invalid key" in bad, bad)
+missing_key = call("ReadTurboMCPNodeResolve", nodeIds=node.rsplit(":", 1)[0] + ":" + "f" * 32)
+check("0 resolved, 1 refused" in missing_key and "fresh ID" in missing_key, missing_key)
 oversized = call("ReadTurboMCPNodeResolve", nodeIds="|".join([node] * 26))
 check(oversized.startswith("error:") and "at most 25" in oversized, oversized)
 help_text = call("ReadTurboMCPToolHelp", toolsetName=READ_TOOLSET, toolName="ReadTurboMCPNodeResolve")
