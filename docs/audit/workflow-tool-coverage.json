@@ -852,6 +852,21 @@
         "No layout algorithm changed and no visual screenshot acceptance claimed.",
         "Cross-graph reads were tested; variable-scope name collisions may conservatively retain extra nodes."
       ]
+    },
+    {
+      "id": "WF-EDIT-READINESS",
+      "title": "Check editor readiness before planning an edit",
+      "status": "scenario_accepted",
+      "review": "docs/audit/edit-readiness-review.json",
+      "evidence": "01c94b23e433496f8450e351c6e82b6a",
+      "tools_used": [
+        "ReadTurboMCPEditQueue"
+      ],
+      "limitations": [
+        "PIE, simulation, non-editor and unavailable transaction-system branches are source-reviewed only.",
+        "Readiness is a point-in-time diagnostic, not a reservation or authorization for a particular tool.",
+        "Asset/source-control/per-tool preference checks remain with each edit."
+      ]
     }
   ],
   "tool_usage": {
@@ -1248,9 +1263,12 @@
     ],
     "EditTurboMCPGraphDead": [
       "WF-GRAPH-DEAD-REVIEW"
+    ],
+    "ReadTurboMCPEditQueue": [
+      "WF-EDIT-READINESS"
     ]
   },
-  "unique_tools_scenario_reviewed": 108,
+  "unique_tools_scenario_reviewed": 109,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

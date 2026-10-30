@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "workflow": "WF-EDIT-READINESS",
-  "status": "in_progress",
+  "status": "scenario_accepted",
   "readiness": "ready",
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPEditQueue"
   ],
@@ -15,6 +15,21 @@
     "Live help names actual behavior and toolset."
   ],
   "limitations": [
-    "PIE and non-editor branches require source review or targeted runtime evidence."
-  ]
+    "PIE, simulation, non-editor and unavailable transaction-system branches are source-reviewed only.",
+    "Readiness is a point-in-time diagnostic, not a reservation or authorization for a particular tool.",
+    "Asset/source-control/per-tool preference checks remain with each edit."
+  ],
+  "evidence": {
+    "run": "01c94b23e433496f8450e351c6e82b6a",
+    "candidate": "2a52366",
+    "state": "passed",
+    "checks": [
+      "Stock engine build",
+      "MCP route and compact help",
+      "Idle readiness is not blanket permission",
+      "Active transaction blocks readiness",
+      "Recovery gate blocks readiness and explains next step"
+    ],
+    "effects": "No assets edited, compiled or saved by this fixture; temporary test transaction is cancelled and fixture recovery latch reset."
+  }
 }
