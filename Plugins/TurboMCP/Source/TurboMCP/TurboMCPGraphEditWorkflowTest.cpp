@@ -107,6 +107,16 @@ bool FTurboMCPGraphEditWorkflowTest::RunTest(const FString& Parameters)
     AddInfo(InvalidPatch);
     TestEqual(TEXT("Invalid patch preserves value"),Consumer->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("corrected")));
     TestFalse(TEXT("Invalid patch does not report changed"),InvalidPatch.StartsWith(TEXT("changed:")));
+    const FString CreatedTarget = UTurboMCPEditToolset::EditTurboMCPGraphRepoint(
+        Blueprint->GetPathName(),Graph->GetName(),TargetKey,TEXT("then"),TEXT(""),TEXT("Development|PrintString"),TEXT("then"),TEXT("false"));
+    AddInfo(CreatedTarget);
+    TestTrue(TEXT("Repoint creates target and removes old source"),CreatedTarget.StartsWith(TEXT("changed:")));
+    TestFalse(TEXT("Deleted source is absent"),Graph->Nodes.Contains(Target));
+    TestEqual(TEXT("Create/remove preserves net node count"),Graph->Nodes.Num(),3);
+    if (!TestEqual(TEXT("Consumer has one replacement source"),Consumer->FindPinChecked(TEXT("execute"))->LinkedTo.Num(),1)) return false;
+    Target = Cast<UK2Node_CallFunction>(Consumer->FindPinChecked(TEXT("execute"))->LinkedTo[0]->GetOwningNode());
+    if (!TestNotNull(TEXT("Created source is a call node"),Target)) return false;
+    TestEqual(TEXT("Create/remove preserves consumer default"),Consumer->FindPinChecked(TEXT("InString"))->DefaultValue,FString(TEXT("corrected")));
     UEdGraph* Sibling = NewObject<UEdGraph>(Blueprint,TEXT("UnrelatedGraph"),RF_Transactional);
     Sibling->Schema = UEdGraphSchema_K2::StaticClass();
     Blueprint->UbergraphPages.Add(Sibling);
