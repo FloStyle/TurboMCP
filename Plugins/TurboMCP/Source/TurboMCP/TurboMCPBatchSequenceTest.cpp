@@ -75,7 +75,13 @@ bool FTurboMCPBatchSequenceTest::RunTest(const FString& Parameters)
     };
     UTurboMCPPreviewToolset* Preview = GetMutableDefault<UTurboMCPPreviewToolset>();
     UTurboMCPEditToolset* Edit = GetMutableDefault<UTurboMCPEditToolset>();
-    FString Result = Preview->PreviewTurboMCPBatchEdit(Invalid);
+    FString Result = Preview->PreviewTurboMCPBatchEdit(TEXT("[null]"));
+    TestTrue(TEXT("First malformed operation uses one-based numbering"), Result.Contains(TEXT("Operation 1 must be a JSON object.")));
+    TestTrue(TEXT("Malformed preview preserves original edge"), OriginalEdge());
+    Result = Edit->EditTurboMCPBatchEdit(TEXT("[") + First + TEXT(",null]"));
+    TestTrue(TEXT("Later malformed operation uses one-based numbering"), Result.StartsWith(TEXT("unchanged")) && Result.Contains(TEXT("Operation 2 must be a JSON object.")));
+    TestTrue(TEXT("Malformed later operation preserves original edge"), OriginalEdge());
+    Result = Preview->PreviewTurboMCPBatchEdit(Invalid);
     TestTrue(TEXT("Invalid later operation refused in preview"), Result.Contains(TEXT("refused")) && Result.Contains(TEXT("MissingPin")));
     TestTrue(TEXT("Failed preview preserves original edge"), OriginalEdge());
     Result = Edit->EditTurboMCPBatchEdit(Invalid);
