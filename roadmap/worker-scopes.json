@@ -3033,6 +3033,13 @@
             "Tools/test-node-reader-output.py"
           ],
           "new_files": []
+        },
+        "tool-review-refs": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefs.cpp",
+            "Tools/test-refs.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

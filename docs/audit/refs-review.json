@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "workflow": "WF-ASSET-REFERENCES",
+  "status": "in_progress",
+  "readiness": "ready",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPRefs"
+  ],
+  "findings": [
+    "Unchecked registry return values can produce false zero counts.",
+    "Unrequested directions are counted as zero.",
+    "Filtered engine content is called non-content; truncation suggests nonexistent query narrowing."
+  ],
+  "acceptance": [
+    "Positive outgoing/incoming edges, deterministic results and path identity.",
+    "Invalid inputs refuse; unrequested directions explicitly not queried.",
+    "Query failure is not zero; filtering and limitations are truthful.",
+    "Review output, comments and live help."
+  ],
+  "remaining": [
+    "Implement repairs and focused native evidence."
+  ]
+}
