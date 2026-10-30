@@ -107,9 +107,13 @@ def main():
 
     # THE ID IT RETURNS MUST BE USABLE, so the pins reader is pointed at it. A type id the pins
     # reader then refuses would mean the two disagree, which is worse than one being wrong.
-    ids = re.findall(r"(?:^|\s)([\w|]+K2Node[\w|]*)", typed)
-    if not ids:
-        ids = re.findall(r"([A-Za-z][\w ]*\|[\w ]+)", typed)
+    # IDs occupy complete unindented lines. Preserve separators, slashes and
+    # punctuation; extracting class-name fragments produces invalid tool input.
+    ids = [line for line in typed.splitlines()
+           if line.startswith("Function|") and line.endswith(":PrintString")]
+    check("the exact PrintString type ID is present", len(ids) == 1, repr(ids))
+    if len(ids) != 1:
+        raise RuntimeError("Cannot run the pin workflow without one exact reader-provided ID")
     print("    candidate ids: %s" % ids[:3])
 
     # THE ASSET MUST NOT CHANGE. The engine's own pin reader adds a probe node to the real graph and
@@ -119,7 +123,7 @@ def main():
                            "format": "", "tokenBudget": ""})
 
     pins_args = {"asset": ASSET, "graphName": GRAPH,
-                 "typeId": ids[0].strip() if ids else "K2Node_CallFunction"}
+                 "typeId": ids[0]}
     pinned = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPNodePins", pins_args)
     print(pinned[:700])
     print()
@@ -134,16 +138,12 @@ def main():
     after = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
                          {"asset": ASSET, "graphName": GRAPH, "detail": "signatures",
                           "format": "", "tokenBudget": ""})
-    before_count = re.search(r"(\d+) node\(s\)", before)
-    after_count = re.search(r"(\d+) node\(s\)", after)
-    print("    node count %s -> %s"
-          % (before_count.group(1) if before_count else "?",
-             after_count.group(1) if after_count else "?"))
+    # Compare the complete bounded readback rather than an obsolete summary
+    # count. Equal error messages are not preservation evidence.
     check("READING THE PINS DID NOT CHANGE THE GRAPH",
-          before_count is not None and after_count is not None
-          and before_count.group(1) == after_count.group(1),
-          "%s -> %s" % (before_count.group(1) if before_count else "?",
-                        after_count.group(1) if after_count else "?"))
+          bool(before.strip()) and not before.lower().startswith(("error:", "refused"))
+          and before == after,
+          "full graph readback identical=%s" % (before == after))
 
     # A word that matches nothing is refused with the closest names.
     nothing = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPNodeType",
