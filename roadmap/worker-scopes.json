@@ -3017,6 +3017,15 @@
             "Tools/test-asset-cost.py"
           ],
           "new_files": []
+        },
+        "tool-review-types": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Tools/test-type-discovery.py"
+          ]
         }
       },
       "preserve_rows": []

@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "workflow": "WF-TYPE-DISCOVERY",
+  "status": "in_progress",
+  "readiness": "ready",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPTypeFind"
+  ],
+  "acceptance": [
+    "Whitespace-separated words match independently, with deterministic results.",
+    "Invalid input refuses and missing types report no matches.",
+    "Registry completeness and loaded-only class coverage are explicit.",
+    "No claims that a discovered reflected type is automatically supported by a writer.",
+    "Live help, output and source comments reviewed."
+  ],
+  "findings": [
+    "ParseIntoArray uses a delimiter string instead of whitespace tokenization.",
+    "Help does not disclose loaded-only class coverage; comments promise pin usability beyond actual filters."
+  ],
+  "remaining": [
+    "Implement and run focused native workflow."
+  ]
+}
