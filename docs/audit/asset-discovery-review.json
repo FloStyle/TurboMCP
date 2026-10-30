@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "workflow": "WF-ASSET-DISCOVERY",
-  "status": "in_progress",
+  "status": "scenario_accepted",
   "readiness": "ready",
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPAssetSearch",
     "ReadTurboMCPAssetDescribe",
@@ -12,13 +12,18 @@
   "findings": [
     {
       "id": "ASSET-SEARCH-TIE",
-      "state": "implemented_source_reviewed_runtime_workflow_passed",
+      "state": "implemented_source_reviewed; specific branch not runtime injected",
       "problem": "Same-named results in different folders lack stable final tie-break."
     },
     {
       "id": "ASSET-SEARCH-SCAN",
-      "state": "implemented_source_reviewed_runtime_workflow_passed",
+      "state": "implemented_source_reviewed; specific branch not runtime injected",
       "problem": "Incomplete registry scan is not distinguished from complete search."
+    },
+    {
+      "id": "ASSET-COST-UNKNOWN-CAP",
+      "state": "implemented_native_test_passed",
+      "problem": "Unknown-size list was unbounded and negative registry sizes could be shown as measurements."
     }
   ],
   "acceptance": [
@@ -29,8 +34,8 @@
     "Review help, comments and English outputs; retain unverified cases."
   ],
   "evidence": {
-    "candidate": "a8e7b7c91ecb821859531be6b9feb05437cfbee7",
-    "run": "93f98b927bff4d41914094f567e81152",
+    "candidate": "3c3445ae52ba40e8e7dab6359b8829dd77d2ad50",
+    "run": "36ad9fb639fe438dacaa3feb8eccd0ec",
     "state": "passed",
     "suites": [
       "test-asset-describe-metadata",
@@ -41,21 +46,37 @@
       "Search rejects empty/malformed filters and reports no matches.",
       "Mixed describe reports one success and one refusal.",
       "Repeated describes remain identical and unloaded.",
-      "Existing package-cost suite passed."
+      "Existing package-cost suite passed.",
+      "Native CostOutput checks unknown sizes, list cap, preserved category counts, default cap and partial-query output.",
+      "Live help reports all three identities and required parameters; source help and comments reviewed.",
+      "Stock engine compilation passed."
     ],
     "limits": [
       "Same-name duplicate-folder tie and active-scan branches are source-reviewed only.",
-      "No full cost acceptance claimed from legacy suite alone."
+      "Synthetic output checks do not inject missing disk-size metadata into a live registry.",
+      "Registry dependencies are direct, may overlap and may omit unsaved or dynamic references; disk size is not runtime memory.",
+      "Bounded Blueprint and Widget fixtures; not exhaustive project or asset-class certification."
+    ],
+    "previous_run": "93f98b927bff4d41914094f567e81152",
+    "offline_attempts": [
+      {
+        "run": "ac2bcf26976f42a3b87cac9e30b368ef",
+        "state": "failed",
+        "details": "Stale generated inventory and runner-verdict failures with no manifests during overlapping supervised engine execution. Inventory regenerated; serialized rerun passed. Runner cause not conclusively isolated."
+      }
     ],
     "offline": {
-      "run": "e6dbc83f2cfe4b0fa3f2eee1efed4086",
+      "run": "7afc59feb6ff4b62b47205ce69558978",
       "state": "passed",
-      "checks": 26
+      "checks": 26,
+      "note": "Serialized rerun after inventory regeneration; review-record edits were present during the run. Earlier failure retained; concurrency cause not conclusively isolated."
     }
   },
-  "remaining": [
-    "Review complete help/parameter text and code comments for the trio.",
-    "Check unknown/negative size handling and bounded cost output.",
-    "Document loaded/unsaved registry metadata limits and any missing dependency evidence."
+  "remaining": [],
+  "limitations": [
+    "Same-name duplicate-folder tie and active-scan branches are source-reviewed only.",
+    "Synthetic output checks do not inject missing disk-size metadata into a live registry.",
+    "Registry dependencies are direct, may overlap and may omit unsaved or dynamic references; disk size is not runtime memory.",
+    "Bounded Blueprint and Widget fixtures; not exhaustive project or asset-class certification."
   ]
 }

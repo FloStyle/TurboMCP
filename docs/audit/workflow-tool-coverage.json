@@ -867,6 +867,24 @@
         "Readiness is a point-in-time diagnostic, not a reservation or authorization for a particular tool.",
         "Asset/source-control/per-tool preference checks remain with each edit."
       ]
+    },
+    {
+      "id": "WF-ASSET-DISCOVERY",
+      "title": "Find, describe and inspect direct asset dependency sizes",
+      "status": "scenario_accepted",
+      "review": "docs/audit/asset-discovery-review.json",
+      "evidence": "36ad9fb639fe438dacaa3feb8eccd0ec",
+      "tools_used": [
+        "ReadTurboMCPAssetSearch",
+        "ReadTurboMCPAssetDescribe",
+        "ReadTurboMCPAssetCost"
+      ],
+      "limitations": [
+        "Same-name duplicate-folder tie and active-scan branches are source-reviewed only.",
+        "Synthetic output checks do not inject missing disk-size metadata into a live registry.",
+        "Registry dependencies are direct, may overlap and may omit unsaved or dynamic references; disk size is not runtime memory.",
+        "Bounded Blueprint and Widget fixtures; not exhaustive project or asset-class certification."
+      ]
     }
   ],
   "tool_usage": {
@@ -1266,9 +1284,18 @@
     ],
     "ReadTurboMCPEditQueue": [
       "WF-EDIT-READINESS"
+    ],
+    "ReadTurboMCPAssetSearch": [
+      "WF-ASSET-DISCOVERY"
+    ],
+    "ReadTurboMCPAssetDescribe": [
+      "WF-ASSET-DISCOVERY"
+    ],
+    "ReadTurboMCPAssetCost": [
+      "WF-ASSET-DISCOVERY"
     ]
   },
-  "unique_tools_scenario_reviewed": 109,
+  "unique_tools_scenario_reviewed": 112,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
