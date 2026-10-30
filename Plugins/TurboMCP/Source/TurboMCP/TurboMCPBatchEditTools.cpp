@@ -17,6 +17,7 @@
 #include "Editor/Transactor.h"
 #include "Editor/TransBuffer.h"
 #include "Serialization/ObjectWriter.h"
+#include "EdGraphUtilities.h"
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/UObjectHash.h"
 #include "UObject/Package.h"
@@ -139,10 +140,12 @@ struct FBatchSnapshot
  {
   TStrongObjectPtr<UObject> Object;
   TArray<uint8> Bytes;
+  FString NodeText;
   explicit FEntry(UObject* Value) : Object(Value)
   {
    // Verbatim duplication avoids creating a localization namespace while reading.
    FObjectWriter Writer(Value, Bytes, false, false, false, PPF_DuplicateVerbatim);
+   if (Cast<UEdGraphNode>(Value)) FEdGraphUtilities::ExportNodesToText(TSet<UObject*>{Value}, NodeText);
   }
  };
  TArray<TUniquePtr<FEntry>> Entries;
@@ -163,7 +166,26 @@ struct FBatchSnapshot
    if (!IsValid(Entry->Object.Get())) { Difference = TEXT("A captured source object is no longer valid."); return false; }
    TArray<uint8> Current;
    FObjectWriter Writer(Entry->Object.Get(), Current, false, false, false, PPF_DuplicateVerbatim);
-   if (Current != Entry->Bytes) { Difference = TEXT("Serialized source state differs: ") + Entry->Object->GetPathName(); return false; }
+   if (Current != Entry->Bytes)
+   {
+    Difference = TEXT("Serialized source state differs: ") + Entry->Object->GetPathName();
+    if (Cast<UEdGraphNode>(Entry->Object.Get()))
+    {
+     FString CurrentText;
+     FEdGraphUtilities::ExportNodesToText(TSet<UObject*>{Entry->Object.Get()}, CurrentText);
+     TArray<FString> BeforeLines, AfterLines;
+     Entry->NodeText.ParseIntoArrayLines(BeforeLines);
+     CurrentText.ParseIntoArrayLines(AfterLines);
+     Difference += FString::Printf(TEXT("; text_equal=%s"), CurrentText == Entry->NodeText ? TEXT("true") : TEXT("false"));
+     for (int32 Index = 0; Index < FMath::Min(BeforeLines.Num(), AfterLines.Num()); ++Index)
+      if (BeforeLines[Index] != AfterLines[Index])
+      {
+       Difference += TEXT("; before=") + BeforeLines[Index].Left(240) + TEXT("; after=") + AfterLines[Index].Left(240);
+       break;
+      }
+    }
+    return false;
+   }
   }
   return true;
  }
