@@ -17,7 +17,6 @@
 #include "Editor/Transactor.h"
 #include "Editor/TransBuffer.h"
 #include "Serialization/ObjectWriter.h"
-#include "EdGraphUtilities.h"
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/UObjectHash.h"
 #include "UObject/Package.h"
@@ -140,12 +139,10 @@ struct FBatchSnapshot
  {
   TStrongObjectPtr<UObject> Object;
   TArray<uint8> Bytes;
-  FString NodeText;
   explicit FEntry(UObject* Value) : Object(Value)
   {
    // Verbatim duplication avoids creating a localization namespace while reading.
    FObjectWriter Writer(Value, Bytes, false, false, false, PPF_DuplicateVerbatim);
-   if (Cast<UEdGraphNode>(Value)) FEdGraphUtilities::ExportNodesToText(TSet<UObject*>{Value}, NodeText);
   }
  };
  TArray<TUniquePtr<FEntry>> Entries;
@@ -169,21 +166,6 @@ struct FBatchSnapshot
    if (Current != Entry->Bytes)
    {
     Difference = TEXT("Serialized source state differs: ") + Entry->Object->GetPathName();
-    if (Cast<UEdGraphNode>(Entry->Object.Get()))
-    {
-     FString CurrentText;
-     FEdGraphUtilities::ExportNodesToText(TSet<UObject*>{Entry->Object.Get()}, CurrentText);
-     TArray<FString> BeforeLines, AfterLines;
-     Entry->NodeText.ParseIntoArrayLines(BeforeLines);
-     CurrentText.ParseIntoArrayLines(AfterLines);
-     Difference += FString::Printf(TEXT("; text_equal=%s"), CurrentText == Entry->NodeText ? TEXT("true") : TEXT("false"));
-     for (int32 Index = 0; Index < FMath::Min(BeforeLines.Num(), AfterLines.Num()); ++Index)
-      if (BeforeLines[Index] != AfterLines[Index])
-      {
-       Difference += TEXT("; before=") + BeforeLines[Index].Left(240) + TEXT("; after=") + AfterLines[Index].Left(240);
-       break;
-      }
-    }
     return false;
    }
   }
@@ -301,6 +283,7 @@ bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
         Node->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
         Graph->AddNode(Node, false, false);
         Node->CreateNewGuid();
+        Node->PostPlacedNewNode(); // Match editor placement, including DevelopmentOnly metadata.
         Node->AllocateDefaultPins();
         Node->NodePosX = X;
         return Node;
@@ -321,6 +304,13 @@ bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
 
     const FString Payload = TEXT("[") + Operation(TEXT("first"), Source, Target, TEXT("then")) + TEXT(",")
         + Operation(TEXT("second"), Target, FinalTarget, TEXT("then")) + TEXT("]");
+    const FBatchSnapshot ControlSnapshot(Blueprint);
+    FString Difference;
+    TestTrue(TEXT("Snapshot matches unchanged source objects"), ControlSnapshot.Matches(Difference));
+    Consumer->FindPinChecked(TEXT("InString"))->DefaultValue = TEXT("detect-this-change");
+    TestFalse(TEXT("Snapshot rejects an unrelated default change"), ControlSnapshot.Matches(Difference));
+    Consumer->FindPinChecked(TEXT("InString"))->DefaultValue = TEXT("preserve-me");
+    TestTrue(TEXT("Snapshot matches restored default"), ControlSnapshot.Matches(Difference));
     TArray<FBatchOperation> Ops;
     FString Error;
     if (!TestTrue(TEXT("Production batch planning succeeds"), ParseBatch(Payload, Ops, Error))) { AddError(Error); return false; }
