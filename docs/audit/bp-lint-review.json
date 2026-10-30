@@ -2,7 +2,7 @@
   "schema": 1,
   "workflow": "WF-BP-LINT",
   "status": "in_progress",
-  "readiness": "source_review",
+  "readiness": "ready",
   "counted_as_reviewed": false,
   "focus_tools": [
     "ReadTurboMCPBPLint"
@@ -21,5 +21,11 @@
   ],
   "remaining": [
     "Approve repair scope, implement and run focused workflow; inspect all six check semantics."
+  ],
+  "acceptance": [
+    "Identify real engine Tick events, not title substrings; use positive and negative controls.",
+    "Heavy-reference query failures/scanning are not zero findings.",
+    "Static findings explain their actual scope and do not promise safe removal.",
+    "Run focused lint workflow and review all check output/help."
   ]
 }

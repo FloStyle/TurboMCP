@@ -3047,6 +3047,13 @@
             "Tools/test-pure-checks.py"
           ],
           "new_files": []
+        },
+        "tool-review-bp-lint": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp",
+            "Tools/test-bp-lint.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
