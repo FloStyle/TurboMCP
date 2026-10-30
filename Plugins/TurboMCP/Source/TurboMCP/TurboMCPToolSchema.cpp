@@ -707,6 +707,7 @@ FString FTurboMCPToolSchema::Render(const FPlan& InPlan)
 		Out += FString::Printf(TEXT("\n; the schema is unusual: %s"), *Tool.OddSchemaNote);
 	}
 
+    Out += TEXT("\nCompact summary: descriptions are shortened; nested schemas and constraints may be omitted. Use describe_toolset with the full toolset name for the authoritative schema before constructing arguments.");
 	Out += FString::Printf(TEXT("\nparameters: %d"), Tool.Params.Num());
 
 	// The cap. The signature, the description and the trap notes are the parts a caller acts

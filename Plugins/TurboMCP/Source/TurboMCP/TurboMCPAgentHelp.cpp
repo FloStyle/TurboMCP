@@ -413,8 +413,20 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
         if (Matches.IsEmpty()) return TEXT("read: no registered tools match all search words in the requested toolset scope");
         if (Offset >= Matches.Num()) return TEXT("error: search offset outside current results; restart with find:0:<search words>");
         FString Result = FString::Printf(TEXT("read: %d matching registered tools; offset %d; alphabetical, not a recommendation"), Matches.Num(), Offset);
-        const int32 End = FMath::Min(Offset + 20, Matches.Num());
-        for (int32 Index = Offset; Index < End; ++Index) Result += TEXT("\n  ") + Matches[Index];
+        int32 End = Offset;
+        // Reserve the bounded query plus routing guidance; never split a tool identity.
+        const int32 FooterReserve = Query.Len() + 220;
+        for (; End < Matches.Num() && End < Offset + 20; ++End)
+        {
+            const FString Row = TEXT("\n  ") + Matches[End];
+            if (Result.Len() + Row.Len() + FooterReserve > HelpBudgetChars)
+            {
+                if (End == Offset)
+                    return TEXT("error: a tool name exceeds the search budget; inspect describe_toolset directly");
+                break;
+            }
+            Result += Row;
+        }
         if (End < Matches.Num()) Result += FString::Printf(TEXT("\nnext: keep ToolsetName; ToolName=find:%d:%s"), End, *Query);
         Result += TEXT("\nUse an exact tool name for parameters and traps. Search does not authorize edits or bypass refusals.");
         return Result;
@@ -597,10 +609,13 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 				}
 				else
 				{
-					Help += TEXT("\nparameters: none");
+					Help += TEXT("\nparameters: unavailable (schema has no properties object). Use describe_toolset; do not assume this tool takes no arguments.");
 				}
-			}
-
+            }
+            else
+            {
+                Help += TEXT("\nparameters: unavailable (schema has no inputSchema object). Use describe_toolset; do not guess arguments.");
+            }
 
 			// Traps come from the data file, never from code (D-07).
 			const FTurboMCPTraps::FToolInfo* Info = Traps.Find(Bare);

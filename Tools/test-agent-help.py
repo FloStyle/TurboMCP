@@ -187,6 +187,8 @@ def main():
     check("status does not invent revision provenance", "source revision: unknown" in status)
     schema = s.call(READ_TOOLSET, "ReadTurboMCPToolSchema", {"toolset": "Read", "tool": "ReadTurboMCPStatus"})
     print(schema)
+    check("schema announces omitted details", "Compact summary:" in schema and "constraints may be omitted" in schema and "describe_toolset" in schema)
+    check("schema stays within budget", len(schema) <= HELP_BUDGET)
     check("schema resolves exact tool with short toolset", "ReadTurboMCPStatus" in schema and not schema.startswith("error:"))
     refused = s.call(READ_TOOLSET, "ReadTurboMCPToolSchema", {"toolset": "Read", "tool": "NoSuchTool"})
     check("schema refuses unknown tool", refused.startswith("error:"))
