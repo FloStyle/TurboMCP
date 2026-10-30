@@ -6,7 +6,7 @@ Generated from declarations, definitions and static test references. All runtime
 | --- | --- | --- | --- | --- |
 | EditTurboMCPAssetRevert | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPAssetUndo | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
-| EditTurboMCPBatchEdit | [TurboMCPBatchEditTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPBatchEdit | [TurboMCPBatchEditTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPBindFunction | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPBindNewEvent | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPCallLog | [TurboMCPCallLogTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
@@ -79,7 +79,7 @@ Generated from declarations, definitions and static test references. All runtime
 | LookTurboMCPWidgetPreview | [TurboMCPWidgetPreview.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp) | parsed_call | not certified | compare-native-before-expanding |
 | PreviewTurboMCPAssetRevert | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPAssetUndo | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
-| PreviewTurboMCPBatchEdit | [TurboMCPBatchEditTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPBatchEdit | [TurboMCPBatchEditTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPBindFunction | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPBindNewEvent | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPComment | [TurboMCPCommentTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |

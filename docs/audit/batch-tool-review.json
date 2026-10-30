@@ -168,6 +168,11 @@
       "Sequential edit creates one undo record; user undo restores source links and defaults.",
       "Earlier recovery tests verify created/deleted nodes, already-dirty state, unverified restoration and blocked subsequent edits."
     ],
-    "visual_limit": "No layout algorithm changed in this batch; no new screenshot acceptance claimed."
+    "visual_limit": "No layout algorithm changed in this batch; no new screenshot acceptance claimed.",
+    "offline": {
+      "run": "57c857709d694b6b836d0f80e25bb248",
+      "state": "passed",
+      "checks": 26
+    }
   }
 }
