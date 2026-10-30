@@ -230,7 +230,8 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 
 		FCompilerResultsLog CompileLog;
 		CompileLog.bLogInfoOnly = false;
-		FKismetEditorUtilities::CompileBlueprint(Blueprint, EBlueprintCompileOptions::None, &CompileLog);
+		// Saving is a separate tool action, regardless of the editor preference.
+		FKismetEditorUtilities::CompileBlueprint(Blueprint, EBlueprintCompileOptions::SkipSave, &CompileLog);
 
 		const bool bHasErrors = CompileLog.NumErrors > 0;
 		// *** THE SENTENCE BELOW WAS DECIDED BY `CompileLog` ALONE, AND `FCompilerResultsLog` CARRIES ONLY WHAT THE

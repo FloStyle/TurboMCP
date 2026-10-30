@@ -16,6 +16,10 @@
 #include "GameFramework/Actor.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UObject/Package.h"
+#include "UObject/ObjectSaveContext.h"
+#include "BlueprintEditorSettings.h"
+#include "Misc/PackageName.h"
+#include "HAL/FileManager.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPBatchSequenceTest,
     "TurboMCP.Batch.Sequential",
@@ -102,6 +106,29 @@ bool FTurboMCPBatchSequenceTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("All nodes retained"), Graph->Nodes.Num(), 4);
     TestEqual(TEXT("Unrelated default retained"), Consumer->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("preserve-me")));
     TestEqual(TEXT("Unrelated position retained"), Consumer->NodePosX, 300);
+    // Explicit compilation must not inherit Save on Compile from user settings.
+    // Use only this unsaved fixture and restore the preference even on failure.
+    UBlueprintEditorSettings* Settings = GetMutableDefault<UBlueprintEditorSettings>();
+    const ESaveOnCompile PreviousSaveMode = Settings->SaveOnCompile;
+    Settings->SaveOnCompile = SoC_Always;
+    int32 SaveAttempts = 0;
+    const FDelegateHandle SaveHandle = UPackage::PreSavePackageWithContextEvent.AddLambda(
+        [&](UPackage* SavingPackage, FObjectPreSaveContext)
+        {
+            if (SavingPackage == Package) ++SaveAttempts;
+        });
+    ON_SCOPE_EXIT
+    {
+        UPackage::PreSavePackageWithContextEvent.Remove(SaveHandle);
+        Settings->SaveOnCompile = PreviousSaveMode;
+    };
+    const FString Filename = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+    TestFalse(TEXT("Fixture has no file before compile"), IFileManager::Get().FileExists(*Filename));
+    Result = Edit->EditTurboMCPCompile(Blueprint->GetPathName());
+    AddInfo(TEXT("Explicit compile with Save on Compile Always: ") + Result);
+    TestTrue(TEXT("Explicit fixture compile succeeds"), Blueprint->Status == BS_UpToDate || Blueprint->Status == BS_UpToDateWithWarnings);
+    TestEqual(TEXT("Compile does not attempt to save the fixture"), SaveAttempts, 0);
+    TestFalse(TEXT("Compile leaves the fixture off disk"), IFileManager::Get().FileExists(*Filename));
     return !HasAnyErrors();
 }
 #endif
