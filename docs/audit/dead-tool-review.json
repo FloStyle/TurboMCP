@@ -11,22 +11,22 @@
   "findings": [
     {
       "id": "DEAD-KEEP",
-      "state": "open",
+      "state": "implemented_focused_native_passed",
       "problem": "Preview says unrecognized groups are kept while candidate selection still includes them."
     },
     {
       "id": "DEAD-UNDO",
-      "state": "open",
+      "state": "implemented_focused_native_passed",
       "problem": "Destructive removal lacks tool-owned undo and idle-editor guard."
     },
     {
       "id": "DEAD-PREFLIGHT",
-      "state": "open",
+      "state": "implemented_focused_native_passed",
       "problem": "Apply removes nodes while resolving IDs, permitting avoidable partial deletion."
     },
     {
       "id": "DEAD-TEST",
-      "state": "open",
+      "state": "implemented_focused_native_passed",
       "problem": "Legacy test exercises no deletion, uses outdated writer assumptions and obsolete output parsing."
     }
   ],
@@ -39,5 +39,22 @@
   ],
   "limitations": [
     "Static reachability is not runtime proof. No acceptance until native evidence."
+  ],
+  "evidence": {
+    "candidate": "d80e2caed1ec0a6341c02d1f9fa0309ba3668328",
+    "run": "09de707633f2442fa1c7a237ff3f5d14",
+    "failed_legacy_run": "0bcbb1733f2b46d4b0448ef142cb797b",
+    "note": "Legacy no-op test retained in Git history; replaced by actual synthetic deletion/undo. Initial fixture-writing command failed due default text encoding; corrected to explicit UTF-8 before native test.",
+    "passed": [
+      "Disconnected PrintString removed; live event/call, comment and unknown node preserved.",
+      "Preview preserves clean flag and undo history.",
+      "Stale liveness selection refuses before deletion.",
+      "One undo record restores removed identity and count; live links/defaults preserved."
+    ]
+  },
+  "remaining": [
+    "Complete published help and code-comment review; remove stale no-undo descriptions.",
+    "Exercise no-candidate/invalid-target paths and cross-graph variable-read protection.",
+    "Record visual limits; no layout changes or screenshot acceptance claimed."
   ]
 }
