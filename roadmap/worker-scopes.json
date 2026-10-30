@@ -2997,6 +2997,15 @@
             "Tools/test-graph-dead.py"
           ],
           "new_files": []
+        },
+        "tool-review-readiness": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Tools/test-edit-readiness.py"
+          ]
         }
       },
       "preserve_rows": []
