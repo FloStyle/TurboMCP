@@ -2972,7 +2972,8 @@
           "files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchSequenceTest.cpp",
             "Tools/test-batch-edit.py",
-            "Tools/test-batch-sequence.py"
+            "Tools/test-batch-sequence.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp"
           ],
           "new_files": []
         }
