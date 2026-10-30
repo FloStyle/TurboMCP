@@ -46,7 +46,7 @@ namespace
   for (int32 Index = 0; Index < Values->Num(); ++Index)
   {
    const TSharedPtr<FJsonObject> Object = (*Values)[Index].IsValid() && (*Values)[Index]->Type==EJson::Object ? (*Values)[Index]->AsObject() : nullptr;
-   if (!Object.IsValid()) { Error = FString::Printf(TEXT("operation %d is not an object"), Index); return false; }
+   if (!Object.IsValid()) { Error = FString::Printf(TEXT("Operation %d must be a JSON object."), Index + 1); return false; }
    TSet<FString> SeenFields;
    for (const auto& Field : Object->Values)
    {
