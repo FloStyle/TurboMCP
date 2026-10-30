@@ -14,7 +14,7 @@ for toolset, tool in (("TurboMCP.TurboMCPPreviewToolset", "PreviewTurboMCPBatchE
     print(help_text)
     if help_text.startswith("error:") or len(help_text) > 2000:
         raise RuntimeError("Batch help is unavailable or exceeds its compact budget")
-    for required in ("operations", "graphRepoint", "compile", "restoration", "blocked"):
+    for required in ("operations", "graphRepoint", "compil", "restoration", "blocked", "one asset and graph"):
         if required.lower() not in help_text.lower():
             raise RuntimeError("Batch help omits required guidance: " + required)
 session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})

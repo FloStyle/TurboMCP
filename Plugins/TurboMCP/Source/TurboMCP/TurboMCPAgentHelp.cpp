@@ -536,8 +536,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
                     Help += TEXT("\nusage template: Asset=<existing Blueprint path>, GraphName=<explicit existing graph>. For an existing PrintString call, replace <full reader node ID> below with that node's actual identity:\n(Development|PrintString ; <full reader node ID>\n    InString \"Hello\")\nPreview first. Patch changes existing literal defaults; this is not an append or an execution-link rewrite. The type and pin must match the target node; placeholders are not accepted IDs.");
             }
 
-			Help += FString::Printf(TEXT("\nwhat: %s"),
-				*FirstSentence(Field(Tool, TEXT("description"))));
+            // Batch recovery and scope restrictions are part of safe use, not
+            // optional detail. Keep them in compact help as well as the schema.
+            const bool bBatch = Bare == TEXT("PreviewTurboMCPBatchEdit") || Bare == TEXT("EditTurboMCPBatchEdit");
+            const FString Description = Field(Tool, TEXT("description"));
+            Help += FString::Printf(TEXT("\nwhat: %s"), *(bBatch ? Description : FirstSentence(Description)));
 
 			// Parameters, straight out of the schema the registry published.
 			const TSharedPtr<FJsonObject>* InputSchema = nullptr;
