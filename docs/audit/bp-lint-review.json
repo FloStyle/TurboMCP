@@ -42,7 +42,12 @@
       "Disk fixture unchanged",
       "Live help, check list and public contract reviewed against all six implementations"
     ],
-    "previous_run": "bf674dd5af9a487298e173e700f5e6ee"
+    "previous_run": "bf674dd5af9a487298e173e700f5e6ee",
+    "offline": {
+      "run": "fef354829a3a4edcb0517c280ae444cd",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "fixes": [
     "Actual engine function identity instead of Tick title substring.",
