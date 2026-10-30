@@ -1,27 +1,4 @@
-# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-BP-11
-"""Exercise R-REFS against the running editor.
-
-Checks the rules the spec states, and exits non-zero on failure.
-
-  T-BP-11  references in and out, full paths with class
-  P1       zero is a real answer and says what it means
-  P2       a bad direction is refused by name
-  P5       every path form gives the same answer
-  P6       engine and script packages are counted, not listed
-
-THE TEST ASSETS MATTER, AND GETTING THEM WRONG ONCE COST AN HOUR
-----------------------------------------------------------------
-`/Game/Tests/BP_NodeTest` and `/Game/Tests/TA11_TestEnum` have **no content
-dependencies at all**: everything they reference is `/Script`, which this tool
-counts and does not list. So both directions answer zero for them, correctly, and
-they prove nothing about whether the dependency walk works.
-
-An engine widget Blueprint is used for the outgoing direction instead, because it
-genuinely depends on project content. This was nearly mistaken for a bug in the
-tool: the engine's OWN `get_dependencies` also returns an empty list for
-`/Engine/EditorBlueprintResources/StandardMacros`, so an empty answer for an engine
-asset is the engine's behaviour and not ours.
-"""
+"""T-BP-11: Direct saved-registry references, identities and truthful limits."""
 
 import os
 import sys
@@ -91,10 +68,19 @@ def main():
     check("prints the class", "[Texture2D]" in out)
     check(
         "counts what it did not list",
-        "not listed" in out or "uses (out): 0" in out,
+        "registry entries omitted" in out or "uses (out): 0" in out,
     )
     check("says nothing about the incoming direction", "used by (in)" not in out)
 
+    check("unrequested incoming direction is not a false zero", "in=not queried" in out, out)
+    incoming = session.call(READ_TOOLSET, "ReadTurboMCPRefs", {"asset": "/AudioWidgets/AudioFader/AudioFader_Inner", "direction": "in"})
+    print(incoming)
+    check("inverse edge points back to the known dependency owner", "/AudioWidgets/AudioFader/AudioFader.AudioFader" in incoming, incoming)
+    check("unrequested outgoing direction is not a false zero", "out=not queried" in incoming, incoming)
+    check("limits do not imply deletion safety", "zero is not permission to delete" in out, out)
+    help_text = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": READ_TOOLSET, "toolName": "ReadTurboMCPRefs"})
+    print(help_text)
+    check("live help includes required arguments and saved-registry scope", "asset:" in help_text and "direction:" in help_text and "registry" in help_text, help_text)
     print()
     print("=== an asset with no content references, and P1 ===")
     none = session.call(READ_TOOLSET, "ReadTurboMCPRefs",
@@ -110,7 +96,7 @@ def main():
     print("=== the registry caveat is stated ===")
     check(
         "says the registry needs a saved package",
-        "records these edges when packages are saved" in none,
+        "Unsaved or dynamic references may be missing" in none,
     )
 
     print()

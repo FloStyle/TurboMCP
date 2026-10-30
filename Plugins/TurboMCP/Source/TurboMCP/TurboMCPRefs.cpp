@@ -88,6 +88,7 @@ namespace
 			return Reference;
 		}
 
+		Found.Sort([](const FAssetData& A, const FAssetData& B) { return A.GetObjectPathString() < B.GetObjectPathString(); });
 		Reference.bPackageHasSeveralAssets = Found.Num() > 1;
 
 		// The registry's own object path and class, so this cannot disagree with
@@ -135,7 +136,7 @@ namespace
 			{
 				// The package holds more than one asset, so the object path printed
 				// is one of several. A caller acting on it has to know.
-				Out += TEXT("  (this package holds several assets; this is the first)");
+				Out += TEXT("  (package-level edge; first asset by path shown, not a proven object-level target)");
 			}
 		}
 
@@ -143,8 +144,8 @@ namespace
 		{
 			// `04_FORMATS.md` section 1: a capped list says how many are left.
 			Out += FString::Printf(
-				TEXT("\n  (%d more, use a narrower %s to see them)"),
-				InReferences.Num() - Shown, InNextStep);
+				TEXT("\n  (%d more references omitted by the 60-row limit; this tool has no pagination. Use Unreal Reference Viewer for the complete list.)"),
+				InReferences.Num() - Shown);
 		}
 
 		return Out;
@@ -155,7 +156,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPRefs(
 	const FString& Asset,
 	const FString& Direction)
 {
-	if (Asset.IsEmpty())
+	if (Asset.TrimStartAndEnd().IsEmpty())
 	{
 		return TEXT("error: no asset given. Pass an asset in any path form, for ")
 			TEXT("example BP_NodeTest or /Game/Tests/BP_NodeTest.");
@@ -217,14 +218,10 @@ FString UTurboMCPReadToolset::ReadTurboMCPRefs(
 
 	if (bWantOut)
 	{
-		// The FAssetIdentifier overload is used rather than the FName one.
-		//
-		// The registry documents the FName overload as the package dependency
-		// query, which reads the older DependsMap that is only reliably populated
-		// for cooked packages. Asking by identifier reads the live dependency data
-		// the editor builds while it works, which is what a running editor has.
+		// Read saved registry edges; failure is distinct from an empty result.
 		TArray<FAssetDependency> Dependencies;
-		Registry->GetDependencies(FAssetIdentifier(PackageName), Dependencies);
+		if (!Registry->GetDependencies(FAssetIdentifier(PackageName), Dependencies))
+			return TEXT("partial: outgoing registry references are unavailable; no complete counts were produced. The package may not have saved dependency data. No edit, compile or save was requested.");
 
 		TArray<FReference> References;
 		TArray<FString> Dropped;
@@ -252,8 +249,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPRefs(
 			{
 				Reference.ObjectPath = FString::Printf(TEXT("%s.%s"), *Name, *ObjectName);
 				// The class is the object's own, which may differ from the package's
-				// first asset. When the object is not loaded the package's class is
-				// kept, because that is still the truth about the package.
+				// first asset. Unknown object classes must not inherit another asset's class.
+				Reference.ClassName = TEXT("unknown (object class not loaded)");
 				if (const UObject* Found = FindObject<UObject>(nullptr,
 						*Reference.ObjectPath))
 				{
@@ -271,15 +268,15 @@ FString UTurboMCPReadToolset::ReadTurboMCPRefs(
 		if (Dropped.Num() > 0)
 		{
 			Result += FString::Printf(
-				TEXT("\n  (%d engine or script package(s) were not listed: they are ")
-				TEXT("not content)"), Dropped.Num());
+				TEXT("\n  (%d registry entries omitted: engine, script, temporary or empty package identities)"), Dropped.Num());
 		}
 	}
 
 	if (bWantIn)
 	{
 		TArray<FAssetDependency> Referencers;
-		Registry->GetReferencers(FAssetIdentifier(PackageName), Referencers);
+		if (!Registry->GetReferencers(FAssetIdentifier(PackageName), Referencers))
+			return TEXT("partial: incoming registry references are unavailable; no complete counts were produced. The package may not have saved dependency data. No edit, compile or save was requested.");
 
 		TArray<FReference> References;
 		TArray<FString> Dropped;
@@ -301,30 +298,31 @@ FString UTurboMCPReadToolset::ReadTurboMCPRefs(
 		if (Dropped.Num() > 0)
 		{
 			Result += FString::Printf(
-				TEXT("\n  (%d engine or script referencer(s) were not listed: they ")
-				TEXT("are not content)"), Dropped.Num());
+				TEXT("\n  (%d registry entries omitted: engine, script, temporary or empty package identities)"), Dropped.Num());
 		}
 	}
 
 	// The counts go on the status line, which is only possible now that both
 	// directions have run. They are printed after the opening sentence rather than
 	// in it, because the opening sentence is built before either query runs.
-	Result += FString::Printf(TEXT("\ncounts: %d out, %d in"), OutCount, InCount);
+	Result += FString::Printf(TEXT("\ncounts: out=%s, in=%s"),
+        bWantOut ? *FString::FromInt(OutCount) : TEXT("not queried"),
+        bWantIn ? *FString::FromInt(InCount) : TEXT("not queried"));
 
 	// The engine keeps dependency edges for packages it has seen. A package that
 	// was never saved, or a project the registry has not scanned, has no edges,
 	// and a caller seeing "0 in" must know which of the two it is looking at.
-	Result += TEXT("\n; the asset registry records these edges when packages are ")
-		TEXT("saved, so an asset that has never been saved has no outgoing edges and ")
-		TEXT("an unsaved user will not appear as an incoming one.");
+	Result += TEXT("\nScope: direct registry edges, not a recursive impact analysis. Engine, script and temporary packages are filtered. Unsaved or dynamic references may be missing; zero is not permission to delete an asset. No edit, compile or save was requested.");
 
 	if (Result.Len() > MaxResultChars)
 	{
-		const int32 Dropped = Result.Len() - MaxResultChars;
-		Result = Result.Left(MaxResultChars);
+		const int32 OriginalLength = Result.Len();
+		int32 Boundary = MaxResultChars;
+        while (Boundary > 0 && Result[Boundary - 1] != TEXT('\n')) --Boundary;
+        Result = Result.Left(Boundary > 0 ? Boundary - 1 : 0);
 		Result += FString::Printf(
 			TEXT("\n\n; (%d more character(s) were dropped; use direction out or in ")
-			TEXT("to read one side at a time)"), Dropped);
+			TEXT("to read one side at a time. This truncated result cannot prove complete impact or safe deletion.)"), OriginalLength - Result.Len());
 	}
 
 	return Result;
