@@ -3040,6 +3040,13 @@
             "Tools/test-refs.py"
           ],
           "new_files": []
+        },
+        "tool-review-pure-checks": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPureChecks.cpp",
+            "Tools/test-pure-checks.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

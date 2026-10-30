@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "workflow": "WF-CALL-STRING-DIAGNOSTICS",
+  "status": "in_progress",
+  "readiness": "ready",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPPureChecks"
+  ],
+  "acceptance": [
+    "Literal normalization and asset extraction remain accurate.",
+    "All echoed values stay on one line; original measurements are preserved.",
+    "Help and output clearly say this is not tool execution, JSON validation or asset resolution.",
+    "No runtime or graph safety certification implied."
+  ],
+  "findings": [
+    "Toolset and extracted-key echoes do not honor single-line output promise."
+  ],
+  "remaining": [
+    "Fix output and validate literal diagnostic workflow."
+  ]
+}
