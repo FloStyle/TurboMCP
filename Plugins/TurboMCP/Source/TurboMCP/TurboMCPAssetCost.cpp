@@ -16,16 +16,7 @@
 
 namespace
 {
-	/**
-	 * The registry's own recorded size for a package, or INDEX_NONE when it cannot be read.
-	 *
-	 * *** `INDEX_NONE` RATHER THAN ZERO IS THE WHOLE CONTRACT: `P1` AND THE SPEC BOTH SAY A SIZE THAT CANNOT BE READ
-	 * IS REPORTED AS UNKNOWN WITH THE REASON, NEVER AS ZERO. A caller who sees 0 believes the package is free. ***
-	 *
-	 * AND THE CALL IS COPIED FROM `R-BP-LINT` RATHER THAN RECALLED - `GetAssetPackageDataCopy` returns a
-	 * `TOptional`, so "the registry has no row for this package" is a DISTINGUISHABLE state and must not be folded
-	 * into a size. `FAssetPackageData::DiskSize` is at `AssetData.h:968`.
-	 */
+    // Missing or negative registry measurements are unknown, never zero cost.
 	int64 DiskSizeOfPackage(IAssetRegistry* InRegistry, const FName InPackageName)
 	{
 		const TOptional<FAssetPackageData> Data = InRegistry->GetAssetPackageDataCopy(InPackageName);
@@ -33,7 +24,7 @@ namespace
 		{
 			return INDEX_NONE;
 		}
-		return Data.GetValue().DiskSize;
+		return Data.GetValue().DiskSize >= 0 ? Data.GetValue().DiskSize : INDEX_NONE;
 	}
 
 	/** One dependency set, read with the readable query form. */
@@ -44,11 +35,7 @@ namespace
 		const FString& InReason,
 		FTurboMCPAssetCost& Out)
 	{
-		// *** THE QUERY IS BUILT FROM `EDependencyQuery` AND NOT FROM `EDependencyProperty` - MEASURED BY THE
-		// `R-BP-LINT` WORKSTREAM, WHOSE FIRST ATTEMPT DID NOT COMPILE. `EDependencyProperty`
-		// (`Misc/AssetRegistryInterface.h:53`) HAS NO `Soft` AND NO `EditorOnly`; THOSE SPELLINGS LIVE ON
-		// `EDependencyQuery` (`:108`), AND ITS `FDependencyQuery` CONSTRUCTOR (`:248`) TRANSLATES THEM INTO THE
-		// `Required`/`Excluded` BIT FIELDS THE QUERY ACTUALLY USES. THE READABLE FORM IS THE ONE TO PASS. ***
+        // Query flags select dependency categories; categories can overlap.
 		const UE::AssetRegistry::FDependencyQuery Query(InKind);
 
 		TArray<FName> Dependencies;
@@ -81,7 +68,7 @@ namespace
 			if (Contributor.Bytes == INDEX_NONE)
 			{
 				// UNKNOWN IS ITS OWN LIST, WITH ITS REASON. It is NEVER added to a total as zero (`P1`).
-				Contributor.Reason = InReason + TEXT(", and THE REGISTRY HAS NO SIZE FOR IT");
+				Contributor.Reason = InReason + TEXT(", size unavailable in registry");
 				Out.Unknown.Add(Contributor);
 			}
 			// A missing size does not remove a dependency from its category count.
@@ -93,6 +80,7 @@ namespace
 
 FString FTurboMCPAssetCost::Render(int32 Cap) const
 {
+    Cap = Cap > 0 ? Cap : 10;
 	TArray<FString> Lines;
 	Lines.Add(FString::Printf(TEXT("read: asset package sizes and direct registry dependencies")));
 	Lines.Add(FString::Printf(TEXT("asset: %s"), *Asset));
@@ -124,14 +112,14 @@ FString FTurboMCPAssetCost::Render(int32 Cap) const
 		Lines.Add(TEXT("Wait for the asset registry scan to finish, then retry. Unsaved packages may have no recorded dependencies."));
 		return FString::Join(Lines, TEXT("\n"));
 	}
-	Lines.Add(FString::Printf(TEXT("WHAT IT PULLS IN, SPLIT BY KIND (%d dependency entr(ies) examined)"), Examined));
+	Lines.Add(FString::Printf(TEXT("DIRECT DEPENDENCIES BY KIND (%d dependency entr(ies) examined)"), Examined));
 	Lines.Add(FString::Printf(TEXT("  hard references        : %d package(s)"), Hard.Num()));
 	Lines.Add(FString::Printf(TEXT("  soft references        : %d package(s)"), Soft.Num()));
 	Lines.Add(FString::Printf(TEXT("  editor-only references : %d package(s)"), EditorOnly.Num()));
 	Lines.Add(TEXT(""));
 	Lines.Add(TEXT("  These are direct registry dependencies, not a recursive load-cost total."));
 	Lines.Add(TEXT("  Editor-only entries can overlap hard or soft entries; do not add the categories."));
-	Lines.Add(TEXT("  Sizes are recorded package disk sizes; missing measurements remain unknown."));
+	Lines.Add(TEXT("  Sizes are recorded package disk sizes, not runtime memory or cooked-build sizes; missing measurements remain unknown."));
 	Lines.Add(TEXT(""));
 
 	// ---------------------------------------------------------------------------------------------
@@ -141,10 +129,11 @@ FString FTurboMCPAssetCost::Render(int32 Cap) const
 	{
 		Lines.Add(FString::Printf(TEXT("SIZES THAT COULD NOT BE READ (%d) - AN ABSENT MEASUREMENT, NOT ZERO COST"),
 			Unknown.Num()));
-		for (const FContributor& Entry : Unknown)
-		{
-			Lines.Add(FString::Printf(TEXT("  %s"), *Entry.Package));
-		}
+        const int32 UnknownShown = FMath::Min(Cap, Unknown.Num());
+        for (int32 Index = 0; Index < UnknownShown; ++Index)
+            Lines.Add(FString::Printf(TEXT("  %s"), *Unknown[Index].Package));
+        if (UnknownShown < Unknown.Num())
+            Lines.Add(FString::Printf(TEXT("  ... %d unknown-size entries omitted by Cap; increase Cap to see more."), Unknown.Num() - UnknownShown));
 		Lines.Add(TEXT(""));
 	}
 
@@ -260,3 +249,29 @@ FString FTurboMCPAssetCostReader::Read(const FString& AssetName, int32 Cap)
 
 	return Report.Render(EffectiveCap);
 }
+
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPAssetCostRenderTest, "TurboMCP.Assets.CostOutput",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPAssetCostRenderTest::RunTest(const FString& Parameters)
+{
+    FTurboMCPAssetCost Report; Report.Asset = TEXT("/Game/Tests/CostFixture"); Report.OwnBytes = 100;
+    for (int32 I = 0; I < 5; ++I)
+    {
+        FTurboMCPAssetCost::FContributor Entry;
+        Entry.Package = FString::Printf(TEXT("/Game/Unknown%d"), I); Entry.Reason = TEXT("hard reference, size unavailable");
+        Report.Unknown.Add(Entry); Report.Hard.Add(Entry); Report.Largest.Add(Entry); ++Report.Examined;
+    }
+    const FString Text = Report.Render(2);
+    TestTrue(TEXT("Unknown list cap disclosed"), Text.Contains(TEXT("3 unknown-size entries omitted by Cap")));
+    TestFalse(TEXT("Unshown unknown package omitted"), Text.Contains(TEXT("/Game/Unknown4")));
+    TestTrue(TEXT("Category retains full count"), Text.Contains(TEXT("hard references        : 5 package(s)")));
+    TestTrue(TEXT("Known own size has memory disclaimer"), Text.Contains(TEXT("not runtime memory")));
+    TestTrue(TEXT("Unknown never reported as zero"), Text.Contains(TEXT("size UNKNOWN")) && !Text.Contains(TEXT("0 byte(s) |")));
+    TestFalse(TEXT("Nonpositive cap uses default"), Report.Render(0).Contains(TEXT("entries omitted by Cap")));
+    Report.QueryErrors.Add(TEXT("hard references"));
+    TestTrue(TEXT("Query failure is partial"), Report.Render(2).StartsWith(TEXT("partial:")));
+    return !HasAnyErrors();
+}
+#endif

@@ -59,7 +59,7 @@ def section(text, heading):
     project five checks twice.
     """
     lines = text.splitlines()
-    known = ("OWN SIZE", "WHAT IT PULLS IN", "SIZES THAT COULD NOT BE READ", "LARGEST CONTRIBUTORS")
+    known = ("OWN SIZE", "DIRECT DEPENDENCIES", "SIZES THAT COULD NOT BE READ", "LARGEST CONTRIBUTORS")
     start = None
     for index, line in enumerate(lines):
         if heading in line:
@@ -78,6 +78,16 @@ def section(text, heading):
 def main():
     session = Session()
     session.connect()
+    import runpy
+    from pathlib import Path
+    support = runpy.run_path(str(Path(__file__).with_name("test-widget-roundtrip.py")))
+    session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
+    name = "TurboMCP.Assets.CostOutput"
+    raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})
+    print(raw)
+    entry, report = support["parse_run_tests_report"](raw, name)
+    check("native output controls have no warnings", not entry["warnings"], repr(entry["warnings"]))
+
 
     text = session.call(READ_TOOLSET, "ReadTurboMCPAssetCost", {"asset": ASSET, "cap": 5})
     print(text[:900])
@@ -119,7 +129,7 @@ def main():
     # ---------------------------------------------------------------------------------------------
     own = section(text, "OWN SIZE")
     own_text = "\n".join(own)
-    own_ok = ("byte(s)" in text.split("WHAT IT PULLS IN")[0]) or ("unknown" in own_text.lower())
+    own_ok = ("byte(s)" in text.split("DIRECT DEPENDENCIES")[0]) or ("unknown" in own_text.lower())
     check("the asset's own size is either a size or an explicit unknown",
           own_ok, own_text[:300])
 
