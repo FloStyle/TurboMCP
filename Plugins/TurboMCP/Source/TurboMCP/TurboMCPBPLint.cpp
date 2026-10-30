@@ -18,6 +18,8 @@
 #include "Engine/Blueprint.h"
 #include "K2Node.h"
 #include "K2Node_DynamicCast.h"
+#include "K2Node_Event.h"
+#include "GameFramework/Actor.h"
 #include "Misc/AssetRegistryInterface.h"
 
 #include "TurboMCPAssetResolver.h"
@@ -36,19 +38,7 @@ namespace
 	const TCHAR* const CheckUnusedDeclarations = TEXT("unused-declarations");
 	const TCHAR* const CheckUnconnectedPins = TEXT("unconnected-pins");
 
-	/**
-	 * THE THRESHOLD FOR `heavy-hard-references`, IN BYTES.
-	 *
-	 * `Spec/03_TOOLS.md` says "hard references to assets over a threshold" WITHOUT NAMING ONE, and
-	 * `R-ASSET-COST` is where the numbers are supposed to come from - and R-ASSET-COST DOES NOT EXIST YET
-	 * (measured: no `ReadTurboMCPAssetCost`, no `TurboMCPAssetCost.cpp`). So this constant IS the threshold
-	 * and it is REPORTED IN THE OUTPUT beside every finding, so a caller can see the rule rather than infer
-	 * it. 1 MiB is chosen because it is far above a Blueprint's ordinary references - a data table, a
-	 * material, a texture reference in a default value - and far below a badly chosen hard reference to a
-	 * large asset. When `R-ASSET-COST` lands this must be reconciled with it, and that is a QUESTION rather
-	 * than something to guess: the two tools quoting different sizes would be worse than one of them
-	 * staying silent.
-	 */
+	// Fixed saved-package disk-size heuristic; not runtime memory or measured cost.
 	const int64 HeavyHardReferenceBytes = 1024 * 1024;
 
 	/** Splits a comma or whitespace separated filter. Empty means "no filter", which is every check. */
@@ -125,7 +115,7 @@ TArray<FTurboMCPBPLint::FCheckName> FTurboMCPBPLint::KnownChecks()
 	Names.Add({ CheckUnnecessaryCasts,
 		TEXT("a cast whose result only calls something already on the class, or on a known type") });
 	Names.Add({ CheckExpensiveTick,
-		TEXT("work done directly in a Tick or ReceiveTick that could be event driven") });
+		TEXT("direct connections from known engine Tick events; not measured execution cost") });
 	Names.Add({ CheckHeavyHardReferences,
 		TEXT("hard references to assets over a size threshold, read from the registry") });
 	Names.Add({ CheckUnusedDeclarations,
@@ -191,11 +181,11 @@ static void RunDeadNodes(const UBlueprint* InBlueprint, const TArray<UEdGraph*>&
 				Finding.GraphName = Graph->GetName();
 				// `error` because this node is unreachable from every entry and removable, which is the
 				// strongest thing this check can say - and it says it only when `Plan` said so.
-				Finding.Severity = TEXT("error");
+				Finding.Severity = TEXT("warning");
 				Finding.Why = Group.bRepeatsLiveLogic
 					? FString::Printf(TEXT("unreachable from any entry, and it repeats live logic (%s)"),
 						*FString::Join(Group.RepeatedItems, TEXT(", ")))
-					: TEXT("unreachable from any entry point, so nothing runs it");
+					: TEXT("not reached by the static entry walk; inspect the dead-node preview before changing it");
 				Finding.FixTool = TEXT("PreviewTurboMCPGraphDead");
 				Out.Findings.Add(Finding);
 			}
@@ -267,14 +257,13 @@ static void RunExpensiveTick(const UBlueprint* InBlueprint, const TArray<UEdGrap
 		for (UEdGraphNode* Node : Graph->Nodes)
 		{
 			if (Node == nullptr) { continue; }
-			const FString ClassName = Node->GetClass()->GetName();
-
-			// THE TICK ENTRIES, BY NAME, because guessing at them would be the recalled-name mistake this
-			// project has made eight times. `K2Node_Event` carries the event's name in its own accessor; a
-			// `ReceiveTick` and a `Tick` are the two the spec names.
-			const bool bIsTickEntry =
-				(ClassName.Contains(TEXT("K2Node_Event")) || ClassName.Contains(TEXT("K2Node_FunctionEntry")))
-				&& TitleOf(Node).Contains(TEXT("Tick"), ESearchCase::IgnoreCase);
+            const UK2Node_Event* Event = Cast<UK2Node_Event>(Node);
+            const UFunction* Function = Event ? Event->EventReference.ResolveMember<UFunction>(InBlueprint ? InBlueprint->GeneratedClass : nullptr) : nullptr;
+            const FString Owner = Function ? Function->GetOuterUClass()->GetPathName() : FString();
+            const FName Name = Function ? Function->GetFName() : NAME_None;
+            const bool bIsTickEntry = Function &&
+                ((Name == TEXT("ReceiveTick") && (Owner == TEXT("/Script/Engine.Actor") || Owner == TEXT("/Script/Engine.ActorComponent"))) ||
+                 (Name == TEXT("Tick") && Owner == TEXT("/Script/UMG.UserWidget")));
 
 			if (!bIsTickEntry) { continue; }
 
@@ -302,9 +291,9 @@ static void RunExpensiveTick(const UBlueprint* InBlueprint, const TArray<UEdGrap
 			// `info`, NOT `warning`: this is a report about shape, not a claim that anything is slow.
 			Finding.Severity = TEXT("info");
 			Finding.Why = DependsOn.Num() > 0
-				? FString::Printf(TEXT("runs every frame and depends on %s; consider an event instead"),
+				? FString::Printf(TEXT("engine Tick event has direct connections to %s; review whether event-driven work is appropriate. Tick may be disabled or interval-limited; no runtime cost was measured"),
 					*FString::Join(DependsOn, TEXT(", ")))
-				: TEXT("runs every frame with nothing connected to it; consider an event instead");
+				: TEXT("engine Tick event has no connected outputs; this is not evidence of expensive work");
 			Out.Findings.Add(Finding);
 		}
 	}
@@ -339,17 +328,17 @@ static void RunHeavyHardReferences(const FString& InPackageName, FTurboMCPBPLint
 		return;
 	}
 
-	// HARD ONLY, AND THE QUERY IS BUILT FROM `EDependencyQuery` RATHER THAN FROM `EDependencyProperty` - MEASURED,
-	// BECAUSE THE FIRST ATTEMPT DID NOT COMPILE. `EDependencyProperty` (`AssetRegistryInterface.h:53`) HAS NO
-	// `Soft` AND NO `EditorOnly`: its members are `Hard`, `Game`, `Build` and the masks. THE SPELLINGS THAT
-	// MEAN "not soft" AND "not editor only" LIVE ON `EDependencyQuery` (`:108`), where `Soft = NotHard` and
-	// `EditorOnly = NotGame`, AND ITS `FDependencyQuery` CONSTRUCTOR (`:248`) TRANSLATES THEM INTO THE
-	// `Required`/`Excluded` BIT FIELDS THE QUERY ACTUALLY USES. So the readable form is the one to pass.
+	// Include hard package references; editor-only references are not excluded.
 	const UE::AssetRegistry::FDependencyQuery Query(UE::AssetRegistry::EDependencyQuery::Hard);
 
 	TArray<FName> Dependencies;
-	Registry->GetDependencies(FName(*InPackageName), Dependencies,
-		UE::AssetRegistry::EDependencyCategory::Package, Query);
+    if (Registry->IsGathering() || !Registry->GetDependencies(FName(*InPackageName), Dependencies,
+        UE::AssetRegistry::EDependencyCategory::Package, Query))
+    {
+        Out.bRan = false;
+        Out.Reason = TEXT("registry scanning or unavailable dependency data prevents a complete hard-reference check; retry after scanning");
+        return;
+    }
 
 	// THE DENOMINATOR IS EVERY HARD DEPENDENCY, not only the heavy ones: a check that found nothing must be
 	// distinguishable from a check whose dependency lookup came back empty for a reason.
@@ -584,6 +573,7 @@ bool FTurboMCPBPLint::Lint(const FString& InAsset, const FString& InChecks,
 	FReport& OutReport, FString& OutError)
 {
 	OutError.Empty();
+	OutReport = FReport();
 
 	const FString Asset = InAsset.TrimStartAndEnd();
 	if (Asset.IsEmpty())
@@ -795,3 +785,26 @@ FString FTurboMCPBPLint::Render(const FReport& InReport, int32 InTokenBudget)
 	Out += TEXT("\n\nReview findings before applying changes. Suggested tools do not guarantee a fix; this lint pass does not explicitly edit, compile or save assets.");
 	return Out;
 }
+
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Misc/AutomationTest.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPLintTickTest, "TurboMCP.Lint.TickIdentity", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPLintTickTest::RunTest(const FString& Parameters)
+{
+    UBlueprint* Blueprint = NewObject<UBlueprint>(GetTransientPackage());
+    UEdGraph* Graph = NewObject<UEdGraph>(Blueprint);
+    UK2Node_Event* Tick = NewObject<UK2Node_Event>(Graph);
+    Tick->EventReference.SetExternalMember(TEXT("ReceiveTick"), AActor::StaticClass());
+    Graph->Nodes.Add(Tick);
+    UK2Node_Event* Other = NewObject<UK2Node_Event>(Graph);
+    Other->EventReference.SetExternalMember(TEXT("TickSomethingUnrelated"), AActor::StaticClass());
+    Graph->Nodes.Add(Other);
+    FTurboMCPBPLint::FCheckResult Result;
+    RunExpensiveTick(Blueprint, { Graph }, Result);
+    TestEqual(TEXT("Only actual engine Tick is counted"), Result.Scanned, 1);
+    TestEqual(TEXT("One bounded finding"), Result.Findings.Num(), 1);
+    if (Result.Findings.Num() == 1)
+        TestTrue(TEXT("Disconnected Tick is not expensive evidence"), Result.Findings[0].Why.Contains(TEXT("not evidence of expensive")));
+    return !HasAnyErrors();
+}
+#endif

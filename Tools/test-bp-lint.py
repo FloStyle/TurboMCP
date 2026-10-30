@@ -177,6 +177,15 @@ def md5(path):
 def main():
     session = Session()
     session.connect()
+    import runpy
+    from pathlib import Path
+    support = runpy.run_path(str(Path(__file__).with_name("test-widget-roundtrip.py")))
+    session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
+    name = "TurboMCP.Lint.TickIdentity"
+    raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})
+    print(raw)
+    support["parse_run_tests_report"](raw, name)
+
 
     print("=== the six checks are NAMED, and `list` answers without needing an asset ===")
     listing = lint(session, "", "list")
