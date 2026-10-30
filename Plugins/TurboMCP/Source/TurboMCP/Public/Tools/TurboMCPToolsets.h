@@ -160,26 +160,12 @@ public:
 	static FString ReadTurboMCPAssetDescribe(const FString& Assets);
 
 	/**
-	 * Read the exact type path a pin or a variable needs.
-	 *
-	 * Pass part of a type name, and optionally a kind of struct, enum, class,
-	 * interface or any. Every word must appear in the type's name or its full
-	 * path.
-	 *
-	 * Searches native C++ types through reflection and user-made struct and enum
-	 * assets, and says which of the two each result is. Each result gives the
-	 * exact path to use, its kind, and the module or asset it lives in.
-	 *
-	 * A type that exists on disk but is not loaded is still listed, marked as not
-	 * loaded, with the note that the asset must be loaded before a graph can use
-	 * it. Results are capped and the number left out is printed.
-	 *
-	 * Pass an empty kind for `any`. An unknown kind is refused with the list of
-	 * accepted kinds.
-	 *
-	 * @param Words Words matched against type names and paths, e.g. Vector. Empty or whitespace-only input is refused.
-	 * @param Kind struct, enum, class, interface or any; empty means any. Example: struct.
-	*/
+	 * Find reflected type paths without loading or editing assets; matches do not guarantee pin or writer support.
+	 * Searches loaded reflected types and registered user-defined structs/enums. Blueprint generated classes and unloaded native modules are excluded; use AssetSearch/AssetDescribe for Blueprint classes.
+	 * Every whitespace-separated word must match the name or path. Lists at most 30 matches with omitted counts. Registry scanning reports partial rather than a complete search; unloaded registry paths are not validated.
+	 * @param Words Required nonempty words, e.g. CoreUObject Vector. All words must match, ignoring case; spaces, tabs and newlines separate words.
+	 * @param Kind Required filter: struct, enum, class, interface or any. Empty means any. Example: struct. Unknown values are refused.
+	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPTypeFind(const FString& Words, const FString& Kind);
 

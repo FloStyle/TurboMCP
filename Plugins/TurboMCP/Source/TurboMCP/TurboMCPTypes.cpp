@@ -35,18 +35,13 @@ namespace
 	/** How many type matches one search may print (`P6`). */
 	constexpr int32 MaxTypeResults = 30;
 
-	/** Characters a type search is split on. */
-	const TCHAR* WordSeparators = TEXT(" \t");
-
 	/** One matched type. */
 	struct FTypeHit
 	{
 		/** The exact path a pin or variable needs. */
 		FString Path;
 
-		/** `struct`, `enum`, `class` or `interface`. *** THE KINDS THE CODE CAN ACTUALLY PRODUCE: `function` AND
-		 * `delegate` WERE NAMED HERE, AND NEITHER EXISTS ANYWHERE - `KindOfType` IS ONLY CALLED ON TYPES THAT
-		 * PASSED THE `UClass`/`UScriptStruct`/`UEnum` FILTER, AND `KnownKinds[]` LISTS FIVE. *** */
+		/** Reflected category: struct, enum, class or interface. */
 		FString Kind;
 
 		/** The module for a native type, or the asset path for a user-made one. */
@@ -118,10 +113,7 @@ namespace
 		{
 			return TEXT("enum");
 		}
-		// NO `UFunction` BRANCH: the caller filters to `UClass`, `UScriptStruct` and `UEnum` before calling this,
-		// so a function can never arrive. *** IT WAS HERE, WITH A `"type"` FALLBACK BELOW THAT IS ALSO UNREACHABLE
-		// FOR THE SAME REASON - AND THE COMMENT ON `FTypeHit::Kind` NAMED BOTH `function` AND `delegate`, WHICH A
-		// CALLER COULD NOT ASK FOR EITHER. ***
+		// Callers only pass reflected classes, structs and enums.
 		return TEXT("type");
 	}
 
@@ -145,8 +137,8 @@ namespace
 	/**
 	 * True when this object should be offered as a type.
 	 *
-	 * Skips the types that would only add noise: private implementation classes,
-	 * the class default objects, and anything not flagged as usable by a pin.
+	 * Skips the types that would only add noise: skeleton/reinstanced classes and non-public native objects.
+	 * This filter does not establish Blueprint pin or writer compatibility.
 	 */
 	bool IsUsefulType(const UObject* InType)
 	{
@@ -161,7 +153,7 @@ namespace
 			return false;
 		}
 
-		// Only types a pin or variable can actually be given.
+		// Public reflection visibility is not proof of Blueprint pin compatibility.
 		if (!InType->HasAnyFlags(RF_Public) && !IsAssetType(InType))
 		{
 			return false;
@@ -171,8 +163,8 @@ namespace
 		{
 			// Abstract and interface classes are still useful: an interface is a
 			// legitimate pin type, and an abstract class can be a variable type.
-			// A generated class is skipped because its Blueprint is the type a
-			// caller wants, not the class UHT generated from it.
+			// Generated Blueprint classes are outside this native-class search.
+			// Use AssetSearch/AssetDescribe for Blueprint class identities.
 			if (AsClass->GetName().EndsWith(TEXT("_C")))
 			{
 				return false;
@@ -189,11 +181,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPTypeFind(const FString& Words, const F
 	if (Words.TrimStartAndEnd().IsEmpty())
 	{
 		return TEXT("error: no words given. Pass part of a type name, and optionally a kind ")
-			TEXT("of struct, enum, class or any. Example: Vector kind:struct");
+			TEXT("of struct, enum, class, interface or any. Example arguments: words=Vector, kind=struct.");
 	}
 
 	TArray<FString> SearchWords;
-	Words.ParseIntoArray(SearchWords, WordSeparators, /*InCullEmpty=*/true);
+	Words.ParseIntoArrayWS(SearchWords);
 
 	FString WantedKind = Kind.TrimStartAndEnd().ToLower();
 	if (WantedKind.IsEmpty())
@@ -264,6 +256,10 @@ FString UTurboMCPReadToolset::ReadTurboMCPTypeFind(const FString& Words, const F
 	// A user-made struct or enum that is not loaded is not in the object graph
 	// yet, so add anything the registry knows about that is not already listed.
 	IAssetRegistry* Registry = IAssetRegistry::Get();
+	if (!Registry || Registry->IsGathering())
+	{
+		return TEXT("partial: type discovery is incomplete because the asset registry is unavailable or still scanning. Wait for scanning to finish, then retry. No assets were loaded or edited.");
+	}
 	if (Registry != nullptr && (WantedKind == TEXT("any") || WantedKind == TEXT("struct") || WantedKind == TEXT("enum")))
 	{
 		TArray<FAssetData> AllAssets;
@@ -273,11 +269,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPTypeFind(const FString& Words, const F
 		{
 			const FString ClassName = Asset.AssetClassPath.ToString();
 			FString AssetKind;
-			if (ClassName.Contains(TEXT("UserDefinedStruct")))
+			if (ClassName == TEXT("/Script/CoreUObject.UserDefinedStruct"))
 			{
 				AssetKind = TEXT("struct");
 			}
-			else if (ClassName.Contains(TEXT("UserDefinedEnum")))
+			else if (ClassName == TEXT("/Script/Engine.UserDefinedEnum"))
 			{
 				AssetKind = TEXT("enum");
 			}
@@ -345,6 +341,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPTypeFind(const FString& Words, const F
 	FString Result = FString::Printf(TEXT("read: type search for '%s', kind %s, %d match(es)"),
 		*Words, *WantedKind, Hits.Num());
 
+	Result += TEXT("\nScope: loaded reflected types plus registered user-defined structs and enums; Blueprint generated classes and unloaded native modules are excluded. A match does not guarantee pin or editing-tool support.");
+
 	if (Hits.Num() == 0)
 	{
 		Result += TEXT("\nNothing matched. Try fewer words or kind:any.");
@@ -378,7 +376,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPTypeFind(const FString& Words, const F
 	if (ShownUnloadedCount > 0)
 	{
 		Result += FString::Printf(
-			TEXT("\n%d of the shown matches are not loaded yet; the path is still valid, but load the asset ")
+			TEXT("\n%d of the shown matches are not loaded yet; the registry path is unvalidated; load the asset ")
 			TEXT("before using it in a graph."),
 			ShownUnloadedCount);
 	}
