@@ -14,6 +14,8 @@
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphNode_Comment.h"
 #include "Engine/Blueprint.h"
+#include "Editor.h"
+#include "ScopedTransaction.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
@@ -428,7 +430,7 @@ bool FTurboMCPGraphDead::Plan(const FString& InAsset, const FString& InGraphName
 		}
 
 		// Does it repeat live logic? A group that calls something live code also calls, or touches
-		// a variable live code touches, is very likely a copy of it — which is what a reader needs
+		// a variable live code touches, is very likely a copy of it â€” which is what a reader needs
 		// to know before agreeing to delete it.
 		for (const FName& Call : GroupCalls)
 		{
@@ -456,7 +458,8 @@ bool FTurboMCPGraphDead::Plan(const FString& InAsset, const FString& InGraphName
 
 		// A CANDIDATE ONLY WHEN ALL THREE HOLD. Any one of them failing is a reason to keep, and the
 		// reasons are printed rather than left implicit.
-		if (!Added.bHoldsEntry && Added.bWritesAreUnread && Added.bUnreachable)
+		if (!Added.bHoldsEntry && Added.bWritesAreUnread && Added.bUnreachable
+            && (Added.Writes.Num() > 0 || Added.Calls.Num() > 0))
 		{
 			OutPlan.CandidateIndices.Add(Index);
 		}
@@ -491,7 +494,7 @@ FString FTurboMCPGraphDead::RenderPreview(const FPlan& InPlan)
 		if (Group.bHoldsEntry)
 		{
 			Out += TEXT("\n    KEPT: it holds an event, a custom event or a function entry. An ")
-				TEXT("entry is never removed, even when nothing reaches it — a hook the user made ")
+				TEXT("entry is never removed, even when nothing reaches it â€” a hook the user made ")
 				TEXT("on purpose looks the same as one nothing calls.");
 		}
 		if (!Group.bWritesAreUnread)
@@ -502,7 +505,7 @@ FString FTurboMCPGraphDead::RenderPreview(const FPlan& InPlan)
 		}
 		if (Group.Writes.Num() == 0 && Group.Calls.Num() == 0 && !Group.bHoldsEntry)
 		{
-			Out += TEXT("\n    Kept: this group has no recognized variable read or function call, so it does not meet the removal heuristic. External dependencies were not ruled out.");
+			Out += TEXT("\n    Kept: this group has no recognized variable write or function call, so it does not meet the removal heuristic. External dependencies were not ruled out.");
 		}
 
 		if (Group.bRepeatsLiveLogic)
@@ -533,6 +536,10 @@ FString FTurboMCPGraphDead::RenderPreview(const FPlan& InPlan)
 
 FString FTurboMCPGraphDead::Apply(const FPlan& InPlan)
 {
+    if (!IsInGameThread() || !GEditor || !GEditor->CanTransact()
+        || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: dead-node removal requires an idle editor outside PIE and active transactions.");
+
 	FTurboMCPAssetResolver::FResolved Resolved;
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(InPlan.Asset, Resolved);
 	if (!ResolveError.IsEmpty())
@@ -563,58 +570,48 @@ FString FTurboMCPGraphDead::Apply(const FPlan& InPlan)
 			*InPlan.GraphName, InPlan.Groups.Num());
 	}
 
-	// THE NODES ARE RESOLVED BY KEY AGAIN rather than held from the plan, because a plan is made and
-	// applied in two calls and the graph could have changed between them. A key that no longer
-	// resolves is REPORTED, not silently skipped: quietly removing eight of ten nodes would be a
-	// half-applied edit, which `P8` forbids.
-	const int32 Before = Graph->Nodes.Num();
-	int32 Removed = 0;
-	int32 Skipped = 0;
-	TArray<FString> Missing;
-	TArray<FString> RemovedClasses;
-
-	for (const int32 Index : InPlan.CandidateIndices)
-	{
-		if (!InPlan.Groups.IsValidIndex(Index))
-		{
-			continue;
-		}
-		for (const FString& Key : InPlan.Groups[Index].Keys)
-		{
-			UEdGraphNode* Found = nullptr;
-			for (UEdGraphNode* Node : Graph->Nodes)
-			{
-				if (Node != nullptr && KeyOf(Node).Equals(Key, ESearchCase::IgnoreCase))
-				{
-					Found = Node;
-					break;
-				}
-			}
-
-			if (Found == nullptr)
-			{
-				++Skipped;
-				Missing.Add(Key);
-				continue;
-			}
-
-			// The entry rule is re-checked HERE, on the node that is about to go, rather than
-			// trusted from the plan. It is the rule whose failure destroys work.
-			if (IsEntryNode(Found))
-			{
-				++Skipped;
-				Missing.Add(Key + TEXT(" (an entry node)"));
-				continue;
-			}
-
-			RemovedClasses.Add(Found->GetClass()->GetName());
-			Graph->Modify();
-			// `FBlueprintEditorUtils::RemoveNode` is the editor's own removal: it breaks the links,
-			// tells the Blueprint, and does not leave a dangling pin behind.
-			FBlueprintEditorUtils::RemoveNode(Blueprint, Found, /*bDontRecompile=*/true);
-			++Removed;
-		}
-	}
+    // Recompute liveness before touching any node. A stale internal plan must not
+    // delete nodes that became connected after it was prepared.
+    FPlan Current;
+    FString Error;
+    if (!Plan(InPlan.Asset, InPlan.GraphName, Current, Error))
+        return TEXT("unchanged: could not revalidate removal candidates. ") + Error;
+    auto CandidateKeys = [](const FPlan& PlanToRead)
+    {
+        TArray<FString> Keys;
+        for (int32 Index : PlanToRead.CandidateIndices)
+            if (PlanToRead.Groups.IsValidIndex(Index)) Keys.Append(PlanToRead.Groups[Index].Keys);
+        Keys.Sort();
+        return Keys;
+    };
+    const TArray<FString> Keys = CandidateKeys(InPlan);
+    if (Keys != CandidateKeys(Current) || Keys.IsEmpty())
+        return TEXT("unchanged: removal candidates changed. Read and preview the graph again.");
+    TArray<UEdGraphNode*> NodesToRemove;
+    for (const FString& Key : Keys)
+    {
+        UEdGraphNode* Match = nullptr;
+        for (UEdGraphNode* Node : Graph->Nodes)
+        {
+            if (!Node || !KeyOf(Node).Equals(Key, ESearchCase::IgnoreCase)) continue;
+            if (Match) return TEXT("unchanged: a node identity is ambiguous. No nodes were removed.");
+            Match = Node;
+        }
+        if (!Match || IsEntryNode(Match) || Cast<UEdGraphNode_Comment>(Match))
+            return TEXT("unchanged: a candidate is missing or protected. No nodes were removed.");
+        NodesToRemove.Add(Match);
+    }
+    const int32 Before = Graph->Nodes.Num();
+    int32 Removed = 0;
+    const FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "RemoveDeadNodes", "Remove disconnected Blueprint nodes"));
+    Blueprint->Modify();
+    Graph->Modify();
+    for (UEdGraphNode* Node : NodesToRemove)
+    {
+        Node->Modify();
+        FBlueprintEditorUtils::RemoveNode(Blueprint, Node, /*bDontRecompile=*/true);
+        ++Removed;
+    }
 
 	if (Removed > 0)
 	{
@@ -625,23 +622,6 @@ FString FTurboMCPGraphDead::Apply(const FPlan& InPlan)
 		Removed, *Resolved.ObjectPath, *Graph->GetName());
 	Out += FString::Printf(TEXT("\nnodes: %d -> %d"), Before, Graph->Nodes.Num());
 
-	if (Skipped > 0)
-	{
-		Out = TEXT("partial: some selected nodes were not removed.\n") + Out;
-		Out += FString::Printf(
-			TEXT("\n%d node(s) were NOT removed because they no longer resolve or are entries: %s"),
-			Skipped, *FString::Join(Missing, TEXT(", ")));
-	}
-
-	Out += TEXT("\nChanges are in memory. No tool-owned undo transaction, compilation or save was performed. Inspect the graph, compile it, then use EditTurboMCPSave if the result is correct. Runtime behavior is not verified.");
-
-	if (Removed == 0)
-	{
-		Out = FString::Printf(
-			TEXT("unchanged: nothing could be removed from %s : %s. %d node key(s) were missing or protected entries. ")
-			TEXT("Read the graph again before retrying."),
-			*Resolved.ObjectPath, *Graph->GetName(), Skipped);
-	}
-
-	return Out;
+    Out += TEXT("\nChanges are in memory in one undo transaction. No compilation or save was performed. Inspect the graph, compile explicitly, then save if correct. Static reachability does not prove runtime behavior.");
+    return Out;
 }
