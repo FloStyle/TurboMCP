@@ -10,6 +10,7 @@
 #include "Kismet2/CompilerResultsLog.h"
 #include "Serialization/ArchiveUObject.h"
 #include "Misc/OutputDevice.h"
+#include "Internationalization/Regex.h"
 #include "UObject/UnrealType.h"
 #include "Kismet2/Kismet2NameValidators.h"
 #include "TurboMCPTypeParser.h"
@@ -207,6 +208,19 @@ namespace
             Scope, TEXT("Value"), Type, nullptr, CPF_None, GetDefault<UEdGraphSchema_K2>(), Messages));
         if (!Property || Messages.NumErrors > 0)
             return TEXT("the declared type could not be represented as a variable property.");
+        // Integer import accepts globally registered enum names. Numeric variables
+        // require numeric text so an unrelated enum cannot silently choose their value.
+        if (const FNumericProperty* Numeric = CastField<FNumericProperty>(Property.Get()))
+        {
+            if (!CastField<FByteProperty>(Property.Get()) || !CastField<FByteProperty>(Property.Get())->Enum)
+            {
+                const FString Pattern = Numeric->IsInteger()
+                    ? TEXT("^[+-]?(?:[0-9]+|0[xX][0-9a-fA-F]+)$")
+                    : TEXT("^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?[fF]?$");
+                FRegexMatcher Matcher(FRegexPattern(Pattern), Default);
+                if (!Matcher.FindNext()) return TEXT("provide a numeric literal for this numeric variable, not an enum name or malformed number.");
+            }
+        }
         FArchiveUObject Archive;
         Property->LinkWithoutChangingOffset(Archive);
         FDefaultConstructedPropertyElement Temporary(Property.Get());

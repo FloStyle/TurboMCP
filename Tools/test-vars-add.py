@@ -140,7 +140,7 @@ def main():
         help_text = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": toolset, "toolName": tool})
         check(tool + " help explains syntax", "Name: Type" in help_text and "default" in help_text, help_text)
         check(tool + " help explains preview limits", "existing names" in help_text, help_text)
-    for declaration in ("A: int default=1 value=2", "A: int private=maybe", "A: int, a: bool"):
+    for declaration in ("A: int default=banana", "A: int default=12garbage", "A: bool default=banana", "A: int default=1 value=2", "A: int private=maybe", "A: int, a: bool"):
         rejected = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPVarsAdd", {"asset": ASSET, "variables": declaration})
         check("invalid declaration is refused: " + declaration, rejected.startswith("error:"), rejected)
 
