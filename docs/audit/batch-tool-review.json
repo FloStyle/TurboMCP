@@ -49,9 +49,12 @@
     },
     {
       "id": "BATCH-REVIEW-COMPILE-SAVE",
-      "state": "open",
+      "state": "implemented_native_passed",
       "problem": "Explicit Compile passes default engine options while its response says compile did not save. Stock engine provides SkipSave to suppress configured SaveOnCompile.",
-      "repair": "Use SkipSave and assert no package file or save callback for a disposable Blueprint with SaveOnCompile always enabled. Restore the setting after the fixture."
+      "repair": "Use SkipSave and assert no package file or save callback for a disposable Blueprint with SaveOnCompile always enabled. Restore the setting after the fixture.",
+      "candidate": "61fa25a7e0dbb501c92e3ff0ea0217b082177405",
+      "run": "633924b60f0648b7a236e43502aa4a9a",
+      "limits": "Unsaved synthetic Blueprint; proves zero fixture save attempts and no fixture file with Always preference. Not a saved Widget persistence test."
     }
   ],
   "limitations": [
@@ -93,5 +96,11 @@
       "Extend shared compile/baseline scope before implementation, then test stale or absent baseline refusal, diagnostic identity changes, final compilation, verified rollback and failed-restoration refusal.",
       "Keep preview and edit open; existing test successes are limited to sequential rewiring, malformed input, and the injected undo path."
     ]
+  },
+  "product_decision": {
+    "state": "awaiting_owner",
+    "question": "Keep compile explicit, matching current tools and reinstancing safety, or require automatic batch compilation as in legacy ARC09?",
+    "reason": "Explicit Compile refuses active editor transactions because reinstancing is not reliably undoable. Do not silently weaken ARC09 or bypass that guard.",
+    "independent_work": "Verified restoration and truthful output review remain required under either choice."
   }
 }
