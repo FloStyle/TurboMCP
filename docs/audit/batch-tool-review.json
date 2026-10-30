@@ -17,7 +17,7 @@
   ],
   "initial_findings": [
     {
-      "state": "open",
+      "state": "implemented_focused_native_passed",
       "problem": "Non-object operation error uses zero-based Index, while other operation diagnostics use Index+1.",
       "source": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp"
     },
@@ -39,6 +39,13 @@
       "id": "BATCH-REVIEW-LEGACY-DOC",
       "state": "open",
       "problem": "test-batch-edit.py describes missing sequential planning and rollback that now partially exist; retain baseline history but reconcile current test documentation."
+    },
+    {
+      "id": "BATCH-REVIEW-DISCOVERY-PARSER",
+      "state": "implemented_retest_pending",
+      "problem": "Legacy discovery test truncated Function IDs and expected an obsolete graph node count. Corrected exact ID selection and full readback preservation assertion.",
+      "failed_evidence": "28921bc1353349aa85b247bc566642f9",
+      "candidate": "00faebf"
     }
   ],
   "limitations": [
@@ -48,13 +55,23 @@
   "owner": "codex-integrator",
   "candidate": "40773fd",
   "testing": {
-    "state": "running",
-    "supervisor_session": 2946,
-    "suites": [
+    "state": "partial_pass",
+    "run": "28921bc1353349aa85b247bc566642f9",
+    "candidate": "40773fd",
+    "passed": [
+      "stock-engine build",
       "test-batch-sequence",
-      "test-batch-rollback",
-      "test-batch-tools"
+      "test-batch-rollback"
     ],
-    "note": "Build passed. Supervisor reported an unresponsive owned editor and initiated its bounded startup retry; runtime outcome pending. test-batch-tools covers discovery rather than batch mutation and must not be counted as batch acceptance."
+    "failed": [
+      "test-batch-tools: truncated type-ID parsing and obsolete node-count parsing"
+    ],
+    "followup": {
+      "candidate": "00faebf",
+      "session": 56608,
+      "state": "running",
+      "suite": "test-batch-tools"
+    },
+    "limits": "Passing native checks do not satisfy final compilation or verified restoration release requirements."
   }
 }
