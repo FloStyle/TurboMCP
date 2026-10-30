@@ -6,6 +6,11 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPVarsAdd.h"
+#include "KismetCompilerMisc.h"
+#include "Kismet2/CompilerResultsLog.h"
+#include "Serialization/ArchiveUObject.h"
+#include "Misc/OutputDevice.h"
+#include "UObject/UnrealType.h"
 #include "Kismet2/Kismet2NameValidators.h"
 #include "TurboMCPTypeParser.h"
 
@@ -181,6 +186,187 @@ namespace
 			Loaded != nullptr ? *Loaded->GetClass()->GetName() : TEXT("missing object"));
 		return false;
 	}
+    struct FDefaultImportMessages : FOutputDevice
+    {
+        FString Text;
+        void Serialize(const TCHAR* Message, ELogVerbosity::Type, const FName&) override
+        {
+            if (!Text.IsEmpty()) Text += TEXT("; ");
+            Text += Message;
+        }
+    };
+
+    // Build an unlinked property in transient storage, then import the default into a
+    // temporary value. No target Blueprint or generated class is modified by validation.
+    FString ValidateVariableDefault(const FEdGraphPinType& Type, const FString& Default)
+    {
+        if (Default.IsEmpty()) return FString();
+        UScriptStruct* Scope = NewObject<UScriptStruct>(GetTransientPackage());
+        FCompilerResultsLog Messages;
+        TUniquePtr<FProperty> Property(FKismetCompilerUtilities::CreatePropertyOnScope(
+            Scope, TEXT("Value"), Type, nullptr, CPF_None, GetDefault<UEdGraphSchema_K2>(), Messages));
+        if (!Property || Messages.NumErrors > 0)
+            return TEXT("the declared type could not be represented as a variable property.");
+        FArchiveUObject Archive;
+        Property->LinkWithoutChangingOffset(Archive);
+        FDefaultConstructedPropertyElement Temporary(Property.Get());
+        FDefaultImportMessages ImportMessages;
+        const TCHAR* End = Property->ImportText_Direct(*Default, Temporary.GetObjAddress(), nullptr, PPF_None, &ImportMessages);
+        if (!End || !FString(End).TrimStartAndEnd().IsEmpty() || !ImportMessages.Text.IsEmpty())
+            return TEXT("provide complete Unreal property text with no trailing characters. ") + ImportMessages.Text;
+        return FString();
+    }
+
+    FString ResolveVariableTypes(const FTurboMCPVarsAdd::FPlan& InPlan, TArray<FEdGraphPinType>& ResolvedTypes)
+    {
+	const int32 Added = 0;
+	ResolvedTypes.Reset();
+	for (const FTurboMCPVarsAdd::FVar& Variable : InPlan.Variables)
+	{
+		// THE TYPE RESOLVER IS THE ENGINE'S OWN, AND IT CANNOT REPORT FAILURE.
+		//
+		// `UBlueprintEditorLibrary::GetBasicTypeByName` says in its own comment that it
+		// "returns 'int' type if invalid type is provided", so a caller that trusted it
+		// would silently add an int where a `banana` was asked for. That is why the name is
+		// checked against the accepted list FIRST, and the resolver is only reached for a
+		// name that is known to be one of them.
+		FEdGraphPinType PinType;
+		const FString ReferenceType=ReferenceTypeSyntax(Variable.InnerType);
+        const FString Lower = ReferenceType.ToLower();
+
+		const TSet<FString>& BasicNames = BasicTypeNames();
+		const TMap<FString, FString>& StructNames = StructTypeNames();
+
+		if (Lower.StartsWith(TEXT("object<")) || Lower.StartsWith(TEXT("class<"))
+			|| Lower.StartsWith(TEXT("softobject<")) || Lower.StartsWith(TEXT("softclass<")))
+		{
+			FString TypeWhy;
+			if (!FTurboMCPTypeParser::Resolve(ReferenceType, PinType, TypeWhy))
+			{
+				return FString::Printf(TEXT("error: '%s' has invalid type '%s': %s. %d variable(s) before it were added."),
+					*Variable.Name, *Variable.InnerType, *TypeWhy, Added);
+			}
+		}
+		else if (BasicNames.Contains(Lower))
+		{
+			// `float` is the name a caller writes; the engine's menu calls it `real`.
+			PinType = UBlueprintEditorLibrary::GetBasicTypeByName(
+				FName(*(Lower == TEXT("float") ? TEXT("real") : Lower)));
+		}
+		else if (StructNames.Contains(Lower))
+		{
+			UScriptStruct* Struct = FindObject<UScriptStruct>(
+				nullptr, *StructNames[Lower]);
+			if (Struct == nullptr)
+			{
+				return FString::Printf(
+					TEXT("error: the struct for '%s' could not be found in this engine, ")
+					TEXT("so the list stopped there. %d variable(s) before it were added."),
+					*Variable.InnerType, Added);
+			}
+			PinType = UBlueprintEditorLibrary::GetStructType(Struct);
+		}
+		else
+		{
+			// A path to an enum or a struct asset, which is how a caller names one the
+			// engine's short table does not carry. The asset is resolved with the same
+			// resolver every other tool uses, so a short name behaves the same way here.
+			FTurboMCPAssetResolver::FResolved TypeResolved;
+			const FString TypeError =
+				FTurboMCPAssetResolver::Resolve(Variable.InnerType, TypeResolved);
+
+			if (!TypeError.IsEmpty())
+			{
+				// The accepted names are listed so a caller corrects itself in one step
+				// rather than guessing (`P7`). Both lists are SORTED: a TSet and a TMap do
+				// not iterate in a caller's order, and an error message whose list changes
+				// order between runs is a message nobody can compare.
+				TArray<FString> BasicList = BasicNames.Array();
+				BasicList.Sort();
+
+				TArray<FString> StructKeys;
+				StructNames.GetKeys(StructKeys);
+				StructKeys.Sort();
+
+				return FString::Printf(
+					TEXT("error: '%s' is not a type. Accepted basic types: %s. Accepted ")
+					TEXT("struct names: %s. For an enum or a struct asset, pass its path. ")
+					TEXT("%d variable(s) before it were added."),
+					*Variable.InnerType, *FString::Join(BasicList, TEXT(", ")),
+					*FString::Join(StructKeys, TEXT(", ")),
+					Added);
+			}
+
+			UObject* TypeObject = LoadObject<UObject>(nullptr, *TypeResolved.ObjectPath);
+			if (UScriptStruct* Struct = Cast<UScriptStruct>(TypeObject))
+			{
+				PinType = UBlueprintEditorLibrary::GetStructType(Struct);
+			}
+			else if (UEnum* Enum = Cast<UEnum>(TypeObject))
+			{
+				// THERE IS NO `GetEnumType`. The engine's library carries basic, struct,
+				// class-reference and object-reference helpers and nothing for an enum, so
+				// an enum variable's pin type is assembled directly: its category is the
+				// byte category and the enum itself is the sub-category object, which is
+				// the shape `EdGraphSchema_K2` reads back.
+				PinType.PinCategory = UEdGraphSchema_K2::PC_Byte;
+				PinType.PinSubCategoryObject = Enum;
+			}
+			else
+			{
+				return FString::Printf(
+					TEXT("error: %s is a %s, and a variable can be an enum or a struct ")
+					TEXT("but not that. %d variable(s) before it were added."),
+					*TypeResolved.ObjectPath,
+					TypeObject != nullptr ? *TypeObject->GetClass()->GetName()
+						: TEXT("missing object"),
+					Added);
+			}
+		}
+
+		// THE CONTAINER WRAPPERS ARE THE ENGINE'S OWN, and replacing the inner type is what
+		// makes `Array<Vector>` an array OF vector rather than an array of whatever the
+		// inner call happened to return. `GetMapType` also carries the value type into the
+		// terminal, which setting `ContainerType` alone does not do.
+		if (Variable.Container != FTurboMCPVarsAdd::FVar::EContainer::None)
+		{
+            if (Variable.Container != FTurboMCPVarsAdd::FVar::EContainer::Array
+                && !FBlueprintEditorUtils::HasGetTypeHash(PinType))
+                return FString::Printf(TEXT("'%s' requires a hashable set element or map key type."), *Variable.Name);
+			if (Variable.Container == FTurboMCPVarsAdd::FVar::EContainer::Array)
+			{
+				PinType = UBlueprintEditorLibrary::GetArrayType(PinType);
+			}
+			else if (Variable.Container == FTurboMCPVarsAdd::FVar::EContainer::Set)
+			{
+				PinType = UBlueprintEditorLibrary::GetSetType(PinType);
+			}
+			else
+			{
+				const FString ValueLower = Variable.ValueType.ToLower();
+				if (!BasicNames.Contains(ValueLower))
+				{
+					return FString::Printf(
+						TEXT("error: '%s' is not a usable map value type; this tool accepts ")
+						TEXT("a basic type there. %d variable(s) before it were added."),
+						*Variable.ValueType, Added);
+				}
+
+				const FEdGraphPinType ValueType = UBlueprintEditorLibrary::GetBasicTypeByName(
+					FName(*(ValueLower == TEXT("float") ? TEXT("real") : ValueLower)));
+				PinType = UBlueprintEditorLibrary::GetMapType(PinType, ValueType);
+			}
+		}
+
+        const FString DefaultError = ValidateVariableDefault(PinType, Variable.Default);
+        if (!DefaultError.IsEmpty())
+            return FString::Printf(TEXT("'%s' has an invalid default: %s"), *Variable.Name, *DefaultError);
+        ResolvedTypes.Add(PinType);
+    }
+
+        return FString();
+    }
+
 }
 
 bool FTurboMCPVarsAdd::Plan(const FString& InAsset, const FString& InVariables,
@@ -466,7 +652,10 @@ bool FTurboMCPVarsAdd::Plan(const FString& InAsset, const FString& InVariables,
 		return false;
 	}
 
-	return true;
+    TArray<FEdGraphPinType> ResolvedTypes;
+    OutError = ResolveVariableTypes(OutPlan, ResolvedTypes);
+    if (!OutError.IsEmpty()) { OutPlan.Variables.Reset(); return false; }
+    return true;
 }
 
 FString FTurboMCPVarsAdd::RenderPreview(const FPlan& InPlan)
@@ -509,7 +698,7 @@ FString FTurboMCPVarsAdd::RenderPreview(const FPlan& InPlan)
 		}
 	}
 
-	Out += TEXT("\n; Preview validates declaration syntax and referenced types, not the target Blueprint or existing names. Default text is not validated against the declared type.");
+	Out += TEXT("\n; Preview validates declaration syntax and referenced types, not the target Blueprint or existing names. Defaults are checked by importing Unreal property text into temporary storage.");
 	Out += TEXT("\n; Edit checks names before adding variables, but an editor failure can leave a partial list. No automatic rollback is performed.");
 	Out += TEXT("\n; Edit may regenerate the skeleton repeatedly and run editor callbacks; it does not perform a full compile or save.");
 	return Out;
@@ -574,144 +763,10 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 			Clashes.Num(), *FString::Join(Clashes, TEXT(", ")));
 	}
 
-	int32 Added = 0;
+    int32 Added = 0;
     TArray<FEdGraphPinType> ResolvedTypes;
-	for (const FVar& Variable : InPlan.Variables)
-	{
-		// THE TYPE RESOLVER IS THE ENGINE'S OWN, AND IT CANNOT REPORT FAILURE.
-		//
-		// `UBlueprintEditorLibrary::GetBasicTypeByName` says in its own comment that it
-		// "returns 'int' type if invalid type is provided", so a caller that trusted it
-		// would silently add an int where a `banana` was asked for. That is why the name is
-		// checked against the accepted list FIRST, and the resolver is only reached for a
-		// name that is known to be one of them.
-		FEdGraphPinType PinType;
-		const FString ReferenceType=ReferenceTypeSyntax(Variable.InnerType);
-        const FString Lower = ReferenceType.ToLower();
-
-		const TSet<FString>& BasicNames = BasicTypeNames();
-		const TMap<FString, FString>& StructNames = StructTypeNames();
-
-		if (Lower.StartsWith(TEXT("object<")) || Lower.StartsWith(TEXT("class<"))
-			|| Lower.StartsWith(TEXT("softobject<")) || Lower.StartsWith(TEXT("softclass<")))
-		{
-			FString TypeWhy;
-			if (!FTurboMCPTypeParser::Resolve(ReferenceType, PinType, TypeWhy))
-			{
-				return FString::Printf(TEXT("error: '%s' has invalid type '%s': %s. %d variable(s) before it were added."),
-					*Variable.Name, *Variable.InnerType, *TypeWhy, Added);
-			}
-		}
-		else if (BasicNames.Contains(Lower))
-		{
-			// `float` is the name a caller writes; the engine's menu calls it `real`.
-			PinType = UBlueprintEditorLibrary::GetBasicTypeByName(
-				FName(*(Lower == TEXT("float") ? TEXT("real") : Lower)));
-		}
-		else if (StructNames.Contains(Lower))
-		{
-			UScriptStruct* Struct = FindObject<UScriptStruct>(
-				nullptr, *StructNames[Lower]);
-			if (Struct == nullptr)
-			{
-				return FString::Printf(
-					TEXT("error: the struct for '%s' could not be found in this engine, ")
-					TEXT("so the list stopped there. %d variable(s) before it were added."),
-					*Variable.InnerType, Added);
-			}
-			PinType = UBlueprintEditorLibrary::GetStructType(Struct);
-		}
-		else
-		{
-			// A path to an enum or a struct asset, which is how a caller names one the
-			// engine's short table does not carry. The asset is resolved with the same
-			// resolver every other tool uses, so a short name behaves the same way here.
-			FTurboMCPAssetResolver::FResolved TypeResolved;
-			const FString TypeError =
-				FTurboMCPAssetResolver::Resolve(Variable.InnerType, TypeResolved);
-
-			if (!TypeError.IsEmpty())
-			{
-				// The accepted names are listed so a caller corrects itself in one step
-				// rather than guessing (`P7`). Both lists are SORTED: a TSet and a TMap do
-				// not iterate in a caller's order, and an error message whose list changes
-				// order between runs is a message nobody can compare.
-				TArray<FString> BasicList = BasicNames.Array();
-				BasicList.Sort();
-
-				TArray<FString> StructKeys;
-				StructNames.GetKeys(StructKeys);
-				StructKeys.Sort();
-
-				return FString::Printf(
-					TEXT("error: '%s' is not a type. Accepted basic types: %s. Accepted ")
-					TEXT("struct names: %s. For an enum or a struct asset, pass its path. ")
-					TEXT("%d variable(s) before it were added."),
-					*Variable.InnerType, *FString::Join(BasicList, TEXT(", ")),
-					*FString::Join(StructKeys, TEXT(", ")),
-					Added);
-			}
-
-			UObject* TypeObject = LoadObject<UObject>(nullptr, *TypeResolved.ObjectPath);
-			if (UScriptStruct* Struct = Cast<UScriptStruct>(TypeObject))
-			{
-				PinType = UBlueprintEditorLibrary::GetStructType(Struct);
-			}
-			else if (UEnum* Enum = Cast<UEnum>(TypeObject))
-			{
-				// THERE IS NO `GetEnumType`. The engine's library carries basic, struct,
-				// class-reference and object-reference helpers and nothing for an enum, so
-				// an enum variable's pin type is assembled directly: its category is the
-				// byte category and the enum itself is the sub-category object, which is
-				// the shape `EdGraphSchema_K2` reads back.
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Byte;
-				PinType.PinSubCategoryObject = Enum;
-			}
-			else
-			{
-				return FString::Printf(
-					TEXT("error: %s is a %s, and a variable can be an enum or a struct ")
-					TEXT("but not that. %d variable(s) before it were added."),
-					*TypeResolved.ObjectPath,
-					TypeObject != nullptr ? *TypeObject->GetClass()->GetName()
-						: TEXT("missing object"),
-					Added);
-			}
-		}
-
-		// THE CONTAINER WRAPPERS ARE THE ENGINE'S OWN, and replacing the inner type is what
-		// makes `Array<Vector>` an array OF vector rather than an array of whatever the
-		// inner call happened to return. `GetMapType` also carries the value type into the
-		// terminal, which setting `ContainerType` alone does not do.
-		if (Variable.Container != FVar::EContainer::None)
-		{
-			if (Variable.Container == FVar::EContainer::Array)
-			{
-				PinType = UBlueprintEditorLibrary::GetArrayType(PinType);
-			}
-			else if (Variable.Container == FVar::EContainer::Set)
-			{
-				PinType = UBlueprintEditorLibrary::GetSetType(PinType);
-			}
-			else
-			{
-				const FString ValueLower = Variable.ValueType.ToLower();
-				if (!BasicNames.Contains(ValueLower))
-				{
-					return FString::Printf(
-						TEXT("error: '%s' is not a usable map value type; this tool accepts ")
-						TEXT("a basic type there. %d variable(s) before it were added."),
-						*Variable.ValueType, Added);
-				}
-
-				const FEdGraphPinType ValueType = UBlueprintEditorLibrary::GetBasicTypeByName(
-					FName(*(ValueLower == TEXT("float") ? TEXT("real") : ValueLower)));
-				PinType = UBlueprintEditorLibrary::GetMapType(PinType, ValueType);
-			}
-		}
-
-        ResolvedTypes.Add(PinType);
-    }
+    const FString TypeError = ResolveVariableTypes(InPlan, ResolvedTypes);
+    if (!TypeError.IsEmpty()) return TEXT("error: ") + TypeError + TEXT(" No variables were added.");
 
     // Type resolution above is read-only. Do not partially apply a list with an invalid later type.
     for (int32 Index = 0; Index < InPlan.Variables.Num(); ++Index)

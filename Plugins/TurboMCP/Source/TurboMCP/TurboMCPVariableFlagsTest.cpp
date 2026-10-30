@@ -53,6 +53,16 @@ bool FTurboMCPVariableFlagsTest::RunTest(const FString& Parameters)
     if (ReusedPlan.Variables.Num() == 1) TestEqual(TEXT("Only new declaration remains"), ReusedPlan.Variables[0].Name, FString(TEXT("NewProbe")));
     TestFalse(TEXT("Empty request refuses"), FTurboMCPVarsAdd::Plan(Blueprint->GetPathName(), TEXT(""), ReusedPlan, Error));
     TestEqual(TEXT("Refused empty request retains no old declarations"), ReusedPlan.Variables.Num(), 0);
+    for (const TCHAR* Declaration : {TEXT("Bad: int default=banana"), TEXT("Bad: bool default=banana"), TEXT("Bad: int default=12garbage")})
+    {
+        TestFalse(FString(TEXT("Invalid default refuses: ")) + Declaration,
+            FTurboMCPVarsAdd::Plan(Blueprint->GetPathName(), Declaration, ReusedPlan, Error));
+    }
+    for (const TCHAR* Declaration : {TEXT("Good: int default=12"), TEXT("Good: Vector default=(X=1,Y=2,Z=3)"), TEXT("Good: Array<int> default=(1,2,3)"), TEXT("Good: Set<int> default=(1,2)"), TEXT("Good: Map<int,int> default=((1,2),(3,4))")})
+    {
+        TestTrue(FString(TEXT("Valid default accepts: ")) + Declaration,
+            FTurboMCPVarsAdd::Plan(Blueprint->GetPathName(), Declaration, ReusedPlan, Error));
+    }
     const FString Result = FTurboMCPVarsAdd::Apply(Plan);
     TestTrue(TEXT("Fresh creation reports two variables"), Result.StartsWith(TEXT("changed: added 2 variable(s)")));
     FString Tooltip;
