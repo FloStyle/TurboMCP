@@ -947,6 +947,22 @@
         "Heuristic extraction is not JSON parsing or asset resolution.",
         "Large arbitrary input has no dedicated stress test."
       ]
+    },
+    {
+      "id": "WF-BP-LINT",
+      "title": "Review static Blueprint findings before choosing an edit",
+      "status": "scenario_accepted",
+      "review": "docs/audit/bp-lint-review.json",
+      "evidence": "f4f92717174a4fd589d3d855846dc7e6",
+      "tools_used": [
+        "ReadTurboMCPBPLint"
+      ],
+      "limitations": [
+        "Actor Tick identity tested; ActorComponent and UserWidget variants source-reviewed only.",
+        "Registry failure/scanning and reused-report reset source-reviewed only.",
+        "Static findings do not exclude external/dynamic uses or certify deletion safety.",
+        "Fixture disk bytes preserved; no blanket claim about load-time effects or all custom node families."
+      ]
     }
   ],
   "tool_usage": {
@@ -1367,9 +1383,12 @@
     ],
     "ReadTurboMCPPureChecks": [
       "WF-CALL-STRING-DIAGNOSTICS"
+    ],
+    "ReadTurboMCPBPLint": [
+      "WF-BP-LINT"
     ]
   },
-  "unique_tools_scenario_reviewed": 116,
+  "unique_tools_scenario_reviewed": 117,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

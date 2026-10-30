@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "workflow": "WF-BP-LINT",
-  "status": "in_progress",
+  "status": "scenario_accepted",
   "readiness": "ready",
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPBPLint"
   ],
@@ -15,14 +15,11 @@
     },
     {
       "id": "LINT-LEGACY-COMMENTS",
-      "state": "partial_cpp_comment_repaired_public_header_pending",
+      "state": "implemented_documentation_reviewed",
       "problem": "Heavy-reference comment says AssetCost does not exist; review obsolete explanations and exact findings."
     }
   ],
-  "remaining": [
-    "Finish public header/help and remaining six-check diagnostic wording review.",
-    "Record unsupported Tick variants and registry-failure injection limits; do not count tool accepted yet."
-  ],
+  "remaining": [],
   "acceptance": [
     "Identify real engine Tick events, not title substrings; use positive and negative controls.",
     "Heavy-reference query failures/scanning are not zero findings.",
@@ -30,10 +27,10 @@
     "Run focused lint workflow and review all check output/help."
   ],
   "evidence": {
-    "run": "bf674dd5af9a487298e173e700f5e6ee",
-    "candidate": "8ff4ba3c74ec32532af69f819c0938b77fa98383",
+    "run": "f4f92717174a4fd589d3d855846dc7e6",
+    "candidate": "d814d85ecfed858d37ff7b84d77ff282141f0289",
     "state": "passed",
-    "checks": 51,
+    "checks": 53,
     "prior_failure": {
       "run": "08ff62583bee45bf90278df9b92b9ba0",
       "reason": "Legacy assertion counted only error-severity dead findings; nonexistent edit call was intercepted by tool policy. Updated warning contract and used help discovery, retaining node identity controls."
@@ -42,13 +39,10 @@
       "Stock engine build",
       "Native actual Actor Tick and unrelated Tick-named event control",
       "All six lint sections, filters, node identity comparisons and budget controls",
-      "Disk fixture unchanged"
+      "Disk fixture unchanged",
+      "Live help, check list and public contract reviewed against all six implementations"
     ],
-    "offline": {
-      "run": "be0bdb2efdc04af99962730ebb8626e9",
-      "state": "passed",
-      "checks": 26
-    }
+    "previous_run": "bf674dd5af9a487298e173e700f5e6ee"
   },
   "fixes": [
     "Actual engine function identity instead of Tick title substring.",
@@ -56,5 +50,11 @@
     "Incomplete registry query marks check not run.",
     "Reset reused reports before collecting checks.",
     "Static dead-node finding is a warning, not unconditional runtime failure."
+  ],
+  "limitations": [
+    "Actor Tick identity tested; ActorComponent and UserWidget variants source-reviewed only.",
+    "Registry failure/scanning and reused-report reset source-reviewed only.",
+    "Static findings do not exclude external/dynamic uses or certify deletion safety.",
+    "Fixture disk bytes preserved; no blanket claim about load-time effects or all custom node families."
   ]
 }
