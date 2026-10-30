@@ -111,17 +111,17 @@ TArray<FTurboMCPBPLint::FCheckName> FTurboMCPBPLint::KnownChecks()
 {
 	TArray<FCheckName> Names;
 	Names.Add({ CheckDeadNodes,
-		TEXT("the disconnected groups PreviewTurboMCPGraphDead would remove, with the entry rule applied") });
+		TEXT("disconnected groups selected by the static dead-node planner; review its preview before removal") });
 	Names.Add({ CheckUnnecessaryCasts,
-		TEXT("a cast whose result only calls something already on the class, or on a known type") });
+		TEXT("casts with no connected output consumers; not proof that removing a cast preserves behavior") });
 	Names.Add({ CheckExpensiveTick,
 		TEXT("direct connections from known engine Tick events; not measured execution cost") });
 	Names.Add({ CheckHeavyHardReferences,
-		TEXT("hard references to assets over a size threshold, read from the registry") });
+		TEXT("direct hard references above 1 MiB of recorded package disk size; not measured runtime memory") });
 	Names.Add({ CheckUnusedDeclarations,
-		TEXT("variables nothing reads, functions nothing calls, events nothing binds") });
+		TEXT("declarations with no reference found in scanned graphs and designer bindings; external and dynamic uses are not excluded") });
 	Names.Add({ CheckUnconnectedPins,
-		TEXT("a required input pin with no link and no default, and a node nothing reaches") });
+		TEXT("unlinked pins without recorded defaults, disconnected nodes and static layout hints; review optional pins and intended graph structure") });
 	return Names;
 }
 
@@ -179,8 +179,7 @@ static void RunDeadNodes(const UBlueprint* InBlueprint, const TArray<UEdGraph*>&
 				Finding.Check = Out.Name;
 				Finding.NodeKey = Key;
 				Finding.GraphName = Graph->GetName();
-				// `error` because this node is unreachable from every entry and removable, which is the
-				// strongest thing this check can say - and it says it only when `Plan` said so.
+				// Static planner evidence is a review warning, not proof of runtime failure.
 				Finding.Severity = TEXT("warning");
 				Finding.Why = Group.bRepeatsLiveLogic
 					? FString::Printf(TEXT("unreachable from any entry, and it repeats live logic (%s)"),
@@ -765,7 +764,7 @@ FString FTurboMCPBPLint::Render(const FReport& InReport, int32 InTokenBudget)
 			Line += FString::Printf(TEXT(": %s"), *Finding.Why);
 			if (!Finding.FixTool.IsEmpty())
 			{
-				Line += FString::Printf(TEXT("  -> fix with %s"), *Finding.FixTool);
+				Line += FString::Printf(TEXT("  -> review with %s"), *Finding.FixTool);
 			}
 
 			Out += Line;

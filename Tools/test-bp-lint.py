@@ -177,6 +177,12 @@ def md5(path):
 def main():
     session = Session()
     session.connect()
+    listing = session.call(READ_TOOLSET, "ReadTurboMCPBPLint", {"assets": "", "checks": "list", "tokenBudget": ""})
+    check("check descriptions state static limits", "external and dynamic uses are not excluded" in listing and "not measured runtime memory" in listing, listing)
+    help_text = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": READ_TOOLSET, "toolName": "ReadTurboMCPBPLint"})
+    print(help_text)
+    check("live help describes parameters and budget", all(p in help_text for p in ("assets:", "checks:", "tokenBudget:")), help_text)
+
     import runpy
     from pathlib import Path
     support = runpy.run_path(str(Path(__file__).with_name("test-widget-roundtrip.py")))
@@ -315,7 +321,7 @@ def main():
           bool(stacked) and all(re.search(r"\[[a-z]+\]\s+[0-9a-f]{4,}", line) for line in stacked),
           "a finding without a node id: %s" % (stacked[:2],))
     check("and every one of them names a fix tool",
-          bool(stacked) and all("-> fix with" in line for line in stacked),
+          bool(stacked) and all("-> review with" in line for line in stacked),
           "a finding naming no fix: %s" % (stacked[:2],))
 
     print()

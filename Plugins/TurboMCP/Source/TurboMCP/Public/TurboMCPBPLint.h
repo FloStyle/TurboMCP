@@ -13,38 +13,12 @@ class UBlueprint;
 class UEdGraph;
 class UEdGraphNode;
 
-/**
- * `R-BP-LINT`: what is wrong with this Blueprint, with every check NAMED.
- *
- * *** THE ROW THAT DEFINES THIS CAPABILITY IS ONE SENTENCE, AND ITS SECOND HALF IS THE POINT:
- * "every check named, each reporting how many things it looked at". *** A LINT THAT SAYS "no problems
- * found" WITHOUT A DENOMINATOR IS INDISTINGUISHABLE FROM A LINT THAT LOOKED AT NOTHING, and `P1` says an
- * empty result must say why it is empty. So every check here carries a `Scanned` count BESIDES its
- * findings, and a check that could not run reports `Ran=false` with a reason rather than a zero - the two
- * are different answers and a caller needs to tell them apart.
- *
- * IT REUSES THE EXISTING DETECTORS RATHER THAN WRITING SECOND ONES, WHICH IS WHY ITS ANSWERS AGREE WITH THE
- * TOOLS A CALLER WILL USE TO FIX THEM:
- *
- *  - dead nodes come from `FTurboMCPGraphDead::Plan`, so THE ENTRY RULE IS ALREADY APPLIED and nothing an
- *    event reaches is ever reported. A second walk would eventually disagree with `E-GRAPH-DEAD` about what
- *    is removable, and the two would then send a caller in opposite directions.
- *  - backward getters and origin strays come from `FTurboMCPGraphFixBackward::Plan`, read through its `FMove`
- *    rule identifiers (`R2` is a getter under its consumer, `R3` a lone node at the origin) - THE SAME
- *    PREDICATES `P-GRAPH-FIX-BACKWARD` ACTS ON, so the finding and the fix cannot drift.
- *  - unused declarations are PARSED FROM `FTurboMCPBlueprintRead::RenderRelations`, the relation layer itself,
- *    because `D-05` says print only what the relation layer can PROVE. Recomputing them would be a second
- *    implementation of the thing the reader already answers.
- *  - heavy hard references read the asset registry the same way `R-ASSET-COST` does and report THE SAME
- *    NUMBERS, because a lint that quoted different sizes than the cost tool would be worse than no lint.
- *
- * *** AND ONE TRAP IS INHERITED RATHER THAN REDISCOVERED: `UEdGraphNode_Comment` HAS NO PINS, so a walk from
- * the entry nodes can never reach one, AND TREATING THAT AS DEAD ONCE QUEUED AN AUTHOR'S DOCUMENTATION FOR
- * DELETION. `FTurboMCPGraphDead` already skips comment seeds, and this tool reports whatever THAT says -
- * it does not add a walk of its own that could forget. ***
- *
- * THIS IS A READ TOOL AND IT NEVER EDITS. It lives in the reader toolset, which is structurally unable to
- * write, and every finding that has a fix NAMES THE EXISTING TOOL rather than describing one.
+/** Static Blueprint diagnostics with per-check coverage and explicit unavailable results.
+ * Findings are review suggestions, not runtime proof or permission to delete content.
+ * Dead-node and layout checks reuse production planners. Declaration usage uses
+ * collected Blueprint facts; external and dynamic uses can remain unknown.
+ * Package-size checks use saved registry disk sizes, not runtime memory.
+ * Lint may load assets but does not request graph edits, compilation or saving.
  */
 class FTurboMCPBPLint
 {
@@ -59,7 +33,7 @@ public:
 	/** Every check name this tool knows, in report order. For `checks=list` and for a failed filter (`P1`). */
 	static TArray<FCheckName> KnownChecks();
 
-	/** One finding: where it is, how bad, why, and which existing tool fixes it. */
+	/** One finding: where it is, how bad, why, and which existing tool can inspect or address it. */
 	struct FFinding
 	{
 		FString Check;
