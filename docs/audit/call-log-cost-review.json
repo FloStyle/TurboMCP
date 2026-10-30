@@ -27,7 +27,12 @@
       "test-call-cost"
     ],
     "cost_checks": 35,
-    "post_test_change": "34dfc8a is whitespace only"
+    "post_test_change": "34dfc8a is whitespace only",
+    "offline": {
+      "run": "fa3e780a4a4c4aa4ab8c6aadaba25279",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "limitations": [
     "Zero-duration completed-call handling source-reviewed; no deterministic zero-duration fixture in this run.",
