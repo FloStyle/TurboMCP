@@ -293,6 +293,9 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query)
 			TEXT("Example: type:Material shop");
 	}
 
+    if (Registry->IsGathering())
+        return TEXT("partial: asset registry scanning is active; search results are not complete. Wait for scanning to finish, then retry the same query. No assets were loaded or edited.");
+
 	// GetAllAssets with include-only-on-disk false is the one query that also
 	// sees assets which are in memory but never saved, which P5 requires.
 	TArray<FAssetData> AllAssets;
@@ -336,7 +339,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query)
 
 	// Ranking is the spec's: exact name, then name starts with, then name
 	// contains, then folder only; shorter names first on a tie. The name is a
-	// final tie-break so the order is stable between calls rather than depending
+	// followed by full object path breaks same-name ties without depending
 	// on registry order, which would make two identical queries disagree.
 	Hits.Sort([](const FSearchHit& A, const FSearchHit& B)
 	{
@@ -348,7 +351,9 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query)
 		{
 			return A.NameLength < B.NameLength;
 		}
-		return A.Asset.AssetName.LexicalLess(B.Asset.AssetName);
+        if (A.Asset.AssetName != B.Asset.AssetName)
+            return A.Asset.AssetName.LexicalLess(B.Asset.AssetName);
+        return A.Asset.GetObjectPathString() < B.Asset.GetObjectPathString();
 	});
 
 	FString Result = FString::Printf(TEXT("read: asset search for '%s', %d match(es)"),

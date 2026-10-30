@@ -1,8 +1,15 @@
-"""Check AssetDescribe metadata without causing Blueprint loads."""
+"""Find and describe unloaded Blueprint assets without editing or loading them."""
+import re
 from tmcp import Session, READ_TOOLSET
 s = Session()
 s.connect()
 for asset in ("/Game/Tests/BP_NodeTest", "/Game/Tests/WBP_NodeTest"):
+    query = "path:/Game/Tests " + asset.rsplit("/", 1)[-1]
+    found = s.call(READ_TOOLSET, "ReadTurboMCPAssetSearch", {"query": query})
+    print(found, flush=True)
+    assert not found.startswith(("error:", "partial:")), found
+    assert asset + "." in found, found
+    assert found == s.call(READ_TOOLSET, "ReadTurboMCPAssetSearch", {"query": query}), found
     first = s.call(READ_TOOLSET, "ReadTurboMCPAssetDescribe", {"assets": asset})
     second = s.call(READ_TOOLSET, "ReadTurboMCPAssetDescribe", {"assets": asset})
     print(first, flush=True)
@@ -12,4 +19,11 @@ for asset in ("/Game/Tests/BP_NodeTest", "/Game/Tests/WBP_NodeTest"):
     assert "this asset kind has no generated class" not in first, first
     assert "generated class: unknown" in first or "_C" in first, first
     assert "parent:" in first, first
-print("RESULT: PASS; Blueprint descriptions remain unloaded and do not infer class absence.")
+for query in ("", "type:", "path:"):
+    refused = s.call(READ_TOOLSET, "ReadTurboMCPAssetSearch", {"query": query})
+    assert refused.startswith("error:"), refused
+missing = s.call(READ_TOOLSET, "ReadTurboMCPAssetSearch", {"query": "NoSuchAssetUnique987654"})
+assert "0 match(es)" in missing and "Nothing matched" in missing, missing
+mixed = s.call(READ_TOOLSET, "ReadTurboMCPAssetDescribe", {"assets": "/Game/Tests/BP_NodeTest|/Game/NoSuchAssetUnique987654"})
+assert "1 described, 1 refused" in mixed, mixed
+print("RESULT: PASS; search/refusal and unloaded Blueprint descriptions checked.")
