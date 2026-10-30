@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "workflow": "WF-ASSET-REFERENCES",
-  "status": "in_progress",
+  "status": "scenario_accepted",
   "readiness": "ready",
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPRefs"
   ],
@@ -18,7 +18,32 @@
     "Query failure is not zero; filtering and limitations are truthful.",
     "Review output, comments and live help."
   ],
-  "remaining": [
-    "Implement repairs and focused native evidence."
+  "remaining": [],
+  "evidence": {
+    "run": "6270b111f8a1478ba894150c2cbea019",
+    "candidate": "46d4ad6f8f844837cc1aea62ea8f68fbc39f5aa7",
+    "state": "passed",
+    "checks": [
+      "Stock engine build",
+      "Known AudioFader outgoing dependency and inverse incoming edge",
+      "Repeated queries stable",
+      "Project asset path forms equivalent",
+      "Missing asset and invalid direction refuse",
+      "Unrequested direction marked not queried",
+      "Live help and output limits inspected"
+    ]
+  },
+  "limitations": [
+    "Registry failure and active-scan branches source-reviewed only.",
+    "60-row and 20000-character limits, multi-asset packages and object-level unknown classes source-reviewed only.",
+    "Saved registry edges are not exhaustive dynamic or unsaved change-impact evidence.",
+    "No delete/edit acceptance claimed from this read-only scenario."
+  ],
+  "fixes": [
+    "Check registry query return values before producing counts.",
+    "Unrequested direction is not queried, not zero.",
+    "Accurate filtered-entry descriptions and unavailable pagination guidance.",
+    "Deterministic first asset selection and unknown class disclosure.",
+    "Truncate at complete lines instead of splitting identities."
   ]
 }

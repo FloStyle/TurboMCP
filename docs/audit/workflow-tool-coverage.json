@@ -916,6 +916,22 @@
         "Resolving may load assets; absence of downstream load side effects is not certified.",
         "Existing NodeFind/NodeContext calls support the workflow and do not add unique coverage."
       ]
+    },
+    {
+      "id": "WF-ASSET-REFERENCES",
+      "title": "Inspect direct asset references before planning a change",
+      "status": "scenario_accepted",
+      "review": "docs/audit/refs-review.json",
+      "evidence": "6270b111f8a1478ba894150c2cbea019",
+      "tools_used": [
+        "ReadTurboMCPRefs"
+      ],
+      "limitations": [
+        "Registry failure and active-scan branches source-reviewed only.",
+        "60-row and 20000-character limits, multi-asset packages and object-level unknown classes source-reviewed only.",
+        "Saved registry edges are not exhaustive dynamic or unsaved change-impact evidence.",
+        "No delete/edit acceptance claimed from this read-only scenario."
+      ]
     }
   ],
   "tool_usage": {
@@ -1330,9 +1346,12 @@
     ],
     "ReadTurboMCPNodeResolve": [
       "WF-NODE-RESOLVE"
+    ],
+    "ReadTurboMCPRefs": [
+      "WF-ASSET-REFERENCES"
     ]
   },
-  "unique_tools_scenario_reviewed": 114,
+  "unique_tools_scenario_reviewed": 115,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

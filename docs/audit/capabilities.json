@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "5b885c006959657d40320e007852a6f772910522",
+  "plugin_tree": "997daeba8e035791c5a80c7ab9432de64c7d9e22",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -3858,7 +3858,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefs.cpp",
-          "line": 154
+          "line": 155
         }
       ],
       "test_references": [
@@ -3926,6 +3926,7 @@
         "Tools/test-graph-dead.py",
         "Tools/test-graph-edit-workflow.py",
         "Tools/test-node-reader-output.py",
+        "Tools/test-refs.py",
         "Tools/test-save-undo-workflow.py",
         "Tools/test-scoped-tidy.py",
         "Tools/test-tool-text-inventory.py",
