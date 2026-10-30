@@ -900,6 +900,22 @@
         "No native unloaded user-struct fixture or malformed registry-class injection.",
         "No mutation or pin-creation acceptance; discovery does not guarantee writer support."
       ]
+    },
+    {
+      "id": "WF-NODE-RESOLVE",
+      "title": "Resolve a discovered node before editing",
+      "status": "scenario_accepted",
+      "review": "docs/audit/node-resolve-review.json",
+      "evidence": "53f14f09bf9d4768aa330d01a785ae86",
+      "tools_used": [
+        "ReadTurboMCPNodeResolve"
+      ],
+      "limitations": [
+        "Bounded event-node fixture, not exhaustive node or pin-family coverage.",
+        "Array/set/map labels, 40-pin truncation and ambiguous key collisions source-reviewed only.",
+        "Resolving may load assets; absence of downstream load side effects is not certified.",
+        "Existing NodeFind/NodeContext calls support the workflow and do not add unique coverage."
+      ]
     }
   ],
   "tool_usage": {
@@ -1311,9 +1327,12 @@
     ],
     "ReadTurboMCPTypeFind": [
       "WF-TYPE-DISCOVERY"
+    ],
+    "ReadTurboMCPNodeResolve": [
+      "WF-NODE-RESOLVE"
     ]
   },
-  "unique_tools_scenario_reviewed": 113,
+  "unique_tools_scenario_reviewed": 114,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "workflow": "WF-NODE-RESOLVE",
-  "status": "in_progress",
+  "status": "scenario_accepted",
   "readiness": "ready",
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPNodeResolve"
   ],
@@ -14,7 +14,32 @@
     "Comments and output do not imply writer support or identity equivalence for suggested keys.",
     "Focused live workflow and help checked without mutation."
   ],
-  "remaining": [
-    "Review and repair output, then run native workflow."
+  "remaining": [],
+  "evidence": {
+    "run": "53f14f09bf9d4768aa330d01a785ae86",
+    "candidate": "00355784e7c91729891651479adb6af21635d8ea",
+    "state": "passed",
+    "prior_run": "23bdeaa727b2437fa30e6553b9149785",
+    "checks": [
+      "Stock engine build",
+      "Exact identity and pin addressing on BP_NodeTest event node",
+      "Deterministic repeated resolve",
+      "Mixed valid/malformed batch counts",
+      "Non-hex, short and missing keys refuse",
+      "26-ID limit refuses",
+      "Live parameter help and full English output inspected"
+    ]
+  },
+  "limitations": [
+    "Bounded event-node fixture, not exhaustive node or pin-family coverage.",
+    "Array/set/map labels, 40-pin truncation and ambiguous key collisions source-reviewed only.",
+    "Resolving may load assets; absence of downstream load side effects is not certified.",
+    "Existing NodeFind/NodeContext calls support the workflow and do not add unique coverage."
+  ],
+  "fixes": [
+    "Readable container names accompany stable numeric fields.",
+    "Similar key prefixes explicitly are not replacement identities.",
+    "Missing keys direct callers to a fresh NodeFind result.",
+    "Output documents load effects and fresh identity requirements; obsolete comments removed."
   ]
 }

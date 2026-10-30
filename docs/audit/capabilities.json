@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "fcfaa869d079f59234b6fd2977ab6c5785beb5d2",
+  "plugin_tree": "5b885c006959657d40320e007852a6f772910522",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -3684,7 +3684,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
-          "line": 660
+          "line": 656
         }
       ],
       "test_references": [
@@ -3709,7 +3709,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
-          "line": 511
+          "line": 507
         }
       ],
       "test_references": [
@@ -3737,7 +3737,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
-          "line": 283
+          "line": 279
         }
       ],
       "test_references": [
@@ -3925,6 +3925,7 @@
         "Tools/test-function-flags.py",
         "Tools/test-graph-dead.py",
         "Tools/test-graph-edit-workflow.py",
+        "Tools/test-node-reader-output.py",
         "Tools/test-save-undo-workflow.py",
         "Tools/test-scoped-tidy.py",
         "Tools/test-tool-text-inventory.py",
