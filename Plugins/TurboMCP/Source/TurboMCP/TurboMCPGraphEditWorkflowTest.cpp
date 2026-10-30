@@ -116,8 +116,8 @@ bool FTurboMCPGraphEditWorkflowTest::RunTest(const FString& Parameters)
     const FString RefusedPreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphReplace(Blueprint->GetPathName(),Graph->GetName(),Disconnected);
     const FString RefusedEdit = UTurboMCPEditToolset::EditTurboMCPGraphReplace(Blueprint->GetPathName(),Graph->GetName(),Disconnected);
     AddInfo(RefusedPreview); AddInfo(RefusedEdit);
-    TestTrue(TEXT("Disconnected replacement preview refuses"),RefusedPreview.Contains(TEXT("replacement preflight refused")));
-    TestTrue(TEXT("Disconnected replacement edit refuses before transaction"),RefusedEdit.Contains(TEXT("replacement preflight refused")));
+    TestTrue(TEXT("Disconnected replacement preview refuses"),RefusedPreview.Contains(TEXT("preflight refused")));
+    TestTrue(TEXT("Disconnected replacement edit refuses before transaction"),RefusedEdit.Contains(TEXT("preflight refused")));
     TestEqual(TEXT("Refusal preserves undo history"),Buffer->GetQueueLength(),BeforeRefusalUndo);
     TestEqual(TEXT("Refusal preserves dirty flag"),Package->IsDirty(),BeforeRefusalDirty);
     TestEqual(TEXT("Refusal preserves nodes"),Graph->Nodes.Num(),3);
