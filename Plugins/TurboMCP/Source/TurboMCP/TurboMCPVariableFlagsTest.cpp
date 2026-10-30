@@ -44,10 +44,20 @@ bool FTurboMCPVariableFlagsTest::RunTest(const FString& Parameters)
     FString Error;
     if (!TestTrue(TEXT("Production plan accepts private and public variables"),
         FTurboMCPVarsAdd::Plan(Blueprint->GetPathName(),
-            TEXT("PrivateProbe: int private=true instanceEditable=true, PublicProbe: int private=false instanceEditable=true"),
+            TEXT("PrivateProbe: int private=true instanceEditable=true tooltip=PrivateCounter, PublicProbe: int private=false instanceEditable=true"),
             Plan, Error))) { AddError(Error); return false; }
+    FTurboMCPVarsAdd::FPlan ReusedPlan;
+    TestTrue(TEXT("First reusable plan"), FTurboMCPVarsAdd::Plan(Blueprint->GetPathName(), TEXT("OldProbe: int"), ReusedPlan, Error));
+    TestTrue(TEXT("Second reusable plan"), FTurboMCPVarsAdd::Plan(Blueprint->GetPathName(), TEXT("NewProbe: bool"), ReusedPlan, Error));
+    TestEqual(TEXT("Replanning replaces previous declarations"), ReusedPlan.Variables.Num(), 1);
+    if (ReusedPlan.Variables.Num() == 1) TestEqual(TEXT("Only new declaration remains"), ReusedPlan.Variables[0].Name, FString(TEXT("NewProbe")));
+    TestFalse(TEXT("Empty request refuses"), FTurboMCPVarsAdd::Plan(Blueprint->GetPathName(), TEXT(""), ReusedPlan, Error));
+    TestEqual(TEXT("Refused empty request retains no old declarations"), ReusedPlan.Variables.Num(), 0);
     const FString Result = FTurboMCPVarsAdd::Apply(Plan);
     TestTrue(TEXT("Fresh creation reports two variables"), Result.StartsWith(TEXT("changed: added 2 variable(s)")));
+    FString Tooltip;
+    TestTrue(TEXT("Tooltip metadata exists"), FBlueprintEditorUtils::GetBlueprintVariableMetaData(Blueprint, TEXT("PrivateProbe"), nullptr, TEXT("tooltip"), Tooltip));
+    TestEqual(TEXT("Tooltip does not acquire literal quotation marks"), Tooltip, FString(TEXT("PrivateCounter")));
     FString PrivateValue;
     TestTrue(TEXT("Private metadata exists on Blueprint description"),
         FBlueprintEditorUtils::GetBlueprintVariableMetaData(Blueprint, TEXT("PrivateProbe"), nullptr,

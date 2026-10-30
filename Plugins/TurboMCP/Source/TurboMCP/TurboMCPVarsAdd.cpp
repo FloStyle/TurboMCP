@@ -187,6 +187,7 @@ bool FTurboMCPVarsAdd::Plan(const FString& InAsset, const FString& InVariables,
 	FPlan& OutPlan, FString& OutError)
 {
 	OutError.Empty();
+	OutPlan = FPlan();
 	OutPlan.Asset = Trim(InAsset);
 
 	if (OutPlan.Asset.IsEmpty())
@@ -344,8 +345,7 @@ bool FTurboMCPVarsAdd::Plan(const FString& InAsset, const FString& InVariables,
 			}
 			else if (Key == TEXT("tooltip"))
 			{
-				// A tooltip holds spaces, so it is taken from the first `tooltip=` to the end
-				// of the item rather than from one token.
+				// Tooltip follows the same grouped-token grammar as other values.
 				const int32 At = Token.Find(TEXT("="));
 				Variable.Tooltip = At >= 0 ? Trim(Token.Mid(At + 1)) : Value;
 			}
@@ -736,7 +736,7 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 
 		if (Description == nullptr)
 		{
-			continue;
+			return FString::Printf(TEXT("partial: added %d variable(s), but metadata for %s could not be applied because its description is missing. Inspect the Blueprint before retrying; changes are not saved."), Added, *Variable.Name);
 		}
 
 		if (!Variable.Category.IsEmpty())
@@ -795,7 +795,7 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 			FBlueprintEditorUtils::SetBlueprintVariableMetaData(
 				Blueprint, Name, /*InLocalVarScope=*/nullptr,
 				FName(TEXT("tooltip")),
-				FString::Printf(TEXT("\"%s\""), *Variable.Tooltip));
+				Variable.Tooltip);
 		}
 	}
 
