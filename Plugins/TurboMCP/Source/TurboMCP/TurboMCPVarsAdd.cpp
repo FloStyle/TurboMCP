@@ -509,7 +509,7 @@ FString FTurboMCPVarsAdd::RenderPreview(const FPlan& InPlan)
 		}
 	}
 
-	Out += TEXT("\n; Preview validates declaration syntax and referenced types, not the target Blueprint or existing names.");
+	Out += TEXT("\n; Preview validates declaration syntax and referenced types, not the target Blueprint or existing names. Default text is not validated against the declared type.");
 	Out += TEXT("\n; Edit checks names before adding variables, but an editor failure can leave a partial list. No automatic rollback is performed.");
 	Out += TEXT("\n; Edit may regenerate the skeleton repeatedly and run editor callbacks; it does not perform a full compile or save.");
 	return Out;

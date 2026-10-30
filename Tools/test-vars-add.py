@@ -1,23 +1,9 @@
-# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-STRUCT-1
-"""Exercise the P/E-VARS-ADD pair against the running editor.
-
-  T-STRUCT-1  add variables in bulk
-  P4          the Edit opens with `changed:` or `unchanged:`
-  D-02        the Preview and the Edit share one code path
-
-THE CHECK THAT MATTERS
-----------------------
-`E-VARS-ADD` reports how many variables it added AND how many it read back. Both numbers come
-from the same code, so neither is evidence on its own. The suite therefore reads the result
-back through a DIFFERENT tool — `R-BP-LOAD` — after a SAVE, which is the only way to show the
-variables are really on the Blueprint rather than in the writer's report.
-
-The flags and the category are checked the same way, because a flag that was set in memory and
-lost by the save is exactly the failure this project keeps finding.
+"""Verify fresh variable creation, same-editor readback, duplicate refusal and live help.
+The supervisor restores the owned fixture. A save followed by an in-memory read is not reload evidence.
 """
-
 import os
 import sys
+import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -44,6 +30,12 @@ def main():
     session = Session()
     session.connect()
 
+    global VARS
+    suffix = uuid.uuid4().hex[:10]
+    names = {name: name + "_" + suffix for name in ("Speed", "bIsArmed", "Label")}
+    for old, new in names.items():
+        VARS = VARS.replace(old, new)
+
     print("=== the preview parses and prints the plan without writing ===")
     preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPVarsAdd",
                            {"asset": ASSET, "variables": VARS})
@@ -67,10 +59,9 @@ def main():
     print(edit)
     print()
     check("the edit opens with changed: or unchanged:, per P4",
-          edit.startswith("changed:") or edit.startswith("unchanged:"), edit[:70])
+          edit.startswith("changed:"), edit[:70])
     check("the edit reads the variables back",
-          "read back from the Blueprint: 3 of 3" in edit
-          or edit.startswith("unchanged:"), edit[:120])
+          "read back from the Blueprint: 3 of 3" in edit, edit[:120])
 
     print()
     print("=== a second call with the same names is refused, adding nothing ===")
@@ -79,14 +70,16 @@ def main():
     print(again)
     print()
     check("the second call is refused", again.startswith("unchanged:"), again[:80])
-    check("it names what already exists", all(name in again for name in ("Speed", "bIsArmed", "Label"))
+    check("it names what already exists", all(name in again for name in names.values())
           and "nothing was added" in again)
 
     print()
     print("=== save, then read it back through a DIFFERENT tool ===")
     # The point of a different tool is that it cannot share the writer's belief about what it
     # did. R-BP-LOAD reads the Blueprint's own variable list.
-    print(session.call(EDIT_TOOLSET, "EditTurboMCPSave", {"assets": ASSET})[:90].replace("\n", " "))
+    saved = session.call(EDIT_TOOLSET, "EditTurboMCPSave", {"assets": ASSET})
+    print(saved)
+    check("save does not report failure", not saved.startswith(("error:", "partial:")), saved)
     described = session.call(READ_TOOLSET, "ReadTurboMCPBlueprintLoad",
                              {"assets": ASSET, "detail": "signatures",
                               "graphFilter": "", "format": "", "tokenBudget": ""})
@@ -97,14 +90,14 @@ def main():
 
     for name, type_text in (("Speed", "Float"), ("bIsArmed", "Boolean"), ("Label", "String")):
         check("%s is on the Blueprint, read by R-BP-LOAD" % name,
-              "%s : %s" % (name, type_text) in described,
+              "%s : %s" % (names[name], type_text) in described,
               "%s : %s" % (name, type_text))
 
     # The category is the field most likely to be set in memory and lost, so it is checked
     # by name rather than by counting lines.
-    check("the category survived the save", "category: Movement" in described)
+    check("category is present in the loaded Blueprint after save", "category: Movement" in described)
     # `CPF_BlueprintReadOnly` is how the engine expresses read-only, and the reader prints it.
-    check("the read-only flag survived the save",
+    check("read-only flag is present in the loaded Blueprint after save",
           "BlueprintReadOnly" in described)
 
     print()
@@ -143,6 +136,14 @@ def main():
     check("the map type is printed whole", "Map<String, int>" in container)
 
     print()
+    for toolset, tool in ((PREVIEW_TOOLSET, "PreviewTurboMCPVarsAdd"), (EDIT_TOOLSET, "EditTurboMCPVarsAdd")):
+        help_text = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": toolset, "toolName": tool})
+        check(tool + " help explains syntax", "Name: Type" in help_text and "default" in help_text, help_text)
+        check(tool + " help explains preview limits", "existing names" in help_text, help_text)
+    for declaration in ("A: int default=1 value=2", "A: int private=maybe", "A: int, a: bool"):
+        rejected = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPVarsAdd", {"asset": ASSET, "variables": declaration})
+        check("invalid declaration is refused: " + declaration, rejected.startswith("error:"), rejected)
+
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1
