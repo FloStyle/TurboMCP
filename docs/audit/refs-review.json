@@ -31,7 +31,12 @@
       "Missing asset and invalid direction refuse",
       "Unrequested direction marked not queried",
       "Live help and output limits inspected"
-    ]
+    ],
+    "offline": {
+      "run": "b283a09cf6a74b7393c35e519a93ae9a",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "limitations": [
     "Registry failure and active-scan branches source-reviewed only.",
