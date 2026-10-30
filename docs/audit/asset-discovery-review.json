@@ -12,12 +12,12 @@
   "findings": [
     {
       "id": "ASSET-SEARCH-TIE",
-      "state": "open",
+      "state": "implemented_source_reviewed_runtime_workflow_passed",
       "problem": "Same-named results in different folders lack stable final tie-break."
     },
     {
       "id": "ASSET-SEARCH-SCAN",
-      "state": "open",
+      "state": "implemented_source_reviewed_runtime_workflow_passed",
       "problem": "Incomplete registry scan is not distinguished from complete search."
     }
   ],
@@ -27,5 +27,30 @@
     "Invalid filters and missing targets provide actionable errors.",
     "Cost separates direct dependency categories and unknown sizes from runtime memory claims.",
     "Review help, comments and English outputs; retain unverified cases."
+  ],
+  "evidence": {
+    "candidate": "a8e7b7c91ecb821859531be6b9feb05437cfbee7",
+    "run": "93f98b927bff4d41914094f567e81152",
+    "state": "passed",
+    "suites": [
+      "test-asset-describe-metadata",
+      "test-asset-cost"
+    ],
+    "checks": [
+      "Search finds Blueprint and Widget full object paths deterministically.",
+      "Search rejects empty/malformed filters and reports no matches.",
+      "Mixed describe reports one success and one refusal.",
+      "Repeated describes remain identical and unloaded.",
+      "Existing package-cost suite passed."
+    ],
+    "limits": [
+      "Same-name duplicate-folder tie and active-scan branches are source-reviewed only.",
+      "No full cost acceptance claimed from legacy suite alone."
+    ]
+  },
+  "remaining": [
+    "Review complete help/parameter text and code comments for the trio.",
+    "Check unknown/negative size handling and bounded cost output.",
+    "Document loaded/unsaved registry metadata limits and any missing dependency evidence."
   ]
 }
