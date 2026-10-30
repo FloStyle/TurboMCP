@@ -30,18 +30,8 @@
 #include "TurboMCPGraphScratch.h"
 #include "K2Node_FunctionEntry.h"
 
-/**
- * R-NODE-RESOLVE and R-NODE-FIND: the two tools that let an agent name a node.
- *
- * Everything else in the roadmap that reads or writes a graph starts from a node
- * ID, so these are built before any body reader. The ID scheme is verified here,
- * on its own, so that a broken ID cannot later look like a broken reader.
- *
- * `03_TOOLS.md` requires `R-NODE-RESOLVE` to print "the node type ID (the one the
- * engine's node creation tool accepts)". That format is not the C++ class name:
- * it is `<category>|<title>` with whitespace removed, matching the engine's own
- * Blueprint toolset. `TurboMCPNodeId::GetNodeTypeId` implements that rule.
- */
+// Resolve exact reader identities and expose pin details for edit planning.
+// Type labels describe identity, not guaranteed support by a creation tool.
 namespace
 {
 	/** How many node IDs one resolve call may handle. */
@@ -139,15 +129,21 @@ namespace
 			// the real name differ, the real name is printed.
 			const FString Direction = bIsInput ? TEXT("in ") : TEXT("out");
 
-			// A default value is only interesting when the pin is not linked, and
-			// `2.1.8` says pins left at their default are not printed. It is named
-			// here rather than printed, because this tool reports a node's shape,
-			// not its graph text.
+			// Addressing indices are distinct; defaults below are shown only for unlinked pins.
 			Lines += FString::Printf(TEXT("\n      %s direction-index=%d array-index=%d %s [pin-guid=%s]"),
 				*Direction, Index, RawIndex, *Pin->PinName.ToString(), *Pin->PinId.ToString());
 
-            Lines += FString::Printf(TEXT(" [category=%s subcategory=%s container=%d]"),
-                *Pin->PinType.PinCategory.ToString(), *Pin->PinType.PinSubCategory.ToString(), static_cast<int32>(Pin->PinType.ContainerType));
+            const TCHAR* ContainerName = TEXT("unknown");
+            switch (Pin->PinType.ContainerType)
+            {
+            case EPinContainerType::None: ContainerName = TEXT("scalar"); break;
+            case EPinContainerType::Array: ContainerName = TEXT("array"); break;
+            case EPinContainerType::Set: ContainerName = TEXT("set"); break;
+            case EPinContainerType::Map: ContainerName = TEXT("map"); break;
+            }
+            Lines += FString::Printf(TEXT(" [category=%s subcategory=%s container=%d container-name=%s]"),
+                *Pin->PinType.PinCategory.ToString(), *Pin->PinType.PinSubCategory.ToString(),
+                static_cast<int32>(Pin->PinType.ContainerType), ContainerName);
             if (const UObject* TypeObject = Pin->PinType.PinSubCategoryObject.Get())
                 Lines += FString::Printf(TEXT(" type=%s"), *TypeObject->GetPathName());
             if (Pin->PinType.bIsReference) Lines += TEXT(" reference");
@@ -431,8 +427,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeResolve(const FString& NodeIds)
 					break;
 				}
 				const FString Key = Node->NodeGuid.ToString(EGuidFormats::DigitsLower);
-				// Same first two hex digits is a cheap near miss and is enough to
-				// suggest a node that may be the same one after a rebuild.
+				// Matching prefixes are navigation suggestions only, not identity evidence.
 				if (Key.Left(2) == Wanted.Left(2))
 				{
 					NearMisses += FString::Printf(TEXT("\n      %s  %s"),
@@ -444,12 +439,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeResolve(const FString& NodeIds)
 
 			Errors += FString::Printf(
 				TEXT("\nerror: no node in %s:%s has the key %s. ")
-				TEXT("The node may have been deleted, or the graph rebuilt."),
+				TEXT("The node may have been deleted, or the graph rebuilt. Use ReadTurboMCPNodeFind to obtain a fresh ID."),
 				*AssetResolved.AssetName, *Parsed.GraphName, *Parsed.NodeKey);
 			if (!NearMisses.IsEmpty())
 			{
 				Errors += FString::Printf(
-					TEXT("\n    nodes in this graph starting with the same two digits:%s"),
+					TEXT("\n    Similar key prefixes (suggestions only, not replacement identities); use ReadTurboMCPNodeFind to identify the intended node:%s"),
 					*NearMisses);
 			}
 			++RefusedCount;
@@ -497,6 +492,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeResolve(const FString& NodeIds)
 	Result += FString::Printf(TEXT(": %d resolved, %d refused"), ResolvedCount, RefusedCount);
 	Result += Lines;
 	Result += Errors;
+	Result += TEXT("\nNo edit, compile or save was requested. Resolving may load assets. Pin indices describe the current graph; obtain fresh IDs after structural changes.");
 
 	if (ResolvedCount == 0 && RefusedCount == 0)
 	{
