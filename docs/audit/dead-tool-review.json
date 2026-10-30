@@ -77,7 +77,12 @@
         "Prior actual deletion, stale-plan refusal and identity-preserving undo checks retained."
       ]
     },
-    "post_test_change": "8686e03739baa62eee0635f98b9f32d453977eca changes comments only."
+    "post_test_change": "8686e03739baa62eee0635f98b9f32d453977eca changes comments only.",
+    "final_offline": {
+      "run": "829a44b50ad84a65a4a48a6602dc3a42",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "remaining": []
 }
