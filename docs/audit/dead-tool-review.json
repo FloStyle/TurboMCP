@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "workflow": "WF-GRAPH-DEAD-REVIEW",
-  "status": "in_progress",
+  "status": "scenario_accepted",
   "readiness": "ready",
-  "counted_as_reviewed": false,
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPGraphDead",
     "EditTurboMCPGraphDead"
@@ -28,6 +28,12 @@
       "id": "DEAD-TEST",
       "state": "implemented_focused_native_passed",
       "problem": "Legacy test exercises no deletion, uses outdated writer assumptions and obsolete output parsing."
+    },
+    {
+      "id": "DEAD-PLAN-REUSE",
+      "state": "implemented_native_passed",
+      "problem": "Reusing a plan object accumulated old groups and candidates.",
+      "fix": "Clear plan before each analysis; regression repeats planning on same object."
     }
   ],
   "acceptance": [
@@ -38,7 +44,10 @@
     "Help and output accurately describe heuristic limits, undo, compile and save."
   ],
   "limitations": [
-    "Static reachability is not runtime proof. No acceptance until native evidence."
+    "Static reachability and variable-name matching are conservative heuristics, not runtime or user-intent proof.",
+    "Synthetic event graphs with PrintString, member get/set, comment and generic unknown node; no arbitrary project callback or saved-asset persistence certification.",
+    "No layout algorithm changed and no visual screenshot acceptance claimed.",
+    "Cross-graph reads were tested; variable-scope name collisions may conservatively retain extra nodes."
   ],
   "evidence": {
     "candidate": "d80e2caed1ec0a6341c02d1f9fa0309ba3668328",
@@ -55,11 +64,20 @@
       "run": "3a4d813c34084f5a8a64986c3bef3858",
       "state": "passed",
       "checks": 26
-    }
+    },
+    "final_native": {
+      "run": "5bde64ab9b4242a08dd2a71ff193e401",
+      "candidate": "902958d",
+      "state": "passed",
+      "checks": [
+        "Cross-graph reachable read preserves disconnected variable writer.",
+        "Repeated Plan clears old candidate state.",
+        "No-candidate edit does not add undo; invalid graph and empty asset refuse.",
+        "Live help documents undo, no compile/save and parameters.",
+        "Prior actual deletion, stale-plan refusal and identity-preserving undo checks retained."
+      ]
+    },
+    "post_test_change": "8686e03739baa62eee0635f98b9f32d453977eca changes comments only."
   },
-  "remaining": [
-    "Complete published help and code-comment review; remove stale no-undo descriptions.",
-    "Exercise no-candidate/invalid-target paths and cross-graph variable-read protection.",
-    "Record visual limits; no layout changes or screenshot acceptance claimed."
-  ]
+  "remaining": []
 }

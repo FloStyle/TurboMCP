@@ -835,6 +835,23 @@
         "Extreme-length external tool names and missing inputSchema branches source-reviewed, not injected in runtime.",
         "ReadTurboMCPToolSchema remains a compact summary; full constraints require describe_toolset. Short-name matching can be ambiguous, so help directs models to full registry names."
       ]
+    },
+    {
+      "id": "WF-GRAPH-DEAD-REVIEW",
+      "title": "Preview disconnected-node cleanup and undo a targeted removal",
+      "status": "scenario_accepted",
+      "review": "docs/audit/dead-tool-review.json",
+      "evidence": "5bde64ab9b4242a08dd2a71ff193e401",
+      "tools_used": [
+        "PreviewTurboMCPGraphDead",
+        "EditTurboMCPGraphDead"
+      ],
+      "limitations": [
+        "Static reachability and variable-name matching are conservative heuristics, not runtime or user-intent proof.",
+        "Synthetic event graphs with PrintString, member get/set, comment and generic unknown node; no arbitrary project callback or saved-asset persistence certification.",
+        "No layout algorithm changed and no visual screenshot acceptance claimed.",
+        "Cross-graph reads were tested; variable-scope name collisions may conservatively retain extra nodes."
+      ]
     }
   ],
   "tool_usage": {
@@ -1225,9 +1242,15 @@
     ],
     "PreviewTurboMCPToolset": [
       "WF-DISCOVERY-01"
+    ],
+    "PreviewTurboMCPGraphDead": [
+      "WF-GRAPH-DEAD-REVIEW"
+    ],
+    "EditTurboMCPGraphDead": [
+      "WF-GRAPH-DEAD-REVIEW"
     ]
   },
-  "unique_tools_scenario_reviewed": 106,
+  "unique_tools_scenario_reviewed": 108,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
