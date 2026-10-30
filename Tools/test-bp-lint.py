@@ -242,7 +242,7 @@ def main():
     # asserted is that THIS GRAPH carries dead nodes at all, which a lint looking only at the event graph
     # could not say.
     messy_findings = sum(1 for line in dead.splitlines()
-                         if "in '%s'" % MESSY_GRAPH in line and "[error]" in line)
+                         if "in '%s'" % MESSY_GRAPH in line and "[warning]" in line)
     check("the '%s' graph carries dead nodes (TA-3's unwired copy)" % MESSY_GRAPH,
           messy_findings >= 1, "found %d in that graph" % messy_findings)
 
@@ -334,9 +334,9 @@ def main():
     print()
     print("=== no EditTurboMCPBPLint tool is registered ===")
     # This checks name discovery only, not whether a toolset can mutate assets.
-    refused = session.call("TurboMCP.TurboMCPReadToolset", "EditTurboMCPBPLint", {})
+    refused = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolsetName": READ_TOOLSET, "toolName": "EditTurboMCPBPLint"})
     check("the nonexistent edit-lint tool is identified",
-          "Unknown tool EditTurboMCPBPLint" in refused, refused[:200])
+          "error: no tool named 'EditTurboMCPBPLint'" in refused, refused[:200])
 
     print()
     print("=== it MUTATES NOTHING: the asset is byte-identical after a full lint ===")
