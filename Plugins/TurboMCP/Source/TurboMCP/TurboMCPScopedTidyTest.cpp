@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "TurboMCPGraphTidy.h"
 #include "TurboMCPGraphFixBackward.h"
+#include "TurboMCPGraphKnots.h"
+#include "K2Node_Knot.h"
 #include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
@@ -637,6 +639,53 @@ bool FTurboMCPPositionsReviewTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Comment width preserved"), Box->NodeWidth, 500);
     TestTrue(TEXT("Undo comment move"), GEditor->UndoTransaction(false));
 
+    BP->ClearFlags(RF_Public | RF_Standalone); Package->SetDirtyFlag(false);
+    return !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPKnotsReviewTest,
+    "TurboMCP.Graph.KnotsReview", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPKnotsReviewTest::RunTest(const FString& Parameters)
+{
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/KnotsReview_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    UBlueprint* BP = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("KnotsReview"),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    if (!TestNotNull(TEXT("Knots fixture"), BP)) return false;
+    UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("Routing"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+    FBlueprintEditorUtils::AddUbergraphPage(BP, Graph);
+    auto MakeNode = [&](int32 X, int32 Y)
+    {
+        auto* Node = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional);
+        Node->SetFromFunction(UKismetStringLibrary::StaticClass()->FindFunctionByName(TEXT("Concat_StrStr")));
+        Graph->AddNode(Node, false, false); Node->CreateNewGuid(); Node->AllocateDefaultPins();
+        Node->NodePosX = X; Node->NodePosY = Y; Node->NodeWidth = 200; Node->NodeHeight = 100;
+        return Node;
+    };
+    auto* Source = MakeNode(0, 0);
+    auto* First = MakeNode(1400, 400);
+    auto* Second = MakeNode(1400, 700);
+    MakeNode(700, 200); MakeNode(700, 350);
+    auto* Output = Source->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue);
+    auto* Input1 = First->FindPinChecked(TEXT("A")); auto* Input2 = Second->FindPinChecked(TEXT("A"));
+    Output->MakeLinkTo(Input1); Output->MakeLinkTo(Input2);
+    Package->SetDirtyFlag(false);
+    const FString Asset = BP->GetPathName();
+    FTurboMCPGraphKnots::FPlan Plan; FString Error;
+    TestTrue(TEXT("Plan fanout routing"), FTurboMCPGraphKnots::Plan(Asset, Graph->GetName(), Plan, Error));
+    AddInfo(FTurboMCPGraphKnots::RenderPreview(Plan));
+    TestEqual(TEXT("Plan both crossing wires"), Plan.AcceptedIndices.Num(), 2);
+    TestFalse(TEXT("Preview stays clean"), Package->IsDirty());
+    TestEqual(TEXT("Preview preserves original links"), Output->LinkedTo.Num(), 2);
+    const FString Edit = UTurboMCPEditToolset::EditTurboMCPGraphKnots(Asset, Graph->GetName()); AddInfo(Edit);
+    TestTrue(TEXT("Routing succeeds"), Edit.StartsWith(TEXT("changed:")));
+    int32 Count = 0; UK2Node_Knot* Shared = nullptr;
+    for (UEdGraphNode* Node : Graph->Nodes) if (auto* Knot = Cast<UK2Node_Knot>(Node)) { ++Count; Shared = Knot; }
+    TestEqual(TEXT("Fanout uses one shared knot"), Count, 1);
+    if (Shared) TestTrue(TEXT("Both destinations remain linked through shared knot"), Shared->GetOutputPin()->LinkedTo.Contains(Input1) && Shared->GetOutputPin()->LinkedTo.Contains(Input2));
+    AddInfo(TEXT("Knot capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900")));
+    TestTrue(TEXT("Undo routing"), GEditor->UndoTransaction(false));
+    TestTrue(TEXT("Undo restores both original links"), Output->LinkedTo.Contains(Input1) && Output->LinkedTo.Contains(Input2));
+    TestTrue(TEXT("Empty graph refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphKnots(Asset, TEXT("")).StartsWith(TEXT("error:")));
     BP->ClearFlags(RF_Public | RF_Standalone); Package->SetDirtyFlag(false);
     return !HasAnyErrors();
 }
