@@ -71,7 +71,13 @@
           "state": "failed",
           "reason": "Valid double -0.5 fell back to int; corrected scalar and map-value type mapping."
         }
-      ]
+      ],
+      "offline": {
+        "run": "b43d6f1b06b044029c4adaa49f6120ec",
+        "state": "passed",
+        "checks": 26,
+        "candidate": "9d9a5b512f05da6f0901ce980a7c341809572cf8"
+      }
     }
   },
   "remaining": [],
