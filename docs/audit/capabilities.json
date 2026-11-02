@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "1cc391d64db8a24e608ef3374c56990f04657636",
+  "plugin_tree": "5365d7544fdeeafdf91af85b153051c2fff9db85",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -396,7 +396,8 @@
         }
       ],
       "test_references": [
-        "Tools/test-enum-add.py"
+        "Tools/test-enum-add.py",
+        "Tools/test-enum-creation.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2124,7 +2125,8 @@
         }
       ],
       "test_references": [
-        "Tools/test-enum-add.py"
+        "Tools/test-enum-add.py",
+        "Tools/test-enum-creation.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -3951,6 +3953,7 @@
         "Tools/test-diagnostic-console.py",
         "Tools/test-edit-readiness.py",
         "Tools/test-editor-log.py",
+        "Tools/test-enum-creation.py",
         "Tools/test-function-flags.py",
         "Tools/test-function-remove-review.py",
         "Tools/test-graph-copy-review.py",

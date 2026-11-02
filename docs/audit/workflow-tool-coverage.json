@@ -1223,6 +1223,29 @@
         "Removing a function can leave broken callers; the tool warns but does not repair them."
       ],
       "evidence": "6020fe0cf6ea46c4b6d7001d3222b9e5"
+    },
+    {
+      "id": "WF-ENUM-CREATION",
+      "title": "Create and inspect a user-defined enum",
+      "status": "scenario_accepted",
+      "review": "docs/audit/enum-quality-review.json",
+      "focus_tools": [
+        "PreviewTurboMCPEnumAdd",
+        "EditTurboMCPEnumAdd"
+      ],
+      "tools_used": [
+        "PreviewTurboMCPEnumAdd",
+        "EditTurboMCPEnumAdd",
+        "ReadTurboMCPAssetDescribe"
+      ],
+      "limitations": [
+        "Small three-value enum fixture; no large-enum or every display-name rejection test.",
+        "Creation stays in memory; save/reload and use in a compiled Blueprint were not exercised.",
+        "PIE and off-game-thread guard source-reviewed; active transaction refusal tested in editor.",
+        "Engine callbacks may create their own undo records; there is no tool-owned atomic undo guarantee.",
+        "Creation failures may leave a partial unsaved asset; no new rollback guarantee."
+      ],
+      "evidence": "345d47bdd3fd41f5bd4e7eed496f163f"
     }
   ],
   "tool_usage": {
@@ -1639,7 +1662,8 @@
       "WF-ASSET-DISCOVERY"
     ],
     "ReadTurboMCPAssetDescribe": [
-      "WF-ASSET-DISCOVERY"
+      "WF-ASSET-DISCOVERY",
+      "WF-ENUM-CREATION"
     ],
     "ReadTurboMCPAssetCost": [
       "WF-ASSET-DISCOVERY"
@@ -1733,9 +1757,15 @@
     ],
     "EditTurboMCPFunctionRemove": [
       "WF-FUNCTION-REMOVE"
+    ],
+    "PreviewTurboMCPEnumAdd": [
+      "WF-ENUM-CREATION"
+    ],
+    "EditTurboMCPEnumAdd": [
+      "WF-ENUM-CREATION"
     ]
   },
-  "unique_tools_scenario_reviewed": 142,
+  "unique_tools_scenario_reviewed": 144,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

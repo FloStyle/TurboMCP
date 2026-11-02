@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "workflow": "WF-ENUM-CREATION",
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
+  "focus_tools": [
+    "PreviewTurboMCPEnumAdd",
+    "EditTurboMCPEnumAdd"
+  ],
+  "scenario": "Preview and create a three-value colour enum with explicit display text, inspect identities and unsaved state, refuse collision and invalid names, and guard active transactions.",
+  "candidate": "5c2aa5731ba6c24631b23c6a6d76b75adc0361d3",
+  "native_run": "345d47bdd3fd41f5bd4e7eed496f163f",
+  "scope_gate": "PASS",
+  "remaining": [],
+  "limitations": [
+    "Small three-value enum fixture; no large-enum or every display-name rejection test.",
+    "Creation stays in memory; save/reload and use in a compiled Blueprint were not exercised.",
+    "PIE and off-game-thread guard source-reviewed; active transaction refusal tested in editor.",
+    "Engine callbacks may create their own undo records; there is no tool-owned atomic undo guarantee.",
+    "Creation failures may leave a partial unsaved asset; no new rollback guarantee."
+  ],
+  "confirmed_failures": [
+    {
+      "run": "97b0b49a728643d7aaa3552a4d0afb99",
+      "finding": "Creation inside an active transaction succeeded and created a package. Other native assertions passed."
+    }
+  ],
+  "fixes": [
+    "Refuse asset creation before mutation outside the idle editor/game-thread context.",
+    "Expose idle-editor requirement in live help and preview output.",
+    "Clarify preview versus edit effects and simplify enum API comments."
+  ],
+  "checks": [
+    "Live preview/edit help includes path, values, display text and save behavior.",
+    "Preview does not create an object.",
+    "Empty, duplicate case-insensitive, reserved and malformed names refuse without creating a package.",
+    "Active transaction refuses with no package created.",
+    "Three names, consecutive numeric values, display text and sentinel read back correctly.",
+    "Collision preserves existing names/count/display text.",
+    "AssetDescribe separates dirty state from on-disk existence.",
+    "New enum remains unsaved."
+  ],
+  "visual_review": "Not applicable: enum data and returned text checked directly; no layout/capture contract."
+}
