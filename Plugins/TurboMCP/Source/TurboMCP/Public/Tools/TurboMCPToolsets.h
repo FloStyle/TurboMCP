@@ -999,30 +999,12 @@ public:
 		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""));
 
 	/**
-	 * Repair the bad spots in a mostly-good graph, WITHOUT moving anything.
-	 *
-	 * A LOCAL pass, not a layout. It fixes three specific things and leaves the rest alone: an exec wire
-	 * that RUNS BACKWARD, a GETTER sitting to the right of the node that reads it, and a LONE NODE left
-	 * at the origin next to nothing.
-	 *
-	 * IT NEVER MOVES A COMMENT BOX, and that is a property of the type rather than a promise: the plan
-	 * carries no box position at all, so there is nothing to write one from.
-	 *
-	 * MEASURES AND ROLLS BACK like the tidy pass: the total wire length is measured on the PLANNED
-	 * positions and the plan is offered only when the result is SHORTER. `bForce` offers it anyway, and
-	 * it lives HERE rather than on the edit so the preview can state a rollback the edit would perform.
-	 *
-	 * REFUSES rather than guesses, naming the reason. Where the engine has measured NO NODE SIZES it uses
-	 * a documented fallback square and SAYS SO, under-reporting rather than inventing a position. That is
-	 * not unusual: NodeWidth is written only by Slate when a node is drawn.
-	 *
-	 * The number it prints is the TOTAL WIRE LENGTH, the same quantity `P-GRAPH-TIDY` reports, so the two
-	 * are comparable. `P-GRAPH-KNOTS` reports WIRES CROSSING NODES and is deliberately not comparable.
-	 *
-	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
-	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
-	 * @param bForce Required boolean. false requires the proposed wire-length improvement; true permits applying the planned placement without that improvement. Other safety checks still apply.
-	 */
+     * Preview supported position repairs across one Blueprint graph; loads and measures transient graph widgets, but does not move live nodes, compile or save.
+     * Repairs selected backward execution patterns, exclusive pure chains, misplaced getters and linked origin strays. This is not a complete tidy or proof of graph correctness. Nodes and links are retained; comment boxes are not moved or resized.
+     * @param Asset Required Blueprint package/object path or unique short name, e.g. /Game/Tests/BP_NodeTest. Prefer a full path. Loading may run editor callbacks; an idle editor and measured node geometry are required.
+     * @param GraphName Required unique graph name from the reader, e.g. EventGraph. Empty, missing or ambiguous names are refused. The whole named graph is considered; there is no node-selection parameter. Exclusive pure chains are limited to 8 nodes; a chain that cannot fit safely is not partially carried.
+     * @param bForce Required boolean. false writes only when estimated straight-segment wire length decreases; true permits an equal or longer result and reports it. Force never bypasses identity, collision, comment or coordinate guards, and a no-op stays unchanged. Preview first; edit replans current state. No automatic compilation or saving.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphFixBackward(
 		const FString& Asset,
@@ -1861,22 +1843,12 @@ public:
 		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""));
 
 	/**
-	 * Apply the repairs the preview listed.
-	 *
-	 * The same inputs, found and judged the same way, as `P-GRAPH-FIX-BACKWARD`, because the two share one
-	 * code path up to the write. Every node is RE-RESOLVED BY KEY before it moves, because a plan is made
-	 * and applied in two calls and the graph can change between them.
-	 *
-	 * A COMMENT BOX IS NEVER MOVED. Nothing in the plan holds a box position, so no code path here can
-	 * write one.
-	 *
-	 * `bForce` writes even when the measure says the layout is not shorter, which is what a caller who
-	 * disagrees with the measure asks for.
-	 *
-	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
-	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
-	 * @param bForce Required boolean. false requires the proposed wire-length improvement; true permits applying the planned placement without that improvement. Other safety checks still apply.
-	 */
+     * Replan and apply supported position repairs across one Blueprint graph in one undo transaction; marks the Blueprint modified, but does not compile or save.
+     * Repairs selected backward execution patterns, exclusive pure chains, misplaced getters and linked origin strays. This is not a complete tidy or proof of graph correctness. Nodes and links are retained; comment boxes are not moved or resized.
+     * @param Asset Required Blueprint package/object path or unique short name, e.g. /Game/Tests/BP_NodeTest. Prefer a full path. Loading may run editor callbacks; an idle editor and measured node geometry are required.
+     * @param GraphName Required unique graph name from the reader, e.g. EventGraph. Empty, missing or ambiguous names are refused. The whole named graph is considered; there is no node-selection parameter. Exclusive pure chains are limited to 8 nodes; a chain that cannot fit safely is not partially carried.
+     * @param bForce Required boolean. false writes only when estimated straight-segment wire length decreases; true permits an equal or longer result and reports it. Force never bypasses identity, collision, comment or coordinate guards, and a no-op stays unchanged. Preview first; edit replans current state. No automatic compilation or saving.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphFixBackward(
 		const FString& Asset,

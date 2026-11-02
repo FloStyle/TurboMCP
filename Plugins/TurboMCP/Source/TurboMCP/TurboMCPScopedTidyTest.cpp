@@ -459,6 +459,20 @@ bool FTurboMCPBackwardReviewTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Undo preserves source X"), Event->NodePosX, 900);
     TestTrue(TEXT("Empty graph refuses rather than guessing"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphFixBackward(Asset, TEXT(""), false).StartsWith(TEXT("error:")));
 
+    // A short backward wire can become longer when moved to readable clearance.
+    Call->NodePosX = 850;
+    FTurboMCPGraphFixBackward::FPlan Unforced;
+    FString ForceError;
+    TestTrue(TEXT("Plan non-improving repair"), FTurboMCPGraphFixBackward::Plan(Asset, Graph->GetName(), false, Unforced, ForceError));
+    TestFalse(TEXT("Default refuses a non-improving repair"), Unforced.bWouldApply);
+    TestTrue(TEXT("Default edit leaves non-improving repair unchanged"), UTurboMCPEditToolset::EditTurboMCPGraphFixBackward(Asset, Graph->GetName(), false).StartsWith(TEXT("unchanged:")));
+    const FString ForcedPreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphFixBackward(Asset, Graph->GetName(), true);
+    TestTrue(TEXT("Forced preview explains no improvement"), ForcedPreview.Contains(TEXT("NOT SHORTER")));
+    const FString Forced = UTurboMCPEditToolset::EditTurboMCPGraphFixBackward(Asset, Graph->GetName(), true);
+    TestTrue(TEXT("Force applies and discloses the non-improvement"), Forced.StartsWith(TEXT("changed:")) && Forced.Contains(TEXT("WORSE OR EQUAL")));
+    TestTrue(TEXT("Forced repair can be undone"), GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo forced target"), Call->NodePosX, 850);
+    Call->NodePosX = 300;
     auto MakePure = [&](int32 X)
     {
         auto* Pure = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional);
@@ -500,6 +514,13 @@ bool FTurboMCPBackwardReviewTest::RunTest(const FString& Parameters)
     for (const auto& N : Capped.Nodes)
         if (N.Key == TurboMCPNodeId::MakeKey(Call->NodeGuid))
             TestEqual(TEXT("Over-limit R1 consumer X stays fixed"), N.PlannedX, 300.0);
+    Package->SetDirtyFlag(false);
+    TestTrue(TEXT("Force does not turn a refused chain into a write"), UTurboMCPEditToolset::EditTurboMCPGraphFixBackward(Asset, Graph->GetName(), true).StartsWith(TEXT("unchanged:")));
+    TestFalse(TEXT("Refused forced chain stays clean"), Package->IsDirty());
+    const FGuid SavedGuid = Call->NodeGuid;
+    Call->NodeGuid = Event->NodeGuid;
+    TestTrue(TEXT("Duplicate node identities refuse"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphFixBackward(Asset, Graph->GetName(), true).StartsWith(TEXT("error:")));
+    Call->NodeGuid = SavedGuid;
     BP->ClearFlags(RF_Public | RF_Standalone);
     Package->SetDirtyFlag(false);
     return !HasAnyErrors();

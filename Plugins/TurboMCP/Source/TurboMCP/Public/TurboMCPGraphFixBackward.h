@@ -15,46 +15,14 @@ class UBlueprint;
 class UEdGraph;
 class UEdGraphNode;
 
-/**
- * Repair the bad spots in a graph that is otherwise fine, in front of `P-GRAPH-FIX-BACKWARD` and
- * `E-GRAPH-FIX-BACKWARD`.
- *
- * THREE RULES, AND IT REPAIRS ONLY WHAT ONE OF THEM COVERS. `Spec/03_TOOLS.md` states the capability as
- * three sentences, and every clause in them is load-bearing:
- *
- *  - R1 AN EXEC WIRE THAT RUNS BACKWARD. The node it feeds is placed on the row of the node before it,
- *    to its right, together with any PURE nodes used only by it; later nodes in that row are pushed
- *    along. "Backward" is `RectOf(Target).MinX < RectOf(Source).MaxX`, reused VERBATIM from
- *    L-LAYOUT-REPORT (TurboMCPLayoutReport.cpp:281), because that report output is asserted as a
- *    baseline by T-LAY-1 and the two tools have to agree.
- *  - R2 A GETTER PLACED UNDER THE NODE THAT READS IT. It is moved to that node's own row, directly to
- *    its left. The predicate is the bUnderneath comparison of the report (:374) and NOT its whole
- *    `getter-place` finding: a getter to the RIGHT on the same row is not backwards.
- *  - R3 A LONE NODE PARKED AT THE ORIGIN. Within `OriginBand` of `(0,0)` on both axes, with at least one
- *    link and its NEAREST linked node farther than `StrayLinkDistance`, it is brought next to that
- *    neighbour. Both constants are the own constants of the report (:35, :38).
- *
- * A BACKWARD DATA WIRE THAT NO RULE COVERS IS LEFT ALONE AND COUNTED. R1 is about an EXEC wire; R2 and
- * R3 are about specific shapes. Moving a node merely because a data wire points backwards, with no
- * getter and no pure consumer involved, would be the pass guessing. The count is reported so the answer
- * never implies it fixed more than it did - an honest count beats a silent omission.
- *
- * NOTHING IS CREATED, NOTHING IS REMOVED, NO LINK IS MADE OR BROKEN. That is what makes the rollback a
- * PROPERTY rather than a code path: `Plan` carries the planned positions as VALUES, measures the wire
- * length ON those values, and `Apply` writes only when the result is strictly shorter. There is nothing
- * to undo, because nothing was done until the decision was made.
- *
- * AND A COMMENT BOX IS NEVER MOVED, RESIZED OR CREATED - A PROPERTY OF THE TYPE, NOT A PROMISE IN THE
- * CODE. `FBox` below carries a key, its text, its depth, its parent index and its member indices. It
- * carries NO X, NO Y, NO WIDTH AND NO HEIGHT. There is nothing to write a box position from, so a later
- * edit cannot break the promise by accident.
- *
- * IT MEASURES TOTAL WIRE LENGTH, WHICH IS WHAT `P/E-GRAPH-TIDY` IS JUDGED ON. `P/E-GRAPH-KNOTS` is
- * judged on WIRES CROSSING NODES instead. The two numbers are deliberately not comparable, and each
- * pass says which one it printed.
- *
- * `P/E-` SHARES ONE CODE PATH UP TO THE WRITE (`D-02`), and EVERY REFUSAL IS DECIDED IN `Plan` so the
- * Preview states it rather than the Edit surprising a caller who had already agreed.
+/** Plans bounded position repairs without changing graph logic.
+ * R1 repairs supported backward execution patterns and carries up to eight
+ * exclusive pure producers atomically. R2 repositions eligible getters; R3
+ * brings linked origin strays closer to their neighbours. Comment bounds stay
+ * fixed. Planning requires measured node bounds and unique node identifiers.
+ * The improvement metric is estimated straight-segment wire length, not a
+ * rendered-spline or whole-graph readability guarantee. Force bypasses only
+ * that improvement requirement. Apply records changed nodes for editor undo.
  */
 class FTurboMCPGraphFixBackward
 {
@@ -80,24 +48,9 @@ public:
 		double Width = 0.0;
 		double Height = 0.0;
 
-		/**
-		 * WHAT THE ENGINE MEASURED, AND NOTHING ELSE. Zero when Slate has never drawn the node.
-		 *
-		 * KEPT SEPARATE FROM `Width`/`Height`, AND THAT SEPARATION IS A MEASURED FIX - the same one
-		 * `FTurboMCPGraphTidy` made independently, which is a good sign it is the right one.
-		 *
-		 * `L-LAYOUT-REPORT` reads `NodeWidth` RAW. This pass substitutes a documented 48-unit fallback
-		 * for a node the engine never measured, because `NodeWidth` is written only when Slate DRAWS a
-		 * node and a commandlet draws nothing. So if the fallback is stored in the field the MEASURE
-		 * reads, the two tools describe DIFFERENT RECTANGLES and their numbers cannot agree.
-		 *
-		 * The same fault made THIS pass compare a fallback-measured before against a raw-measured after,
-		 * so on a graph where nothing needed repairing it believed it had improved things, answered
-		 * `changed:`, and would have REWRITTEN A GOOD GRAPH.
-		 *
-		 * THE RULE: a pass may compare only LIKE WITH LIKE. These two fields are what the graph IS;
-		 * `Width` and `Height` are what this pass will MAKE OF IT.
-		 */
+        /** Stored dimensions retained for the legacy report-compatible wire metric;
+         * these are not the transient widget measurements used for collision guards.
+         */
 		double MeasuredWidth = 0.0;
 		double MeasuredHeight = 0.0;
 

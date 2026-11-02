@@ -78,26 +78,8 @@ namespace
 	 */
 	constexpr int32 MaxPureChain = 8;
 
-	/**
-	 * `FallbackNodeExtent`: the size given to a node whose rectangle the engine has never measured.
-	 *
-	 * `NodeWidth` and `NodeHeight` are plain `int32` on `UEdGraphNode` and NOTHING in the engine
-	 * computes them: the only writes in the whole engine tree are in
-	 * `UEdGraphNode_Documentation::ResizeNode` and `::SetBounds`. For an ordinary node SLATE writes them
-	 * when it draws, so a graph built by a commandlet has NO measured sizes until something renders it.
-	 * MEASURED, for every node including ones loaded from a saved package: `size (0,0)`.
-	 *
-	 * THIS PASS FALLS BACK RATHER THAN REFUSING, and it is the same decision the knot pass made and for
-	 * the same measured reason: refusing was tried there and made the tool useless on every graph it
-	 * exists for. A point is a real answer to "where is this node", which is what the geometry asks.
-	 *
-	 * THE FALLBACK IS NEVER SILENT, AND EVERY LAYER CARRIES IT. `FPlan::bUsedFallbackSizes` is set when
-	 * any node has no measured size, `RenderPreview` prints a note that names the substituted extent and
-	 * calls the result CONSERVATIVE rather than exact, and every write site recomputes its geometry
-	 * through `PlannedExtent`, so the substitution is applied rather than re-derived. A pass may not
-	 * quietly substitute a size, because then a number a caller compares would be built from geometry
-	 * that does not exist.
-	 */
+    // Retained for legacy summary fields. Planning now requires measured bounds.
+
 	constexpr double FallbackNodeExtent = 48.0;
 
 	/**
@@ -279,35 +261,11 @@ namespace
 		return INDEX_NONE;
 	}
 
-	/**
-	 * TOTAL WIRE LENGTH ON THE PLANNED POSITIONS.
-	 *
-	 * The definition is the report's: for every non-implicit pin with links, the straight distance from
-	 * that pin's position to each linked pin's position, with knots seen THROUGH so a routed wire
-	 * measures as the one wire it is. An output pin is only counted once its links resolve, so a wire is
-	 * measured from the pin that owns it rather than twice from both ends.
-	 *
-	 * IT READS `MeasuredWidth`, SO IT TAKES NO GEOMETRY FLAG, AND BOTH SIMPLIFICATIONS ARE THE FIX.
-	 *
-	 * The before-number used to disagree with the project's reference measure, and the suite's own
-	 * cross-check caught it:
-	 *
-	 *     L-LAYOUT-REPORT total: 450   my before: 402.0
-	 *
-	 * The cause was that the 48-unit fallback extent was applied while measuring the graph AS IT EXISTED,
-	 * while `L-LAYOUT-REPORT` reads `NodeWidth` RAW. Two different geometries, two numbers that cannot
-	 * agree - which defeats the whole point of a cross-check.
-	 *
-	 * Trying to fix that with a per-call flag was WORSE, and the suite said so at once: with the
-	 * before-number on raw width and the after-number on the fallback, the pass reported `changed:` on
-	 * `SaneProbe`, a graph where NOTHING needed repairing, and WOULD HAVE REWRITTEN A GOOD GRAPH. Its own
-	 * sentence contradicted itself - "wire length 450 -> 450" under a verdict of "changed:".
-	 *
-	 * THE RULE: a pass may compare only LIKE WITH LIKE. There is now one geometry for the measure -
-	 * whatever the ENGINE measured - and the fallback lives only in the layout guards, where a node has
-	 * to have AREA to be spaced or collision-tested. So this number depends on the engine's rectangles and
-	 * on WHERE the nodes are, and on nothing else.
-	 */
+    /** Sum each actual output-link segment once using the same estimated pin-row
+     * geometry before and after. Translation offsets are applied without moving
+     * live nodes. This score does not measure rendered spline crossings.
+     */
+
 	double PlannedWireLength(const UEdGraph* InGraph, const TArray<FTurboMCPGraphFixBackward::FNode>& InNodes,
 		const FIndex& InIndex)
 	{
@@ -335,15 +293,7 @@ namespace
 					continue;
 				}
 
-				// THE MEASURE READS THE MEASURED SIZE ALWAYS, WHICH IS WHY IT NO LONGER NEEDS A FLAG.
-				//
-				// The before and after numbers describe the SAME graph - the same rectangles, the same
-				// pin rows - and differ only in where the nodes ARE. That is what makes the comparison
-				// meaningful. `MeasuredWidth` is what the engine said; `Width` is the planned extent the
-				// LAYOUT GUARDS use, and the measure deliberately does not read it.
-				//
-				// It also means this number IS `L-LAYOUT-REPORT`'s number on any graph, measured or not,
-				// because the report reads `NodeWidth` raw and so does this.
+
 				const FVector2D From = FTurboMCPLayoutReport::PinPosition(Pin) + FVector2D(SelfNode.PlannedX - Node->NodePosX, SelfNode.PlannedY - Node->NodePosY);
 
 				for (UEdGraphPin* Link : Pin->LinkedTo)
@@ -1482,7 +1432,7 @@ FString FTurboMCPGraphFixBackward::RenderPreview(const FPlan& InPlan)
 
 	// THE NUMBERS COME FIRST, because T-LAY-9 and T-LAY-5 both read them and a caller wants to know
 	// whether the pass is worth running before reading how it would do it.
-	Out += FString::Printf(TEXT("preview: repair %s in %s : wire length %.0f -> %.0f"),
+	Out += FString::Printf(TEXT("preview: repair %s in %s : estimated wire length %.0f -> %.0f"),
 		*InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter);
 
 	if (InPlan.bWouldApply)
@@ -1494,7 +1444,7 @@ FString FTurboMCPGraphFixBackward::RenderPreview(const FPlan& InPlan)
 		{
 			// A FORCED REGRESSION IS NEVER DISGUISED. The word is in capitals so it cannot be skimmed
 			// past - the same convention the tidy spec uses.
-			Out += TEXT(" FORCE IS SET AND THE RESULT IS WORSE: the edit would apply it anyway.");
+			Out += TEXT(" FORCE IS SET AND THE RESULT IS NOT SHORTER: the edit would apply it anyway.");
 		}
 	}
 	else if (InPlan.bAlreadyCorrect)
@@ -1636,6 +1586,7 @@ FString FTurboMCPGraphFixBackward::Apply(const FPlan& InPlan)
     Graph->Modify();
 
 	int32 Written = 0;
+    TSet<FString> WrittenKeys;
 	TArray<FString> Missing;
 	TArray<FString> Skipped;
 
@@ -1680,7 +1631,8 @@ FString FTurboMCPGraphFixBackward::Apply(const FPlan& InPlan)
 		Node->Modify();
         Node->NodePosX = static_cast<int32>(FMath::RoundToDouble(Move.ToX));
 		Node->NodePosY = static_cast<int32>(FMath::RoundToDouble(Move.ToY));
-		++Written;
+		WrittenKeys.Add(Move.Key);
+        Written = WrittenKeys.Num();
 	}
 
 	Graph->NotifyGraphChanged();
@@ -1719,13 +1671,13 @@ FString FTurboMCPGraphFixBackward::Apply(const FPlan& InPlan)
 	const double ReMeasured = PlannedWireLength(Graph, LiveNodes, LiveIndex);
 
 	FString Out = FString::Printf(
-		TEXT("changed: repaired %s in %s : wire length %.0f -> %.0f"),
+		TEXT("changed: repaired %s in %s : estimated wire length %.0f -> %.0f"),
 		*InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, ReMeasured);
 
 	// A FORCED REGRESSION IS NEVER DISGUISED.
 	if (InPlan.bForce && ReMeasured >= InPlan.WireLengthBefore)
 	{
-		Out += TEXT("  WORSE: Force was set, so a result that is not shorter was applied anyway.");
+		Out += TEXT("  WORSE OR EQUAL: Force was set, so a result that is not shorter was applied.");
 	}
 
 	const auto RemainingLayout = FTurboMCPLayoutReport::Measure(Graph, InPlan.Asset);
