@@ -11,7 +11,7 @@ for toolset, tool in ((PREVIEW_TOOLSET, "PreviewTurboMCPGraphFixBackward"), (EDI
     for phrase in ("graphName", "whole named graph", "8 nodes", "no-op stays unchanged", "No automatic compilation or saving"):
         if phrase not in help_text:
             raise RuntimeError(f"{tool} help lacks {phrase}: {help_text}")
-name = "TurboMCP.Graph.BackwardReview"
+name = "TurboMCP.Graph.PositionsReview"
 session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
 raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})
 print(raw)

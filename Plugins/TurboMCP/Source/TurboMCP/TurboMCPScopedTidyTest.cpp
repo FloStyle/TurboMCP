@@ -583,4 +583,31 @@ bool FTurboMCPBackwardReviewTest::RunTest(const FString& Parameters)
     Package->SetDirtyFlag(false);
     return !HasAnyErrors();
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPPositionsReviewTest,
+    "TurboMCP.Graph.PositionsReview", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPPositionsReviewTest::RunTest(const FString& Parameters)
+{
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/PositionsReview_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    UBlueprint* BP = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("PositionsReview"),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    if (!TestNotNull(TEXT("Positions fixture"), BP)) return false;
+    UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("PositionFlow"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+    FBlueprintEditorUtils::AddUbergraphPage(BP, Graph);
+    auto* Node = NewObject<UK2Node_CustomEvent>(Graph, NAME_None, RF_Transactional);
+    Node->CustomFunctionName = TEXT("PositionProbe");
+    Graph->AddNode(Node, false, false); Node->CreateNewGuid(); Node->AllocateDefaultPins();
+    Node->NodePosX = 200; Node->NodePosY = 300;
+    const FString Id = TurboMCPNodeId::MakeForNode(Node, true);
+    const FString Asset = BP->GetPathName();
+    auto Request = [&](const FString& X) { return FString::Printf(TEXT("[{\"node\":\"%s\",\"x\":%s,\"y\":300}]"), *Id, *X); };
+    Package->SetDirtyFlag(false);
+    const FString Invalid = UTurboMCPEditToolset::EditTurboMCPGraphPositions(Asset, Graph->GetName(), Request(TEXT("true")));
+    AddInfo(Invalid);
+    TestTrue(TEXT("Boolean coordinate refuses"), Invalid.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Boolean refusal preserves position"), Node->NodePosX, 200);
+    TestFalse(TEXT("Boolean refusal preserves clean package"), Package->IsDirty());
+    BP->ClearFlags(RF_Public | RF_Standalone); Package->SetDirtyFlag(false);
+    return !HasAnyErrors();
+}
 #endif
