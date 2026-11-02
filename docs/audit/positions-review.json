@@ -1,19 +1,17 @@
 {
   "schema": 1,
   "workflow": "WF-GRAPH-POSITIONS",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "EditTurboMCPGraphPositions"
   ],
   "scope": "Review exact manual positioning in an existing graph: batch validation, undo, unchanged nodes, comments, IDs, help and output. No automatic tidy or graph rewiring.",
-  "remaining": [
-    "Check strict JSON types and refusal diagnostics",
-    "Test real edit, read-back, undo, no-op and invalid mixed batch",
-    "Inspect native screenshot and live help"
-  ],
+  "remaining": [],
   "limitations": [
-    "Not accepted yet"
+    "Synthetic in-memory workflow, not every node class or maximum batch size.",
+    "Exact placement intentionally permits overlaps and backward wires; no automatic tidy or comment-content movement.",
+    "No persistence, compilation or runtime behavior certification."
   ],
   "confirmed_bug": {
     "run": "540f857cc26942e49988c41c49f77e27",
@@ -22,8 +20,32 @@
     "description": "Boolean x=true was coerced to 1, moved the node and dirtied the package instead of refusing."
   },
   "repair": {
-    "candidate": "c80fd7d",
-    "state": "implemented_testing",
+    "candidate": "0b324cd6108b8177bde30ce5eca0493a8998b821",
+    "state": "implemented_focused_editor_pass",
     "description": "Require actual JSON number fields and a string ID before conversion. Explain exact placement, comment-only movement and safety prerequisites in live help."
+  },
+  "prior_runs": [
+    {
+      "run": "535882520fc04e4383b392fab5ea5217",
+      "state": "failed",
+      "reason": "Build passed, but live tool help hid the placement warnings after the first sentence. Moved essential semantics into the summary and parameter help."
+    }
+  ],
+  "evidence": {
+    "run": "15bae10228e6471e895c54920f8977b9",
+    "candidate": "0b324cd6108b8177bde30ce5eca0493a8998b821",
+    "state": "passed",
+    "native_test": "TurboMCP.Graph.PositionsReview",
+    "controls": [
+      "Boolean/string/fraction/out-of-range/null coordinates refuse",
+      "Mixed valid and missing-node batch refuses without moving first node",
+      "Invalid requests and matching no-op keep clean package",
+      "Exact edit and read-back, unlisted comment preserved, undo restores position",
+      "Comment-only movement leaves contained node and box dimensions unchanged",
+      "Live help exposes manual-placement limits and input format"
+    ],
+    "capture": "PositionsReview_PositionFlow_native_1200x800_5B40397443635560AC80818D9576D467.png",
+    "visual_review": "Native screenshot inspected: node visible within unchanged comment with readable text and expected spacing.",
+    "registration": "Same tested wrapper moved from temporary backward-review entry to test-positions-review; backward wrapper restored. No production behavior changed after this engine run."
   }
 }

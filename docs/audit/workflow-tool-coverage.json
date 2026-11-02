@@ -1069,15 +1069,20 @@
     {
       "id": "WF-GRAPH-POSITIONS",
       "title": "Place selected nodes at exact coordinates with atomic validation and undo",
-      "status": "in_progress",
+      "status": "scenario_accepted",
       "review": "docs/audit/positions-review.json",
-      "tools_used": [],
+      "tools_used": [
+        "EditTurboMCPGraphPositions"
+      ],
       "focus_tools": [
         "EditTurboMCPGraphPositions"
       ],
       "limitations": [
-        "Build/editor checks pending; not counted as reviewed."
-      ]
+        "Synthetic in-memory workflow, not every node class or maximum batch size.",
+        "Exact placement intentionally permits overlaps and backward wires; no automatic tidy or comment-content movement.",
+        "No persistence, compilation or runtime behavior certification."
+      ],
+      "evidence": "15bae10228e6471e895c54920f8977b9"
     }
   ],
   "tool_usage": {
@@ -1540,9 +1545,12 @@
     ],
     "EditTurboMCPGraphFixBackward": [
       "WF-BACKWARD-REPAIR"
+    ],
+    "EditTurboMCPGraphPositions": [
+      "WF-GRAPH-POSITIONS"
     ]
   },
-  "unique_tools_scenario_reviewed": 130,
+  "unique_tools_scenario_reviewed": 131,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

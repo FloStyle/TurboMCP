@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "f9fb5bf64d9fad802f579cd672f5a96248cbb1d1",
+  "plugin_tree": "0ca21b3699fa3811213d3c62b7b4b6b0bfc0aff7",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -23,7 +23,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 276
+          "line": 280
         }
       ],
       "test_references": [
@@ -47,7 +47,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 140
+          "line": 144
         }
       ],
       "test_references": [
@@ -665,7 +665,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 535
+          "line": 539
         }
       ],
       "test_references": [
@@ -740,6 +740,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-positions-review.py",
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "name_reference_only",
@@ -1822,7 +1823,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 275
+          "line": 279
         }
       ],
       "test_references": [
@@ -1845,7 +1846,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 139
+          "line": 143
         }
       ],
       "test_references": [
@@ -2361,7 +2362,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 534
+          "line": 538
         }
       ],
       "test_references": [
@@ -2385,7 +2386,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 537
+          "line": 541
         }
       ],
       "test_references": [
@@ -3936,6 +3937,7 @@
         "Tools/test-graph-dead.py",
         "Tools/test-graph-edit-workflow.py",
         "Tools/test-node-reader-output.py",
+        "Tools/test-positions-review.py",
         "Tools/test-pure-checks.py",
         "Tools/test-refs.py",
         "Tools/test-save-undo-workflow.py",
