@@ -43,6 +43,11 @@ bool FTurboMCPFunctionRemoveReviewTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Transaction refusal preserves graph"),BP->FunctionGraphs.Contains(Removed));
         Transaction.Cancel();
     }
+    Kept->bAllowDeletion=false;
+    const FString Protected=Remove(TEXT("KeepCalculation")); AddInfo(Protected);
+    TestTrue(TEXT("Protected function unchanged rather than partial"),Protected.StartsWith(TEXT("unchanged")));
+    TestFalse(TEXT("Protected refusal stays clean"),Package->IsDirty());
+    Kept->bAllowDeletion=true;
     const int32 KeptNodes=Kept->Nodes.Num();
     const FString Result=Remove(TEXT("  obsoletecalculation  ")); AddInfo(Result);
     TestTrue(TEXT("Case and whitespace normalized"),Result.StartsWith(TEXT("changed")));

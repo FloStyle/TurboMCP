@@ -7,11 +7,13 @@ session = Session()
 session.connect()
 help_text = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolset": EDIT_TOOLSET, "tool": "EditTurboMCPFunctionRemove"})
 print(help_text)
+help_errors = []
 for phrase in ("name", "asset", "undo", "save", "callers"):
-    assert phrase in help_text.lower(), f"Help lacks {phrase}"
+    if phrase not in help_text.lower(): help_errors.append(f"Help lacks {phrase}")
 name = "TurboMCP.Function.RemoveReview"
 session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
 raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})
 print(raw)
 support["parse_run_tests_report"](raw, name)
+if help_errors: raise RuntimeError("; ".join(help_errors))
 print("RESULT: PASS")
