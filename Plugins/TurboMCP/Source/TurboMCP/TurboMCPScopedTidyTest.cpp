@@ -4,6 +4,8 @@
 #include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
+#include "Misc/Parse.h"
+#include "Editor.h"
 #include "BlueprintEditorLibrary.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
@@ -327,6 +329,7 @@ bool FTurboMCPGroupMovementTest::RunTest(const FString& Parameters)
         auto* Node = NewObject<UK2Node_CallFunction>(Graph);
         Node->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
         Graph->AddNode(Node, false, false); Node->CreateNewGuid(); Node->AllocateDefaultPins();
+        Node->SetFlags(RF_Transactional);
         Node->NodePosX = X; Node->NodePosY = Y;
         return Node;
     };
@@ -337,6 +340,7 @@ bool FTurboMCPGroupMovementTest::RunTest(const FString& Parameters)
     Second->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Outside->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
     auto* Box = NewObject<UEdGraphNode_Comment>(Graph);
     Graph->AddNode(Box, false, false); Box->CreateNewGuid();
+    Box->SetFlags(RF_Transactional);
     Box->NodePosX = 3000; Box->NodePosY = -100; Box->NodeWidth = 1200; Box->NodeHeight = 800;
     Box->NodeComment = TEXT("Destination section");
     const FString Asset = BP->GetPathName();
@@ -363,9 +367,50 @@ bool FTurboMCPGroupMovementTest::RunTest(const FString& Parameters)
     AddInfo(TEXT("Comment boundary refusal: ") + Crossing);
     TestTrue(TEXT("Explicit movement refuses partial comment entry"), Crossing.StartsWith(TEXT("error:")));
     TestEqual(TEXT("Comment refusal preserves X"), First->NodePosX, 0);
+    TestTrue(TEXT("Zero offset is a no-op"), UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(Asset, Graph->GetName(), Ids, 0, 0, TEXT("")).StartsWith(TEXT("unchanged:")));
+    TestTrue(TEXT("Missing node refuses"), UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(Asset, Graph->GetName(), {TEXT("missing")}, 0, 50, TEXT("")).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Missing graph refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphGroupPlacement(Asset, TEXT("missing"), Ids).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Empty selection refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphGroupPlacement(Asset, Graph->GetName(), {}).StartsWith(TEXT("error:")));
     const FString Proposal = UTurboMCPPreviewToolset::PreviewTurboMCPGraphGroupPlacement(Asset, Graph->GetName(), Ids);
     AddInfo(Proposal);
-    TestTrue(TEXT("Connected placement reports proposal or bounded no-op"), Proposal.StartsWith(TEXT("preview:")) || Proposal.StartsWith(TEXT("unchanged:")));
+    TestTrue(TEXT("Connected fixture gets a placement proposal"), Proposal.StartsWith(TEXT("preview:")));
+    int32 DX = 0, DY = 0;
+    const bool HasOffsets = FParse::Value(*Proposal, TEXT("DeltaX="), DX) && FParse::Value(*Proposal, TEXT("DeltaY="), DY);
+    TestTrue(TEXT("Proposal contains explicit offsets"), HasOffsets);
+    TestEqual(TEXT("Proposal preserves position"), First->NodePosY, 600);
+    if (HasOffsets)
+    {
+        const FString Placed = UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(Asset, Graph->GetName(), Ids, DX, DY, TEXT(""));
+        AddInfo(Placed);
+        TestTrue(TEXT("Apply proposed free placement"), Placed.StartsWith(TEXT("changed:")));
+        TestEqual(TEXT("Proposal X applied exactly"), First->NodePosX, DX);
+        TestEqual(TEXT("Proposal Y applied exactly"), First->NodePosY, 600 + DY);
+        AddInfo(TEXT("Proposed group placement capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900")));
+        TestTrue(TEXT("One undo restores placement"), GEditor->UndoTransaction(false));
+        TestEqual(TEXT("Undo restores first X"), First->NodePosX, 0);
+        TestEqual(TEXT("Undo restores second X"), Second->NodePosX, 600);
+        TestEqual(TEXT("Undo restores first Y"), First->NodePosY, 600);
+    }
+    const FString BoxId = TurboMCPNodeId::MakeForNode(Box, true);
+    TestTrue(TEXT("Comment entry requires destination"), UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(Asset, Graph->GetName(), {Ids[0]}, 3100, -500, TEXT("")).StartsWith(TEXT("error:")));
+    const FString Transfer = UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(Asset, Graph->GetName(), {Ids[0]}, 3100, -500, BoxId);
+    AddInfo(Transfer);
+    TestTrue(TEXT("Explicit padded comment transfer succeeds"), Transfer.StartsWith(TEXT("changed:")));
+    TestEqual(TEXT("Transferred first X"), First->NodePosX, 3100);
+    TestEqual(TEXT("Destination width is unchanged"), Box->NodeWidth, 1200);
+    const FString MovedBox = UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(Asset, Graph->GetName(), {BoxId}, 0, 1000, TEXT(""));
+    AddInfo(MovedBox);
+    TestTrue(TEXT("Selected comment moves its contents"), MovedBox.StartsWith(TEXT("changed:")));
+    TestEqual(TEXT("Comment moved"), Box->NodePosY, 900);
+    TestEqual(TEXT("Contained node moved with comment"), First->NodePosY, 1100);
+    TestEqual(TEXT("Outside selected comment stays fixed"), Second->NodePosY, 600);
+    TestTrue(TEXT("Undo comment and contents together"), GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo restores comment"), Box->NodePosY, -100);
+    TestEqual(TEXT("Undo restores contents"), First->NodePosY, 100);
+    TestTrue(TEXT("Undo transfer"), GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo transfer restores X"), First->NodePosX, 0);
+    TestEqual(TEXT("Undo transfer restores Y"), First->NodePosY, 600);
+    TestTrue(TEXT("Links survive transfer and undo"), First->FindPinChecked(UEdGraphSchema_K2::PN_Then)->LinkedTo.Contains(Second->FindPinChecked(UEdGraphSchema_K2::PN_Execute)));
     AddInfo(TEXT("Group movement capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900")));
     BP->ClearFlags(RF_Public | RF_Standalone);
     Package->SetDirtyFlag(false);
