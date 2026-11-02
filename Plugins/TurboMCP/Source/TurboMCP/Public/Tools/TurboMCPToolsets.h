@@ -1310,8 +1310,8 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
      * Required target members must already exist. External links that cannot resolve in the target are reported and left unconnected. Inspect the preview, then check layout, links and compilation after editing; preview does not guarantee edit success.
      * @param SourceAsset Required source Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
      * @param SourceGraph Required existing source graph name, e.g. EventGraph; use the reader's name. Missing targets are refused.
-     * @param NodeIds Required array of source reader node IDs. Empty means nothing to copy. Use exact IDs from the source graph; unresolved or unsupported selections are refused. Selecting a comment does not implicitly select its contents.
-     * @param TargetAsset Required destination Blueprint path or unique short name. It must already exist and declare the members needed by copied nodes. Empty or ambiguous input is refused.
+     * @param NodeIds Required array of source reader node IDs. Empty means nothing to copy. Use exact IDs from the source graph; unresolved or unsupported selections are refused. Structural nodes and comments are refused. Copies retain relative positions with a +40 offset; use GraphConnect for boundary wires and GraphTidy for layout afterward.
+     * @param TargetAsset Required destination Blueprint path or unique short name. It must already exist and declare compatible members needed by copied nodes; self functions need compiled signatures with matching parameter names and types. Empty or ambiguous input is refused.
      * @param TargetGraph Required existing destination graph name. This is not a new graph name; choose a different graph from the source. Example: EventGraph in another Blueprint.
      * @param AnchorNodeId Required string; pass empty. Anchor wiring is not implemented and any nonempty value is refused.
      */
@@ -2203,12 +2203,12 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 		const TArray<FString>& Rows);
 
 	/**
-     * Copy selected nodes and reconnect planned links in an owned undo transaction; loads both Blueprints, but does not compile or save.
+     * Copy selected nodes into a different graph in one undo transaction; preserves the source and does not compile or save.
      * Required target members must already exist. External links that cannot resolve in the target are reported and left unconnected. Inspect the preview, then check layout, links and compilation after editing; preview does not guarantee edit success.
      * @param SourceAsset Required source Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
      * @param SourceGraph Required existing source graph name, e.g. EventGraph; use the reader's name. Missing targets are refused.
-     * @param NodeIds Required array of source reader node IDs. Empty means nothing to copy. Use exact IDs from the source graph; unresolved or unsupported selections are refused. Selecting a comment does not implicitly select its contents.
-     * @param TargetAsset Required destination Blueprint path or unique short name. It must already exist and declare the members needed by copied nodes. Empty or ambiguous input is refused.
+     * @param NodeIds Required array of source reader node IDs. Empty means nothing to copy. Use exact IDs from the source graph; unresolved or unsupported selections are refused. Structural nodes and comments are refused. Copies retain relative positions with a +40 offset; use GraphConnect for boundary wires and GraphTidy for layout afterward.
+     * @param TargetAsset Required destination Blueprint path or unique short name. It must already exist and declare compatible members needed by copied nodes; self functions need compiled signatures with matching parameter names and types. Empty or ambiguous input is refused.
      * @param TargetGraph Required existing destination graph name. This is not a new graph name; choose a different graph from the source. Example: EventGraph in another Blueprint.
      * @param AnchorNodeId Required string; pass empty. Anchor wiring is not implemented and any nonempty value is refused.
      */

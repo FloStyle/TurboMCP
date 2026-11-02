@@ -37,6 +37,7 @@
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
 #include "UObject/Package.h"
+#include "UObject/UnrealType.h"
 
 namespace
 {
@@ -432,16 +433,6 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 		return false;
 	}
 
-	// ---- SAME ASSET AND GRAPH IS REFUSED BY NAME AND POINTED AT WHAT IT ACTUALLY IS --------------------
-	if (SourceResolved.ObjectPath.Equals(TargetResolved.ObjectPath, ESearchCase::CaseSensitive)
-		&& InSourceGraph.Equals(InTargetGraph, ESearchCase::CaseSensitive))
-	{
-		OutPlan.Refusals.Add(FString::Printf(
-			TEXT("the source and the target are the same graph ('%s' / '%s'), which is a duplicate rather than ")
-			TEXT("a copy. Use the paste-in-place case for that."),
-			*SourceResolved.PackagePath, *InSourceGraph));
-		return true;
-	}
 
 	UBlueprint* SourceBlueprint = LoadObject<UBlueprint>(nullptr, *SourceResolved.ObjectPath);
 	if (SourceBlueprint == nullptr)
@@ -469,6 +460,13 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 		OutError = FString::Printf(TEXT("no graph named '%s' in '%s'"),
 			*InTargetGraph, *TargetResolved.PackagePath);
 		return false;
+	}
+
+	// Compare resolved objects: graph lookup accepts case-insensitive names.
+	if (SourceGraphObject == TargetGraphObject)
+	{
+		OutPlan.Refusals.Add(TEXT("source and destination resolve to the same graph; choose a different destination graph"));
+		return true;
 	}
 
 	// ---- THE SELECTION, AND EVERY KEY THAT IS NOT THERE NAMED ------------------------------------------
@@ -535,6 +533,29 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 		else if (Kind == TEXT("function"))
 		{
 			bPresent = BlueprintHasFunction(TargetBlueprint, Name);
+            // Copied pins must retain their names and types in the destination.
+            // A matching function name alone is not a compatible call contract.
+            const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node);
+            const UFunction* SourceFunction = Call ? Call->GetTargetFunction() : nullptr;
+            const UFunction* TargetFunction = TargetBlueprint->GeneratedClass
+                ? TargetBlueprint->GeneratedClass->FindFunctionByName(FName(*Name)) : nullptr;
+            bool bCompatible = SourceFunction && TargetFunction
+                && SourceFunction->IsSignatureCompatibleWith(TargetFunction)
+                && (SourceFunction->FunctionFlags & (FUNC_Static | FUNC_BlueprintPure))
+                    == (TargetFunction->FunctionFlags & (FUNC_Static | FUNC_BlueprintPure));
+            TArray<const FProperty*> SourceParameters, TargetParameters;
+            if (SourceFunction && TargetFunction)
+            {
+                for (TFieldIterator<FProperty> It(SourceFunction); It; ++It)
+                    if (It->HasAnyPropertyFlags(CPF_Parm)) SourceParameters.Add(*It);
+                for (TFieldIterator<FProperty> It(TargetFunction); It; ++It)
+                    if (It->HasAnyPropertyFlags(CPF_Parm)) TargetParameters.Add(*It);
+                bCompatible &= SourceParameters.Num() == TargetParameters.Num();
+                for (int32 ParameterIndex = 0; bCompatible && ParameterIndex < SourceParameters.Num(); ++ParameterIndex)
+                    bCompatible &= SourceParameters[ParameterIndex]->GetFName() == TargetParameters[ParameterIndex]->GetFName();
+            }
+            if (bPresent && !bCompatible)
+                OutPlan.Refusals.Add(FString::Printf(TEXT("self function '%s' has an unresolved or incompatible destination signature; explicitly compile both Blueprints and match parameter names, types and function behavior before copying"), *Name));
 		}
 		else if (Kind == TEXT("event"))
 		{
@@ -1397,7 +1418,7 @@ FString FTurboMCPGraphStructure::RenderPreview(const FPlan& InPlan)
 		Lines.Add(FString::Printf(TEXT("anchor: %s"), *InPlan.TargetAnchorNodeKey));
 	}
 
-	Lines.Add(FString::Printf(TEXT("nodes selected: %d of %d in the target graph before"),
+	Lines.Add(FString::Printf(TEXT("source nodes selected: %d; destination nodes before: %d"),
 		InPlan.Nodes.Num(), InPlan.TargetNodeCountBefore));
 
 	for (const FCopiedNode& Node : InPlan.Nodes)

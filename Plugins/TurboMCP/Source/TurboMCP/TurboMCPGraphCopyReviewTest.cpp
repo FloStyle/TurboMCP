@@ -98,6 +98,16 @@ bool FTurboMCPGraphCopyReviewTest::RunTest(const FString& Parameters)
     SelfCall->FunctionReference.SetSelfMember(TEXT("SharedHandler")); SG->AddNode(SelfCall,false,false); SelfCall->CreateNewGuid(); SelfCall->AllocateDefaultPins();
     const FString Mismatch=UTurboMCPPreviewToolset::PreviewTurboMCPGraphCopy(SA,SG->GetName(),{Id(SelfCall)},TA,TG->GetName(),TEXT("")); AddInfo(Mismatch);
     TestTrue(TEXT("Different signature refuses"),Mismatch.StartsWith(TEXT("unchanged")));
+    UBlueprint* Compatible = MakeBP(TEXT("CopyCompatible"));
+    UEdGraph* CompatibleGraph = MakeGraph(Compatible,TEXT("CompatibleFlow"));
+    AddFunction(Compatible,UEdGraphSchema_K2::PC_Int);
+    FKismetEditorUtilities::CompileBlueprint(Compatible);
+    const FString CompatibleResult = UTurboMCPEditToolset::EditTurboMCPGraphCopy(SA,SG->GetName(),{Id(SelfCall)},Compatible->GetPathName(),CompatibleGraph->GetName(),TEXT(""));
+    AddInfo(CompatibleResult);
+    TestTrue(TEXT("Compatible self function copies"),CompatibleResult.StartsWith(TEXT("changed")));
+    TestEqual(TEXT("One compatible call copied"),CompatibleGraph->Nodes.Num(),1);
+    FKismetEditorUtilities::CompileBlueprint(Compatible);
+    TestTrue(TEXT("Compatible copied call compiles"),Compatible->Status!=BS_Error);
     SelfCall->BreakAllNodeLinks(); SG->RemoveNode(SelfCall);
     AddInfo(Copy()); LocateCopies(); if(!CA || !CB) return false;
     AddInfo(UTurboMCPEditToolset::EditTurboMCPGraphConnect(TA,TG->GetName(),Id(TargetStart),TEXT("then"),Id(CA),TEXT("execute")));
