@@ -115,51 +115,83 @@ bool Trivial(UEdGraphNode* Node)
     const FString Name=Fn->GetName();
     return Name==TEXT("MakeLiteralBool") || Name==TEXT("MakeLiteralInt") || Name==TEXT("MakeLiteralFloat") || Name==TEXT("MakeLiteralDouble") || Name==TEXT("MakeLiteralName") || Name==TEXT("MakeLiteralString") || Name==TEXT("MakeLiteralText") || Name==TEXT("MakeLiteralByte");
 }
-bool Split(UEdGraph* Graph,UEdGraphNode* Node,const TSet<UEdGraphNode*>* Selected,int32& Count,FString& Error,FString* Mapping=nullptr)
+bool Split(UEdGraph* Graph, UEdGraphNode* Node, const TSet<UEdGraphNode*>* Selected,
+    int32& Count, FString& Error, FString* Mapping=nullptr)
 {
-    if(!Trivial(Node)) { Error=TEXT("only pure self, variable-get, object-literal and whitelisted literal constructors can be split; never impure calls"); return false; }
-    UEdGraphPin* Value=nullptr;
-    for(UEdGraphPin* P:Node->Pins) if(P && P->Direction==EGPD_Output)
-    { if(Value || P->PinType.PinCategory==TEXT("exec") || P->SubPins.Num()>0 || P->ParentPin) { Error=TEXT("split requires one unsplit data output"); return false; } Value=P; }
-    if(!Value) { Error=TEXT("value output missing"); return false; }
-    for(UEdGraphPin* P:Node->Pins) if(P && P->Direction==EGPD_Input && P->LinkedTo.Num()>1)
-    { Error=TEXT("malformed multi-source input on value node; repair before splitting"); return false; }
-    const int32 BeforeCopies=Count;
-    const TArray<UEdGraphPin*> Readers=Value->LinkedTo;
-    bool Kept=false;
-    for(UEdGraphPin* Reader:Readers)
+    if (!Graph || !Graph->GetSchema() || !Graph->GetSchema()->IsA<UEdGraphSchema_K2>()
+        || !Node || Node->GetGraph()!=Graph || !Trivial(Node))
     {
-        if(!Reader || Reader->Direction!=EGPD_Input || Reader->LinkedTo.Num()!=1 || Reader->LinkedTo[0]!=Value)
-        { Error=TEXT("malformed value links must be repaired before splitting"); return false; }
-        if(Selected && !Selected->Contains(Reader->GetOwningNode())) continue;
-        if(!Kept && Readers.Num()==1) { Kept=true; continue; }
+        Error=TEXT("Select a supported pure self, variable-get, object-literal or literal-constructor node in the named K2 graph; arbitrary pure functions and impure calls are not supported.");
+        return false;
+    }
+    UEdGraphPin* Value=nullptr;
+    for (UEdGraphPin* P:Node->Pins)
+    {
+        if (!P || P->bOrphanedPin) { Error=TEXT("The source contains missing or orphaned pins; repair it before splitting."); return false; }
+        if (P->Direction==EGPD_Output)
+        {
+            if (Value || P->PinType.PinCategory==TEXT("exec") || !P->SubPins.IsEmpty() || P->ParentPin)
+            { Error=TEXT("The source must have exactly one unsplit data output."); return false; }
+            Value=P;
+        }
+        else
+        {
+            if (P->LinkedTo.Num()>1) { Error=TEXT("A source input has multiple connections; repair it before splitting."); return false; }
+            for (UEdGraphPin* Source:P->LinkedTo)
+                if (!Source || Source->Direction!=EGPD_Output || Source->GetOwningNode()->GetGraph()!=Graph || !Source->LinkedTo.Contains(P))
+                { Error=TEXT("A source input link is invalid or belongs to another graph; repair it before splitting."); return false; }
+        }
+    }
+    if (!Value) { Error=TEXT("The source has no data output."); return false; }
+    const TArray<UEdGraphPin*> Readers=Value->LinkedTo;
+    if (Readers.Num()>4096) { Error=TEXT("A source may have at most 4096 connected consumer inputs for this operation."); return false; }
+    // Validate every affected endpoint before cloning or reconnecting anything.
+    // Each connected input receives its own copy, even on the same consumer node.
+    for (UEdGraphPin* Reader:Readers)
+    {
+        if (!Reader || Reader->bOrphanedPin || Reader->Direction!=EGPD_Input
+            || Reader->GetOwningNode()->GetGraph()!=Graph || Reader->GetOwningNode()==Node
+            || Reader->LinkedTo.Num()!=1 || Reader->LinkedTo[0]!=Value)
+        { Error=TEXT("A consumer link is invalid, cyclic or belongs to another graph; repair it before splitting."); return false; }
+        if ((!Selected || Selected->Contains(Reader->GetOwningNode())) && Readers.Num()>1
+            && static_cast<int64>(Reader->GetOwningNode()->NodePosX)-240 < MIN_int32)
+        { Error=TEXT("A proposed value-copy position exceeds the supported coordinate range."); return false; }
+    }
+    if (Readers.Num()<=1) return true;
+    if (!Node->CanUserDeleteNode())
+    { Error=TEXT("This source cannot be deleted safely; splitting it would leave an unused original node."); return false; }
+    const int32 BeforeCopies=Count;
+    for (UEdGraphPin* Reader:Readers)
+    {
+        if (Selected && !Selected->Contains(Reader->GetOwningNode())) continue;
         UEdGraphNode* Copy=DuplicateObject<UEdGraphNode>(Node,Graph);
-        if(!Copy) { Error=TEXT("value copy failed"); return false; }
+        if (!Copy) { Error=TEXT("The engine could not copy the source node."); return false; }
         Copy->SetFlags(RF_Transactional); Copy->CreateNewGuid();
-        // Clear only the copied link arrays, not their original peers' reciprocal links.
-        for(UEdGraphPin* P:Copy->Pins) if(P) P->LinkedTo.Reset();
+        // Clear only the copied arrays. The original peers still own their links.
+        for (UEdGraphPin* P:Copy->Pins) if (P) P->LinkedTo.Reset();
         Graph->AddNode(Copy,false,false);
-        for(UEdGraphPin* P:Node->Pins) if(P && P->Direction==EGPD_Input)
+        for (UEdGraphPin* P:Node->Pins) if (P->Direction==EGPD_Input)
         {
             UEdGraphPin* Q=Pin(Copy,P->PinName.ToString(),EGPD_Input);
-            if(!Q) { Error=TEXT("copied input missing"); return false; }
-            for(UEdGraphPin* Source:P->LinkedTo) if(!Connect(Graph,Source,Q,Error)) return false;
+            if (!Q) { Error=TEXT("A copied input pin is missing or ambiguous."); return false; }
+            for (UEdGraphPin* Source:P->LinkedTo) if (!Connect(Graph,Source,Q,Error)) return false;
         }
         UEdGraphPin* NewValue=Pin(Copy,Value->PinName.ToString(),EGPD_Output);
-        if(!Connect(Graph,NewValue,Reader,Error)) return false;
-        Copy->NodePosX=Reader->GetOwningNode()->NodePosX-240; Copy->NodePosY=Reader->GetOwningNode()->NodePosY;
-        if(Mapping)
-        {
-            *Mapping+=FString::Printf(TEXT("\ncopy %s output=%s -> consumer %s input=%s"),
+        if (!Connect(Graph,NewValue,Reader,Error)) return false;
+        Copy->NodePosX=Reader->GetOwningNode()->NodePosX-240;
+        Copy->NodePosY=Reader->GetOwningNode()->NodePosY;
+        if (Mapping)
+            *Mapping+=FString::Printf(TEXT("\nCopy %s output=%s -> consumer %s input=%s"),
                 *TurboMCPNodeId::MakeForNode(Copy,true),*NewValue->PinName.ToString(),
                 *TurboMCPNodeId::MakeForNode(Reader->GetOwningNode(),true),*Reader->PinName.ToString());
-        }
         ++Count;
     }
-    // Keep the original if anything outside this selection still consumes it.
-    if(Value->LinkedTo.IsEmpty() && Count>BeforeCopies && Node->CanUserDeleteNode()) { Node->BreakAllNodeLinks(); Graph->RemoveNode(Node); }
+    // Sequence may select only some consumers. Keep the source for all others.
+    if (Value->LinkedTo.IsEmpty() && Count>BeforeCopies)
+    { Node->BreakAllNodeLinks(); Graph->RemoveNode(Node); }
     return true;
 }
+
 FString Fingerprint(UEdGraph* Graph)
 {
     TArray<FString> Parts;
@@ -579,10 +611,29 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphConnect(const FString& Asse
 { return ConnectNamed(Asset, GraphName, false, SourceNodeId, SourcePin, TargetNodeId, TargetPin); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin)
 { return ConnectNamed(Asset, GraphName, true, SourceNodeId, SourcePin, TargetNodeId, TargetPin); }
+namespace
+{
+FString SplitNamed(const FString& Asset, const FString& GraphName, const FString& NodeId, bool bEdit)
+{
+    if (GraphName.IsEmpty()) return TEXT("unchanged\nrefused: GraphName is required; use an explicit graph name from the reader.");
+    return Run(Asset,GraphName,bEdit,[&](UEdGraph* Graph,UEdGraph* Identity,FString& Report,FString& Error)
+    {
+        UEdGraphNode* Source=ResolveEditNode(Graph,Identity,NodeId,Error);
+        if (!Source) return false;
+        int32 Count=0; FString Mapping;
+        if (!Split(Graph,Source,nullptr,Count,Error,&Mapping)) return false;
+        Report=Count==0
+            ? TEXT("No copies needed: the source has zero or one connected consumer input.")
+            : FString::Printf(TEXT("Created %d copies, one per connected consumer input; removed the original source. Defaults and existing input sources are preserved."),Count)
+                +Mapping+TEXT("\nExisting nodes were not moved. New copies need layout; tidy the affected nodes and inspect a capture before compiling and saving explicitly.");
+        return true;
+    });
+}
+}
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId)
-{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { int32 Count=0; FString Mapping; const bool Ok=Split(G,ResolveNode(G,I,NodeId),nullptr,Count,E,&Mapping); R=FString::Printf(TEXT("value copies=%d; one source per consumer; layout required"),Count)+Mapping; return Ok; }); }
+{ return SplitNamed(Asset,GraphName,NodeId,false); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId)
-{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { int32 Count=0; FString Mapping; const bool Ok=Split(G,ResolveNode(G,I,NodeId),nullptr,Count,E,&Mapping); R=FString::Printf(TEXT("value copies=%d; one source per consumer; layout required"),Count)+Mapping; return Ok; }); }
+{ return SplitNamed(Asset,GraphName,NodeId,true); }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues)
 { if (GraphName.IsEmpty()) return TEXT("unchanged\nrefused: GraphName is required; use an explicit graph name from the reader."); return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Sequence(G,I,Groups,bSplitValues,R,E); }); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues)

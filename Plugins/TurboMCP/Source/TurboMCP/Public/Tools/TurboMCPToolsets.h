@@ -1216,12 +1216,13 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 
 
 
-    /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards.
-	 *
-	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
-	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
-	 * @param NodeId Exact reader ID of a supported pure self, getter or literal node to copy per consumer. Impure calls are refused. Run layout after the edit; no compile or save.
-	 */
+    /** Preview copies of a shared pure value on a transient graph without editing, compiling or saving the asset; requires an idle editor.
+     * Preserves defaults and existing source-input links. Zero or one connected input is unchanged. Supported sources are self, pure variable-get, object literals and whitelisted literal constructors; arbitrary pure functions, impure calls and split outputs are refused.
+     * A consumer node using the source twice receives two copies. Copies are initially placed left of their consumers, may overlap and require layout. Read back and tidy the affected nodes, inspect a capture, then compile and save explicitly. Copying getters may change evaluation frequency; it is not a proof of equivalent project behavior.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Prefer a full path; empty or ambiguous assets are refused.
+     * @param GraphName Required exact existing K2 graph name from the reader, e.g. EventGraph. Empty, missing and ambiguous names are refused.
+     * @param NodeId Required exact reader ID or unique hexadecimal node key of at least six digits in the named graph. Missing or ambiguous IDs are refused. The source must have one unsplit data output and at most 4096 connected consumer inputs. Preview IDs for new copies are provisional; use edit-result IDs for subsequent calls. No compile or save is performed.
+     */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId);
 
@@ -2085,12 +2086,13 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 
 
 
-    /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards.
-	 *
-	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
-	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
-	 * @param NodeId Exact reader ID of a supported pure self, getter or literal node to copy per consumer. Impure calls are refused. Run layout after the edit; no compile or save.
-	 */
+    /** Copy a shared pure value per connected input in one undo transaction; removes the original and marks the asset modified, without compile, save or automatic tidy.
+     * Preserves defaults and existing source-input links. Zero or one connected input is unchanged. Supported sources are self, pure variable-get, object literals and whitelisted literal constructors; arbitrary pure functions, impure calls and split outputs are refused.
+     * A consumer node using the source twice receives two copies. Copies are initially placed left of their consumers, may overlap and require layout. Read back and tidy the affected nodes, inspect a capture, then compile and save explicitly. Copying getters may change evaluation frequency; it is not a proof of equivalent project behavior.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Prefer a full path; empty or ambiguous assets are refused.
+     * @param GraphName Required exact existing K2 graph name from the reader, e.g. EventGraph. Empty, missing and ambiguous names are refused.
+     * @param NodeId Required exact reader ID or unique hexadecimal node key of at least six digits in the named graph. Missing or ambiguous IDs are refused. The source must have one unsplit data output and at most 4096 connected consumer inputs. Preview IDs for new copies are provisional; use edit-result IDs for subsequent calls. No compile or save is performed.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId);
 
