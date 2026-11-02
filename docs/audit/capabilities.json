@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "32c5a0abf12b64ef3456e7ea732ee4b96fe2fa72",
+  "plugin_tree": "c061333c05352cfab22d56965b5e5cf364798420",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -692,7 +692,8 @@
         }
       ],
       "test_references": [
-        "Tools/test-graph-knots.py"
+        "Tools/test-graph-knots.py",
+        "Tools/test-knots-review.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2413,7 +2414,8 @@
         }
       ],
       "test_references": [
-        "Tools/test-graph-knots.py"
+        "Tools/test-graph-knots.py",
+        "Tools/test-knots-review.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -3936,6 +3938,7 @@
         "Tools/test-function-flags.py",
         "Tools/test-graph-dead.py",
         "Tools/test-graph-edit-workflow.py",
+        "Tools/test-knots-review.py",
         "Tools/test-node-reader-output.py",
         "Tools/test-positions-review.py",
         "Tools/test-pure-checks.py",

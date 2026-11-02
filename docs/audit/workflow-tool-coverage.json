@@ -1087,16 +1087,24 @@
     {
       "id": "WF-GRAPH-KNOTS",
       "title": "Route crossing wires through safe reroute nodes",
-      "status": "in_progress",
+      "status": "scenario_accepted",
       "review": "docs/audit/knots-review.json",
       "focus_tools": [
         "PreviewTurboMCPGraphKnots",
         "EditTurboMCPGraphKnots"
       ],
-      "tools_used": [],
+      "tools_used": [
+        "PreviewTurboMCPGraphKnots",
+        "EditTurboMCPGraphKnots"
+      ],
       "limitations": [
-        "Not accepted"
-      ]
+        "Acceptance is limited to reproducible synthetic Blueprint routing scenarios, not all graph shapes or node classes.",
+        "Crossing counts use straight physical segments, not native spline collision; visual inspection remains necessary.",
+        "Bounded candidates can refuse a route that a more general routing algorithm could find; existing knots are left untouched.",
+        "Schema failure recovery reports partial/restoration-unverified; callback failures and rollback paths were source-reviewed but not exhaustively fault-injected.",
+        "No automatic compilation, saving or runtime-behavior certification."
+      ],
+      "evidence": "124d02287e494506b3dcdd9dedba613a"
     }
   ],
   "tool_usage": {
@@ -1562,9 +1570,15 @@
     ],
     "EditTurboMCPGraphPositions": [
       "WF-GRAPH-POSITIONS"
+    ],
+    "PreviewTurboMCPGraphKnots": [
+      "WF-GRAPH-KNOTS"
+    ],
+    "EditTurboMCPGraphKnots": [
+      "WF-GRAPH-KNOTS"
     ]
   },
-  "unique_tools_scenario_reviewed": 131,
+  "unique_tools_scenario_reviewed": 133,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

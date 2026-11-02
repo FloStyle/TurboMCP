@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-GRAPH-KNOTS",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPGraphKnots",
     "EditTurboMCPGraphKnots"
@@ -13,16 +13,13 @@
     "Preview can promise a shared knot but Apply creates one knot per wire.",
     "Geometry uses fallback rectangles; comments overstate restoration and behavioral safety."
   ],
-  "remaining": [
-    "Use measured geometry rather than fallback node rectangles and review crossing recount against actual routed segments",
-    "Remove target-entry hooks; inspect new screenshots",
-    "Validate shared candidate against all destinations, collision reservations and stale-plan refusal",
-    "Review rollback safety and refusal output; exercise controls beyond the basic fanout",
-    "Verify updated live help and finish code/comment cleanup"
-  ],
+  "remaining": [],
   "limitations": [
-    "Tool pair remains unaccepted and does not increase coverage.",
-    "Focused pass proves clean preview, shared fanout, original-link undo and empty graph refusal only."
+    "Acceptance is limited to reproducible synthetic Blueprint routing scenarios, not all graph shapes or node classes.",
+    "Crossing counts use straight physical segments, not native spline collision; visual inspection remains necessary.",
+    "Bounded candidates can refuse a route that a more general routing algorithm could find; existing knots are left untouched.",
+    "Schema failure recovery reports partial/restoration-unverified; callback failures and rollback paths were source-reviewed but not exhaustively fault-injected.",
+    "No automatic compilation, saving or runtime-behavior certification."
   ],
   "confirmed_failures": {
     "run": "ef5d0ed68888414b8dd93ff5a284d0b7",
@@ -61,5 +58,44 @@
       "reason": "All behavioral/offline checks passed except generated source-line inventory. Regenerated inventory and reran validate-repo successfully; no production change."
     }
   ],
-  "next_step": "Continue measured routing and target-entry geometry review in the existing knots-review worktree; claim retained until the family review is complete."
+  "evidence": {
+    "candidate": "d40f0ae91cf33566fd4a3bf94a5cb388c1171e79",
+    "run": "124d02287e494506b3dcdd9dedba613a",
+    "state": "passed",
+    "suite": "test-knots-review",
+    "controls": [
+      "Preview preserves clean package and original links",
+      "Two crossing wires use one shared knot; both destinations remain connected",
+      "Undo restores both original links",
+      "Measured knot inlet aligns with source and retains forward target clearance",
+      "Repeated edit remains unchanged and clean",
+      "Existing reroutes do not hide newly introduced crossings and receive no extra knots",
+      "Stale plan and ambiguous identities refuse before writing",
+      "Comment-blocked routes remain unchanged and clean",
+      "Live tool help states graph selection, effects and compilation/save limits"
+    ],
+    "capture": "KnotsReview_Routing_native_1600x900_C00680D848E9F23DCD3DF3B763AA2713.png",
+    "visual_review": "Inspected native capture: aligned source wire, one shared knot, forward target approaches, no obstacle overlap; no backward target-entry hooks."
+  },
+  "fixes": [
+    "Measured node and pin geometry replaces stored-size estimates for route planning",
+    "Measure knot geometry in an isolated transient Blueprint, never under the live graph",
+    "Count actual physical segments, including existing reroute branches",
+    "Validate each shared candidate against every destination and check both routed segments",
+    "Reserve planned knot footprints to prevent stacking",
+    "Refuse stale graph state and out-of-range candidate coordinates",
+    "Correct English help, counts and unsafe historical comments"
+  ],
+  "additional_runs": [
+    {
+      "run": "f055bff001824b8db1e76ab213d7b494",
+      "state": "passed",
+      "scope": "Measured node geometry, physical segment recount and forward clearance; capture improved but knot pin offset not yet aligned."
+    },
+    {
+      "run": "73ae10db8ab146ea92f8f914661e8971",
+      "state": "passed",
+      "scope": "Transient knot measurement and complete-route validation."
+    }
+  ]
 }
