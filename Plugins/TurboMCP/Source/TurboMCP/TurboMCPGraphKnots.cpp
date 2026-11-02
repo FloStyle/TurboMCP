@@ -18,6 +18,7 @@
 #include "K2Node_Knot.h"
 #include "ScopedTransaction.h"
 #include "Editor.h"
+#include "UObject/StrongObjectPtr.h"
 #include "UObject/Class.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
@@ -359,6 +360,8 @@ namespace
 	{
 		double Width = 0.0;
 		double Height = 0.0;
+        FVector2D InputOffset = FVector2D::ZeroVector;
+        FVector2D OutputOffset = FVector2D::ZeroVector;
 
 		/** True when no size could be measured and the named fallback was used instead. */
 		bool bWasFallback = false;
@@ -367,37 +370,29 @@ namespace
 	};
 
 	/** Reuse stored knot dimensions when available; otherwise disclose a fixed estimate. */
-	FFootprint MeasureKnotFootprint(UEdGraph* InGraph)
-	{
-		FFootprint Out;
-		if (InGraph == nullptr)
-		{
-			return Out;
-		}
-
-		// 1. AN EXISTING KNOT IS THE BEST SOURCE, because its size is what the editor measured.
-		for (UEdGraphNode* Node : InGraph->Nodes)
-		{
-			if (!IsKnot(Node))
-			{
-				continue;
-			}
-			if (Node->NodeWidth > 0 && Node->NodeHeight > 0)
-			{
-				Out.Width = static_cast<double>(Node->NodeWidth);
-				Out.Height = static_cast<double>(Node->NodeHeight);
-				return Out;
-			}
-		}
-
-        // A newly allocated knot has no measured size. Creating and destroying a
-        // probe under the live graph can dirty it, so use the disclosed estimate.
-        Out.Width = FallbackKnotExtent;
-        Out.Height = FallbackKnotExtent;
-        Out.bWasFallback = true;
-
-		return Out;
-	}
+    FFootprint MeasureKnotFootprint(UBlueprint* Blueprint, FString& Error)
+    {
+        FFootprint Out;
+        TGuardValue<ITransaction*> SuppressUndo(GUndo, nullptr);
+        TStrongObjectPtr<UBlueprint> Scratch(NewObject<UBlueprint>(GetTransientPackage(), NAME_None, RF_Transient));
+        Scratch->ParentClass = Blueprint->ParentClass;
+        Scratch->GeneratedClass = Blueprint->GeneratedClass;
+        Scratch->SkeletonGeneratedClass = Blueprint->SkeletonGeneratedClass;
+        UEdGraph* ProbeGraph = NewObject<UEdGraph>(Scratch.Get(), NAME_None, RF_Transient);
+        ProbeGraph->Schema = UEdGraphSchema_K2::StaticClass();
+        Scratch->UbergraphPages.Add(ProbeGraph);
+        auto* Probe = NewObject<UK2Node_Knot>(ProbeGraph, NAME_None, RF_Transient);
+        ProbeGraph->AddNode(Probe, false, false); Probe->CreateNewGuid(); Probe->AllocateDefaultPins();
+        if (FTurboMCPGraphTidy::PrepareAlignment(Scratch.Get(), ProbeGraph, Error))
+        {
+            const FVector2D Size = FTurboMCPGraphTidy::AlignmentNodeSize(Probe);
+            Out.Width = Size.X; Out.Height = Size.Y;
+            Out.InputOffset = FTurboMCPGraphTidy::AlignmentPinPosition(Probe->GetInputPin());
+            Out.OutputOffset = FTurboMCPGraphTidy::AlignmentPinPosition(Probe->GetOutputPin());
+        }
+        Scratch->MarkAsGarbage();
+        return Out;
+    }
 
 	/** One candidate knot position, and why it was refused when it was. */
 	struct FCandidate
@@ -449,17 +444,17 @@ namespace
 	}
 
 	/** The two positions `C3` allows, in a fixed order so a report is stable. */
-	void CandidatesFor(const FVector2D& InSource, const FVector2D& InTarget,
+	void CandidatesFor(const FVector2D& InSource, const FVector2D& InTarget, const FFootprint& Footprint,
 		FCandidate& OutLevelWithTarget, FCandidate& OutLevelWithSource)
 	{
 		// Level with the TARGET pin: same X as the target, same row as the source. The route is one
 		// horizontal run then one vertical run.
-		OutLevelWithTarget.X = InTarget.X - 160.0;
-		OutLevelWithTarget.Y = InSource.Y;
+		OutLevelWithTarget.X = InTarget.X - 160.0 - Footprint.InputOffset.X;
+		OutLevelWithTarget.Y = InSource.Y - Footprint.InputOffset.Y;
 
 		// Level with the SOURCE pin: same X as the source, same row as the target.
-		OutLevelWithSource.X = InSource.X + 160.0;
-		OutLevelWithSource.Y = InTarget.Y;
+		OutLevelWithSource.X = InSource.X + 160.0 - Footprint.OutputOffset.X;
+		OutLevelWithSource.Y = InTarget.Y - Footprint.OutputOffset.Y;
 	}
 
 	/** True when the two columns are neighbours, which is what `C4` refuses. */
@@ -485,6 +480,27 @@ namespace
 		TArray<FString> CrossedIds;
 		bool bAlreadyKnotted = false;
 	};
+
+    FString RouteReason(const FCandidate& Candidate, const FFootprint& Footprint,
+        const TArray<FObstacle>& Obstacles, const TArray<FTurboMCPLayoutReport::FRect>& Comments,
+        const TArray<FTurboMCPLayoutReport::FRect>& Knots, const FFoundWire& Wire)
+    {
+        const FString Space = FreeSpaceReason(Candidate, Footprint, Obstacles, Comments, Knots, nullptr, nullptr);
+        if (!Space.IsEmpty()) return Space;
+        const FVector2D Start = FTurboMCPGraphTidy::AlignmentPinPosition(Wire.SourcePin);
+        const FVector2D End = FTurboMCPGraphTidy::AlignmentPinPosition(Wire.TargetPin);
+        const FVector2D Input = FVector2D(Candidate.X, Candidate.Y) + Footprint.InputOffset;
+        const FVector2D Output = FVector2D(Candidate.X, Candidate.Y) + Footprint.OutputOffset;
+        if (Input.X < Start.X + 64.0 || Output.X > End.X - 64.0)
+            return TEXT("the route would not leave forward clearance at both endpoints");
+        for (const FObstacle& Obstacle : Obstacles)
+        {
+            if (Obstacle.Node == Wire.SourceNode || Obstacle.Node == Wire.TargetNode) continue;
+            if (SegmentCrossesRect(Start, Input, Obstacle.Rect) || SegmentCrossesRect(Output, End, Obstacle.Rect))
+                return TEXT("a routed segment would still cross node ") + Obstacle.Key;
+        }
+        return FString();
+    }
 
 	/**
 	 * The pin a wire logically starts or ends at, walking through any knots in between.
@@ -793,14 +809,15 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 		OutPlan.GraphName = Graph->GetName();
 	}
 
-    if (!FTurboMCPGraphTidy::PrepareAlignment(Resolved.Blueprint, Graph, OutError)) return false;
 	OutPlan.NodeCountBefore = Graph->Nodes.Num();
 
 	// THE FOOTPRINT IS MEASURED BEFORE ANYTHING IS PLANNED, because `C5` cannot be decided without
 	// it. When nothing in the graph has ever been rendered the measurement falls back to a NAMED
 	// constant and the report SAYS SO, rather than refusing: see `MinimumNodeExtent`, which explains
 	// why the spec's advice to refuse was departed from, with the measurement that justifies it.
-	const FFootprint Footprint = MeasureKnotFootprint(Graph);
+	const FFootprint Footprint = MeasureKnotFootprint(Resolved.Blueprint, OutError);
+    if (!Footprint.IsUsable()) return false;
+    if (!FTurboMCPGraphTidy::PrepareAlignment(Resolved.Blueprint, Graph, OutError)) return false;
 	OutPlan.bFootprintUnknown = Footprint.bWasFallback;
 
 	TArray<FObstacle> Obstacles;
@@ -873,11 +890,11 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 
 				FCandidate WithTarget;
 				FCandidate WithSource;
-				CandidatesFor(Source, Target, WithTarget, WithSource);
-				const FCandidate& Candidate = (Which == 0) ? WithTarget : WithSource;
+				CandidatesFor(Source, Target, Footprint, WithTarget, WithSource);
+				if (Index == Group.Value[0]) Trial = (Which == 0) ? WithTarget : WithSource;
+                const FCandidate& Candidate = Trial;
 
-				const FString Reason = FreeSpaceReason(Candidate, Footprint, Obstacles, Comments,
-					KnotRects, Wire.SourceNode, Wire.TargetNode);
+				const FString Reason = RouteReason(Candidate, Footprint, Obstacles, Comments, KnotRects, Wire);
 				if (!Reason.IsEmpty())
 				{
 					bUsable = false;
@@ -937,12 +954,10 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 			// told only one of them will try the other.
 			FCandidate WithTarget;
 			FCandidate WithSource;
-			CandidatesFor(Source, Target, WithTarget, WithSource);
+			CandidatesFor(Source, Target, Footprint, WithTarget, WithSource);
 
-			const FString ReasonWithTarget = FreeSpaceReason(WithTarget, Footprint, Obstacles,
-				Comments, KnotRects, Wire.SourceNode, Wire.TargetNode);
-			const FString ReasonWithSource = FreeSpaceReason(WithSource, Footprint, Obstacles,
-				Comments, KnotRects, Wire.SourceNode, Wire.TargetNode);
+			const FString ReasonWithTarget = RouteReason(WithTarget, Footprint, Obstacles, Comments, KnotRects, Wire);
+			const FString ReasonWithSource = RouteReason(WithSource, Footprint, Obstacles, Comments, KnotRects, Wire);
 
 			const FString SharedWhy = SharedRefusal.Contains(Group.Key)
 				? SharedRefusal[Group.Key] : FString();
