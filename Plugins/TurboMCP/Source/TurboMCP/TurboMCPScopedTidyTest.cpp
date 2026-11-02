@@ -419,4 +419,45 @@ bool FTurboMCPGroupMovementTest::RunTest(const FString& Parameters)
     Package->SetDirtyFlag(false);
     return !HasAnyErrors();
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPBackwardReviewTest,
+    "TurboMCP.Graph.BackwardReview", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPBackwardReviewTest::RunTest(const FString& Parameters)
+{
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/BackwardReview_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    UBlueprint* BP = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("BackwardReview"),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    if (!TestNotNull(TEXT("Backward fixture"), BP)) return false;
+    UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("BackwardFlow"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+    FBlueprintEditorUtils::AddUbergraphPage(BP, Graph);
+    auto* Event = NewObject<UK2Node_CustomEvent>(Graph, NAME_None, RF_Transactional);
+    Event->CustomFunctionName = TEXT("RunBackwardProbe");
+    Graph->AddNode(Event, false, false); Event->CreateNewGuid(); Event->AllocateDefaultPins();
+    Event->NodePosX = 900; Event->NodePosY = 0;
+    auto* Call = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional);
+    Call->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+    Graph->AddNode(Call, false, false); Call->CreateNewGuid(); Call->AllocateDefaultPins();
+    Call->NodePosX = 300; Call->NodePosY = 0;
+    Event->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Call->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+    Package->SetDirtyFlag(false);
+    const FString Asset = BP->GetPathName();
+    const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphFixBackward(Asset, Graph->GetName(), false);
+    AddInfo(Preview);
+    TestTrue(TEXT("Preview succeeds"), Preview.StartsWith(TEXT("preview:")));
+    TestEqual(TEXT("Preview preserves target"), Call->NodePosX, 300);
+    TestFalse(TEXT("Preview preserves clean package"), Package->IsDirty());
+    const FString Edit = UTurboMCPEditToolset::EditTurboMCPGraphFixBackward(Asset, Graph->GetName(), false);
+    AddInfo(Edit);
+    TestTrue(TEXT("Backward execution repaired"), Edit.StartsWith(TEXT("changed:")));
+    TestTrue(TEXT("Target moved right of source"), Call->NodePosX > Event->NodePosX);
+    TestTrue(TEXT("Execution link preserved"), Event->FindPinChecked(UEdGraphSchema_K2::PN_Then)->LinkedTo.Contains(Call->FindPinChecked(UEdGraphSchema_K2::PN_Execute)));
+    AddInfo(TEXT("Backward repair capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1200x800")));
+    TestTrue(TEXT("Undo transaction exists"), GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo restores repaired node X"), Call->NodePosX, 300);
+    TestEqual(TEXT("Undo preserves source X"), Event->NodePosX, 900);
+    TestTrue(TEXT("Empty graph refuses rather than guessing"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphFixBackward(Asset, TEXT(""), false).StartsWith(TEXT("error:")));
+    BP->ClearFlags(RF_Public | RF_Standalone);
+    Package->SetDirtyFlag(false);
+    return !HasAnyErrors();
+}
 #endif
