@@ -59,7 +59,12 @@
       "Undo restores placement, comment and transfer coordinates"
     ],
     "capture": "GroupMove_MoveGroup_native_1600x900_7133E36C466E763BFEA1EC9D86DF3CD0.png",
-    "visual_review": "Inspected native capture: execution connections run forward, nodes do not overlap, and unrelated comment remains fixed."
+    "visual_review": "Inspected native capture: execution connections run forward, nodes do not overlap, and unrelated comment remains fixed.",
+    "offline": {
+      "run": "1950b3a2734c40809b37e91fbaf9e293",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "followup_failures": [
     {
