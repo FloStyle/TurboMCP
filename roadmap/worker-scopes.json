@@ -3145,6 +3145,17 @@
             "Tools/test-backward-review.py"
           ],
           "new_files": []
+        },
+        "knots-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnots.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphKnots.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPScopedTidyTest.cpp"
+          ],
+          "new_files": [
+            "Tools/test-knots-review.py"
+          ]
         }
       },
       "preserve_rows": []

@@ -1083,6 +1083,20 @@
         "No persistence, compilation or runtime behavior certification."
       ],
       "evidence": "15bae10228e6471e895c54920f8977b9"
+    },
+    {
+      "id": "WF-GRAPH-KNOTS",
+      "title": "Route crossing wires through safe reroute nodes",
+      "status": "in_progress",
+      "review": "docs/audit/knots-review.json",
+      "focus_tools": [
+        "PreviewTurboMCPGraphKnots",
+        "EditTurboMCPGraphKnots"
+      ],
+      "tools_used": [],
+      "limitations": [
+        "Not accepted"
+      ]
     }
   ],
   "tool_usage": {

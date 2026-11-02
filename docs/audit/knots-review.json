@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "workflow": "WF-GRAPH-KNOTS",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPGraphKnots",
+    "EditTurboMCPGraphKnots"
+  ],
+  "source_findings": [
+    "Empty graph silently selects a default; graph lookup does not reject ambiguity.",
+    "No idle editor guard; undo records graph but not Blueprint or existing endpoint nodes.",
+    "Preview can promise a shared knot but Apply creates one knot per wire.",
+    "Geometry uses fallback rectangles; comments overstate restoration and behavioral safety."
+  ],
+  "remaining": [
+    "Reproduce and fix routing, shared-knot and undo behavior",
+    "Review geometry, safety guards, help and English",
+    "Focused editor tests and screenshot review"
+  ],
+  "limitations": [
+    "Not accepted"
+  ]
+}
