@@ -46,6 +46,12 @@
     ],
     "capture": "PositionsReview_PositionFlow_native_1200x800_5B40397443635560AC80818D9576D467.png",
     "visual_review": "Native screenshot inspected: node visible within unchanged comment with readable text and expected spacing.",
-    "registration": "Same tested wrapper moved from temporary backward-review entry to test-positions-review; backward wrapper restored. No production behavior changed after this engine run."
+    "registration": "Same tested wrapper moved from temporary backward-review entry to test-positions-review; backward wrapper restored. No production behavior changed after this engine run.",
+    "offline": {
+      "run": "adf307cfb8954aeebea6ea919b93cabd",
+      "candidate": "0cba964",
+      "state": "passed",
+      "checks": 26
+    }
   }
 }
