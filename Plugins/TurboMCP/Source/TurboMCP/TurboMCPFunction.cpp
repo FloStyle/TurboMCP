@@ -502,10 +502,7 @@ FString FTurboMCPFunction::Remove(const FString& InAsset, const FString& InName)
         if (Candidate && NameMatches(Candidate->GetFName(), Wanted)) ++Matches;
     if (Matches > 1) return TEXT("unchanged: function name is ambiguous; no graph was removed");
 
-	// ONLY A FUNCTION GRAPH IS REMOVED HERE, and the name is checked against the function list
-	// first. Removing by NAME through the engine's `RemoveFunctionGraph` would be enough, but
-	// finding the graph first is what lets the refusal name the functions this Blueprint does
-	// have, and lets the result say what came out.
+	// Resolve only function graphs; never remove a same-named event graph.
 	for (UEdGraph* Graph : Blueprint->FunctionGraphs)
 	{
 		if (Graph == nullptr || !NameMatches(Graph->GetFName(), Wanted))
@@ -513,21 +510,14 @@ FString FTurboMCPFunction::Remove(const FString& InAsset, const FString& InName)
 			continue;
 		}
 
-		const FString RemovedGraph = Graph->GetName();
+        if (!Graph->bAllowDeletion)
+            return FString::Printf(TEXT("unchanged: function '%s' is protected against deletion; no graph was removed; save=not_requested"), *Graph->GetName());
+        const FString RemovedGraph = Graph->GetName();
 
-		// The engine's own removal, which is what the editor's delete does. The graph is a
-		// function's whole body, so removing it is exactly what was asked for; unlike an EVENT
-		// override, a function graph holds nothing but that function.
+		// Use the stock editor removal path, including its editor and skeleton callbacks.
 		UBlueprintEditorLibrary::RemoveFunctionGraph(Blueprint, Graph->GetFName());
 
-		// THE READ-BACK, so the removal is checked rather than asserted. What CAN be checked is
-		// that no function graph holds the name any more. What CANNOT be checked this way is
-		// whether the PACKAGE has released it: `AddFunctionGraph` uniques a name against the
-		// objects still in the package, and that set is not something a `CheckName` over the
-		// Blueprint's graphs can see.
-		//
-		// CLAIMING "the name is free again: yes" ON THAT WEAKER CHECK IS WRONG: the next add creates
-		// `ComputeScore_0` instead of `ComputeScore`.
+        // Verify graph removal without claiming the package released its object name.
         bool bStillPresent = Blueprint->FunctionGraphs.Contains(Graph);
         for (UEdGraph* Candidate : Blueprint->FunctionGraphs)
             if (Candidate && NameMatches(Candidate->GetFName(), Wanted)) bStillPresent = true;
@@ -536,7 +526,7 @@ FString FTurboMCPFunction::Remove(const FString& InAsset, const FString& InName)
 		const FNameCheck AfterCheck = CheckName(Blueprint, Wanted);
 
 		FString Out = FString::Printf(TEXT("changed: removed function '%s' from %s"),
-			*Wanted, *Resolved.ObjectPath);
+			*RemovedGraph, *Resolved.ObjectPath);
 		Out += FString::Printf(TEXT("\nremoved: graph '%s'"), *RemovedGraph);
 		Out += TEXT("\n; The entire function graph and its nodes were removed. Callers and widget bindings were not repaired.");
 		Out += TEXT("\n; Editor callbacks and skeleton regeneration may have run. This tool does not perform a full compile or create a dedicated undo transaction.");

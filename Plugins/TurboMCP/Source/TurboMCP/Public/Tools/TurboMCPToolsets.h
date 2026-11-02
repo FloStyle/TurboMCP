@@ -1742,7 +1742,7 @@ public:
 		const FString& Inputs = TEXT(""), const FString& Outputs = TEXT(""));
 
 	/**
-	 * Delete a function graph and all its nodes; may close asset editors, regenerate the skeleton and run editor callbacks, does not perform a full compile or save, and provides no dedicated undo transaction.
+	 * Delete a function graph and all its nodes without repairing callers or bindings; no full compile, save or dedicated undo transaction, and editor callbacks may close asset editors and regenerate the skeleton.
 	 * Requires an idle editor outside PIE. Does not repair callers or bindings. Removing the graph does not guarantee its name is immediately reusable; inspect the result before recreating it.
 	 * @param Asset Required Blueprint name or package/object path, for example /Game/Tests/BP_NodeTest; empty or unresolved values are refused.
 	 * @param Name Required function graph name, for example ComputeScore; case-insensitive with surrounding whitespace trimmed. Empty or ambiguous names are refused; no default. A missing name returns unchanged and lists available functions.
