@@ -494,7 +494,7 @@ namespace
    Destination=BestDestination;
    DeltaX=static_cast<int32>(BestOffset.X);DeltaY=static_cast<int32>(BestOffset.Y);
    PlacementDetails=FString::Printf(TEXT("\nplacement proposal: DeltaX=%d DeltaY=%d; best feasible candidate searched, not a global optimum; %d candidates, %d feasible. Boundary-wire total %.1f -> %.1f estimated graph units. Apply with EditTurboMCPGraphGroupMove using the same NodeIds, offsets and DestinationBox; positions and obstacles are rechecked. Only the explicitly returned DestinationBox and its containing ancestors may gain the selected unboxed nodes."),DeltaX,DeltaY,Evaluated,Feasible,Before,Best);
-   PlacementDetails+=TEXT("\nDestinationBox=")+(Destination?TurboMCPNodeId::MakeForNode(Destination):TEXT("(empty; retain membership)"));
+   PlacementDetails+=TEXT("\nDestinationBox=")+(Destination?TurboMCPNodeId::MakeForNode(Destination):TEXT("\"\" (empty string; retain membership)"));
    for(const FBoundaryWire& Wire:Boundary)
    {
     const double OldLength=FVector2D::Distance(Wire.Start,Wire.End);
