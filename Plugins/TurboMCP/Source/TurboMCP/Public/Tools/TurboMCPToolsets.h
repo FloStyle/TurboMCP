@@ -1622,7 +1622,7 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPSaveWithoutThumbnail(const FString& Assets);
 
-	/** Create a new user-defined enum in memory and mark its package dirty; editor enum callbacks may run; no tool-owned undo transaction, explicit Blueprint compile or save is performed.
+	/** Create a new user-defined enum in memory in an idle editor outside PIE and active transactions; marks its package dirty and may run enum callbacks, with no tool-owned undo transaction, explicit Blueprint compile or save.
      * Existing assets are not overwritten. Preview does not guarantee creation or that the engine will accept every display name; edit reads names, numeric values and requested display names back. Failed creation may leave an unsaved asset for inspection.
      * @param Path Required new package path including the asset name, for example /Game/Enums/E_Colour; do not supply an object suffix or filesystem extension. Surrounding whitespace is trimmed; empty and relative paths are refused. Use a writable content mount.
      * @param Values Required comma- or pipe-separated entries in Name or Name=Display Name format, for example Red,Green=Dark Green,Blue. Names start with a letter or underscore and contain only letters, digits or underscores; duplicates ignoring case and _MAX are refused. Values receive consecutive integers starting at zero. Empty input is refused; empty separators are skipped. Empty display text uses the engine-generated display name. Commas and pipes cannot be escaped inside display text.

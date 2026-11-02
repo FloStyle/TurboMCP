@@ -10,6 +10,7 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Containers/UnrealString.h"
 #include "Engine/UserDefinedEnum.h"
+#include "Editor.h"
 #include "Kismet2/EnumEditorUtils.h"
 #include "Misc/Paths.h"
 #include "Misc/PackageName.h"
@@ -160,8 +161,7 @@ FString FTurboMCPEnumAdd::RenderPreview(const FPlan& InPlan)
 		}
 		else
 		{
-			// The display name is printed only when it differs from the name, because a
-			// line that repeats the name says nothing.
+			// Show explicitly requested display text alongside its stable enumerator name.
 			Out += FString::Printf(TEXT("\n  %s  shown as \"%s\""),
 				*Value.Name, *Value.DisplayName);
 		}
@@ -185,13 +185,17 @@ FString FTurboMCPEnumAdd::RenderPreview(const FPlan& InPlan)
 		Out += TEXT("\nthis asset does not exist yet; creation can still fail if the path or display names are rejected.");
 	}
 
-	Out += TEXT("\n; the enum is created through the editor's own ")
+	Out += TEXT("\nPreview created no asset. Creation requires an idle editor outside PIE and active transactions.\n; the enum is created through the editor's own ")
 		+ FString(TEXT("FEnumEditorUtils, so it stays editable in the enum editor."));
 	return Out;
 }
 
 FString FTurboMCPEnumAdd::Apply(const FPlan& InPlan)
 {
+    // Enum editor utilities open their own transactions and invoke change callbacks.
+    // Do not nest asset creation inside a caller-owned transaction or a play session.
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: enum creation requires an idle editor outside PIE and active transactions; no asset was created; save=not_requested");
 	const FString ObjectPath = FString::Printf(TEXT("%s.%s"),
 		*InPlan.PackagePath, *InPlan.AssetName);
 
@@ -238,20 +242,8 @@ FString FTurboMCPEnumAdd::Apply(const FPlan& InPlan)
 		FEnumEditorUtils::AddNewEnumeratorForUserDefinedEnum(UserEnum);
 	}
 
-	// THE NAMES ARE SET THROUGH `UEnum::SetEnums`, WHICH IS THE ENGINE'S OWN API.
-	//
-	// WRITING THE PRIVATE `Names` ARRAY BY REFLECTION IS NOT POSSIBLE: `UEnum::Names` is a private UNION of a
-	// `const FName*` used by compiled-in enums and a `TArray` used by user-defined ones, and it carries no
-	// `UPROPERTY`, so `FindFProperty` does not see it. A tool that tries is told so rather than writing a
-	// wrong name.
-	//
-	// `SetEnums` is what `FEnumEditorUtils` itself calls, so this is the same path the enum
-	// editor takes. It rebuilds the name list in one step, which is also why it is safer
-	// than poking entries: there is no half-renamed state to leave behind.
-	//
-	// The names carry the enum's own prefix, `<EnumName>::<Value>`, because
-	// `GenerateFullEnumName` is what the engine would produce and a bare name would not
-	// resolve through `GetIndexByName`.
+    // Use qualified names through the public enum API; retain Unreal's sentinel.
+    // Do not access the private name storage or assume requested writes succeeded.
 	TArray<TPair<FName, int64>> NewNames;
 	for (int32 Index = 0; Index < InPlan.Values.Num(); ++Index)
 	{
@@ -316,8 +308,7 @@ FString FTurboMCPEnumAdd::Apply(const FPlan& InPlan)
 		&& UserEnum->NumEnums() == NewNames.Num() + 1 && ShownAs == RequestedDisplays;
 
 
-	// The asset registry has to learn about the new asset, and the package has to be saved,
-	// or the enum dies with the editor exactly as the first test assets did.
+	// Register the in-memory asset and mark it dirty. Saving remains an explicit caller action.
 	FAssetRegistryModule::AssetCreated(UserEnum);
 	Package->MarkPackageDirty();
 
