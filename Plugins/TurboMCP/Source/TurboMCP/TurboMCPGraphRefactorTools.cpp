@@ -402,72 +402,110 @@ bool Remove(UEdGraph* Graph,UEdGraph* Identity,const FString& Nodes,const FStrin
 }
 bool Sequence(UEdGraph* Graph,UEdGraph* Identity,const FString& Groups,bool SplitValues,FString& Report,FString& Error)
 {
+    // Preview and edit share the same preflight; layout and compilation are separate.
+    if (!Graph || !Graph->GetSchema() || !Graph->GetSchema()->IsA<UEdGraphSchema_K2>())
+    { Error=TEXT("Sequence refactoring requires a Blueprint K2 graph."); return false; }
     TArray<TSharedPtr<FJsonValue>> Json;
     if(!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Groups),Json) || Json.Num()<2 || Json.Num()>64)
-    { Error=TEXT("Groups must be a JSON array of 2..64 ordered nonempty arrays of reader node IDs"); return false; }
+    { Error=TEXT("Groups must be a JSON array of 2 to 64 ordered, nonempty arrays of reader node IDs."); return false; }
     TArray<TArray<UEdGraphNode*>> Rows; TArray<UEdGraphNode*> Chain; TSet<UEdGraphNode*> Selected;
     TArray<UEdGraphPin*> Ins,Outs;
     for(const auto& Value:Json)
     {
-        if(!Value.IsValid() || Value->Type!=EJson::Array || Value->AsArray().IsEmpty()) { Error=TEXT("each group must be a nonempty node-ID array"); return false; }
+        if(!Value.IsValid() || Value->Type!=EJson::Array || Value->AsArray().IsEmpty()) { Error=TEXT("Each group must be a nonempty array of node IDs."); return false; }
         TArray<UEdGraphNode*> Row;
         for(const auto& Id:Value->AsArray())
         {
-            FString Name; if(!Id.IsValid() || !Id->TryGetString(Name)) { Error=TEXT("group IDs must be strings"); return false; }
-            UEdGraphNode* N=ResolveNode(Graph,Identity,Name);
+            FString Name; if(!Id.IsValid() || Id->Type!=EJson::String || !Id->TryGetString(Name)) { Error=TEXT("Each node ID must be a JSON string."); return false; }
+            if (Chain.Num()>=4096) { Error=TEXT("Groups may contain at most 4096 calls in total."); return false; }
+            UEdGraphNode* N=ResolveEditNode(Graph,Identity,Name,Error);
+            if (!N) return false;
             UK2Node_CallFunction* Call=Cast<UK2Node_CallFunction>(N); UFunction* Fn=Call?Call->GetTargetFunction():nullptr;
             if(!Call || Call->GetClass()!=UK2Node_CallFunction::StaticClass() || !Fn || Call->IsNodePure() || Fn->HasMetaData(TEXT("Latent")) || Selected.Contains(N))
-            { Error=TEXT("groups require distinct synchronous single-path function calls; latent, branching, loop and unknown node types refuse"); return false; }
+            { Error=TEXT("Groups require distinct, synchronous function calls with one execution input and output; latent, branching and unsupported nodes are refused."); return false; }
             UEdGraphPin* In=nullptr; UEdGraphPin* Out=nullptr;
-            for(UEdGraphPin* P:N->Pins) if(P && P->PinType.PinCategory==TEXT("exec"))
+            for(UEdGraphPin* P:N->Pins) if(P && !P->bOrphanedPin && P->PinType.PinCategory==TEXT("exec"))
             {
-                if(P->Direction==EGPD_Input) { if(In) { Error=TEXT("multiple exec inputs refuse"); return false; } In=P; }
-                else { if(Out) { Error=TEXT("multiple exec outputs refuse"); return false; } Out=P; }
+                if(P->Direction==EGPD_Input) { if(In) { Error=TEXT("Calls with multiple execution inputs are not supported."); return false; } In=P; }
+                else { if(Out) { Error=TEXT("Calls with multiple execution outputs are not supported."); return false; } Out=P; }
             }
-            if(!In || !Out || In->LinkedTo.Num()!=1 || Out->LinkedTo.Num()>1) { Error=TEXT("calls must form one connected linear execution chain"); return false; }
+            if(!In || !Out || In->LinkedTo.Num()!=1 || Out->LinkedTo.Num()>1) { Error=TEXT("Calls must form one connected, linear execution chain."); return false; }
             Ins.Add(In); Outs.Add(Out); Selected.Add(N); Row.Add(N); Chain.Add(N);
         }
         Rows.Add(Row);
     }
     for(int32 I=1;I<Chain.Num();++I) if(Outs[I-1]->LinkedTo.Num()!=1 || Outs[I-1]->LinkedTo[0]!=Ins[I] || Ins[I]->LinkedTo[0]!=Outs[I-1])
-    { Error=TEXT("groups must enumerate the original chain in execution order, without gaps or reordering"); return false; }
+    { Error=TEXT("Groups must list the original chain in execution order, without gaps or reordering."); return false; }
     UEdGraphPin* Before=Ins[0]->LinkedTo[0]; UEdGraphPin* After=Outs.Last()->LinkedTo.IsEmpty()?nullptr:Outs.Last()->LinkedTo[0];
-    if(!Before || Selected.Contains(Before->GetOwningNode()) || (After && Selected.Contains(After->GetOwningNode()))) { Error=TEXT("execution cycle refuses"); return false; }
+    if(!Before || Selected.Contains(Before->GetOwningNode()) || (After && Selected.Contains(After->GetOwningNode()))) { Error=TEXT("The selected execution chain contains a cycle."); return false; }
     if(Before->LinkedTo.Num()!=1 || Before->LinkedTo[0]!=Ins[0] || (After && (After->LinkedTo.Num()!=1 || After->LinkedTo[0]!=Outs.Last())))
-    { Error=TEXT("entry and continuation links must be exclusive and reciprocal"); return false; }
+    { Error=TEXT("Entry and continuation links must be exclusive and reciprocal."); return false; }
+    // A continuation must not re-enter the selected chain through intermediate nodes.
+    TArray<UEdGraphNode*> Pending; TSet<UEdGraphNode*> Seen;
+    if (After) Pending.Add(After->GetOwningNode());
+    while (!Pending.IsEmpty())
+    {
+        UEdGraphNode* N=Pending.Pop(EAllowShrinking::No);
+        if (!N || Seen.Contains(N)) continue;
+        if (Selected.Contains(N)) { Error=TEXT("The continuation returns to a selected call; cyclic chains are not supported."); return false; }
+        Seen.Add(N);
+        for (UEdGraphPin* P:N->Pins) if (P && P->Direction==EGPD_Output && P->PinType.PinCategory==TEXT("exec"))
+            for (UEdGraphPin* Q:P->LinkedTo) if (Q) Pending.Add(Q->GetOwningNode());
+    }
+    if (static_cast<int64>(Chain[0]->NodePosX)-300 < MIN_int32)
+    { Error=TEXT("The Sequence position would exceed the supported coordinate range."); return false; }
     UK2Node_ExecutionSequence* Seq=NewObject<UK2Node_ExecutionSequence>(Graph,NAME_None,RF_Transactional);
     Graph->AddNode(Seq,false,false); Seq->CreateNewGuid(); Seq->PostPlacedNewNode(); Seq->AllocateDefaultPins();
     const int32 Outputs=Rows.Num()+(After?1:0);
     for(int32 I=2;I<Outputs;++I) Seq->AddInputPin();
     Seq->NodePosX=Chain[0]->NodePosX-300; Seq->NodePosY=Chain[0]->NodePosY;
     UEdGraphPin* SeqIn=Seq->FindPin(TEXT("execute"),EGPD_Input);
-    if(!SeqIn) { Error=TEXT("sequence input missing"); return false; }
+    if(!SeqIn) { Error=TEXT("The new Sequence input is missing."); return false; }
     Before->BreakLinkTo(Ins[0]);
-    if(!Graph->GetSchema()->TryCreateConnection(Before,SeqIn)) { Error=TEXT("sequence entry connection refused"); return false; }
+    if(!Graph->GetSchema()->TryCreateConnection(Before,SeqIn)) { Error=TEXT("The schema refused the Sequence entry connection."); return false; }
     int32 Offset=0;
     for(int32 I=0;I<Rows.Num();++I)
     {
         UEdGraphPin* First=Ins[Offset]; UEdGraphPin* Last=Outs[Offset+Rows[I].Num()-1];
         First->BreakAllPinLinks(); Last->BreakAllPinLinks();
-        if(!Graph->GetSchema()->TryCreateConnection(Seq->GetThenPinGivenIndex(I),First)) { Error=TEXT("sequence lane connection refused"); return false; }
+        if(!Graph->GetSchema()->TryCreateConnection(Seq->GetThenPinGivenIndex(I),First)) { Error=TEXT("The schema refused a Sequence row connection."); return false; }
         Offset+=Rows[I].Num();
     }
-    if(After && !Graph->GetSchema()->TryCreateConnection(Seq->GetThenPinGivenIndex(Rows.Num()),After)) { Error=TEXT("sequence continuation refused"); return false; }
+    if(After && !Graph->GetSchema()->TryCreateConnection(Seq->GetThenPinGivenIndex(Rows.Num()),After)) { Error=TEXT("The schema refused the Sequence continuation connection."); return false; }
     Offset=0;
     for(int32 I=0;I<Rows.Num();++I)
     {
         UEdGraphPin* Output=Seq->GetThenPinGivenIndex(I);
         if(!Output || Output->LinkedTo.Num()!=1 || Output->LinkedTo[0]!=Ins[Offset] || Ins[Offset]->LinkedTo.Num()!=1 || Ins[Offset]->LinkedTo[0]!=Output)
-        { Error=TEXT("sequence lane read-back failed"); return false; }
+        { Error=TEXT("Sequence row connection verification failed."); return false; }
         Offset+=Rows[I].Num();
     }
+    if (Before->LinkedTo.Num()!=1 || Before->LinkedTo[0]!=SeqIn || !SeqIn->LinkedTo.Contains(Before)
+        || (After && (After->LinkedTo.Num()!=1 || After->LinkedTo[0]!=Seq->GetThenPinGivenIndex(Rows.Num())
+            || !Seq->GetThenPinGivenIndex(Rows.Num())->LinkedTo.Contains(After))))
+    { Error=TEXT("Sequence entry or continuation verification failed."); return false; }
     int32 Copies=0;
+    FString CopyMapping;
     if(SplitValues)
     {
         const TArray<TObjectPtr<UEdGraphNode>> Nodes=Graph->Nodes;
-        for(UEdGraphNode* N:Nodes) if(Trivial(N) && !Split(Graph,N,&Selected,Copies,Error)) return false;
+        for (UEdGraphNode* N:Nodes) if (Trivial(N))
+        {
+            bool UsedBySelection=false;
+            for (UEdGraphPin* P:N->Pins) if (P && P->Direction==EGPD_Output)
+                for (UEdGraphPin* Q:P->LinkedTo) if (Q && Selected.Contains(Q->GetOwningNode())) UsedBySelection=true;
+            // Do not validate or rewrite unrelated values elsewhere in the graph.
+            if (UsedBySelection && !Split(Graph,N,&Selected,Copies,Error,&CopyMapping)) return false;
+        }
     }
     Report=FString::Printf(TEXT("sequence lanes=%d; ordered calls=%d; value copies=%d; continuation=%s; execution order preserved; no save"),Rows.Num(),Chain.Num(),Copies,After?TEXT("last output"):TEXT("none"));
+    Report+=TEXT("\nSequence node: ")+TurboMCPNodeId::MakeForNode(Seq,true);
+    for (int32 I=0;I<Rows.Num();++I)
+        Report+=FString::Printf(TEXT("\nThen %d: %d call(s), first=%s, last=%s"),I,Rows[I].Num(),
+            *TurboMCPNodeId::MakeForNode(Rows[I][0],true),*TurboMCPNodeId::MakeForNode(Rows[I].Last(),true));
+    if (After) Report+=FString::Printf(TEXT("\nThen %d: continuation=%s pin=%s"),Rows.Num(),
+        *TurboMCPNodeId::MakeForNode(After->GetOwningNode(),true),*After->PinName.ToString());
+    Report+=CopyMapping+TEXT("\nLayout is not tidied automatically. Read the graph, then tidy the affected nodes and inspect a capture.");
     return true;
 }
 }
@@ -541,9 +579,9 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphSplitValue(const FString& A
 FString UTurboMCPEditToolset::EditTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId)
 { return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { int32 Count=0; FString Mapping; const bool Ok=Split(G,ResolveNode(G,I,NodeId),nullptr,Count,E,&Mapping); R=FString::Printf(TEXT("value copies=%d; one source per consumer; layout required"),Count)+Mapping; return Ok; }); }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues)
-{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Sequence(G,I,Groups,bSplitValues,R,E); }); }
+{ if (GraphName.IsEmpty()) return TEXT("unchanged\nrefused: GraphName is required; use an explicit graph name from the reader."); return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Sequence(G,I,Groups,bSplitValues,R,E); }); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues)
-{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Sequence(G,I,Groups,bSplitValues,R,E); }); }
+{ if (GraphName.IsEmpty()) return TEXT("unchanged\nrefused: GraphName is required; use an explicit graph name from the reader."); return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Sequence(G,I,Groups,bSplitValues,R,E); }); }
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links)
 { return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Remove(G,I,Nodes,Links,R,E); }, false); }
