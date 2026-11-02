@@ -40,5 +40,11 @@
     "AssetDescribe separates dirty state from on-disk existence.",
     "New enum remains unsaved."
   ],
-  "visual_review": "Not applicable: enum data and returned text checked directly; no layout/capture contract."
+  "visual_review": "Not applicable: enum data and returned text checked directly; no layout/capture contract.",
+  "offline_gate": {
+    "run": "1e3089e535ff415cb9fc00bea9d3064c",
+    "result": "26/26 passed",
+    "integrated_commit": "35e3868d",
+    "dirty": false
+  }
 }
