@@ -385,6 +385,9 @@ bool FTurboMCPGroupMovementTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Apply proposed free placement"), Placed.StartsWith(TEXT("changed:")));
         TestEqual(TEXT("Proposal X applied exactly"), First->NodePosX, DX);
         TestEqual(TEXT("Proposal Y applied exactly"), First->NodePosY, 600 + DY);
+        const double ForwardGap = FTurboMCPGraphTidy::AlignmentPinPosition(Outside->FindPinChecked(UEdGraphSchema_K2::PN_Execute)).X
+            - FTurboMCPGraphTidy::AlignmentPinPosition(Second->FindPinChecked(UEdGraphSchema_K2::PN_Then)).X;
+        TestTrue(TEXT("Placement keeps measured execution pins forward with clearance"), ForwardGap >= 63.9);
         AddInfo(TEXT("Proposed group placement capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900")));
         TestTrue(TEXT("One undo restores placement"), GEditor->UndoTransaction(false));
         TestEqual(TEXT("Undo restores first X"), First->NodePosX, 0);

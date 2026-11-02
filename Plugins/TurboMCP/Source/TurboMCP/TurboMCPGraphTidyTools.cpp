@@ -388,7 +388,9 @@ namespace
       if(SourceMoves==TargetMoves) continue;
       const UEdGraphPin* Moving=SourceMoves?Pin:Other;
       const UEdGraphPin* Fixed=SourceMoves?Other:Pin;
-      Boundary.Add({Moving,Fixed,FTurboMCPLayoutReport::PinPosition(Moving),FTurboMCPLayoutReport::PinPosition(Fixed)});
+      // Use the geometry measured above. Stored NodeWidth can be zero and
+      // would put the output pin on the wrong side of a rendered node.
+      Boundary.Add({Moving,Fixed,FTurboMCPGraphTidy::AlignmentPinPosition(Moving),FTurboMCPGraphTidy::AlignmentPinPosition(Fixed)});
      }
     }
    if(Boundary.IsEmpty()) return TEXT("unchanged: selected group has no links to outside nodes; no connected placement to propose");
@@ -427,7 +429,9 @@ namespace
      const double Sign=Wire.Moving->Direction==EGPD_Output?1.0:-1.0;
      const double OldForward=Sign*(Wire.End.X-Wire.Start.X);
      const double NewForward=Sign*(Wire.End.X-Wire.Start.X-D.X);
-     if(OldForward>=0.0 && NewForward<0.0) return;
+     // Keep a readable forward run; do not shorten a valid execution
+     // connection into a hairpin just to improve the distance score.
+     if(OldForward>=0.0 && NewForward<FMath::Min(64.0,OldForward)) return;
     }
     ++Feasible;
     const double Cost=Score(D);
