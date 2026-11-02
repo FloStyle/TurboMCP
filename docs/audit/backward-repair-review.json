@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-BACKWARD-REPAIR",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPGraphFixBackward",
     "EditTurboMCPGraphFixBackward"
@@ -13,22 +13,32 @@
     "Refuse invalid or colliding short node identifiers before planning.",
     "Require measured node bounds before collision planning.",
     "Check coordinates and target positions before applying; notify graph changes.",
-    "Avoid claiming no issues remain when no safe movement was planned."
+    "Avoid claiming no issues remain when no safe movement was planned.",
+    "Carry exclusive pure producers atomically, refusing chains longer than eight nodes without partial movement.",
+    "Use measured bounds to detect backward connections and preserve every comment membership.",
+    "Keep forced no-ops clean; disclose estimated wire-length non-improvement.",
+    "Clarify live help, parameters, limits, comments and preview rule counts."
   ],
   "evidence": {
-    "run": "92780fa857304b599df8f68e0be53c21",
-    "candidate": "dc8d22ecfb304f156371760dfa8efbd0a80d7663",
+    "run": "5373811629284a819ed481606945a4ae",
+    "candidate": "4670f861890c411303645ab1cf32788e06b24776",
     "state": "passed",
     "suite": "test-backward-review",
-    "capture": "BackwardReview_BackwardFlow_native_1200x800_7E7F100B48A14CE49AA0109E15D94685.png",
-    "visual_review": "Native screenshot inspected: source and target have aligned execution pins, a forward wire and no overlap.",
-    "controls": "Preview preserves node position and clean state; edit repairs backward execution and preserves link; editor undo restores target; empty graph refuses.",
-    "post_run_source_adjustment": "06b3789: equivalent local-pointer null guard; no engine rerun for this expression-only change.",
-    "offline": {
-      "run": "e7cd99a0ec944b079d4064165b9068f5",
-      "state": "passed",
-      "checks": 26
-    }
+    "controls": [
+      "Preview does not mutate; explicit graph required",
+      "Backward execution repair preserves links and supports undo",
+      "Two exclusive pure producers move together; repeat is a no-op",
+      "Nine-node chain refuses atomically, including Force, without dirtying",
+      "Force explains non-improvement; duplicate identity and stale position refuse",
+      "Measured node width detects backward wires; unrelated comment membership preserved",
+      "Getter and origin repair apply with undo"
+    ],
+    "captures": [
+      "BackwardReview_BackwardFlow_native_1600x900_A35A2BE3494660D40803A193D297F204.png",
+      "BackwardReview_BackwardFlow_native_1200x800_A3A41BDB4008CFE3BAB842A0C1FB45ED.png",
+      "BackwardReview_BackwardFlow_native_1200x800_6C0D1F444B1625BB39AFD09DE505C409.png"
+    ],
+    "visual_review": "Inspected all three native captures: forward wires, readable spacing, no node overlaps in the chain, getter and origin fixtures."
   },
   "prior_runs": [
     {
@@ -45,15 +55,48 @@
       "run": "da2d4204a57e45fa91d6902e1961be2f",
       "state": "offline_failed",
       "reason": "Lookup checker did not recognize the member-field null guard. Re-expressed the same guard with a local pointer; checker and unsafe control then passed."
+    },
+    {
+      "run": "6ad7c0bc6aef42c58455e65d533127c5",
+      "state": "failed",
+      "reason": "Exclusive pure producers were not carried and the over-limit consumer still moved."
+    },
+    {
+      "run": "dbc0cf0e8a87447cb9fa6bfe6b0569c2",
+      "state": "passed",
+      "reason": "Two-producer chain and nine-node refusal controls after repair."
+    },
+    {
+      "run": "bb476119666f4419a277dd367ad24a7d",
+      "state": "passed",
+      "reason": "Live help, Force disclosure, clean no-op and duplicate identity controls."
+    },
+    {
+      "run": "5c72995aa0d445429a614d7b03175d2e",
+      "state": "passed",
+      "reason": "Measured-width detection, stale-position refusal and unrelated comment boundary."
     }
   ],
-  "remaining": [
-    "Replace outdated fallback-size and rollback claims in public help and source comments; verify live English help.",
-    "Exercise duplicate identity and stale-plan refusals, Force/no-improvement behavior and idempotence.",
-    "Investigate the older suite pure-chain carry defect and getter/comment cases; do not treat the simple execution fixture as full acceptance."
-  ],
+  "remaining": [],
   "limitations": [
-    "Focused safety workflow only; no full tool acceptance yet.",
-    "No engine changes, compile/save behavior or runtime graph semantics claimed."
-  ]
+    "Acceptance covers these reproducible synthetic workflows, not every graph topology or node class.",
+    "Wire length is an estimate, not rendered spline length; Force does not bypass safety refusals.",
+    "No automatic compilation or saving; no persistence or runtime behavior certification.",
+    "Shared producers, deeply nested comments and arbitrary graph types are not exhaustively tested."
+  ],
+  "previous_evidence": {
+    "run": "92780fa857304b599df8f68e0be53c21",
+    "candidate": "dc8d22ecfb304f156371760dfa8efbd0a80d7663",
+    "state": "passed",
+    "suite": "test-backward-review",
+    "capture": "BackwardReview_BackwardFlow_native_1200x800_7E7F100B48A14CE49AA0109E15D94685.png",
+    "visual_review": "Native screenshot inspected: source and target have aligned execution pins, a forward wire and no overlap.",
+    "controls": "Preview preserves node position and clean state; edit repairs backward execution and preserves link; editor undo restores target; empty graph refuses.",
+    "post_run_source_adjustment": "06b3789: equivalent local-pointer null guard; no engine rerun for this expression-only change.",
+    "offline": {
+      "run": "e7cd99a0ec944b079d4064165b9068f5",
+      "state": "passed",
+      "checks": 26
+    }
+  }
 }

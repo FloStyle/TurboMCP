@@ -1047,18 +1047,23 @@
     },
     {
       "id": "WF-BACKWARD-REPAIR",
-      "title": "Repair backward execution while preserving undo",
-      "status": "in_progress",
+      "title": "Repair backward wires, getters and distant origin nodes safely",
+      "status": "scenario_accepted",
       "review": "docs/audit/backward-repair-review.json",
-      "evidence": "92780fa857304b599df8f68e0be53c21",
-      "tools_used": [],
+      "evidence": "5373811629284a819ed481606945a4ae",
+      "tools_used": [
+        "PreviewTurboMCPGraphFixBackward",
+        "EditTurboMCPGraphFixBackward"
+      ],
       "focus_tools": [
         "PreviewTurboMCPGraphFixBackward",
         "EditTurboMCPGraphFixBackward"
       ],
       "limitations": [
-        "Focused safety workflow only; no full tool acceptance yet.",
-        "No engine changes, compile/save behavior or runtime graph semantics claimed."
+        "Acceptance covers these reproducible synthetic workflows, not every graph topology or node class.",
+        "Wire length is an estimate, not rendered spline length; Force does not bypass safety refusals.",
+        "No automatic compilation or saving; no persistence or runtime behavior certification.",
+        "Shared producers, deeply nested comments and arbitrary graph types are not exhaustively tested."
       ]
     }
   ],
@@ -1516,9 +1521,15 @@
     ],
     "EditTurboMCPGraphGroupMove": [
       "WF-GRAPH-GROUP"
+    ],
+    "PreviewTurboMCPGraphFixBackward": [
+      "WF-BACKWARD-REPAIR"
+    ],
+    "EditTurboMCPGraphFixBackward": [
+      "WF-BACKWARD-REPAIR"
     ]
   },
-  "unique_tools_scenario_reviewed": 128,
+  "unique_tools_scenario_reviewed": 130,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

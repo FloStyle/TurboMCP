@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "03c24b0321425ab13266e2fe2a5668699b53be5e",
+  "plugin_tree": "f9fb5bf64d9fad802f579cd672f5a96248cbb1d1",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -641,6 +641,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-backward-review.py",
         "Tools/test-graph-fix-backward.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -2336,6 +2337,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-backward-review.py",
         "Tools/test-graph-fix-backward.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -3920,6 +3922,7 @@
         "Tools/test-agent-help.py",
         "Tools/test-asset-describe-metadata.py",
         "Tools/test-asset-recovery.py",
+        "Tools/test-backward-review.py",
         "Tools/test-batch-sequence.py",
         "Tools/test-bp-lint.py",
         "Tools/test-collapse-function.py",
