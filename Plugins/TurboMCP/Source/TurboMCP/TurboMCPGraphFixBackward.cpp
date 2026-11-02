@@ -200,12 +200,13 @@ namespace
             return false;
         }
         int32 Matches = 0;
-        Out.Graph = TurboMCPNodeId::FindGraphByName(Out.Blueprint, Wanted, Matches);
-        if (!Out.Graph || Matches != 1)
+        UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(Out.Blueprint, Wanted, Matches);
+        if (!Graph || Matches != 1)
         {
             OutError = TEXT("Graph is missing or ambiguous. Use a unique graph name from the reader.");
             return false;
         }
+        Out.Graph = Graph;
         return true;
     }
 
