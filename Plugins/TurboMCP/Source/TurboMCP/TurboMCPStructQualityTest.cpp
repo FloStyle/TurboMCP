@@ -3,7 +3,7 @@
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Tools/TurboMCPToolsets.h"
 #include "Misc/AutomationTest.h"
-#include "Engine/UserDefinedStruct.h"
+#include "StructUtils/UserDefinedStruct.h"
 #include "Kismet2/StructureEditorUtils.h"
 #include "ScopedTransaction.h"
 #include "UObject/Package.h"
@@ -57,3 +57,4 @@ bool FTurboMCPStructQualityTest::RunTest(const FString& Parameters)
     return true;
 }
 #endif
+
