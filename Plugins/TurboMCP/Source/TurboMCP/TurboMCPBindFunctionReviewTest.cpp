@@ -56,6 +56,7 @@ bool FTurboMCPBindFunctionReviewTest::RunTest(const FString& Parameters)
     if(!TestNotNull(TEXT("Create Event node"),Delegate)) return false;
     TestEqual(TEXT("Function selected"),Delegate->GetFunctionName(),FName(TEXT("OnTimer")));
     TestTrue(TEXT("Implicit self"),Delegate->GetObjectInPin()->LinkedTo.IsEmpty());
+    TestTrue(TEXT("Empty input reported accurately"),First.Contains(TEXT("previously unconnected")));
     TestTrue(TEXT("Output identifies created node"),First.Contains(TurboMCPNodeId::MakeForNode(Delegate,true)));
     Package->SetDirtyFlag(false);
     const FString Repeat=Edit(TEXT("OnTimer")); AddInfo(Repeat);
@@ -76,6 +77,11 @@ bool FTurboMCPBindFunctionReviewTest::RunTest(const FString& Parameters)
     for(const FString Function:{TEXT("MissingHandler"),TEXT("K2_GetActorLocation")})
         TestTrue(TEXT("Missing/incompatible function refuses"),Edit(Function).Contains(TEXT("refused:")));
     TestTrue(TEXT("Partial object pair refuses"),Edit(TEXT("OnTimer"),SelfId).Contains(TEXT("refused:")));
+    TestTrue(TEXT("Empty graph refuses"),UTurboMCPEditToolset::EditTurboMCPBindFunction(Asset,TEXT(""),Target,TEXT("Delegate"),TEXT("OnTimer")).Contains(TEXT("refused:")));
+    TestTrue(TEXT("Non-object output refuses"),Edit(TEXT("OnTimer"),Target,TEXT("ReturnValue")).Contains(TEXT("refused:")));
+    const int32 OriginalY=Timer->NodePosY; Timer->NodePosY=MAX_int32;
+    TestTrue(TEXT("Coordinate overflow refuses"),Edit(TEXT("OnTimer")).Contains(TEXT("refused:")));
+    Timer->NodePosY=OriginalY;
     TestFalse(TEXT("Refusals clean"),Package->IsDirty()); TestTrue(TEXT("Refusals preserve input"),Input->LinkedTo.IsEmpty());
     const FString Explicit=Edit(TEXT("OnTimer"),SelfId,TEXT("self")); AddInfo(Explicit);
     TestTrue(TEXT("Explicit object succeeds"),Explicit.StartsWith(TEXT("changed\n")));
@@ -84,6 +90,11 @@ bool FTurboMCPBindFunctionReviewTest::RunTest(const FString& Parameters)
         auto* Bound=Cast<UK2Node_CreateDelegate>(Input->LinkedTo[0]->GetOwningNode());
         TestTrue(TEXT("Object endpoint preserved"),Bound && Bound->GetObjectInPin()->LinkedTo.Contains(Self->FindPinChecked(TEXT("self"))));
     }
+    Package->SetDirtyFlag(false);
+    const int32 ExplicitCount=Graph->Nodes.Num();
+    TestTrue(TEXT("Repeated explicit object unchanged"),Edit(TEXT("OnTimer"),SelfId,TEXT("self")).StartsWith(TEXT("unchanged\n")));
+    TestFalse(TEXT("Explicit no-op clean"),Package->IsDirty());
+    TestEqual(TEXT("Explicit no-op node count"),Graph->Nodes.Num(),ExplicitCount);
     AddInfo(UTurboMCPEditToolset::EditTurboMCPGraphTidy(Asset,Graph->GetName(),false,{}));
     const FString Capture=UTurboMCPLookToolset::LookTurboMCPCapture(Asset,Graph->GetName(),TEXT("graph"),TEXT(""),TEXT("1600x900"));
     AddInfo(TEXT("Bind-function capture: ")+Capture); TestTrue(TEXT("Capture"),Capture.StartsWith(TEXT("look:")));
