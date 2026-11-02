@@ -75,7 +75,13 @@
       "Live tool help states graph selection, effects and compilation/save limits"
     ],
     "capture": "KnotsReview_Routing_native_1600x900_C00680D848E9F23DCD3DF3B763AA2713.png",
-    "visual_review": "Inspected native capture: aligned source wire, one shared knot, forward target approaches, no obstacle overlap; no backward target-entry hooks."
+    "visual_review": "Inspected native capture: aligned source wire, one shared knot, forward target approaches, no obstacle overlap; no backward target-entry hooks.",
+    "offline": {
+      "run": "bdb24dcdbf984cec95db7ede1dda1e12",
+      "candidate": "00b926a",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "fixes": [
     "Measured node and pin geometry replaces stored-size estimates for route planning",
