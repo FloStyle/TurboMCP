@@ -1065,6 +1065,19 @@
         "No automatic compilation or saving; no persistence or runtime behavior certification.",
         "Shared producers, deeply nested comments and arbitrary graph types are not exhaustively tested."
       ]
+    },
+    {
+      "id": "WF-GRAPH-POSITIONS",
+      "title": "Place selected nodes at exact coordinates with atomic validation and undo",
+      "status": "in_progress",
+      "review": "docs/audit/positions-review.json",
+      "tools_used": [],
+      "focus_tools": [
+        "EditTurboMCPGraphPositions"
+      ],
+      "limitations": [
+        "Build/editor checks pending; not counted as reviewed."
+      ]
     }
   ],
   "tool_usage": {

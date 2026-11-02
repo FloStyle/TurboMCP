@@ -14,5 +14,16 @@
   ],
   "limitations": [
     "Not accepted yet"
-  ]
+  ],
+  "confirmed_bug": {
+    "run": "540f857cc26942e49988c41c49f77e27",
+    "candidate": "aa5fe5b",
+    "state": "failed_as_expected",
+    "description": "Boolean x=true was coerced to 1, moved the node and dirtied the package instead of refusing."
+  },
+  "repair": {
+    "candidate": "c80fd7d",
+    "state": "implemented_testing",
+    "description": "Require actual JSON number fields and a string ID before conversion. Explain exact placement, comment-only movement and safety prerequisites in live help."
+  }
 }
