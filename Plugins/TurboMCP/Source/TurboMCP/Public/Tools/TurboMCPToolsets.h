@@ -1977,6 +1977,11 @@ public:
 	 * x and y are absolute integer graph coordinates, including negative coordinates,
 	 * in the signed 32-bit range. Supply 1..4096 unique nodes; omit unchanged nodes.
 	 * Validates the entire batch before writing; unlisted nodes stay in place.
+	 * Numeric strings and booleans are refused. An already matching batch is a clean no-op.
+	 * This is exact manual placement, not tidy: overlaps and backward wires are permitted.
+	 * Moving a comment moves only its box, not its contents. Include contained nodes explicitly
+	 * or use GraphGroupMove for a rigid group move. Links, defaults and sizes are unchanged.
+	 * Requires an idle editor outside PIE and active transactions.
 	 * @param Positions JSON array encoded as a string. Example: [{"node":"exact reader node ID","x":100,"y":200}]
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
