@@ -473,6 +473,28 @@ bool FTurboMCPBackwardReviewTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Forced repair can be undone"), GEditor->UndoTransaction(false));
     TestEqual(TEXT("Undo forced target"), Call->NodePosX, 850);
     Call->NodePosX = 300;
+    Call->NodePosX = 950;
+    FTurboMCPGraphFixBackward::FPlan Measured;
+    TestTrue(TEXT("Plan measured-width backward connection"), FTurboMCPGraphFixBackward::Plan(Asset, Graph->GetName(), true, Measured, ForceError));
+    TestTrue(TEXT("Visible backward wire detected even when stored node width is zero"), Measured.BackwardExecFound > 0);
+    Call->NodePosX = 300;
+    FTurboMCPGraphFixBackward::FPlan Stale;
+    TestTrue(TEXT("Create plan for stale-position guard"), FTurboMCPGraphFixBackward::Plan(Asset, Graph->GetName(), false, Stale, ForceError));
+    Call->NodePosX = 301;
+    TestTrue(TEXT("Stale positions refuse before writing"), FTurboMCPGraphFixBackward::Apply(Stale).StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Stale refusal preserves later position"), Call->NodePosX, 301);
+    Call->NodePosX = 300;
+    auto* UnrelatedBox = NewObject<UEdGraphNode_Comment>(Graph, NAME_None, RF_Transactional);
+    Graph->AddNode(UnrelatedBox, false, false); UnrelatedBox->CreateNewGuid();
+    UnrelatedBox->NodePosX = 1120; UnrelatedBox->NodePosY = -100;
+    UnrelatedBox->NodeWidth = 600; UnrelatedBox->NodeHeight = 600;
+    UnrelatedBox->NodeComment = TEXT("Unrelated group");
+    FTurboMCPGraphFixBackward::FPlan BoxGuard;
+    TestTrue(TEXT("Plan near unrelated comment"), FTurboMCPGraphFixBackward::Plan(Asset, Graph->GetName(), true, BoxGuard, ForceError));
+    for (const auto& N : BoxGuard.Nodes)
+        if (N.Key == TurboMCPNodeId::MakeKey(Call->NodeGuid))
+            TestEqual(TEXT("Repair does not enter an unrelated comment"), N.PlannedX, 300.0);
+    Graph->RemoveNode(UnrelatedBox);
     auto MakePure = [&](int32 X)
     {
         auto* Pure = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional);

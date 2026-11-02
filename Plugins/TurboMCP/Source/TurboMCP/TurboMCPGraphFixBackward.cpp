@@ -136,7 +136,14 @@ namespace
 	 */
 	FTurboMCPLayoutReport::FRect RectOf(const UEdGraphNode* InNode)
 	{
-		return FTurboMCPLayoutReport::RectOf(InNode);
+		auto Rect = FTurboMCPLayoutReport::RectOf(InNode);
+        if (InNode)
+        {
+            const FVector2D Size = FTurboMCPGraphTidy::AlignmentNodeSize(InNode);
+            Rect.MaxX = Rect.MinX + Size.X;
+            Rect.MaxY = Rect.MinY + Size.Y;
+        }
+        return Rect;
 	}
 
 	/** True when two rectangles overlap, touching edges NOT counting, as the report defines it. */
@@ -456,18 +463,19 @@ namespace
 	bool MoveStaysInsideItsBox(const FTurboMCPGraphFixBackward::FNode& InMoved,
 		const TArray<FTurboMCPLayoutReport::FRect>& InBoxRects)
 	{
-		if (InMoved.BoxIndex == INDEX_NONE || !InBoxRects.IsValidIndex(InMoved.BoxIndex))
-		{
-			return true;
-		}
-
-		const FTurboMCPLayoutReport::FRect& Box = InBoxRects[InMoved.BoxIndex];
-		const FTurboMCPLayoutReport::FRect Moved = PlannedRect(InMoved);
-
-		// The box's rectangle starts `TitleBarHeight` below its position, because the title bar strip
-		// sits above it - the same convention `FTurboMCPComment` uses for membership.
-		return Moved.MinX >= Box.MinX && Moved.MaxX <= Box.MaxX
-			&& Moved.MinY >= Box.MinY && Moved.MaxY <= Box.MaxY;
+        const auto Moved = PlannedRect(InMoved);
+        auto Original = Moved;
+        Original.MinX = InMoved.X; Original.MinY = InMoved.Y;
+        Original.MaxX = InMoved.X + InMoved.Width; Original.MaxY = InMoved.Y + InMoved.Height;
+        auto Contains = [](const FTurboMCPLayoutReport::FRect& Box, const FTurboMCPLayoutReport::FRect& Node)
+        { return Node.MinX >= Box.MinX && Node.MaxX <= Box.MaxX && Node.MinY >= Box.MinY && Node.MaxY <= Box.MaxY; };
+        for (const auto& Box : InBoxRects)
+        {
+            const bool WasInside = Contains(Box, Original);
+            const bool IsInside = Contains(Box, Moved);
+            if (WasInside != IsInside || (RectsOverlap(Box, Moved) && !IsInside)) return false;
+        }
+        return true;
 	}
 
 	/** Records a move on the plan AND applies it to the planned position, so the next rule sees it. */
@@ -875,7 +883,7 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 					Target.PlannedX = OldX;
 					Target.PlannedY = OldY;
 					AddRefusal(OutPlan, FString::Printf(
-						TEXT("%s: placing it right of %s would take it out of its comment box. The move "
+						TEXT("%s: placing it right of %s would change its comment membership or cross a comment boundary. The move "
 							"was refused rather than clamped, because a clamped position is not the one "
 							"the rule asked for."),
 						*Target.Key, *Source.Key));
@@ -1076,7 +1084,7 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 						TEXT("%s: it would have been pushed along by %s but could not be placed (%s). "
 							"The push was refused rather than left overlapping."),
 						*Candidate.Key, *Moved.Key,
-						Blocker.IsEmpty() ? TEXT("it would leave its box") : *Blocker));
+						Blocker.IsEmpty() ? TEXT("it would change comment membership") : *Blocker));
 					continue;
 				}
 
@@ -1200,7 +1208,7 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 			Getter.PlannedX = OldX;
 			Getter.PlannedY = OldY;
 			AddRefusal(OutPlan, FString::Printf(
-				TEXT("%s: moving it left of %s would take it out of its comment box. Refused rather "
+				TEXT("%s: moving it left of %s would change its comment membership or cross a comment boundary. Refused rather "
 					"than clamped."), *Getter.Key, *Consumer.Key));
 			continue;
 		}
@@ -1330,7 +1338,7 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 			Stray.PlannedX = OldX;
 			Stray.PlannedY = OldY;
 			AddRefusal(OutPlan, FString::Printf(
-				TEXT("%s: bringing it next to %s would take it out of its comment box. Refused."),
+				TEXT("%s: bringing it next to %s would change its comment membership or cross a comment boundary. Refused."),
 				*Stray.Key, *Target.Key));
 			continue;
 		}
