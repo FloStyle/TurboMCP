@@ -1225,12 +1225,12 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId);
 
-    /** Refactor an explicitly ordered linear chain of synchronous calls into Sequence rows. Groups is JSON [["reader ID 1","reader ID 2"],["reader ID 3"]]. Keeps original execution order and puts continuation last; refuses latent/branching/cyclic groups. Optional trivial-value splitting; one undo, no compile/save.
+    /** Preview ordered Sequence rows on a transient graph without editing the asset; no compile or save, and requires an idle editor. Rows run in order, followed by the original continuation on the final output; this is not parallel execution. Preview first, edit, read back, tidy the affected nodes, inspect a capture, then compile and save explicitly.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
-	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
-	 * @param Groups JSON array encoded as a string: nonempty arrays of reader node IDs, e.g. [["first ID","second ID"],["third ID"]]. Groups must form an ordered linear chain of synchronous calls; latent, branching and cyclic groups are refused.
-	 * @param bSplitValues Optional boolean, default true. Split supported trivial values for the selected groups when true. false leaves those shared values in place; execution ordering checks still apply.
+	 * @param GraphName Required exact existing K2 graph name from the reader, e.g. EventGraph. Empty, missing and ambiguous names are refused.
+	 * @param Groups JSON array encoded as a string: 2 to 64 nonempty arrays, at most 4096 exact reader node IDs in total, e.g. [["first ID","second ID"],["third ID"]]. Groups must form an ordered linear chain of synchronous calls; latent, branching and cyclic groups are refused.
+	 * @param bSplitValues Optional boolean, default true. Copy supported pure self, variable-get and literal sources per selected consumer when true; unrelated values are untouched. false preserves shared sources. Splitting may create nodes; use the edit result IDs, not provisional preview IDs.
 	 */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues = true);
@@ -2094,12 +2094,12 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId);
 
-    /** Refactor an explicitly ordered linear chain of synchronous calls into Sequence rows. Groups is JSON [["reader ID 1","reader ID 2"],["reader ID 3"]]. Keeps original execution order and puts continuation last; refuses latent/branching/cyclic groups. Optional trivial-value splitting; one undo, no compile/save.
+    /** Replace an ordered synchronous call chain with Sequence rows in one undo transaction; marks the asset modified but does not compile, save or tidy it. Rows run in order, followed by the original continuation on the final output; this is not parallel execution. Preview first, edit, read back, tidy the affected nodes, inspect a capture, then compile and save explicitly.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
-	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
-	 * @param Groups JSON array encoded as a string: nonempty arrays of reader node IDs, e.g. [["first ID","second ID"],["third ID"]]. Groups must form an ordered linear chain of synchronous calls; latent, branching and cyclic groups are refused.
-	 * @param bSplitValues Optional boolean, default true. Split supported trivial values for the selected groups when true. false leaves those shared values in place; execution ordering checks still apply.
+	 * @param GraphName Required exact existing K2 graph name from the reader, e.g. EventGraph. Empty, missing and ambiguous names are refused.
+	 * @param Groups JSON array encoded as a string: 2 to 64 nonempty arrays, at most 4096 exact reader node IDs in total, e.g. [["first ID","second ID"],["third ID"]]. Groups must form an ordered linear chain of synchronous calls; latent, branching and cyclic groups are refused.
+	 * @param bSplitValues Optional boolean, default true. Copy supported pure self, variable-get and literal sources per selected consumer when true; unrelated values are untouched. false preserves shared sources. Splitting may create nodes; use the edit result IDs, not provisional preview IDs.
 	 */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues = true);
