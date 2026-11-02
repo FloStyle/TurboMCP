@@ -958,7 +958,7 @@ public:
 	 * Geometry is estimated when measured sizes are unavailable; a lower crossing count does not prove visual or behavioral correctness.
 	 * Edit replans against current state. Rollback does not verify full graph restoration; inspect partial results before saving.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused; use a full path when possible.
-	 * @param GraphName Required string naming an event, function or macro graph, case-insensitive with surrounding whitespace ignored. Empty selects EventGraph, or the first available graph if absent. Example: EventGraph. Specify a name to avoid fallback selection.
+	 * @param GraphName Exact existing Blueprint graph name, case-insensitive with surrounding whitespace ignored; empty, missing or ambiguous names are refused. Example: EventGraph.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
@@ -1806,7 +1806,7 @@ public:
 	 * Geometry is estimated when measured sizes are unavailable; a lower crossing count does not prove visual or behavioral correctness.
 	 * Edit replans against current state. Rollback does not verify full graph restoration; inspect partial results before saving.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused; use a full path when possible.
-	 * @param GraphName Required string naming an event, function or macro graph, case-insensitive with surrounding whitespace ignored. Empty selects EventGraph, or the first available graph if absent. Example: EventGraph. Specify a name to avoid fallback selection.
+	 * @param GraphName Exact existing Blueprint graph name, case-insensitive with surrounding whitespace ignored; empty, missing or ambiguous names are refused. Example: EventGraph.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);

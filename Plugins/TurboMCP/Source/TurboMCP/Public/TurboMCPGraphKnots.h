@@ -16,61 +16,11 @@ class UEdGraph;
 class UEdGraphNode;
 
 /**
- * Reroute knots in front of `P-GRAPH-KNOTS` and `E-GRAPH-KNOTS`.
- *
- * THE CONTRACT IS NARROWER THAN THE PROSE, AND THAT IS THE DESIGN CONSTRAINT. `06_ACCEPTANCE.md`
- * states T-LAY-10 as:
- *
- *     Preview lists only wires that cross nodes; after Edit those wires are straight
- *
- * `03_TOOLS.md` adds qualifiers, and each one is a REFUSAL or a PLACEMENT RULE rather than a wish:
- * a knot is placed only where the route through it is ONE RUN PLUS ONE BEND, wires between
- * NEIGHBOURING COLUMNS are skipped, the position is LEVEL WITH THE SOURCE OR THE TARGET PIN, it must
- * be in FREE SPACE, two knots are never stacked, and one pin feeding several distant nodes SHARES a
- * single knot.
- *
- * THE RULES, AND THE CONSTANTS THEY USE. Every constant below is a CHOICE made by this capability,
- * because the engine and the plugin have no such notion, and each is named so it can be argued with.
- *
- *  - C1 A wire CROSSES a node when the closed segment between its two computed pin positions meets
- *    the OPEN rectangle of that node. Open means a wire touching an edge exactly does NOT count,
- *    for the same reason two nodes sharing a border are not overlapping.
- *  - C2 The unit reported and fixed is the WIRE, once, naming every node it crosses. Reporting once
- *    per crossing would list one wire three times and make the before and after counts incomparable.
- *  - C3 A knot sits at one of exactly TWO positions: level with the target pin at
- *    `(TargetX, SourceY)`, or level with the source pin at `(SourceX, TargetY)`. Anywhere else makes
- *    a route with two bends. NOTE that this clause does NOT mean "fewer bends than before": before
- *    the knot the wire has ZERO bends, and the clause exists to stop the tool introducing a THIRD
- *    segment, not to minimise a number that starts at zero.
- *  - C4 A node COLUMN is its `NodePosX`, two nodes share a column within `ColumnBand`, and two
- *    columns are NEIGHBOURING when the horizontal gap between their rectangles is within
- *    `NeighbourGap`. A wire between neighbouring columns is refused, because a knot's own footprint
- *    is a large fraction of such a distance and the route had no room to bend badly.
- *  - C5 FREE SPACE: the candidate position plus the knot's own footprint must not meet any other
- *    node's rectangle, any comment box, or any existing knot's footprint inflated by
- *    `StackClearance`. Using the FOOTPRINT rather than the centre is what makes "never stack two
- *    knots" a consequence of the same test instead of a second rule.
- *  - C6 Wires are grouped by their SOURCE PIN, compared by pin identity and not by owning node,
- *    because two output pins of one node are two sources. A group of one gets its own knot; a group
- *    of several gets ONE knot at the candidate acceptable to every member. A group with no such
- *    candidate is refused sharing and falls back to one knot per wire, and the refusal is REPORTED.
- *  - C7 At most ONE knot per wire. A second knot would add a second bend, so a wire that still
- *    crosses a node after its single knot is REPORTED as not fixed rather than fixed twice. This
- *    also stops an implementation looping until clean on a graph where the route cannot avoid the
- *    obstacle.
- *
- * IT MEASURES AND ROLLS BACK. `08_ROADMAP.md` names this capability as one of the three that do.
- * `Plan` counts the crossings; `Apply` performs the pass, RE-MEASURES the same way, and when the
- * result is not better - `after >= before`, because leaving the count unchanged has added knots for
- * nothing - it undoes EVERYTHING, then re-measures to CONFIRM the undo restored the original count.
- * A rollback whose result is not checked is a rollback nobody knows works.
- *
- * WHY THAT RISK IS ACCEPTABLE: `UK2Node_Knot::IsCompilerRelevant` returns false and `ExpandNode`
- * collapses the knot, so a knot CANNOT change what a Blueprint does. A failed rollback therefore
- * leaves a cosmetic mess and not a behavioural one.
- *
- * `P/E-` shares ONE code path up to the write (`D-02`), and EVERY refusal is decided in `Plan` so
- * the Preview states it rather than the Edit surprising a caller who had already agreed.
+ * Plan and insert reroute knots for estimated node crossings in a named Blueprint graph.
+ * Preview does not edit the graph. Edit replans and uses an undo transaction.
+ * Geometry estimates are not a guarantee about rendered splines or runtime behavior.
+ * Non-improving edits attempt restoration, but the result must be inspected before saving.
+ * No automatic compilation or saving is performed.
  */
 class FTurboMCPGraphKnots
 {

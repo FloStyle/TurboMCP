@@ -361,23 +361,7 @@ namespace
 		bool IsUsable() const { return Width > 0.0 && Height > 0.0; }
 	};
 
-	/**
-	 * Measures what space a knot occupies.
-	 *
-	 * A NEWLY CREATED KNOT HAS NO SIZE, WHICH IS THE OPPOSITE OF WHAT THE SPEC ASSUMED, AND IT WAS
-	 * MEASURED RATHER THAN REASONED ABOUT. The spec's OPEN-1 worried that `NodeWidth`/`NodeHeight`
-	 * might be zero headlessly, then concluded from `LookTurboMCPLayoutReport` wire lengths that they are real.
-	 * BOTH ARE TRUE AND THEY ARE ABOUT DIFFERENT NODES:
-	 *
-	 *  - a knot that came out of a SAVED PACKAGE carries the size Slate measured when it was last
-	 *    rendered, which is why the probe graph's wire lengths are meaningful;
-	 *  - a knot made by `NewObject` right now has ZERO, because Slate has never drawn it. READING THAT
-	 *    ZERO AS "CLEARANCE UNKNOWN" AND REFUSING IS CORRECT AND UNUSABLE AT ONCE: it refuses every
-	 *    graph that has no knot yet, which is every graph this capability is for.
-	 *
-	 * So the size comes from an EXISTING knot when the graph has one, and otherwise from a throwaway
-	 * object built here. There is no path that invents a number.
-	 */
+	/** Reuse stored knot dimensions when available; otherwise disclose a fixed estimate. */
 	FFootprint MeasureKnotFootprint(UEdGraph* InGraph)
 	{
 		FFootprint Out;
@@ -1308,9 +1292,8 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 		// created. LOOKING A KNOT UP AGAIN BY ITS POSITION WOULD BE A GUESS: two wires can be planned
 		// at the same coordinates when they share one, and a position is not an identity. Holding the
 		// pointer is exact.
-		// `Created` AND `Completed` ARE APPENDED IN LOCKSTEP, so they always have the same length and
-		// the same index means the same wire. They are kept separate because one holds the undo
-		// handle and the other holds the information needed to re-link the original wire.
+		// CompletedKnots tracks each routed wire; shared knots appear more than once.
+		// Remove each knot once while restoring every original connection.
 		TSet<UK2Node_Knot*> RemovedKnots;
         for (int32 Index = Completed.Num() - 1; Index >= 0; --Index)
 		{
