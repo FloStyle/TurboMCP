@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "workflow": "WF-GRAPH-SEQUENCE",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPGraphSequence",
+    "EditTurboMCPGraphSequence"
+  ],
+  "scenario": "Read an existing synchronous call chain, preview two ordered Sequence rows, edit with the original continuation last, verify defaults and connections, undo, then reapply, tidy, capture and compile explicitly.",
+  "confirmed_failures": [
+    {
+      "run": "70755d816575474790e1cfdb9452808f",
+      "finding": "Live help omits compile/save behavior because only the first summary sentence is exposed; native test did not run."
+    },
+    {
+      "run": "3887bc6cfebc4e01a1ba52b0ae0213c7",
+      "finding": "An unrelated unsupported pure value prevents preview and edit with splitting enabled."
+    },
+    {
+      "run": "32054ff2e9d24a7ebd752b33c29d2ebd",
+      "finding": "Unchanged-candidate repeat after patch script aborted before writing; not independent evidence."
+    }
+  ],
+  "source_fixes": [
+    "Restrict value splitting to sources used by selected calls.",
+    "Use unique node resolver and strict JSON string IDs.",
+    "Require explicit K2 graph and check coordinate range.",
+    "Reject a continuation that re-enters selected calls.",
+    "Verify entry and continuation reciprocal connections.",
+    "Return Sequence and row IDs, value-copy mapping and explicit follow-up layout guidance.",
+    "Document sequential rather than parallel behavior, parameter bounds, side effects and explicit compile/save."
+  ],
+  "remaining": [
+    "Focused editor result and screenshot inspection",
+    "Value splitting and refusal controls",
+    "Offline gate, integration and coverage update"
+  ],
+  "limitations": [
+    "Synthetic workflow acceptance is not all graphs or callback behaviors.",
+    "Compilation and saving remain separate; rollback restoration is reported as unverified on an apply failure."
+  ]
+}
