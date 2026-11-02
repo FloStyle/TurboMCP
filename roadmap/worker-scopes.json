@@ -3104,6 +3104,15 @@
             "Tools/test-vars-add.py"
           ],
           "new_files": []
+        },
+        "graph-group-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPScopedTidyTest.cpp",
+            "Tools/test-scoped-tidy.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
