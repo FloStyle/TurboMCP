@@ -3166,6 +3166,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSequenceReviewTest.cpp",
             "Tools/test-sequence-review.py"
           ]
+        },
+        "split-value-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSplitValueReviewTest.cpp",
+            "Tools/test-split-value-review.py"
+          ]
         }
       },
       "preserve_rows": []
