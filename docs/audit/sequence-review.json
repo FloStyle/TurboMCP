@@ -73,5 +73,11 @@
         "Explicit tidy, native capture and Blueprint compilation"
       ]
     }
-  ]
+  ],
+  "offline_gate": {
+    "run": "9da5c40920a545e98a7e395111deffbd",
+    "result": "26/26 passed",
+    "integrated_commit": "fad1ed6",
+    "dirty": false
+  }
 }
