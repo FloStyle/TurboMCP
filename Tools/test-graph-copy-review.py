@@ -9,9 +9,11 @@ help_errors = []
 for toolset, tool in ((PREVIEW_TOOLSET, "PreviewTurboMCPGraphCopy"), (EDIT_TOOLSET, "EditTurboMCPGraphCopy")):
     help_text = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolset": toolset, "tool": tool})
     print(help_text)
-    for phrase in ("sourceGraph", "nodeIds", "save"):
+    for phrase in ("sourceGraph", "nodeIds"):
         if phrase not in help_text:
             help_errors.append(f"{tool} help lacks {phrase}")
+    if not any(phrase in help_text for phrase in ("does not compile or save", "without applying the copy, compiling or saving")):
+        help_errors.append(f"{tool} help lacks explicit compile/save behavior")
 name = "TurboMCP.Graph.CopyReview"
 session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
 raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})

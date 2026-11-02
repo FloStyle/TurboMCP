@@ -469,7 +469,7 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 		return true;
 	}
 
-	// ---- THE SELECTION, AND EVERY KEY THAT IS NOT THERE NAMED ------------------------------------------
+	// Resolve every selected node before mutation.
 	TArray<UEdGraphNode*> Selected;
 	if (!CollectSelected(SourceGraphObject, InNodeKeys, Selected, OutPlan.Refusals))
 	{
@@ -484,7 +484,7 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 
 	OutPlan.TargetNodeCountBefore = TargetGraphObject->Nodes.Num();
 
-	// ---- EVERY NODE, ITS CLASS, AND EVERY MEMBER THE TARGET MUST HAVE ----------------------------------
+	// Check node eligibility and required destination members.
 	for (int32 Index = 0; Index < Selected.Num(); ++Index)
 	{
 		UEdGraphNode* Node = Selected[Index];
@@ -514,10 +514,7 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 			continue;
 		}
 
-		// THE SAME-ASSET CASE IS EXEMPT FROM THE MEMBER CHECK, AND THAT IS NOT A SHORTCUT. A copy inside one
-		// Blueprint between two of its graphs moves the member names to an asset that ALREADY HAS THEM by
-		// construction, so checking them would be a check that cannot fail - and this project has now recorded
-		// three suites whose counts overstated their coverage for exactly that reason.
+		// Nodes copied within one Blueprint retain the same member declarations.
 		const bool bSameAsset = SourceResolved.ObjectPath.Equals(TargetResolved.ObjectPath,
 			ESearchCase::CaseSensitive);
 		if (bSameAsset)

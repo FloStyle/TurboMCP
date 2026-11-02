@@ -73,7 +73,7 @@ public:
 		/** The class the copy will have, read off the source. */
 		FString ClassName;
 
-		/** 1-based index among the selected nodes, so the report can count. */
+		/** Zero-based index in the source selection. */
 		int32 Index = 0;
 	};
 
