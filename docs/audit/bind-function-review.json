@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "workflow": "WF-BIND-FUNCTION",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPBindFunction",
+    "EditTurboMCPBindFunction"
+  ],
+  "scenario": "Connect an existing no-argument function to Set Timer by Event on self or an explicit object endpoint; preview, edit, repeat, replace, undo, tidy, capture and compile.",
+  "confirmed_failures": [
+    {
+      "run": "433ada6fc992451bbf7035dc53641e98",
+      "candidate": "1da1b47",
+      "findings": [
+        "Repeated identical binding creates another node and dirties the asset.",
+        "Replacement result omits the displaced source identity."
+      ],
+      "passing_checks": [
+        "Preview preservation",
+        "Self and explicit object binding",
+        "Signature/missing-function/partial-object refusals",
+        "Undo",
+        "Explicit compilation"
+      ]
+    }
+  ],
+  "remaining": [
+    "Verify repaired repeated-call no-op and replacement reporting",
+    "Inspect final capture and finish focused controls",
+    "Offline gate and integration"
+  ],
+  "limitations": [
+    "Synthetic timer-delegate scenario; not all delegate signatures or object classes.",
+    "Runtime registration requires execution of the owning node; creation alone does not register the delegate."
+  ]
+}
