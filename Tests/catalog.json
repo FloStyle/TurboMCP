@@ -995,6 +995,13 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-backward-review",
+      "path": "Tools/test-backward-review.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
     }
   ]
 }

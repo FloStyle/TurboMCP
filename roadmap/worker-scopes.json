@@ -3113,6 +3113,18 @@
             "Tools/test-scoped-tidy.py"
           ],
           "new_files": []
+        },
+        "backward-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackward.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackwardTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphFixBackward.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPScopedTidyTest.cpp"
+          ],
+          "new_files": [
+            "Tools/test-backward-review.py"
+          ]
         }
       },
       "preserve_rows": []
