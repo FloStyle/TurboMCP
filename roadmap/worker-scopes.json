@@ -3217,6 +3217,17 @@
             "Tools/test-enum-creation.py"
           ],
           "new_files": []
+        },
+        "struct-quality-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructQualityTest.cpp",
+            "Tools/test-struct-quality.py"
+          ]
         }
       },
       "preserve_rows": []
