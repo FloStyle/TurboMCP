@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "1402c4d374698cfa681238e4dff6f8f47240ff1d",
+  "plugin_tree": "591619178d7976fbc9cb969b51bd0d3f02cc50b8",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -664,11 +664,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 531
+          "line": 535
         }
       ],
-      "test_references": [],
-      "static_call_evidence": "missing",
+      "test_references": [
+        "Tools/test-scoped-tidy.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -2357,11 +2359,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 530
+          "line": 534
         }
       ],
-      "test_references": [],
-      "static_call_evidence": "missing",
+      "test_references": [
+        "Tools/test-scoped-tidy.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -2379,11 +2383,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 533
+          "line": 537
         }
       ],
-      "test_references": [],
-      "static_call_evidence": "missing",
+      "test_references": [
+        "Tools/test-scoped-tidy.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",

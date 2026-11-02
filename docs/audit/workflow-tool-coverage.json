@@ -1023,17 +1023,26 @@
     {
       "id": "WF-GRAPH-GROUP",
       "title": "Move connected nodes while preserving comment boundaries",
-      "status": "in_progress",
+      "status": "scenario_accepted",
       "review": "docs/audit/graph-group-review.json",
-      "evidence": "53b63b42b6ba484da7c6572c6b9dcf56",
-      "tools_used": [],
+      "evidence": "728581bb16714ddc848bfeddb65a96a4",
+      "tools_used": [
+        "PreviewTurboMCPGraphGroupMove",
+        "PreviewTurboMCPGraphGroupPlacement",
+        "EditTurboMCPGraphGroupMove"
+      ],
       "focus_tools": [
         "PreviewTurboMCPGraphGroupMove",
         "PreviewTurboMCPGraphGroupPlacement",
         "EditTurboMCPGraphGroupMove"
       ],
       "limitations": [
-        "Boundary crossing fixed and verified; full workflow acceptance still pending. Tools are not added to accepted coverage."
+        "Rigid translation does not repair internal spacing or rewire nodes.",
+        "Placement optimizes estimated straight boundary wires, not all rendered crossings or global layout.",
+        "Selected fixture proves free placement and explicit comment transfer, not automatic selection of every destination or nested-comment topology.",
+        "No exhaustive multi-branch, all-node-class or pre-existing backward-wire layout guarantee.",
+        "No compile, execution semantics or saved reload tested: this workflow changes positions only.",
+        "Undo verified through the editor transaction API; no concurrent user mutation stress test."
       ]
     }
   ],
@@ -1482,9 +1491,18 @@
     ],
     "EditTurboMCPVarsAdd": [
       "WF-VARS-ADD"
+    ],
+    "PreviewTurboMCPGraphGroupMove": [
+      "WF-GRAPH-GROUP"
+    ],
+    "PreviewTurboMCPGraphGroupPlacement": [
+      "WF-GRAPH-GROUP"
+    ],
+    "EditTurboMCPGraphGroupMove": [
+      "WF-GRAPH-GROUP"
     ]
   },
-  "unique_tools_scenario_reviewed": 125,
+  "unique_tools_scenario_reviewed": 128,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

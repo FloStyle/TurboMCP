@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-GRAPH-GROUP",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPGraphGroupMove",
     "PreviewTurboMCPGraphGroupPlacement",
@@ -30,12 +30,51 @@
       "checks": 26
     }
   },
-  "remaining": [
-    "Exercise suggested placement followed by edit, destination-box transfer, selected comment contents, refusals and undo.",
-    "Finish live help and returned-English review before accepting the unreviewed tools."
-  ],
+  "remaining": [],
   "limitations": [
     "Rigid translation does not repair internal spacing or rewire nodes.",
-    "Placement optimizes estimated straight boundary wires, not all rendered crossings or global layout."
-  ]
+    "Placement optimizes estimated straight boundary wires, not all rendered crossings or global layout.",
+    "Selected fixture proves free placement and explicit comment transfer, not automatic selection of every destination or nested-comment topology.",
+    "No exhaustive multi-branch, all-node-class or pre-existing backward-wire layout guarantee.",
+    "No compile, execution semantics or saved reload tested: this workflow changes positions only.",
+    "Undo verified through the editor transaction API; no concurrent user mutation stress test."
+  ],
+  "workflow_evidence": {
+    "run": "728581bb16714ddc848bfeddb65a96a4",
+    "candidate": "ef94da369a806a100bf119ff2e20339f4e2de913",
+    "state": "passed",
+    "suite": "test-scoped-tidy",
+    "native_tests": [
+      "TurboMCP.Graph.ScopedTidy",
+      "TurboMCP.Graph.GroupMovement"
+    ],
+    "checks": [
+      "Live MCP parameter help and identifier rules",
+      "Preview preserves positions and clean package",
+      "Rigid translation preserves internal spacing, links and outside positions",
+      "Collision, comment-boundary, missing-node, missing-graph and empty-selection refusals",
+      "Placement offsets applied exactly with measured forward execution clearance",
+      "Explicit destination transfer without resizing",
+      "Selected comment moves its contents",
+      "Undo restores placement, comment and transfer coordinates"
+    ],
+    "capture": "GroupMove_MoveGroup_native_1600x900_7133E36C466E763BFEA1EC9D86DF3CD0.png",
+    "visual_review": "Inspected native capture: execution connections run forward, nodes do not overlap, and unrelated comment remains fixed."
+  },
+  "followup_failures": [
+    {
+      "run": "9f06bd1856524e6d95afe12c44f799ad",
+      "reason": "Test expected C++ parameter capitalization instead of actual camel-case MCP schema. Corrected assertion; this was not a tool defect."
+    },
+    {
+      "run": "2b20adc5e3b3459687ad1105e5c8c65f",
+      "state": "automated_pass_visual_failure",
+      "reason": "Screenshot showed a backward execution hairpin. Placement scored stored node widths instead of measured pin positions. Replaced scoring geometry and added forward-clearance assertion."
+    }
+  ],
+  "quality_review": {
+    "behavior_and_safety": "Shared preflight before transaction; source reviewed for coordinate overflow, comment membership and collision checks. Preview and edit recheck current geometry.",
+    "code_and_comments": "Corrected outdated preview guarantee; documented measured-pin requirement and execution clearance.",
+    "help_and_english": "Live parameter help checked. Empty returned destination now explicitly shows an empty string. Results distinguish preview, unchanged, error and changed; estimates do not claim global optimality."
+  }
 }
