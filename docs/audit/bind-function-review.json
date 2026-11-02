@@ -59,5 +59,11 @@
     "Missing/incompatible function, partial object pair, empty graph, non-object pin and coordinate overflow refuse cleanly",
     "Explicit Self output remains connected to Create Event object input",
     "Explicit tidy, native capture and compilation pass"
-  ]
+  ],
+  "offline_gate": {
+    "run": "0851c1fbc7c7497dafd56b19f81ab993",
+    "result": "26/26 passed",
+    "integrated_commit": "baa7678",
+    "dirty": false
+  }
 }
