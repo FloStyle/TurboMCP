@@ -26,6 +26,7 @@
 #include "Math/NumericLimits.h"
 #include "Math/UnrealMathUtility.h"
 #include "ScopedTransaction.h"
+#include "Editor.h"
 #include "UObject/Class.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
@@ -192,71 +193,21 @@ namespace
 			return false;
 		}
 
-		// EVERY KIND IS SEARCHED (`D-LAY-1`): a kind filter would silently exclude a graph nobody sees.
-		TArray<UEdGraph*> Graphs;
-		for (UEdGraph* Graph : Out.Blueprint->UbergraphPages)
-		{
-			if (Graph != nullptr) { Graphs.Add(Graph); }
-		}
-		for (UEdGraph* Graph : Out.Blueprint->FunctionGraphs)
-		{
-			if (Graph != nullptr) { Graphs.Add(Graph); }
-		}
-		for (UEdGraph* Graph : Out.Blueprint->MacroGraphs)
-		{
-			if (Graph != nullptr) { Graphs.Add(Graph); }
-		}
-
-		if (Graphs.Num() == 0)
-		{
-			OutError = FString::Printf(TEXT("%s has no graphs."), *Resolved.ObjectPath);
-			return false;
-		}
-
 		const FString Wanted = InGraphName.TrimStartAndEnd();
-		if (Wanted.IsEmpty())
-		{
-			// The event graph by default, because that is the one a caller means when they do not say,
-			// and the answer names it so nobody is left guessing.
-			for (UEdGraph* Candidate : Graphs)
-			{
-				if (NameMatches(Candidate->GetFName(), TEXT("EventGraph")))
-				{
-					Out.Graph = Candidate;
-					break;
-				}
-			}
-			if (Out.Graph == nullptr)
-			{
-				Out.Graph = Graphs[0];
-			}
-			return true;
-		}
-
-		for (UEdGraph* Candidate : Graphs)
-		{
-			if (NameMatches(Candidate->GetFName(), Wanted))
-			{
-				Out.Graph = Candidate;
-				break;
-			}
-		}
-
-		if (Out.Graph == nullptr)
-		{
-			TArray<FString> Names;
-			for (UEdGraph* Candidate : Graphs)
-			{
-				Names.Add(Candidate->GetName());
-			}
-			Names.Sort();
-			OutError = FString::Printf(
-				TEXT("'%s' is not a graph of %s. Its graphs are: %s"),
-				*Wanted, *Resolved.ObjectPath, *FString::Join(Names, TEXT(", ")));
-			return false;
-		}
-		return true;
-	}
+        if (Wanted.IsEmpty())
+        {
+            OutError = TEXT("GraphName is required. Read the Blueprint overview and choose an exact graph name.");
+            return false;
+        }
+        int32 Matches = 0;
+        Out.Graph = TurboMCPNodeId::FindGraphByName(Out.Blueprint, Wanted, Matches);
+        if (!Out.Graph || Matches != 1)
+        {
+            OutError = TEXT("Graph is missing or ambiguous. Use a unique graph name from the reader.");
+            return false;
+        }
+        return true;
+    }
 
 	/**
 	 * WHERE A PIN IS, COMPUTED FROM POSITIONS THIS PASS OWNS.
@@ -622,6 +573,12 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
 	OutPlan.GraphName = InGraphName.TrimStartAndEnd();
 	OutPlan.bForce = bInForce;
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+    {
+        OutError = TEXT("An idle editor is required; no graph changes were made.");
+        return false;
+    }
+
 
 	if (OutPlan.Asset.IsEmpty())
 	{
@@ -636,6 +593,25 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 	}
 
 	UEdGraph* Graph = Resolved.Graph;
+    FString GeometryError;
+    if (!FTurboMCPGraphTidy::PrepareAlignment(Resolved.Blueprint, Graph, GeometryError))
+    {
+        OutError = TEXT("Node geometry could not be measured: ") + GeometryError;
+        return false;
+    }
+    TSet<FString> NodeKeys;
+    for (const UEdGraphNode* Node : Graph->Nodes)
+    {
+        if (!Node) continue;
+        const FString Key = KeyOf(Node);
+        if (!Node->NodeGuid.IsValid() || NodeKeys.Contains(Key))
+        {
+            OutError = TEXT("Node identifiers are invalid or ambiguous; repair their identities before retrying. No graph changes were made.");
+            return false;
+        }
+        NodeKeys.Add(Key);
+    }
+
 	if (OutPlan.GraphName.IsEmpty())
 	{
 		OutPlan.GraphName = Graph->GetName();
@@ -668,32 +644,17 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 		// while the layout guards need a node to have AREA. See `FNode::MeasuredWidth`.
 		Read.MeasuredWidth = static_cast<double>(Node->NodeWidth);
 		Read.MeasuredHeight = static_cast<double>(Node->NodeHeight);
-		Read.Width = PlannedExtent(Read.MeasuredWidth);
-		Read.Height = PlannedExtent(Read.MeasuredHeight);
+        const FVector2D Size = FTurboMCPGraphTidy::AlignmentNodeSize(Node);
+        Read.Width = Size.X;
+        Read.Height = Size.Y;
 		Read.bIsComment = IsComment(Node);
 		Read.bIsKnot = IsKnot(Node);
 
-		// THE STORED WIDTH STAYS RAW, AND THE FALLBACK IS APPLIED ONLY WHEN A PLANNED LAYOUT IS MEASURED.
-		//
-		// THIS IS THE FIX FOR A REAL DISAGREEMENT, caught by this suite's own cross-check against
-		// `L-LAYOUT-REPORT`: 450 from the report against 402 from here on the same untouched graph.
-		// Substituting 48 for a node the engine never measured is CORRECT when describing a layout this
-		// pass intends to write, because a planned node genuinely has no measured geometry. It is WRONG
-		// when describing the graph AS IT EXISTS, because the report reads `NodeWidth` raw and the two
-		// numbers then describe different geometries - which defeats the whole point of a cross-check.
-		//
-		// So `Width` holds what the engine measured, `PlannedWireLength` takes a flag saying which
-		// geometry is being described, and the fallback is chosen at the point of use.
-		//
-		// MEASURED, AND WHY THE FALLBACK EXISTS AT ALL: `NodeWidth`/`NodeHeight` are zero for every node
-		// a commandlet builds, including ones loaded from a saved package, because Slate writes them when
-		// it DRAWS and a commandlet draws nothing. Refusing was tried in the knot pass and made the tool
-		// useless on every graph it exists for; a point is a real answer to "where is this node".
-		if (Read.Width <= 0.0 || Read.Height <= 0.0)
-		{
-			Read.bSizeFallback = true;
-			OutPlan.bUsedFallbackSizes = true;
-		}
+        if (!FMath::IsFinite(Read.Width) || !FMath::IsFinite(Read.Height) || Read.Width <= 0.0 || Read.Height <= 0.0)
+        {
+            OutError = TEXT("A node has no usable measured bounds; no graph changes were made.");
+            return false;
+        }
 
 		if (const UK2Node* AsK2 = Cast<UK2Node>(Node))
 		{
@@ -1507,9 +1468,7 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 				NearestDistance), /*bInPushed=*/false);
 	}
 
-    FString AlignmentError;
-    FTurboMCPGraphTidy::PrepareAlignment(FBlueprintEditorUtils::FindBlueprintForGraph(Graph),Graph,AlignmentError);
-    if(!AlignmentError.IsEmpty()) AddRefusal(OutPlan,TEXT("Native pin geometry unavailable; alignment uses estimated pin rows: ")+AlignmentError);
+    // Measurement was required before planning; reuse that geometry for pin alignment.
     // Alignment is conservative: preserve X, membership and collision guards.
     // Process exec from left to right, then pure producers from right to left.
     TArray<UEdGraphNode*> AlignNodes;
@@ -1590,7 +1549,9 @@ FString FTurboMCPGraphFixBackward::RenderPreview(const FPlan& InPlan)
 
 	if (InPlan.bWouldApply)
 	{
-		Out += TEXT("\n    the wiring would be shorter, so the edit would write it.");
+		Out += InPlan.WireLengthAfter < InPlan.WireLengthBefore
+            ? TEXT("\n    Estimated wiring would be shorter; edit will recheck the current graph before writing.")
+            : TEXT("\n    Estimated wiring would not be shorter; Force permits this placement.");
 		if (InPlan.bForce && InPlan.WireLengthAfter >= InPlan.WireLengthBefore)
 		{
 			// A FORCED REGRESSION IS NEVER DISGUISED. The word is in capitals so it cannot be skimmed
@@ -1600,7 +1561,7 @@ FString FTurboMCPGraphFixBackward::RenderPreview(const FPlan& InPlan)
 	}
 	else if (InPlan.bAlreadyCorrect)
 	{
-		Out += TEXT("\n    nothing needs moving. The three rules were all evaluated and found nothing.");
+		Out += TEXT("\n    No supported safe movement was planned. Review the findings and refusals below; this does not mean the graph has no layout issues.");
 	}
 	else
 	{
@@ -1691,7 +1652,7 @@ FString FTurboMCPGraphFixBackward::Apply(const FPlan& InPlan)
 		if (InPlan.bAlreadyCorrect)
 		{
 			return FString::Printf(
-				TEXT("unchanged: nothing to repair in %s of %s. No backward exec wire, no getter under its consumer and no lone node at the origin. wire length %.0f -> %.0f"),
+				TEXT("unchanged: no supported safe movement planned in %s of %s. Inspect the preview for remaining findings and refusals. Estimated wire length %.0f -> %.0f"),
 				*InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter);
 		}
 
@@ -1711,11 +1672,30 @@ FString FTurboMCPGraphFixBackward::Apply(const FPlan& InPlan)
 	}
 	UEdGraph* Graph = Resolved.Graph;
 
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+        return TEXT("error: an idle editor is required; unchanged");
+    FNodeCache Preflight;
+    Preflight.Build(Graph);
+    for (const FNode& Planned : InPlan.Nodes)
+    {
+        const UEdGraphNode* Node = Preflight.Find(Planned.Key);
+        if (!Node || Node->NodePosX != Planned.X || Node->NodePosY != Planned.Y)
+            return TEXT("error: graph positions or identities changed after planning; preview again. Unchanged.");
+    }
+    for (const FMove& Move : InPlan.Moves)
+    {
+        const UEdGraphNode* Node = Preflight.Find(Move.Key);
+        if (!Node || Node->IsA<UEdGraphNode_Comment>() || !FMath::IsFinite(Move.ToX) || !FMath::IsFinite(Move.ToY)
+            || Move.ToX < MIN_int32 || Move.ToX > MAX_int32 || Move.ToY < MIN_int32 || Move.ToY > MAX_int32)
+            return TEXT("error: invalid move target or coordinate overflow; unchanged");
+    }
 	// ONE TRANSACTION, SO ONE UNDO PUTS THE GRAPH BACK (`P4`). A transaction is an undo entry rather
 	// than a rollback mechanism - the rollback here is that nothing was written before the decision.
 	const FScopedTransaction Transaction(
 		FText::FromString(TEXT("TurboMCP: repair backward layout")));
-	Graph->Modify();
+	if (!Transaction.IsOutstanding()) return TEXT("error: no undo transaction is available; unchanged");
+    Resolved.Blueprint->Modify();
+    Graph->Modify();
 
 	int32 Written = 0;
 	TArray<FString> Missing;
@@ -1759,12 +1739,14 @@ FString FTurboMCPGraphFixBackward::Apply(const FPlan& InPlan)
 			continue;
 		}
 
-		Node->NodePosX = static_cast<int32>(FMath::RoundToDouble(Move.ToX));
+		Node->Modify();
+        Node->NodePosX = static_cast<int32>(FMath::RoundToDouble(Move.ToX));
 		Node->NodePosY = static_cast<int32>(FMath::RoundToDouble(Move.ToY));
 		++Written;
 	}
 
-	Graph->MarkPackageDirty();
+	Graph->NotifyGraphChanged();
+    FBlueprintEditorUtils::MarkBlueprintAsModified(Resolved.Blueprint);
 
 	// RE-MEASURE THE LIVE GRAPH, WITH THE SAME FUNCTION THAT MEASURED BEFORE, and read it from the GRAPH
 	// rather than from the plan so a planned position that did not survive the write shows up as a

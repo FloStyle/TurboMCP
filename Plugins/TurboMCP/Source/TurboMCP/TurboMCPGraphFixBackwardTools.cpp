@@ -13,19 +13,9 @@
 
 #include "TurboMCPGraphFixBackward.h"
 
-/**
- * `P-GRAPH-FIX-BACKWARD` and `E-GRAPH-FIX-BACKWARD`.
- *
- * ONE CODE PATH, TWO OUTCOMES (`D-02`). `FTurboMCPGraphFixBackward::Plan` reads the graph, computes the
- * whole pass against VALUES, measures the wiring on the planned positions and decides whether the result
- * is better - so EVERY REFUSAL AND THE ROLL-BACK DECISION are already made when the Preview prints. The
- * Edit calls the same `Plan` and then `Apply`, which means it refuses exactly what the Preview refused
- * and writes exactly what the Preview described.
- *
- * `Force` LIVES ON `Plan` RATHER THAN ON `Apply`, and that is deliberate: the Preview must be able to say
- * "this would be worse and would be rolled back, but Force is set so it will be applied". A flag on
- * `Apply` would let the Preview describe a rollback the Edit then does not perform, which is the `D-02`
- * disagreement this project has been caught by twice.
+/** Preview and edit plan against the current graph. Edit replans before applying;
+ * a previous preview is not a reservation. Force only bypasses the estimated
+ * wire-length improvement requirement, not identity, geometry or safety checks.
  */
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphFixBackward(
 	const FString& Asset, const FString& GraphName, bool Force)
