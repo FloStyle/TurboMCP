@@ -23,7 +23,12 @@
     "capture": "BackwardReview_BackwardFlow_native_1200x800_7E7F100B48A14CE49AA0109E15D94685.png",
     "visual_review": "Native screenshot inspected: source and target have aligned execution pins, a forward wire and no overlap.",
     "controls": "Preview preserves node position and clean state; edit repairs backward execution and preserves link; editor undo restores target; empty graph refuses.",
-    "post_run_source_adjustment": "06b3789: equivalent local-pointer null guard; no engine rerun for this expression-only change."
+    "post_run_source_adjustment": "06b3789: equivalent local-pointer null guard; no engine rerun for this expression-only change.",
+    "offline": {
+      "run": "e7cd99a0ec944b079d4064165b9068f5",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "prior_runs": [
     {
