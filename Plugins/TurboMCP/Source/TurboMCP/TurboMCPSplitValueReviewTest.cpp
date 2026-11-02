@@ -11,6 +11,7 @@
 #include "K2Node_CustomEvent.h"
 #include "K2Node_CallFunction.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "TurboMCPNodeId.h"
@@ -73,6 +74,28 @@ bool FTurboMCPSplitValueReviewTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Impure call refused"),UTurboMCPEditToolset::EditTurboMCPGraphSplitValue(Asset,Graph->GetName(),TurboMCPNodeId::MakeForNode(A,true)).Contains(TEXT("refused:")));
     TestTrue(TEXT("Missing source refused"),UTurboMCPEditToolset::EditTurboMCPGraphSplitValue(Asset,Graph->GetName(),TEXT("missing")).Contains(TEXT("refused:")));
     TestFalse(TEXT("Refusals clean"),Package->IsDirty());
+    TestTrue(TEXT("Empty graph refused"),UTurboMCPEditToolset::EditTurboMCPGraphSplitValue(Asset,TEXT(""),Id).Contains(TEXT("refused:")));
+    const int32 OriginalX=A->NodePosX; A->NodePosX=MIN_int32;
+    TestTrue(TEXT("Coordinate underflow refused"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphSplitValue(Asset,Graph->GetName(),Id).Contains(TEXT("refused:")));
+    A->NodePosX=OriginalX;
+    Output->bOrphanedPin=true;
+    TestTrue(TEXT("Orphaned output refused"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphSplitValue(Asset,Graph->GetName(),Id).Contains(TEXT("refused:")));
+    Output->bOrphanedPin=false;
+    TestFalse(TEXT("Structural refusals clean"),Package->IsDirty());
+    auto* Unused=MakeCall(TEXT("MakeLiteralString"),0,900); Package->SetDirtyFlag(false);
+    TestTrue(TEXT("Unused source no-op"),UTurboMCPEditToolset::EditTurboMCPGraphSplitValue(Asset,Graph->GetName(),TurboMCPNodeId::MakeForNode(Unused,true)).Contains(TEXT("No copies needed")));
+    TestFalse(TEXT("Unused source remains clean"),Package->IsDirty()); Graph->RemoveNode(Unused);
+    auto* Both=NewObject<UK2Node_CallFunction>(Graph,NAME_None,RF_Transactional);
+    Both->SetFromFunction(UKismetStringLibrary::StaticClass()->FindFunctionByName(TEXT("Concat_StrStr")));
+    Graph->AddNode(Both,false,false); Both->CreateNewGuid(); Both->AllocateDefaultPins(); Both->NodePosX=1600; Both->NodePosY=500;
+    Output->MakeLinkTo(Both->FindPinChecked(TEXT("A"))); Output->MakeLinkTo(Both->FindPinChecked(TEXT("B")));
+    TestTrue(TEXT("Two inputs on one node supported"),UTurboMCPEditToolset::EditTurboMCPGraphSplitValue(Asset,Graph->GetName(),Id).StartsWith(TEXT("changed\n")));
+    auto* Left=Both->FindPinChecked(TEXT("A")); auto* Right=Both->FindPinChecked(TEXT("B"));
+    if(TestEqual(TEXT("First input connected"),Left->LinkedTo.Num(),1) && TestEqual(TEXT("Second input connected"),Right->LinkedTo.Num(),1))
+        TestTrue(TEXT("Each input gets a distinct copy"),Left->LinkedTo[0]->GetOwningNode()!=Right->LinkedTo[0]->GetOwningNode());
+    TestTrue(TEXT("Undo same-node fanout"),GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo all four inputs"),Output->LinkedTo.Num(),4);
+    Both->BreakAllNodeLinks(); Graph->RemoveNode(Both);
     // Linked inputs must be restored on each copy, not silently replaced by defaults.
     auto* Upstream=MakeCall(TEXT("MakeLiteralString"),-300,500);
     auto* UpstreamOutput=Upstream->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue);
