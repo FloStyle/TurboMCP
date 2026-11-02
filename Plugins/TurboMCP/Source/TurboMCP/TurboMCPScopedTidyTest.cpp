@@ -583,4 +583,61 @@ bool FTurboMCPBackwardReviewTest::RunTest(const FString& Parameters)
     Package->SetDirtyFlag(false);
     return !HasAnyErrors();
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPPositionsReviewTest,
+    "TurboMCP.Graph.PositionsReview", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPPositionsReviewTest::RunTest(const FString& Parameters)
+{
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/PositionsReview_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    UBlueprint* BP = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("PositionsReview"),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    if (!TestNotNull(TEXT("Positions fixture"), BP)) return false;
+    UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("PositionFlow"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+    FBlueprintEditorUtils::AddUbergraphPage(BP, Graph);
+    auto* Node = NewObject<UK2Node_CustomEvent>(Graph, NAME_None, RF_Transactional);
+    Node->CustomFunctionName = TEXT("PositionProbe");
+    Graph->AddNode(Node, false, false); Node->CreateNewGuid(); Node->AllocateDefaultPins();
+    Node->NodePosX = 200; Node->NodePosY = 300;
+    const FString Id = TurboMCPNodeId::MakeForNode(Node, true);
+    const FString Asset = BP->GetPathName();
+    auto Request = [&](const FString& X) { return FString::Printf(TEXT("[{\"node\":\"%s\",\"x\":%s,\"y\":300}]"), *Id, *X); };
+    Package->SetDirtyFlag(false);
+    const FString Invalid = UTurboMCPEditToolset::EditTurboMCPGraphPositions(Asset, Graph->GetName(), Request(TEXT("true")));
+    AddInfo(Invalid);
+    TestTrue(TEXT("Boolean coordinate refuses"), Invalid.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Boolean refusal preserves position"), Node->NodePosX, 200);
+    TestFalse(TEXT("Boolean refusal preserves clean package"), Package->IsDirty());
+    for (const FString& Value : {FString(TEXT("\"100\"")), FString(TEXT("1.5")), FString(TEXT("2147483648")), FString(TEXT("null"))})
+        TestTrue(TEXT("Invalid numeric type or range refuses"), UTurboMCPEditToolset::EditTurboMCPGraphPositions(Asset, Graph->GetName(), Request(Value)).StartsWith(TEXT("error:")));
+    const FString Mixed = Request(TEXT("800")).LeftChop(1) + TEXT(",{\"node\":\"missing\",\"x\":1,\"y\":2}]");
+    TestTrue(TEXT("Missing second node refuses whole batch"), UTurboMCPEditToolset::EditTurboMCPGraphPositions(Asset, Graph->GetName(), Mixed).StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Mixed batch did not move first node"), Node->NodePosX, 200);
+    TestFalse(TEXT("Invalid batches stay clean"), Package->IsDirty());
+    TestTrue(TEXT("Matching coordinates are unchanged"), UTurboMCPEditToolset::EditTurboMCPGraphPositions(Asset, Graph->GetName(), Request(TEXT("200"))).StartsWith(TEXT("unchanged:")));
+    TestFalse(TEXT("No-op stays clean"), Package->IsDirty());
+    auto* Box = NewObject<UEdGraphNode_Comment>(Graph, NAME_None, RF_Transactional);
+    Graph->AddNode(Box, false, false); Box->CreateNewGuid();
+    Box->NodePosX = 100; Box->NodePosY = 200; Box->NodeWidth = 500; Box->NodeHeight = 300;
+    Box->NodeComment = TEXT("Manual placement review");
+    const FString Move = UTurboMCPEditToolset::EditTurboMCPGraphPositions(Asset, Graph->GetName(), Request(TEXT("250")));
+    AddInfo(Move);
+    TestTrue(TEXT("Valid position changes"), Move.StartsWith(TEXT("changed:")));
+    TestEqual(TEXT("Exact X applied"), Node->NodePosX, 250);
+    TestEqual(TEXT("Unlisted comment stays fixed"), Box->NodePosX, 100);
+    const FString ReadBack = UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, Graph->GetName(), TEXT(""), 128);
+    AddInfo(ReadBack);
+    TestTrue(TEXT("Reader sees new coordinate"), ReadBack.Contains(TEXT("250")));
+    AddInfo(TEXT("Positions capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1200x800")));
+    TestTrue(TEXT("Undo positions edit"), GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo restores X"), Node->NodePosX, 200);
+    const FString BoxId = TurboMCPNodeId::MakeForNode(Box, true);
+    const FString BoxMove = FString::Printf(TEXT("[{\"node\":\"%s\",\"x\":-100,\"y\":200}]"), *BoxId);
+    TestTrue(TEXT("Comment-only move succeeds"), UTurboMCPEditToolset::EditTurboMCPGraphPositions(Asset, Graph->GetName(), BoxMove).StartsWith(TEXT("changed:")));
+    TestEqual(TEXT("Comment contents are not implicitly moved"), Node->NodePosX, 200);
+    TestEqual(TEXT("Comment width preserved"), Box->NodeWidth, 500);
+    TestTrue(TEXT("Undo comment move"), GEditor->UndoTransaction(false));
+
+    BP->ClearFlags(RF_Public | RF_Standalone); Package->SetDirtyFlag(false);
+    return !HasAnyErrors();
+}
 #endif

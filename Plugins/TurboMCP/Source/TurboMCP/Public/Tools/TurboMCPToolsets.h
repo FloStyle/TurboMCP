@@ -1969,7 +1969,7 @@ public:
 	static FString EditTurboMCPAssetRevert(const FString& Asset, const FString& Confirm);
 
 	/**
-	 * Set node positions in one undo step. No compile or save.
+	 * Set exact node positions in one undo step; not tidy and overlaps are allowed; moving a comment moves only its box, not its contents; requires an idle editor; no compile or save.
 	 * Positions is a STRING containing a JSON array, not lines of text or a JSON object.
 	 * Example: [{"node":"exact reader node ID","x":100,"y":200}]
 	 * Each object must contain exactly node, x, y (case-sensitive); not id or nodeId.
@@ -1977,7 +1977,12 @@ public:
 	 * x and y are absolute integer graph coordinates, including negative coordinates,
 	 * in the signed 32-bit range. Supply 1..4096 unique nodes; omit unchanged nodes.
 	 * Validates the entire batch before writing; unlisted nodes stay in place.
-	 * @param Positions JSON array encoded as a string. Example: [{"node":"exact reader node ID","x":100,"y":200}]
+	 * Numeric strings and booleans are refused. An already matching batch is a clean no-op.
+	 * This is exact manual placement, not tidy: overlaps and backward wires are permitted.
+	 * Moving a comment moves only its box, not its contents. Include contained nodes explicitly
+	 * or use GraphGroupMove for a rigid group move. Links, defaults and sizes are unchanged.
+	 * Requires an idle editor outside PIE and active transactions.
+	 * @param Positions JSON array encoded as a string, with 1..4096 unique node IDs and integer x/y values in signed 32-bit range; booleans and numeric strings are refused; validate all entries before writing and omit unlisted nodes from movement; matching coordinates are a no-op. Example: [{"node":"exact reader node ID","x":100,"y":200}]
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.

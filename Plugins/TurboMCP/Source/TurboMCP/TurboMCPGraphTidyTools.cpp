@@ -72,13 +72,17 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphPositions(const FString& Asset, c
 	TArray<TSharedPtr<FJsonValue>> Items;
 	if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Positions), Items) || Items.IsEmpty() || Items.Num() > 4096)
 		return TEXT("error: Positions must be a string containing a JSON array with 1..4096 entries, e.g. [{\"node\":\"exact reader node ID\",\"x\":100,\"y\":200}]; unchanged");
+	// Validate the complete batch before opening a transaction. JSON conversion
+	// accepts booleans as numbers, so require actual numeric values first.
 	struct FMove { UEdGraphNode* Node; int32 X; int32 Y; };
 	TArray<FMove> Moves; TSet<UEdGraphNode*> Seen;
 	for (const auto& Item : Items)
 	{
 		const TSharedPtr<FJsonObject>* Obj = nullptr; FString Id; double X, Y;
 		if (!Item || !Item->TryGetObject(Obj) || !Obj || !Obj->IsValid() || (*Obj)->Values.Num() != 3
-			|| !(*Obj)->TryGetStringField(TEXT("node"), Id) || !(*Obj)->TryGetNumberField(TEXT("x"), X)
+			|| !(*Obj)->HasTypedField<EJson::String>(TEXT("node"))
+            || !(*Obj)->HasTypedField<EJson::Number>(TEXT("x")) || !(*Obj)->HasTypedField<EJson::Number>(TEXT("y"))
+            || !(*Obj)->TryGetStringField(TEXT("node"), Id) || !(*Obj)->TryGetNumberField(TEXT("x"), X)
 			|| !(*Obj)->TryGetNumberField(TEXT("y"), Y) || !FMath::IsFinite(X) || !FMath::IsFinite(Y)
 			|| X < MIN_int32 || X > MAX_int32 || Y < MIN_int32 || Y > MAX_int32
 			|| FMath::FloorToDouble(X) != X || FMath::FloorToDouble(Y) != Y)
