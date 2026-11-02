@@ -312,19 +312,52 @@ bool BindNewEvent(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
 }
 bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin,FString& Report,FString& Error)
 {
+    if (!Graph || !Graph->GetSchema() || !Graph->GetSchema()->IsA<UEdGraphSchema_K2>())
+    { Error=TEXT("Function binding requires a Blueprint K2 graph."); return false; }
     UEdGraphNode* Target=ResolveEditNode(Graph,Identity,TargetId,Error);
     if (!Target) return false;
     UEdGraphPin* Input=Pin(Target,TargetPin,EGPD_Input);
     if(!Input || Input->PinType.PinCategory!=TEXT("delegate") || FunctionName.TrimStartAndEnd().IsEmpty())
-    { Error=TEXT("requires an exact delegate input pin and a function name"); return false; }
+    { Error=TEXT("Provide an exact delegate input pin and an existing function name."); return false; }
     const bool ExplicitObject=!ObjectNodeId.IsEmpty();
     if(ExplicitObject!=!ObjectPin.IsEmpty())
-    { Error=TEXT("ObjectNodeId and ObjectPin must both be supplied, or both empty for self"); return false; }
+    { Error=TEXT("Supply both ObjectNodeId and ObjectPin, or leave both empty to use self."); return false; }
     UEdGraphNode* ObjectNode = ExplicitObject ? ResolveEditNode(Graph, Identity, ObjectNodeId, Error) : nullptr;
     if (ExplicitObject && !ObjectNode) return false;
     UEdGraphPin* ObjectOutput=ExplicitObject?Pin(ObjectNode,ObjectPin,EGPD_Output):nullptr;
     if(ExplicitObject && (!ObjectOutput || ObjectOutput->PinType.PinCategory!=UEdGraphSchema_K2::PC_Object))
-    { Error=TEXT("object endpoint must resolve to an object-reference output pin"); return false; }
+    { Error=TEXT("The object endpoint must be an object-reference output pin."); return false; }
+    TArray<FString> Displaced;
+    if (Input->LinkedTo.Num()>1) { Error=TEXT("The delegate input has multiple sources; repair it before binding a function."); return false; }
+    for (UEdGraphPin* Prior:Input->LinkedTo)
+    {
+        if (!Prior || Prior->GetOwningNode()->GetGraph()!=Graph || !Prior->LinkedTo.Contains(Input))
+        { Error=TEXT("The existing delegate connection is invalid; repair it before replacing it."); return false; }
+        UEdGraphNode* Original=TurboMCPGraphScratch::ByGuid(Identity,Prior->GetOwningNode()->NodeGuid);
+        Displaced.Add(TurboMCPNodeId::MakeForNode(Original?Original:Prior->GetOwningNode(),true)+TEXT(" pin=")+Prior->PinName.ToString());
+        // An exact, still-compatible binding is a no-op. Do this before creating
+        // a probe, which would otherwise displace the existing connection.
+        if (auto* Existing=Cast<UK2Node_CreateDelegate>(Prior->GetOwningNode()))
+        {
+            UFunction* Signature=Existing->GetDelegateSignature();
+            UClass* Scope=Existing->GetScopeClass();
+            UFunction* Function=Scope?Scope->FindFunctionByName(FName(*FunctionName)):nullptr;
+            UEdGraphPin* ObjectInput=Existing->GetObjectInPin();
+            const bool SameObject=ObjectInput && (ExplicitObject
+                ? ObjectInput->LinkedTo.Num()==1 && ObjectInput->LinkedTo[0]==ObjectOutput && ObjectOutput->LinkedTo.Contains(ObjectInput)
+                : ObjectInput->LinkedTo.IsEmpty() && !ObjectInput->DefaultObject);
+            if (Prior==Existing->GetDelegateOutPin() && Function && Signature
+                && Existing->GetFunctionName()==Function->GetFName() && SameObject
+                && Signature->IsSignatureCompatibleWith(Function) && UEdGraphSchema_K2::FunctionCanBeUsedInDelegate(Function))
+            {
+                Report=TEXT("The requested function and object are already connected; no node was created. Existing delegate: ")
+                    +TurboMCPNodeId::MakeForNode(Original?Original:Existing,true);
+                return true;
+            }
+        }
+    }
+    if (static_cast<int64>(Target->NodePosX)-240 < MIN_int32 || static_cast<int64>(Target->NodePosY)+160 > MAX_int32)
+    { Error=TEXT("The proposed delegate-node position exceeds the supported coordinate range."); return false; }
     UK2Node_CreateDelegate* Event=NewObject<UK2Node_CreateDelegate>(Graph,NAME_None,RF_Transactional);
     Graph->AddNode(Event,false,false); Event->CreateNewGuid(); Event->AllocateDefaultPins();
     Event->NodePosX=Target->NodePosX-240; Event->NodePosY=Target->NodePosY+160;
@@ -335,25 +368,28 @@ bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
     UFunction* Function=Scope?Scope->FindFunctionByName(FName(*FunctionName)):nullptr;
     if(!Signature || !Function || !Signature->IsSignatureCompatibleWith(Function)
         || !UEdGraphSchema_K2::FunctionCanBeUsedInDelegate(Function))
-    { Error=TEXT("function must exist on the chosen object class and match the target delegate signature exactly"); return false; }
+    { Error=TEXT("The function must exist on the chosen object class, be usable as a delegate and match the target signature."); return false; }
     Event->SetFunction(Function->GetFName());
     Event->HandleAnyChangeWithoutNotifying();
     UEdGraphPin* Output=Event->GetDelegateOutPin();
     UEdGraphPin* CurrentInput=Pin(Target,TargetPin,EGPD_Input);
     if(Event->GetFunctionName()!=Function->GetFName() || !Output || !CurrentInput
         || !Output->LinkedTo.Contains(CurrentInput) || !CurrentInput->LinkedTo.Contains(Output))
-    { Error=TEXT("delegate function selection or link did not survive read-back"); return false; }
+    { Error=TEXT("The delegate function selection or connection failed verification."); return false; }
     if(ExplicitObject)
     {
         UEdGraphPin* CurrentObject=Pin(ObjectNode,ObjectPin,EGPD_Output);
         UEdGraphPin* ObjectInput=Event->GetObjectInPin();
         if(!CurrentObject || !ObjectInput || ObjectInput->LinkedTo.Num()!=1
             || ObjectInput->LinkedTo[0]!=CurrentObject || !CurrentObject->LinkedTo.Contains(ObjectInput))
-        { Error=TEXT("delegate object context did not survive read-back"); return false; }
+        { Error=TEXT("The delegate object connection failed verification."); return false; }
     }
-    Report=TEXT("created function delegate ")+TurboMCPNodeId::MakeForNode(Event,true)+TEXT(" function=")+FunctionName
-        +TEXT("; connected to ")+TargetId+TEXT(".")+TargetPin+TEXT("; existing input source replaced; object=")
-        +(ExplicitObject?ObjectNodeId+TEXT(".")+ObjectPin:TEXT("self"))+TEXT("; function selection and requested links read back; compilation, runtime behavior and layout not verified. Inspect the graph before compiling and saving");
+    Report=TEXT("Created function delegate ")+TurboMCPNodeId::MakeForNode(Event,true)+TEXT("; function=")+Function->GetName()
+        +TEXT("; target=")+TargetId+TEXT(" pin=")+TargetPin+TEXT("; object=")
+        +(ExplicitObject?ObjectNodeId+TEXT(" pin=")+ObjectPin:TEXT("self"));
+    Report+=Displaced.IsEmpty() ? TEXT("\nThe target input was previously unconnected.")
+        : TEXT("\nReplaced input sources (nodes retained; inspect remaining uses before cleanup):\n")+FString::Join(Displaced,TEXT("\n"));
+    Report+=TEXT("\nFunction selection and requested links were verified. This creates a delegate value, not a runtime registration; the owning Bind or Timer node must execute. Read back, arrange new nodes, then compile and save explicitly.");
     return true;
 }
 bool Remove(UEdGraph* Graph,UEdGraph* Identity,const FString& Nodes,const FString& Links,FString& Report,FString& Error)
@@ -646,10 +682,10 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphRemove(const FString& Asset,const
 { return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Remove(G,I,Nodes,Links,R,E); }, false); }
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin)
-{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindFunction(G,I,TargetNodeId,TargetPin,FunctionName,ObjectNodeId,ObjectPin,R,E); }); }
+{ if (GraphName.IsEmpty()) return TEXT("unchanged\nrefused: GraphName is required; use an explicit graph name from the reader."); return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindFunction(G,I,TargetNodeId,TargetPin,FunctionName,ObjectNodeId,ObjectPin,R,E); }); }
 
 FString UTurboMCPEditToolset::EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin)
-{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindFunction(G,I,TargetNodeId,TargetPin,FunctionName,ObjectNodeId,ObjectPin,R,E); }); }
+{ if (GraphName.IsEmpty()) return TEXT("unchanged\nrefused: GraphName is required; use an explicit graph name from the reader."); return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindFunction(G,I,TargetNodeId,TargetPin,FunctionName,ObjectNodeId,ObjectPin,R,E); }); }
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPBindNewEvent(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& EventName)
 { return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindNewEvent(G,I,TargetNodeId,TargetPin,EventName,R,E); }); }
