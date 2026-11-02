@@ -38,7 +38,13 @@
       "BackwardReview_BackwardFlow_native_1200x800_A3A41BDB4008CFE3BAB842A0C1FB45ED.png",
       "BackwardReview_BackwardFlow_native_1200x800_6C0D1F444B1625BB39AFD09DE505C409.png"
     ],
-    "visual_review": "Inspected all three native captures: forward wires, readable spacing, no node overlaps in the chain, getter and origin fixtures."
+    "visual_review": "Inspected all three native captures: forward wires, readable spacing, no node overlaps in the chain, getter and origin fixtures.",
+    "offline": {
+      "run": "53deb7317747479287ea0010f213ea91",
+      "candidate": "83fe196",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "prior_runs": [
     {
