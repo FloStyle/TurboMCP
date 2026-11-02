@@ -14,17 +14,9 @@
 #include "TurboMCPGraphTidy.h"
 
 /**
- * The two tool bodies for `P/E-GRAPH-TIDY`.
- *
- * THE PREVIEW AND THE EDIT SHARE ONE CODE PATH UP TO THE WRITE (`D-02`). Both call `FTurboMCPGraphTidy
- * ::Plan` and then differ by ONE call - `RenderPreview` or `Apply`. Every refusal is decided inside
- * `Plan`, so a Preview can never offer a plan the Edit then declines, which is a disagreement this
- * project has been caught by twice.
- *
- * THE DECLARATIONS LIVE IN THE ORCHESTRATOR'S HEADER. This file was gated while they were absent, because
- * a `UFUNCTION` declaration whose body is missing fails the whole module at LINK and breaks every other
- * workstream's build - the knots workstream did exactly that once. The gate is gone now that both
- * declarations are present, which is why this file is live rather than conditional.
+ * Tidy preview and edit share planning and refusal rules. Edit plans again against
+ * the current graph: a preview is not a reservation and cannot guarantee that a
+ * later edit succeeds. Compilation and saving remain separate operations.
  */
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(const FString& Asset,
@@ -368,7 +360,8 @@ namespace
      const bool WasInside=Old.MinX>=Rect.MinX && Old.MinY>=Rect.MinY && Old.MaxX<=Rect.MaxX && Old.MaxY<=Rect.MaxY;
      const bool IsInside=New.MinX>=Rect.MinX && New.MinY>=Rect.MinY && New.MaxX<=Rect.MaxX && New.MaxY<=Rect.MaxY;
      const bool Intersects=New.MinX<Rect.MaxX && New.MaxX>Rect.MinX && New.MinY<Rect.MaxY && New.MaxY>Rect.MinY;
-     if(Suggest && Intersects && !IsInside && !N->IsA<UEdGraphNode_Comment>()) return TEXT("error: candidate crosses a comment boundary");
+     // Preview and explicit edits must reject the same partial comment entry.
+     if(Intersects && !IsInside && !N->IsA<UEdGraphNode_Comment>()) return TEXT("error: moved node would cross an unselected comment boundary; unchanged. Move fully outside the comment or use DestinationBox for an unboxed node that fits inside.");
      const bool AllowedDestination=Destination && !WasInside && IsInside && (Other==Destination || ContainsRect(Rect,Bounds[Destination]));
      if(WasInside!=IsInside && !AllowedDestination) return TEXT("error: move changes membership of an unselected comment; specify its DestinationBox for unboxed nodes or select its group too");
     }
