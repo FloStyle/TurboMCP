@@ -41,5 +41,11 @@
     "Remaining Blueprint compiles.",
     "Live help exposes parameters and key limitations."
   ],
-  "visual_review": "Not applicable: function deletion has no layout or rendered output contract; graph membership and preserved node count checked in editor."
+  "visual_review": "Not applicable: function deletion has no layout or rendered output contract; graph membership and preserved node count checked in editor.",
+  "offline_gate": {
+    "run": "cf907ce9a8be42c2846d0ba13ac9b1e9",
+    "result": "26/26 passed",
+    "integrated_commit": "3c114e51",
+    "dirty": false
+  }
 }
