@@ -954,14 +954,15 @@ public:
 		const FString& TypeId);
 
 	/**
-	 * Plan reroute nodes for estimated wire crossings; loads the Blueprint without requesting graph edits, compilation or saving.
-	 * Geometry is estimated when measured sizes are unavailable; a lower crossing count does not prove visual or behavioral correctness.
+	 * Plan reroutes for crossing wires in one explicit Blueprint graph; measures native geometry without changing the live graph; straight-segment estimates do not certify rendered curves; no compile or save.
+	 * Tries bounded forward routes, shares a knot when all affected destinations fit, and skips existing reroutes, nearby nodes and blocked positions; not a full graph tidy.
 	 * Edit replans against current state. Rollback does not verify full graph restoration; inspect partial results before saving.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused; use a full path when possible.
 	 * @param GraphName Exact existing Blueprint graph name, case-insensitive with surrounding whitespace ignored; empty, missing or ambiguous names are refused. Example: EventGraph.
 	 */
 	UFUNCTION(meta = (AICallable))
-	static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
+	
+static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
 
 	/**
      * Plan a layout for one graph without committing graph changes. Measures native node geometry.
@@ -1802,14 +1803,15 @@ public:
 	static FString EditTurboMCPGraphDead(const FString& Asset, const FString& GraphName);
 
 	/**
-	 * Insert reroute nodes and reconnect wires in an undo transaction; attempts rollback if estimated crossings do not decrease, without compiling or saving.
-	 * Geometry is estimated when measured sizes are unavailable; a lower crossing count does not prove visual or behavioral correctness.
+	 * Insert planned reroutes in one undo transaction without moving existing nodes; requires an idle editor and explicit graph; partial results require inspection before saving; no automatic compile or save.
+	 * Tries bounded forward routes, shares a knot when all affected destinations fit, and skips existing reroutes, nearby nodes and blocked positions; not a full graph tidy.
 	 * Edit replans against current state. Rollback does not verify full graph restoration; inspect partial results before saving.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused; use a full path when possible.
 	 * @param GraphName Exact existing Blueprint graph name, case-insensitive with surrounding whitespace ignored; empty, missing or ambiguous names are refused. Example: EventGraph.
 	 */
 	UFUNCTION(meta = (AICallable))
-	static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
+	
+static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
 
 	/**
      * Recompute and apply a layout using the same options as PreviewTurboMCPGraphTidy.

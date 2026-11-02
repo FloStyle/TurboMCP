@@ -75,6 +75,8 @@ public:
 	{
 		FString Asset;
 		FString GraphName;
+        /** Node positions and pin/link identities captured before planning. */
+        FString GraphState;
 
 		/** Every wire that crosses a node, accepted or refused. */
 		TArray<FWire> Wires;
