@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-BIND-FUNCTION",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPBindFunction",
     "EditTurboMCPBindFunction"
@@ -25,13 +25,39 @@
       ]
     }
   ],
-  "remaining": [
-    "Verify repaired repeated-call no-op and replacement reporting",
-    "Inspect final capture and finish focused controls",
-    "Offline gate and integration"
-  ],
+  "remaining": [],
   "limitations": [
     "Synthetic timer-delegate scenario; not all delegate signatures or object classes.",
-    "Runtime registration requires execution of the owning node; creation alone does not register the delegate."
+    "Runtime registration requires execution of the owning node; creation alone does not register the delegate.",
+    "Explicit-object test uses a Self node; distinct runtime instances, external class callbacks and every signature were not exercised.",
+    "No runtime timer firing or save/reload claim.",
+    "Schema callback failures and partial rollback restoration were source-reviewed, not exhaustively fault-injected.",
+    "Existing source nodes are retained on replacement; cleanup is deliberately separate."
+  ],
+  "candidate": "ea0a8b635a9032f468fcdc828b702c6c763ecbb9",
+  "native_run": "6762044bb6b84aa9b704c12f75cf4dfb",
+  "scope_gate": "PASS",
+  "capture": "BindFunctionReview_TimerFlow_native_1600x900_7E1359124EA0A2F733AC7BB19DFDF087.png",
+  "visual_review": "Inspected native capture: clear execution line and forward Self -> Create Event -> Set Timer connections, selected OnTimer function visible, no overlapping nodes.",
+  "fixes": [
+    "Return unchanged before probing when the same compatible function/object is already connected.",
+    "Identify replaced input sources and retain their nodes for explicit inspection; accurately distinguish an empty input.",
+    "Require explicit K2 graph, valid existing connection and safe proposed coordinates.",
+    "Clarify function binding versus runtime registration, parameter help, side effects, layout and explicit compile/save."
+  ],
+  "passed_runs": [
+    "ced8b64de2d6430d802ff642f8e801e7",
+    "6762044bb6b84aa9b704c12f75cf4dfb"
+  ],
+  "checks": [
+    "Live tool help exposes function/object parameters and save behavior",
+    "Preview preserves empty input, node count and clean package",
+    "Implicit self selects the requested existing function",
+    "Identical implicit/explicit object request is unchanged and clean",
+    "Replacement returns displaced source ID and retains its node",
+    "Undo restores replaced connection; initial undo restores original node count and empty input",
+    "Missing/incompatible function, partial object pair, empty graph, non-object pin and coordinate overflow refuse cleanly",
+    "Explicit Self output remains connected to Create Event object input",
+    "Explicit tidy, native capture and compilation pass"
   ]
 }

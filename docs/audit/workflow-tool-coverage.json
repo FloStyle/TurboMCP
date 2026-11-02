@@ -1154,6 +1154,32 @@
         "Maximum fanout, hostile malformed objects and callback/rollback failure paths were not exhaustively tested; apply failure still reports restoration unverified."
       ],
       "evidence": "b45ae0e679cc48ba8ef2ce950b235a3d"
+    },
+    {
+      "id": "WF-BIND-FUNCTION",
+      "title": "Connect an existing handler to a timer delegate",
+      "status": "scenario_accepted",
+      "review": "docs/audit/bind-function-review.json",
+      "focus_tools": [
+        "PreviewTurboMCPBindFunction",
+        "EditTurboMCPBindFunction"
+      ],
+      "tools_used": [
+        "PreviewTurboMCPBindFunction",
+        "EditTurboMCPBindFunction",
+        "ReadTurboMCPToolHelp",
+        "EditTurboMCPGraphTidy",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "Synthetic timer-delegate scenario; not all delegate signatures or object classes.",
+        "Runtime registration requires execution of the owning node; creation alone does not register the delegate.",
+        "Explicit-object test uses a Self node; distinct runtime instances, external class callbacks and every signature were not exercised.",
+        "No runtime timer firing or save/reload claim.",
+        "Schema callback failures and partial rollback restoration were source-reviewed, not exhaustively fault-injected.",
+        "Existing source nodes are retained on replacement; cleanup is deliberately separate."
+      ],
+      "evidence": "6762044bb6b84aa9b704c12f75cf4dfb"
     }
   ],
   "tool_usage": {
@@ -1202,7 +1228,8 @@
       "WF-UI-07-OVERRIDES",
       "WF-UI-08-OVERRIDE-REMOVE",
       "WF-GRAPH-SEQUENCE",
-      "WF-GRAPH-SPLIT-VALUE"
+      "WF-GRAPH-SPLIT-VALUE",
+      "WF-BIND-FUNCTION"
     ],
     "EditTurboMCPLocalVars": [
       "WF-BP-01-PURCHASE"
@@ -1228,7 +1255,8 @@
       "WF-BP-FUNCTION-FLAGS",
       "WF-BP-COLLAPSE-FUNCTION",
       "WF-GRAPH-SEQUENCE",
-      "WF-GRAPH-SPLIT-VALUE"
+      "WF-GRAPH-SPLIT-VALUE",
+      "WF-BIND-FUNCTION"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -1540,7 +1568,8 @@
     "ReadTurboMCPToolHelp": [
       "WF-DISCOVERY-01",
       "WF-GRAPH-SEQUENCE",
-      "WF-GRAPH-SPLIT-VALUE"
+      "WF-GRAPH-SPLIT-VALUE",
+      "WF-BIND-FUNCTION"
     ],
     "ReadTurboMCPToolSchema": [
       "WF-DISCOVERY-01"
@@ -1643,9 +1672,15 @@
     ],
     "EditTurboMCPGraphSplitValue": [
       "WF-GRAPH-SPLIT-VALUE"
+    ],
+    "PreviewTurboMCPBindFunction": [
+      "WF-BIND-FUNCTION"
+    ],
+    "EditTurboMCPBindFunction": [
+      "WF-BIND-FUNCTION"
     ]
   },
-  "unique_tools_scenario_reviewed": 137,
+  "unique_tools_scenario_reviewed": 139,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

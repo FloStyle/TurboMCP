@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "4ee5cbeba71a3489c1dd86e985229eef8094b113",
+  "plugin_tree": "071f1898374007605624d42ee5836950651e270a",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -98,11 +98,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 651
+          "line": 687
         }
       ],
-      "test_references": [],
-      "static_call_evidence": "missing",
+      "test_references": [
+        "Tools/test-bind-function-review.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -122,7 +124,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 657
+          "line": 693
         }
       ],
       "test_references": [],
@@ -565,7 +567,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 612
+          "line": 648
         }
       ],
       "test_references": [],
@@ -763,7 +765,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 645
+          "line": 681
         }
       ],
       "test_references": [],
@@ -843,7 +845,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 639
+          "line": 675
         }
       ],
       "test_references": [
@@ -867,7 +869,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 635
+          "line": 671
         }
       ],
       "test_references": [
@@ -1902,11 +1904,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 648
+          "line": 684
         }
       ],
-      "test_references": [],
-      "static_call_evidence": "missing",
+      "test_references": [
+        "Tools/test-bind-function-review.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1926,7 +1930,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 654
+          "line": 690
         }
       ],
       "test_references": [],
@@ -2265,7 +2269,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 610
+          "line": 646
         }
       ],
       "test_references": [],
@@ -2464,7 +2468,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 642
+          "line": 678
         }
       ],
       "test_references": [],
@@ -2541,7 +2545,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 637
+          "line": 673
         }
       ],
       "test_references": [
@@ -2565,7 +2569,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 633
+          "line": 669
         }
       ],
       "test_references": [
@@ -3935,6 +3939,7 @@
         "Tools/test-asset-recovery.py",
         "Tools/test-backward-review.py",
         "Tools/test-batch-sequence.py",
+        "Tools/test-bind-function-review.py",
         "Tools/test-bp-lint.py",
         "Tools/test-collapse-function.py",
         "Tools/test-common-button-workflow.py",
