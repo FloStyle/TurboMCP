@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
+#include "ScopedTransaction.h"
 #include "Misc/ScopeExit.h"
 #include "Misc/Guid.h"
 #include "Misc/PackageName.h"
@@ -35,6 +36,22 @@ bool FTurboMCPEnumCreationTest::RunTest(const FString& Parameters)
             Package->MarkAsGarbage();
         }
     };
+    // Refused requests must not create a package or consume the requested name.
+    const FString GuardPath=Path+TEXT("_Guard");
+    {
+        FScopedTransaction Transaction(NSLOCTEXT("TurboMCPTest","EnumGuard","Enum creation guard"));
+        const FString GuardResult=UTurboMCPEditToolset::EditTurboMCPEnumAdd(GuardPath,TEXT("Playing,Paused=Pause Menu,Settings"));
+        AddInfo(GuardResult);
+        TestTrue(TEXT("Active transaction creation refused"),GuardResult.StartsWith(TEXT("unchanged:")));
+        TestNull(TEXT("Guard creates no package"),FindPackage(nullptr,*GuardPath));
+        Transaction.Cancel();
+    }
+    for (const FString& Invalid : {FString(TEXT("")),FString(TEXT("Red,red")),FString(TEXT("_MAX")),FString(TEXT("2Invalid")),FString(TEXT("Bad Name"))})
+    {
+        const FString Refused=UTurboMCPPreviewToolset::PreviewTurboMCPEnumAdd(Path,Invalid);
+        TestTrue(TEXT("Invalid values refused"),Refused.StartsWith(TEXT("error:")));
+        TestNull(TEXT("Invalid preview creates no package"),FindPackage(nullptr,*Path));
+    }
     FTurboMCPEnumAdd::FPlan Plan;
     FString Error;
     if (!TestTrue(TEXT("Production plan accepts values"), FTurboMCPEnumAdd::Plan(
