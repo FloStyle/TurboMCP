@@ -3176,6 +3176,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSplitValueReviewTest.cpp",
             "Tools/test-split-value-review.py"
           ]
+        },
+        "bind-function-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBindFunctionReviewTest.cpp",
+            "Tools/test-bind-function-review.py"
+          ]
         }
       },
       "preserve_rows": []
