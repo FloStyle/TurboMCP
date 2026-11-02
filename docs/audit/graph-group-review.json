@@ -23,7 +23,12 @@
     "state": "implemented_focused_editor_pass",
     "run": "53b63b42b6ba484da7c6572c6b9dcf56",
     "capture": "GroupMove_MoveGroup_native_1600x900_5E6382E64087971A2BCDAD90B2557E3A.png",
-    "visual_review": "Nodes remain outside the unselected comment; spacing and links visible. Wide capture is not a text-legibility acceptance."
+    "visual_review": "Nodes remain outside the unselected comment; spacing and links visible. Wide capture is not a text-legibility acceptance.",
+    "offline": {
+      "run": "f6572041aa5e40329584795b6e1b3ddc",
+      "state": "passed",
+      "checks": 26
+    }
   },
   "remaining": [
     "Exercise suggested placement followed by edit, destination-box transfer, selected comment contents, refusals and undo.",

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-30",
+  "updated": "2026-11-02",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
   "inventory": 165,
   "workflows": [
@@ -1018,6 +1018,22 @@
         "Container positive controls validate preflight import, not container creation or disk reload.",
         "Arbitrary custom struct, object and enum defaults are not exhaustively covered; nested values use stock Unreal import semantics.",
         "Engine failures can leave partial additions; this tool does not provide automatic rollback."
+      ]
+    },
+    {
+      "id": "WF-GRAPH-GROUP",
+      "title": "Move connected nodes while preserving comment boundaries",
+      "status": "in_progress",
+      "review": "docs/audit/graph-group-review.json",
+      "evidence": "53b63b42b6ba484da7c6572c6b9dcf56",
+      "tools_used": [],
+      "focus_tools": [
+        "PreviewTurboMCPGraphGroupMove",
+        "PreviewTurboMCPGraphGroupPlacement",
+        "EditTurboMCPGraphGroupMove"
+      ],
+      "limitations": [
+        "Boundary crossing fixed and verified; full workflow acceptance still pending. Tools are not added to accepted coverage."
       ]
     }
   ],
