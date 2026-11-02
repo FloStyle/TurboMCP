@@ -310,4 +310,65 @@ bool FTurboMCPScopedTidyTest::RunTest(const FString& Parameters)
     Package->SetDirtyFlag(false);
     return !HasAnyErrors();
 }
+
+// Group movement is a rigid translation, not a graph tidy or a rewiring operation.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPGroupMovementTest,
+    "TurboMCP.Graph.GroupMovement", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPGroupMovementTest::RunTest(const FString& Parameters)
+{
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/GroupMove_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    UBlueprint* BP = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("GroupMove"),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    if (!TestNotNull(TEXT("Group fixture"), BP)) return false;
+    UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("MoveGroup"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+    FBlueprintEditorUtils::AddUbergraphPage(BP, Graph);
+    auto MakeCall = [&](int32 X, int32 Y)
+    {
+        auto* Node = NewObject<UK2Node_CallFunction>(Graph);
+        Node->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+        Graph->AddNode(Node, false, false); Node->CreateNewGuid(); Node->AllocateDefaultPins();
+        Node->NodePosX = X; Node->NodePosY = Y;
+        return Node;
+    };
+    auto* First = MakeCall(0, 0);
+    auto* Second = MakeCall(600, 0);
+    auto* Outside = MakeCall(2200, 0);
+    First->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Second->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+    Second->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Outside->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+    auto* Box = NewObject<UEdGraphNode_Comment>(Graph);
+    Graph->AddNode(Box, false, false); Box->CreateNewGuid();
+    Box->NodePosX = 3000; Box->NodePosY = -100; Box->NodeWidth = 1200; Box->NodeHeight = 800;
+    Box->NodeComment = TEXT("Destination section");
+    const FString Asset = BP->GetPathName();
+    const TArray<FString> Ids = {TurboMCPNodeId::MakeForNode(First, true), TurboMCPNodeId::MakeForNode(Second, true)};
+    Package->SetDirtyFlag(false);
+    const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphGroupMove(Asset, Graph->GetName(), Ids, 0, 600, TEXT(""));
+    AddInfo(Preview);
+    TestTrue(TEXT("Translation preview succeeds"), Preview.StartsWith(TEXT("preview:")));
+    TestEqual(TEXT("Preview leaves Y unchanged"), First->NodePosY, 0);
+    TestFalse(TEXT("Preview preserves clean package"), Package->IsDirty());
+    const FString Applied = UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(Asset, Graph->GetName(), Ids, 0, 600, TEXT(""));
+    AddInfo(Applied);
+    TestTrue(TEXT("Translation changes nodes"), Applied.StartsWith(TEXT("changed:")));
+    TestEqual(TEXT("First translated"), First->NodePosY, 600);
+    TestEqual(TEXT("Second translated"), Second->NodePosY, 600);
+    TestEqual(TEXT("Internal X spacing preserved"), Second->NodePosX - First->NodePosX, 600);
+    TestEqual(TEXT("Outside node stays fixed"), Outside->NodePosY, 0);
+    TestTrue(TEXT("Internal link preserved"), First->FindPinChecked(UEdGraphSchema_K2::PN_Then)->LinkedTo.Contains(Second->FindPinChecked(UEdGraphSchema_K2::PN_Execute)));
+    TestTrue(TEXT("Boundary link preserved"), Second->FindPinChecked(UEdGraphSchema_K2::PN_Then)->LinkedTo.Contains(Outside->FindPinChecked(UEdGraphSchema_K2::PN_Execute)));
+    const FString Collision = UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(Asset, Graph->GetName(), Ids, 1600, -600, TEXT(""));
+    TestTrue(TEXT("Collision refuses"), Collision.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Refusal preserves position"), Second->NodePosY, 600);
+    const FString Crossing = UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(Asset, Graph->GetName(), {Ids[0]}, 2950, -600, TEXT(""));
+    AddInfo(TEXT("Comment boundary refusal: ") + Crossing);
+    TestTrue(TEXT("Explicit movement refuses partial comment entry"), Crossing.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Comment refusal preserves X"), First->NodePosX, 0);
+    const FString Proposal = UTurboMCPPreviewToolset::PreviewTurboMCPGraphGroupPlacement(Asset, Graph->GetName(), Ids);
+    AddInfo(Proposal);
+    TestTrue(TEXT("Connected placement reports proposal or bounded no-op"), Proposal.StartsWith(TEXT("preview:")) || Proposal.StartsWith(TEXT("unchanged:")));
+    AddInfo(TEXT("Group movement capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900")));
+    BP->ClearFlags(RF_Public | RF_Standalone);
+    Package->SetDirtyFlag(false);
+    return !HasAnyErrors();
+}
 #endif
