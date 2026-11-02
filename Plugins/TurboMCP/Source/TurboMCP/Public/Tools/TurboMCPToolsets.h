@@ -1188,10 +1188,11 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
     static FString PreviewTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
     /**
-     * Load the Blueprint and simulate delegate binding on a transient graph; no live graph edits, compilation or saving are requested.
+     * Preview connecting an existing function through a Create Event node on a transient graph; no live graph edits, compile or save.
      * Requires an idle editor. Preview exercises graph/schema callbacks on a copy; successful preview does not guarantee a later edit. Inspect the result and arrange new nodes before compiling and saving.
+     * Repeating the identical compatible function/object binding is unchanged. Replaced source nodes are retained and listed for inspection. This creates a delegate value; the owning Bind or Timer node must execute for registration. Read back, tidy the affected nodes, inspect a capture, then compile and save explicitly.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
-     * @param GraphName Required unique graph name, e.g. EventGraph. Empty or unresolved names are refused.
+     * @param GraphName Required unique K2 graph name from the reader, e.g. EventGraph. Empty, missing and ambiguous names are refused.
      * @param TargetNodeId Exact reader ID or unique hexadecimal node key of at least six digits in GraphName. Missing or ambiguous IDs are refused. Qualified IDs must match the named graph.
      * @param TargetPin Required exact delegate input pin name, case-sensitive and not trimmed. Existing input links are replaced. Empty, orphaned, ambiguous or non-delegate pins are refused; use the reader's pin name.
      * @param FunctionName Required existing function name on self or the chosen object class, e.g. HandleClicked. Uses Unreal name matching; whitespace is not trimmed for lookup. Empty, missing or delegate-incompatible functions are refused. Does not create the function.
@@ -1199,6 +1200,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
      * @param ObjectPin Exact object-reference output pin name, case-sensitive and not trimmed. Supply together with ObjectNodeId; both empty selects self. Example: ReturnValue when the named node actually exposes that object output.
      */
     UFUNCTION(meta = (AICallable))
+    
     static FString PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
     /**
@@ -2058,10 +2060,11 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
     static FString EditTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
     /**
-     * Create a delegate binding and replace its target input connection in one undo transaction; loads the Blueprint, but does not compile or save.
+     * Connect an existing function through a Create Event node in one undo transaction; replaces the target input and marks the asset modified, with no compile or save.
      * Requires an idle editor. Preview exercises graph/schema callbacks on a copy; successful preview does not guarantee a later edit. Inspect the result and arrange new nodes before compiling and saving.
+     * Repeating the identical compatible function/object binding is unchanged. Replaced source nodes are retained and listed for inspection. This creates a delegate value; the owning Bind or Timer node must execute for registration. Read back, tidy the affected nodes, inspect a capture, then compile and save explicitly.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
-     * @param GraphName Required unique graph name, e.g. EventGraph. Empty or unresolved names are refused.
+     * @param GraphName Required unique K2 graph name from the reader, e.g. EventGraph. Empty, missing and ambiguous names are refused.
      * @param TargetNodeId Exact reader ID or unique hexadecimal node key of at least six digits in GraphName. Missing or ambiguous IDs are refused. Qualified IDs must match the named graph.
      * @param TargetPin Required exact delegate input pin name, case-sensitive and not trimmed. Existing input links are replaced. Empty, orphaned, ambiguous or non-delegate pins are refused; use the reader's pin name.
      * @param FunctionName Required existing function name on self or the chosen object class, e.g. HandleClicked. Uses Unreal name matching; whitespace is not trimmed for lookup. Empty, missing or delegate-incompatible functions are refused. Does not create the function.
@@ -2069,6 +2072,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
      * @param ObjectPin Exact object-reference output pin name, case-sensitive and not trimmed. Supply together with ObjectNodeId; both empty selects self. Example: ReturnValue when the named node actually exposes that object output.
      */
     UFUNCTION(meta = (AICallable))
+    
     static FString EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
     /**
