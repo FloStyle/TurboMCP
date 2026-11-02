@@ -17,6 +17,7 @@
 #include "Engine/Blueprint.h"
 #include "K2Node_Knot.h"
 #include "ScopedTransaction.h"
+#include "Editor.h"
 #include "UObject/Class.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
@@ -400,29 +401,11 @@ namespace
 			}
 		}
 
-		// 2. OTHERWISE A THROWAWAY OBJECT, which is never added to the graph, so measuring cannot
-		// change the node list. `AllocateDefaultPins` is called for the reason this whole capability
-		// has to respect: a commandlet never reconstructs a node for display, so an unallocated knot
-		// has an EMPTY pin array and `GetInputPin` is `Pins[0]` with no bounds check. The pins are not
-		// read here, but allocating is what makes the object a real knot rather than an empty shell.
-		// Leaving it undestroyed would put a stray knot in the next reader's output.
-		if (UK2Node_Knot* Probe = NewObject<UK2Node_Knot>(InGraph))
-		{
-			Probe->AllocateDefaultPins();
-			Out.Width = static_cast<double>(Probe->NodeWidth);
-			Out.Height = static_cast<double>(Probe->NodeHeight);
-			Probe->DestroyNode();
-		}
-
-		// 3. AND WHEN NOTHING HAS EVER BEEN MEASURED, A NAMED FALLBACK. See `FallbackKnotExtent`:
-		// refusing instead made the capability useless on every graph it exists for, and a small
-		// square is a better answer than no answer as long as the report says which was used.
-		if (!Out.IsUsable())
-		{
-			Out.Width = FallbackKnotExtent;
-			Out.Height = FallbackKnotExtent;
-			Out.bWasFallback = true;
-		}
+        // A newly allocated knot has no measured size. Creating and destroying a
+        // probe under the live graph can dirty it, so use the disclosed estimate.
+        Out.Width = FallbackKnotExtent;
+        Out.Height = FallbackKnotExtent;
+        Out.bWasFallback = true;
 
 		return Out;
 	}
@@ -740,69 +723,14 @@ namespace
 			return false;
 		}
 
-		// EVERY GRAPH KIND IS SEARCHED, because an ID names a graph and not a kind of graph.
-		TArray<UEdGraph*> Graphs;
-		for (UEdGraph* Graph : Out.Blueprint->UbergraphPages)
-		{
-			if (Graph != nullptr) { Graphs.Add(Graph); }
-		}
-		for (UEdGraph* Graph : Out.Blueprint->FunctionGraphs)
-		{
-			if (Graph != nullptr) { Graphs.Add(Graph); }
-		}
-		for (UEdGraph* Graph : Out.Blueprint->MacroGraphs)
-		{
-			if (Graph != nullptr) { Graphs.Add(Graph); }
-		}
-
-		if (Graphs.Num() == 0)
-		{
-			OutError = FString::Printf(TEXT("%s has no graphs."), *Resolved.ObjectPath);
-			return false;
-		}
-
-		const FString Wanted = InGraphName.TrimStartAndEnd();
-		if (Wanted.IsEmpty())
-		{
-			// The event graph by default, because that is the one a caller means when they do not
-			// say. Named in the answer so a caller who omitted it is not left guessing.
-			for (UEdGraph* Candidate : Graphs)
-			{
-				if (NameMatches(Candidate->GetFName(), TEXT("EventGraph")))
-				{
-					Out.Graph = Candidate;
-					break;
-				}
-			}
-			if (Out.Graph == nullptr)
-			{
-				Out.Graph = Graphs[0];
-			}
-			return true;
-		}
-
-		for (UEdGraph* Candidate : Graphs)
-		{
-			if (NameMatches(Candidate->GetFName(), Wanted))
-			{
-				Out.Graph = Candidate;
-				break;
-			}
-		}
-
-		if (Out.Graph == nullptr)
-		{
-			TArray<FString> Names;
-			for (UEdGraph* Candidate : Graphs)
-			{
-				Names.Add(Candidate->GetName());
-			}
-			Names.Sort();
-			OutError = FString::Printf(
-				TEXT("'%s' is not a graph of %s. Its graphs are: %s"),
-				*Wanted, *Resolved.ObjectPath, *FString::Join(Names, TEXT(", ")));
-			return false;
-		}
+        int32 Matches = 0;
+        UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(Out.Blueprint, InGraphName, Matches);
+        if (InGraphName.TrimStartAndEnd().IsEmpty() || !Graph || Matches != 1)
+        {
+            OutError = TEXT("Specify one exact existing graph name; empty, missing or ambiguous graphs are refused.");
+            return false;
+        }
+        Out.Graph = Graph;
 		return true;
 	}
 
@@ -834,6 +762,12 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 {
 	OutError.Empty();
 	OutPlan = FPlan();
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+    {
+        OutError = TEXT("Reroute planning requires an idle editor outside PIE and active transactions.");
+        return false;
+    }
+
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
 	OutPlan.GraphName = InGraphName.TrimStartAndEnd();
 
@@ -851,6 +785,19 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 	}
 
 	UEdGraph* Graph = Resolved.Graph;
+    TSet<FString> NodeKeys;
+    for (UEdGraphNode* Node : Graph->Nodes)
+    {
+        if (!Node) continue;
+        const FString Key = KeyOf(Node);
+        if (!Node->NodeGuid.IsValid() || NodeKeys.Contains(Key))
+        {
+            OutError = TEXT("Graph contains invalid or ambiguous node identifiers; no routing was planned.");
+            return false;
+        }
+        NodeKeys.Add(Key);
+    }
+
 	if (OutPlan.GraphName.IsEmpty())
 	{
 		// The answer says WHICH graph was used, so a caller who omitted the name is not guessing.
@@ -1051,7 +998,7 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
 {
 	FString Out;
-	Out += FString::Printf(TEXT("knots: graph %s\n"), *InPlan.GraphName);
+	Out += FString::Printf(TEXT("preview: knots: graph %s\n"), *InPlan.GraphName);
 	Out += FString::Printf(
 		TEXT("counts: %d graph array entries (includes comments and knots), %d knot(s) already (subset), %d wire(s) cross a node, ")
 		TEXT("%d crossing(s) in total\n"),
@@ -1075,7 +1022,13 @@ FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
 		return Out;
 	}
 
-	Out += FString::Printf(TEXT("would place %d knot(s):\n"), InPlan.AcceptedIndices.Num());
+	TSet<FString> ProposedKnots;
+    for (int32 Index : InPlan.AcceptedIndices)
+    {
+        const FWire& Wire = InPlan.Wires[Index];
+        ProposedKnots.Add(FString::Printf(TEXT("%s.%s@%.0f,%.0f"), *Wire.SourceId, *Wire.SourcePin, Wire.KnotX, Wire.KnotY));
+    }
+    Out += FString::Printf(TEXT("would place %d knot(s) for %d wire(s):\n"), ProposedKnots.Num(), InPlan.AcceptedIndices.Num());
 
 	int32 Listed = 0;
 	for (int32 Index = 0; Index < InPlan.Wires.Num(); ++Index)
@@ -1128,6 +1081,9 @@ FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
 
 FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 {
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+        return TEXT("error: rerouting requires an idle editor outside PIE and active transactions; unchanged");
+
 	FResolved Resolved;
 	FString Error;
 	if (!ResolveGraph(InPlan.Asset, InPlan.GraphName, Resolved, Error))
@@ -1223,7 +1179,16 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 
 	// Keep dirty state when restoration has not been independently verified.
 
-	TArray<UK2Node_Knot*> Created;
+	Resolved.Blueprint->Modify();
+    Graph->Modify();
+    for (const FPending& Item : Pending)
+    {
+        Item.SourcePin->GetOwningNode()->Modify();
+        Item.TargetPin->GetOwningNode()->Modify();
+    }
+    TMap<FString, UK2Node_Knot*> SharedKnots;
+    TArray<UK2Node_Knot*> CompletedKnots;
+    TArray<UK2Node_Knot*> Created;
 	TArray<FPending> Completed;
 	TArray<FString> Failed;
 
@@ -1239,18 +1204,24 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 		// `UEdGraph::AddNode` does not either: the editor allocates them when the node is
 		// RECONSTRUCTED FOR DISPLAY, which never happens in a commandlet. READING THOSE PINS WITHOUT
 		// ALLOCATING THEM FIRST IS `Array index out of bounds: 1 into an array of size 0`.
-		UK2Node_Knot* Knot = NewObject<UK2Node_Knot>(Graph);
+		const FString SharedKey = FString::Printf(TEXT("%s.%s@%.0f,%.0f"), *Item.SourceId, *Item.SourcePinName, Item.KnotX, Item.KnotY);
+        UK2Node_Knot* Knot = SharedKnots.FindRef(SharedKey);
+        const bool bNewKnot = Knot == nullptr;
+        if (bNewKnot) Knot = NewObject<UK2Node_Knot>(Graph, NAME_None, RF_Transactional);
 		if (Knot == nullptr)
 		{
 			Failed.Add(FString::Printf(TEXT("%s.%s (the knot could not be made)"),
 				*Item.SourceId, *Item.SourcePinName));
 			continue;
 		}
-		Knot->CreateNewGuid();
+		if (bNewKnot)
+        {
+        Knot->CreateNewGuid();
 		Knot->NodePosX = static_cast<int32>(Item.KnotX);
 		Knot->NodePosY = static_cast<int32>(Item.KnotY);
 		Graph->AddNode(Knot, /*bUserAction=*/false, /*bSelectNewNode=*/false);
 		Knot->AllocateDefaultPins();
+        }
 
 		UEdGraphPin* KnotIn = Knot->GetInputPin();
 		UEdGraphPin* KnotOut = Knot->GetOutputPin();
@@ -1270,14 +1241,14 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 		// 3. THE TWO NEW LINKS ARE MADE, AND EACH RETURN VALUE IS CHECKED. A failed connection
 		// leaves a wire broken in two, which is WORSE than the crossing it was fixing, so a failure
 		// here abandons this wire and the pass-level rollback below decides the rest.
-		const bool bIn = Schema->TryCreateConnection(Item.SourcePin, KnotIn);
+		const bool bIn = !bNewKnot || Schema->TryCreateConnection(Item.SourcePin, KnotIn);
 		const bool bOut = bIn && Schema->TryCreateConnection(KnotOut, Item.TargetPin);
 
 		if (!bIn || !bOut)
 		{
 			// UNDO THIS WIRE IMMEDIATELY: put the original link back and drop the knot. Leaving it
 			// half-connected is the one outcome that is worse than doing nothing.
-			if (bIn)
+			if (bIn && bNewKnot)
 			{
 				Schema->BreakSinglePinLink(Item.SourcePin, KnotIn);
 			}
@@ -1285,14 +1256,15 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 			{
 				Schema->BreakSinglePinLink(KnotOut, Item.TargetPin);
 			}
-			Knot->DestroyNode();
+			if (bNewKnot) Knot->DestroyNode();
 			Schema->TryCreateConnection(Item.SourcePin, Item.TargetPin);
 			Failed.Add(FString::Printf(TEXT("%s.%s (the schema refused a connection)"),
 				*Item.SourceId, *Item.SourcePinName));
 			continue;
 		}
 
-		Created.Add(Knot);
+		if (bNewKnot) { Created.Add(Knot); SharedKnots.Add(SharedKey, Knot); }
+        CompletedKnots.Add(Knot);
 		Completed.Add(Item);
 	}
 
@@ -1339,12 +1311,13 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 		// `Created` AND `Completed` ARE APPENDED IN LOCKSTEP, so they always have the same length and
 		// the same index means the same wire. They are kept separate because one holds the undo
 		// handle and the other holds the information needed to re-link the original wire.
-		for (int32 Index = Completed.Num() - 1; Index >= 0; --Index)
+		TSet<UK2Node_Knot*> RemovedKnots;
+        for (int32 Index = Completed.Num() - 1; Index >= 0; --Index)
 		{
 			const FPending& Item = Completed[Index];
-			UK2Node_Knot* Knot = Created[Index];
+			UK2Node_Knot* Knot = CompletedKnots[Index];
 
-			if (Knot != nullptr && Knot->GetGraph() == Graph)
+			if (Knot != nullptr && !RemovedKnots.Contains(Knot) && Knot->GetGraph() == Graph)
 			{
 				UEdGraphPin* KnotIn = Knot->GetInputPin();
 				UEdGraphPin* KnotOut = Knot->GetOutputPin();
@@ -1356,7 +1329,8 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 				{
 					Schema->BreakPinLinks(*KnotOut, /*bSendsNodeNotifcation=*/false);
 				}
-				Knot->DestroyNode();
+				RemovedKnots.Add(Knot);
+                Knot->DestroyNode();
 			}
 
 			// The knot's links are gone, so the original wire can be put back. The pins are found
