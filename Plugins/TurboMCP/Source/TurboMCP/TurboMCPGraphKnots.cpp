@@ -709,7 +709,7 @@ namespace
 
         int32 Matches = 0;
         UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(Out.Blueprint, InGraphName, Matches);
-        if (InGraphName.TrimStartAndEnd().IsEmpty() || !Graph || Matches != 1)
+        if (!Graph || Matches != 1 || InGraphName.TrimStartAndEnd().IsEmpty())
         {
             OutError = TEXT("Specify one exact existing graph name; empty, missing or ambiguous graphs are refused.");
             return false;
