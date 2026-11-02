@@ -24,6 +24,8 @@
 
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPLayoutReport.h"
+#include "TurboMCPGraphTidy.h"
+#include "EdGraphSchema_K2.h"
 #include "TurboMCPNodeId.h"
 
 namespace
@@ -129,7 +131,10 @@ namespace
 	 */
 	FTurboMCPLayoutReport::FRect RectOf(const UEdGraphNode* InNode)
 	{
-		return FTurboMCPLayoutReport::RectOf(InNode);
+		auto Rect = FTurboMCPLayoutReport::RectOf(InNode);
+        const FVector2D Size = FTurboMCPGraphTidy::AlignmentNodeSize(InNode);
+        Rect.MaxX = Rect.MinX + Size.X; Rect.MaxY = Rect.MinY + Size.Y;
+        return Rect;
 	}
 
 	/** A node's position on the sheet, which is what this capability calls its COLUMN (`C4`). */
@@ -449,11 +454,11 @@ namespace
 	{
 		// Level with the TARGET pin: same X as the target, same row as the source. The route is one
 		// horizontal run then one vertical run.
-		OutLevelWithTarget.X = InTarget.X;
+		OutLevelWithTarget.X = InTarget.X - 160.0;
 		OutLevelWithTarget.Y = InSource.Y;
 
 		// Level with the SOURCE pin: same X as the source, same row as the target.
-		OutLevelWithSource.X = InSource.X;
+		OutLevelWithSource.X = InSource.X + 160.0;
 		OutLevelWithSource.Y = InTarget.Y;
 	}
 
@@ -583,8 +588,8 @@ namespace
 						continue;
 					}
 
-					UEdGraphNode* SourceNode = ResolveThroughKnots(Pin->GetOwningNode());
-					UEdGraphNode* TargetNode = ResolveThroughKnots(Linked->GetOwningNode());
+					UEdGraphNode* SourceNode = Pin->GetOwningNode();
+					UEdGraphNode* TargetNode = Linked->GetOwningNode();
 					if (SourceNode == nullptr || TargetNode == nullptr || SourceNode == TargetNode)
 					{
 						// A wire a node runs to itself is not a routing problem.
@@ -592,8 +597,8 @@ namespace
 					}
 
 					// THE LOGICAL ENDS OF THE ROUTE, which is what has to be measured.
-					UEdGraphPin* LogicalSource = ResolveThroughKnotsToPin(Pin);
-					UEdGraphPin* LogicalTarget = ResolveThroughKnotsToPin(Linked);
+					UEdGraphPin* LogicalSource = Pin;
+					UEdGraphPin* LogicalTarget = Linked;
 					if (LogicalSource == nullptr || LogicalTarget == nullptr
 						|| LogicalSource == LogicalTarget)
 					{
@@ -607,8 +612,8 @@ namespace
 					}
 					Seen.Add(Route);
 
-					const FVector2D Source = FTurboMCPLayoutReport::PinPosition(LogicalSource);
-					const FVector2D Target = FTurboMCPLayoutReport::PinPosition(LogicalTarget);
+					const FVector2D Source = FTurboMCPGraphTidy::AlignmentPinPosition(LogicalSource);
+					const FVector2D Target = FTurboMCPGraphTidy::AlignmentPinPosition(LogicalTarget);
 
 					TArray<FString> Crossed;
 					for (const FObstacle& Obstacle : InObstacles)
@@ -788,6 +793,7 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 		OutPlan.GraphName = Graph->GetName();
 	}
 
+    if (!FTurboMCPGraphTidy::PrepareAlignment(Resolved.Blueprint, Graph, OutError)) return false;
 	OutPlan.NodeCountBefore = Graph->Nodes.Num();
 
 	// THE FOOTPRINT IS MEASURED BEFORE ANYTHING IS PLANNED, because `C5` cannot be decided without
@@ -862,8 +868,8 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 			for (const int32 Index : Group.Value)
 			{
 				const FFoundWire& Wire = Found[Index];
-				const FVector2D Source = FTurboMCPLayoutReport::PinPosition(Wire.SourcePin);
-				const FVector2D Target = FTurboMCPLayoutReport::PinPosition(Wire.TargetPin);
+				const FVector2D Source = FTurboMCPGraphTidy::AlignmentPinPosition(Wire.SourcePin);
+				const FVector2D Target = FTurboMCPGraphTidy::AlignmentPinPosition(Wire.TargetPin);
 
 				FCandidate WithTarget;
 				FCandidate WithSource;
@@ -911,8 +917,8 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 		for (const int32 Index : Group.Value)
 		{
 			const FFoundWire& Wire = Found[Index];
-			const FVector2D Source = FTurboMCPLayoutReport::PinPosition(Wire.SourcePin);
-			const FVector2D Target = FTurboMCPLayoutReport::PinPosition(Wire.TargetPin);
+			const FVector2D Source = FTurboMCPGraphTidy::AlignmentPinPosition(Wire.SourcePin);
+			const FVector2D Target = FTurboMCPGraphTidy::AlignmentPinPosition(Wire.TargetPin);
 
 			// A SHARED POSITION WINS WHEN ONE WAS AGREED, because `C6` asks for one knot per pin.
 			if (const FCandidate* Shared = SharedChoice.Find(Group.Key))
@@ -989,7 +995,7 @@ FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
 		InPlan.NodeCountBefore, InPlan.KnotCountBefore, InPlan.CrossingWiresBefore,
 		InPlan.CrossingsBefore);
 
-	Out += TEXT("Geometry: crossings use estimated straight wire segments and node rectangles, not rendered wire curves. Missing node dimensions use fallback bounds. Inspect the visible graph before accepting the layout.\n");
+	Out += TEXT("Geometry: native node outlines and pin positions are measured; crossings count straight physical segments through node rectangles, not rendered wire curves. Inspect the visible graph before accepting the layout.\n");
 	if (InPlan.bFootprintUnknown)
 	{
 		// This flag describes the reroute footprint, not whether every node was drawn.
@@ -1264,6 +1270,12 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 				*FString::Join(Skipped, TEXT("; "))) : TEXT(""));
 	}
 
+    FString MeasurementError;
+    if (!FTurboMCPGraphTidy::PrepareAlignment(Resolved.Blueprint, Graph, MeasurementError))
+    {
+        Graph->MarkPackageDirty();
+        return TEXT("partial: reroutes were inserted but geometry could not be remeasured; inspect or undo before saving. ") + MeasurementError;
+    }
 	// 4. RE-MEASURE, WITH THE SAME CODE THAT MEASURED BEFORE.
 	//
 	// The measurement is taken with `FindCrossingWires` rather than a second implementation,
