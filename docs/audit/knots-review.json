@@ -14,11 +14,39 @@
     "Geometry uses fallback rectangles; comments overstate restoration and behavioral safety."
   ],
   "remaining": [
-    "Reproduce and fix routing, shared-knot and undo behavior",
-    "Review geometry, safety guards, help and English",
-    "Focused editor tests and screenshot review"
+    "Use measured geometry rather than fallback node rectangles and review crossing recount against actual routed segments",
+    "Remove target-entry hooks; inspect new screenshots",
+    "Validate shared candidate against all destinations, collision reservations and stale-plan refusal",
+    "Review rollback safety and refusal output; exercise controls beyond the basic fanout",
+    "Verify updated live help and finish code/comment cleanup"
   ],
   "limitations": [
-    "Not accepted"
-  ]
+    "Tool pair remains unaccepted and does not increase coverage.",
+    "Focused pass proves clean preview, shared fanout, original-link undo and empty graph refusal only."
+  ],
+  "confirmed_failures": {
+    "run": "ef5d0ed68888414b8dd93ff5a284d0b7",
+    "candidate": "67991ab",
+    "failures": [
+      "Preview dirtied the package",
+      "Two knots instead of one shared knot",
+      "Each knot did not serve both destinations",
+      "Empty graph did not refuse"
+    ]
+  },
+  "partial_repair": {
+    "candidate": "4d3da0b",
+    "run": "8598a67b4e8941bb87bedb3e6a6138d2",
+    "state": "focused_safety_pass",
+    "fixes": [
+      "Remove live-graph measurement probe that dirtied preview",
+      "Create one shared knot for matching source and position; preserve both links",
+      "Require explicit unique graph, unique node identities and idle editor",
+      "Record Blueprint and endpoint nodes in transaction",
+      "Count proposed knots separately from routed wires"
+    ],
+    "capture": "KnotsReview_Routing_native_1600x900_C17F18064F1D0F7F8AC052BD43BDF397.png",
+    "visual_review": "Screenshot inspected: one shared knot and both destinations connected, but target-entry hooks remain awkward. Not visual acceptance.",
+    "post_run_change": "51b0c19 changes comments and public help only; updated live help not rechecked yet."
+  }
 }
