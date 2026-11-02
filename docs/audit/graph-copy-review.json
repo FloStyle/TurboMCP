@@ -50,5 +50,11 @@
     "Live preview/edit help states parameters and compile/save behavior."
   ],
   "capture": "CopyTarget_TargetFlow_native_1600x900_B626C8724C9C0CA8949D02B503F51BFC.png",
-  "visual_review": "Inspected native capture from e980282c: aligned event and three calls, readable defaults, forward execution wires and no overlap. Final candidate changes only comments and wrapper wording check after that capture."
+  "visual_review": "Inspected native capture from e980282c: aligned event and three calls, readable defaults, forward execution wires and no overlap. Final candidate changes only comments and wrapper wording check after that capture.",
+  "offline_gate": {
+    "run": "947f0d3f00f1413abdcaa30ceccb4fd7",
+    "result": "26/26 passed",
+    "integrated_commit": "7a8d6574",
+    "dirty": false
+  }
 }
