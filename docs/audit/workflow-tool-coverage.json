@@ -1044,6 +1044,22 @@
         "No compile, execution semantics or saved reload tested: this workflow changes positions only.",
         "Undo verified through the editor transaction API; no concurrent user mutation stress test."
       ]
+    },
+    {
+      "id": "WF-BACKWARD-REPAIR",
+      "title": "Repair backward execution while preserving undo",
+      "status": "in_progress",
+      "review": "docs/audit/backward-repair-review.json",
+      "evidence": "92780fa857304b599df8f68e0be53c21",
+      "tools_used": [],
+      "focus_tools": [
+        "PreviewTurboMCPGraphFixBackward",
+        "EditTurboMCPGraphFixBackward"
+      ],
+      "limitations": [
+        "Focused safety workflow only; no full tool acceptance yet.",
+        "No engine changes, compile/save behavior or runtime graph semantics claimed."
+      ]
     }
   ],
   "tool_usage": {

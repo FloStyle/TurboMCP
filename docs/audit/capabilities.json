@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "591619178d7976fbc9cb969b51bd0d3f02cc50b8",
+  "plugin_tree": "018ff7cb0548ab0cc94514b03cef19d12b962d9f",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -637,7 +637,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackwardTools.cpp",
-          "line": 43
+          "line": 33
         }
       ],
       "test_references": [
@@ -2332,7 +2332,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackwardTools.cpp",
-          "line": 30
+          "line": 20
         }
       ],
       "test_references": [
