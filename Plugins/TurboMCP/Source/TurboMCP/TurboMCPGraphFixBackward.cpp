@@ -1466,9 +1466,9 @@ FString FTurboMCPGraphFixBackward::RenderPreview(const FPlan& InPlan)
 
 	// WHAT EACH RULE FOUND, INCLUDING THE RULES THAT FOUND NOTHING. A caller must be able to tell "no bad
 	// spot exists" from "the rule did not run".
-	const int32 R1Moved = InPlan.NodesMoved - InPlan.GettersMoved - InPlan.StraysMoved;
+	const int32 R1Moved = InPlan.Moves.FilterByPredicate([](const FMove& Move) { return Move.Rule == TEXT("R1"); }).Num();
 	Out += FString::Printf(
-		TEXT("\n    R1 backward exec wires: %d found, %d node(s) moved, %d pushed along "
+		TEXT("\n    R1 backward exec wires: %d found, %d consumer(s) would move, %d pushed along "
 			 "(longest push chain %d)"),
 		InPlan.BackwardExecFound, R1Moved, InPlan.PushedMoved, InPlan.MaxPushDepth);
 	Out += FString::Printf(TEXT("\n    R1 pure nodes carried with their consumer: %d"), InPlan.PureMoved);

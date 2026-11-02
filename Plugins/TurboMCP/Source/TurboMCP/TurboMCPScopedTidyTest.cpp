@@ -18,6 +18,7 @@
 #include "GameFramework/Actor.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_VariableGet.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -519,6 +520,9 @@ bool FTurboMCPBackwardReviewTest::RunTest(const FString& Parameters)
     const FString ChainCapture = UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900"));
     AddInfo(TEXT("Pure-chain capture: ") + ChainCapture);
     TestTrue(TEXT("Pure-chain capture succeeds"), ChainCapture.StartsWith(TEXT("look:")));
+    FTurboMCPGraphFixBackward::FPlan Repeat;
+    TestTrue(TEXT("Plan repaired chain again"), FTurboMCPGraphFixBackward::Plan(Asset, Graph->GetName(), true, Repeat, Error));
+    TestFalse(TEXT("Repeated repair is a no-op"), Repeat.bWouldApply);
     TestTrue(TEXT("Undo entire chain repair"), GEditor->UndoTransaction(false));
     TestEqual(TEXT("Undo restores near pure X"), NearPure->NodePosX, 3000);
     TestEqual(TEXT("Undo restores far pure X"), FarPure->NodePosX, 3800);
@@ -543,6 +547,38 @@ bool FTurboMCPBackwardReviewTest::RunTest(const FString& Parameters)
     Call->NodeGuid = Event->NodeGuid;
     TestTrue(TEXT("Duplicate node identities refuse"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphFixBackward(Asset, Graph->GetName(), true).StartsWith(TEXT("error:")));
     Call->NodeGuid = SavedGuid;
+    // Isolate the getter and origin rules from the execution/chain fixture.
+    for (UEdGraphNode* Node : TArray<UEdGraphNode*>(Graph->Nodes)) Graph->RemoveNode(Node);
+    FEdGraphPinType StringType;
+    StringType.PinCategory = UEdGraphSchema_K2::PC_String;
+    FBlueprintEditorUtils::AddMemberVariable(BP, TEXT("ReviewText"), StringType);
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    auto* Consumer = MakePure(2000); Consumer->NodePosY = 600;
+    auto* Getter = NewObject<UK2Node_VariableGet>(Graph, NAME_None, RF_Transactional);
+    Getter->VariableReference.SetSelfMember(TEXT("ReviewText"));
+    Graph->AddNode(Getter, false, false); Getter->CreateNewGuid(); Getter->AllocateDefaultPins();
+    Getter->NodePosX = 2600; Getter->NodePosY = 1000;
+    Getter->FindPinChecked(TEXT("ReviewText"))->MakeLinkTo(Consumer->FindPinChecked(TEXT("A")));
+    FTurboMCPGraphFixBackward::FPlan GetterPlan;
+    TestTrue(TEXT("Plan backward getter"), FTurboMCPGraphFixBackward::Plan(Asset, Graph->GetName(), false, GetterPlan, Error));
+    TestEqual(TEXT("Getter rule moves one getter"), GetterPlan.GettersMoved, 1);
+    TestTrue(TEXT("Apply getter repair"), FTurboMCPGraphFixBackward::Apply(GetterPlan).StartsWith(TEXT("changed:")));
+    TestTrue(TEXT("Getter is left of consumer"), Getter->NodePosX < Consumer->NodePosX);
+    AddInfo(TEXT("Getter capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1200x800")));
+    TestTrue(TEXT("Undo getter repair"), GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo getter X"), Getter->NodePosX, 2600);
+    Graph->RemoveNode(Getter);
+    auto* Stray = MakePure(0); Stray->NodePosY = 0;
+    Stray->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue)->MakeLinkTo(Consumer->FindPinChecked(TEXT("A")));
+    FTurboMCPGraphFixBackward::FPlan StrayPlan;
+    TestTrue(TEXT("Plan origin stray"), FTurboMCPGraphFixBackward::Plan(Asset, Graph->GetName(), false, StrayPlan, Error));
+    TestEqual(TEXT("Origin rule moves one node"), StrayPlan.StraysMoved, 1);
+    TestTrue(TEXT("Apply origin repair"), FTurboMCPGraphFixBackward::Apply(StrayPlan).StartsWith(TEXT("changed:")));
+    TestTrue(TEXT("Stray placed near consumer"), Stray->NodePosX > 1000 && Stray->NodePosX < Consumer->NodePosX);
+    AddInfo(TEXT("Origin capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1200x800")));
+    TestTrue(TEXT("Undo origin repair"), GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo origin X"), Stray->NodePosX, 0);
+
     BP->ClearFlags(RF_Public | RF_Standalone);
     Package->SetDirtyFlag(false);
     return !HasAnyErrors();
