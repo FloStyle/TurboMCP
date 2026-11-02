@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "c061333c05352cfab22d56965b5e5cf364798420",
+  "plugin_tree": "a4ead933a064f1f89eec94747f987feab5581ca1",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -98,7 +98,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 557
+          "line": 600
         }
       ],
       "test_references": [],
@@ -122,7 +122,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 563
+          "line": 606
         }
       ],
       "test_references": [],
@@ -565,7 +565,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 537
+          "line": 580
         }
       ],
       "test_references": [],
@@ -763,7 +763,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 551
+          "line": 594
         }
       ],
       "test_references": [],
@@ -843,11 +843,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 545
+          "line": 588
         }
       ],
-      "test_references": [],
-      "static_call_evidence": "missing",
+      "test_references": [
+        "Tools/test-sequence-review.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -865,7 +867,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 541
+          "line": 584
         }
       ],
       "test_references": [],
@@ -1898,7 +1900,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 554
+          "line": 597
         }
       ],
       "test_references": [],
@@ -1922,7 +1924,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 560
+          "line": 603
         }
       ],
       "test_references": [],
@@ -2261,7 +2263,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 535
+          "line": 578
         }
       ],
       "test_references": [],
@@ -2460,7 +2462,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 548
+          "line": 591
         }
       ],
       "test_references": [],
@@ -2537,11 +2539,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 543
+          "line": 586
         }
       ],
-      "test_references": [],
-      "static_call_evidence": "missing",
+      "test_references": [
+        "Tools/test-sequence-review.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -2559,7 +2563,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 539
+          "line": 582
         }
       ],
       "test_references": [],
@@ -3945,6 +3949,7 @@
         "Tools/test-refs.py",
         "Tools/test-save-undo-workflow.py",
         "Tools/test-scoped-tidy.py",
+        "Tools/test-sequence-review.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-type-discovery.py",
         "Tools/test-vars-add.py",

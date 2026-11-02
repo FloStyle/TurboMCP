@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-GRAPH-SEQUENCE",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPGraphSequence",
     "EditTurboMCPGraphSequence"
@@ -31,13 +31,47 @@
     "Return Sequence and row IDs, value-copy mapping and explicit follow-up layout guidance.",
     "Document sequential rather than parallel behavior, parameter bounds, side effects and explicit compile/save."
   ],
-  "remaining": [
-    "Focused editor result and screenshot inspection",
-    "Value splitting and refusal controls",
-    "Offline gate, integration and coverage update"
-  ],
+  "remaining": [],
   "limitations": [
     "Synthetic workflow acceptance is not all graphs or callback behaviors.",
-    "Compilation and saving remain separate; rollback restoration is reported as unverified on an apply failure."
+    "Compilation and saving remain separate; rollback restoration is reported as unverified on an apply failure.",
+    "No runtime invocation or save/reload durability claim; execution order is checked structurally and the result compiles.",
+    "Maximum-size input, every supported pure-node class, nested callback failures and rollback restoration were not exhaustively exercised.",
+    "Native output-wire spline crossing remains a layout limitation visible in the capture; the rows and nodes are readable and nonoverlapping."
+  ],
+  "candidate": "2864c179ae0b5557152b520c82dfaf2286d60e20",
+  "native_run": "ad3f9353c4de4af6a19f172a48a78de6",
+  "scope_gate": "PASS: exact approved assignment paths",
+  "capture": "SequenceReview_OrderedFlow_native_1600x900_54F279E54535D97B30C206BC2C9DFA01.png",
+  "visual_review": "Inspected native capture: readable ordered rows, no node overlap. Native Sequence output splines cross near the output side; not claimed crossing-free. Existing Tidy is a workflow dependency, not newly accepted by this review.",
+  "test_history": [
+    {
+      "run": "1f20f07e6b814419b098f9dd702f912e",
+      "status": "failed",
+      "cause": "Fixture graph and custom event shared a name, causing explicit compile failure; preservation and undo assertions passed. Renamed the fixture event."
+    },
+    {
+      "run": "9a512d0953a941c38592a6aec3a31739",
+      "status": "failed",
+      "cause": "Dirty-state assertion included fixture node creation/removal. Moved clean baselines and assertions immediately around each request; no production change for this failure."
+    },
+    {
+      "run": "ad3f9353c4de4af6a19f172a48a78de6",
+      "status": "passed",
+      "checks": [
+        "Live parameter help and compile/save guidance",
+        "Preview leaves original nodes, links and package dirty state unchanged",
+        "Original call order and continuation remain connected in ordered outputs",
+        "Existing defaults and positions preserved before explicit tidy",
+        "Single undo restores original node count and chain boundaries",
+        "Splitting disabled preserves shared fanout",
+        "Splitting enabled creates two copies with preserved literal defaults and retains unselected consumer source",
+        "Undo restores shared fanout",
+        "Empty graph, reordered calls, Boolean IDs, duplicate selections, duplicate GUID and latent calls refuse",
+        "Refusals leave package clean",
+        "Chain without continuation has exactly two outputs",
+        "Explicit tidy, native capture and Blueprint compilation"
+      ]
+    }
   ]
 }

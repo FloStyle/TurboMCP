@@ -1105,6 +1105,31 @@
         "No automatic compilation, saving or runtime-behavior certification."
       ],
       "evidence": "124d02287e494506b3dcdd9dedba613a"
+    },
+    {
+      "id": "WF-GRAPH-SEQUENCE",
+      "title": "Refactor a linear call chain into ordered Sequence rows",
+      "status": "scenario_accepted",
+      "review": "docs/audit/sequence-review.json",
+      "focus_tools": [
+        "PreviewTurboMCPGraphSequence",
+        "EditTurboMCPGraphSequence"
+      ],
+      "tools_used": [
+        "PreviewTurboMCPGraphSequence",
+        "EditTurboMCPGraphSequence",
+        "ReadTurboMCPToolHelp",
+        "EditTurboMCPGraphTidy",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "Synthetic workflow acceptance is not all graphs or callback behaviors.",
+        "Compilation and saving remain separate; rollback restoration is reported as unverified on an apply failure.",
+        "No runtime invocation or save/reload durability claim; execution order is checked structurally and the result compiles.",
+        "Maximum-size input, every supported pure-node class, nested callback failures and rollback restoration were not exhaustively exercised.",
+        "Native output-wire spline crossing remains a layout limitation visible in the capture; the rows and nodes are readable and nonoverlapping."
+      ],
+      "evidence": "ad3f9353c4de4af6a19f172a48a78de6"
     }
   ],
   "tool_usage": {
@@ -1151,7 +1176,8 @@
       "WF-BP-04-CALL-SWAP",
       "WF-UI-06-PARENT-BINDING",
       "WF-UI-07-OVERRIDES",
-      "WF-UI-08-OVERRIDE-REMOVE"
+      "WF-UI-08-OVERRIDE-REMOVE",
+      "WF-GRAPH-SEQUENCE"
     ],
     "EditTurboMCPLocalVars": [
       "WF-BP-01-PURCHASE"
@@ -1175,7 +1201,8 @@
       "WF-VISION-06-PLAY-MENU",
       "WF-VISION-07-COMMONUI",
       "WF-BP-FUNCTION-FLAGS",
-      "WF-BP-COLLAPSE-FUNCTION"
+      "WF-BP-COLLAPSE-FUNCTION",
+      "WF-GRAPH-SEQUENCE"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -1485,7 +1512,8 @@
       "WF-DISCOVERY-01"
     ],
     "ReadTurboMCPToolHelp": [
-      "WF-DISCOVERY-01"
+      "WF-DISCOVERY-01",
+      "WF-GRAPH-SEQUENCE"
     ],
     "ReadTurboMCPToolSchema": [
       "WF-DISCOVERY-01"
@@ -1576,9 +1604,15 @@
     ],
     "EditTurboMCPGraphKnots": [
       "WF-GRAPH-KNOTS"
+    ],
+    "PreviewTurboMCPGraphSequence": [
+      "WF-GRAPH-SEQUENCE"
+    ],
+    "EditTurboMCPGraphSequence": [
+      "WF-GRAPH-SEQUENCE"
     ]
   },
-  "unique_tools_scenario_reviewed": 133,
+  "unique_tools_scenario_reviewed": 135,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
