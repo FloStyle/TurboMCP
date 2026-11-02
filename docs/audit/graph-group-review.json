@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "workflow": "WF-GRAPH-GROUP",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPGraphGroupMove",
+    "PreviewTurboMCPGraphGroupPlacement",
+    "EditTurboMCPGraphGroupMove"
+  ],
+  "confirmed_bug": {
+    "description": "Explicit movement allowed a node to straddle an unselected comment boundary although placement suggestion refused that geometry.",
+    "reproduction": "d29884a3c2634b6bbacaaa09c0098c4b",
+    "candidate": "9c27d7e",
+    "state": "failed_as_expected",
+    "failures": [
+      "Explicit movement refuses partial comment entry",
+      "Comment refusal preserves X"
+    ]
+  },
+  "repair": {
+    "candidate": "0db9f1c",
+    "state": "implemented_focused_editor_pass",
+    "run": "53b63b42b6ba484da7c6572c6b9dcf56",
+    "capture": "GroupMove_MoveGroup_native_1600x900_5E6382E64087971A2BCDAD90B2557E3A.png",
+    "visual_review": "Nodes remain outside the unselected comment; spacing and links visible. Wide capture is not a text-legibility acceptance."
+  },
+  "remaining": [
+    "Exercise suggested placement followed by edit, destination-box transfer, selected comment contents, refusals and undo.",
+    "Finish live help and returned-English review before accepting the unreviewed tools."
+  ],
+  "limitations": [
+    "Rigid translation does not repair internal spacing or rewire nodes.",
+    "Placement optimizes estimated straight boundary wires, not all rendered crossings or global layout."
+  ]
+}
