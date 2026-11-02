@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "a4ead933a064f1f89eec94747f987feab5581ca1",
+  "plugin_tree": "4ee5cbeba71a3489c1dd86e985229eef8094b113",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -98,7 +98,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 600
+          "line": 651
         }
       ],
       "test_references": [],
@@ -122,7 +122,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 606
+          "line": 657
         }
       ],
       "test_references": [],
@@ -565,7 +565,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 580
+          "line": 612
         }
       ],
       "test_references": [],
@@ -763,7 +763,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 594
+          "line": 645
         }
       ],
       "test_references": [],
@@ -843,7 +843,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 588
+          "line": 639
         }
       ],
       "test_references": [
@@ -867,11 +867,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 584
+          "line": 635
         }
       ],
-      "test_references": [],
-      "static_call_evidence": "missing",
+      "test_references": [
+        "Tools/test-split-value-review.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1900,7 +1902,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 597
+          "line": 648
         }
       ],
       "test_references": [],
@@ -1924,7 +1926,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 603
+          "line": 654
         }
       ],
       "test_references": [],
@@ -2263,7 +2265,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 578
+          "line": 610
         }
       ],
       "test_references": [],
@@ -2462,7 +2464,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 591
+          "line": 642
         }
       ],
       "test_references": [],
@@ -2539,7 +2541,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 586
+          "line": 637
         }
       ],
       "test_references": [
@@ -2563,11 +2565,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
-          "line": 582
+          "line": 633
         }
       ],
-      "test_references": [],
-      "static_call_evidence": "missing",
+      "test_references": [
+        "Tools/test-split-value-review.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -3950,6 +3954,7 @@
         "Tools/test-save-undo-workflow.py",
         "Tools/test-scoped-tidy.py",
         "Tools/test-sequence-review.py",
+        "Tools/test-split-value-review.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-type-discovery.py",
         "Tools/test-vars-add.py",

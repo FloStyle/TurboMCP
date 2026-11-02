@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "workflow": "WF-GRAPH-SPLIT-VALUE",
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
+  "focus_tools": [
+    "PreviewTurboMCPGraphSplitValue",
+    "EditTurboMCPGraphSplitValue"
+  ],
+  "candidate": "91beb59757297ba11e1178e8c3b678b3feac29f6",
+  "native_run": "b45ae0e679cc48ba8ef2ce950b235a3d",
+  "scope_gate": "PASS",
+  "scenario": "Copy a shared string source near two execution consumers, preserving defaults and linked inputs; preview, edit, undo, reapply, tidy, capture and compile explicitly.",
+  "changes": [
+    "Use strict node identity resolution and explicit K2 graph selection.",
+    "Validate endpoint reciprocity, graph ownership, orphaned pins and coordinate range before copying.",
+    "Refuse unsupported source shapes and nondeletable originals; bound fanout to 4096 inputs.",
+    "State copy-per-input semantics, no-op behavior, source removal, provisional preview IDs and separate layout/compile/save steps.",
+    "Improve English diagnostics, result mapping and helper comments."
+  ],
+  "test_history": [
+    {
+      "run": "b6555fb65c2d4a2baed50b31994b1e13",
+      "status": "failed",
+      "reason": "Unique hexadecimal key rejected by older resolver; this was a new consistency requirement, not a regression against the prior reader-ID-only description. Preservation, undo and compile checks passed."
+    },
+    {
+      "run": "28bb7e6a2f144cb594d4e48fd3e45ef9",
+      "status": "passed",
+      "suites": [
+        "test-split-value-review",
+        "test-sequence-review"
+      ]
+    },
+    {
+      "run": "b45ae0e679cc48ba8ef2ce950b235a3d",
+      "status": "passed",
+      "suites": [
+        "test-split-value-review",
+        "test-sequence-review"
+      ]
+    }
+  ],
+  "checks": [
+    "Preview preserves original count, fanout and clean package",
+    "Two copies replace original with distinct identities and preserved defaults",
+    "Result identifies each copy and consumer",
+    "Existing consumer positions retained before explicit tidy",
+    "Zero/one consumer is a clean no-op",
+    "Single undo restores original and all fanout",
+    "Linked upstream inputs preserved on copies and restored on undo",
+    "Two inputs on one consumer receive distinct copies",
+    "Unique hexadecimal node key accepted",
+    "Impure/missing sources, empty graph, coordinate underflow and orphaned output refused",
+    "Refusals preserve clean state",
+    "Existing Sequence splitting scenario still passes",
+    "Explicit tidy, native capture and compilation pass"
+  ],
+  "capture": "SplitValueReview_ValueFlow_native_1600x900_B9E84477481AE74534EE1AADCB1002B6.png",
+  "visual_review": "Inspected native capture: straight execution flow, separate literal source before each consumer, short forward data links and no overlapping nodes.",
+  "remaining": [],
+  "limitations": [
+    "Synthetic string-literal workflow, not every self/getter/object-literal/constructor combination.",
+    "No runtime invocation, save/reload or project-wide equivalence claim; getter copies may change evaluation frequency.",
+    "New copies are not collision-planned by this tool; follow-up Tidy is required and was exercised in this scenario.",
+    "Maximum fanout, hostile malformed objects and callback/rollback failure paths were not exhaustively tested; apply failure still reports restoration unverified."
+  ]
+}

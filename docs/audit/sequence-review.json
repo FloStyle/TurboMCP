@@ -79,5 +79,9 @@
     "result": "26/26 passed",
     "integrated_commit": "fad1ed6",
     "dirty": false
+  },
+  "shared_split_regression": {
+    "run": "b45ae0e679cc48ba8ef2ce950b235a3d",
+    "result": "passed after shared Split helper validation changes"
   }
 }
