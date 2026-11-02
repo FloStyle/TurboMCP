@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "workflow": "WF-GRAPH-POSITIONS",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "EditTurboMCPGraphPositions"
+  ],
+  "scope": "Review exact manual positioning in an existing graph: batch validation, undo, unchanged nodes, comments, IDs, help and output. No automatic tidy or graph rewiring.",
+  "remaining": [
+    "Check strict JSON types and refusal diagnostics",
+    "Test real edit, read-back, undo, no-op and invalid mixed batch",
+    "Inspect native screenshot and live help"
+  ],
+  "limitations": [
+    "Not accepted yet"
+  ]
+}
