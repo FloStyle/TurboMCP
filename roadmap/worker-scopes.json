@@ -3186,6 +3186,18 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBindFunctionReviewTest.cpp",
             "Tools/test-bind-function-review.py"
           ]
+        },
+        "graph-copy-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCopyReviewTest.cpp",
+            "Tools/test-graph-copy-review.py"
+          ]
         }
       },
       "preserve_rows": []
