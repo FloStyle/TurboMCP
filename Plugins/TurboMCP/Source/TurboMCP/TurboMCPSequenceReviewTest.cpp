@@ -28,7 +28,7 @@ bool FTurboMCPSequenceReviewTest::RunTest(const FString& Parameters)
     UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("OrderedFlow"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
     FBlueprintEditorUtils::AddUbergraphPage(BP, Graph);
     auto* Event = NewObject<UK2Node_CustomEvent>(Graph, NAME_None, RF_Transactional);
-    Event->CustomFunctionName = TEXT("OrderedFlow"); Graph->AddNode(Event, false, false); Event->CreateNewGuid(); Event->AllocateDefaultPins();
+    Event->CustomFunctionName = TEXT("RunOrderedCalls"); Graph->AddNode(Event, false, false); Event->CreateNewGuid(); Event->AllocateDefaultPins();
     auto MakeCall = [&](const TCHAR* Name, int32 X, int32 Y)
     {
         auto* N = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional);
@@ -77,6 +77,51 @@ bool FTurboMCPSequenceReviewTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Single undo succeeds"),GEditor->UndoTransaction(false));
     TestEqual(TEXT("Undo node count"),Graph->Nodes.Num(),OriginalCount);
     TestTrue(TEXT("Undo restores all boundaries"),Out(Event)->LinkedTo.Contains(In(A)) && Out(A)->LinkedTo.Contains(In(B)) && Out(B)->LinkedTo.Contains(In(C)) && Out(C)->LinkedTo.Contains(In(Tail)));
+    Package->SetDirtyFlag(false);
+    TestTrue(TEXT("Boolean IDs refuse"),UTurboMCPEditToolset::EditTurboMCPGraphSequence(Asset,Graph->GetName(),TEXT("[[true],[false]]"),false).Contains(TEXT("refused:")));
+    const FString Duplicate=FString::Printf(TEXT("[[\"%s\"],[\"%s\"]]"),*Id(A),*Id(A));
+    TestTrue(TEXT("Duplicate selection refuses"),UTurboMCPEditToolset::EditTurboMCPGraphSequence(Asset,Graph->GetName(),Duplicate,false).Contains(TEXT("refused:")));
+    auto* Bad=MakeCall(TEXT("PrintString"),0,1200); Bad->NodeGuid=A->NodeGuid;
+    TestTrue(TEXT("Duplicate GUID refuses"),UTurboMCPEditToolset::EditTurboMCPGraphSequence(Asset,Graph->GetName(),Groups,false).Contains(TEXT("refused:")));
+    Graph->RemoveNode(Bad);
+    auto* Latent=MakeCall(TEXT("Delay"),0,1200);
+    const FString LatentGroups=FString::Printf(TEXT("[[\"%s\"],[\"%s\"]]"),*Id(Latent),*Id(A));
+    TestTrue(TEXT("Latent call refuses"),UTurboMCPEditToolset::EditTurboMCPGraphSequence(Asset,Graph->GetName(),LatentGroups,false).Contains(TEXT("refused:")));
+    Graph->RemoveNode(Latent);
+    TestFalse(TEXT("Invalid requests remain clean"),Package->IsDirty());
+    auto* Shared=MakeCall(TEXT("MakeLiteralString"),0,600);
+    Shared->FindPinChecked(TEXT("Value"))->DefaultValue=TEXT("Shared value");
+    auto* Value=Shared->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue);
+    Value->MakeLinkTo(A->FindPinChecked(TEXT("InString"))); Value->MakeLinkTo(C->FindPinChecked(TEXT("InString"))); Value->MakeLinkTo(Tail->FindPinChecked(TEXT("InString")));
+    TestTrue(TEXT("No-split edit succeeds"),UTurboMCPEditToolset::EditTurboMCPGraphSequence(Asset,Graph->GetName(),Groups,false).StartsWith(TEXT("changed\n")));
+    TestEqual(TEXT("No-split preserves shared fanout"),Value->LinkedTo.Num(),3);
+    TestTrue(TEXT("Undo no-split"),GEditor->UndoTransaction(false));
+    const FString SplitResult=UTurboMCPEditToolset::EditTurboMCPGraphSequence(Asset,Graph->GetName(),Groups,true); AddInfo(SplitResult);
+    TestTrue(TEXT("Split edit succeeds"),SplitResult.StartsWith(TEXT("changed\n")));
+    TestTrue(TEXT("Two copies reported"),SplitResult.Contains(TEXT("value copies=2")));
+    TestEqual(TEXT("Original remains for unselected continuation"),Value->LinkedTo.Num(),1);
+    TestTrue(TEXT("Unselected source retained"),Value->LinkedTo.Contains(Tail->FindPinChecked(TEXT("InString"))));
+    for (UEdGraphNode* Consumer:{static_cast<UEdGraphNode*>(A),static_cast<UEdGraphNode*>(C)})
+    {
+        auto* Input=Consumer->FindPinChecked(TEXT("InString"));
+        if(TestEqual(TEXT("One copied source"),Input->LinkedTo.Num(),1))
+        {
+            auto* Copy=Input->LinkedTo[0]->GetOwningNode();
+            TestTrue(TEXT("Source is a copy"),Copy!=Shared);
+            TestEqual(TEXT("Copied literal preserved"),Copy->FindPinChecked(TEXT("Value"))->DefaultValue,FString(TEXT("Shared value")));
+        }
+    }
+    TestTrue(TEXT("Undo copies"),GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo restores shared fanout"),Value->LinkedTo.Num(),3);
+    Shared->BreakAllNodeLinks(); Graph->RemoveNode(Shared);
+    Out(C)->BreakLinkTo(In(Tail));
+    TestTrue(TEXT("No-continuation edit succeeds"),UTurboMCPEditToolset::EditTurboMCPGraphSequence(Asset,Graph->GetName(),Groups,false).StartsWith(TEXT("changed\n")));
+    int32 OutputCount=0;
+    for (UEdGraphNode* N:Graph->Nodes) if(auto* S=Cast<UK2Node_ExecutionSequence>(N))
+        for(UEdGraphPin* P:S->Pins) if(P && P->Direction==EGPD_Output) ++OutputCount;
+    TestEqual(TEXT("No extra continuation output"),OutputCount,2);
+    TestTrue(TEXT("Undo no-continuation"),GEditor->UndoTransaction(false));
+    Out(C)->MakeLinkTo(In(Tail));
     // Reapply and use the existing layout tool as part of the human-readable workflow.
     Graph->RemoveNode(Unrelated);
     AddInfo(UTurboMCPEditToolset::EditTurboMCPGraphSequence(Asset,Graph->GetName(),Groups,false));

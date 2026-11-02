@@ -495,7 +495,12 @@ bool Sequence(UEdGraph* Graph,UEdGraph* Identity,const FString& Groups,bool Spli
             for (UEdGraphPin* P:N->Pins) if (P && P->Direction==EGPD_Output)
                 for (UEdGraphPin* Q:P->LinkedTo) if (Q && Selected.Contains(Q->GetOwningNode())) UsedBySelection=true;
             // Do not validate or rewrite unrelated values elsewhere in the graph.
-            if (UsedBySelection && !Split(Graph,N,&Selected,Copies,Error,&CopyMapping)) return false;
+            if (UsedBySelection)
+            {
+                for (UEdGraphNode* Consumer:Selected) if (static_cast<int64>(Consumer->NodePosX)-240 < MIN_int32)
+                { Error=TEXT("A value-copy position would exceed the supported coordinate range."); return false; }
+                if (!Split(Graph,N,&Selected,Copies,Error,&CopyMapping)) return false;
+            }
         }
     }
     Report=FString::Printf(TEXT("sequence lanes=%d; ordered calls=%d; value copies=%d; continuation=%s; execution order preserved; no save"),Rows.Num(),Chain.Num(),Copies,After?TEXT("last output"):TEXT("none"));
