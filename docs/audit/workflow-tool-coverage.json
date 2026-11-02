@@ -1204,6 +1204,25 @@
         "Structural creation remains refused; compatible compiled self functions and external PrintString calls were exercised."
       ],
       "evidence": "ae61ba2ff77846eb92bd05f5b151c427"
+    },
+    {
+      "id": "WF-FUNCTION-REMOVE",
+      "title": "Remove an unused Blueprint function",
+      "status": "scenario_accepted",
+      "review": "docs/audit/function-remove-review.json",
+      "focus_tools": [
+        "EditTurboMCPFunctionRemove"
+      ],
+      "tools_used": [
+        "EditTurboMCPFunctionRemove"
+      ],
+      "limitations": [
+        "Synthetic local-function removal, not widget binding or inherited/interface override cleanup.",
+        "No dedicated undo guarantee; no save/reload, open-editor callback or runtime caller-repair claim.",
+        "Ambiguous names, PIE and off-game-thread guards reviewed in source; active transaction refusal exercised.",
+        "Removing a function can leave broken callers; the tool warns but does not repair them."
+      ],
+      "evidence": "6020fe0cf6ea46c4b6d7001d3222b9e5"
     }
   ],
   "tool_usage": {
@@ -1711,9 +1730,12 @@
     ],
     "EditTurboMCPGraphCopy": [
       "WF-GRAPH-COPY"
+    ],
+    "EditTurboMCPFunctionRemove": [
+      "WF-FUNCTION-REMOVE"
     ]
   },
-  "unique_tools_scenario_reviewed": 141,
+  "unique_tools_scenario_reviewed": 142,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "workflow": "WF-FUNCTION-REMOVE",
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
+  "focus_tools": [
+    "EditTurboMCPFunctionRemove"
+  ],
+  "scenario": "Remove an unused local function, preserve another function, refuse protected and active-transaction removal, repeat safely and compile explicitly.",
+  "candidate": "414388f8276a8f2de0699259e9fecb256cd7283c",
+  "native_run": "6020fe0cf6ea46c4b6d7001d3222b9e5",
+  "scope_gate": "PASS",
+  "remaining": [],
+  "limitations": [
+    "Synthetic local-function removal, not widget binding or inherited/interface override cleanup.",
+    "No dedicated undo guarantee; no save/reload, open-editor callback or runtime caller-repair claim.",
+    "Ambiguous names, PIE and off-game-thread guards reviewed in source; active transaction refusal exercised.",
+    "Removing a function can leave broken callers; the tool warns but does not repair them."
+  ],
+  "confirmed_failures": [
+    {
+      "run": "51b3cc5e9b534010aec2ac1d79887eb4",
+      "finding": "Live help omitted caller/binding non-repair warning because only the first sentence is exposed; wrapper stopped before native run."
+    },
+    {
+      "run": "11f6d3b485874977aa406d819f959050",
+      "finding": "Protected function removal incorrectly reported partial despite no mutation; other native checks passed."
+    }
+  ],
+  "fixes": [
+    "Preflight bAllowDeletion and report unchanged before invoking stock removal.",
+    "Expose caller/binding, undo, compile/save and callback limitations in live help.",
+    "Report canonical removed function name; simplify implementation comments."
+  ],
+  "checks": [
+    "Empty and missing names refuse without dirtying the package; missing result lists functions.",
+    "Active transaction and protected graph refuse without removal.",
+    "Whitespace/case-normalized removal removes requested graph and preserves other function/nodes.",
+    "Repeated removal is unchanged and clean.",
+    "Result states no caller repair or dedicated undo.",
+    "Remaining Blueprint compiles.",
+    "Live help exposes parameters and key limitations."
+  ],
+  "visual_review": "Not applicable: function deletion has no layout or rendered output contract; graph membership and preserved node count checked in editor."
+}

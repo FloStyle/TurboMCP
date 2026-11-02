@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "72e7d04446c6be888dc200ebbc3a353b5535da09",
+  "plugin_tree": "1cc391d64db8a24e608ef3374c56990f04657636",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -469,6 +469,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-function-remove-review.py",
         "Tools/test-function.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -3951,6 +3952,7 @@
         "Tools/test-edit-readiness.py",
         "Tools/test-editor-log.py",
         "Tools/test-function-flags.py",
+        "Tools/test-function-remove-review.py",
         "Tools/test-graph-copy-review.py",
         "Tools/test-graph-dead.py",
         "Tools/test-graph-edit-workflow.py",
