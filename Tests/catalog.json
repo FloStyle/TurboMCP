@@ -1044,6 +1044,13 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-function-remove-review",
+      "path": "Tools/test-function-remove-review.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
     }
   ]
 }
