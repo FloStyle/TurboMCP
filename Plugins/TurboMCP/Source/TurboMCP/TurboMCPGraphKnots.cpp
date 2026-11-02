@@ -31,63 +31,16 @@
 
 namespace
 {
-	/**
-	 * THE CONSTANTS ARE CHOICES, AND SAYING SO IS THE POINT.
-	 *
-	 * The engine has no column, no neighbour gap and no knot clearance, so this capability invents
-	 * all three. Each is named and justified rather than buried, because a number nobody can point
-	 * at is a number nobody can argue with.
-	 *
-	 * `ColumnBand`: two nodes share a COLUMN when their `NodePosX` differ by no more than this.
-	 */
+	
 	constexpr double ColumnBand = 64.0;
 
-	/**
-	 * `NeighbourGap`: two columns are NEIGHBOURING when the horizontal gap between their rectangles
-	 * is no more than this.
-	 *
-	 * DERIVED FROM THE FIXTURE rather than copied: in `KnotProbe` the two calls are 1200 apart and
-	 * the three probes are 300 apart, so 400 treats the probes as one column and the calls as two
-	 * columns that are NOT neighbours. A wire over 300 units is worth a knot; a wire over 1200 is
-	 * worth one. A wire between nodes 300 apart is not, because the knot footprint is a large
-	 * fraction of the distance and the route had no room to bend badly.
-	 */
+	
 	constexpr double NeighbourGap = 400.0;
 
 	/** `StackClearance`: how far an existing knot is inflated when testing free space (`C5`). */
 	constexpr double StackClearance = 32.0;
 
-	/**
-	 * `MinimumNodeExtent`: the size a node is GIVEN when the engine has measured none.
-	 *
-	 * THIS CONSTANT IS THE WHOLE ANSWER TO OPEN-1, AND IT WAS MEASURED RATHER THAN ASSUMED.
-	 *
-	 * `NodeWidth` and `NodeHeight` are plain `int32` fields on `UEdGraphNode`
-	 * (`EdGraphNode.h:309,313`) and NOTHING in the engine computes them: the only writes in the entire
-	 * engine tree are in `UEdGraphNode_Documentation::ResizeNode` and `::SetBounds`
-	 * (`Runtime/Engine/Private/EdGraph/EdGraphNode_Documentation.cpp:69,74`). For every ordinary node
-	 * the value is written by the SLATE WIDGET when it draws. MEASURED, from the acceptance
-	 * commandlet's own diagnostic, in a headless run:
-	 *
-	 *     node K2Node_CallFunction_0 at (300,0) size (0,0) rect x 300..300 y 0..0
-	 *
-	 * for EVERY node, including nodes loaded from a previously saved package. So the spec's OPEN-1
-	 * conclusion - that `LookTurboMCPLayoutReport`'s wire lengths prove the sizes are real - WAS WRONG. Those
-	 * wire lengths come from `PinRowSpacing`, a plugin constant, not from a measured height.
-	 *
-	 * REFUSING IS NOT THE RIGHT ANSWER, and this is where the spec's advice is worth departing from
-	 * with a reason. A zero-size rectangle is a POINT, and a point is a perfectly good obstacle: it
-	 * answers "does this wire pass through where this node is", which is the question T-LAY-10 asks.
-	 * A node whose size has never been measured is given this small square instead, centred on its
-	 * position, so every predicate has an AREA to work with. The tool is then CONSERVATIVE rather than
-	 * exact: it under-reports a crossing when a wire clips the corner of a node that is really much
-	 * wider.
-	 *
-	 * WHAT THIS COSTS, STATED PLAINLY: on a graph whose nodes have never been drawn, this capability
-	 * judges crossings against small squares rather than the real outlines. When measured node sizes are available they improve the estimate;
-	 * straight-segment crossing checks still do not model rendered wire splines. Every report
-	 * says which of the two it used, so a caller is never left guessing.
-	 */
+	
 	constexpr double MinimumNodeExtent = 48.0;
 
 	/**
@@ -115,6 +68,27 @@ namespace
 	{
 		return InNode != nullptr ? TurboMCPNodeId::MakeKey(InNode->NodeGuid) : FString();
 	}
+
+    FString GraphState(UEdGraph* Graph)
+    {
+        TArray<FString> Rows;
+        for (UEdGraphNode* Node : Graph->Nodes)
+        {
+            if (!Node) continue;
+            const FString Id = Node->NodeGuid.ToString();
+            Rows.Add(FString::Printf(TEXT("%s:%d:%d:%d:%d"), *Id, Node->NodePosX, Node->NodePosY, Node->NodeWidth, Node->NodeHeight));
+            for (UEdGraphPin* Pin : Node->Pins)
+            {
+                if (!Pin) continue;
+                Rows.Add(Id + Pin->PinId.ToString() + Pin->PinName.ToString() + FString::FromInt(Pin->Direction)
+                    + Pin->PinType.PinCategory.ToString() + Pin->PinType.PinSubCategory.ToString());
+                for (UEdGraphPin* Other : Pin->LinkedTo)
+                    if (Other) Rows.Add(Pin->PinId.ToString() + TEXT(">") + Other->PinId.ToString());
+            }
+        }
+        Rows.Sort();
+        return FString::Join(Rows, TEXT("\n"));
+    }
 
 	/** True when a node carries a wire rather than doing work. */
 	bool IsKnot(const UEdGraphNode* InNode)
@@ -144,53 +118,9 @@ namespace
 		return InNode != nullptr ? static_cast<double>(InNode->NodePosX) : 0.0;
 	}
 
-	/**
-	 * Walks through knots to the node a wire really comes from or goes to.
-	 *
-	 * A knot is a piece of wire, so a wire whose endpoint is a knot must be attributed to the node
-	 * the knot leads to. Without this an existing knot would HIDE a crossing from the predicate,
-	 * which is the opposite of what a reroute is for.
-	 *
-	 * The depth bound is because a malformed graph can point a knot at itself.
-	 */
-	UEdGraphNode* ResolveThroughKnots(const UEdGraphNode* InNode, int32 InDepth = 0)
-	{
-		if (InNode == nullptr || InDepth > 64 || !IsKnot(InNode))
-		{
-			return const_cast<UEdGraphNode*>(InNode);
-		}
+	
 
-		// A knot passes through on its single output pin.
-		for (const UEdGraphPin* Pin : InNode->Pins)
-		{
-			if (Pin != nullptr && Pin->Direction == EGPD_Output && Pin->LinkedTo.Num() > 0)
-			{
-				if (const UEdGraphNode* Next = Pin->LinkedTo[0]->GetOwningNode())
-				{
-					return ResolveThroughKnots(Next, InDepth + 1);
-				}
-			}
-		}
-		return const_cast<UEdGraphNode*>(InNode);
-	}
-
-	/**
-	 * True when the segment S->T passes through the OPEN rectangle R.
-	 *
-	 * WHY THIS IS WRITTEN BY HAND INSTEAD OF CALLING AN ENGINE HELPER. The spec left
-	 * `FMath::LineBoxIntersection`'s exact overload unread, and this project has had five guessed
-	 * API names in a row turn out wrong. The slab method below needs no engine call at all and is
-	 * exact for an AXIS-ALIGNED rectangle, which every node rectangle is.
-	 *
-	 * HOW IT WORKS. The segment is `P(t) = S + t * D` for `t` in `[0, 1]`. For each axis the set of
-	 * `t` whose point lies between the rectangle's two bounds is an interval. The two intervals are
-	 * intersected; if the result is non-empty the segment is inside the box.
-	 *
-	 * `bExclusive` IS WHAT MAKES "OPEN" MEAN OPEN. With it, the two candidate intervals are shrunk
-	 * by an epsilon so a wire touching an edge exactly does NOT count, which is what `C1` requires
-	 * and for the same reason `RectsOverlap` treats touching edges as not an overlap: two nodes side
-	 * by side share a border.
-	 */
+	
 	bool SegmentCrossesRect(const FVector2D& InStart, const FVector2D& InEnd,
 		const FTurboMCPLayoutReport::FRect& InRect)
 	{
@@ -485,6 +415,9 @@ namespace
         const TArray<FObstacle>& Obstacles, const TArray<FTurboMCPLayoutReport::FRect>& Comments,
         const TArray<FTurboMCPLayoutReport::FRect>& Knots, const FFoundWire& Wire)
     {
+        if (!FMath::IsFinite(Candidate.X) || !FMath::IsFinite(Candidate.Y)
+            || Candidate.X < MIN_int32 || Candidate.X > MAX_int32 || Candidate.Y < MIN_int32 || Candidate.Y > MAX_int32)
+            return TEXT("the proposed position is outside the supported coordinate range");
         const FString Space = FreeSpaceReason(Candidate, Footprint, Obstacles, Comments, Knots, nullptr, nullptr);
         if (!Space.IsEmpty()) return Space;
         const FVector2D Start = FTurboMCPGraphTidy::AlignmentPinPosition(Wire.SourcePin);
@@ -502,69 +435,9 @@ namespace
         return FString();
     }
 
-	/**
-	 * The pin a wire logically starts or ends at, walking through any knots in between.
-	 *
-	 * WHY THIS IS NEEDED FOR THE MEASUREMENT TO MEAN ANYTHING. After a knot is placed, the original
-	 * wire becomes TWO wires, `source -> knot` and `knot -> target`. Measuring either stub on its own
-	 * is measuring a segment that no longer reaches across the graph, so the count would APPEAR to
-	 * improve for a reason that has nothing to do with the crossing being fixed - and worse, the
-	 * before and after numbers would not be comparable at all, which is exactly what the spec's
-	 * "counts wires crossing nodes before and after" requires them to be.
-	 *
-	 * Measured consequence of NOT doing this: a pass that placed one knot reported crossings going
-	 * from 7 to 7 and rolled itself back, even though the crossing it fixed was gone. The count was
-	 * right and the ROUTE IT MEASURED was wrong.
-	 *
-	 * The logical pin of a stub is found by following the wire THROUGH the knot to its far side,
-	 * which is the same resolution `ResolveThroughKnots` does for the owning node.
-	 */
-	UEdGraphPin* ResolveThroughKnotsToPin(UEdGraphPin* InPin, int32 InDepth = 0)
-	{
-		if (InPin == nullptr || InDepth > 64)
-		{
-			return InPin;
-		}
-		UEdGraphNode* Owner = InPin->GetOwningNode();
-		if (Owner == nullptr || !IsKnot(Owner))
-		{
-			return InPin;
-		}
+	
 
-		// An INPUT pin on a knot means the wire came from the source side, so the logical pin is the
-		// input pin's single link. An OUTPUT pin means the wire is leaving toward the target, so the
-		// logical pin is the output's single link.
-		const bool bIsInput = InPin->Direction == EGPD_Input;
-		for (UEdGraphPin* FarSide : InPin->LinkedTo)
-		{
-			if (FarSide == nullptr)
-			{
-				continue;
-			}
-			// The far side must be on the other side of the knot from where the wire arrived.
-			if (bIsInput && FarSide->Direction == EGPD_Output)
-			{
-				return ResolveThroughKnotsToPin(FarSide, InDepth + 1);
-			}
-			if (!bIsInput && FarSide->Direction == EGPD_Input)
-			{
-				return ResolveThroughKnotsToPin(FarSide, InDepth + 1);
-			}
-		}
-		return InPin;
-	}
-
-	/**
-	 * Every wire in the graph that crosses a node, found by `C1` and reported once each by `C2`.
-	 *
-	 * THE WIRE IS THE UNIT. Iterating output pins and following `LinkedTo` visits each wire from its
-	 * source end exactly once, which is what makes "listed once however many nodes it crosses" a
-	 * property of the walk rather than a de-duplication step afterwards.
-	 *
-	 * A WIRE THAT ALREADY TOUCHES A KNOT IS MEASURED BY ITS LOGICAL ROUTE, not by the stub the loop
-	 * happens to be holding. See `ResolveThroughKnotsToPin`: without that, placing a knot SPLITS one
-	 * crossing wire into two uncrossing stubs and the before/after counts stop being comparable.
-	 */
+	
 	void FindCrossingWires(UEdGraph* InGraph, const TArray<FObstacle>& InObstacles,
 		TArray<FFoundWire>& OutWires, int32& OutCrossings, int32& OutKnotCount)
 	{
@@ -612,7 +485,7 @@ namespace
 						continue;
 					}
 
-					// THE LOGICAL ENDS OF THE ROUTE, which is what has to be measured.
+					// Count each physical segment once, including every branch of a reroute.
 					UEdGraphPin* LogicalSource = Pin;
 					UEdGraphPin* LogicalTarget = Linked;
 					if (LogicalSource == nullptr || LogicalTarget == nullptr
@@ -735,6 +608,11 @@ namespace
             OutError = TEXT("Specify one exact existing graph name; empty, missing or ambiguous graphs are refused.");
             return false;
         }
+        if (!Graph->GetSchema() || !Graph->GetSchema()->IsA<UEdGraphSchema_K2>())
+        {
+            OutError = TEXT("Rerouting supports Blueprint K2 graphs only.");
+            return false;
+        }
         Out.Graph = Graph;
 		return true;
 	}
@@ -810,6 +688,7 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 	}
 
 	OutPlan.NodeCountBefore = Graph->Nodes.Num();
+    OutPlan.GraphState = GraphState(Graph);
 
 	// THE FOOTPRINT IS MEASURED BEFORE ANYTHING IS PLANNED, because `C5` cannot be decided without
 	// it. When nothing in the graph has ever been rendered the measurement falls back to a NAMED
@@ -997,7 +876,23 @@ bool FTurboMCPGraphKnots::Plan(const FString& InAsset, const FString& InGraphNam
 		}
 	}
 
-	return true;
+    TMap<FString, FTurboMCPLayoutReport::FRect> Reserved;
+    TArray<int32> Accepted;
+    for (int32 Index : OutPlan.AcceptedIndices)
+    {
+        FWire& Wire = OutPlan.Wires[Index];
+        const FString Key = FString::Printf(TEXT("%s.%s@%.0f,%.0f"), *Wire.SourceId, *Wire.SourcePin, Wire.KnotX, Wire.KnotY);
+        FTurboMCPLayoutReport::FRect Bounds;
+        Bounds.MinX = Wire.KnotX - StackClearance; Bounds.MinY = Wire.KnotY - StackClearance;
+        Bounds.MaxX = Wire.KnotX + Footprint.Width + StackClearance; Bounds.MaxY = Wire.KnotY + Footprint.Height + StackClearance;
+        bool Conflict = false;
+        for (const auto& Other : Reserved)
+            if (Other.Key != Key && RectsOverlap(Bounds, Other.Value)) { Conflict = true; break; }
+        if (Conflict) { Wire.bRefused = true; Wire.RefusalReason = TEXT("another planned reroute reserves this space"); }
+        else { Reserved.Add(Key, Bounds); Accepted.Add(Index); }
+    }
+    OutPlan.AcceptedIndices = MoveTemp(Accepted);
+    return true;
 }
 
 FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
@@ -1023,7 +918,7 @@ FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
 		// `P1`: never return nothing. "No crossings" is an answer and it says what was looked at.
 		Out += TEXT("No crossings were found by this geometry estimate, so no reroute is proposed. A crossing means the ")
 			TEXT("straight segment between its two pin positions meets a node's rectangle, ")
-			TEXT("using the same pin-position estimate as LookTurboMCPLayoutReport. Rendered wires may differ.\n");
+			TEXT("using measured pin positions. Rendered wires may differ.\n");
 		return Out;
 	}
 
@@ -1059,17 +954,8 @@ FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
 		{
 			// WHICH PIN THE KNOT IS LEVEL WITH IS RECORDED IN THE PLAN, not worked out again here.
 			// `C3` allows exactly two positions and the recogniser picked one, so it knows which.
-			const FString Level = Wire.bShared
-				? FString(TEXT("the target pin, and it is SHARED by every wire of this pin because one "))
-					+ TEXT("pin feeding several distant nodes gets a single knot")
-				: (Wire.bLevelWithTarget
-					? FString(TEXT("the target pin, so the route is one horizontal run then one "))
-						+ TEXT("vertical run")
-					: FString(TEXT("the source pin, so the route is one vertical run then one "))
-						+ TEXT("horizontal run"));
-
-			Out += FString::Printf(TEXT("      knot at (%.0f, %.0f), level with %s\n"),
-				Wire.KnotX, Wire.KnotY, *Level);
+            Out += FString::Printf(TEXT("      reroute at (%.0f, %.0f)%s; forward endpoint clearance retained\n"),
+                Wire.KnotX, Wire.KnotY, Wire.bShared ? TEXT("; shared by this source pin") : TEXT(""));
 		}
 		else
 		{
@@ -1097,6 +983,8 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 	}
 
 	UEdGraph* Graph = Resolved.Graph;
+    if (InPlan.GraphState != GraphState(Graph))
+        return TEXT("error: graph positions or connections changed after planning; preview again; unchanged");
 	const UEdGraphSchema* Schema = Graph->GetSchema();
 	if (Schema == nullptr)
 	{

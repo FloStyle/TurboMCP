@@ -664,7 +664,7 @@ bool FTurboMCPKnotsReviewTest::RunTest(const FString& Parameters)
     auto* Source = MakeNode(0, 0);
     auto* First = MakeNode(1400, 400);
     auto* Second = MakeNode(1400, 700);
-    MakeNode(700, 200); MakeNode(700, 350);
+    auto* Obstacle = MakeNode(700, 200); MakeNode(700, 350);
     auto* Output = Source->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue);
     auto* Input1 = First->FindPinChecked(TEXT("A")); auto* Input2 = Second->FindPinChecked(TEXT("A"));
     Output->MakeLinkTo(Input1); Output->MakeLinkTo(Input2);
@@ -683,9 +683,40 @@ bool FTurboMCPKnotsReviewTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Fanout uses one shared knot"), Count, 1);
     if (Shared) TestTrue(TEXT("Both destinations remain linked through shared knot"), Shared->GetOutputPin()->LinkedTo.Contains(Input1) && Shared->GetOutputPin()->LinkedTo.Contains(Input2));
     AddInfo(TEXT("Knot capture: ") + UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900")));
+    if (Shared)
+    {
+        TestTrue(TEXT("Reroute inlet aligns with source output"), FMath::Abs(FTurboMCPGraphTidy::AlignmentPinPosition(Shared->GetInputPin()).Y - FTurboMCPGraphTidy::AlignmentPinPosition(Output).Y) <= 1.0);
+        TestTrue(TEXT("Reroute leaves forward target clearance"), FTurboMCPGraphTidy::AlignmentPinPosition(Shared->GetOutputPin()).X < FTurboMCPGraphTidy::AlignmentPinPosition(Input1).X - 64.0);
+    }
+    Package->SetDirtyFlag(false);
+    TestTrue(TEXT("Repeated edit is unchanged"), UTurboMCPEditToolset::EditTurboMCPGraphKnots(Asset, Graph->GetName()).StartsWith(TEXT("unchanged:")));
+    TestFalse(TEXT("Repeated no-op stays clean"), Package->IsDirty());
+    Obstacle->NodePosX = 900; Obstacle->NodePosY = 0;
+    FTurboMCPGraphKnots::FPlan Recross;
+    TestTrue(TEXT("Measure existing routed segments"), FTurboMCPGraphKnots::Plan(Asset, Graph->GetName(), Recross, Error));
+    TestTrue(TEXT("Existing reroute does not hide a new crossing"), Recross.CrossingsBefore > 0);
+    TestEqual(TEXT("Existing routed wires are not given more knots"), Recross.AcceptedIndices.Num(), 0);
+    Obstacle->NodePosX = 700; Obstacle->NodePosY = 200;
     TestTrue(TEXT("Undo routing"), GEditor->UndoTransaction(false));
     TestTrue(TEXT("Undo restores both original links"), Output->LinkedTo.Contains(Input1) && Output->LinkedTo.Contains(Input2));
     TestTrue(TEXT("Empty graph refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphKnots(Asset, TEXT("")).StartsWith(TEXT("error:")));
+    FTurboMCPGraphKnots::FPlan Stale;
+    TestTrue(TEXT("Plan stale control"), FTurboMCPGraphKnots::Plan(Asset, Graph->GetName(), Stale, Error));
+    Second->NodePosX += 1;
+    TestTrue(TEXT("Stale plan refuses"), FTurboMCPGraphKnots::Apply(Stale).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Stale refusal keeps original links"), Output->LinkedTo.Contains(Input1) && Output->LinkedTo.Contains(Input2));
+    Second->NodePosX -= 1;
+    auto* Box = NewObject<UEdGraphNode_Comment>(Graph, NAME_None, RF_Transactional);
+    Graph->AddNode(Box, false, false); Box->CreateNewGuid();
+    Box->NodePosX = -100; Box->NodePosY = -100; Box->NodeWidth = 2000; Box->NodeHeight = 1200;
+    Package->SetDirtyFlag(false);
+    TestTrue(TEXT("Comment-blocked routes remain unchanged"), UTurboMCPEditToolset::EditTurboMCPGraphKnots(Asset, Graph->GetName()).StartsWith(TEXT("unchanged:")));
+    TestFalse(TEXT("Blocked routes stay clean"), Package->IsDirty());
+    Graph->RemoveNode(Box);
+    const FGuid Saved = Second->NodeGuid; Second->NodeGuid = Source->NodeGuid;
+    TestTrue(TEXT("Ambiguous node identities refuse"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphKnots(Asset, Graph->GetName()).StartsWith(TEXT("error:")));
+    Second->NodeGuid = Saved;
+
     BP->ClearFlags(RF_Public | RF_Standalone); Package->SetDirtyFlag(false);
     return !HasAnyErrors();
 }
