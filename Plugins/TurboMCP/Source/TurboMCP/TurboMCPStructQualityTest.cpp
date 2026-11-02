@@ -5,6 +5,7 @@
 #include "Misc/AutomationTest.h"
 #include "StructUtils/UserDefinedStruct.h"
 #include "Kismet2/StructureEditorUtils.h"
+#include "UserDefinedStructure/UserDefinedStructEditorData.h"
 #include "ScopedTransaction.h"
 #include "UObject/Package.h"
 #include "Misc/PackageName.h"
