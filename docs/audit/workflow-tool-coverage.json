@@ -1180,6 +1180,30 @@
         "Existing source nodes are retained on replacement; cleanup is deliberately separate."
       ],
       "evidence": "6762044bb6b84aa9b704c12f75cf4dfb"
+    },
+    {
+      "id": "WF-GRAPH-COPY",
+      "title": "Copy a selected block into another Blueprint graph",
+      "status": "scenario_accepted",
+      "review": "docs/audit/graph-copy-review.json",
+      "focus_tools": [
+        "PreviewTurboMCPGraphCopy",
+        "EditTurboMCPGraphCopy"
+      ],
+      "tools_used": [
+        "PreviewTurboMCPGraphCopy",
+        "EditTurboMCPGraphCopy",
+        "EditTurboMCPGraphConnect",
+        "EditTurboMCPGraphTidy",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "Bounded synthetic K2 call-node workflow, not every Blueprint node class or signature.",
+        "No save/reload or runtime execution claim.",
+        "Copy offsets positions by +40; boundary reconnection and tidy are explicit follow-up operations.",
+        "Structural creation remains refused; compatible compiled self functions and external PrintString calls were exercised."
+      ],
+      "evidence": "ae61ba2ff77846eb92bd05f5b151c427"
     }
   ],
   "tool_usage": {
@@ -1210,7 +1234,8 @@
       "WF-UI-06-PARENT-BINDING",
       "WF-UI-07-OVERRIDES",
       "WF-UI-08-OVERRIDE-REMOVE",
-      "WF-UI-09-WIDGET-VARIABLE"
+      "WF-UI-09-WIDGET-VARIABLE",
+      "WF-GRAPH-COPY"
     ],
     "EditTurboMCPGraphRemove": [
       "WF-BP-03-EVENT-CONNECT",
@@ -1229,7 +1254,8 @@
       "WF-UI-08-OVERRIDE-REMOVE",
       "WF-GRAPH-SEQUENCE",
       "WF-GRAPH-SPLIT-VALUE",
-      "WF-BIND-FUNCTION"
+      "WF-BIND-FUNCTION",
+      "WF-GRAPH-COPY"
     ],
     "EditTurboMCPLocalVars": [
       "WF-BP-01-PURCHASE"
@@ -1256,7 +1282,8 @@
       "WF-BP-COLLAPSE-FUNCTION",
       "WF-GRAPH-SEQUENCE",
       "WF-GRAPH-SPLIT-VALUE",
-      "WF-BIND-FUNCTION"
+      "WF-BIND-FUNCTION",
+      "WF-GRAPH-COPY"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -1678,9 +1705,15 @@
     ],
     "EditTurboMCPBindFunction": [
       "WF-BIND-FUNCTION"
+    ],
+    "PreviewTurboMCPGraphCopy": [
+      "WF-GRAPH-COPY"
+    ],
+    "EditTurboMCPGraphCopy": [
+      "WF-GRAPH-COPY"
     ]
   },
-  "unique_tools_scenario_reviewed": 139,
+  "unique_tools_scenario_reviewed": 141,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

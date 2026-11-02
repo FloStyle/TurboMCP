@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "workflow": "WF-GRAPH-COPY",
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
+  "focus_tools": [
+    "PreviewTurboMCPGraphCopy",
+    "EditTurboMCPGraphCopy"
+  ],
+  "scenario": "Copy two connected calls between Blueprint graphs, preserve source/defaults, undo, reconnect destination boundaries, tidy, capture and compile; check self-function compatibility.",
+  "candidate": "9f5a4f75b6f43556d45b0aabf3cbcaf115ab5677",
+  "native_run": "ae61ba2ff77846eb92bd05f5b151c427",
+  "scope_gate": "PASS",
+  "remaining": [],
+  "limitations": [
+    "Bounded synthetic K2 call-node workflow, not every Blueprint node class or signature.",
+    "No save/reload or runtime execution claim.",
+    "Copy offsets positions by +40; boundary reconnection and tidy are explicit follow-up operations.",
+    "Structural creation remains refused; compatible compiled self functions and external PrintString calls were exercised."
+  ],
+  "confirmed_failures": [
+    {
+      "run": "1564d29e976c4977ad91a36436b33fb9",
+      "findings": [
+        "Case-insensitive graph alias bypassed same-graph refusal.",
+        "Same-named self function with incompatible parameter type was accepted."
+      ]
+    },
+    {
+      "run": "e980282c85ce4bf696e1713d7b20cd33",
+      "findings": [
+        "Both native suites passed; Python help assertion incorrectly required save rather than saving. Corrected to accept explicit equivalent side-effect wording."
+      ]
+    }
+  ],
+  "fixes": [
+    "Reject identical resolved source/destination graph objects.",
+    "Require compatible compiled self-function signatures, parameter names and pure/static flags.",
+    "Clarify source selection versus destination counts, parameters, layout and boundary follow-up steps.",
+    "Correct index documentation and simplify affected comments."
+  ],
+  "checks": [
+    "Clean preview; untouched source nodes, links and package.",
+    "Copied defaults, fresh identities, reciprocal internal links and disconnected boundary report.",
+    "Single undo restores destination node count.",
+    "Different-case same graph and mismatched self-function signatures refused.",
+    "Compatible self function copies and compiles.",
+    "Explicit connect/tidy/capture/compile workflow.",
+    "Post-mutation failure rollback regression passed.",
+    "Live preview/edit help states parameters and compile/save behavior."
+  ],
+  "capture": "CopyTarget_TargetFlow_native_1600x900_B626C8724C9C0CA8949D02B503F51BFC.png",
+  "visual_review": "Inspected native capture from e980282c: aligned event and three calls, readable defaults, forward execution wires and no overlap. Final candidate changes only comments and wrapper wording check after that capture."
+}

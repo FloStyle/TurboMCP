@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "071f1898374007605624d42ee5836950651e270a",
+  "plugin_tree": "72e7d04446c6be888dc200ebbc3a353b5535da09",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -596,6 +596,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-graph-copy-review.py",
         "Tools/test-graph-structure.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -2298,6 +2299,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-graph-copy-review.py",
         "Tools/test-graph-structure.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -3949,6 +3951,7 @@
         "Tools/test-edit-readiness.py",
         "Tools/test-editor-log.py",
         "Tools/test-function-flags.py",
+        "Tools/test-graph-copy-review.py",
         "Tools/test-graph-dead.py",
         "Tools/test-graph-edit-workflow.py",
         "Tools/test-knots-review.py",
