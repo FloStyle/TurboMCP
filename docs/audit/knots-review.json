@@ -54,6 +54,12 @@
       "run": "31ba1e3abdbb4bb58f0b5c081cc9f8f2",
       "state": "failed",
       "reason": "Lookup checker did not recognize null check after the name check. Reordered equivalent condition; unsafe control remains detected."
+    },
+    {
+      "run": "93037dbd79394519b5a5cc60331b0f00",
+      "state": "25_passed_1_stale_inventory",
+      "reason": "All behavioral/offline checks passed except generated source-line inventory. Regenerated inventory and reran validate-repo successfully; no production change."
     }
-  ]
+  ],
+  "next_step": "Continue measured routing and target-entry geometry review in the existing knots-review worktree; claim retained until the family review is complete."
 }
