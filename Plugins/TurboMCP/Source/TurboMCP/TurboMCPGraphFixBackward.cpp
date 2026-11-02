@@ -943,153 +943,86 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 					continue;
 				}
 
-				// ---- R1's pure nodes: carried along, to the LEFT of their consumer ---------------
-				//
-				// A pure node has no exec pins, so moving it cannot reorder execution. An IMPURE node
-				// that feeds the target could, so it is not carried and the move still proceeds.
-				{
-					int32 ChainDepth = 0;
-					TSet<FString> Visited;
-					TArray<int32> Frontier;
-					Frontier.Add(TargetIndex);
 
-					while (Frontier.Num() > 0)
-					{
-						const int32 ConsumerIndex = Frontier[0];
-						Frontier.RemoveAt(0);
+                // Discover exclusive upstream producers through OUTPUT links only.
+                // Input links describe their dependencies, not additional consumers.
+                TArray<TPair<int32, int32>> Chain;
+                TArray<int32> Frontier = {TargetIndex};
+                TSet<int32> Visited;
+                Visited.Add(TargetIndex);
+                bool ChainTooLarge = false;
+                for (int32 Cursor = 0; Cursor < Frontier.Num() && !ChainTooLarge; ++Cursor)
+                {
+                    const int32 ConsumerIndex = Frontier[Cursor];
+                    for (int32 CandidateIndex = 0; CandidateIndex < Nodes.Num(); ++CandidateIndex)
+                    {
+                        const FNode& Pure = Nodes[CandidateIndex];
+                        if (!Pure.bIsPure || Pure.bIsComment || Pure.bIsKnot || Visited.Contains(CandidateIndex)) continue;
+                        UEdGraphNode* PureNode = Cache.Find(Pure.Key);
+                        if (!PureNode) continue;
+                        bool HasOutput = false;
+                        bool Exclusive = true;
+                        for (const UEdGraphPin* PurePin : PureNode->Pins)
+                        {
+                            if (!PurePin || PurePin->Direction != EGPD_Output) continue;
+                            for (const UEdGraphPin* Other : PurePin->LinkedTo)
+                            {
+                                if (!Other || !Other->GetOwningNodeUnchecked()) { Exclusive = false; continue; }
+                                HasOutput = true;
+                                if (KeyOf(Other->GetOwningNodeUnchecked()) != Nodes[ConsumerIndex].Key) Exclusive = false;
+                            }
+                        }
+                        if (!HasOutput || !Exclusive) continue;
+                        Visited.Add(CandidateIndex);
+                        Chain.Emplace(CandidateIndex, ConsumerIndex);
+                        Frontier.Add(CandidateIndex);
+                        if (Chain.Num() > MaxPureChain) { ChainTooLarge = true; break; }
+                    }
+                }
+                if (ChainTooLarge)
+                {
+                    Target.PlannedX = OldX; Target.PlannedY = OldY;
+                    AddRefusal(OutPlan, Target.Key + TEXT(": exclusive pure chain exceeds 8 nodes; this consumer repair was not planned."));
+                    continue;
+                }
 
-						if (ChainDepth >= MaxPureChain)
-						{
-							break;
-						}
-
-						for (int32 CandidateIndex = 0; CandidateIndex < Nodes.Num(); ++CandidateIndex)
-						{
-							FNode& Pure = Nodes[CandidateIndex];
-							if (!Pure.bIsPure || Pure.bIsComment || Pure.bIsKnot
-								|| CandidateIndex == ConsumerIndex || Visited.Contains(Pure.Key))
-							{
-								continue;
-							}
-
-							// "USED ONLY BY IT": every link out of every pin lands on the consumer.
-							//
-							// THE NODE IS FOUND THROUGH THE CACHE, not by scanning the graph again. SCANNING
-							// `Graph->Nodes` HERE FOR EVERY CANDIDATE CONSIDERED BY EVERY CONSUMER IS CUBIC
-							// on a graph with a pure chain, and the first symptom of that on a real
-							// Blueprint is a tool that appears to hang rather than one that answers wrongly.
-							bool bUsedOnlyByConsumer = false;
-							bool bHasAnyLink = false;
-							if (UEdGraphNode* PureNode = Cache.Find(Pure.Key))
-							{
-								int32 LinkCount = 0;
-								int32 ToConsumer = 0;
-
-								// NAMED DIFFERENTLY FROM THE OUTER `Pin`, WHICH IS THE ONE THE WIRE WAS
-								// FOUND THROUGH. Shadowing it here would be legal but would make the two
-								// indistinguishable to a reader, and this project builds with warnings as
-								// errors for exactly that reason.
-								for (UEdGraphPin* PurePin : PureNode->Pins)
-								{
-									if (PurePin == nullptr)
-									{
-										continue;
-									}
-									for (UEdGraphPin* Other : PurePin->LinkedTo)
-									{
-										if (Other == nullptr)
-										{
-											continue;
-										}
-										UEdGraphNode* Owner = Other->GetOwningNodeUnchecked();
-										if (Owner == nullptr || Owner == PureNode)
-										{
-											continue;
-										}
-										++LinkCount;
-										// COMPARED BY KEY, because a node is identified by its key in this
-										// pass and a pointer comparison against an `FString` does not
-										// compile.
-										if (KeyOf(Owner) == Nodes[ConsumerIndex].Key)
-										{
-											++ToConsumer;
-										}
-									}
-								}
-
-								bHasAnyLink = LinkCount > 0;
-								bUsedOnlyByConsumer = bHasAnyLink && LinkCount == ToConsumer;
-							}
-
-							if (!bUsedOnlyByConsumer)
-							{
-								continue;
-							}
-
-							const FNode& Consumer = Nodes[ConsumerIndex];
-
-							// THE CARRIED NODE IS ANCHORED TO CLEAR THE SOURCE, NOT ONLY ITS CONSUMER.
-							//
-							// ANCHORING ON THE CONSUMER ALONE IS WRONG, BY SUBSTITUTION. The form
-							//
-							//     PureToX = Consumer.PlannedX - Pure.Width - Gap
-							//
-							// takes `Consumer.PlannedX` as the target's FINAL position, which the move below
-							// sets to `Source.PlannedX + Source.Width + Gap`. Substituting gives
-							//
-							//     PureToX = Source.PlannedX + Source.Width - Pure.Width
-							//
-							// so with equal widths the carried node lands EXACTLY ON THE SOURCE'S OWN LEFT
-							// EDGE while the source is still there, the overlap guard refuses, and the pure
-							// carry NEVER FIRES. A workstream built SEVEN fixture configurations against
-							// this - every one refused, with a pure node satisfying every STATED condition
-							// of the rule (`IsNodePure()`, one link, one consumer, not a getter) - and
-							// recorded it as a defect in the RULE rather than papering over it with a
-							// fixture built to make a counter non-zero.
-							//
-							// THE FIX IS ONE `Min`: the carried node must clear BOTH the consumer it feeds
-							// and the source that stays where it is. The push runs after the carry, so a
-							// carried node placed on the source's edge is refused before anything can move
-							// out of its way - which is why anchoring to the source works and reordering
-							// would not have been enough on its own.
-							const double SourceClearX =
-								Nodes[SourceIndex].PlannedX
-								- PlannedExtent(Pure.Width) - HorizontalNodeGap;
-							const double ConsumerClearX =
-								Consumer.PlannedX - PlannedExtent(Pure.Width) - HorizontalNodeGap;
-							const double PureToX = FMath::Min(ConsumerClearX, SourceClearX);
-							const double PureToY = Consumer.PlannedY;
-
-							const double PureOldX = Pure.PlannedX;
-							const double PureOldY = Pure.PlannedY;
-							Pure.PlannedX = PureToX;
-							Pure.PlannedY = PureToY;
-
-							FString PureBlocker;
-							if (!MoveStaysInsideItsBox(Pure, BoxRects)
-								|| !PlannedRectIsClear(Nodes, Pure, PureBlocker))
-							{
-								Pure.PlannedX = PureOldX;
-								Pure.PlannedY = PureOldY;
-								AddRefusal(OutPlan, FString::Printf(
-									TEXT("%s: a pure node used only by %s could not be placed to its left "
-										"(%s). The move was refused rather than split, because a "
-										"half-moved chain is worse than an unmoved one."),
-									*Pure.Key, *Consumer.Key,
-									PureBlocker.IsEmpty() ? TEXT("it would leave its box") : *PureBlocker));
-								continue;
-							}
-
-							Visited.Add(Pure.Key);
-							Frontier.Add(CandidateIndex);
-							++ChainDepth;
-							++OutPlan.PureMoved;
-							CommitMove(OutPlan, Nodes, CandidateIndex, TEXT("R1-pure"), PureToX, PureToY,
-								FString::Printf(TEXT("a pure node used only by %s"),
-									*Consumer.Key), /*bInPushed=*/false);
-						}
-					}
-				}
+                // Plan every producer before recording any moves. If one cannot fit,
+                // restore the entire candidate chain and its consumer, not a prefix.
+                TMap<int32, FVector2D> SavedPositions;
+                bool ChainFits = true;
+                for (const auto& Entry : Chain)
+                {
+                    FNode& Pure = Nodes[Entry.Key];
+                    const FNode& Consumer = Nodes[Entry.Value];
+                    SavedPositions.Add(Entry.Key, FVector2D(Pure.PlannedX, Pure.PlannedY));
+                    Pure.PlannedX = Consumer.PlannedX - Pure.Width - HorizontalNodeGap;
+                    const double BaseY = Entry.Value == TargetIndex
+                        ? Consumer.PlannedY + Consumer.Height + HorizontalNodeGap : Consumer.PlannedY;
+                    bool Fits = false;
+                    for (int32 Lane = 0; Lane <= MaxPureChain; ++Lane)
+                    {
+                        Pure.PlannedY = BaseY + Lane * (Pure.Height + HorizontalNodeGap);
+                        FString PureBlocker;
+                        if (MoveStaysInsideItsBox(Pure, BoxRects) && PlannedRectIsClear(Nodes, Pure, PureBlocker))
+                        { Fits = true; break; }
+                    }
+                    if (!Fits) { ChainFits = false; break; }
+                }
+                if (!ChainFits)
+                {
+                    for (const auto& Saved : SavedPositions)
+                    { Nodes[Saved.Key].PlannedX = Saved.Value.X; Nodes[Saved.Key].PlannedY = Saved.Value.Y; }
+                    Target.PlannedX = OldX; Target.PlannedY = OldY;
+                    AddRefusal(OutPlan, Target.Key + TEXT(": the complete exclusive pure chain cannot fit without a collision or leaving its comment; this consumer repair was not planned."));
+                    continue;
+                }
+                for (const auto& Entry : Chain)
+                {
+                    const FNode& Pure = Nodes[Entry.Key];
+                    CommitMove(OutPlan, Nodes, Entry.Key, TEXT("R1-pure"), Pure.PlannedX, Pure.PlannedY,
+                        TEXT("exclusive upstream producer carried with its consumer"), false);
+                    ++OutPlan.PureMoved;
+                }
 
 				CommitMove(OutPlan, Nodes, TargetIndex, TEXT("R1"), ToX, ToY,
 					FString::Printf(TEXT("it is fed by an exec wire from %s that runs backward"),
@@ -1519,7 +1452,11 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 	OutPlan.bAlreadyCorrect = OutPlan.Moves.Num() == 0;
 
 	// `After < Before` OR Force. `>=` would apply a pass that moved nodes for no gain.
-	if (OutPlan.WireLengthAfter < OutPlan.WireLengthBefore)
+	if (OutPlan.bAlreadyCorrect)
+    {
+        OutPlan.bWouldApply = false;
+    }
+    else if (OutPlan.WireLengthAfter < OutPlan.WireLengthBefore)
 	{
 		OutPlan.bWouldApply = true;
 	}
