@@ -1,6 +1,7 @@
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 #include "TurboMCPGraphTidy.h"
+#include "TurboMCPGraphFixBackward.h"
 #include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
@@ -18,6 +19,7 @@
 #include "K2Node_CustomEvent.h"
 #include "K2Node_CallFunction.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "TurboMCPNodeId.h"
@@ -456,6 +458,48 @@ bool FTurboMCPBackwardReviewTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Undo restores repaired node X"), Call->NodePosX, 300);
     TestEqual(TEXT("Undo preserves source X"), Event->NodePosX, 900);
     TestTrue(TEXT("Empty graph refuses rather than guessing"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphFixBackward(Asset, TEXT(""), false).StartsWith(TEXT("error:")));
+
+    auto MakePure = [&](int32 X)
+    {
+        auto* Pure = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional);
+        Pure->SetFromFunction(UKismetStringLibrary::StaticClass()->FindFunctionByName(TEXT("Concat_StrStr")));
+        Graph->AddNode(Pure, false, false); Pure->CreateNewGuid(); Pure->AllocateDefaultPins();
+        Pure->NodePosX = X; Pure->NodePosY = 500;
+        return Pure;
+    };
+    auto* NearPure = MakePure(3000);
+    auto* FarPure = MakePure(3800);
+    NearPure->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue)->MakeLinkTo(Call->FindPinChecked(TEXT("InString")));
+    FarPure->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue)->MakeLinkTo(NearPure->FindPinChecked(TEXT("A")));
+    FTurboMCPGraphFixBackward::FPlan ChainPlan;
+    FString Error;
+    TestTrue(TEXT("Plan two-node pure chain"), FTurboMCPGraphFixBackward::Plan(Asset, Graph->GetName(), false, ChainPlan, Error));
+    AddInfo(FTurboMCPGraphFixBackward::RenderPreview(ChainPlan));
+    TestEqual(TEXT("Both exclusive producers are carried"), ChainPlan.PureMoved, 2);
+    TestTrue(TEXT("Pure-chain repair improves estimated wire length"), ChainPlan.bWouldApply);
+    AddInfo(UTurboMCPEditToolset::EditTurboMCPGraphFixBackward(Asset, Graph->GetName(), false));
+    TestTrue(TEXT("Near pure node is left of consumer"), NearPure->NodePosX < Call->NodePosX);
+    TestTrue(TEXT("Upstream pure node is left of downstream producer"), FarPure->NodePosX < NearPure->NodePosX);
+    const FString ChainCapture = UTurboMCPLookToolset::LookTurboMCPCapture(Asset, Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900"));
+    AddInfo(TEXT("Pure-chain capture: ") + ChainCapture);
+    TestTrue(TEXT("Pure-chain capture succeeds"), ChainCapture.StartsWith(TEXT("look:")));
+    TestTrue(TEXT("Undo entire chain repair"), GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo restores near pure X"), NearPure->NodePosX, 3000);
+    TestEqual(TEXT("Undo restores far pure X"), FarPure->NodePosX, 3800);
+    UK2Node_CallFunction* Previous = FarPure;
+    for (int32 I = 0; I < 7; ++I)
+    {
+        auto* Upstream = MakePure(4600 + I * 500);
+        Upstream->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue)->MakeLinkTo(Previous->FindPinChecked(TEXT("A")));
+        Previous = Upstream;
+    }
+    FTurboMCPGraphFixBackward::FPlan Capped;
+    TestTrue(TEXT("Plan over-limit chain"), FTurboMCPGraphFixBackward::Plan(Asset, Graph->GetName(), true, Capped, Error));
+    AddInfo(FTurboMCPGraphFixBackward::RenderPreview(Capped));
+    TestEqual(TEXT("Over-limit chain is not partially carried"), Capped.PureMoved, 0);
+    for (const auto& N : Capped.Nodes)
+        if (N.Key == TurboMCPNodeId::MakeKey(Call->NodeGuid))
+            TestEqual(TEXT("Over-limit R1 consumer X stays fixed"), N.PlannedX, 300.0);
     BP->ClearFlags(RF_Public | RF_Standalone);
     Package->SetDirtyFlag(false);
     return !HasAnyErrors();
