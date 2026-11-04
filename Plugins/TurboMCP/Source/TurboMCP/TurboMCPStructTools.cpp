@@ -12,6 +12,7 @@
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPStruct.h"
+#include "Editor.h"
 #include "TurboMCPSourceControlWrite.h"
 
 // Shared planning validates syntax; apply checks current objects and can still fail.
@@ -31,6 +32,9 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPStructNew(
 FString UTurboMCPEditToolset::EditTurboMCPStructNew(
 	const FString& Path, const FString& Fields)
 {
+    // Refuse before type loading, source-control checkout or asset mutation.
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: struct editing requires an idle editor outside PIE and active transactions; checkout=not_requested; save=not_requested");
 	// Rebuild the plan; an earlier preview does not reserve a path or freeze editor state.
 	FTurboMCPStruct::FPlanNew Plan;
 	FString Error;
@@ -52,15 +56,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPStructFields(
 		return FTurboMCPToolError::AsError(Error);
 	}
 
-	// =============================================================================================
-	// ROW 10.2 / D-57: THE AUTOMATIC CHECKOUT, DECIDED IN ONE PLAN SO THE EDIT TWIN CANNOT DISAGREE.
-	//
-	// *** THE BLOCK IS APPENDED, NEVER PREPENDED, AND EVERY LINE OF IT IS INDENTED BY FOUR SPACES OR
-	// STARTS AT COLUMN 0. *** That is a hard constraint rather than a style choice: the project's own
-	// suite reads this answer, and its field reader takes exactly-two-space-indented lines carrying a
-	// colon as FIELD NAMES. A prepended block would also break the "changed:" / "error:" opening every
-	// caller relies on.
-	// =============================================================================================
+	// Append checkout information after the field report so it cannot be parsed as a field.
 	TArray<FString> Targets;
 	Targets.Add(Plan.ObjectPath);
 	const FTurboMCPWriteCheckoutPlan Checkout = FTurboMCPSourceControlWrite::Plan(Targets);
@@ -74,6 +70,9 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPStructFields(
 FString UTurboMCPEditToolset::EditTurboMCPStructFields(
 	const FString& Struct, const FString& Changes)
 {
+    // Refuse before type loading, source-control checkout or asset mutation.
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: struct editing requires an idle editor outside PIE and active transactions; checkout=not_requested; save=not_requested");
 	FTurboMCPStruct::FPlanFields Plan;
 	FString Error;
 	if (!FTurboMCPStruct::PlanFieldEdits(Struct, Changes, Plan, Error))
@@ -81,14 +80,7 @@ FString UTurboMCPEditToolset::EditTurboMCPStructFields(
 		return FTurboMCPToolError::AsError(Error);
 	}
 
-	// =============================================================================================
-	// ROW 10.2 / D-57: THE AUTOMATIC CHECKOUT, ISSUED BEFORE THIS TOOL WRITES TO THE ASSET.
-	//
-	// The report is captured FIRST and appended LAST, so the write still opens with "changed:" and the
-	// block can never be read as this tool's own outcome. The same Plan function the Preview called is
-	// called here, so the two decide identically, and the report is never a gate: D-57 warns against
-	// turning a source control problem into a write failure, and on Git it would refuse every write.
-	// =============================================================================================
+	// Attempt checkout before editing; report failures without implying the asset was saved.
 	TArray<FString> Targets;
 	Targets.Add(Plan.ObjectPath);
 	const FString CheckoutReport = FTurboMCPSourceControlWrite::EnsureCheckedOut(

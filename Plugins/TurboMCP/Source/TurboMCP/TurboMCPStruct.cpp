@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPStruct.h"
+#include "Editor.h"
 #include "TurboMCPTypeParser.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -905,6 +906,9 @@ FString FTurboMCPStruct::RenderPreviewNew(const FPlanNew& InPlan)
 
 FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 {
+    // Struct editor operations compile and notify dependents; do not nest them in another edit.
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: struct editing requires an idle editor outside PIE and active transactions; save=not_requested");
 	const FString ObjectPath = FString::Printf(TEXT("%s.%s"), *InPlan.PackagePath, *InPlan.AssetName);
 
 	// REFUSED RATHER THAN OVERWRITTEN. A name someone else chose is not this tool's to replace, which is what `P8`
@@ -1534,6 +1538,9 @@ FString FTurboMCPStruct::RenderPreviewFields(const FPlanFields& InPlan)
 
 FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 {
+    // Struct editor operations compile and notify dependents; do not nest them in another edit.
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: struct editing requires an idle editor outside PIE and active transactions; save=not_requested");
 	// THE TARGET IS RE-RESOLVED HERE, NOT TRUSTED FROM THE PLAN. `D-45` requires it and the reason is that a plan is
 	// made and applied in two calls, so the object can be gone in between.
 	UObject* Loaded = LoadObject<UObject>(nullptr, *InPlan.ObjectPath);
