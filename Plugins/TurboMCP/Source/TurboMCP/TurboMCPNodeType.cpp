@@ -1125,17 +1125,31 @@ bool FTurboMCPNodePins::Plan(const FString& InAsset, const FString& InGraphName,
 		Out.Direction = DirectionSpelling(Pin->Direction);
 		Out.bExec = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec;
 
-		// The type, as the pin's own category and sub-category. `PreviewTurboMCPNodeType`'s spec asks for
-		// the type a pin or variable needs, and this is the pair the engine's own tools print.
-		Out.Type = Pin->PinType.PinCategory.ToString();
-		if (Pin->PinType.PinSubCategory != NAME_None)
-		{
-			Out.Type += FString::Printf(TEXT("<%s>"), *Pin->PinType.PinSubCategory.ToString());
-		}
-		if (Pin->PinType.IsArray())
-		{
-			Out.Type += TEXT("[]");
-		}
+        // Preserve exact subtype identity as well as both sides of a map. A map's
+        // key category alone is not its type and must never look like a scalar.
+        auto DescribeTerminal = [](FName Category, FName SubCategory, const UObject* Object)
+        {
+            FString Type = Category.ToString();
+            if (SubCategory != NAME_None) Type += TEXT("<") + SubCategory.ToString() + TEXT(">");
+            if (Object) Type += TEXT("<") + Object->GetPathName() + TEXT(">");
+            return Type;
+        };
+        Out.Type = DescribeTerminal(Pin->PinType.PinCategory, Pin->PinType.PinSubCategory, Pin->PinType.PinSubCategoryObject.Get());
+        switch (Pin->PinType.ContainerType)
+        {
+        case EPinContainerType::Array: Out.Type = TEXT("Array<") + Out.Type + TEXT(">"); break;
+        case EPinContainerType::Set: Out.Type = TEXT("Set<") + Out.Type + TEXT(">"); break;
+        case EPinContainerType::Map:
+        {
+            const FEdGraphTerminalType& Value = Pin->PinType.PinValueType;
+            Out.Type = TEXT("Map<") + Out.Type + TEXT(", ")
+                + DescribeTerminal(Value.TerminalCategory, Value.TerminalSubCategory, Value.TerminalSubCategoryObject.Get()) + TEXT(">");
+            break;
+        }
+        default: break;
+        }
+        if (Pin->PinType.bIsReference) Out.Type += TEXT(" reference");
+        if (Pin->PinType.bIsConst) Out.Type += TEXT(" const");
 
 		// The default, only when the pin has one. An empty default is omitted rather than
 		// printed as nothing, because "the pin has no default" and "the default is the empty

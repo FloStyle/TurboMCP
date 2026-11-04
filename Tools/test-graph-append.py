@@ -686,6 +686,7 @@ def main():
          "the placement test reported no errors"),
     )
     automation_tests += (("TurboMCP.GraphAppend.DelegateSideEffects", "delegate test discovered", "delegate report parsed", "delegate workflow succeeds", "delegate workflow has no errors"),)
+    automation_tests += (("TurboMCP.GraphAppend.PinContainers", "container test discovered", "container report parsed", "container workflow succeeds", "container workflow has no errors"),)
     for test_path, discovered_name, report_name, success_name, errors_name in automation_tests:
         check(discovered_name, test_path in listed, listed[:240])
         if test_path not in listed:

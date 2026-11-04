@@ -1292,6 +1292,15 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 		if (Schema != nullptr)
 		{
 			const FPinConnectionResponse Response = Schema->CanCreateConnection(FromPin, ToPin);
+            if (Response.Response == CONNECT_RESPONSE_DISALLOW)
+            {
+                const FString Reason = FString::Printf(TEXT("line %d: cannot connect '%s' (%s) to '%s' (%s): %s"),
+                    Link.Line, *Link.FromPin, *UEdGraphSchema_K2::TypeToText(FromPin->PinType).ToString(),
+                    *Link.ToPin, *UEdGraphSchema_K2::TypeToText(ToPin->PinType).ToString(), *Response.Message.ToString());
+                const bool Undone = Rollback();
+                OutError = FString(RollbackStatus(Undone)) + TEXT(". ") + Reason;
+                return false;
+            }
 			if (Response.Response == CONNECT_RESPONSE_MAKE_WITH_CONVERSION_NODE)
 			{
 				// Do not let a plain link request silently introduce a cast/conversion node.
