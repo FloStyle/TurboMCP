@@ -73,10 +73,16 @@
       "run": "301e0ae44efd4fa482767ec0031c5ccf",
       "result": "failed",
       "scope": "Raw-link reachability change used a smart-pointer accessor on a stock raw expression pointer; compiler rejected it. Corrected both function and material output paths."
+    },
+    {
+      "run": "f6b14f9866dd4fa08be613f70d99d933",
+      "result": "passed",
+      "scope": "Both 1,605-node reroute and arithmetic chains preserve connected-node classification; deep-tree omission disclosed. Entire reader workflow passed."
     }
   ],
   "remaining": [
-    "Repair reroute reachability classification; directly verify long non-reroute traversal.",
-    "Run final immutable workflow, offline and scope gates before acceptance."
-  ]
+    "Await full offline gate and integrate accepted bounded workflow."
+  ],
+  "candidate": "bdadc2398b02485819f9f75f974248919f090517",
+  "scope_gate": "PASS"
 }
