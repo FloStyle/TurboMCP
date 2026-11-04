@@ -29,7 +29,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "reproduced_fix_under_test",
       "source_ids": [
         "SF-05",
         "SF-06"
@@ -39,7 +39,18 @@
         "2026-11-03_S4/SF-06"
       ],
       "dependencies": [],
-      "next_step": "Claim nov04-struct-fields; reproduce object-array addition with a loaded Blueprint dependent. Current AddVariable failure loses the engine reason and records only a field name."
+      "next_step": "Object-array field addition to a loaded-dependent fixture failed in fad9cc9c56f940a5af7b6dd7bd73e38f. Current resolver lacked object class paths despite help claiming support. Candidate b15ddeb0 adds class-path object references and actionable rejection diagnostics; focused run pending. Historical partial-result cause remains unproven.",
+      "evidence": [
+        {
+          "run": "fad9cc9c56f940a5af7b6dd7bd73e38f",
+          "result": "failed",
+          "scope": "SoundBase object-array preview/add rejected with loaded Blueprint dependent; three native assertions failed."
+        }
+      ],
+      "followups": [
+        "Verify stored array element type and dependent state after edit.",
+        "Do not equate reproduced unsupported type with the unknown historical partial-result cause."
+      ]
     },
     {
       "id": "NOV04-03",
