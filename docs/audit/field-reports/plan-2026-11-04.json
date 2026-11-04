@@ -210,10 +210,10 @@
       "title": "Find interface implementation graphs consistently",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "ready",
-      "owner": "unassigned",
-      "validation": "source_gap_confirmed_runtime_pending",
+      "owner": "codex",
+      "validation": "implementation_pending_workflow",
       "source_ids": [
         "TD-50",
         "TD-57"
@@ -223,7 +223,7 @@
         "2026-11-03_S1/TD-57"
       ],
       "dependencies": [],
-      "next_step": "Scope nov04-interface-tidy follows node-key integration. Tidy manual enumeration omits ImplementedInterfaces; shared reader lookup includes them. Also clarify requested/moved/already-matching position counts from TD-57. Native fixture and refusal verification required."
+      "next_step": "Claim 32543367db2b4758a537114d176a8a4d at base 9bcb29a5. Candidate now uses complete graph enumeration and shared reader lookup, including interface graphs, with ambiguity refusal and trimmed input. Position output reports requested/moved/already_matching counts. Native interface fixture, refusal checks, help review and capture remain before integration."
     },
     {
       "id": "NOV04-07",
