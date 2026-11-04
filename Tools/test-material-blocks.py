@@ -80,6 +80,7 @@ DOES NOT GO RED MEANS THE BINARY IS OLD, NOT THAT THE CHECK IS GOOD.
 """
 
 import os
+import runpy
 import re
 import subprocess
 import sys
@@ -202,6 +203,15 @@ def connect():
 
 
 def main():
+    quality_session = Session()
+    quality_session.connect()
+    support = runpy.run_path(os.path.join(TOOLS, "test-widget-roundtrip.py"))
+    test_name = "TurboMCP.Material.BlocksQuality"
+    quality_session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
+    raw = quality_session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [test_name]})
+    print(raw)
+    entry, _ = support["parse_run_tests_report"](raw, test_name)
+    assert not entry["warnings"], entry["warnings"]
     print("=== checking whether the shared fixture needs rebuilding, WITHOUT stopping the editor ===")
     session = connect()
     if session is None:
