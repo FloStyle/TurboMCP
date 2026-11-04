@@ -96,13 +96,12 @@ bool FTurboMCPMaterialTidy::Plan(const FString& InAsset, bool bInForce,
 		return false;
 	}
 
-	// THE COMPILED-RESULT BASELINE IS TAKEN BEFORE ANYTHING IS PLANNED. Measuring afterwards and calling
-	// the result "before" is how a pass reports success on a material it already changed.
-	if (OutPlan.Material != nullptr)
-	{
-		OutPlan.StateIdBefore = OutPlan.Material->StateId;
-		OutPlan.CompileErrorsBefore = UMaterialEditingLibrary::RecompileMaterial(OutPlan.Material);
-	}
+    if (OutPlan.Function != nullptr)
+    {
+        OutError = TEXT("Material functions are not supported by Material Tidy. Pass a Material asset.");
+        return false;
+    }
+    OutPlan.StateIdBefore = OutPlan.Material->StateId;
 
 	// EVERY EXPRESSION BECOMES A NODE, in the reader's stable order.
 	TMap<const UMaterialExpression*, int32> IndexByExpression;
@@ -256,7 +255,7 @@ bool FTurboMCPMaterialTidy::Plan(const FString& InAsset, bool bInForce,
 
 		TArray<int32> Columns;
 		ByColumn.GetKeys(Columns);
-		Columns.Sort();
+		Columns.Sort([](int32 A, int32 B) { return A > B; });
 
 		double ColumnLeft = 0.0;
 		for (const int32 Column : Columns)
@@ -424,6 +423,8 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 	{
 		return FString::Printf(TEXT("error: %s has no material to write into"), *InPlan.Asset);
 	}
+
+	const TArray<FString> CompileErrorsBefore = UMaterialEditingLibrary::RecompileMaterial(InPlan.Material);
 
 	// Group geometry edits in a transaction; failure paths request undo without certifying restoration.
 	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "MaterialTidy", "TurboMCP: tidy a material"));
