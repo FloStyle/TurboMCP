@@ -3309,6 +3309,18 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelPromoteQualityTest.cpp"
           ]
+        },
+        "material-tidy-quality-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterialTidy.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-material-tidy.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyQualityTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
