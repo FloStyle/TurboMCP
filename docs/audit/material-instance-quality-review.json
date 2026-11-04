@@ -55,6 +55,11 @@
       "run": "6d4d6c0cdb3d4563ab73dd39afaf84f2",
       "result": "failed",
       "scope": "Explicit deferred uniform-cache preparation did not fix the base-material capture. No acceptance claim. Later cross-type reader collision repair is not covered by this run."
+    },
+    {
+      "run": "3ee7ea626b6c4b1faeaba6d4359756f8",
+      "result": "passed",
+      "scope": "Waiting for shader compilation after the preparation paint resolved all five color assertions. Base blue, child blue and edited child red PNGs visually inspected. Earlier failures retained. Cross-type reader change compiled, but focused identity assertions and final quality gate remain."
     }
   ],
   "limitations": [
@@ -63,7 +68,7 @@
     "Visual capture and final acceptance pending."
   ],
   "remaining": [
-    "Finish visual test and inspect PNGs.",
-    "Finish prose/help/code review and offline gate."
+    "Add focused parameter-identity coverage and finish prose/help review.",
+    "Run final offline gate and scope review before integration and acceptance."
   ]
 }
