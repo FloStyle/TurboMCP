@@ -447,61 +447,45 @@ namespace
 		}
 		OutContext.Blueprint = Blueprint;
 
-		TArray<UEdGraph*> Graphs;
-		for (UEdGraph* Graph : Blueprint->UbergraphPages)
-		{
-			if (Graph != nullptr) { Graphs.AddUnique(Graph); }
-		}
-		for (UEdGraph* Graph : Blueprint->FunctionGraphs)
-		{
-			if (Graph != nullptr) { Graphs.AddUnique(Graph); }
-		}
-        for (UEdGraph* Graph : Blueprint->MacroGraphs)
-            if (Graph) Graphs.AddUnique(Graph);
-        for (UEdGraph* Graph : Blueprint->EventGraphs)
-            if (Graph) Graphs.AddUnique(Graph);
-		if (Graphs.Num() == 0)
-		{
-			OutError = FString::Printf(TEXT("%s has no graphs to tidy."),
-				*Resolved.ObjectPath);
-			return false;
-		}
-
-		if (InGraphName.IsEmpty())
-		{
-			for (UEdGraph* Candidate : Graphs)
-			{
-				if (NameMatches(Candidate->GetName(), TEXT("EventGraph")))
-				{
-					OutContext.Graph = Candidate;
-					break;
-				}
-			}
-			if (OutContext.Graph == nullptr)
-			{
-                if (Graphs.Num() != 1)
-                {
-                    OutError = TEXT("multiple graphs and no EventGraph; pass an explicit graph name");
-                    return false;
-                }
-                OutContext.Graph = Graphs[0];
-			}
-			return true;
-		}
-
-        for (UEdGraph* Candidate : Graphs)
+        // Match reader discovery, including interface implementations and nested graphs.
+        TArray<UEdGraph*> AllGraphs;
+        Blueprint->GetAllGraphs(AllGraphs);
+        for (UEdGraph* EventGraph : Blueprint->EventGraphs)
         {
-            if (NameMatches(Candidate->GetName(), InGraphName))
-            {
-                if (OutContext.Graph)
-                {
-                    OutError = TEXT("ambiguous graph name; no layout planned or applied");
-                    return false;
-                }
-                OutContext.Graph = Candidate;
-            }
+            if (!EventGraph) continue;
+            AllGraphs.Add(EventGraph);
+            EventGraph->GetAllChildrenGraphs(AllGraphs);
+        }
+        TArray<UEdGraph*> Graphs;
+        for (UEdGraph* Graph : AllGraphs)
+            if (Graph) Graphs.AddUnique(Graph);
+        if (Graphs.IsEmpty())
+        {
+            OutError = FString::Printf(TEXT("%s has no graphs to tidy."), *Resolved.ObjectPath);
+            return false;
+        }
+
+        const FString RequestedName = InGraphName.TrimStartAndEnd();
+        const FString LookupName = RequestedName.IsEmpty() ? TEXT("EventGraph") : RequestedName;
+        int32 MatchCount = 0;
+        OutContext.Graph = TurboMCPNodeId::FindGraphByName(Blueprint, LookupName, MatchCount);
+        if (MatchCount > 1)
+        {
+            OutContext.Graph = nullptr;
+            OutError = TEXT("Ambiguous graph name; no layout was planned or applied. Pass a unique graph name.");
+            return false;
         }
         if (OutContext.Graph) return true;
+        if (RequestedName.IsEmpty())
+        {
+            if (Graphs.Num() != 1)
+            {
+                OutError = TEXT("Multiple graphs and no EventGraph; pass an explicit graph name.");
+                return false;
+            }
+            OutContext.Graph = Graphs[0];
+            return true;
+        }
 
 		TArray<FString> Names;
 		for (UEdGraph* Candidate : Graphs) { Names.Add(Candidate->GetName()); }

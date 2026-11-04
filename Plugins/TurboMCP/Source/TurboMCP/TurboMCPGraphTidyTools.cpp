@@ -95,13 +95,13 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphPositions(const FString& Asset, c
 		Seen.Add(Found);
 		if (Found->NodePosX != int32(X) || Found->NodePosY != int32(Y)) Moves.Add({Found, int32(X), int32(Y)});
 	}
-	if (Moves.IsEmpty()) return TEXT("unchanged: all positions already match");
+	if (Moves.IsEmpty()) return FString::Printf(TEXT("unchanged: requested=%d; moved=0; already_matching=%d; all positions already match; compile=not_run; save=not_requested"), Items.Num(), Items.Num());
 	const FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP batch node positions")));
 	BP->Modify(); Graph->Modify();
 	for (const FMove& Move : Moves) { Move.Node->Modify(); Move.Node->NodePosX = Move.X; Move.Node->NodePosY = Move.Y; }
 	Graph->NotifyGraphChanged();
 	FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
-	return FString::Printf(TEXT("changed: positioned %d nodes in one undo step; compile=not_run; save=not_requested"), Moves.Num());
+	return FString::Printf(TEXT("changed: requested=%d; moved=%d; already_matching=%d; one undo step; compile=not_run; save=not_requested"), Items.Num(), Moves.Num(), Items.Num() - Moves.Num());
 }
 
 #include "Editor/TransBuffer.h"
