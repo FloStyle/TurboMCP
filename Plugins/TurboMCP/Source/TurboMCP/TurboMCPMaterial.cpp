@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPMaterial.h"
+#include "TurboMCPMaterialInstance.h"
 
 #include "Containers/UnrealString.h"
 #include "MaterialEditingLibrary.h"
@@ -1323,56 +1324,16 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 		? FString::Printf(TEXT("read: %s, output %s"), *InPlan.Asset, *InPlan.OutputProperty)
 		: FString::Printf(TEXT("read: %s"), *InPlan.Asset);
 
-	// THE INSTANCE TABLE, when overrides were asked for. `03_TOOLS.md`: "which are then listed as a
-	// short table." The table names the parameter, its association and its value, and it carries the
-	// parent's path because an override is meaningless without knowing what it overrides.
-	if (InPlan.Instance != nullptr)
-	{
-		Out += FString::Printf(TEXT("\n; this is a Material Instance. Its parent is %s."),
-			InPlan.ParentPath.IsEmpty() ? TEXT("(not set)") : *InPlan.ParentPath);
-
-		const int32 Scalars = InPlan.Instance->ScalarParameterValues.Num();
-		const int32 Vectors = InPlan.Instance->VectorParameterValues.Num();
-		const int32 Textures = InPlan.Instance->TextureParameterValues.Num();
-		const int32 StaticSwitches = InPlan.Instance->GetStaticParameters().StaticSwitchParameters.Num();
-
-		Out += FString::Printf(
-			TEXT("\noverrides: %d scalar, %d vector, %d texture, %d static switch"),
-			Scalars, Vectors, Textures, StaticSwitches);
-
-		if (Scalars + Vectors + Textures + StaticSwitches == 0)
-		{
-			Out += TEXT("\nthis instance overrides nothing, so it shows exactly what its parent ")
-				TEXT("shows. Read the parent for the graph.");
-			return Out;
-		}
-
-		Out += TEXT("\n\n; name association value");
-		for (const FScalarParameterValue& Value : InPlan.Instance->ScalarParameterValues)
-		{
-			Out += FString::Printf(TEXT("\n%s %s %g"),
-				*Value.ParameterInfo.Name.ToString(),
-				*AssociationName(Value.ParameterInfo.Association),
-				Value.ParameterValue);
-		}
-		for (const FVectorParameterValue& Value : InPlan.Instance->VectorParameterValues)
-		{
-			const FLinearColor Colour = Value.ParameterValue;
-			Out += FString::Printf(TEXT("\n%s %s (%g, %g, %g, %g)"),
-				*Value.ParameterInfo.Name.ToString(),
-				*AssociationName(Value.ParameterInfo.Association),
-				Colour.R, Colour.G, Colour.B, Colour.A);
-		}
-		for (const FTextureParameterValue& Value : InPlan.Instance->TextureParameterValues)
-		{
-			Out += FString::Printf(TEXT("\n%s %s %s"),
-				*Value.ParameterInfo.Name.ToString(),
-				*AssociationName(Value.ParameterInfo.Association),
-				Value.ParameterValue != nullptr
-					? *Value.ParameterValue->GetPathName() : TEXT("(none)"));
-		}
-		return Out;
-	}
+    // Share instance classification and identity rules with the dedicated instance reader.
+    if (InPlan.Instance != nullptr)
+    {
+        FTurboMCPMaterialInstance::FResult Result;
+        FString Error;
+        if (!FTurboMCPMaterialInstance::Read(InPlan.Asset, Result, Error)) return Error;
+        Out = FTurboMCPMaterialInstance::Render(Result);
+        Out += BudgetNote(Out, InTokenBudget, TEXT("ReadTurboMCPMaterialLoad"));
+        return Out;
+    }
 
 	// PARAMETERS COME FIRST, which `03_TOOLS.md` requires: "parameters with defaults and groups, then
 	// every connected output property as an expression tree."

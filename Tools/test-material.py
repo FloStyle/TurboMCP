@@ -166,6 +166,13 @@ def main():
     check("the base material still answers with overrides requested",
           not inst.startswith("error:"), inst[:160])
 
+    instance_load = session.call(READ_TOOLSET, "ReadTurboMCPMaterialLoad",
+                                 {"asset": INSTANCE, "bIncludeInstanceOverrides": True, "tokenBudget": 1})
+    instance_read = session.call(READ_TOOLSET, "ReadTurboMCPMaterialInstance", {"asset": INSTANCE})
+    check("Load preserves dedicated instance report", not instance_read.startswith("error:")
+          and instance_load.startswith(instance_read), instance_load)
+    check("Instance budget overrun is disclosed", "budget" in instance_load.lower(), instance_load)
+
     fn = session.call(READ_TOOLSET, "ReadTurboMCPMaterialLoad",
                       {"asset": FUNCTION, "bIncludeInstanceOverrides": False,
                        "tokenBudget": 2000})
