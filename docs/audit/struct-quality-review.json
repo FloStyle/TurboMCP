@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "workflow": "WF-STRUCT-QUALITY",
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
+  "focus_tools": [
+    "PreviewTurboMCPStructNew",
+    "EditTurboMCPStructNew",
+    "PreviewTurboMCPStructFields",
+    "EditTurboMCPStructFields"
+  ],
+  "scenario": "Create an item struct, preview/add/reorder/remove a field, preserve existing fields, change defaults and metadata, check rejected defaults and transaction guards.",
+  "candidate": "25b700635a8b2f0642ae9ab01a52c92e97af48e9",
+  "native_run": "c3824fb6cdc54825b6b6a9f02d34ff53",
+  "scope_gate": "PASS",
+  "remaining": [],
+  "limitations": [
+    "Bounded int/name/Vector struct workflow; not every supported field type, container or default literal.",
+    "No save/reload or dependent Blueprint/DataTable migration claim.",
+    "Loaded-dependent removal consent and actual Perforce checkout source-reviewed; this fixture removes an unused field.",
+    "PIE and off-game-thread guards source-reviewed; active transaction refusal exercised.",
+    "Partial creation/edits remain inspectable and unsaved; no rollback or exhaustive undo guarantee."
+  ],
+  "confirmed_failures": [
+    {
+      "run": "658109a5c404445291c7f8fdbdee6c73",
+      "finding": "Creation and field editing mutated assets inside an active transaction."
+    },
+    {
+      "run": "9915d98c049b4cf7b2da5243bb96087d",
+      "finding": "Both creation and field editing reported changed after an invalid integer default was rejected."
+    },
+    {
+      "run": "e70d9a129b0e46ac934961687c8b77f7",
+      "finding": "First verification implementation incorrectly rejected a valid normalized float default; repaired using setter success and exact no-op handling."
+    }
+  ],
+  "fixture_build_failures": [
+    "b18b0d98a4a94ba387f24806fb400ea6: wrong struct include path",
+    "6dbf35aa1cef46d09226cba99253492c: missing field-description include"
+  ],
+  "fixes": [
+    "Guard before type loading, checkout and mutation, with defensive guards in apply helpers.",
+    "Report rejected defaults and mismatched tooltip/category values as partial with field identity.",
+    "Accept engine-normalized defaults and already-matching defaults.",
+    "Clarify editor requirements and verification output; simplify checkout comments."
+  ],
+  "checks": [
+    "All four live tool help records expose parameters and save behavior.",
+    "New preview creates no package; field preview does not add a field.",
+    "Creation and field editing refuse active transactions without mutation or dirtying.",
+    "Create int/name/Vector fields, add float default, reorder, remove, preserve unrelated fields.",
+    "Valid int default, tooltip and category independently read from editor field descriptions.",
+    "Invalid integer defaults in creation and editing report partial.",
+    "Existing asset is not overwritten; no implicit save."
+  ],
+  "visual_review": "Not applicable: field membership, ordering and metadata checked directly in editor; no graph-layout contract."
+}

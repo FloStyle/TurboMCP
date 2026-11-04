@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "5365d7544fdeeafdf91af85b153051c2fff9db85",
+  "plugin_tree": "0977bc7bb2dd63c62000bf03482b45992d61c5d1",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -1357,7 +1357,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
-          "line": 74
+          "line": 70
         }
       ],
       "test_references": [
@@ -1381,7 +1381,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
-          "line": 31
+          "line": 32
         }
       ],
       "test_references": [
@@ -2937,7 +2937,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
-          "line": 45
+          "line": 49
         }
       ],
       "test_references": [
@@ -2961,7 +2961,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
-          "line": 18
+          "line": 19
         }
       ],
       "test_references": [
@@ -3968,6 +3968,7 @@
         "Tools/test-scoped-tidy.py",
         "Tools/test-sequence-review.py",
         "Tools/test-split-value-review.py",
+        "Tools/test-struct-quality.py",
         "Tools/test-tool-text-inventory.py",
         "Tools/test-type-discovery.py",
         "Tools/test-vars-add.py",

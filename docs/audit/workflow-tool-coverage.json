@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-11-02",
+  "updated": "2026-11-04",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
   "inventory": 165,
   "workflows": [
@@ -1246,6 +1246,32 @@
         "Creation failures may leave a partial unsaved asset; no new rollback guarantee."
       ],
       "evidence": "345d47bdd3fd41f5bd4e7eed496f163f"
+    },
+    {
+      "id": "WF-STRUCT-QUALITY",
+      "title": "Create and edit an item data struct",
+      "status": "scenario_accepted",
+      "review": "docs/audit/struct-quality-review.json",
+      "focus_tools": [
+        "PreviewTurboMCPStructNew",
+        "EditTurboMCPStructNew",
+        "PreviewTurboMCPStructFields",
+        "EditTurboMCPStructFields"
+      ],
+      "tools_used": [
+        "PreviewTurboMCPStructNew",
+        "EditTurboMCPStructNew",
+        "PreviewTurboMCPStructFields",
+        "EditTurboMCPStructFields"
+      ],
+      "limitations": [
+        "Bounded int/name/Vector struct workflow; not every supported field type, container or default literal.",
+        "No save/reload or dependent Blueprint/DataTable migration claim.",
+        "Loaded-dependent removal consent and actual Perforce checkout source-reviewed; this fixture removes an unused field.",
+        "PIE and off-game-thread guards source-reviewed; active transaction refusal exercised.",
+        "Partial creation/edits remain inspectable and unsaved; no rollback or exhaustive undo guarantee."
+      ],
+      "evidence": "c3824fb6cdc54825b6b6a9f02d34ff53"
     }
   ],
   "tool_usage": {
@@ -1763,9 +1789,21 @@
     ],
     "EditTurboMCPEnumAdd": [
       "WF-ENUM-CREATION"
+    ],
+    "PreviewTurboMCPStructNew": [
+      "WF-STRUCT-QUALITY"
+    ],
+    "EditTurboMCPStructNew": [
+      "WF-STRUCT-QUALITY"
+    ],
+    "PreviewTurboMCPStructFields": [
+      "WF-STRUCT-QUALITY"
+    ],
+    "EditTurboMCPStructFields": [
+      "WF-STRUCT-QUALITY"
     ]
   },
-  "unique_tools_scenario_reviewed": 144,
+  "unique_tools_scenario_reviewed": 148,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
