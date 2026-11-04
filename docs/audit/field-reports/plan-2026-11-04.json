@@ -369,7 +369,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reconciled_runtime_pending",
+      "validation": "partial_candidate_native_pending",
       "source_ids": [
         "GC-86",
         "GC-87"
@@ -379,7 +379,7 @@
         "2026-11-03_S2/GC-87"
       ],
       "dependencies": [],
-      "next_step": "Source confirms reachability refusal reports qualified IDs without pin-level explanation. Approved nov04-append-reachability: improve diagnostics without weakening unreachable-impure refusal; native disconnected/wired impure, pure-data-only and existing DoOnce exec-merge fixtures. GC-87 cause remains unconfirmed until reproduced."
+      "next_step": "Claim 373d803fc7064c26b06db350d73e7496 at 6e4f4ae2. Candidate fe69b71d improves unreachable-node diagnostics with title/type/label and exec-input causes; native disconnected/wired fixture added. Run 1091b75cfba24a80ae4ed3e2cab1938b failed compilation because the new fixture called private ExecuteGraph; corrected to public Apply without widening access. Rerun active. Pure-data-only and existing DoOnce merge fixtures remain required; no completion or integration claimed."
     },
     {
       "id": "NOV04-13",
