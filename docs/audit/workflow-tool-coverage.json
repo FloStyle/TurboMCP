@@ -1272,6 +1272,26 @@
         "Partial creation/edits remain inspectable and unsaved; no rollback or exhaustive undo guarantee."
       ],
       "evidence": "c3824fb6cdc54825b6b6a9f02d34ff53"
+    },
+    {
+      "id": "WF-WIDGET-RETARGET-QUALITY",
+      "title": "Repair missing widget binding targets after replacement",
+      "status": "scenario_accepted",
+      "review": "docs/audit/widget-retarget-quality-review.json",
+      "focus_tools": [
+        "PreviewTurboMCPWidgetRetarget",
+        "EditTurboMCPWidgetRetarget"
+      ],
+      "tools_used": [
+        "PreviewTurboMCPWidgetRetarget",
+        "EditTurboMCPWidgetRetarget"
+      ],
+      "limitations": [
+        "Presence-only check; bound-function signatures and runtime invocation remain unchecked.",
+        "No dedicated undo transaction, compile, save or reload claim.",
+        "Native fixture checks binding records and graph-node preservation, not visual layout; no visual changes are made."
+      ],
+      "evidence": "d37969e694174ab4b80de2d8117ad4bc"
     }
   ],
   "tool_usage": {
@@ -1801,9 +1821,15 @@
     ],
     "EditTurboMCPStructFields": [
       "WF-STRUCT-QUALITY"
+    ],
+    "PreviewTurboMCPWidgetRetarget": [
+      "WF-WIDGET-RETARGET-QUALITY"
+    ],
+    "EditTurboMCPWidgetRetarget": [
+      "WF-WIDGET-RETARGET-QUALITY"
     ]
   },
-  "unique_tools_scenario_reviewed": 148,
+  "unique_tools_scenario_reviewed": 150,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-WIDGET-RETARGET-QUALITY",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPWidgetRetarget",
     "EditTurboMCPWidgetRetarget"
@@ -28,12 +28,14 @@
     "Comments and result wording implied full binding validity; narrowed to widget/delegate presence."
   ],
   "limitations": [
-    "No full signature or bound-function validation.",
-    "No dedicated undo transaction, compile or save; edits affect memory only.",
-    "Native fixture pending; no acceptance claimed."
+    "Presence-only check; bound-function signatures and runtime invocation remain unchecked.",
+    "No dedicated undo transaction, compile, save or reload claim.",
+    "Native fixture checks binding records and graph-node preservation, not visual layout; no visual changes are made."
   ],
-  "remaining": [
-    "Complete native workflow and offline gate.",
-    "Regenerate capability inventory and integrate reviewed candidate."
-  ]
+  "remaining": [],
+  "candidate": "bd8b9732e0a543d60bccc2bd0f2c0abc14854578",
+  "native_run": "d37969e694174ab4b80de2d8117ad4bc",
+  "scope_gate": "PASS",
+  "offline_run": "377e0ed42b404a70a2ff7655a467a447",
+  "offline_result": "26 passed"
 }

@@ -3240,6 +3240,16 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetQualityTest.cpp"
           ]
+        },
+        "vcs-quality-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-vcs.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

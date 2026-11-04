@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "0977bc7bb2dd63c62000bf03482b45992d61c5d1",
+  "plugin_tree": "845dfe830be136987c73fbc92032b6f133a8943c",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -826,8 +826,7 @@
         "Tools/test-c09-success.py",
         "Tools/test-client-retry.py",
         "Tools/test-graph-repoint.py",
-        "Tools/test-result-contract.py",
-        "Tools/test-widget-retarget.py"
+        "Tools/test-result-contract.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1312,7 +1311,6 @@
         "Tools/test-tool-text-inventory.py",
         "Tools/test-vars-add.py",
         "Tools/test-vcs-write.py",
-        "Tools/test-widget-retarget.py",
         "Tools/test-widgets-as-vars.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -1507,10 +1505,9 @@
         }
       ],
       "test_references": [
-        "Tools/test-tool-text-inventory.py",
-        "Tools/test-widget-retarget.py"
+        "Tools/test-tool-text-inventory.py"
       ],
-      "static_call_evidence": "parsed_call",
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1593,14 +1590,14 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetTools.cpp",
-          "line": 38
+          "line": 32
         }
       ],
       "test_references": [
         "Tools/test-tool-text-inventory.py",
         "Tools/test-widget-retarget.py"
       ],
-      "static_call_evidence": "parsed_call",
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -3119,14 +3116,14 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetTools.cpp",
-          "line": 26
+          "line": 20
         }
       ],
       "test_references": [
         "Tools/test-tool-text-inventory.py",
         "Tools/test-widget-retarget.py"
       ],
-      "static_call_evidence": "parsed_call",
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -3972,7 +3969,8 @@
         "Tools/test-tool-text-inventory.py",
         "Tools/test-type-discovery.py",
         "Tools/test-vars-add.py",
-        "Tools/test-vision-workflow.py"
+        "Tools/test-vision-workflow.py",
+        "Tools/test-widget-retarget.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
