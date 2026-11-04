@@ -29,6 +29,21 @@
       "run": "228c6b30e9264deea67fd8af702244df",
       "result": "failed",
       "scope": "Visual fixture build used a nonexistent SlateMaterialBrush header; replaced with stock FSlateBrush."
+    },
+    {
+      "run": "7567a604d9ac43ad8e0797e6c5689483",
+      "result": "failed",
+      "scope": "Visual fixture crashed after dereferencing a null render target under NullRHI. Stack identifies fixture DrawWidget call. Added null guard and real-RHI suite configuration."
+    },
+    {
+      "run": "54ae912d7bab44da817deb2801a035d1",
+      "result": "failed",
+      "scope": "Real rendering produced black before and red after. Pixel assertion failed; images inspected. Original fixed filenames were reused, so these are observations, not independently retained image artifacts."
+    },
+    {
+      "run": "2461f573452d4a16b507a5357919b320",
+      "result": "failed",
+      "scope": "Explicit instance resource update did not resolve black initial rendering. Generated-texture compilation and effective texture identity are under investigation."
     }
   ],
   "limitations": [
