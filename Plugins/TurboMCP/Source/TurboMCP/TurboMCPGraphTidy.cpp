@@ -2867,10 +2867,6 @@ static FString TidyRecoveryGuidance(bool bSelectedScope)
 FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 {
 	TArray<FString> Lines;
-    int32 FeedbackCount = 0;
-    for (const FWire& Wire : InPlan.Wires) if (Wire.bControlFeedback) ++FeedbackCount;
-    if (FeedbackCount > 0)
-        Lines.Add(FString::Printf(TEXT("control feedback: %d stock Break/Reset wire(s) preserved; excluded from forward ordering and alignment penalties, included in total wire length."), FeedbackCount));
 
 
 	// THE NUMBERS GO ON THE FIRST LINE, as the spec requires, AND THEY ARE LABELLED AS THE THING THAT
@@ -2882,6 +2878,10 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
         Lines.Add(FString::Printf(TEXT("row break after %s (execution links preserved)"),*InPlan.Nodes[I].Key));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift,QualityBefore.FanOutRowConflicts,QualityAfter.FanOutRowConflicts,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.BackwardData,QualityAfter.BackwardData,QualityBefore.PureInputRowConflicts,QualityAfter.PureInputRowConflicts,QualityBefore.InputPinDrift,QualityAfter.InputPinDrift));
 	Lines.Add(FString::Printf(TEXT("preview: %s in %s : total wire length %.1f -> %.1f across %d wire(s)"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter, InPlan.WireCount));
+    int32 FeedbackCount = 0;
+    for (const FWire& Wire : InPlan.Wires) if (Wire.bControlFeedback) ++FeedbackCount;
+    if (FeedbackCount > 0)
+        Lines.Add(FString::Printf(TEXT("control feedback: %d stock Break/Reset wire(s) preserved; excluded from forward ordering and alignment penalties, included in total wire length."), FeedbackCount));
 
 	if (InPlan.SelectedNodeKeys.Num() > 0)
 	{
@@ -3280,14 +3280,14 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
     Graph->NotifyGraphChanged();
 
 	TArray<FString> Lines;
-    int32 FeedbackCount = 0;
-    for (const FWire& Wire : InPlan.Wires) if (Wire.bControlFeedback) ++FeedbackCount;
-    if (FeedbackCount > 0)
-        Lines.Add(FString::Printf(TEXT("control feedback: %d stock Break/Reset wire(s) preserved; excluded from forward ordering and alignment penalties, included in total wire length."), FeedbackCount));
 
 	const bool bWorse = MeasuredAfter >= InPlan.WireLengthBefore;
 	const bool bScoreMatchesPlan = FMath::IsNearlyEqual(MeasuredAfter, InPlan.WireLengthAfter, 1.0);
 	Lines.Add(FString::Printf(TEXT("changed: tidied %s in %s : total wire length %.1f -> %.1f%s"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, bWorse ? (InPlan.bForce ? TEXT(" (longer wires; Force enabled)") : TEXT(" (longer wires; structural quality improved)")) : TEXT("")));
+    int32 FeedbackCount = 0;
+    for (const FWire& Wire : InPlan.Wires) if (Wire.bControlFeedback) ++FeedbackCount;
+    if (FeedbackCount > 0)
+        Lines.Add(FString::Printf(TEXT("control feedback: %d stock Break/Reset wire(s) preserved; excluded from forward ordering and alignment penalties, included in total wire length."), FeedbackCount));
 	Lines.Add(FString::Printf(TEXT("wire length: current plan predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("matches the current plan") : TEXT("differs from the current plan")));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),OriginalQuality.Overlaps,ActualQuality.Overlaps,OriginalQuality.LinearExecDrift,ActualQuality.LinearExecDrift,OriginalQuality.FanOutRowConflicts,ActualQuality.FanOutRowConflicts,OriginalQuality.BackwardExec,ActualQuality.BackwardExec,OriginalQuality.BackwardData,ActualQuality.BackwardData,OriginalQuality.PureInputRowConflicts,ActualQuality.PureInputRowConflicts,OriginalQuality.InputPinDrift,ActualQuality.InputPinDrift));
     const auto CrossBoxAfter = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
