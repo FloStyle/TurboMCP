@@ -2096,3 +2096,7 @@ Review Preview/Edit MaterialTidy in a disposable material workflow with branchin
 ## Approved November field struct repair (2026-11-04)
 
 Readiness: ready. Assignment nov04-struct-fields addresses NOV04-02 (SF-05/SF-06). Reproduce adding an object-array field to a user-defined struct with a loaded Blueprint dependent using disposable fixtures. Inspect stock StructureEditorUtils failure conditions before changing behavior. Preserve existing values and references; report exact failed operations and available engine reasons, not an unexplained partial count. Align preview and edit validation where possible. Review help and English output; verify focused struct workflow and offline gates. No engine changes, user asset deletion or unrelated features. Preserve failures and report unresolved causes explicitly.
+
+## Approved November delegate append repair (2026-11-04)
+
+Readiness: ready. Assignment nov04-delegate-append addresses NOV04-03/GC-83. Reproduce delegate assignment spawning an extra custom event when append explicitly binds an existing event. Preserve existing nodes and links; prevent orphaned auto-generated events when superseded by explicit requested binding, and report all retained engine-created nodes with usable IDs and accurate counts. Do not remove pre-existing or connected user nodes. Verify scratch preview parity, live append and failure cleanup with disposable fixtures through test-graph-append. Review output/help and preserve failed evidence; stock engine only.

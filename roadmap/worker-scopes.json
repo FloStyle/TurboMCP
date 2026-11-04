@@ -3332,6 +3332,18 @@
             "Tools/test-struct-quality.py"
           ],
           "new_files": []
+        },
+        "nov04-delegate-append": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDelegateAppendTest.cpp"
+          ]
         }
       },
       "preserve_rows": []

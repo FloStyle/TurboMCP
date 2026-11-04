@@ -26,10 +26,10 @@
       "title": "Explain and repair failed struct field additions",
       "kind": "bug",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "focused_workflow_passed",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "SF-05",
         "SF-06"
@@ -39,7 +39,7 @@
         "2026-11-03_S4/SF-06"
       ],
       "dependencies": [],
-      "next_step": "Focused run 3bde2ca39e144d4fb08a284756ad3687 passed exact object-array type, original fields, dependent compile/reference preservation and recursive-type refusal. Offline gate and integration pending. Historical partial-result cause remains unproven.",
+      "next_step": "Monitor field recurrence of the historical partial result; its exact cause is not proven from the old report.",
       "evidence": [
         {
           "run": "fad9cc9c56f940a5af7b6dd7bd73e38f",
@@ -50,21 +50,26 @@
           "run": "3bde2ca39e144d4fb08a284756ad3687",
           "result": "passed",
           "scope": "Class-path object-array addition with loaded dependent; stored type, dependent preservation, preview refusal and prior struct quality checks."
+        },
+        {
+          "run": "514ee87e26234f7282c8514fe4fbfaa6",
+          "result": "passed",
+          "scope": "26 offline checks; trusted source scope gate passed."
         }
       ],
       "followups": [
-        "Integrate after offline gate.",
-        "Historical partial-result cause cannot be confirmed without original payload/build; retain this limit."
-      ]
+        "Historical partial-result cause remains unproven without original payload/build; reopen on recurrence with exact call and LogBlueprint diagnostics."
+      ],
+      "resolution": "Implemented class-path object-reference fields and actionable add rejection diagnostics; integrated at 73371f74. Original failed reproduction retained."
     },
     {
       "id": "NOV04-03",
       "title": "Prevent or identify delegate append side-effect events",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
       "validation": "reported_not_reproduced",
       "source_ids": [
         "GC-83"
@@ -73,7 +78,7 @@
         "2026-11-03_S1/GC-83"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Reproduce AssignDelegate placement followed by explicit existing-event wiring. Stock UK2Node_AssignDelegate::PostPlacedNewNode creates an event; current append counts only returned nodes. Verify before attributing field cause."
     },
     {
       "id": "NOV04-04",
