@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-MATERIAL-INSTANCE-QUALITY",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPMaterialInstance",
     "EditTurboMCPMaterialInstanceSet"
@@ -70,15 +70,27 @@
       "run": "124f9cfcbe79427ea16f4fc146a969cc",
       "result": "failed",
       "scope": "Offline gate failed catalog completeness; other checks passed. Registered the workflow and refreshed inventory; subsequent validate-repo passed. Full final gate still pending."
+    },
+    {
+      "run": "78597438982d43f89e7a240355d3c6cd",
+      "result": "failed",
+      "scope": "Stock 5.8.3 MaterialEditingLibrary static-switch setter always returns false despite applying the value. Source inspection confirmed bResult is never changed; fixture now verifies independent effective read-back. Engine untouched."
+    },
+    {
+      "run": "df3830a46deb42b6a80e0611c322d2ac",
+      "result": "passed",
+      "scope": "Standalone registered workflow, scalar/vector identity, static-switch local/inherited classification, texture edit/refusal/no-op and visual assertions."
     }
   ],
   "limitations": [
-    "Editor supports texture overrides only, not scalar/vector/static-switch editing.",
-    "Layered-parameter identity fixes need focused evidence; no exhaustive sampler or material-layer claim.",
-    "Visual capture and final acceptance pending."
+    "Editor supports texture overrides only; scalar/vector/static-switch editing is not offered.",
+    "Same-name scalar/vector and static-switch identities tested; material-layer combinations and all sampler types are not exhaustively verified.",
+    "Visual evidence uses an offscreen UI material; it does not certify every scene material or rendering platform."
   ],
-  "remaining": [
-    "Add focused parameter-identity coverage and finish prose/help review.",
-    "Run final offline gate and scope review before integration and acceptance."
-  ]
+  "remaining": [],
+  "candidate": "da46fc7ed20422709d6113d66adadac721d46417",
+  "native_run": "df3830a46deb42b6a80e0611c322d2ac",
+  "scope_gate": "PASS: source submission and follow-up checked separately; catalog/inventory changes reviewed by integrator",
+  "offline_run": "b59a67b9a8034e59896f277defe90c85",
+  "offline_result": "25 checks passed; validate-repo initially failed stale inventory and passed after regeneration. Original failure retained."
 }

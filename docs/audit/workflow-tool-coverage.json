@@ -1314,6 +1314,26 @@
         "No submission, revert, asset save or compilation is requested by these tools."
       ],
       "evidence": "e70a2265163441d19e88ace2430cda99"
+    },
+    {
+      "id": "WF-MATERIAL-INSTANCE-QUALITY",
+      "title": "Inspect inheritance and change material-instance appearance",
+      "status": "scenario_accepted",
+      "review": "docs/audit/material-instance-quality-review.json",
+      "focus_tools": [
+        "ReadTurboMCPMaterialInstance",
+        "EditTurboMCPMaterialInstanceSet"
+      ],
+      "tools_used": [
+        "ReadTurboMCPMaterialInstance",
+        "EditTurboMCPMaterialInstanceSet"
+      ],
+      "limitations": [
+        "Editor supports texture overrides only; scalar/vector/static-switch editing is not offered.",
+        "Same-name scalar/vector and static-switch identities tested; material-layer combinations and all sampler types are not exhaustively verified.",
+        "Visual evidence uses an offscreen UI material; it does not certify every scene material or rendering platform."
+      ],
+      "evidence": "df3830a46deb42b6a80e0611c322d2ac"
     }
   ],
   "tool_usage": {
@@ -1858,9 +1878,15 @@
     ],
     "EditTurboMCPVcsCheckout": [
       "WF-VCS-QUALITY"
+    ],
+    "ReadTurboMCPMaterialInstance": [
+      "WF-MATERIAL-INSTANCE-QUALITY"
+    ],
+    "EditTurboMCPMaterialInstanceSet": [
+      "WF-MATERIAL-INSTANCE-QUALITY"
     ]
   },
-  "unique_tools_scenario_reviewed": 153,
+  "unique_tools_scenario_reviewed": 155,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
