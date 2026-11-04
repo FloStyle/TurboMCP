@@ -12,7 +12,8 @@
     "Inherited parameters appeared once per ancestor instead of once using the nearest value.",
     "Name-only override identity ignored type, layer/blend association and index.",
     "Local static-switch overrides were missing.",
-    "Repeated identical texture edits dirtied the instance and reported changed."
+    "Repeated identical texture edits dirtied the instance and reported changed.",
+    "Combining per-type metadata in a map keyed without type could discard same-name parameters across types; candidate now preserves all entries. Focused evidence pending."
   ],
   "evidence": [
     {
@@ -44,6 +45,16 @@
       "run": "2461f573452d4a16b507a5357919b320",
       "result": "failed",
       "scope": "Explicit instance resource update did not resolve black initial rendering. Generated-texture compilation and effective texture identity are under investigation."
+    },
+    {
+      "run": "900c14965cba4f8797895cc336547720",
+      "result": "failed",
+      "scope": "Diagnostic captures: direct blue texture, parent instance, child instance and red edited child passed; base material blue capture failed. This narrows the failure but does not establish its cause."
+    },
+    {
+      "run": "6d4d6c0cdb3d4563ab73dd39afaf84f2",
+      "result": "failed",
+      "scope": "Explicit deferred uniform-cache preparation did not fix the base-material capture. No acceptance claim. Later cross-type reader collision repair is not covered by this run."
     }
   ],
   "limitations": [
