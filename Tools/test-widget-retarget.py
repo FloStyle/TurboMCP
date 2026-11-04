@@ -112,8 +112,8 @@ def main():
     print()
     check("it counts the bindings", "2 binding(s)" in preview)
     check("it counts exactly one the class cannot satisfy",
-          "1 the current class cannot satisfy" in preview, preview[:200])
-    check("the valid one is marked ok", "ok      TitleText" in preview)
+          "1 with a missing widget or delegate" in preview, preview[:200])
+    check("the valid one is marked ok", "present TitleText" in preview)
     check("the broken one is marked BROKEN", "BROKEN  TitleText2" in preview)
     check("it says WHY the broken one is broken",
           "has no delegate" in preview and BROKEN_PROPERTY in preview)
@@ -143,9 +143,9 @@ def main():
     print(after)
     print()
     check("one binding remains", "1 binding(s)" in after)
-    check("it is the VALID one", "ok      TitleText" in after)
+    check("it is the VALID one", "present TitleText" in after)
     check("the broken one is gone", "TitleText2" not in after)
-    check("nothing is broken now", "0 the current class cannot satisfy" in after)
+    check("nothing is broken now", "0 with a missing widget or delegate" in after)
     check("the edit has nothing left to do",
           "nothing to do" in after, after[:200])
 
@@ -156,13 +156,13 @@ def main():
     print()
     check("it opens with unchanged:", again.startswith("unchanged:"), again[:70])
     check("it says every binding is satisfiable",
-          "satisfy all of them" in again)
+          "none has a missing widget or delegate" in again)
     check("it says nothing was removed", "nothing was removed" in again)
 
     print()
     print("=== the request is validated ===")
     for label, args, expect in (
-        ("no asset", {"asset": ""}, "no asset given"),
+        ("no asset", {"asset": ""}, "No asset was provided"),
         ("a non-widget asset", {"asset": "BP_NodeTest"}, "only a Widget Blueprint"),
     ):
         result = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPWidgetRetarget", args)

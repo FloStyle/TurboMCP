@@ -13,23 +13,9 @@
 
 class UWidgetBlueprint;
 
-/**
- * Repairing widget bindings after a class swap, behind `P/E-WIDGET-RETARGET`.
- *
- * `03_TOOLS.md` names the shape: a widget replaced by one of another class under the same name
- * leaves bound events and call nodes expecting the old class. The Preview lists them; the Edit
- * keeps each bound event the new class can still satisfy and REMOVES the ones it cannot, saying so.
- *
- * HOW "CAN THE NEW CLASS SATISFY IT" IS DECIDED, AND WHY THIS IS NOT A GUESS
- * --------------------------------------------------------------------------
- * The engine answers this itself, in `FDelegateEditorBinding::IsBindingValid`. It finds the target
- * widget, then looks for a `FDelegateProperty` on the WIDGET'S OWN CLASS named either
- * `<PropertyName>Delegate` or `<PropertyName>`, and only if one exists is the binding valid. So the
- * same lookup is done here rather than a rule being invented: a binding whose delegate the new
- * class does not carry is exactly the one the engine's compiler would reject.
- *
- * The binding is identified by the pair the engine's own `operator==` uses — `ObjectName` and
- * `PropertyName` — because that pair is what the editor treats as the identity of a binding.
+/** Inspect and remove widget bindings with missing widgets or delegates.
+ * Delegate presence is not full binding validation. Call nodes are diagnostic only.
+ * This helper does not reparent widgets, compile, save or create an undo transaction.
  */
 class FTurboMCPWidgetRetarget
 {

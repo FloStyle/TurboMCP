@@ -24,22 +24,8 @@
 
 namespace
 {
-	/**
-	 * The delegate a widget binding needs, and the type of property it was found as.
-	 *
-	 * THE ENGINE'S OWN CHECK IS TOO NARROW FOR REAL WIDGET EVENTS, AND THIS WIDENS IT.
-	 *
-	 * `FDelegateEditorBinding::IsBindingValid` looks for a `FDelegateProperty` named
-	 * `<PropertyName>Delegate` or `<PropertyName>`. Measured against the engine's own headers:
-	 * `UButton::OnClicked` is declared `DECLARE_DYNAMIC_MULTICAST_DELEGATE`, so it is a
-	 * `FMulticastDelegateProperty` and the engine's check NEVER finds it. A rule that rejected
-	 * every normal widget event would be useless, and its "ok" case would be unreachable — which
-	 * means a test of the broken case alone would have passed while proving nothing about the
-	 * good one.
-	 *
-	 * So both property kinds count, and which one was found is carried back so the result can say
-	 * it rather than flattening the two.
-	 */
+	// Presence checks preserve both single-cast property bindings and multicast events.
+	// They do not validate the bound function, signature or runtime behavior.
 	enum class EDelegateKind : uint8 { None, Single, Multicast };
 
 	EDelegateKind FindBindingDelegate(
@@ -86,11 +72,12 @@ bool FTurboMCPWidgetRetarget::Plan(
 	const FString& InAsset, FPlan& OutPlan, FString& OutError)
 {
 	OutError.Empty();
+	OutPlan = FPlan();
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
 
 	if (OutPlan.Asset.IsEmpty())
 	{
-		OutError = TEXT("no asset given. Pass a Widget Blueprint in any path form, for ")
+		OutError = TEXT("No asset was provided. Pass a Widget Blueprint path or unique name, for ")
 			TEXT("example WBP_NodeTest.");
 		return false;
 	}
@@ -125,8 +112,7 @@ bool FTurboMCPWidgetRetarget::Plan(
 		Found.PropertyName = Binding.PropertyName.ToString();
 		Found.FunctionName = Binding.FunctionName.ToString();
 
-		// THE SAME LOOKUP THE ENGINE'S OWN `IsBindingValid` DOES, so "the new class cannot
-		// satisfy this" is the engine's answer rather than a rule invented here.
+		// Check the member widget before looking for its delegate.
 		UWidget* TargetWidget = Tree != nullptr
 			? Tree->FindWidget(FName(*Binding.ObjectName)) : nullptr;
 
@@ -158,7 +144,7 @@ bool FTurboMCPWidgetRetarget::Plan(
 	// it is reported rather than removed: a caller may be about to add that function, and removing
 	// a node is a bigger change than the spec asks for here.
 	TArray<UEdGraph*> Graphs;
-    FTurboMCPBlueprintRead::CollectGraphs(WidgetBlueprint, Graphs);
+	FTurboMCPBlueprintRead::CollectGraphs(WidgetBlueprint, Graphs);
 
 	const UClass* Parent = WidgetBlueprint->ParentClass;
 
@@ -178,14 +164,15 @@ bool FTurboMCPWidgetRetarget::Plan(
 				continue;
 			}
 
-			// A function is fine if the parent class, the generated class, or one of this
-			// Blueprint's own function graphs provides it.
-			bool bResolves = (Parent != nullptr
+			// Resolve the node's declared owner first. Only self-context calls may fall
+			// back to this Blueprint's parent, generated class or function graphs.
+			const bool bSelfContext = Call->FunctionReference.IsSelfContext();
+			bool bResolves = Call->GetTargetFunction() != nullptr || (bSelfContext && ((Parent != nullptr
 					&& Parent->FindFunctionByName(FunctionName) != nullptr)
 				|| (WidgetBlueprint->GeneratedClass != nullptr
-					&& WidgetBlueprint->GeneratedClass->FindFunctionByName(FunctionName) != nullptr);
+					&& WidgetBlueprint->GeneratedClass->FindFunctionByName(FunctionName) != nullptr)));
 
-			if (!bResolves)
+			if (!bResolves && bSelfContext)
 			{
 				for (UEdGraph* FunctionGraph : WidgetBlueprint->FunctionGraphs)
 				{
@@ -201,7 +188,7 @@ bool FTurboMCPWidgetRetarget::Plan(
 			if (!bResolves)
 			{
 				OutPlan.StaleCalls.Add(FString::Printf(
-					TEXT("%s names '%s', which the current class does not have (in '%s')"),
+					TEXT("%s references unresolved function '%s' (in graph '%s')"),
 					*Call->GetName(), *FunctionName.ToString(), *Graph->GetName()));
 			}
 		}
@@ -214,7 +201,7 @@ FString FTurboMCPWidgetRetarget::RenderPreview(const FPlan& InPlan)
 {
 	FString Out = FString::Printf(TEXT("preview: retarget %s"),
 		*InPlan.Asset);
-	Out += FString::Printf(TEXT("\n%d binding(s), %d the current class cannot satisfy"),
+	Out += FString::Printf(TEXT("\n%d binding(s), %d with a missing widget or delegate"),
 		InPlan.Bindings.Num(), InPlan.NumBroken());
 
 	for (const FBinding& Binding : InPlan.Bindings)
@@ -223,7 +210,7 @@ FString FTurboMCPWidgetRetarget::RenderPreview(const FPlan& InPlan)
 		{
 			// WHICH KIND IT IS, because a single delegate and a multicast one are not the same
 			// thing and flattening them would hide that the widget's events are multicast.
-			Out += FString::Printf(TEXT("\n  ok      %s.%s  on %s  (%s delegate)  -> %s"),
+			Out += FString::Printf(TEXT("\n  present %s.%s  on %s  (%s delegate)  -> %s"),
 				*Binding.ObjectName, *Binding.PropertyName, *Binding.WidgetClass,
 				Binding.bIsMulticast ? TEXT("a multicast") : TEXT("a single"),
 				*Binding.FunctionName);
@@ -245,7 +232,7 @@ FString FTurboMCPWidgetRetarget::RenderPreview(const FPlan& InPlan)
 
 	if (InPlan.StaleCalls.Num() > 0)
 	{
-		Out += FString::Printf(TEXT("\n%d call node(s) name something the class does not have:"),
+		Out += FString::Printf(TEXT("\n%d call node(s) reference unresolved functions:"),
 			InPlan.StaleCalls.Num());
 		for (const FString& Call : InPlan.StaleCalls)
 		{
@@ -290,7 +277,7 @@ FString FTurboMCPWidgetRetarget::Apply(const FPlan& InPlan)
 	if (InPlan.NumBroken() == 0)
 	{
 		return FString::Printf(
-			TEXT("unchanged: %s has %d binding(s) and the current classes satisfy all of them, ")
+			TEXT("unchanged: %s has %d binding(s); none has a missing widget or delegate, ")
 			TEXT("so nothing was removed."),
 			*Resolved.ObjectPath, InPlan.Bindings.Num());
 	}
@@ -332,7 +319,7 @@ FString FTurboMCPWidgetRetarget::Apply(const FPlan& InPlan)
 
 	FString Out = FString::Printf(TEXT("changed: removed %d binding(s) from %s"),
 		Removed.Num(), *Resolved.ObjectPath);
-	Out += FString::Printf(TEXT("\nkept: %d binding(s) the current classes still satisfy"),
+	Out += FString::Printf(TEXT("\nkept: %d binding(s) with a present widget and delegate"),
 		Remaining);
 
 	for (const FString& Name : Removed)
