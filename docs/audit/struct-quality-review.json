@@ -54,5 +54,11 @@
     "Invalid integer defaults in creation and editing report partial.",
     "Existing asset is not overwritten; no implicit save."
   ],
-  "visual_review": "Not applicable: field membership, ordering and metadata checked directly in editor; no graph-layout contract."
+  "visual_review": "Not applicable: field membership, ordering and metadata checked directly in editor; no graph-layout contract.",
+  "offline_gate": {
+    "run": "f78b8b6b829d4e0c97be61dd57d4aa75",
+    "result": "26/26 passed",
+    "integrated_commit": "0ba3e4ad",
+    "dirty": false
+  }
 }
