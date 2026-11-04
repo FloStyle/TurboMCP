@@ -14,7 +14,8 @@
     "Shared instance refusal suggested a parameter absent from three reader schemas; candidate now directs callers to ReadTurboMCPMaterialInstance.",
     "Legacy test described unchanged counts as proof of no graph mutation; claims now distinguish report stability from independent state verification.",
     "Duplicate label declarations overwrite one another in the name map; promised ambiguity reporting is absent. Repair and focused evidence pending.",
-    "Load with instance overrides has a separate legacy table that omits parameter indices and double vectors and can imply complete equivalence with the parent. Reuse of the accepted instance reader is under review."
+    "Load with instance overrides has a separate legacy table that omits parameter indices and double vectors and can imply complete equivalence with the parent. Reuse of the accepted instance reader is under review.",
+    "Connected output labels can be emitted without defining their upstream expressions. Complete label definitions are required before reader acceptance."
   ],
   "evidence": [
     {
@@ -36,6 +37,11 @@
       "run": "54ce79a12f5243aa92b11f3251dcff17",
       "result": "passed",
       "scope": "All four readers refuse duplicate labels with both declaration identities and actionable recovery; node count and clean package preserved. Existing material/function reader workflow passed."
+    },
+    {
+      "run": "147d8e1da93f4aba9aa5b5bc68252a24",
+      "result": "passed",
+      "scope": "Load with instance overrides preserves the dedicated instance reader report and discloses advisory budget overruns; full reader and duplicate-label suite passed."
     }
   ],
   "remaining": [
