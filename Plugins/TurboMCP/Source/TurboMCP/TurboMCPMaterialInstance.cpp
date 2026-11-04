@@ -14,12 +14,19 @@
 // was at MaterialParameters.h:446 and the enum at :187 WHEN THIS WAS WRITTEN.
 #include "Materials/MaterialParameters.h"
 #include "Materials/Material.h"
+#include "StaticParameterSet.h"
 #include "UObject/UObjectGlobals.h"
 
 #include "TurboMCPAssetResolver.h"
 
 namespace
 {
+    FString ParameterIdentity(const FMaterialParameterInfo& Info, const FString& Type)
+    {
+        return FString::Printf(TEXT("%s|%d|%d|%s"), *Info.Name.ToString().ToLower(),
+            static_cast<int32>(Info.Association), Info.Index, *Type.ToLower().Replace(TEXT(" "), TEXT("")));
+    }
+
 	/**
 	 * A parameter association, as a word, so the text is stable.
 	 *
@@ -85,7 +92,7 @@ namespace
 	/** The four types this reader enumerates on every level. See CoveredTypes. */
 	const TArray<FString>& CoveredTypeNames()
 	{
-		static const TArray<FString> Names = { TEXT("scalar"), TEXT("vector"), TEXT("texture"), TEXT("static switch") };
+		static const TArray<FString> Names = { TEXT("scalar"), TEXT("vector"), TEXT("double vector"), TEXT("texture"), TEXT("static switch") };
 		return Names;
 	}
 }
@@ -182,37 +189,39 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 	// -----------------------------------------------------------------------------------------------
 	TSet<FString> OverriddenNames;
 
-	auto AddOverride = [&OutResult, &OverriddenNames](const FString& InName, EMaterialParameterAssociation InAssociation, const FString& InType, const FString& InValue)
+	auto AddOverride = [&OutResult, &OverriddenNames](const FMaterialParameterInfo& Info, const FString& InType, const FString& InValue)
 	{
 		FParameter Parameter;
-		Parameter.Name = InName;
-		Parameter.Association = AssociationName(InAssociation);
+		Parameter.Name = Info.Name.ToString();
+		Parameter.Association = AssociationName(Info.Association);
+		Parameter.Index = Info.Index;
+		Parameter.Identity = ParameterIdentity(Info, InType);
 		Parameter.Type = InType;
 		Parameter.Value = InValue;
 		OutResult.Overridden.Add(Parameter);
-		OverriddenNames.Add(InName);
+		OverriddenNames.Add(Parameter.Identity);
 	};
 
 	for (const FScalarParameterValue& Value : Instance->ScalarParameterValues)
 	{
-		AddOverride(Value.ParameterInfo.Name.ToString(), Value.ParameterInfo.Association, TEXT("scalar"),
+		AddOverride(Value.ParameterInfo, TEXT("scalar"),
 			FString::Printf(TEXT("%g"), Value.ParameterValue));
 	}
 	for (const FVectorParameterValue& Value : Instance->VectorParameterValues)
 	{
 		const FLinearColor Colour = Value.ParameterValue;
-		AddOverride(Value.ParameterInfo.Name.ToString(), Value.ParameterInfo.Association, TEXT("vector"),
+		AddOverride(Value.ParameterInfo, TEXT("vector"),
 			FString::Printf(TEXT("(%g, %g, %g, %g)"), Colour.R, Colour.G, Colour.B, Colour.A));
 	}
 	for (const FDoubleVectorParameterValue& Value : Instance->DoubleVectorParameterValues)
 	{
-		AddOverride(Value.ParameterInfo.Name.ToString(), Value.ParameterInfo.Association, TEXT("double vector"),
+		AddOverride(Value.ParameterInfo, TEXT("double vector"),
 			FString::Printf(TEXT("(%g, %g, %g, %g)"),
 				Value.ParameterValue.X, Value.ParameterValue.Y, Value.ParameterValue.Z, Value.ParameterValue.W));
 	}
 	for (const FTextureParameterValue& Value : Instance->TextureParameterValues)
 	{
-		AddOverride(Value.ParameterInfo.Name.ToString(), Value.ParameterInfo.Association, TEXT("texture"),
+		AddOverride(Value.ParameterInfo, TEXT("texture"),
 			Value.ParameterValue != nullptr ? Value.ParameterValue->GetPathName() : TEXT("(none)"));
 	}
 
@@ -224,7 +233,12 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 	// ORDER THE ENGINE ITSELF RESOLVES IN, and the order that makes DeclaredAt the answer to "which asset would I
 	// have to edit".
 	// -----------------------------------------------------------------------------------------------
-	TSet<FString> DeclaredBySomeAncestor;
+	const FStaticParameterSet StaticParameters = static_cast<const UMaterialInstance*>(Instance)->GetStaticParameters();
+    for (const FStaticSwitchParameter& Value : StaticParameters.StaticSwitchParameters)
+    {
+        if (Value.bOverride) AddOverride(Value.ParameterInfo, TEXT("static switch"), Value.Value ? TEXT("true") : TEXT("false"));
+    }
+    TSet<FString> DeclaredBySomeAncestor;
 
 	for (int32 LevelIndex = 1; LevelIndex < Levels.Num(); ++LevelIndex)
 	{
@@ -233,7 +247,7 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 
 		TMap<FMaterialParameterInfo, FMaterialParameterMetadata> Parameters;
 		for (const EMaterialParameterType Type : { EMaterialParameterType::Scalar, EMaterialParameterType::Vector,
-			EMaterialParameterType::Texture, EMaterialParameterType::StaticSwitch })
+			EMaterialParameterType::DoubleVector, EMaterialParameterType::Texture, EMaterialParameterType::StaticSwitch })
 		{
 			// A FRESH MAP PER TYPE, declared inside the loop, SO THE HAZARD OF REUSING ONE ACROSS FOUR CALLS
 			// CANNOT ARISE - nothing has to be cleared. The engine's own signature takes ONE type at a time
@@ -252,9 +266,11 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 		{
 			const FString Name = Pair.Key.Name.ToString();
 
-			DeclaredBySomeAncestor.Add(Name);
+			const FString Identity = ParameterIdentity(Pair.Key, TypeOf(Pair.Value));
+            if (DeclaredBySomeAncestor.Contains(Identity)) continue;
+            DeclaredBySomeAncestor.Add(Identity);
 
-			if (OverriddenNames.Contains(Name))
+            if (OverriddenNames.Contains(Identity))
 			{
 				continue;
 			}
@@ -262,6 +278,8 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 			FParameter Parameter;
 			Parameter.Name = Name;
 			Parameter.Association = AssociationName(Pair.Key.Association);
+			Parameter.Index = Pair.Key.Index;
+			Parameter.Identity = Identity;
 			Parameter.Type = TypeOf(Pair.Value);
 			Parameter.Value = ValueOf(Pair.Value);
 			Parameter.DeclaredAt = LevelPath;
@@ -278,7 +296,7 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 	// -------------------------------------------------------------------------------------------
 	for (const FParameter& Parameter : OutResult.Overridden)
 	{
-		if (!DeclaredBySomeAncestor.Contains(Parameter.Name))
+		if (!DeclaredBySomeAncestor.Contains(Parameter.Identity))
 		{
 			OutResult.Orphaned.Add(Parameter);
 		}
@@ -323,13 +341,13 @@ FString FTurboMCPMaterialInstance::Render(const FResult& InResult)
 	}
 	for (const FParameter& Parameter : InResult.Overridden)
 	{
-		Out += FString::Printf(TEXT("\n%s = %s  [%s, %s]"),
-			*Parameter.Name, *Parameter.Value, *Parameter.Type, *Parameter.Association);
+		Out += FString::Printf(TEXT("\n%s = %s  [%s, %s, index=%d]"),
+			*Parameter.Name, *Parameter.Value, *Parameter.Type, *Parameter.Association, Parameter.Index);
 	}
 
 	Out += FString::Printf(TEXT("\n\n; INHERITED - declared by a parent, NOT overridden here (%d)"), InResult.Inherited.Num());
 	Out += TEXT("\n; Values below are inherited from a parent. To change one of");
-	Out += TEXT("\n; these, edit the asset named in declared at, or set an override on this instance.");
+	Out += TEXT("\n; these, set an override on this instance; changing its parent can affect other instances.");
 	if (InResult.Inherited.Num() == 0)
 	{
 		Out += TEXT("\nnone - every parameter the chain declares is overridden here");
@@ -340,8 +358,8 @@ FString FTurboMCPMaterialInstance::Render(const FResult& InResult)
 		// INDISTINGUISHABLE FROM AN OVERRIDE when it is read alone. THE SPEC SAYS THIS LIST MATTERS BECAUSE
 		// AN AGENT MUST TELL WHETHER A VALUE IS REALLY ON THIS INSTANCE - SO THE DISTINCTION HAS TO SURVIVE BEING
 		// READ ONE LINE AT A TIME, which is how an agent reads it.
-		Out += FString::Printf(TEXT("\n%s = %s  [%s, %s, inherited, declared at %s]"),
-			*Parameter.Name, *Parameter.Value, *Parameter.Type, *Parameter.Association, *Parameter.DeclaredAt);
+		Out += FString::Printf(TEXT("\n%s = %s  [%s, %s, index=%d, inherited, resolved from %s]"),
+			*Parameter.Name, *Parameter.Value, *Parameter.Type, *Parameter.Association, Parameter.Index, *Parameter.DeclaredAt);
 	}
 
 	Out += FString::Printf(TEXT("\n\n; ORPHANED - set here, declared by no parent (%d)"), InResult.Orphaned.Num());
@@ -351,8 +369,8 @@ FString FTurboMCPMaterialInstance::Render(const FResult& InResult)
 	}
 	for (const FParameter& Parameter : InResult.Orphaned)
 	{
-		Out += FString::Printf(TEXT("\n%s = %s  [%s, %s]"),
-			*Parameter.Name, *Parameter.Value, *Parameter.Type, *Parameter.Association);
+		Out += FString::Printf(TEXT("\n%s = %s  [%s, %s, index=%d]"),
+			*Parameter.Name, *Parameter.Value, *Parameter.Type, *Parameter.Association, Parameter.Index);
 	}
 
 	// THE DENOMINATOR, ON THE MODEL R-BP-LINT SETTLED: a count with no denominator cannot be told apart from a

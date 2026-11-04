@@ -11,27 +11,9 @@
 
 class UMaterialInterface;
 
-/**
- * `R-MAT-INST-LOAD`: read a material instance.
- *
- * `03_TOOLS.md` names three outputs and says WHICH ONE MATTERS:
- *
- *   "Output: the parent chain up to the base material, then every parameter the instance overrides with its value,
- *    then every parameter the parent has that this instance does NOT override, marked as inherited.
- *    THE SECOND LIST IS THE ONE THAT MATTERS: an agent asked to change a parameter needs to know whether the value
- *    it wants to change is really on this instance or inherited from a parent it does not own.
- *    A parameter name the parent does not declare is reported as orphaned rather than dropped, because a renamed
- *    parameter leaves one behind."
- *
- * AND IT IS A SEPARATE READER RATHER THAN A MODE OF THE MATERIAL READER, WHICH IS D-43: "A material instance is not
- * written through the graph writer. It is a list of overrides, so it has its own read and write tools. WHY: AN
- * INSTANCE REAL BEHAVIOUR LIVES IN THE OVERRIDES, AND A TEXT THAT HIDES THEM INVITES AN EDIT THAT CHANGES THE WRONG
- * ASSET."
- *
- * WHAT IS REUSED RATHER THAN DUPLICATED. FTurboMCPAssetResolver::Resolve does the path work, so the five path forms
- * a caller might use all work. What this class adds is the one list nothing printed before: TurboMCPMaterial.cpp
- * RenderTree already prints the parameters an instance OVERRIDES, and NOTHING PRINTED THE ONES IT DOES NOT - so an
- * agent could see a value and have no way to tell which asset to edit.
+/** Read local overrides and effective inherited values without changing the instance.
+ * Parameter identity includes type, association and index. The report separates local
+ * storage from inherited values and retains orphaned local overrides for diagnosis.
  */
 class FTurboMCPMaterialInstance
 {
@@ -41,6 +23,8 @@ public:
 	{
 		FString Name;
 		FString Association;
+		int32 Index = INDEX_NONE;
+		FString Identity;
 		FString Type;
 		FString Value;
 		/** The level this parameter belongs to, for an inherited one: the nearest level that declares it. */

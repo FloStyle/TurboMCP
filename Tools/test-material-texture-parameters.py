@@ -1,6 +1,7 @@
 """Focused proof for texture material parameters and sampler-safe instance editing."""
 
 import os
+import runpy
 import re
 import sys
 import time
@@ -43,6 +44,7 @@ def parameter_line(text, name):
 
 
 def main():
+    runpy.run_path(os.path.join(TOOLS, "test-material-instance-quality.py"))
     session = connect()
     if session is None:
         return 1

@@ -63,10 +63,12 @@ namespace
 	UMaterialExpressionTextureSampleParameter* FindTextureParameter(UMaterialInstanceConstant* Instance,
 		const FName ParameterName)
 	{
+		TSet<const UMaterialInterface*> Visited;
 		for (UMaterialInterface* Link = Instance != nullptr ? Instance->Parent : nullptr;
-			Link != nullptr; Link = Cast<UMaterialInstance>(Link) != nullptr
+			Link != nullptr && !Visited.Contains(Link); Link = Cast<UMaterialInstance>(Link) != nullptr
 				? Cast<UMaterialInstance>(Link)->Parent : nullptr)
 		{
+			Visited.Add(Link);
 			const UMaterial* Material = Cast<UMaterial>(Link);
 			if (Material == nullptr)
 			{
@@ -173,10 +175,10 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialInstanceSet(const FString& Ass
 		}
 		if (!IsSamplerCompatible(Expression->SamplerType, Texture))
 		{
-			return FString::Printf(TEXT("error: texture '%s' is incompatible with parameter '%s': sampler %s requires an %s texture."),
+			return FString::Printf(TEXT("error: texture '%s' is incompatible with parameter '%s': sampler %s requires a texture with %s."),
 				*Texture->GetPathName(), *DeclaredPair->Key.Name.ToString(),
 				*UEnum::GetValueAsString(Expression->SamplerType),
-				Expression->SamplerType == SAMPLERTYPE_LinearColor ? TEXT("linear (sRGB disabled)") : TEXT("sRGB"));
+				Expression->SamplerType == SAMPLERTYPE_LinearColor ? TEXT("linear (sRGB disabled)") : TEXT("sRGB enabled"));
 		}
 
 		FTextureOverride& Override = Planned.AddDefaulted_GetRef();
@@ -185,11 +187,19 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialInstanceSet(const FString& Ass
 		Override.Texture = Texture;
 	}
 
-	for (const FTextureOverride& Override : Planned)
-	{
-		Instance->SetTextureParameterValueEditorOnly(Override.Parameter, Override.Texture);
+    int32 ChangedCount = 0;
+    for (const FTextureOverride& Override : Planned)
+    {
+        const bool bAlreadyLocal = Instance->TextureParameterValues.ContainsByPredicate(
+            [&](const FTextureParameterValue& Value) { return Value.ParameterInfo == Override.Parameter && Value.ParameterValue == Override.Texture; });
+        if (bAlreadyLocal) continue;
+        Instance->Modify();
+        ++ChangedCount;
+        Instance->SetTextureParameterValueEditorOnly(Override.Parameter, Override.Texture);
 	}
-	Instance->PostEditChange();
+    if (ChangedCount == 0)
+        return FString::Printf(TEXT("unchanged: %s already stores all %d requested texture override(s); no compile or save was requested."), *Resolved.ObjectPath, Planned.Num());
+    Instance->PostEditChange();
     for (const FTextureOverride& Override : Planned)
     {
         UTexture* Actual = nullptr;
@@ -203,6 +213,6 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialInstanceSet(const FString& Ass
 	{
 		return FString::Printf(TEXT("partial: overrides were written but the instance report failed: %s; inspect before saving or retrying; no rollback was attempted."), *ReadError);
 	}
-	return FString::Printf(TEXT("changed: %d texture override(s); effective texture values verified; rendered appearance not verified; save=not_requested\n%s"), Planned.Num(),
+	return FString::Printf(TEXT("changed: %d texture override(s); effective texture values verified; rendered appearance not verified; save=not_requested\n%s"), ChangedCount,
 		*FTurboMCPMaterialInstance::Render(Result));
 }
