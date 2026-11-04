@@ -14,6 +14,7 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "EdGraphSchema_K2.h"
+#include "Sound/SoundBase.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPStructQualityTest,
     "TurboMCP.Struct.Quality", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -82,6 +83,25 @@ bool FTurboMCPStructQualityTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Object array preview accepted"), ArrayPreview.StartsWith(TEXT("preview:")));
     TestTrue(TEXT("Object array addition succeeds with loaded dependent"), Edit(ObjectArrayChange).StartsWith(TEXT("changed:")));
     TestTrue(TEXT("Object array field exists"), Names().Contains(TEXT("AudioEvents")));
+    for (const auto& Description : FStructureEditorUtils::GetVarDesc(Struct))
+    {
+        if (Description.FriendlyName == TEXT("AudioEvents"))
+        {
+            const FEdGraphPinType ActualType = Description.ToPinType();
+            TestTrue(TEXT("Stored field is an array"), ActualType.ContainerType == EPinContainerType::Array);
+            TestEqual(TEXT("Stored array is object references"), ActualType.PinCategory, UEdGraphSchema_K2::PC_Object);
+            TestTrue(TEXT("Stored array element class is SoundBase"), ActualType.PinSubCategoryObject.Get() == USoundBase::StaticClass());
+        }
+    }
+    TestTrue(TEXT("Original fields survive object-array addition"), Names().Contains(TEXT("Count")) && Names().Contains(TEXT("Label")) && Names().Contains(TEXT("Offset")));
+    FKismetEditorUtilities::CompileBlueprint(Dependent);
+    TestTrue(TEXT("Dependent still compiles"), Dependent->Status == BS_UpToDate || Dependent->Status == BS_UpToDateWithWarnings);
+    const FBPVariableDescription* Settings = Dependent->NewVariables.FindByPredicate([](const FBPVariableDescription& Variable) { return Variable.VarName == TEXT("Settings"); });
+    TestTrue(TEXT("Dependent still references original struct"), Settings && Settings->VarType.PinSubCategoryObject.Get() == Struct);
+    const int32 BeforeRefusal = Names().Num();
+    const FString Recursive = UTurboMCPPreviewToolset::PreviewTurboMCPStructFields(Path, TEXT("Recursive: ") + Struct->GetPathName());
+    TestTrue(TEXT("Recursive member refused in preview with field context"), Recursive.StartsWith(TEXT("error:")) && Recursive.Contains(TEXT("Recursive")));
+    TestEqual(TEXT("Refusal leaves field count unchanged"), Names().Num(), BeforeRefusal);
     DependentPackage->SetDirtyFlag(false);
     TestTrue(TEXT("Existing path refused"),UTurboMCPEditToolset::EditTurboMCPStructNew(Path,Fields).StartsWith(TEXT("unchanged:")));
     TestFalse(TEXT("No implicit save"),FPackageName::DoesPackageExist(Path));
