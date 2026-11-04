@@ -534,6 +534,77 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		OutPlan.InBlockReroutes.Add(MoveTemp(Removal));
 	}
 
+    // Plan positions before applying any mutation. Existing nodes and boxes stay put.
+    struct FOccupiedNode { int32 X, Y, Width, Height; };
+    TArray<FOccupiedNode> Occupied;
+    for (const UMaterialExpression* Expression : Read.Expressions)
+        if (Expression) Occupied.Add({Expression->MaterialExpressionEditorX,
+            Expression->MaterialExpressionEditorY, Expression->HasAParameterName() ? 240 : 200,
+            Expression->HasAParameterName() ? 220 : 160});
+    auto IsFree = [&](int32 X, int32 Y, int32 Width)
+    {
+        for (const FOccupiedNode& Node : Occupied)
+            if (X < Node.X + Node.Width + 24 && X + Width + 24 > Node.X &&
+                Y < Node.Y + Node.Height + 24 && Y + 124 > Node.Y) return false;
+        return true;
+    };
+    for (FCrossing& Crossing : OutPlan.Crossings)
+    {
+        const int32 Width = FMath::Max(180, Crossing.ProposedName.Len() * 8 + 48);
+        int32 X = Crossing.Source->MaterialExpressionEditorX;
+        int32 Y = Crossing.Source->MaterialExpressionEditorY + 240;
+        while (!IsFree(X, Y, Width)) Y += 124;
+        Crossing.DeclarationPosition = FIntPoint(X, Y);
+        Occupied.Add({X, Y, Width, 100});
+        for (const FString& Ref : Crossing.ConsumerRefs)
+        {
+            const int32 Hash = Ref.Find(TEXT("#"), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+            const FString ReaderKey = Ref.Left(Hash);
+            UMaterialExpression* Reader = nullptr;
+            for (UMaterialExpression* Expression : Read.Expressions)
+                if (FTurboMCPMaterial::KeyOf(Expression) == ReaderKey) { Reader = Expression; break; }
+            if (!Reader) { OutError = TEXT("Cannot locate a planned consumer; no changes made."); return false; }
+            const int32 Block = BlockOf(Read, Reader);
+            const FString Group = Block == INDEX_NONE ? ReaderKey : FString::FromInt(Block);
+            if (Crossing.UsagePositions.Contains(Group)) continue;
+            bool bFound = false;
+            if (Read.Comments.IsValidIndex(Block) && Read.Comments[Block])
+            {
+                const UMaterialExpressionComment* Box = Read.Comments[Block];
+                for (int32 CandidateY = Box->MaterialExpressionEditorY + 48;
+                     CandidateY + 124 <= Box->MaterialExpressionEditorY + Box->SizeY && !bFound; CandidateY += 16)
+                    for (int32 CandidateX = Box->MaterialExpressionEditorX + 24;
+                         CandidateX + Width + 24 <= Box->MaterialExpressionEditorX + Box->SizeX; CandidateX += 16)
+                    {
+                        if (!IsFree(CandidateX, CandidateY, Width)) continue;
+                        // Do not accidentally place an outer-block usage in a nested block.
+                        bool bNested = false;
+                        for (int32 Other = 0; Other < Read.Comments.Num(); ++Other)
+                        {
+                            const UMaterialExpressionComment* Inner = Read.Comments[Other];
+                            if (!Inner || Other == Block || int64(Inner->SizeX) * Inner->SizeY >= int64(Box->SizeX) * Box->SizeY) continue;
+                            if (CandidateX >= Inner->MaterialExpressionEditorX && CandidateX <= Inner->MaterialExpressionEditorX + Inner->SizeX &&
+                                CandidateY >= Inner->MaterialExpressionEditorY && CandidateY <= Inner->MaterialExpressionEditorY + Inner->SizeY) bNested = true;
+                        }
+                        if (bNested) continue;
+                        X = CandidateX; Y = CandidateY; bFound = true; break;
+                    }
+                if (!bFound)
+                {
+                    OutError = FString::Printf(TEXT("Not enough free space for @%s inside block '%s'. Enlarge or reorganize that comment box, then preview again. Nothing was changed."), *Crossing.ProposedName, *Box->Text);
+                    return false;
+                }
+            }
+            else
+            {
+                X = Reader->MaterialExpressionEditorX - Width - 40; Y = Reader->MaterialExpressionEditorY;
+                while (!IsFree(X, Y, Width)) Y += 124;
+            }
+            Crossing.UsagePositions.Add(Group, FIntPoint(X, Y));
+            Occupied.Add({X, Y, Width, 100});
+        }
+    }
+
 	OutPlan.bNothingToChange = OutPlan.ItemCount() == 0;
 
 	if (OutPlan.bNothingToChange)
@@ -871,34 +942,6 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	TMap<FString, UMaterialExpression*> ByKey;
 	IndexByKey(Read, ByKey);
 
-    // Reserve space for added nodes without moving existing expressions. Headless
-    // materials have no measured Slate geometry, so use conservative envelopes.
-    struct FOccupiedNode { int32 X, Y, Width, Height; };
-    TArray<FOccupiedNode> Occupied;
-    for (const UMaterialExpression* Expression : Read.Expressions)
-        if (Expression) Occupied.Add({Expression->MaterialExpressionEditorX,
-            Expression->MaterialExpressionEditorY, 260, 200});
-    auto ReservePosition = [&](int32 X, int32 Y, int32 Width) -> FIntPoint
-    {
-        bool bCollision;
-        do
-        {
-            bCollision = false;
-            for (const FOccupiedNode& Node : Occupied)
-            {
-                if (X < Node.X + Node.Width + 24 && X + Width + 24 > Node.X &&
-                    Y < Node.Y + Node.Height + 24 && Y + 100 + 24 > Node.Y)
-                {
-                    Y = Node.Y + Node.Height + 24;
-                    bCollision = true;
-                    break;
-                }
-            }
-        } while (bCollision);
-        Occupied.Add({X, Y, Width, 100});
-        return FIntPoint(X, Y);
-    };
-
 	int32 LabelsAdded = 0;
 	int32 UsagesCreated = 0;
 	int32 UsagesRemoved = 0;
@@ -919,9 +962,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				TEXT(""), *Crossing.SourceKey);
 		}
 
-        const int32 LabelWidth = FMath::Max(180, Crossing.ProposedName.Len() * 8 + 48);
-        const FIntPoint DeclarationPosition = ReservePosition(Source->MaterialExpressionEditorX,
-            Source->MaterialExpressionEditorY + 240, LabelWidth);
+        const FIntPoint DeclarationPosition = Crossing.DeclarationPosition;
 		UMaterialExpression* const Created = UMaterialEditingLibrary::CreateMaterialExpressionEx(
 			Material, /*MaterialFunction=*/nullptr,
 			UMaterialExpressionNamedRerouteDeclaration::StaticClass(),
@@ -983,8 +1024,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
             UMaterialExpressionNamedRerouteUsage* Usage = UsageByReaderKey.FindRef(UsageGroup);
 			if (Usage == nullptr)
 			{
-                const FIntPoint UsagePosition = ReservePosition(Reader->MaterialExpressionEditorX - LabelWidth - 40,
-                    Reader->MaterialExpressionEditorY, LabelWidth);
+                const FIntPoint UsagePosition = Crossing.UsagePositions.FindChecked(UsageGroup);
 				UMaterialExpression* const CreatedUsage = UMaterialEditingLibrary::CreateMaterialExpressionEx(
 					Material, /*MaterialFunction=*/nullptr,
 					UMaterialExpressionNamedRerouteUsage::StaticClass(),

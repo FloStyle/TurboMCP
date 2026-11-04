@@ -47,6 +47,8 @@ public:
 
 		/** The name this pass proposes, taken from the caption. */
 		FString ProposedName;
+		FIntPoint DeclarationPosition;
+		TMap<FString, FIntPoint> UsagePositions;
 
 		/** Every block that reads the value, as indices into the reader's box list. */
 		TArray<int32> ReaderBlocks;

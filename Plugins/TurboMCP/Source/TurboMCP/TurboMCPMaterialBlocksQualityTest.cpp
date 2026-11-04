@@ -76,14 +76,14 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
     Material->PostEditChange();
     const FString Folder = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("TurboMCP/MaterialBlocksQuality"), FPaths::GetCleanFilename(Package->GetName()));
     IFileManager::Get().MakeDirectory(*Folder, true);
-    auto Capture = [&](const TCHAR* Name) -> FColor
+    auto Capture = [&](const TCHAR* Name, UMaterial* Resource = nullptr) -> FColor
     {
         if (GShaderCompilingManager) GShaderCompilingManager->FinishAllCompilation();
         ENQUEUE_RENDER_COMMAND(BlocksUniforms)([](FRHICommandListImmediate& RHICmdList) {
             FMaterialRenderProxy::UpdateDeferredCachedUniformExpressions(RHICmdList);
         });
         FlushRenderingCommands();
-        FSlateBrush Brush; Brush.SetResourceObject(Material); Brush.ImageSize = FVector2D(128,128);
+        FSlateBrush Brush; Brush.SetResourceObject(Resource ? Resource : Material); Brush.ImageSize = FVector2D(128,128);
         TSharedRef<SWidget> Widget = SNew(SImage).Image(&Brush);
         FWidgetRenderer Renderer(false);
         UTextureRenderTarget2D* Target = FWidgetRenderer::CreateTargetFor(FVector2D(128,128), TF_Bilinear, false);
@@ -103,6 +103,13 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
     const FColor BeforeColor = Capture(TEXT("before.png"));
     TestTrue(TEXT("Fixture displays distinct red and green channels"), BeforeColor.G > BeforeColor.R && BeforeColor.R > 20 && BeforeColor.B < 10);
     Package->SetDirtyFlag(false);
+    for (UMaterialExpressionComment* Box : Material->GetExpressionCollection().EditorComments) Box->SizeX = 150;
+    FTurboMCPMaterialBlocks::FPlan CrampedPlan;
+    FString CrampedError;
+    TestFalse(TEXT("Insufficient block space refused before editing"), FTurboMCPMaterialBlocks::Plan(Material->GetPathName(), CrampedPlan, CrampedError));
+    TestTrue(TEXT("Space refusal gives recovery"), CrampedError.Contains(TEXT("free space")) && CrampedError.Contains(TEXT("preview again")));
+    TestFalse(TEXT("Space refusal keeps package clean"), Package->IsDirty());
+    for (UMaterialExpressionComment* Box : Material->GetExpressionCollection().EditorComments) Box->SizeX = 500;
     const FGuid BeforeState = Material->StateId;
     FTurboMCPMaterialBlocks::FPlan Plan;
     FString Error;
@@ -124,6 +131,10 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
         const FExpressionInput* Connection = &Readers[Index]->A;
         if (const auto* Usage = Cast<UMaterialExpressionNamedRerouteUsage>(Connection->Expression))
         {
+            FTurboMCPMaterial::FPlan Membership;
+            FString MembershipError;
+            TestTrue(TEXT("Membership read succeeds"), FTurboMCPMaterial::Plan(Material->GetPathName(), FTurboMCPMaterial::ERead::Blocks, TEXT(""), false, Membership, MembershipError));
+            TestEqual(TEXT("Usage stays in consumer block"), FTurboMCPMaterial::BlockIndexOf(Membership, Usage), FTurboMCPMaterial::BlockIndexOf(Membership, Readers[Index]));
             if (!TestNotNull(TEXT("Usage declaration"), Usage->Declaration.Get())) continue;
             Connection = &Usage->Declaration->Input;
         }
@@ -157,15 +168,23 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
     Second->MaterialExpressionGuid = FGuid::NewGuid(); Second->Input.Connect(0, First);
     ChainMaterial->GetExpressionCollection().AddExpression(Second);
     auto* Consumer = NewObject<UMaterialExpressionAdd>(ChainMaterial, NAME_None, RF_Transactional);
-    Consumer->MaterialExpressionGuid = FGuid::NewGuid(); Consumer->A.Connect(0, Second);
+    auto* Third = NewObject<UMaterialExpressionReroute>(ChainMaterial, NAME_None, RF_Transactional);
+    Third->MaterialExpressionGuid = FGuid::NewGuid(); Third->Input.Connect(0, Second);
+    ChainMaterial->GetExpressionCollection().AddExpression(Third);
+    Consumer->MaterialExpressionGuid = FGuid::NewGuid(); Consumer->A.Connect(0, Third);
     ChainMaterial->GetExpressionCollection().AddExpression(Consumer);
     ChainMaterial->GetEditorOnlyData()->BaseColor.Connect(0, Consumer);
     ChainMaterial->GetEditorOnlyData()->Roughness.Connect(0, First);
+    ChainMaterial->MaterialDomain = MD_UI;
+    ChainMaterial->GetEditorOnlyData()->EmissiveColor.Connect(0, Consumer);
+    ChainMaterial->PostEditChange();
+    const FColor ChainBefore = Capture(TEXT("chain-before.png"), ChainMaterial);
     FTurboMCPMaterialBlocks::FPlan ChainPlan;
     if (!TestTrue(TEXT("Chain plan succeeds"), FTurboMCPMaterialBlocks::Plan(ChainMaterial->GetPathName(), ChainPlan, Error))) return false;
-    TestEqual(TEXT("Only the internal reroute is removed"), ChainPlan.InBlockReroutes.Num(), 1);
+    TestEqual(TEXT("Both internal reroutes are removed"), ChainPlan.InBlockReroutes.Num(), 2);
     const FString ChainResult = FTurboMCPMaterialBlocks::Apply(ChainPlan, Rollback);
     AddInfo(ChainResult + Rollback);
+    TestEqual(TEXT("Chain rendered value preserved"), Capture(TEXT("chain-after.png"), ChainMaterial), ChainBefore);
     TestTrue(TEXT("Chain cleanup changed"), ChainResult.StartsWith(TEXT("changed:")));
     TestTrue(TEXT("Chain final source preserved"), Consumer->A.Expression == ChainValue);
     TestEqual(TEXT("Chain selected output preserved"), Consumer->A.OutputIndex, 2);
@@ -189,11 +208,14 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
     auto* KeptUsage = RemovedUsage == UsageA ? UsageB : UsageA;
     ChainMaterial->GetEditorOnlyData()->Roughness.Connect(0, RemovedUsage);
     Consumer->A.Connect(0, RemovedUsage);
+    ChainMaterial->PostEditChange();
+    const FColor MergeBefore = Capture(TEXT("merge-before.png"), ChainMaterial);
     FTurboMCPMaterialBlocks::FPlan MergePlan;
     if (!TestTrue(TEXT("Output merge plan succeeds"), FTurboMCPMaterialBlocks::Plan(ChainMaterial->GetPathName(), MergePlan, Error))) return false;
     TestEqual(TEXT("One usage merge planned"), MergePlan.Merges.Num(), 1);
     const FString MergeResult = FTurboMCPMaterialBlocks::Apply(MergePlan, Rollback);
     AddInfo(MergeResult + Rollback);
+    TestEqual(TEXT("Merge rendered value preserved"), Capture(TEXT("merge-after.png"), ChainMaterial), MergeBefore);
     TestTrue(TEXT("Usage merge changed"), MergeResult.StartsWith(TEXT("changed:")));
     TestTrue(TEXT("Material output retargeted to surviving usage"), ChainMaterial->GetEditorOnlyData()->Roughness.Expression == KeptUsage);
     TestTrue(TEXT("Expression retargeted to surviving usage"), Consumer->A.Expression == KeptUsage);

@@ -131,6 +131,11 @@ def main():
     print(raw)
     entry, _ = support["parse_run_tests_report"](raw, test_name)
     assert not entry["warnings"], entry["warnings"]
+    for toolset, tool in ((PREVIEW_TOOLSET, PREVIEW), (EDIT_TOOLSET, EDIT)):
+        help_text = quality_session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolset": toolset, "tool": tool})
+        assert "asset" in help_text.lower() and "material functions" in help_text.lower(), help_text
+        refusal = quality_session.call(toolset, tool, {"asset": "MF_TurboMCPFixture"})
+        assert refusal.startswith("error:") and "material functions" in refusal, refusal
     print("=== checking whether the shared fixture needs rebuilding, WITHOUT stopping the editor ===")
     session = connect()
     if session is None:
