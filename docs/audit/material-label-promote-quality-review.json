@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPMaterialLabelPromote",
+    "EditTurboMCPMaterialLabelPromote"
+  ],
+  "candidate": "4c66d970d592fbe03a0ecaebcd007b935e92ce56",
+  "source_findings": [
+    "Preserved source output indices and masks instead of merging all outputs of an expression.",
+    "Preview and unchanged calls no longer compile.",
+    "Existing declarations retain names and exact inputs; remaining direct readers can be promoted.",
+    "Stale wiring/layout plans refuse before mutation.",
+    "Planned placement avoids conservative node envelopes; fixed offsets overlapped labels and consumers.",
+    "Corrected survivor/addition counts and verify all planned nodes and rewires.",
+    "Clarified help and removed obsolete column bookkeeping and misleading semantic-proof comments."
+  ],
+  "evidence": [
+    {
+      "run": "82ad6a2e5c474ddd9160da717d592e8a",
+      "result": "passed",
+      "scope": "Native output preservation, reuse, preview purity; 22 saved-fixture checks."
+    },
+    {
+      "run": "085dd86a659444c6a60484855efcf1c7",
+      "result": "runtime_pass_visual_fail",
+      "scope": "Stale-plan refusal passed; screenshot showed long names overlapping readers."
+    },
+    {
+      "run": "45ec5fb6554447668377cc45d964ae3b",
+      "result": "passed",
+      "scope": "Naming and conservative placement; inspected graph has no label-reader overlaps in this fixture."
+    },
+    {
+      "run": "d13984fb09e240db9d10a95e26719c06",
+      "result": "passed",
+      "scope": "Nontrivial red/green before-after render equality."
+    },
+    {
+      "run": "3654ff146413475c9e9cf4a4f58d4579",
+      "result": "passed",
+      "scope": "Final added-node reporting and incomplete-edit detection."
+    },
+    {
+      "run": "b9023f2c093c4c58ad784edfa9fc0520",
+      "result": "failed",
+      "scope": "Offline source notice missing after comment cleanup; restored in bd0893b8. Other checks passed."
+    }
+  ],
+  "remaining": [
+    "Final live help/refusal run and offline rerun pending.",
+    "Integration and coverage acceptance pending."
+  ],
+  "limitations": [
+    "Material assets only; functions and instances refused.",
+    "At least two distinct direct readers per exact output/mask; existing named-reroute readers left alone.",
+    "Conservative collision bounds; no full tidy or comment containment; existing positions preserved.",
+    "Compiler/identity checks are not general semantic-equivalence proof.",
+    "Failure requests undo but does not certify complete restoration; compilation may invoke editor callbacks.",
+    "No persistent approval token; edit replans current state."
+  ]
+}
