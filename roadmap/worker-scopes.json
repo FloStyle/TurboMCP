@@ -3285,6 +3285,18 @@
             "Tools/test-material.py"
           ],
           "new_files": []
+        },
+        "material-blocks-quality-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocks.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterialBlocks.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-material-blocks.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksQualityTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
