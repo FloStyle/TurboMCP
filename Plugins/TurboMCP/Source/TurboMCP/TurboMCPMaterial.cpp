@@ -12,6 +12,7 @@
 #include "MaterialEditingLibrary.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionComment.h"
+#include "Materials/MaterialExpressionConstant.h"
 #include "Materials/MaterialExpressionFunctionOutput.h"
 #include "Materials/MaterialExpressionNamedReroute.h"
 #include "Materials/MaterialExpressionParameter.h"
@@ -1459,7 +1460,11 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 	// REACHABILITY IS COMPUTED FROM THE OUTPUTS, not from "has a consumer", and the two differ: a
 	// value that feeds only another unreached value has a consumer and still reaches nothing.
 	// `HasAnyConsumer` WOULD MISS EXACTLY THAT CASE.
-	TArray<FString> Unreached;
+    // A Trace prints one tree, but an unused-expression finding must consider every output.
+    FRenderState AllOutputState;
+    for (const FString& Property : ConnectedOutputs(InPlan))
+        MarkReached(OutputSource(InPlan, Property), AllOutputState);
+    TArray<FString> Unreached;
 	for (UMaterialExpression* Expression : InPlan.Expressions)
 	{
 		// A FUNCTION OUTPUT NODE IS AN OUTPUT, SO IT CANNOT "REACH NO OUTPUT" - AND IT WAS LISTED
@@ -1490,7 +1495,7 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 			continue;
 		}
 
-		if (Expression != nullptr && !State.Reached.Contains(Expression))
+		if (Expression != nullptr && !AllOutputState.Reached.Contains(Expression))
 		{
 			Unreached.Add(FString::Printf(TEXT("\n  %s %s %s"),
 				*KeyOf(Expression),
@@ -1969,6 +1974,25 @@ bool FTurboMCPMaterialDuplicateLabelTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Block reports named reroute input"), Blocks.Contains(TEXT("inputs: @SharedValue")));
     TestTrue(TEXT("Block reports named reroute output"), Blocks.Contains(TEXT("outputs: (output MP_BaseColor), @SharedValue")));
     TestFalse(TEXT("Block read keeps fixture clean"), Package->IsDirty());
+    auto* ColorValue = NewObject<UMaterialExpressionConstant>(Material);
+    auto* RoughnessValue = NewObject<UMaterialExpressionConstant>(Material);
+    auto* UnusedValue = NewObject<UMaterialExpressionConstant>(Material);
+    ColorValue->MaterialExpressionGuid = FGuid::NewGuid();
+    RoughnessValue->MaterialExpressionGuid = FGuid::NewGuid();
+    UnusedValue->MaterialExpressionGuid = FGuid::NewGuid();
+    Material->GetEditorOnlyData()->BaseColor.Connect(0, ColorValue);
+    Material->GetEditorOnlyData()->Roughness.Connect(0, RoughnessValue);
+    FTurboMCPMaterial::FPlan TracePlan;
+    TracePlan.Material = Material; TracePlan.Asset = Material->GetPathName();
+    TracePlan.AssetName = Material->GetName(); TracePlan.GraphName = TEXT("Material");
+    TracePlan.OutputProperty = TEXT("MP_BaseColor");
+    TracePlan.Expressions = {ColorValue, RoughnessValue, UnusedValue};
+    Package->SetDirtyFlag(false);
+    const FString Trace = FTurboMCPMaterial::RenderTree(TracePlan, true, 0);
+    TestTrue(TEXT("Trace reports genuinely unused node"), Trace.Contains(FTurboMCPMaterial::KeyOf(UnusedValue)));
+    TestFalse(TEXT("Trace does not mislabel other output branch"), Trace.Contains(FTurboMCPMaterial::KeyOf(RoughnessValue)));
+    TestTrue(TEXT("Trace retains requested branch"), Trace.Contains(FTurboMCPMaterial::KeyOf(ColorValue)));
+    TestFalse(TEXT("Trace keeps fixture clean"), Package->IsDirty());
     return true;
 }
 #endif
