@@ -31,6 +31,11 @@
       "run": "63331557aa93414eb91b143a79766bc5",
       "result": "failed",
       "scope": "Duplicate-label regression fixture used auto* for TObjectPtr entries and failed compilation; corrected explicit iteration type. No engine changes."
+    },
+    {
+      "run": "54ce79a12f5243aa92b11f3251dcff17",
+      "result": "passed",
+      "scope": "All four readers refuse duplicate labels with both declaration identities and actionable recovery; node count and clean package preserved. Existing material/function reader workflow passed."
     }
   ],
   "remaining": [
