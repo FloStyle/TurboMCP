@@ -41,17 +41,6 @@ namespace
 		return FTurboMCPMaterial::IsLabelUsage(InExpression, Ignored);
 	}
 
-	/**
-	 * Turn a caption into something usable as a label name.
-	 *
-	 * THE UNIQUENESS OF THE RESULT IS NOT DECIDED HERE. `UMaterialExpressionNamedRerouteDeclaration` makes
-	 * its own name unique through `MakeNameUnique`
-	 * (`Runtime/Engine/Private/Materials/MaterialExpressions.cpp:18344`), which is the engine's rule and
-	 * the only one that cannot drift from it. This only makes a caption SAFE TO OFFER.
-	 *
-	 * IT MIRRORS `FTurboMCPMaterialLabelsPromote` DELIBERATELY: both propose names from the same caption,
-	 * so a value this pass names and a value that pass names must not read differently in two reports.
-	 */
 	FString NameFromCaption(const FString& InCaption)
 	{
 		FString Out;
@@ -82,14 +71,6 @@ namespace
 		return Found.IsNone() ? FString() : Found.ToString();
 	}
 
-	/**
-	 * One reader input, named so `Apply` can find it again.
-	 *
-	 * *** THIS IS THE REF D-45 REQUIRES AND IT CARRIES BOTH HALVES OF THE IDENTITY. *** The reader's key
-	 * says WHICH NODE, and the input index says WHICH PIN. A key alone would be ambiguous for a node that
-	 * reads the same value into two of its own inputs - a `Lerp` whose A and B are the same constant - and
-	 * an index alone means nothing without the node.
-	 */
 	FString ConsumerRef(const FString& InReaderKey, int32 InInputIndex)
 	{
 		return FString::Printf(TEXT("%s#%d"), *InReaderKey, InInputIndex);
@@ -117,13 +98,6 @@ namespace
 		/** What the input actually points at, BEFORE any reroute is followed. */
 		UMaterialExpression* Direct = nullptr;
 
-		/**
-		 * What the value really is, AFTER plain reroutes are followed.
-		 *
-		 * `2.5`: "Plain reroutes are invisible: links go through them." So a crossing is measured against
-		 * the REAL source - a value wired into a box through a long-wire reroute is still the same value
-		 * crossing the same boundary.
-		 */
 		UMaterialExpression* Source = nullptr;
 		FExpressionInput SourceConnection;
 		FExpressionInput DirectConnection;
@@ -229,9 +203,6 @@ namespace
 				continue;
 			}
 
-			// KEYED BY KEY RATHER THAN APPENDED TO AN ARRAY, so the node this pass keeps is chosen by a
-			// stable order. A `TMap` iteration order is not stable either, which is why the caller sorts
-			// the keys it reads out of this rather than trusting the map.
 			OutUsages.FindOrAdd(Label).Add(FTurboMCPMaterial::KeyOf(Usage), Usage);
 		}
 	}
@@ -239,9 +210,6 @@ namespace
 
 bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FString& OutError)
 {
-	// THE READER DOES THE RESOLUTION, DELIBERATELY. `FTurboMCPMaterial::Plan` refuses a non-material
-	// asset, names the alternative where it can, and gathers the expressions, the comments and the
-	// labels. A second resolver here would be the second-dialect mistake in a new place.
 	FTurboMCPMaterial::FPlan Read;
 	if (!FTurboMCPMaterial::Plan(InAsset, FTurboMCPMaterial::ERead::Blocks, FString(),
 		/*bInIncludeInstanceOverrides=*/false, Read, OutError))
@@ -257,11 +225,12 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 	OutPlan.BlockCount = FTurboMCPMaterial::BlockCount(Read);
 	OutPlan.ConnectionSnapshot = ConnectionSnapshot(Read);
 
-	// ---------------------------------------------------------------------------------------------
-	// A REFUSAL RATHER THAN AN EMPTY ANSWER, for the reason `LabelsPromote` records: an instance has no
-	// graph, so changing blocks inside it would edit its PARENT - an asset the caller did not name. A
-	// writer must not proceed on something a reader merely reports.
-	// ---------------------------------------------------------------------------------------------
+    if (OutPlan.Function != nullptr)
+    {
+        OutError = TEXT("Material Blocks cleanup supports materials, not material functions. Use ReadTurboMCPMaterialBlocks to inspect this function; no changes were made.");
+        return false;
+    }
+
 	if (OutPlan.Material == nullptr && OutPlan.Function == nullptr)
 	{
 		OutError = OutPlan.ParentPath.IsEmpty()
@@ -287,9 +256,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		}
 	}
 
-	// THE EMPTY BASELINE IS REFUSED, because an empty key set makes every subset check pass for the wrong
-	// reason. This project has already paid for that lesson once: a suite whose output name was wrong
-	// produced an empty key set and seven checks passed or failed for reasons unrelated to the tool.
 	if (OutPlan.KeysBefore.Num() == 0)
 	{
 		OutError = FString::Printf(TEXT("%s reports no expressions, so a compiled-result comparison would ")
@@ -305,15 +271,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		}
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// A MATERIAL WITH NO BOXES HAS ONE BLOCK, AND THAT IS A DIFFERENT ANSWER FROM "NOTHING TO DO".
-	//
-	// `RenderBlocks` already reports this for the reader. Here it becomes a refusal, because EVERY block
-	// rule D-17 states is about the boundary between blocks, and a material with one block has no
-	// boundary to enforce: adding a label would name a value that never leaves anywhere, merging usages
-	// would be cosmetic, and removing an in-block reroute would be a layout change this capability does
-	// not claim to make. SAYING SO IS THE ANSWER, and `P1` requires one.
-	// ---------------------------------------------------------------------------------------------
 	if (OutPlan.BlockCount == 0)
 	{
 		OutPlan.bNothingToChange = true;
@@ -328,9 +285,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 	TArray<FLink> Links;
 	GatherLinks(Read, Links);
 
-	// WHICH VALUES ALREADY HAVE A NAME, FOUND BY WHAT THEY FORWARD RATHER THAN BY THE NAME. The engine may
-	// have made a name unique, so a lookup by a proposed name can miss the declaration an earlier run
-	// made - the value's own key is the identity that cannot drift. `LabelsPromote` records the same trap.
 	TSet<FString> DeclaredSourceKeys;
 	for (const TPair<FString, UMaterialExpressionNamedRerouteDeclaration*>& Pair : Read.DeclarationsByLabel)
 	{
@@ -341,15 +295,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		}
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// (1) A VALUE READ FROM SEVERAL BLOCKS WITH NO LABEL. D-17: "When a value leaves its block for
-	// another block, it travels as a named reroute."
-	//
-	// THE BLOCKS ARE COMPARED, NOT THE DISTANCES. `LabelsPromote` promotes a value read in two places,
-	// which is about how SHARED a value is; this pass cares about WHERE those places are, because a value
-	// read twice inside one block needs no name at all - the block already says they belong together.
-	// TWO VALUES, TWO QUESTIONS, AND CONFLATING THEM WOULD MAKE ONE OF THE TWO TOOLS WRONG.
-	// ---------------------------------------------------------------------------------------------
 	TMap<FString, TArray<const FLink*>> LinksBySource;
 	for (const FLink& Link : Links)
 	{
@@ -358,9 +303,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 			continue;
 		}
 
-		// A LABEL IS NOT A REASON TO ADD A LABEL, for the reason `LabelsPromote` records: a declaration
-		// already names its value and a usage forwards a name, so counting either would let a material
-		// that is already named propose a second name for the same thing.
 		if (IsDeclaration(Link.Reader) || IsUsage(Link.Reader))
 		{
 			continue;
@@ -389,20 +331,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 			}
 		}
 
-		// *** THE TEST IS "READ FROM TWO DIFFERENT BOXES", AND AN UNBOXED READER DOES NOT COUNT AS ONE. ***
-		//
-		// THIS WAS MEASURED AND THE FIRST RULE WAS WRONG. It originally SKIPPED a value whenever ANY reader
-		// sat outside every box, on the reasoning that an unboxed expression is not "in a block" - WHICH IS
-		// TRUE AND WAS THE WRONG CONCLUSION: a value read from block 1 and from the unboxed part of the
-		// graph DOES cross a boundary, and skipping it meant this pass refused to name exactly the values
-		// D-17 says must travel as a label. `R-MAT-BLOCKS` reported it independently - "1 value(s) cross
-		// between boxes without a label ... a wire crossing a box boundary is what a label is for" - WHILE
-		// THIS PASS REPORTED NOTHING TO DO, and two tools built on one rule disagreeing about one material is
-		// the failure this project keeps recording.
-		//
-		// WHAT DID NOT CHANGE IS THE OTHER SIDE OF IT: ONE block plus unboxed readers is still not a
-		// crossing, because there is only ONE box for the value to leave. A single block means no boundary
-		// was crossed, which is what the count below enforces.
 		if (Blocks.Num() < 2)
 		{
 			continue;
@@ -415,9 +343,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		Crossing.SourceCaption = FTurboMCPMaterial::CaptionOf(Source);
 		Crossing.ProposedName = NameFromCaption(Crossing.SourceCaption);
 
-		// SORTED, BECAUSE A `TSet` HAS NO ORDER. `KeySort` DOES NOT EXIST ON `TSet` - it is `TMap` that has
-		// one - and `TSet::Array()` takes no out-parameter, so the keys are RETURNED and then sorted, which
-		// is also what makes the preview and the edit print the same blocks in the same order.
 		TArray<int32> SortedBlocks = Blocks.Array();
 		SortedBlocks.Sort([](int32 A, int32 B) { return A < B; });
 		for (const int32 Block : SortedBlocks)
@@ -435,13 +360,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		OutPlan.Crossings.Add(MoveTemp(Crossing));
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// (2) A LABEL READ THROUGH TWO OR MORE USAGE NODES IN ONE BLOCK. D-17: "A block reads each label
-	// through a single usage node."
-	//
-	// AND THE COMPLEMENT IS DELIBERATELY NOT TOUCHED: two usages in TWO blocks is the correct shape, and
-	// merging those would break "the consuming block reads it" rather than fix anything.
-	// ---------------------------------------------------------------------------------------------
 	TMap<FString, TMap<FString, UMaterialExpressionNamedRerouteUsage*>> UsagesByLabel;
 	GatherUsagesByLabel(Read, UsagesByLabel);
 
@@ -514,16 +432,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		}
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// (3) A PLAIN REROUTE STANDING FOR A VALUE INSIDE ONE BLOCK. D-17: "Plain reroute dots are for
-	// routing long wires, and never stand for a value."
-	//
-	// THE BOUNDARY IS WHAT MAKES THE REMOVAL SAFE, AND IT IS CHECKED ON BOTH SIDES. A reroute whose
-	// source is in block B and whose readers are ALL in block B does nothing that a direct wire would not
-	// do, so removing it cannot move a value across a boundary - WHICH IS THE ONLY THING TIME-CRITICAL
-	// ABOUT THIS OPERATION. A reroute that spans blocks is EXACTLY the long-wire case D-17 says reroutes
-	// are for, and it is left alone.
-	// ---------------------------------------------------------------------------------------------
 	TMap<const UMaterialExpression*, TArray<const FLink*>> ReadersByDirect;
 	for (const FLink& Link : Links)
 	{
@@ -559,9 +467,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		const TArray<const FLink*>* Readers = ReadersByDirect.Find(Reroute);
 		if (Readers == nullptr || Readers->Num() == 0)
 		{
-			// A REROUTE NOTHING READS IS NOT A VALUE CROSSING ANYTHING, and removing it would be a
-			// deletion this capability does not claim to make. `R-MAT-BLOCKS` reports unreachable
-			// structure; this pass does not tidy it.
 			continue;
 		}
 
@@ -571,10 +476,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 			continue;
 		}
 
-		// THE REROUTE'S OWN INPUT, READ DIRECTLY FROM `Input` FOR THE REASON `ResolveThroughReroutes`
-		// RECORDS: `GetRerouteInput` is `protected` (`MaterialExpressionRerouteBase.h:44`) and its use was
-		// a `C2248` compile error, while `MaterialExpressionReroute.h` declares `Input` under `public:` -
-		// and for a PLAIN reroute, which is what is checked above, `Input` IS the link.
 		UMaterialExpressionReroute* const AsReroute = Cast<UMaterialExpressionReroute>(Reroute);
 		if (AsReroute == nullptr || AsReroute->Input.Expression == nullptr)
 		{
@@ -612,9 +513,6 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		FInBlockReroute Removal;
 		Removal.Reroute = Reroute;
 		Removal.RerouteKey = FTurboMCPMaterial::KeyOf(Reroute);
-		// *** THE CLASS IS TAKEN FROM THE ENGINE RATHER THAN LEFT FOR THE REPORT TO INVENT. THERE IS NO
-		// TITLE: `FInBlockReroute` HAS NO TITLE FIELD, so `D-45`'s "class and title" is satisfied for
-		// the class only and every report line below prints the key and the class. ***
 		Removal.RerouteClass = Reroute->GetClass()->GetName();
 		Removal.Source = Source;
 		Removal.SourceConnection = TracePlainInput(AsReroute->Input);
@@ -634,9 +532,9 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 	if (OutPlan.bNothingToChange)
 	{
 		// `P1`: never return nothing, and say WHY. This is the answer the capability exists to give on a
-		// material that already follows D-17, and it is a different answer from a failed read.
+		// material that already follows the block rules, and it is a different answer from a failed read.
 		OutPlan.Refusals.Add(FString::Printf(
-			TEXT("%s already follows D-17 across its %d block(s): no value crosses a block without a ")
+			TEXT("%s already follows the block rules across its %d block(s): no value crosses a block without a ")
 			TEXT("label, no label is read through two usage nodes in one block, and no plain reroute stands ")
 			TEXT("for a value inside a single block. %d expression(s) were examined, %d of them in no block."),
 			*OutPlan.Asset, OutPlan.BlockCount, OutPlan.KeysBefore.Num(), OutPlan.UnboxedExpressions));
@@ -655,9 +553,6 @@ FString FTurboMCPMaterialBlocks::RenderPreview(const FPlan& InPlan)
 
 	if (!InPlan.bHasGraphNodes)
 	{
-		// REPORTED, NOT ASSUMED, AND IT DECIDES HOW THE EDIT IS MADE. The engine's own editor works
-		// through `UEdGraph` pins; a material built headlessly by `CreateMaterialExpressionEx` has none,
-		// so the edit goes where the compiler reads instead.
 		Out += TEXT("\n; no expression carries a graph node, so this is a headlessly built material and ")
 			TEXT("the readers are retargeted on the expression inputs, which is where the compiler reads.");
 	}
@@ -740,19 +635,7 @@ FString FTurboMCPMaterialBlocks::RenderPreview(const FPlan& InPlan)
 
 namespace
 {
-	/**
-	 * Resolves the plan's key set against the material AS IT IS NOW.
-	 *
-	 * *** D-45 IS THE REASON THIS EXISTS RATHER THAN THE PLAN CARRYING POINTERS: "it re-resolves every
-	 * node by key at apply time rather than trusting a plan from an earlier call", BECAUSE A PLAN IS MADE
-	 * AND APPLIED IN TWO CALLS AND THE MATERIAL CAN CHANGE BETWEEN THEM. *** A stale pointer would retarget
-	 * whatever now occupies that address, which is a wrong material that still compiles - the one outcome
-	 * the compiled-result check cannot distinguish from a correct edit.
-	 *
-	 * A KEY THAT NO LONGER RESOLVES IS A REFUSAL, NOT A SKIP. Silently skipping it would make the edit
-	 * differ from the preview it was authorised by, which is exactly what "changes exactly the items in
-	 * the Preview list" forbids.
-	 */
+	
 	void IndexByKey(const FTurboMCPMaterial::FPlan& InRead,
 		TMap<FString, UMaterialExpression*>& OutByKey)
 	{
@@ -765,18 +648,6 @@ namespace
 		}
 	}
 
-	/**
-	 * Re-points one reader input, refusing unless the reader, the new target and the pin are all real.
-	 *
-	 * *** WHAT THIS REFUSES, STATED EXACTLY, BECAUSE THE NAME PROMISES MORE: it refuses a null reader, a
-	 * null new target, an input index the reader does not have, and a null pin at that index. IT DOES NOT
-	 * DETECT A MATERIAL THAT CHANGED BETWEEN THE TWO CALLS, because the caller recomputes
-	 * `InExpectedOld` FROM THE READER ITSELF and hands that value in - so `It.Input->Expression !=
-	 * InExpectedOld` compares the pin with the value just read off it and cannot fail. The parameter is
-	 * kept because the comparison is correct if a caller ever supplies a value the plan carried. ***
-	 * Refusing on the four real conditions is still better than retargeting by index alone, which would
-	 * write to whatever that pin now holds.
-	 */
 	bool RetargetInput(UMaterialExpression* InReader, int32 InInputIndex,
 		UMaterialExpression* InExpectedOld, UMaterialExpression* InNew)
 	{
@@ -819,23 +690,6 @@ namespace
 			&& FDefaultValueHelper::ParseInt(InRef.Mid(Hash + 1), OutInputIndex);
 	}
 
-	/**
-	 * *** MEASURES THE ROLLBACK, WHICH IS THE ONE THING THE NINETEEN `Transaction.Cancel()` SITES NEVER DO. ***
-	 *
-	 * `Cancel()` returns `void`, so there is no result to read - but the transaction is not opaque:
-	 * `Cancel()` calls `GEditor->CancelTransaction(Index)` AND THEN sets `Index = -1`
-	 * (`ScopedTransaction.cpp:42-49`), so `IsOutstanding()` (`:54-57`) answers FALSE afterwards. THE RESTORE
-	 * HAS ALREADY HAPPENED BY THAT POINT, because it happens INSIDE `Cancel()`; the destructor only calls
-	 * `EndTransaction()` while the transaction is STILL outstanding (`:31-37`).
-	 *
-	 * SO A FAILED PASS CAN BE MEASURED ON ITS WAY OUT OF THE SCOPE, WITHOUT TOUCHING ANY OF THE NINETEEN
-	 * RETURN SITES. This object is declared after the transaction and destroyed before it, and its destructor
-	 * is the one place every cancelled path reaches.
-	 *
-	 * THE REFERENCE SET IS `Plan.KeysBefore` - what the plan READ before the edit, and the same set `Apply`
-	 * already compares the post-edit state against. A rollback that does not come back to it is a defect in
-	 * this tool, and the note says so in those words rather than restating the request as "rolled back".
-	 */
 	struct FRollbackMeasurement
 	{
 		FRollbackMeasurement(const FTurboMCPMaterialBlocks::FPlan& InPlan, FString* InOutNote,
@@ -853,14 +707,6 @@ namespace
 				return;
 			}
 
-			// *** THE REVERT, AND ITS ORDER IS THE WHOLE POINT - THIS IS WHAT `Cancel()` NEVER DID. ***
-			// `UTransBuffer::Undo` reads the UNDO BUFFER (`EditorTransaction.cpp:1638`), and the ACTIVE
-			// transaction is not on it until `EndTransaction` pushes it. UNDOING FIRST WOULD REVERT THE
-			// PREVIOUS TRANSACTION - SOMEBODY ELSE'S WORK - AND `Cancel()` CANNOT HELP, because it POPS the
-			// record rather than applying it. `bCanRedo == false` then REMOVES the record, so a failed edit
-			// cannot be redone either.
-			// *** THE ORDERING ARGUMENT LIVES IN `TurboMCPRollback.h`, BECAUSE FIVE OTHER WRITERS NEED THE SAME
-			// TWO CALLS AND A SECOND COPY OF THEM WOULD AGREE WITH THIS ONE UNTIL ONE OF THEM CHANGED. ***
 			FTurboMCPRollback::EndAndUndoActiveTransaction();
 
 			FTurboMCPMaterial::FPlan Reread;
@@ -910,25 +756,12 @@ namespace
 				return;
 			}
 
-			// *** A SECOND AND RAWER LOOK, BECAUSE "GONE" HAS TWO DIFFERENT REPAIRS. *** The keys above come
-			// from the same reader the pass itself uses. If the material's collection STILL HOLDS THE
-			// POINTER, the array came back and something else is hiding the node from the reader - a
-			// `MarkAsGarbage` flag is not a serialized property, so no transaction can restore it. If the
-			// collection does NOT hold it, the array was never in the transaction's buffer at all, and the
-			// repair is a `Modify()` that is missing or too late.
-			//
-			// WITHOUT THIS LINE THE TWO READ THE SAME, which is why the first repair attempted here -
-			// `Material->Modify()` - could be added, built, and measured WITHOUT SETTLING ANYTHING.
 			int32 RawLength = 0;
 			int32 RawLive = 0;
 			int32 RawHoldsMissing = 0;
 			if (Plan.Material != nullptr)
 			{
 				const auto& RawExpressions = Plan.Material->GetExpressionCollection().Expressions;
-				// THE LENGTH IS COUNTED SEPARATELY FROM THE LIVE ENTRIES, AND THE TWO ARE NOT THE SAME
-				// ANSWER. An array restored with a NULL or destroyed pointer in the freed slot has the same
-				// LENGTH as before and one fewer live entry - and that reads identically to an array that
-				// was never restored at all, unless both numbers are printed.
 				RawLength = RawExpressions.Num();
 				for (const UMaterialExpression* Expression : RawExpressions)
 				{
@@ -977,10 +810,6 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 {
 	OutRollbackNote.Empty();
 
-	// *** SET BY EVERY FAILING PATH, AND IT IS WHAT REPLACES `Cancel()` AS THE SIGNAL. *** The nineteen sites
-	// used to call `Transaction.Cancel()`, which discards the undo record WITHOUT reverting anything - so the
-	// "rollback" they announced never happened. They set this instead, and the guard below performs a REAL
-	// revert once the transaction has been ended.
 	bool bOutRolledBack = false;
 
     FTurboMCPMaterial::FPlan Current;
@@ -993,7 +822,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	if (InPlan.bNothingToChange)
 	{
 		return FString::Printf(
-			TEXT("unchanged: %s already follows D-17 across its %d block(s), so there is nothing to change. ")
+			TEXT("unchanged: %s already follows the block rules across its %d block(s), so there is nothing to change. ")
 			TEXT("%d expression(s) were examined."),
 			*InPlan.Asset, InPlan.BlockCount, InPlan.KeysBefore.Num());
 	}
@@ -1015,26 +844,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 
 	UMaterial* const Material = InPlan.Material;
 
-	// *** THE MATERIAL IS REGISTERED WITH THE TRANSACTION BEFORE ANYTHING IS MUTATED, AND THE ANSWER IS KEPT
-	// BECAUSE IT DECIDES WHETHER A ROLLBACK CAN RESTORE THE MATERIAL AT ALL. ***
-	//
-	// `UMaterialEditingLibrary::DeleteMaterialExpression` - the only remover this pass has, used at the two
-	// sites below - runs `Material->GetExpressionCollection().RemoveExpression(...)`,
-	// `Expression->MarkAsGarbage()` and `Material->MarkPackageDirty()`, AND NEVER CALLS `Modify()`
-	// (`MaterialEditingLibrary.cpp:590-617`). IT RELIES ON ITS CALLER, AND THIS PASS WAS NOT CALLING IT.
-	//
-	// BUT `Modify()` IS NOT UNCONDITIONAL EITHER. It reaches `SaveToTransactionBuffer`, which saves the
-	// object ONLY when `GUndo` is set AND `Object->HasAnyFlags(RF_Transactional)`
-	// (`UObjectGlobals.cpp:3215-3218`), and `Obj.cpp:1664-1665` says the same thing in its own words - the
-	// save "will fail if ... the object isn't transactional". `RF_Transactional` is GRANTED BY THE PROPERTY
-	// EDITOR PATHS rather than by loading (`Obj.cpp:587-595`, `:775-778`), so a plain loaded asset may not
-	// carry it. THIS RETURN VALUE IS THEREFORE PART OF THE MEASUREMENT AND NOT A DETAIL.
 	const bool bMaterialRegistered = Material->Modify();
 
-	// *** THE ONE MEASUREMENT EVERY ROLLBACK PATH REACHES, DECLARED HERE SO THAT IT OUTLIVES ALL NINETEEN
-	// `Cancel()` SITES AND IS DESTROYED BEFORE THE TRANSACTION ITSELF. *** See its definition above: it does
-	// nothing on a successful pass, and on a cancelled one it re-reads the material and compares the
-	// expression set with the one the plan read.
 	FRollbackMeasurement Rollback(InPlan, &OutRollbackNote, bMaterialRegistered, bOutRolledBack);
 
 	// THE MATERIAL IS RE-READ BEFORE ANYTHING IS TOUCHED, which is what makes this an edit of the CURRENT
@@ -1062,14 +873,6 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	TArray<FString> PlannedAdds;
 	TArray<FString> PlannedRemovals;
 
-	// ---------------------------------------------------------------------------------------------
-	// (1) ADD THE LABELS. Each crossing gets a declaration forwarding its value, and one usage node per
-	// DISTINCT READER - which is the engine's own convention
-	// (`Editor/MaterialEditor/Private/MaterialEditor.cpp:4633-4643`) and what makes a label report how
-	// many places read it. `LabelsPromote` measured the cost of getting this wrong: pointing readers
-	// straight at a declaration produced a label that `R-MAT-LABELS` answered `read in 0 place(s)` about,
-	// and NOTHING IN ITS OWN REPORT SAID SO.
-	// ---------------------------------------------------------------------------------------------
 	for (const FCrossing& Crossing : InPlan.Crossings)
 	{
 		UMaterialExpression* const Source = ByKey.FindRef(Crossing.SourceKey);
@@ -1186,11 +989,6 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		}
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// (2) MERGE THE REDUNDANT USAGE NODES. The readers move to the kept node FIRST, and only then is the
-	// redundant one removed - so the value is never briefly unread, and a removal that failed would leave
-	// a graph that still works rather than one with a dangling reference.
-	// ---------------------------------------------------------------------------------------------
 	for (const FMerge& Merge : InPlan.Merges)
 	{
 		UMaterialExpression* const Keep = ByKey.FindRef(Merge.KeepKey);
@@ -1275,10 +1073,6 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		}
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// (3) REMOVE THE IN-BLOCK REROUTES. Same order as the merge: the readers move to what the reroute was
-	// passing along, and the reroute is removed only afterwards.
-	// ---------------------------------------------------------------------------------------------
     TSet<FString> RerouteRemovalKeys;
     for (const FInBlockReroute& Item : InPlan.InBlockReroutes)
         RerouteRemovalKeys.Add(Item.RerouteKey);
@@ -1345,19 +1139,6 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		++ReroutesRemoved;
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// THE COMPILED-RESULT CHECK. "Same compiled result check" IS THE REQUIREMENT AND IT IS MEASURED HERE.
-	//
-	// THE ASYMMETRY IS DELIBERATE AND FOLLOWS `LabelsPromote`. This pass ADDS declarations and usages and
-	// REMOVES usage nodes and reroutes, so the assertion is that no pre-existing expression was lost
-	// EXCEPT THE ONES THIS PASS PLANNED TO REMOVE, and that what was GAINED is exactly what it planned. A
-	// bare "the sets differ" check would fail every time it worked; a one-directional check would miss a
-	// dropped expression.
-	//
-	// AND THE REMOVALS ARE COMPARED AGAINST THE PLAN RATHER THAN COUNTED, because "changes exactly the
-	// items in the Preview list" means an edit that removed ONE MORE node than it listed has failed even
-	// though the material still compiles.
-	// ---------------------------------------------------------------------------------------------
 	Material->PostEditChange();
 
 	TArray<FString> const CompileErrorsAfter = UMaterialEditingLibrary::RecompileMaterial(Material);
@@ -1420,6 +1201,24 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		}
 	}
 
+    // Verify both directions: planned additions must exist and planned removals must be absent.
+    for (const FString& Key : PlannedGains)
+    {
+        if (!After.Contains(Key))
+        {
+            bOutRolledBack = true;
+            return FString::Printf(TEXT("error: planned new expression %s is missing. Undo requested; see rollback details."), *Key);
+        }
+    }
+    for (const FString& Key : PlannedLosses)
+    {
+        if (After.Contains(Key))
+        {
+            bOutRolledBack = true;
+            return FString::Printf(TEXT("error: expression %s was not removed as planned. Undo requested; see rollback details."), *Key);
+        }
+    }
+
 	if (NewErrors.Num() > 0)
 	{
 		bOutRolledBack = true;
@@ -1476,15 +1275,11 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		TEXT("them on the plan's own list, %d gained and all of them planned, and the engine reports %d ")
 		TEXT("error(s), none of them new. StateId %s -> %s (reported rather than asserted: it can change for ")
 		TEXT("reasons this pass does not control)."),
-		KeysAfter.Num(), InPlan.KeysBefore.Num(), PlannedRemovals.Num(),
+		InPlan.KeysBefore.Num() - PlannedRemovals.Num(), InPlan.KeysBefore.Num(), PlannedRemovals.Num(),
 		GainedUnexpected.Num() == 0 ? PlannedGains.Num() : 0,
 		CompileErrorsAfter.Num(),
 		*StateIdBefore.ToString(), *Material->StateId.ToString());
 
-	// THE ITEM COUNT IS COMPARED AGAINST THE PLAN RATHER THAN RESTATED. `InPlan.ItemCount()` is the list
-	// the Preview printed, so this line is the assertion that the edit did what it was authorised to do
-	// and nothing else: the labels, the merge GROUPS - not the nodes inside them, because one group is one
-	// item the Preview listed - and the reroutes.
 	const int32 ItemsChanged = InPlan.Crossings.Num() + InPlan.Merges.Num() + ReroutesRemoved;
 	Out += FString::Printf(
 		TEXT("\nITEMS CHANGED: %d, which is exactly the %d the Preview listed."),

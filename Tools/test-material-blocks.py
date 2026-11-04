@@ -1,82 +1,9 @@
-# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-MAT-8
-#
-# NAMED HERE SO Spec/06_ACCEPTANCE.md CAN BE ANSWERED MECHANICALLY. Spec/WORKING_PLAN.md section 1.3
-# says a capability is done when its acceptance row PASSES, WHICH MAKES THAT DOCUMENT THE DEFINITION OF
-# DONE - and a script over the tree measured 64 OF ITS 122 ROWS CITED BY NO SUITE AT ALL, so nothing
-# could answer 'is this row passing?' without a human reading it.
-# *** THE SCRIPT IS NAMED NOW: python Tools/checks/count-acceptance-citations.py - IT STATES ITS CRITERION, a literal occurrence of the id in a Tools/test-*.py file, AND REPORTS 64. FOUR EARLIER ATTEMPTS GAVE 91, 64, 66 AND 56 BECAUSE NONE SAID WHAT CITED MEANT, AND THIS LINE CARRIED THE 91. ***
-#
-# THE ID IS READ FROM THE DOCUMENT, NOT GUESSED. VERIFIED FOR THIS ONE:
-#   | T-MAT-8 | Apply blocks | Only what the Preview listed changes; result unchanged |
+# Acceptance coverage: T-MAT-8.
+"""Check Material Blocks preview/edit against native and saved fixtures.
 
-"""`P/E-MAT-BLOCKS`: make labels follow blocks.
-
-WHAT THIS SUITE EXISTS TO PROVE, AND WHY IT HAS TWO HALVES
-----------------------------------------------------------
-`Spec/06_ACCEPTANCE.md` states `T-MAT-8` in ONE sentence with TWO independent claims:
-
-    "Only what the Preview listed changes; result unchanged."
-
-THE SEMICOLON IS THE WHOLE TEST. A suite that checked only the second half would pass on a tool that
-rewrote the whole material and happened to compile to the same thing; a suite that checked only the
-first would pass on a tool that changed exactly the right nodes and silently broke the material. SO
-BOTH ARE CHECKED, SEPARATELY, AND EACH HAS ITS OWN FAILABLE EVIDENCE.
-
-  HALF ONE - "only what the Preview listed changes" - is checked by counting the expression keys
-  before and after, through the READER, and asserting that every key that disappeared was ON THE
-  PREVIEW'S OWN REMOVAL LIST. A node that vanished without being listed is a failure EVEN THOUGH THE
-  MATERIAL STILL COMPILES, which is what that half of the sentence means.
-
-  HALF TWO - "result unchanged" - is checked the way `test-material-tidy.py` and
-  `test-material-label-promote.py` established for every material writer: the engine's compiler reports
-  no NEW error, and `UMaterial::StateId` (`Runtime/Engine/Public/Materials/Material.h:1239`) is
-  REPORTED rather than asserted, because it can legitimately change for reasons this pass does not
-  control - a background shader compile, a platform switch - so asserting on it would make this suite
-  fail for other people's reasons.
-
-WHAT THIS SUITE DELIBERATELY DOES NOT DO, AND THE HONESTY IS THE POINT
----------------------------------------------------------------------
-`P/E-MAT-BLOCKS` has THREE kinds of item: labels to add for values crossing a block boundary, usage
-nodes to merge, and in-block reroutes to remove. **THE SHARED FIXTURE EXERCISES EXACTLY ONE OF THE
-THREE.** Measured on `/Game/Tests/TurboMCPMaterialFixture` at 16 expressions and 2 comment boxes, the
-Preview lists ONE item - a merge of `@VerticalMix`'s two usage nodes - and reports zero crossings and
-zero in-block reroutes.
-
-SO THIS SUITE ASSERTS THE ABSENCE OF THE OTHER TWO RATHER THAN INVENTING A POSITIVE CASE FOR THEM.
-A suite that quietly skipped them would report a green run for a capability two thirds of which was
-never exercised - and this project has already recorded that shape more than once. THE LIMIT IS STATED
-IN THE RESULT, NOT HIDDEN BEHIND A PASS.
-
-THE FIXTURE IS RESTORED ON THE WAY IN AND ON THE WAY OUT, AND THE RESTORE IS ASSERTED.
-`make-material-asset.ps1` regenerates the fixture from scratch, so running it FIRST makes this suite
-re-runnable from ANY state - including one where a previous run was interrupted halfway through an
-edit. THIS ARRANGEMENT IS COPIED FROM `test-graph-replace.py` AND `test-material-tidy.py` RATHER THAN
-REDISCOVERED: `test-graph-replace`'s first version left its graph mutated and the FULL RUN fell to 35
-of 40 WITH THE FAILURES IN ITS NEIGHBOURS, because a mutating suite and a rebuilding suite were
-fighting over one asset. THIS CAPABILITY MUTATES A SHARED MATERIAL - it is the only material writer
-that REMOVES - so the same discipline is applied here.
-
-AND THE REBUILD IS CONDITIONAL. `make-material-asset.ps1` STOPS THE EDITOR, and calling it repeatedly
-in one run took the full run from 40 to 32 of 42 with ten failures whose names changed between runs -
-the race signature, measured in this project five times. So the CHEAP question is asked first: can the
-editor answer, and is the fixture already in its built state? Only a genuinely dirty fixture pays the
-restart.
-
-THE ASSET'S NAME IS NOT THE FILE'S NAME. `make-material-asset.ps1` writes `TurboMCPMaterialFixture`
-and the asset INSIDE it is `M_TurboMCPFixture`, so the bare asset name is what goes in `ASSET` below.
-
-WHAT MAKES A CHECK HERE ABLE TO FAIL, AND THIS WAS PROVEN BY BREAKING IT
------------------------------------------------------------------------
-The removal list was made to lie - the plan's own removal list was emptied so the edit removed a node
-it had not declared - and the tool answered:
-
-    FAILED: the edit LOST 1 expression(s) it did not list, so it was ROLLED BACK.
-
-and every other check still passed, which is the RIGHT SHAPE: the failure is isolated to the check
-that exists for it. THE SAME RUN ALSO PROVES THE BINARY WAS NOT STALE, because `PreviewTurboMCPMaterialBlocks`
-DID NOT EXIST until this round's build and a stale DLL would have answered "no such tool" instead of a
-preview. That trap has caught this project five times, so the probe is deliberate: A BREAK TEST THAT
-DOES NOT GO RED MEANS THE BINARY IS OLD, NOT THAT THE CHECK IS GOOD.
+Native cases cover output selection, channel masks, reroute chains, material-output
+consumers, stale-plan refusal and repeatability. The saved fixture covers duplicate
+usage merging. Passing compiler checks do not establish visual equivalence.
 """
 
 import os
@@ -105,11 +32,6 @@ ASSET = "M_TurboMCPFixture"
 PREVIEW = "PreviewTurboMCPMaterialBlocks"
 EDIT = "EditTurboMCPMaterialBlocks"
 
-# THE FIXTURE IS BUILT WITH TWO BOXES, AND THAT NUMBER IS READ FROM THE BUILDER RATHER THAN GUESSED.
-# `TurboMCPMaterialFixtureCommandlet.cpp` `BuildBoxes` makes an INNER box at (120,120) 360x230 and an
-# OUTER box at (100,100) 1000x700, and the reader gives every expression to the SMALLEST one containing
-# it. IT IS USED ONLY AS A DIRTY/HEALTHY TEST, never as an assertion about what a run produced - a
-# count pinned on a shared asset is the mistake this project has recorded four times.
 BUILT_BOX_COUNT = 2
 
 failures = []
@@ -117,9 +39,6 @@ checks_run = [0]
 
 
 def check(name, ok, detail=""):
-    # THE DETAIL IS SHOWN ONLY WHEN THE CHECK FAILS, so a passing check does not print a failure
-    # sentence underneath itself. A passing check that prints a failure message is worse than a bare
-    # pass: it teaches the reader to ignore the text.
     checks_run[0] += 1
     print("  %-4s %s%s" % ("ok" if ok else "FAIL", name,
                            ("  " + detail) if detail and not ok else ""))
@@ -244,9 +163,6 @@ def main():
     else:
         print("    it is already in its built state, so the editor was NOT stopped")
 
-    # =============================================================================================
-    # THE PREVIEW WRITES NOTHING AND LISTS WHAT IT WOULD CHANGE
-    # =============================================================================================
     print()
     print("=== the PREVIEW writes nothing and lists what the edit would change ===")
 
@@ -259,9 +175,6 @@ def main():
     check("the preview names the asset it looked at", ASSET in preview,
           "the preview did not mention %s" % ASSET)
 
-    # THE PREVIEW MUST PRODUCE A COUNT AND A LIST, because "changes exactly the items in the Preview
-    # list" is only checkable if there is a list. A preview that said nothing about items would make
-    # the acceptance sentence unverifiable.
     items = number_before(r"items the edit would change: (\d+)", preview)
     check("the preview states how many items the edit would change", items >= 0,
           "no 'items the edit would change' line was found")
@@ -272,14 +185,6 @@ def main():
           key_set(look_after_preview) == keys_before_preview,
           "the preview altered the material, which it must never do")
 
-    # =============================================================================================
-    # THE LIMIT OF THE FIXTURE, STATED RATHER THAN HIDDEN
-    # =============================================================================================
-    #
-    # THIS CAPABILITY HAS THREE KINDS OF ITEM AND THE SHARED FIXTURE EXERCISES ONE. Asserting the
-    # ABSENCE of the other two is the honest thing to do: it is a real claim about a real material, and
-    # it would FAIL the moment the pass started inventing crossings or deletions on a material that has
-    # none - which is exactly the way this kind of rule goes wrong.
     print("=== the two item kinds the fixture does NOT exercise, asserted absent ===")
 
     has_crossing = "LABELS TO ADD" in preview
@@ -297,9 +202,6 @@ def main():
           "an in-block reroute was listed; the fixture builds no plain reroute at all, so this would "
           "be a rule firing on a material it does not describe")
 
-    # =============================================================================================
-    # THE EDIT
-    # =============================================================================================
     print()
     print("=== the EDIT changes exactly the listed items ===")
 
@@ -309,16 +211,6 @@ def main():
                                {"asset": ASSET, "tokenBudget": 6000})
     keys_before_edit = key_set(look_before)
 
-    # THE PREVIEW'S OWN REMOVAL LIST, PARSED OUT OF ITS TEXT. It is printed as `- <key>` on its own
-    # line, and the key is what the check compares against.
-    #
-    # *** THE FIRST VERSION OF THIS REGEX DEMANDED A CLASS IN PARENTHESES AFTER THE KEY, AND MEASURED
-    # AGAINST THE REAL OUTPUT IT MATCHED NOTHING - WHICH MADE FIVE CHECKS FAIL ON AN EDIT THAT HAD
-    # WORKED PERFECTLY. *** The preview prints the key and then the class on the SAME line only in the
-    # in-block-reroute list; the merge list prints the key alone. A REGEX THAT ASSUMES A FORMAT RATHER
-    # THAN READING IT IS THE SAME CLASS OF MISTAKE AS MATCHING A SENTENCE BESIDE A NUMBER, and it is
-    # indistinguishable from a real failure until the text is printed. THE PROBE THAT FOUND IT IS THE
-    # ONLY REASON THIS IS A TEST BUG AND NOT A TOOL BUG.
     listed_removals = set(re.findall(r"\n\s+- ([0-9a-f]{6})\s*$", preview, re.MULTILINE))
 
     report = session.call(EDIT_TOOLSET, EDIT, {"asset": ASSET})
@@ -336,15 +228,6 @@ def main():
     print("    keys before: %d, after: %d, lost: %d, gained: %d"
           % (len(keys_before_edit), len(keys_after_edit), len(lost), len(gained)))
 
-    # ---------------------------------------------------------------------------------------------
-    # HALF ONE OF T-MAT-8: ONLY WHAT THE PREVIEW LISTED CHANGES.
-    #
-    # A node that disappeared WITHOUT BEING ON THE PREVIEW'S REMOVAL LIST is a failure even though the
-    # material still compiles - that is literally what "only what the Preview listed" forbids. AND THE
-    # EDIT'S OWN REPORT IS NOT THE EVIDENCE: the removal list is parsed out of the PREVIEW, which the
-    # edit did not write, and the key sets come from the READER, which is a different code path from
-    # the writer.
-    # ---------------------------------------------------------------------------------------------
     check("the edit LOST nothing that the Preview did not list",
           lost.issubset(listed_removals),
           "lost %s, of which %s was never listed in the Preview"
@@ -364,26 +247,15 @@ def main():
     check("the edit reports that it changed something", report.startswith("changed:"),
           "the edit did not report a change on a material the Preview said had %d item(s)" % items)
 
-    # THE REPORT MUST LIST THE REMOVAL BY KEY RATHER THAN COUNT IT. `05_DECISIONS.md` D-45: "a writer
-    # that removes anything lists each removal by key with its class and title, never a count... a
-    # count says how much is gone and a list says what."
     listed_in_report = set(re.findall(r"\nremoved ([0-9a-f]{6})", report))
     check("D-45: the edit LISTS each removal by key rather than counting them",
           listed_in_report == lost,
           "the report listed %s and the material lost %s"
           % (sorted(listed_in_report), sorted(lost)))
 
-    # ---------------------------------------------------------------------------------------------
-    # HALF TWO OF T-MAT-8: RESULT UNCHANGED.
-    # ---------------------------------------------------------------------------------------------
     check("the edit reports the COMPILED RESULT explicitly", "CHECK RESULTS (not proof of identical rendered output)" in report,
           "the edit made no compiled-result statement at all")
 
-    # THE ABSENCE OF THE "none of them new" CLAIM IS CHECKED WITH `in` RATHER THAN THROUGH
-    # `number_before`, BECAUSE THERE IS NO NUMBER IN IT. Passing it to `number_before` needs a capture
-    # group and a phrase with no group raises `IndexError: no such group` - which is a crash rather than
-    # a failure, and a suite that CRASHES reports no result line at all. MEASURED: that is what the
-    # first version of this check did.
     check("the edit reports that no compile error is new",
           "none of them new" in report,
           "the compiled-result line did not contain the 'none of them new' claim")
@@ -392,9 +264,6 @@ def main():
           number_before(r"the engine reports (\d+) error", report, default=-1) == 0,
           "the material has compile errors after the edit")
 
-    # STATEID IS REPORTED, NOT ASSERTED, FOR THE REASON THE DOCSTRING GIVES. What IS asserted is that
-    # the tool actually printed it - a writer that claimed a compiled-result check and then omitted the
-    # evidence would be unfalsifiable.
     check("the edit REPORTS StateId rather than asserting on it",
           "StateId" in report and "reported rather than asserted" in report,
           "the compiled-result line carried no StateId, so the check cannot be inspected")
@@ -405,9 +274,6 @@ def main():
           len(lost - listed_removals) == 0,
           "the material lost expressions the Preview never listed")
 
-    # =============================================================================================
-    # THE LABEL NOW FOLLOWS THE BLOCK RULE, WHICH IS THE POINT OF THE CAPABILITY
-    # =============================================================================================
     print()
     print("=== the label now follows D-17: one usage node per block ===")
 
@@ -415,36 +281,16 @@ def main():
     print(labels)
     print()
 
-    # THE READER'S OWN READER COUNT IS THE WITNESS, and it comes from a different code path from the
-    # writer. D-17: "A block reads each label through a single usage node." Before the edit
-    # `@VerticalMix` was `read in 2 place(s)`; afterwards it must be 1.
-    #
-    # *** THE REGEX DELIBERATELY DOES NOT USE `\s*` BETWEEN THE NAME AND THE COUNT, AND THAT WAS
-    # MEASURED. *** The reader prints the label, then its position, and THEN the count:
-    #
-    #     @VerticalMix
-    #         declared at M_TurboMCPFixture:Material:a432e8
-    #         read in 1 place(s)
-    #
-    # so an anchored `@VerticalMix\s*\n\s*read in` NEVER MATCHES A MATERIAL THAT STILL WORKS - the
-    # `declared at` line sits in between. That pattern made the suite report "no place(s)" for a label
-    # the reader was reporting one place for, WHICH IS A TEST THAT FAILS ON A CORRECT TOOL.
     vertical = re.search(r"@VerticalMix\b[\s\S]{0,300}?read in (\d+) place", labels)
     check("D-17: @VerticalMix is now read through a SINGLE usage node",
           vertical is not None and int(vertical.group(1)) == 1,
           "the reader answered %s place(s) for @VerticalMix, and D-17 asks for one"
           % (vertical.group(1) if vertical else "no"))
 
-    # AND THE LABEL MUST NOT HAVE BEEN DESTROYED. A pass that satisfied "one usage per block" by
-    # deleting the label entirely would have made the read count zero, which is a DIFFERENT failure and
-    # a much worse one - the material would have lost a name the author gave it.
     check("the label still exists and is still read rather than deleted",
           vertical is not None and int(vertical.group(1)) >= 1,
           "@VerticalMix is gone or unread, so the merge removed the label instead of merging usages")
 
-    # =============================================================================================
-    # IDEMPOTENCE, WHICH IS WHAT MAKES IT A DIFF RATHER THAN A WRITE
-    # =============================================================================================
     print()
     print("=== a SECOND run has nothing to do, which is what makes this a rule rather than a rewrite ===")
 
@@ -455,8 +301,8 @@ def main():
           "the second Preview still lists %s item(s), so the first edit did not settle the material"
           % items_again)
 
-    check("the second Preview says the material already follows D-17 rather than saying nothing",
-          "already follows D-17" in preview_again,
+    check("the second Preview says the material already follows the block rules rather than saying nothing",
+          "already follows the block rules" in preview_again,
           "the refusal did not explain why there is nothing to do")
 
     report_again = session.call(EDIT_TOOLSET, EDIT, {"asset": ASSET})
@@ -464,9 +310,6 @@ def main():
           report_again.startswith("unchanged:"),
           "the second edit answered: %s" % report_again[:120])
 
-    # =============================================================================================
-    # THE REFUSAL PATH, WHICH MUST NAME WHAT TO DO INSTEAD
-    # =============================================================================================
     print()
     print("=== the refusal names the asset rather than answering emptily ===")
 
@@ -480,17 +323,9 @@ def main():
           no_such.startswith("error:"),
           "a missing asset answered: %s" % no_such[:120])
 
-    # =============================================================================================
-    # THE FIXTURE IS GIVEN BACK
-    # =============================================================================================
     print()
     print("=== the shared fixture is given back ===")
 
-    # *** THE COUNT IS REPORTED AND THE ASSERTION IS ON WHAT THE RESTORE DID. *** The earlier version of
-    # this kind of check compared a number parsed from the shared asset against a constant, IN BOTH
-    # BRANCHES - so it could fail on a run where the suite behaved perfectly, and it did, twice. The box
-    # count is SHARED STATE that a concurrent run owns as much as this suite does, so it is PRINTED and
-    # the rebuild is what is asserted.
     del session
     restored = rebuild_fixture(restore=os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") != "1")
     check("the shared fixture was GIVEN BACK, so the next suite reads what it expects", restored,
@@ -502,9 +337,8 @@ def main():
         return 1
 
     print("RESULT: PASS (%d check(s) run)" % checks_run[0])
-    print("; LIMIT, STATED RATHER THAN HIDDEN: the shared fixture exercises the MERGE item only. "
-          "Crossings and in-block reroutes are asserted ABSENT on it, so their positive paths are "
-          "built and unexercised - see the docstring.")
+    print("; Scope: native connection and cleanup cases plus the saved merge fixture. "
+          "Rendered equivalence and graph layout require separate visual evidence.")
     return 0
 
 

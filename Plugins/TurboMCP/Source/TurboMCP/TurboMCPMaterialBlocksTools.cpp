@@ -28,10 +28,6 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPMaterialBlocks(const FString& As
 		return FTurboMCPToolError::AsError(Error);
 	}
 
-	// A MATERIAL THAT ALREADY FOLLOWS D-17 IS AN ANSWER RATHER THAN A REFUSAL, and it is the answer this
-	// capability exists to give on a material that is already shaped correctly. `RenderPreview` prints it
-	// with the block count and the number of expressions in no block, so "nothing to change" can never be
-	// confused with "nothing was looked at".
 	return FTurboMCPMaterialBlocks::RenderPreview(Plan);
 }
 
@@ -50,9 +46,6 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialBlocks(const FString& Asset)
 		return FTurboMCPToolError::AsError(Error);
 	}
 
-	// THE ROLLBACK MEASUREMENT IS APPENDED HERE RATHER THAN INSIDE `Apply`, because it is produced in a
-	// destructor there - after the report has already been built - so `Apply` can only hand it back through
-	// this out-parameter. A successful pass leaves it empty.
 	FString RollbackNote;
 	FString Out = FTurboMCPMaterialBlocks::Apply(Plan, RollbackNote);
 	Out += RollbackNote;

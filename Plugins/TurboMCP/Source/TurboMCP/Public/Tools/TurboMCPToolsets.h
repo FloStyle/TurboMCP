@@ -1289,7 +1289,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	/**
 	 * Plan material label and reroute cleanup using the loaded graph. Does not compile, change graph data or save.
 	 * Uses existing comment boxes as blocks. Review planned removals before editing. Matching expression identities and compile errors do not prove identical links, values or rendered output.
-	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; explicitly name the parent. A material without comment boxes has no block boundaries to clean up.
+	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances and material functions are refused. For an instance, explicitly name its parent material. Blocks are existing comment boxes; this tool does not create boxes or perform a full graph layout.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPMaterialBlocks(
@@ -2176,7 +2176,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	/**
 	 * Add labels, rewire inputs and delete redundant usage/reroute nodes in an undo transaction; recompiles materials and runs editor callbacks, does not save, and verifies only expression identities after attempted rollback.
 	 * Uses existing comment boxes as blocks. Review planned removals before editing. Matching expression identities and compile errors do not prove identical links, values or rendered output.
-	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; explicitly name the parent. A material without comment boxes has no block boundaries to clean up.
+	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances and material functions are refused. For an instance, explicitly name its parent material. Blocks are existing comment boxes; this tool does not create boxes or perform a full graph layout.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPMaterialBlocks(

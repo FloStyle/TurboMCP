@@ -29,7 +29,7 @@ class UMaterialFunctionInterface;
 class FTurboMCPMaterialBlocks
 {
 public:
-	/** A value read from more than one block with no label, which D-17 says must travel as a label. */
+	/** A value read from more than one block with no label, to promote to a named reroute. */
 	struct FCrossing
 	{
 		/** The expression producing the value. */
@@ -54,17 +54,10 @@ public:
 		/** How many inputs would be retargeted onto the new label. */
 		int32 InputsToRetarget = 0;
 
-		/**
-		 * The keys of every reader input this would touch, as `<readerKey>#<inputIndex>`.
-		 *
-		 * CARRIED SO `Apply` CAN RE-RESOLVE THEM, which D-45 requires and which is the difference between
-		 * an edit that does what was previewed and an edit that does what the material happens to look
-		 * like now. An index alone would be wrong after any earlier change in the same run.
-		 */
 		TArray<FString> ConsumerRefs;
 	};
 
-	/** A label read through more than one usage node inside ONE block, which D-17 forbids. */
+	/** A label read through more than one usage node inside one block. */
 	struct FMerge
 	{
 		/** The label's name, which is what the report names. */
@@ -73,17 +66,9 @@ public:
 		/** The block the redundant usages sit in. */
 		int32 BlockIndex = INDEX_NONE;
 
-		/**
-		 * The usage node that is KEPT, by key.
-		 *
-		 * THE KEPT ONE IS THE FIRST IN A KEY-ORDERED LIST RATHER THAN AN ARBITRARY POINTER ORDER, so a
-		 * preview and the edit that follows it choose the same node. Pointer order is stable within one
-		 * run and meaningless across two, and a preview that disagrees with its own edit is worse than no
-		 * preview - a rule this project states for every `P/E` pair.
-		 */
 		FString KeepKey;
 
-		/** Every usage node to remove, by key, with the class and title D-45 requires. */
+		/** Keys of the usage nodes to remove. */
 		TArray<FString> RemoveKeys;
 
 		/** How many reader inputs would be re-pointed at the kept usage node. */
@@ -159,17 +144,9 @@ public:
 		/** Connection and layout state used to reject stale plans before mutation. */
 		FString ConnectionSnapshot;
 
-
 		/** Every expression key as this pass found them, so the caller can compare sets. */
 		TArray<FString> KeysBefore;
 
-		/**
-		 * True when at least one expression carries a graph node.
-		 *
-		 * REPORTED RATHER THAN ASSUMED, because it tells a caller whether they are looking at a material
-		 * the editor built or one built headlessly - the difference between a graph a human can open and
-		 * one only the compiler can see.
-		 */
 		bool bHasGraphNodes = false;
 
 		/** Anything that could not be done, named rather than silently skipped. */
@@ -188,13 +165,6 @@ public:
 		}
 	};
 
-	/**
-	 * Plans the changes and changes nothing.
-	 *
-	 * THE CHECKS LIVE HERE RATHER THAN IN `Apply`, so the Preview and its Edit twin refuse the SAME
-	 * input - a rule this project states for every `P/E` pair because a Preview that accepts what the
-	 * Edit rejects is worse than no Preview.
-	 */
 	static bool Plan(const FString& InAsset, FPlan& OutPlan, FString& OutError);
 
 	/**
