@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "workflow": "WF-MATERIAL-INSTANCE-QUALITY",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPMaterialInstance",
+    "EditTurboMCPMaterialInstanceSet"
+  ],
+  "scenario": "Read a three-level instance chain, preserve inherited/local identities, reject invalid texture batches, apply a texture override, repeat without mutation, and render before/after appearance.",
+  "source_findings": [
+    "Inherited parameters appeared once per ancestor instead of once using the nearest value.",
+    "Name-only override identity ignored type, layer/blend association and index.",
+    "Local static-switch overrides were missing.",
+    "Repeated identical texture edits dirtied the instance and reported changed."
+  ],
+  "evidence": [
+    {
+      "run": "d48a3c007ae44b6d8ce96fe5df39a9e7",
+      "result": "passed",
+      "scope": "Inheritance and existing incompatible-sampler refusal workflow."
+    },
+    {
+      "run": "aa86799228ee4b14a8f682e112263378",
+      "result": "passed",
+      "scope": "Adds texture edit/read-back, invalid mixed-batch preservation, clean no-op and parent preservation."
+    },
+    {
+      "run": "228c6b30e9264deea67fd8af702244df",
+      "result": "failed",
+      "scope": "Visual fixture build used a nonexistent SlateMaterialBrush header; replaced with stock FSlateBrush."
+    }
+  ],
+  "limitations": [
+    "Editor supports texture overrides only, not scalar/vector/static-switch editing.",
+    "Layered-parameter identity fixes need focused evidence; no exhaustive sampler or material-layer claim.",
+    "Visual capture and final acceptance pending."
+  ],
+  "remaining": [
+    "Finish visual test and inspect PNGs.",
+    "Finish prose/help/code review and offline gate."
+  ]
+}
