@@ -218,13 +218,7 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		return false;
 	}
 
-	// THE COMPILED-RESULT BASELINE IS TAKEN BEFORE ANYTHING IS PLANNED. Measuring afterwards and calling
-	// the result "before" is how a pass reports success on a material it already changed.
-	if (OutPlan.Material != nullptr)
-	{
-		OutPlan.StateIdBefore = OutPlan.Material->StateId;
-		OutPlan.CompileErrorsBefore = UMaterialEditingLibrary::RecompileMaterial(OutPlan.Material);
-	}
+	// Planning only inspects the loaded graph. Compilation belongs to Apply, not preview.
 
 	for (UMaterialExpression* Expression : Read.Expressions)
 	{
@@ -939,6 +933,12 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		return FString::Printf(TEXT("error: %s has no material to change blocks in"), *InPlan.Asset);
 	}
 
+	// Capture compile diagnostics only for an edit that has work to apply.
+	// Compilation can invoke editor callbacks; preview and no-op edits must avoid it.
+	const FGuid StateIdBefore = InPlan.Material->StateId;
+	const TArray<FString> CompileErrorsBefore =
+		UMaterialEditingLibrary::RecompileMaterial(InPlan.Material);
+
 	// Group graph changes in one transaction; rollback checks expression identities only.
 	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "MaterialBlocks",
 		"TurboMCP: make labels follow blocks"));
@@ -1304,7 +1304,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 
 	// A NEW ERROR IS THE FAILURE SIGNAL, not any error. A material that ALREADY had a compiler error
 	// before this pass must not make this pass fail - that would be blaming the edit for what it found.
-	TSet<FString> const ErrorsBefore(InPlan.CompileErrorsBefore);
+	TSet<FString> const ErrorsBefore(CompileErrorsBefore);
 	TArray<FString> NewErrors;
 	for (const FString& Error : CompileErrorsAfter)
 	{
@@ -1373,7 +1373,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		KeysAfter.Num(), InPlan.KeysBefore.Num(), PlannedRemovals.Num(),
 		GainedUnexpected.Num() == 0 ? PlannedGains.Num() : 0,
 		CompileErrorsAfter.Num(),
-		*InPlan.StateIdBefore.ToString(), *Material->StateId.ToString());
+		*StateIdBefore.ToString(), *Material->StateId.ToString());
 
 	// THE ITEM COUNT IS COMPARED AGAINST THE PLAN RATHER THAN RESTATED. `InPlan.ItemCount()` is the list
 	// the Preview printed, so this line is the assertion that the edit did what it was authorised to do
