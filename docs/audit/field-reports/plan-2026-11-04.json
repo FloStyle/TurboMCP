@@ -70,7 +70,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "reproduced_fix_candidate_testing",
       "source_ids": [
         "GC-83"
       ],
@@ -78,7 +78,19 @@
         "2026-11-03_S1/GC-83"
       ],
       "dependencies": [],
-      "next_step": "Reproduce AssignDelegate placement followed by explicit existing-event wiring. Stock UK2Node_AssignDelegate::PostPlacedNewNode creates an event; current append counts only returned nodes. Verify before attributing field cause."
+      "next_step": "Candidate 11f3cfdd tracks engine-created companions and removes newly generated disconnected delegate events; supervised build/workflow run 1bdcdd001ad24828b537aa1f17ee792d is pending. Do not mark resolved until explicit-handler preservation and reporting pass.",
+      "evidence": [
+        {
+          "run": "d82350a508684b99b7568b6116432397",
+          "result": "failed",
+          "scope": "Initial synthetic fixture correctly refused because assignment lacked an execution entry; not evidence of delegate regression."
+        },
+        {
+          "run": "c2486722bab6433da4487dfa4f2e5b02",
+          "result": "failed",
+          "scope": "Connected assignment created its companion event but did not report the engine-created addition. Production reporting defect reproduced."
+        }
+      ]
     },
     {
       "id": "NOV04-04",
@@ -88,7 +100,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_confirmed_runtime_pending",
       "source_ids": [
         "NT-11"
       ],
@@ -96,7 +108,7 @@
         "2026-10-30_S4/NT-11"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Source reconciliation: FTurboMCPNodePins::Plan in TurboMCPNodeType.cpp formats category/subcategory and arrays only; map value types, set containers and subtype objects are omitted. Scope a complete pin-type formatter and schema mismatch reason in append, then verify map-to-scalar refusal with a disposable fixture."
     },
     {
       "id": "NOV04-05",
