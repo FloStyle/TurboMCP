@@ -59,6 +59,7 @@ namespace
                 if (Box) Entries.Add(FString::Printf(TEXT("box:%d:%d:%d:%d:%s"),
                     Box->MaterialExpressionEditorX, Box->MaterialExpressionEditorY, Box->SizeX, Box->SizeY, *Box->Text));
         }
+        if (Read.Material) Entries.Add(FString::Printf(TEXT("root:%d:%d"), Read.Material->EditorX, Read.Material->EditorY));
         Entries.Sort();
         return FString::Join(Entries, TEXT("\n"));
     }
@@ -76,7 +77,7 @@ namespace
 		double& OutWidth, double& OutHeight, bool& bOutFallback)
 	{
 		OutWidth = FTurboMCPMaterialTidy::FallbackWidth;
-		OutHeight = FTurboMCPMaterialTidy::FallbackHeight;
+		OutHeight = InExpression && InExpression->HasAParameterName() ? 260.0 : FTurboMCPMaterialTidy::FallbackHeight;
 		bOutFallback = true;
 
 		// A COMMENT HAS A REAL SIZE, and using the fallback for it would be wrong in a way that shows:
@@ -322,33 +323,24 @@ bool FTurboMCPMaterialTidy::Plan(const FString& InAsset, bool bInForce,
 			Block.Right = ColumnLeft + ColumnWidth + FitPadding;
 			Block.Bottom = (Top - VerticalNodeGap) + FitPadding;
 
-			// THE BOX NAMES WHAT IT HOLDS. A box labelled only "column 3" tells a reader nothing, and the
-			// whole value of a block box is that it says what the block of logic is.
-			{
-				TArray<FString> Captions;
-				for (const int32 Index : Members)
-				{
-					const FString Caption = OutPlan.Nodes[Index].Expression != nullptr
-						? OutPlan.Nodes[Index].Expression->GetClass()->GetName()
-						: FString(TEXT("(unknown)"));
-					Captions.AddUnique(Caption);
-				}
-				Captions.Sort();
-				Block.Text = Captions.Num() > 0
-					? FString::Printf(TEXT("block %d: %s"), Column, *FString::Join(Captions, TEXT(", ")))
-					: FString::Printf(TEXT("block %d"), Column);
-			}
+            // Keep generated titles short enough to remain readable at graph zoom.
+            Block.Text = FString::Printf(TEXT("Stage %d"), Columns.Num() - Column);
 
 			OutPlan.Blocks.Add(MoveTemp(Block));
 			ColumnLeft = OutPlan.Blocks.Last().Right + BoxGap;
 		}
 	}
 
+    OutPlan.PlannedOutputX = OutPlan.Blocks.IsEmpty() ? Read.Material->EditorX :
+        FMath::RoundToInt(OutPlan.Blocks.Last().Right + BoxGap);
+    OutPlan.PlannedOutputY = 0;
+
 	// ALREADY TIDY IS A REAL ANSWER AND IT IS MEASURED RATHER THAN GUESSED: every expression is where
 	// this pass would put it. Saying `unchanged` for a material it would not move is what makes the
 	// pass safe to run twice.
 	{
-		bool bAllInPlace = OutPlan.Blocks.Num() > 0 && OutPlan.Nodes.Num() > 0;
+		bool bAllInPlace = OutPlan.Blocks.Num() > 0 && OutPlan.Nodes.Num() > 0 &&
+            Read.Material->EditorX == OutPlan.PlannedOutputX && Read.Material->EditorY == OutPlan.PlannedOutputY;
 		for (const FNode& Node : OutPlan.Nodes)
 		{
 			if (FMath::Abs(Node.PlannedX - static_cast<double>(Node.X)) > 1.0
@@ -483,6 +475,9 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 	int32 BoxesWritten = 0;
 
 	UMaterial* Material = InPlan.Material;
+    Material->Modify();
+    Material->EditorX = InPlan.PlannedOutputX;
+    Material->EditorY = InPlan.PlannedOutputY;
 	FMaterialExpressionCollection& Collection = Material->GetExpressionCollection();
 
 	// ---------------------------------------------------------------------------------------------

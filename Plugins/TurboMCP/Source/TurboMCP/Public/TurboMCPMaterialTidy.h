@@ -162,6 +162,8 @@ public:
 		FString Asset;
 		FString AssetName;
 		FString ConnectionSnapshot;
+		int32 PlannedOutputX = 0;
+		int32 PlannedOutputY = 0;
 
 		/** The material, when the asset is one. Null for a material function. */
 		UMaterial* Material = nullptr;
