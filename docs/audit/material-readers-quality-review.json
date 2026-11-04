@@ -13,7 +13,8 @@
   "source_findings": [
     "Shared instance refusal suggested a parameter absent from three reader schemas; candidate now directs callers to ReadTurboMCPMaterialInstance.",
     "Legacy test described unchanged counts as proof of no graph mutation; claims now distinguish report stability from independent state verification.",
-    "Duplicate label declarations overwrite one another in the name map; promised ambiguity reporting is absent. Repair and focused evidence pending."
+    "Duplicate label declarations overwrite one another in the name map; promised ambiguity reporting is absent. Repair and focused evidence pending.",
+    "Load with instance overrides has a separate legacy table that omits parameter indices and double vectors and can imply complete equivalence with the parent. Reuse of the accepted instance reader is under review."
   ],
   "evidence": [
     {
@@ -25,6 +26,11 @@
       "run": "2ba26936370f457db3c4692b87c541ed",
       "result": "passed",
       "scope": "Immutable candidate: material/function reading, four reader help checks and actionable instance refusal, constants, labels, trace choices, blocks and repeated report stability."
+    },
+    {
+      "run": "63331557aa93414eb91b143a79766bc5",
+      "result": "failed",
+      "scope": "Duplicate-label regression fixture used auto* for TObjectPtr entries and failed compilation; corrected explicit iteration type. No engine changes."
     }
   ],
   "remaining": [
