@@ -5,6 +5,7 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "TurboMCPNodeType.h"
+#include "TurboMCPNodeId.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
@@ -26,6 +27,11 @@ bool FTurboMCPDelegateAppendTest::RunTest(const FString& Parameters)
     if (!TestNotNull(TEXT("Fixture Blueprint"), BP)) return false;
     UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("DelegateGraph"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
     BP->UbergraphPages.Add(Graph);
+    UK2Node_CustomEvent* Entry = NewObject<UK2Node_CustomEvent>(Graph, NAME_None, RF_Transactional);
+    Entry->CustomFunctionName = TEXT("RegisterHandler");
+    Graph->AddNode(Entry, false, false);
+    Entry->CreateNewGuid();
+    Entry->AllocateDefaultPins();
     FKismetEditorUtilities::CompileBlueprint(BP);
     FString AssignId;
     for (const FString& Id : FTurboMCPNodeType::AvailableTypeIds(BP, Graph))
@@ -35,7 +41,7 @@ bool FTurboMCPDelegateAppendTest::RunTest(const FString& Parameters)
     const int32 Before = Graph->Nodes.Num();
     FTurboMCPGraphAppend::FPlan Plan;
     FString Error, Report;
-    const FString Text = FString::Printf(TEXT("(\"%s\"\n)"), *AssignId);
+    const FString Text = FString::Printf(TEXT("(\"%s\"\n execute (-> %s:then))"), *AssignId, *TurboMCPNodeId::MakeForNode(Entry, true));
     if (!TestTrue(TEXT("Delegate append plans"), FTurboMCPGraphAppend::Plan(BP->GetPathName(), Graph->GetName(), Text, Plan, Error))) { AddError(Error); return false; }
     TestEqual(TEXT("Preview leaves live node count unchanged"), Graph->Nodes.Num(), Before);
     if (!TestTrue(TEXT("Delegate append applies"), FTurboMCPGraphAppend::Apply(Plan, Report, Error))) { AddError(Error); return false; }
