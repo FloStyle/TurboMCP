@@ -15,6 +15,7 @@
 #include "Math/Color.h"
 #include "Misc/Guid.h"
 #include "MaterialExpressionIO.h"
+#include "Math/IntPoint.h"
 
 class UMaterial;
 class UMaterialExpression;
@@ -72,6 +73,8 @@ public:
 
 		/** Exact selected output and channel mask forwarded by the label. */
 		FExpressionInput SourceConnection;
+		FIntPoint DeclarationPosition;
+		TMap<FString, FIntPoint> UsagePositions;
 
 		/** Its key, so the report and the check agree on identity. */
 		FString SourceKey;

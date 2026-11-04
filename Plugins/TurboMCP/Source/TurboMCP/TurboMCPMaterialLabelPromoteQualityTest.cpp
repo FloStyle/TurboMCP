@@ -44,6 +44,8 @@ bool FTurboMCPMaterialLabelPromoteQualityTest::RunTest(const FString& Parameters
     Existing->Name = TEXT("ExistingRed");
     Existing->Input = Readers[0]->A;
     Material->GetExpressionCollection().AddExpression(Existing);
+    Existing->MaterialExpressionEditorY = 300;
+    Material->EditorX = 1100; Material->EditorY = 0;
     Material->GetEditorOnlyData()->BaseColor.Connect(0, Readers[0]);
     Material->GetEditorOnlyData()->Roughness.Connect(0, Readers[1]);
     Package->SetDirtyFlag(false);

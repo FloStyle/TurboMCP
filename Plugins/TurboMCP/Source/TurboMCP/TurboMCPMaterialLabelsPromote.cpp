@@ -346,6 +346,48 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 		OutPlan.Promotions.Add(MoveTemp(Promotion));
 	}
 
+    // Reserve conservative node envelopes before mutation. Existing positions never change.
+    struct FOccupied { double X, Y, W, H; };
+    TArray<FOccupied> Occupied;
+    for (UMaterialExpression* Expression : Read.Expressions)
+        if (Expression) Occupied.Add({double(Expression->MaterialExpressionEditorX), double(Expression->MaterialExpressionEditorY),
+            double(FMath::Max(240, FTurboMCPMaterial::CaptionOf(Expression).Len() * 9 + 60)), 220.0});
+    Occupied.Add({double(Read.Material->EditorX), double(Read.Material->EditorY), 260.0, 800.0});
+    auto Reserve = [&](double X, double Y, double Width, FIntPoint& Result) -> bool
+    {
+        for (int32 Attempt = 0; Attempt < 4096; ++Attempt, Y += 128.0)
+        {
+            if (X < MIN_int32 || X > MAX_int32 - Width || Y < MIN_int32 || Y > MAX_int32 - 128.0) return false;
+            bool bOverlap = false;
+            for (const FOccupied& Box : Occupied)
+                if (X < Box.X + Box.W + 24 && X + Width + 24 > Box.X && Y < Box.Y + Box.H + 24 && Y + 124 > Box.Y)
+                { bOverlap = true; break; }
+            if (!bOverlap)
+            {
+                Result = FIntPoint(int32(X), int32(Y));
+                Occupied.Add({X, Y, Width, 100.0});
+                return true;
+            }
+        }
+        return false;
+    };
+    for (FPromotion& Promotion : OutPlan.Promotions)
+    {
+        const double Width = FMath::Max(180, Promotion.ProposedName.Len() * 9 + 60);
+        if (!Promotion.bAlreadyDeclared && !Reserve(Promotion.Source->MaterialExpressionEditorX,
+            double(Promotion.Source->MaterialExpressionEditorY) + 244, Width, Promotion.DeclarationPosition))
+        { OutError = TEXT("No safe space found for a new label. Reorganize the material and preview again. Nothing changed."); return false; }
+        for (const FConsumer& Consumer : Promotion.Consumers)
+        {
+            if (Promotion.UsagePositions.Contains(Consumer.ReaderKey)) continue;
+            FIntPoint Position;
+            if (!Reserve(double(Consumer.Reader->MaterialExpressionEditorX) - Width - 48,
+                Consumer.Reader->MaterialExpressionEditorY, Width, Position))
+            { OutError = TEXT("No safe space found for a label usage. Reorganize the material and preview again. Nothing changed."); return false; }
+            Promotion.UsagePositions.Add(Consumer.ReaderKey, Position);
+        }
+    }
+
 	OutPlan.bNothingToPromote = OutPlan.Promotions.Num() == 0;
 
 
@@ -487,8 +529,8 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 				Material, /*MaterialFunction=*/nullptr,
 				UMaterialExpressionNamedRerouteDeclaration::StaticClass(),
 				/*SelectedAsset=*/nullptr,
-				Promotion.Source->MaterialExpressionEditorX,
-				Promotion.Source->MaterialExpressionEditorY + 120,
+				Promotion.DeclarationPosition.X,
+				Promotion.DeclarationPosition.Y,
 				/*bAllowMarkingPackageDirty=*/true);
 
 			Declaration = Cast<UMaterialExpressionNamedRerouteDeclaration>(Created);
@@ -565,8 +607,8 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 					Material, /*MaterialFunction=*/nullptr,
 					UMaterialExpressionNamedRerouteUsage::StaticClass(),
 					/*SelectedAsset=*/nullptr,
-					Consumer.Reader->MaterialExpressionEditorX - 150,
-					Consumer.Reader->MaterialExpressionEditorY,
+					Promotion.UsagePositions[Consumer.ReaderKey].X,
+					Promotion.UsagePositions[Consumer.ReaderKey].Y,
 					/*bAllowMarkingPackageDirty=*/true);
 
 				Usage = Cast<UMaterialExpressionNamedRerouteUsage>(CreatedUsage);
