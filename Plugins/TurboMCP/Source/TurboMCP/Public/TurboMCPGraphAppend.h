@@ -20,6 +20,8 @@ class UEdGraphPin;
 /**
  * Add nodes and explicitly requested connections to an existing graph.
  * Existing nodes are retained; connecting an occupied input may replace its link.
+ * Engine-created companions are included in the result. A newly generated delegate
+ * event is removed only if requested wiring leaves it completely disconnected.
  * Plan parses the shared graph-text grammar and validates identities and pins.
  * Public preview also executes on a scratch graph. Edit replans against current
  * state and checks the live result. A failed live edit attempts undo but cannot

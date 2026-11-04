@@ -22,6 +22,8 @@
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "EdGraphSchema_K2.h"
+#include "K2Node_AssignDelegate.h"
+#include "K2Node_CustomEvent.h"
 #include "Engine/Blueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "ScopedTransaction.h"
@@ -401,6 +403,8 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		// list. `UBlueprintNodeSpawner::SpawnNode` calls `ParentGraph->Modify()`; using the real graph would
 		// mark the asset dirty even though the probe is removed again. A transient graph makes that
 		// `MarkPackageDirty` a no-op while preserving the same action filtering, class and pin resolution.
+        TSet<UEdGraphNode*> BeforeSpawn;
+        for (UEdGraphNode* Node : Graph->Nodes) if (Node) BeforeSpawn.Add(Node);
 		FString SpawnNote;
 		UEdGraphNode* Probe = FTurboMCPNodeType::BuildProbeNode(Blueprint, Graph, Form.TypeId,
 			SpawnNote);
@@ -1054,6 +1058,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 	TArray<FString> MovedLinkReports;
     TArray<TPair<UEdGraphNode*,UEdGraphPin*>> PendingContinuations;
 	TArray<UEdGraphNode*> Created;
+    TArray<UEdGraphNode*> EngineCreated;
+    TSet<UEdGraphNode*> GeneratedDelegateEvents;
 	TArray<const FPlannedPosition*> PositionByForm;
 	if (InPlan.bPlacementRequested)
 	{
@@ -1075,6 +1081,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 			continue;
 		}
 
+        TSet<UEdGraphNode*> BeforeSpawn;
+        for (UEdGraphNode* Node : Graph->Nodes) if (Node) BeforeSpawn.Add(Node);
 		FString SpawnNote;
 		UEdGraphNode* Made = nullptr;
 		const FTurboMCPNodeType::ESpawnResult Result =
@@ -1095,6 +1103,18 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 				Form.Line, *Form.TypeId, *SpawnNote, RollbackStatus(true));
 			return false;
 		}
+
+        // Spawners can add companion nodes. Track the actual delta, not only their return value.
+        for (UEdGraphNode* Node : Graph->Nodes)
+        {
+            if (!Node || Node == Made || BeforeSpawn.Contains(Node)) continue;
+            EngineCreated.AddUnique(Node);
+            if (UK2Node_AssignDelegate* Assignment = Cast<UK2Node_AssignDelegate>(Made))
+                if (UK2Node_CustomEvent* Event = Cast<UK2Node_CustomEvent>(Node))
+                    if (UEdGraphPin* DelegatePin = Assignment->GetDelegatePin())
+                        for (UEdGraphPin* Linked : DelegatePin->LinkedTo)
+                            if (Linked && Linked->GetOwningNode() == Event) GeneratedDelegateEvents.Add(Event);
+        }
 
 		if (InPlan.bPlacementRequested)
 		{
@@ -1517,6 +1537,27 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
         }
     }
 
+    // An explicit delegate input can supersede the spawner's empty event. Remove only
+    // an event created by this invocation that has become entirely disconnected.
+    // Existing events and any companion with a surviving connection remain untouched.
+    int32 RemovedGeneratedEvents = 0;
+    for (UEdGraphNode* Node : EngineCreated)
+    {
+        if (!Node || !Graph->Nodes.Contains(Node)) continue;
+        bool HasConnections = false;
+        for (const UEdGraphPin* Pin : Node->Pins)
+            if (Pin && !Pin->LinkedTo.IsEmpty()) HasConnections = true;
+        if (GeneratedDelegateEvents.Contains(Node) && !HasConnections)
+        {
+            Node->Modify();
+            Node->DestroyNode();
+            ++RemovedGeneratedEvents;
+            continue;
+        }
+        Created.Add(Node);
+        CreatedByLine.Add(TEXT("engine-created companion"));
+    }
+
 	// Mark the in-memory edit and verify live node identity. Compilation is explicit.
 	if (!bScratch) FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 
@@ -1560,10 +1601,11 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 	Out += FString::Printf(TEXT("\n%d of %d created node(s) are in the graph after the write"),
 		Survived, Created.Num());
 
+    Out += FString::Printf(TEXT("\n%d superseded, disconnected engine-created event(s) removed; existing nodes preserved"), RemovedGeneratedEvents);
     for (const UEdGraphNode* CreatedNode : Created)
         if (CreatedNode && Graph->Nodes.Contains(CreatedNode))
             Out += FString::Printf(TEXT("\ncreated %s: type %s"),
-                *TurboMCPNodeId::MakeForNode(CreatedNode, true), *TurboMCPNodeId::GetNodeTypeId(CreatedNode));
+                *TurboMCPNodeId::MakeForNode(CreatedNode, true), *(TurboMCPNodeId::GetNodeTypeId(CreatedNode) + (EngineCreated.Contains(CreatedNode) ? TEXT(" (engine-created companion)") : TEXT(""))));
 
 	if (Unmatched.Num() > 0)
 	{

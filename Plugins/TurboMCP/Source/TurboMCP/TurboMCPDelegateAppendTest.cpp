@@ -14,6 +14,7 @@
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_AssignDelegate.h"
 #include "UObject/Package.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPDelegateAppendTest,
@@ -49,6 +50,26 @@ bool FTurboMCPDelegateAppendTest::RunTest(const FString& Parameters)
     const int32 Added = Graph->Nodes.Num() - Before;
     TestTrue(TEXT("Fixture creates delegate and generated event"), Added >= 2);
     TestTrue(TEXT("Report identifies engine-created additions"), Report.Contains(TEXT("engine-created")));
-    return true;
+    UK2Node_CustomEvent* Handler = nullptr;
+    UK2Node_AssignDelegate* Assignment = nullptr;
+    for (UEdGraphNode* Node : Graph->Nodes)
+    {
+        if (auto* Event = Cast<UK2Node_CustomEvent>(Node)) if (Event != Entry) Handler = Event;
+        if (auto* Delegate = Cast<UK2Node_AssignDelegate>(Node)) Assignment = Delegate;
+    }
+    if (!TestNotNull(TEXT("Generated handler"), Handler) || !TestNotNull(TEXT("Assignment"), Assignment)) return false;
+    const FString HandlerId = TurboMCPNodeId::MakeForNode(Handler, true);
+    TestTrue(TEXT("Generated handler ID is reported"), Report.Contains(HandlerId));
+    const int32 BeforeExplicit = Graph->Nodes.Num();
+    const FString ExplicitText = FString::Printf(
+        TEXT("(\"%s\"\n execute (-> %s:then)\n %s (-> %s:%s))"), *AssignId,
+        *TurboMCPNodeId::MakeForNode(Assignment, true), *Assignment->GetDelegatePin()->PinName.ToString(),
+        *HandlerId, *UK2Node_CustomEvent::DelegateOutputName.ToString());
+    if (!TestTrue(TEXT("Explicit existing handler plans"), FTurboMCPGraphAppend::Plan(BP->GetPathName(), Graph->GetName(), ExplicitText, Plan, Error))) { AddError(Error); return false; }
+    if (!TestTrue(TEXT("Explicit existing handler applies"), FTurboMCPGraphAppend::Apply(Plan, Report, Error))) { AddError(Error); return false; }
+    TestEqual(TEXT("Only requested assignment remains added"), Graph->Nodes.Num(), BeforeExplicit + 1);
+    TestTrue(TEXT("Pre-existing handler retained"), Graph->Nodes.Contains(Handler));
+    TestTrue(TEXT("Cleanup is reported"), Report.Contains(TEXT("1 superseded, disconnected engine-created event(s) removed")));
+    return !HasAnyErrors();
 }
 #endif
