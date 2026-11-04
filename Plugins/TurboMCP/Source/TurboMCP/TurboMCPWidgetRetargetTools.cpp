@@ -13,14 +13,8 @@
 
 #include "TurboMCPWidgetRetarget.h"
 
-/**
- * `P-WIDGET-RETARGET` and `E-WIDGET-RETARGET`.
- *
- * ONE CODE PATH, TWO OUTCOMES. `FTurboMCPWidgetRetarget::Plan` finds the bindings and decides
- * which ones the widgets' CURRENT classes can still satisfy; the Preview prints that and the Edit
- * applies exactly it. The decision is the engine's own — a binding's delegate is looked for on the
- * widget's current class, which is what `FDelegateEditorBinding::IsBindingValid` does — so a
- * binding this tool calls broken is one the engine's compiler would reject.
+/** Preview inspects delegate presence; edit removes bindings with missing targets.
+ * Neither operation certifies function signatures or changes graph nodes.
  */
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPWidgetRetarget(const FString& Asset)

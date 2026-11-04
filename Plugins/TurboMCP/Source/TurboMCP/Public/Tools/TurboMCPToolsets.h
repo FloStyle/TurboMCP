@@ -877,7 +877,7 @@ public:
 		const FString& FunctionOrEvent);
 
 	/**
-	 * Inspect widget bindings for missing widgets or delegates; loads the asset but does not remove bindings, compile or save it.
+	 * Inspect widget bindings for missing widgets or delegates without validating function signatures, removing bindings, compiling or saving.
 	 * Reports stale call nodes without editing them. Delegate presence does not validate the bound function or its signature.
 	 * @param Asset Required Widget Blueprint path or unique name, e.g. /Game/Tests/WBP_NodeTest. Empty, unresolved and non-Widget Blueprint assets are refused.
 	 */
@@ -1751,7 +1751,7 @@ public:
 	static FString EditTurboMCPFunctionRemove(const FString& Asset, const FString& Name);
 
 	/**
-	 * Remove bindings whose widget or delegate is missing; changes the asset in memory without compiling or saving, and does not create a dedicated undo transaction.
+	 * Remove bindings whose widget or delegate is missing without validating function signatures; changes stay in memory with no compile, save or dedicated undo transaction.
 	 * Rechecks bindings before removal and reports remaining delegate failures. Keeps other bindings and leaves reported call nodes unchanged. Does not validate bound functions or signatures.
 	 * @param Asset Required Widget Blueprint path or unique name, e.g. /Game/Tests/WBP_NodeTest. Empty, unresolved and non-Widget Blueprint assets are refused.
 	 */
