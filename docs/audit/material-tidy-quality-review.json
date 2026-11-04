@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "status": "verification_in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPMaterialTidy",
     "EditTurboMCPMaterialTidy"
@@ -45,11 +45,14 @@
       "run": "8e086c954a30447b8a09394676048f73",
       "result": "failed",
       "scope": "Native passed; exported help omitted no-save contract because only first sentence was exposed."
+    },
+    {
+      "run": "e64e4039e92a4452897bf4bdde635dce",
+      "result": "passed",
+      "scope": "Expanded native workflow, rendered preservation, exported help and function refusals; saved-fixture 23 checks."
     }
   ],
-  "remaining": [
-    "Final exported-help workflow and offline checks pending; integration and coverage update pending."
-  ],
+  "remaining": [],
   "limitations": [
     "Material assets only; functions and instances refused.",
     "Estimated expression geometry, not measured Slate bounds; arbitrary material node classes can differ.",
@@ -58,5 +61,8 @@
     "Failure requests undo without certifying restoration; compilation can invoke editor callbacks.",
     "Legacy Force does not rewrite an already matching layout; edit replans current state."
   ],
-  "scope_gate": "PASS: 4b80a15f21b7a710a4e993aef765f2717a8ac824 to 342279f789d8988324563aa52cde50862ba4592a"
+  "scope_gate": "PASS: 4b80a15f21b7a710a4e993aef765f2717a8ac824 to 342279f789d8988324563aa52cde50862ba4592a",
+  "native_run": "e64e4039e92a4452897bf4bdde635dce",
+  "offline_run": "6de9b59b96694938a603931038d1b7b3",
+  "offline_result": "26 checks passed"
 }

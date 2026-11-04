@@ -1414,6 +1414,29 @@
         "No persistent approval token; edit replans current state."
       ],
       "evidence": "8cdfa304307943bc86e59659d09cd15a"
+    },
+    {
+      "id": "WF-MATERIAL-TIDY-QUALITY",
+      "title": "Material tidy with branching inputs, named reroutes and preserved comments",
+      "status": "scenario_accepted",
+      "review": "docs/audit/material-tidy-quality-review.json",
+      "focus_tools": [
+        "PreviewTurboMCPMaterialTidy",
+        "EditTurboMCPMaterialTidy"
+      ],
+      "tools_used": [
+        "PreviewTurboMCPMaterialTidy",
+        "EditTurboMCPMaterialTidy"
+      ],
+      "limitations": [
+        "Material assets only; functions and instances refused.",
+        "Estimated expression geometry, not measured Slate bounds; arbitrary material node classes can differ.",
+        "Existing comment boxes at planned left edges are reused; other boxes are preserved.",
+        "Compiler, identity and wiring checks plus fixture pixel comparison are not universal semantic-equivalence proof.",
+        "Failure requests undo without certifying restoration; compilation can invoke editor callbacks.",
+        "Legacy Force does not rewrite an already matching layout; edit replans current state."
+      ],
+      "evidence": "e64e4039e92a4452897bf4bdde635dce"
     }
   ],
   "tool_usage": {
@@ -1994,9 +2017,15 @@
     ],
     "EditTurboMCPMaterialLabelPromote": [
       "WF-MATERIAL-LABEL-PROMOTE-QUALITY"
+    ],
+    "PreviewTurboMCPMaterialTidy": [
+      "WF-MATERIAL-TIDY-QUALITY"
+    ],
+    "EditTurboMCPMaterialTidy": [
+      "WF-MATERIAL-TIDY-QUALITY"
     ]
   },
-  "unique_tools_scenario_reviewed": 163,
+  "unique_tools_scenario_reviewed": 165,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
