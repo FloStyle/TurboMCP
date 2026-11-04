@@ -23,10 +23,10 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
     Value->DefaultValue = FLinearColor(0.2f, 0.7f, 0.9f);
     Material->GetExpressionCollection().AddExpression(Value);
     TArray<UMaterialExpressionAdd*> Readers;
-    for (int32 Index = 0; Index < 2; ++Index)
+    for (int32 Index = 0; Index < 4; ++Index)
     {
         auto* Box = NewObject<UMaterialExpressionComment>(Material, NAME_None, RF_Transactional);
-        Box->MaterialExpressionEditorX = 400 + Index * 600;
+        Box->MaterialExpressionEditorX = 400 + (Index / 2) * 600;
         Box->MaterialExpressionEditorY = 0; Box->SizeX = 500; Box->SizeY = 500;
         Box->Text = FString::Printf(TEXT("Consumer %d"), Index);
         Material->GetExpressionCollection().AddComment(Box);
@@ -35,7 +35,7 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
         Reader->MaterialExpressionEditorX = Box->MaterialExpressionEditorX + 50;
         Reader->MaterialExpressionEditorY = 100;
         // Distinct outputs of one expression are distinct values, not one shared vector.
-        Reader->A.Connect(Index + 1, Value);
+        Reader->A.Connect((Index % 2) + 1, Value);
         Reader->ConstB = 0.0f;
         Material->GetExpressionCollection().AddExpression(Reader);
         Readers.Add(Reader);
@@ -63,7 +63,7 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
             Connection = &Usage->Declaration->Input;
         }
         TestTrue(TEXT("Original source preserved"), Connection->Expression == Value);
-        TestEqual(TEXT("Original source output preserved"), Connection->OutputIndex, Index + 1);
+        TestEqual(TEXT("Original source output preserved"), Connection->OutputIndex, (Index % 2) + 1);
     }
     return true;
 }

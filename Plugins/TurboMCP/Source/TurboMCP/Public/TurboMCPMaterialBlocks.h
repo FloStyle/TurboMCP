@@ -13,6 +13,7 @@
 #include "Containers/UnrealString.h"
 #include "CoreTypes.h"
 #include "Misc/Guid.h"
+#include "MaterialExpressionIO.h"
 
 class UMaterial;
 class UMaterialExpression;
@@ -100,6 +101,10 @@ public:
 
 		/** Its caption, which is what the proposed name is built from. */
 		FString SourceCaption;
+
+		/** Complete source connection, including output selection and component mask. */
+		FExpressionInput SourceConnection;
+		TMap<FString, FExpressionInput> ExpectedConsumers;
 
 		/** The name this pass proposes, taken from the caption. */
 		FString ProposedName;

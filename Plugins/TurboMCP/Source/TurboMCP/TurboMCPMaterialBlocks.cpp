@@ -125,7 +125,30 @@ namespace
 		 * crossing the same boundary.
 		 */
 		UMaterialExpression* Source = nullptr;
+		FExpressionInput SourceConnection;
+		FExpressionInput DirectConnection;
 	};
+
+    // Follow plain reroutes as the compiler does, retaining the complete final input.
+    // A cycle has no usable source and must not become a cleanup candidate.
+    FExpressionInput TracePlainInput(FExpressionInput Input)
+    {
+        TSet<UMaterialExpression*> Visited;
+        while (auto* Reroute = Cast<UMaterialExpressionReroute>(Input.Expression))
+        {
+            if (Visited.Contains(Reroute)) return FExpressionInput();
+            Visited.Add(Reroute);
+            Input = Reroute->Input;
+        }
+        return Input;
+    }
+
+    FString ConnectionKey(const FExpressionInput& Input)
+    {
+        return FString::Printf(TEXT("%s:%d:%d:%d:%d:%d:%d"),
+            *FTurboMCPMaterial::KeyOf(Input.Expression), Input.OutputIndex,
+            Input.Mask, Input.MaskR, Input.MaskG, Input.MaskB, Input.MaskA);
+    }
 
 	/** Every input of every expression in the plan, resolved through plain reroutes. */
 	void GatherLinks(const FTurboMCPMaterial::FPlan& InRead, TArray<FLink>& OutLinks)
@@ -151,7 +174,9 @@ namespace
 				Link.InputIndex = It.Index;
 				Link.InputName = NameOfInput(Expression, It.Index);
 				Link.Direct = Input->Expression;
-				Link.Source = FTurboMCPMaterial::ResolveThroughReroutes(Input->Expression);
+				Link.DirectConnection = *Input;
+				Link.SourceConnection = TracePlainInput(*Input);
+				Link.Source = Link.SourceConnection.Expression;
 				OutLinks.Add(MoveTemp(Link));
 			}
 		}
@@ -283,7 +308,7 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		const UMaterialExpressionNamedRerouteDeclaration* Declaration = Pair.Value;
 		if (Declaration != nullptr && Declaration->Input.Expression != nullptr)
 		{
-			DeclaredSourceKeys.Add(FTurboMCPMaterial::KeyOf(Declaration->Input.Expression));
+			DeclaredSourceKeys.Add(ConnectionKey(TracePlainInput(Declaration->Input)));
 		}
 	}
 
@@ -296,7 +321,7 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 	// read twice inside one block needs no name at all - the block already says they belong together.
 	// TWO VALUES, TWO QUESTIONS, AND CONFLATING THEM WOULD MAKE ONE OF THE TWO TOOLS WRONG.
 	// ---------------------------------------------------------------------------------------------
-	TMap<const UMaterialExpression*, TArray<const FLink*>> LinksBySource;
+	TMap<FString, TArray<const FLink*>> LinksBySource;
 	for (const FLink& Link : Links)
 	{
 		if (Link.Source == nullptr)
@@ -312,30 +337,18 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 			continue;
 		}
 
-		LinksBySource.FindOrAdd(Link.Source).Add(&Link);
+		LinksBySource.FindOrAdd(ConnectionKey(Link.SourceConnection)).Add(&Link);
 	}
 
-	TArray<const UMaterialExpression*> Sources;
-	LinksBySource.GetKeys(Sources);
-	// SORTED BY KEY RATHER THAN BY POINTER. Pointer order is stable within one run and meaningless across
-	// two, so a plan built from it would not reproduce - and a preview that disagrees with the edit it
-	// precedes is the failure this project states a rule about.
-	Sources.Sort([](const UMaterialExpression& A, const UMaterialExpression& B)
-	{
-		return FTurboMCPMaterial::KeyOf(&A) < FTurboMCPMaterial::KeyOf(&B);
-	});
-
-	for (const UMaterialExpression* Source : Sources)
-	{
-		const FString SourceKey = FTurboMCPMaterial::KeyOf(Source);
-		if (DeclaredSourceKeys.Contains(SourceKey))
-		{
-			// ALREADY NAMED, so there is nothing to add. This is the case a SECOND RUN hits, and leaving
-			// it out would make the second run propose the same label again and then report `changed`.
-			continue;
-		}
-
-		const TArray<const FLink*>& SourceLinks = LinksBySource[Source];
+    TArray<FString> Sources;
+    LinksBySource.GetKeys(Sources);
+    Sources.Sort();
+    for (const FString& ValueKey : Sources)
+    {
+        if (DeclaredSourceKeys.Contains(ValueKey)) continue;
+        const TArray<const FLink*>& SourceLinks = LinksBySource[ValueKey];
+        const UMaterialExpression* Source = SourceLinks[0]->Source;
+        const FString SourceKey = FTurboMCPMaterial::KeyOf(Source);
 
 		TSet<int32> Blocks;
 		for (const FLink* Link : SourceLinks)
@@ -369,6 +382,7 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		FCrossing Crossing;
 		Crossing.Source = const_cast<UMaterialExpression*>(Source);
 		Crossing.SourceKey = SourceKey;
+		Crossing.SourceConnection = SourceLinks[0]->SourceConnection;
 		Crossing.SourceCaption = FTurboMCPMaterial::CaptionOf(Source);
 		Crossing.ProposedName = NameFromCaption(Crossing.SourceCaption);
 
@@ -386,6 +400,7 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		{
 			++Crossing.InputsToRetarget;
 			Crossing.ConsumerRefs.Add(ConsumerRef(Link->ReaderKey, Link->InputIndex));
+			Crossing.ExpectedConsumers.Add(ConsumerRef(Link->ReaderKey, Link->InputIndex), Link->DirectConnection);
 		}
 
 		OutPlan.Crossings.Add(MoveTemp(Crossing));
@@ -1037,8 +1052,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 
 		// THE DECLARATION READS THE VALUE IT NAMES. Without this the node forwards nothing, so every
 		// reader retargeted to it would compile to an unconnected input - a silently wrong material.
+		Declaration->Input = Crossing.SourceConnection;
 		Declaration->Input.Expression = Source;
-		Declaration->Input.OutputIndex = 0;
 		Declaration->Input.InputName = NAME_None;
 		PlannedAdds.Add(FTurboMCPMaterial::KeyOf(Declaration));
 
@@ -1097,7 +1112,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			}
 
 			// THE EXPECTED OLD VALUE IS THE SOURCE, because a crossing is measured on the RESOLVED source.
-			if (!RetargetInput(Reader, InputIndex, Source, Usage))
+			if (!RetargetInput(Reader, InputIndex, Crossing.ExpectedConsumers.FindChecked(Ref).Expression, Usage))
 			{
 				bOutRolledBack = true;
 				return FString::Printf(
@@ -1105,6 +1120,11 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 					TEXT("and this call and the edit was submitted for undo. Inspect the rollback check below before retrying or saving. ")
 					TEXT("The connection changed after planning."), *Ref, *Crossing.SourceKey);
 			}
+            for (FExpressionInputIterator It{ Reader }; It; ++It)
+            {
+                if (It.Index == InputIndex && It.Input != nullptr)
+                    It.Input->SetMask(0, 0, 0, 0, 0);
+            }
 			++InputsRetargeted;
 		}
 	}
