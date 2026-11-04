@@ -1695,9 +1695,15 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 			MemberSet.Add(Member);
 		}
 
-		for (UMaterialExpression* Member : Box.Members)
-		{
-			for (FExpressionInputIterator It(Member); It; ++It)
+        for (UMaterialExpression* Member : Box.Members)
+        {
+            // Named reroutes connect through Declaration, not an FExpressionInput.
+            if (const auto* Usage = Cast<UMaterialExpressionNamedRerouteUsage>(Member))
+            {
+                if (Usage->Declaration && !MemberSet.Contains(Usage->Declaration))
+                    Inputs.AddUnique(FString::Printf(TEXT("@%s"), *LabelOfUsage(Usage)));
+            }
+            for (FExpressionInputIterator It(Member); It; ++It)
 			{
 				UMaterialExpression* Source = It.Input != nullptr
 					? ResolveThroughReroutes(It.Input->Expression) : nullptr;
@@ -1731,6 +1737,11 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 				{
 					continue;
 				}
+                if (const auto* Usage = Cast<UMaterialExpressionNamedRerouteUsage>(Other))
+                {
+                    if (Usage->Declaration == Member)
+                        Outputs.AddUnique(FString::Printf(TEXT("@%s"), *LabelOfUsage(Usage)));
+                }
 				for (FExpressionInputIterator It(Other); It; ++It)
 				{
 					// `It.Input` IS A POINTER, so the member is reached with `->`. Read from
@@ -1754,6 +1765,13 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 				}
 			}
 		}
+
+        // Material output properties are destinations outside the expression array.
+        for (const FString& Property : ConnectedOutputs(InPlan))
+        {
+            if (MemberSet.Contains(OutputSource(InPlan, Property)))
+                Outputs.AddUnique(FString::Printf(TEXT("(output %s)"), *Property));
+        }
 
 		Inputs.Sort();
 		Outputs.Sort();
@@ -1928,6 +1946,29 @@ bool FTurboMCPMaterialDuplicateLabelTest::RunTest(const FString& Parameters)
     }
     TestEqual(TEXT("Both declarations preserved"), Material->GetExpressionCollection().Expressions.Num(), 2);
     TestFalse(TEXT("Reader does not dirty fixture"), Package->IsDirty());
+    // A named reroute crosses boxes through its declaration pointer; the material output
+    // is another boundary even though it is not an expression in the graph array.
+    auto* Declaration = Cast<UMaterialExpressionNamedRerouteDeclaration>(Material->GetExpressionCollection().Expressions[0]);
+    Declaration->MaterialExpressionEditorX = 10; Declaration->MaterialExpressionEditorY = 10;
+    auto* Usage = NewObject<UMaterialExpressionNamedRerouteUsage>(Material);
+    Usage->Declaration = Declaration;
+    Usage->MaterialExpressionEditorX = 210; Usage->MaterialExpressionEditorY = 10;
+    auto* FirstBox = NewObject<UMaterialExpressionComment>(Material);
+    FirstBox->Text = TEXT("Producer"); FirstBox->SizeX = 100; FirstBox->SizeY = 100;
+    auto* SecondBox = NewObject<UMaterialExpressionComment>(Material);
+    SecondBox->Text = TEXT("Consumer"); SecondBox->MaterialExpressionEditorX = 200;
+    SecondBox->SizeX = 100; SecondBox->SizeY = 100;
+    Material->GetEditorOnlyData()->BaseColor.Connect(0, Declaration);
+    FTurboMCPMaterial::FPlan BoundaryPlan;
+    BoundaryPlan.Material = Material; BoundaryPlan.Asset = Material->GetPathName();
+    BoundaryPlan.AssetName = Material->GetName(); BoundaryPlan.GraphName = TEXT("Material");
+    BoundaryPlan.Expressions = {Declaration, Usage}; BoundaryPlan.Comments = {FirstBox, SecondBox};
+    Package->SetDirtyFlag(false);
+    const FString Blocks = FTurboMCPMaterial::RenderBlocks(BoundaryPlan, 0);
+    AddInfo(Blocks);
+    TestTrue(TEXT("Block reports named reroute input"), Blocks.Contains(TEXT("inputs: @SharedValue")));
+    TestTrue(TEXT("Block reports named reroute output"), Blocks.Contains(TEXT("outputs: (output MP_BaseColor), @SharedValue")));
+    TestFalse(TEXT("Block read keeps fixture clean"), Package->IsDirty());
     return true;
 }
 #endif
