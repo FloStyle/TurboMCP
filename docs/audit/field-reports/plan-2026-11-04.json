@@ -1,0 +1,813 @@
+{
+  "schema": 1,
+  "date": "2026-11-04",
+  "status": "triaged_needs_reconciliation",
+  "tasks": [
+    {
+      "id": "NOV04-01",
+      "title": "Investigate stock-engine asset deletion crash",
+      "kind": "bug",
+      "priority": "P0",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "X-123"
+      ],
+      "source_keys": [
+        "2026-11-03_S4/X-123"
+      ],
+      "dependencies": [],
+      "next_step": "The crash occurred in a stock engine delete tool. Cause and stack evidence are not available. Do not attribute it to TurboMCP or repeat deletion on user assets."
+    },
+    {
+      "id": "NOV04-02",
+      "title": "Explain and repair failed struct field additions",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "SF-05",
+        "SF-06"
+      ],
+      "source_keys": [
+        "2026-11-03_S2/SF-05",
+        "2026-11-03_S4/SF-06"
+      ],
+      "dependencies": [],
+      "next_step": "Recent struct review covers basic add and rejected defaults, not this object-array field with a loaded dependent. Keep SF-05/SF-06 open; reproduce that specific setup."
+    },
+    {
+      "id": "NOV04-03",
+      "title": "Prevent or identify delegate append side-effect events",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "GC-83"
+      ],
+      "source_keys": [
+        "2026-11-03_S1/GC-83"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-04",
+      "title": "Report complete pin container types and link mismatch reasons",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "NT-11"
+      ],
+      "source_keys": [
+        "2026-10-30_S4/NT-11"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-05",
+      "title": "Reconcile short node IDs across graph write tools",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "ED-22",
+        "ED-23",
+        "TD-52",
+        "TD-55",
+        "GC-93",
+        "GC-95"
+      ],
+      "source_keys": [
+        "2026-10-30_S1/ED-22",
+        "2026-10-30_S3/ED-23",
+        "2026-10-30_S4/TD-52",
+        "2026-11-03_S1/TD-55",
+        "2026-11-03_S4/GC-93",
+        "2026-11-04_S1/GC-95"
+      ],
+      "dependencies": [],
+      "next_step": "docs/audit/unique-edit-ids-review.json verifies GraphConnect short keys; GraphCopy review documents exact reader IDs. Field build unknown; compare each affected tool separately, not one assumed shared cause."
+    },
+    {
+      "id": "NOV04-06",
+      "title": "Find interface implementation graphs consistently",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "TD-50",
+        "TD-57"
+      ],
+      "source_keys": [
+        "2026-10-30_S3/TD-50",
+        "2026-11-03_S1/TD-57"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-07",
+      "title": "Handle loop break and reset back edges in scoped tidy",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "TD-51",
+        "TD-53",
+        "TD-59"
+      ],
+      "source_keys": [
+        "2026-10-30_S3/TD-51",
+        "2026-11-03_S1/TD-53",
+        "2026-11-04_S1/TD-59"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-08",
+      "title": "Make suggested and reported node type IDs usable",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "NT-10"
+      ],
+      "source_keys": [
+        "2026-10-30_S1/NT-10"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-09",
+      "title": "Improve operator, variable and dispatcher type discovery",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "NT-12",
+        "NT-14",
+        "NT-15"
+      ],
+      "source_keys": [
+        "2026-11-03_S2/NT-12",
+        "2026-11-03_S3/NT-14",
+        "2026-11-03_S4/NT-15"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-10",
+      "title": "Expose every entry ID and paginate large graph positions",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "X-120",
+        "GL-26",
+        "FT-135"
+      ],
+      "source_keys": [
+        "2026-11-03_S1/X-120",
+        "2026-11-03_S1/GL-26",
+        "2026-11-03_S1/FT-135"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-11",
+      "title": "Clarify append quoting, labels, comments and flat forms",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "GC-76",
+        "GC-77",
+        "GC-82",
+        "GC-92"
+      ],
+      "source_keys": [
+        "2026-10-30_S2/GC-76",
+        "2026-10-30_S2/GC-77",
+        "2026-11-03_S1/GC-82",
+        "2026-11-03_S4/GC-92"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-12",
+      "title": "Diagnose append execution reachability and existing exec merges",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "GC-86",
+        "GC-87"
+      ],
+      "source_keys": [
+        "2026-11-03_S2/GC-86",
+        "2026-11-03_S2/GC-87"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-13",
+      "title": "Provide useful placement options for crowded graphs",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "GC-88",
+        "GC-94"
+      ],
+      "source_keys": [
+        "2026-11-03_S2/GC-88",
+        "2026-11-04_S1/GC-94"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-14",
+      "title": "Reproduce integer zero default refusal",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "GC-89"
+      ],
+      "source_keys": [
+        "2026-11-03_S2/GC-89"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-15",
+      "title": "Clarify continuation behavior with explicit incoming links",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "GC-84"
+      ],
+      "source_keys": [
+        "2026-11-03_S1/GC-84"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-16",
+      "title": "Address unnamed pins in append and pin previews",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "NT-13"
+      ],
+      "source_keys": [
+        "2026-11-03_S2/NT-13"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-17",
+      "title": "Allow locals in implemented interface functions",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "FA-14"
+      ],
+      "source_keys": [
+        "2026-10-30_S3/FA-14"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-18",
+      "title": "Edit flags on existing member variables",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "VA-09",
+        "FT-133"
+      ],
+      "source_keys": [
+        "2026-10-30_S3/VA-09",
+        "2026-10-30_S3/FT-133"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-19",
+      "title": "Remove member variables with reference checks",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "VA-10",
+        "FT-134"
+      ],
+      "source_keys": [
+        "2026-10-30_S4/VA-10",
+        "2026-10-30_S4/FT-134"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-20",
+      "title": "Support variadic node input growth",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "GC-79"
+      ],
+      "source_keys": [
+        "2026-10-30_S3/GC-79"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-21",
+      "title": "Document or support append links into existing node forms",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "GC-80"
+      ],
+      "source_keys": [
+        "2026-10-30_S3/GC-80"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-22",
+      "title": "Preserve or explicitly transfer menu keyboard focus",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "PI-04"
+      ],
+      "source_keys": [
+        "2026-10-30_S1/PI-04"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-23",
+      "title": "Reconcile PIE activation and focus recovery",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "PI-05",
+        "PI-09",
+        "FT-131"
+      ],
+      "source_keys": [
+        "2026-10-30_S1/PI-05",
+        "2026-10-30_S1/FT-131",
+        "2026-11-04_S1/PI-09"
+      ],
+      "dependencies": [],
+      "next_step": "docs/audit/play-activation-review.json already records activation action and unsuccessful OS foreground acquisition. This recurrence remains an explicit limitation, not a new proven repair."
+    },
+    {
+      "id": "NOV04-24",
+      "title": "Explain and test analog input versus menu navigation",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "PI-08"
+      ],
+      "source_keys": [
+        "2026-11-04_S1/PI-08"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-25",
+      "title": "Support timed input sequences and simultaneous holds",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "PI-07",
+        "FT-140"
+      ],
+      "source_keys": [
+        "2026-11-04_S1/PI-07",
+        "2026-11-04_S1/FT-140"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-26",
+      "title": "Make play input state output compact and filterable",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "PI-10"
+      ],
+      "source_keys": [
+        "2026-11-04_S1/PI-10"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-27",
+      "title": "Design scoped PIE console or callable-function invocation",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "X-125",
+        "FT-139"
+      ],
+      "source_keys": [
+        "2026-11-04_S1/X-125",
+        "2026-11-04_S1/FT-139"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-28",
+      "title": "Reproduce data-asset array shrink and define element edits",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "X-127",
+        "FT-141"
+      ],
+      "source_keys": [
+        "2026-11-04_S2/X-127",
+        "2026-11-04_S2/FT-141"
+      ],
+      "dependencies": [],
+      "next_step": "Exact failing tool and payload missing. First compare current DataAssetProperty array semantics and reproduce shrink on a generic Enhanced Input mapping context."
+    },
+    {
+      "id": "NOV04-29",
+      "title": "Reconcile Blueprint reparent and widget event-binding capabilities",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "X-122",
+        "FT-137"
+      ],
+      "source_keys": [
+        "2026-11-03_S3/X-122",
+        "2026-11-03_S3/FT-137"
+      ],
+      "dependencies": [],
+      "next_step": "Check current BindEvent/BindNewEvent/Override tools before implementing new widget event binding; reported absence is not proof of missing capability."
+    },
+    {
+      "id": "NOV04-30",
+      "title": "Clarify delegate node write-back support and safe surrounding edits",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "X-124"
+      ],
+      "source_keys": [
+        "2026-11-03_S4/X-124"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-31",
+      "title": "Flag empty required object inputs without self fallback",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "GL-24",
+        "FT-132"
+      ],
+      "source_keys": [
+        "2026-10-30_S1/GL-24",
+        "2026-10-30_S1/FT-132"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-32",
+      "title": "Reconcile graph reader JSON format expectations",
+      "kind": "feature",
+      "priority": "P3",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "GL-27"
+      ],
+      "source_keys": [
+        "2026-11-03_S1/GL-27"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-33",
+      "title": "Validate graph-position filters and unknown arguments",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "LR-20"
+      ],
+      "source_keys": [
+        "2026-10-30_S1/LR-20"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-34",
+      "title": "Identify overlapping nodes in tidy refusals",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "TD-58"
+      ],
+      "source_keys": [
+        "2026-11-03_S3/TD-58"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-35",
+      "title": "Review scoped tidy comment and boundary-wire limitations",
+      "kind": "feature",
+      "priority": "P3",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "TD-54"
+      ],
+      "source_keys": [
+        "2026-11-03_S1/TD-54"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-36",
+      "title": "Track engine Slate visibility disagreement",
+      "kind": "external",
+      "priority": "P3",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "X-118"
+      ],
+      "source_keys": [
+        "2026-10-30_S1/X-118"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-37",
+      "title": "Track engine PIE stop state versus script errors",
+      "kind": "external",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "X-119"
+      ],
+      "source_keys": [
+        "2026-10-30_S3/X-119"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-38",
+      "title": "Track engine asset lookup and referencer failures",
+      "kind": "external",
+      "priority": "P3",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "X-126"
+      ],
+      "source_keys": [
+        "2026-11-04_S1/X-126"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-39",
+      "title": "Reconcile find-node and create-event retarget workflows",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "FT-136"
+      ],
+      "source_keys": [
+        "2026-11-03_S2/FT-136"
+      ],
+      "dependencies": [],
+      "next_step": "Compare existing NodeFind and BindFunction tools first; positive engine workaround does not prove TurboMCP lacks all equivalent functionality."
+    },
+    {
+      "id": "NOV04-40",
+      "title": "Design function-library creation and safe asset deletion tools",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "FT-138"
+      ],
+      "source_keys": [
+        "2026-11-03_S4/FT-138"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    },
+    {
+      "id": "NOV04-41",
+      "title": "Document struct type syntax for local variables",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_ids": [
+        "FA-17"
+      ],
+      "source_keys": [
+        "2026-11-04_S1/FA-17"
+      ],
+      "dependencies": [],
+      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+    }
+  ],
+  "priority_order": [
+    "NOV04-01",
+    "NOV04-02",
+    "NOV04-03",
+    "NOV04-04",
+    "NOV04-05",
+    "NOV04-06",
+    "NOV04-12"
+  ],
+  "limits": [
+    "All installed plugin revisions are unknown. Reports are observations, not implementation instructions or proof of current causes.",
+    "Raw reports remain on the owner Desktop. This file preserves sanitized item text and hashes.",
+    "Positive reports do not certify release readiness or increase the tool review count."
+  ]
+}
