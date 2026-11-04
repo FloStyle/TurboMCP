@@ -42,10 +42,15 @@
       "run": "147d8e1da93f4aba9aa5b5bc68252a24",
       "result": "passed",
       "scope": "Load with instance overrides preserves the dedicated instance reader report and discloses advisory budget overruns; full reader and duplicate-label suite passed."
+    },
+    {
+      "run": "f50cc7d4854746dc937d00b2326be9dc",
+      "result": "passed",
+      "scope": "Material Load, Trace and function Load have exactly one definition for each referenced label; function source expression is exposed. Subsequent equivalent obsolete-branch cleanup awaits final gate."
     }
   ],
   "remaining": [
-    "Finish implementation and help review, including duplicate labels and graph preservation evidence.",
-    "Complete immutable focused run and final gates."
+    "Finish Blocks boundary-output and overall prose/code review.",
+    "Run final immutable candidate workflow and offline/scope gates before acceptance."
   ]
 }
