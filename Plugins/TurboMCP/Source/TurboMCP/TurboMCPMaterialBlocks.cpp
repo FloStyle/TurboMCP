@@ -475,6 +475,12 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 				}
 			}
 
+            for (const FString& Output : FTurboMCPMaterial::ConnectedOutputs(Read))
+            {
+                if (Removed.Contains(FTurboMCPMaterial::KeyOf(
+                    FTurboMCPMaterial::OutputSource(Read, Output, false))))
+                    Merge.OutputProperties.Add(Output);
+            }
 			OutPlan.Merges.Add(MoveTemp(Merge));
 		}
 	}
@@ -511,8 +517,16 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		return FTurboMCPMaterial::KeyOf(&A) < FTurboMCPMaterial::KeyOf(&B);
 	});
 
+    TSet<UMaterialExpression*> MaterialOutputSources;
+    for (const FString& Output : FTurboMCPMaterial::ConnectedOutputs(Read))
+        MaterialOutputSources.Add(FTurboMCPMaterial::OutputSource(Read, Output, false));
+
 	for (UMaterialExpression* Reroute : Reroutes)
 	{
+        // Material outputs are outside comment blocks. Keep their routing nodes: removing
+        // one would disconnect an output that is not in the in-block consumer list.
+        if (MaterialOutputSources.Contains(Reroute)) continue;
+
 		const TArray<const FLink*>* Readers = ReadersByDirect.Find(Reroute);
 		if (Readers == nullptr || Readers->Num() == 0)
 		{
@@ -574,6 +588,7 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		// the class only and every report line below prints the key and the class. ***
 		Removal.RerouteClass = Reroute->GetClass()->GetName();
 		Removal.Source = Source;
+		Removal.SourceConnection = TracePlainInput(AsReroute->Input);
 		Removal.SourceKey = FTurboMCPMaterial::KeyOf(Source);
 		Removal.BlockIndex = RerouteBlock;
 		for (const FLink* Link : *Readers)
@@ -653,6 +668,8 @@ FString FTurboMCPMaterialBlocks::RenderPreview(const FPlan& InPlan)
 		{
 			Out += FString::Printf(TEXT("\n  = @%s in block %d: keep %s, remove %d node(s)"),
 				*Merge.Label, Merge.BlockIndex, *Merge.KeepKey, Merge.RemoveKeys.Num());
+            for (const FString& Output : Merge.OutputProperties)
+                Out += FString::Printf(TEXT("\n      retarget material output %s"), *Output);
 			for (const FString& Key : Merge.RemoveKeys)
 			{
 				Out += FString::Printf(TEXT("\n      - %s"), *Key);
@@ -1082,7 +1099,9 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 					TEXT("submitted for undo. Inspect the rollback check below before retrying or saving."), *ReaderKey);
 			}
 
-			UMaterialExpressionNamedRerouteUsage* Usage = UsageByReaderKey.FindRef(ReaderKey);
+			const int32 ReaderBlock = BlockOf(Read, Reader);
+            const FString UsageGroup = ReaderBlock == INDEX_NONE ? ReaderKey : FString::FromInt(ReaderBlock);
+            UMaterialExpressionNamedRerouteUsage* Usage = UsageByReaderKey.FindRef(UsageGroup);
 			if (Usage == nullptr)
 			{
 				UMaterialExpression* const CreatedUsage = UMaterialEditingLibrary::CreateMaterialExpressionEx(
@@ -1106,7 +1125,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				// the GUID for a freshly loaded asset whose fixup has not run - `LabelOfUsage` records it.
 				Usage->Declaration = Declaration;
 				Usage->DeclarationGuid = Declaration->VariableGuid;
-				UsageByReaderKey.Add(ReaderKey, Usage);
+				UsageByReaderKey.Add(UsageGroup, Usage);
 				PlannedAdds.Add(FTurboMCPMaterial::KeyOf(Usage));
 				++UsagesCreated;
 			}
@@ -1187,6 +1206,19 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			++InputsRetargeted;
 		}
 
+        for (const FString& Output : Merge.OutputProperties)
+        {
+            const int64 Property = StaticEnum<EMaterialProperty>()->GetValueByNameString(Output);
+            FExpressionInput* Input = Material->GetExpressionInputForProperty(static_cast<EMaterialProperty>(Property));
+            if (Input == nullptr || !Merge.RemoveKeys.Contains(FTurboMCPMaterial::KeyOf(Input->Expression)))
+            {
+                bOutRolledBack = true;
+                return FString::Printf(TEXT("error: material output %s changed after planning; undo requested. See rollback details."), *Output);
+            }
+            Input->Expression = Keep;
+            ++InputsRetargeted;
+        }
+
 		for (const FString& RemoveKey : Merge.RemoveKeys)
 		{
 			UMaterialExpression* const Doomed = ByKey.FindRef(RemoveKey);
@@ -1209,6 +1241,9 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	// (3) REMOVE THE IN-BLOCK REROUTES. Same order as the merge: the readers move to what the reroute was
 	// passing along, and the reroute is removed only afterwards.
 	// ---------------------------------------------------------------------------------------------
+    TSet<FString> RerouteRemovalKeys;
+    for (const FInBlockReroute& Item : InPlan.InBlockReroutes)
+        RerouteRemovalKeys.Add(Item.RerouteKey);
 	for (const FInBlockReroute& Removal : InPlan.InBlockReroutes)
 	{
 		UMaterialExpression* const Reroute = ByKey.FindRef(Removal.RerouteKey);
@@ -1233,6 +1268,9 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 					TEXT("FAILED: the plan carried a consumer reference this pass cannot parse (%s)."), *Ref);
 			}
 
+            // A consumer scheduled for removal needs no rewiring. Its surviving
+            // consumers use their own final source snapshots, independent of key order.
+            if (RerouteRemovalKeys.Contains(ReaderKey)) continue;
 			UMaterialExpression* const Reader = ByKey.FindRef(ReaderKey);
 			if (Reader == nullptr)
 			{
@@ -1251,6 +1289,16 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 					TEXT("FAILED: %s no longer points at the reroute %s, so the edit was submitted for undo. Inspect the rollback check below before retrying or saving. ")
 					TEXT(""), *Ref, *Removal.RerouteKey);
 			}
+            for (FExpressionInputIterator It{ Reader }; It; ++It)
+            {
+                if (It.Index == InputIndex && It.Input != nullptr)
+                {
+                    const FName InputName = It.Input->InputName;
+                    *It.Input = Removal.SourceConnection;
+                    It.Input->Expression = Source;
+                    It.Input->InputName = InputName;
+                }
+            }
 			++InputsRetargeted;
 		}
 

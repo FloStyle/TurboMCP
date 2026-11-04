@@ -152,6 +152,8 @@ public:
 
 		/** The reader inputs to retarget, as `<readerKey>#<inputIndex>`. */
 		TArray<FString> ConsumerRefs;
+		/** Material property inputs that also consume a removed usage. */
+		TArray<FString> OutputProperties;
 	};
 
 	/** A plain reroute standing for a value inside one block, which D-17 says is not what they are for. */
@@ -165,6 +167,9 @@ public:
 
 		/** The engine class name, carried because D-45 requires a class beside every removal. */
 		FString RerouteClass;
+
+		/** Final source connection retained when bypassing the reroute chain. */
+		FExpressionInput SourceConnection;
 
 		/** The expression the reroute passes along, which is what its readers will point at instead. */
 		UMaterialExpression* Source = nullptr;
