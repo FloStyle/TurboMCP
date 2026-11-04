@@ -461,14 +461,18 @@ namespace
         const FString RequestedName = InGraphName.TrimStartAndEnd();
         const FString LookupName = RequestedName.IsEmpty() ? TEXT("EventGraph") : RequestedName;
         int32 MatchCount = 0;
-        OutContext.Graph = TurboMCPNodeId::FindGraphByName(Blueprint, LookupName, MatchCount);
+        UEdGraph* MatchedGraph = TurboMCPNodeId::FindGraphByName(Blueprint, LookupName, MatchCount);
         if (MatchCount > 1)
         {
             OutContext.Graph = nullptr;
             OutError = TEXT("Ambiguous graph name; no layout was planned or applied. Pass a unique graph name.");
             return false;
         }
-        if (OutContext.Graph) return true;
+        if (MatchedGraph != nullptr)
+        {
+            OutContext.Graph = MatchedGraph;
+            return true;
+        }
         if (RequestedName.IsEmpty())
         {
             if (Graphs.Num() != 1)

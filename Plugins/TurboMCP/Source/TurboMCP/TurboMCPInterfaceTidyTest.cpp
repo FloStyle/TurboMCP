@@ -39,7 +39,11 @@ bool FTurboMCPInterfaceTidyTest::RunTest(const FString& Parameters)
     if (!TestTrue(TEXT("Interface added"), Added.StartsWith(TEXT("edited:")))) return false;
     int32 Matches = 0;
     UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(BP, TEXT("ReadState"), Matches);
-    if (!TestNotNull(TEXT("Reader lookup finds implementation"), Graph)) return false;
+    if (Graph == nullptr)
+    {
+        AddError(TEXT("Reader lookup did not find the interface implementation."));
+        return false;
+    }
     TestEqual(TEXT("Implementation unique"), Matches, 1);
     const FString Read = UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Asset, Graph->GetName());
     TestFalse(TEXT("Reader accepts implementation"), Read.StartsWith(TEXT("error:")));
