@@ -9,6 +9,10 @@
 #include "Materials/MaterialExpressionAdd.h"
 #include "Materials/MaterialExpressionNamedReroute.h"
 #include "UObject/Package.h"
+#include "Tools/TurboMCPToolsets.h"
+#include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
+#include "HAL/FileManager.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPMaterialLabelPromoteQualityTest,
     "TurboMCP.Material.LabelPromoteQuality", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -72,6 +76,11 @@ bool FTurboMCPMaterialLabelPromoteQualityTest::RunTest(const FString& Parameters
     FTurboMCPMaterialLabelsPromote::FPlan Repeat;
     TestTrue(TEXT("Repeat plan succeeds"), FTurboMCPMaterialLabelsPromote::Plan(Material->GetPathName(), Repeat, Error));
     TestTrue(TEXT("Repeat is unchanged"), FTurboMCPMaterialLabelsPromote::Apply(Repeat).StartsWith(TEXT("unchanged:")));
+    const FString Folder = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("TurboMCP/MaterialLabelPromoteQuality"), FPaths::GetCleanFilename(Package->GetName()));
+    IFileManager::Get().MakeDirectory(*Folder, true);
+    const FString GraphCapture = UTurboMCPLookToolset::LookTurboMCPCapture(Material->GetPathName(), TEXT(""), TEXT("asset-editor"), TEXT("fit"), TEXT(""));
+    TestFalse(TEXT("Graph capture succeeds"), GraphCapture.StartsWith(TEXT("error:")));
+    FFileHelper::SaveStringToFile(GraphCapture, *FPaths::Combine(Folder, TEXT("graph-capture.txt")));
     return true;
 }
 #endif
