@@ -136,6 +136,11 @@ bool FTurboMCPMaterialTidyQualityTest::RunTest(const FString& Parameters)
     FTurboMCPMaterialTidy::FPlan Repeat;
     TestTrue(TEXT("Repeat plan succeeds"), FTurboMCPMaterialTidy::Plan(Material->GetPathName(), false, Repeat, Error));
     TestTrue(TEXT("Repeat unchanged"), FTurboMCPMaterialTidy::Apply(Repeat).StartsWith(TEXT("unchanged:")));
+    FTurboMCPMaterialTidy::FPlan ForcedRepeat;
+    TestTrue(TEXT("Legacy Force plan succeeds"), FTurboMCPMaterialTidy::Plan(Material->GetPathName(), true, ForcedRepeat, Error));
+    const FGuid RepeatState = Material->StateId;
+    TestTrue(TEXT("Legacy Force does not rewrite matching layout"), FTurboMCPMaterialTidy::Apply(ForcedRepeat).StartsWith(TEXT("unchanged:")));
+    TestEqual(TEXT("No-op does not compile"), Material->StateId, RepeatState);
     TestEqual(TEXT("Rendered output preserved"), Capture(TEXT("after.png")), BeforeColor);
     const FString GraphCapture = UTurboMCPLookToolset::LookTurboMCPCapture(Material->GetPathName(), TEXT(""), TEXT("asset-editor"), TEXT("fit"), TEXT(""));
     TestFalse(TEXT("Graph capture succeeds"), GraphCapture.StartsWith(TEXT("error:")));

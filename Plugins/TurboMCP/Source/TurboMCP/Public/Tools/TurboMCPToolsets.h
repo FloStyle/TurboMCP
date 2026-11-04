@@ -1270,7 +1270,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * Plan material positions and descriptive column boxes. Loads the Material but does not compile, apply layout or save. Material functions and instances are refused.
 	 * Uses estimated expression sizes. Matching expression identities and compile errors do not prove identical rendered output.
 	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; name their parent explicitly.
-	 * @param Force Optional string, default empty: skip an already matching layout. Any nonempty trimmed value forces the pass, including false or 0; use force to request it explicitly.
+	 * @param Force Legacy compatibility string; leave empty. Layout is always recomputed and an already matching result remains unchanged, including when Force is nonempty.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPMaterialTidy(
@@ -2157,7 +2157,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * Move material expressions and write comment boxes in an undo transaction; recompiles before and after layout and runs editor callbacks, but does not save; failure cleanup is attempted, not certified restoration.
 	 * Uses estimated expression sizes. Matching expression identities and compile errors do not prove identical rendered output.
 	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; name their parent explicitly.
-	 * @param Force Optional string, default empty: skip an already matching layout. Any nonempty trimmed value forces the pass, including false or 0; use force to request it explicitly.
+	 * @param Force Legacy compatibility string; leave empty. Layout is always recomputed and an already matching result remains unchanged, including when Force is nonempty.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPMaterialTidy(

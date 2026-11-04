@@ -573,24 +573,8 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 		}
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// THE COMPILED-RESULT CHECK. "Same compiled result" IS THE REQUIREMENT AND IT IS MEASURED HERE.
-	//
-	// THE ASSERTION RESTS ON THE EXPRESSION SET RATHER THAN ON `StateId`, AND THE REASON IS MEASURED
-	// RATHER THAN PREFERRED: `StateId` can legitimately change for reasons that have nothing to do with
-	// a layout - a background shader compile, a platform switch, a material function the material calls
-	// being recompiled by something else. Asserting on it would make this pass fail for other people's
-	// reasons. So the STRONGEST STATEMENT AVAILABLE is made instead:
-	//
-	//   - the SET OF EXPRESSIONS is identical, which a layout cannot change and which is what "same
-	//     compiled result" actually depends on, and
-	//   - the engine reports NO NEW ERROR, so nothing was broken, and
-	//   - `StateId` is REPORTED, so a reader can see it and judge.
-	//
-	// A LAYOUT PASS THAT CANNOT PROVE IT PRESERVED THE MATERIAL IS A PASS THAT MIGHT HAVE BROKEN IT
-	// SILENTLY, so a failure here is reported as a FAILURE with the difference named - never as a
-	// success with a note.
-	// ---------------------------------------------------------------------------------------------
+    // Recompile and compare identities and new errors. These checks cannot establish
+    // semantic equivalence; the workflow also compares rendered fixture pixels.
 	Material->PostEditChange();
 
 
@@ -645,7 +629,7 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 	// A NEW ERROR IS THE FAILURE SIGNAL, not any error. A material that ALREADY had a compiler error
 	// before this pass must not make this pass fail - that would be blaming the layout for something it
 	// found.
-	TSet<FString> Before(InPlan.CompileErrorsBefore);
+	TSet<FString> Before(CompileErrorsBefore);
 
 	TArray<FString> NewErrors;
 	for (const FString& Error : CompileErrorsAfter)
