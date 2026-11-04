@@ -6,7 +6,7 @@
     "PreviewTurboMCPMaterialBlocks",
     "EditTurboMCPMaterialBlocks"
   ],
-  "candidate": "b7d84cab",
+  "candidate": "31c0a982",
   "source_findings": [
     "Preview compilation moved to nonempty edit path; native fixture preserves package dirty flag and material StateId.",
     "Native regression reproduced source outputs 1 and 2 both replaced by output 0. Connection grouping now includes output and component mask; declaration copies the complete source input.",
@@ -44,6 +44,11 @@
       "run": "f859ec53883144d2837005bf934ecf8b",
       "result": "passed",
       "scope": "Stale connection refusal and repeat/no-op native assertions, alongside channel, reroute and material-output merge regressions."
+    },
+    {
+      "run": "be39a2178a78410d96fcf8223a283b04",
+      "result": "passed",
+      "scope": "Blocks native and saved fixture suite after success-count correction, complete planned add/remove checks, function refusal and documentation cleanup."
     }
   ],
   "remaining": [
