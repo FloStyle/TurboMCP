@@ -1267,7 +1267,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 		const FString& Text);
 
 	/**
-	 * Plan material positions and descriptive column boxes without compiling, applying layout or saving; accepts Materials only, not functions or instances.
+	 * Plan material positions and descriptive column boxes; does not compile, apply layout or save; accepts Materials only, not functions or instances.
 	 * Uses estimated expression sizes. Matching expression identities and compile errors do not prove identical rendered output.
 	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; name their parent explicitly.
 	 * @param Force Legacy compatibility string; leave empty. Layout is always recomputed and an already matching result remains unchanged, including when Force is nonempty.
