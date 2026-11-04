@@ -53,8 +53,11 @@ bool FTurboMCPAppendReachabilityTest::RunTest(const FString& Parameters)
     if (!TestFalse(TEXT("Pure data function discovered"),PureId.IsEmpty())) return false;
     const FString PureText=FString::Printf(TEXT("(\"%s\")"),*PureId);
     if (!TestTrue(TEXT("Pure-only append parses"),FTurboMCPGraphAppend::Plan(BP->GetPathName(),Graph->GetName(),PureText,Plan,Error))) {AddError(Error);return false;}
+    if (!TestTrue(TEXT("Pure-only plan is acceptable"),Plan.bAcceptable())) {AddError(FTurboMCPGraphAppend::RenderPreview(Plan));return false;}
+    const int32 BeforePureCount=Graph->Nodes.Num();
     if (!TestTrue(TEXT("Pure-only preview succeeds"),FTurboMCPGraphAppend::Preflight(Plan,Report,Error))) {AddError(Error);return false;}
     if (!TestTrue(TEXT("Pure-only edit succeeds"),FTurboMCPGraphAppend::Apply(Plan,Report,Error))) {AddError(Error);return false;}
+    TestEqual(TEXT("Pure-only edit adds one node"),Graph->Nodes.Num(),BeforePureCount+1);
     UBlueprint* Macros=LoadObject<UBlueprint>(nullptr,TEXT("/Engine/EditorBlueprintResources/StandardMacros.StandardMacros"));
     if (Macros==nullptr) {AddError(TEXT("Stock macro library is unavailable."));return false;}
     UEdGraph* DoOnceDefinition=nullptr;
@@ -70,7 +73,7 @@ bool FTurboMCPAppendReachabilityTest::RunTest(const FString& Parameters)
     if (!TestTrue(TEXT("Existing event connected"),MergeGraph->GetSchema()->TryCreateConnection(ExistingEntry->FindPin(UEdGraphSchema_K2::PN_Then),OnceInput))) return false;
     auto* BranchProbe=NewObject<UK2Node_IfThenElse>(MergeGraph);BranchProbe->AllocateDefaultPins();
     const FString BranchId=TurboMCPNodeId::GetNodeTypeId(BranchProbe);
-    const FString MergeText=FString::Printf(TEXT("(\"%s\"\n execute (-> %s:then)) ; label Choice\n(\"%s\" ; %s\n %s (-> Choice:then)\n %s (-> Choice:else))"),*BranchId,*TurboMCPNodeId::MakeForNode(NewEntry,true),*TurboMCPNodeId::GetNodeTypeId(Once),*TurboMCPNodeId::MakeForNode(Once,true),*OnceInput->PinName.ToString(),*OnceInput->PinName.ToString());
+    const FString MergeText=FString::Printf(TEXT("(\"%s\"\n execute (-> %s:then)\n) ; label Choice\n(\"%s\" ; %s\n %s (-> Choice:then)\n %s (-> Choice:else))"),*BranchId,*TurboMCPNodeId::MakeForNode(NewEntry,true),*TurboMCPNodeId::GetNodeTypeId(Once),*TurboMCPNodeId::MakeForNode(Once,true),*OnceInput->PinName.ToString(),*OnceInput->PinName.ToString());
     const int32 MergeCount=MergeGraph->Nodes.Num();
     if (!TestTrue(TEXT("Existing merge append parses"),FTurboMCPGraphAppend::Plan(BP->GetPathName(),MergeGraph->GetName(),MergeText,Plan,Error))) {AddError(Error);return false;}
     if (!TestTrue(TEXT("Existing merge plan is acceptable"),Plan.bAcceptable())) {AddError(FTurboMCPGraphAppend::RenderPreview(Plan));return false;}
