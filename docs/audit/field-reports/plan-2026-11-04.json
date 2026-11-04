@@ -255,7 +255,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_reconciled_runtime_pending",
       "source_ids": [
         "NT-10"
       ],
@@ -263,7 +263,7 @@
         "2026-10-30_S1/NT-10"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Current BuildProbeNode self suggestions use Entry.TypeId from the same CollectEntries list as creation, so the reported suggestion mismatch may already be repaired. Append created-node output still uses GetNodeTypeId rather than the accepted input creation ID. Verify suggested self ID -> preview/edit -> reported ID round trip in a disposable graph before deciding whether further repair is needed; do not close from source inspection alone."
     },
     {
       "id": "NOV04-09",
