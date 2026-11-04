@@ -262,6 +262,11 @@ def main():
     print(raw)
     entry, _ = support["parse_run_tests_report"](raw, test_name)
     assert not entry["warnings"], entry["warnings"]
+    for toolset, tool in ((PREVIEW_TOOLSET, PREVIEW), (EDIT_TOOLSET, EDIT)):
+        help_text = quality_session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolset": toolset, "tool": tool})
+        assert "asset" in help_text.lower() and "output" in help_text.lower(), help_text
+        refusal = quality_session.call(toolset, tool, {"asset": "MF_TurboMCPFixture"})
+        assert refusal.startswith("error:") and "not supported" in refusal, refusal
     print("=== rebuilding the fixture so this suite is re-runnable from ANY state ===")
     # ON THE WAY IN, ALWAYS. A previous run that was interrupted leaves the material promoted, and a
     # suite that assumed a clean fixture would then test the wrong thing.
