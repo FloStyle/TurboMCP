@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "workflow": "WF-MATERIAL-READERS-QUALITY",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPMaterialLoad",
+    "ReadTurboMCPMaterialTrace",
+    "ReadTurboMCPMaterialLabels",
+    "ReadTurboMCPMaterialBlocks"
+  ],
+  "scenario": "Inspect parameters, labels and comment blocks, then trace one connected output in a material and inspect a material function.",
+  "source_findings": [
+    "Shared instance refusal suggested a parameter absent from three reader schemas; candidate now directs callers to ReadTurboMCPMaterialInstance.",
+    "Legacy test described unchanged counts as proof of no graph mutation; claims now distinguish report stability from independent state verification.",
+    "Duplicate label declarations overwrite one another in the name map; promised ambiguity reporting is absent. Repair and focused evidence pending.",
+    "Load with instance overrides has a separate legacy table that omits parameter indices and double vectors and can imply complete equivalence with the parent. Reuse of the accepted instance reader is under review.",
+    "Connected output labels can be emitted without defining their upstream expressions. Complete label definitions are required before reader acceptance.",
+    "Trace uses selected-output reachability for a global unused-expression claim; expressions feeding other outputs can be mislabeled. Repair pending."
+  ],
+  "evidence": [
+    {
+      "run": "9328745269ee445b8526089482bd06ae",
+      "result": "invalid",
+      "scope": "Child assertions passed, but supervisor rejected candidate changes during validation. Not acceptance evidence."
+    },
+    {
+      "run": "2ba26936370f457db3c4692b87c541ed",
+      "result": "passed",
+      "scope": "Immutable candidate: material/function reading, four reader help checks and actionable instance refusal, constants, labels, trace choices, blocks and repeated report stability."
+    },
+    {
+      "run": "63331557aa93414eb91b143a79766bc5",
+      "result": "failed",
+      "scope": "Duplicate-label regression fixture used auto* for TObjectPtr entries and failed compilation; corrected explicit iteration type. No engine changes."
+    },
+    {
+      "run": "54ce79a12f5243aa92b11f3251dcff17",
+      "result": "passed",
+      "scope": "All four readers refuse duplicate labels with both declaration identities and actionable recovery; node count and clean package preserved. Existing material/function reader workflow passed."
+    },
+    {
+      "run": "147d8e1da93f4aba9aa5b5bc68252a24",
+      "result": "passed",
+      "scope": "Load with instance overrides preserves the dedicated instance reader report and discloses advisory budget overruns; full reader and duplicate-label suite passed."
+    },
+    {
+      "run": "f50cc7d4854746dc937d00b2326be9dc",
+      "result": "passed",
+      "scope": "Material Load, Trace and function Load have exactly one definition for each referenced label; function source expression is exposed. Subsequent equivalent obsolete-branch cleanup awaits final gate."
+    },
+    {
+      "run": "73d51cfbd9b945e49e678801f187b25e",
+      "result": "passed",
+      "scope": "Block fixture verifies named-reroute incoming/outgoing values and direct material output destinations; clean package preserved. Full reader suite passed."
+    },
+    {
+      "run": "9c88e4c391e84836a3756586320d3cd8",
+      "result": "passed",
+      "scope": "Trace prints the requested branch, does not mislabel the other connected branch, and still identifies a genuinely unused expression; clean package preserved. Full reader suite passed."
+    },
+    {
+      "run": "ac0a5c6a319b40459f1d647b573a0920",
+      "result": "failed",
+      "scope": "Long connected reroute chain incorrectly reported unused. Traversal skips plain reroutes while unused classification includes them; retained failing regression. Documentation and explicit expansion warning updated."
+    },
+    {
+      "run": "99b5b398c9c94be2b766728157fa99db",
+      "result": "failed",
+      "scope": "Raw-link reachability change used a smart-pointer accessor on a stock raw expression pointer; compiler rejected it. Corrected both function and material output paths."
+    },
+    {
+      "run": "301e0ae44efd4fa482767ec0031c5ccf",
+      "result": "failed",
+      "scope": "Raw-link reachability change used a smart-pointer accessor on a stock raw expression pointer; compiler rejected it. Corrected both function and material output paths."
+    },
+    {
+      "run": "f6b14f9866dd4fa08be613f70d99d933",
+      "result": "passed",
+      "scope": "Both 1,605-node reroute and arithmetic chains preserve connected-node classification; deep-tree omission disclosed. Entire reader workflow passed."
+    }
+  ],
+  "remaining": [
+    "Await full offline gate and integrate accepted bounded workflow."
+  ],
+  "candidate": "bdadc2398b02485819f9f75f974248919f090517",
+  "scope_gate": "PASS"
+}
