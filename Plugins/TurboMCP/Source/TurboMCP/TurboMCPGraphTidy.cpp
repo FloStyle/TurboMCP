@@ -154,7 +154,7 @@ namespace
         }
         for(const auto& W:Plan.Wires)
         {
-            if(!W.OutputPin || !W.InputPin || W.OutputPin->PinType.PinCategory!=TEXT("exec") || !Plan.Nodes.IsValidIndex(W.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(W.TargetNodeIndex)) continue;
+            if(W.bControlFeedback || !W.OutputPin || !W.InputPin || W.OutputPin->PinType.PinCategory!=TEXT("exec") || !Plan.Nodes.IsValidIndex(W.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(W.TargetNodeIndex)) continue;
             const auto& S=Plan.Nodes[W.SourceNodeIndex]; const auto& T=Plan.Nodes[W.TargetNodeIndex];
             if(!S.Node || !T.Node) continue;
             const FVector2D Start=FTurboMCPGraphTidy::AlignmentPinPosition(W.OutputPin)+Position(S)-FVector2D(S.Node->NodePosX,S.Node->NodePosY);
@@ -175,12 +175,12 @@ namespace
         for(int32 A=0;A<Plan.Wires.Num();++A)
         {
             const auto& L=Plan.Wires[A];
-            if(!L.OutputPin || !L.InputPin || L.OutputPin->PinType.PinCategory!=TEXT("exec")
+            if(L.bControlFeedback || !L.OutputPin || !L.InputPin || L.OutputPin->PinType.PinCategory!=TEXT("exec")
                 || !Plan.Nodes.IsValidIndex(L.TargetNodeIndex)) continue;
             for(int32 B=A+1;B<Plan.Wires.Num();++B)
             {
                 const auto& R=Plan.Wires[B];
-                if(!R.OutputPin || !R.InputPin || R.OutputPin->PinType.PinCategory!=TEXT("exec")
+                if(R.bControlFeedback || !R.OutputPin || !R.InputPin || R.OutputPin->PinType.PinCategory!=TEXT("exec")
                     || L.SourceNodeIndex!=R.SourceNodeIndex || L.OutputPin==R.OutputPin
                     || L.TargetNodeIndex==R.TargetNodeIndex || !Plan.Nodes.IsValidIndex(R.TargetNodeIndex)) continue;
                 const auto& LN=Plan.Nodes[L.TargetNodeIndex];const auto& RN=Plan.Nodes[R.TargetNodeIndex];
@@ -968,7 +968,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         {OutError=TEXT("WrapAfter requires unique execution node IDs within the selected scope");return false;}
         bool HasContinuation=false;
         for(const FWire& W:OutPlan.Wires)
-            if(W.SourceNodeIndex==Found && W.OutputPin && W.OutputPin->PinType.PinCategory==TEXT("exec")) HasContinuation=true;
+            if(W.SourceNodeIndex==Found && W.OutputPin && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec")) HasContinuation=true;
         if(!HasContinuation) {OutError=TEXT("WrapAfter node has no execution continuation");return false;}
         OutPlan.WrapAfterNodes.Add(Found);
     }
@@ -1015,7 +1015,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         if(Previous!=INDEX_NONE)
         {
             bool Connected=false;
-            for(const FWire& W:OutPlan.Wires) if(W.SourceNodeIndex==Previous && W.TargetNodeIndex==Current && W.OutputPin->PinType.PinCategory==TEXT("exec")) { Connected=true; break; }
+            for(const FWire& W:OutPlan.Wires) if(W.SourceNodeIndex==Previous && W.TargetNodeIndex==Current && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec")) { Connected=true; break; }
             if(!Connected) { OutError=TEXT("MainPath nodes must be connected in order by execution wires"); return false; }
             MainPredecessor.Add(Current,Previous);
         }
@@ -1129,7 +1129,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				Titles.Add(TurboMCPNodeId::GetNodeTitle(OutPlan.Nodes[Index].Node));
 			}
 			OutError = FString::Printf(
-				TEXT("graph %s has a directed node cycle: %s. No column order exists; break this loop and run Tidy again."),
+				TEXT("graph %s has a directed node cycle: %s. No supported forward layout order exists for this scope; no nodes moved. Select an acyclic region or use explicit positions. Graph links were preserved."),
 				*OutPlan.GraphName, *FString::Join(Titles, TEXT(" -> ")));
 			return false;
 		}
@@ -1255,7 +1255,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				bool Changed = false;
 				for (const FWire& W : OutPlan.Wires)
 				{
-					if (!W.OutputPin || W.OutputPin->PinType.PinCategory != TEXT("exec")
+					if (W.bControlFeedback || !W.OutputPin || W.OutputPin->PinType.PinCategory != TEXT("exec")
 						|| OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex)
                         || !RowOf.Contains(W.SourceNodeIndex) || !RowOf.Contains(W.TargetNodeIndex)) continue;
 					const int32 R = FMath::Min(RowOf[W.SourceNodeIndex], RowOf[W.TargetNodeIndex]);
@@ -1355,7 +1355,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					if (RowOf[I] != Row || N.bIsPure) continue;
 					int32 Lane = MAX_int32; const FWire* Incoming = nullptr;
 					for (const FWire& W : OutPlan.Wires)
-						if (W.TargetNodeIndex == I && W.OutputPin && W.OutputPin->PinType.PinCategory == TEXT("exec") && LaneOf.Contains(W.SourceNodeIndex))
+						if (W.TargetNodeIndex == I && W.OutputPin && !W.bControlFeedback && W.OutputPin->PinType.PinCategory == TEXT("exec") && LaneOf.Contains(W.SourceNodeIndex))
 						{
                             const bool Preferred=MainPredecessor.Contains(I) && MainPredecessor[I]==W.SourceNodeIndex;
                             const bool SequenceEdge=OutPlan.Nodes[W.SourceNodeIndex].Node->IsA<UK2Node_ExecutionSequence>();
@@ -1382,7 +1382,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             if(!MainOutput || Pin->PinName==TEXT("Completed")) MainOutput=Pin;
                         }
                     for(const FWire& W:OutPlan.Wires)
-                        if(W.SourceNodeIndex==I && W.OutputPin && W.OutputPin->PinType.PinCategory==TEXT("exec")
+                        if(W.SourceNodeIndex==I && W.OutputPin && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec")
                             && MainPredecessor.Contains(W.TargetNodeIndex) && MainPredecessor[W.TargetNodeIndex]==I)
                         { MainOutput=W.OutputPin;break; }
                     const bool IsSequence=N.Node->IsA<UK2Node_ExecutionSequence>();
@@ -1414,7 +1414,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     // placed predecessor, not just that lane's shorter branch.
                     double IncomingRight=LaneCursor[Lane];
                     for(const FWire& W:OutPlan.Wires)
-                        if(W.TargetNodeIndex==I && W.OutputPin && W.OutputPin->PinType.PinCategory==TEXT("exec")
+                        if(W.TargetNodeIndex==I && W.OutputPin && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec")
                             && LaneOf.Contains(W.SourceNodeIndex) && W.SourceNodeIndex!=I)
                         {
                             const FNode& Predecessor=OutPlan.Nodes[W.SourceNodeIndex];
@@ -1652,13 +1652,13 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 for(UEdGraphPin* Exec:SeqNode.Node->Pins) if(Exec && Exec->Direction==EGPD_Output && Exec->PinType.PinCategory==TEXT("exec"))
                 {
                     int32 Next=INDEX_NONE;
-                    for(const FWire& W:OutPlan.Wires) if(W.OutputPin==Exec) { if(Next!=INDEX_NONE) Supported=false; Next=W.TargetNodeIndex; }
+                    for(const FWire& W:OutPlan.Wires) if(!W.bControlFeedback && W.OutputPin==Exec) { if(Next!=INDEX_NONE) Supported=false; Next=W.TargetNodeIndex; }
                     TArray<int32> Lane;
                     while(Supported && Next!=INDEX_NONE)
                     {
                         if(!Free.Contains(Next) || OwnedCalls.Contains(Next) || OutPlan.Nodes[Next].bIsPure || OutPlan.Nodes[Next].Node->IsA<UK2Node_ExecutionSequence>()) { Supported=false; break; }
                         int32 Inputs=0,Outputs=0,Following=INDEX_NONE;
-                        for(const FWire& W:OutPlan.Wires) if(W.OutputPin->PinType.PinCategory==TEXT("exec"))
+                        for(const FWire& W:OutPlan.Wires) if(!W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec"))
                         {
                             if(W.TargetNodeIndex==Next) ++Inputs;
                             if(W.SourceNodeIndex==Next) { ++Outputs; Following=W.TargetNodeIndex; }
@@ -1693,7 +1693,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 for(int32 Stage=0;Stage<Stages;++Stage) { Column+=Reserves[Stage]; Columns[Stage]=Column; Column+=Widths[Stage]+SpacingX; }
                 double LaneY=SeqNode.PlannedY;
                 for(const FWire& W:OutPlan.Wires)
-                    if(W.SourceNodeIndex==SeqIndex && W.TargetNodeIndex==Lanes[0][0] && W.OutputPin->PinType.PinCategory==TEXT("exec"))
+                    if(W.SourceNodeIndex==SeqIndex && W.TargetNodeIndex==Lanes[0][0] && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec"))
                         LaneY=AlignmentPinPosition(W.OutputPin).Y+SeqNode.PlannedY-SeqNode.Y
                             -(AlignmentPinPosition(W.InputPin).Y-OutPlan.Nodes[Lanes[0][0]].Y);
                 double PreviousRight=Left,PreviousLaneBottom=LaneY; TSet<int32> EarlierCalls;
@@ -1710,7 +1710,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     for(int32 Stage=0;Stage<Lane.Num();++Stage)
                     {
                         FNode& N=OutPlan.Nodes[Lane[Stage]]; N.PlannedX=Columns[Stage]+Extra; N.PlannedY=LaneY;
-                        if(Stage>0) for(const FWire& W:OutPlan.Wires) if(W.SourceNodeIndex==Lane[Stage-1] && W.TargetNodeIndex==Lane[Stage] && W.OutputPin->PinType.PinCategory==TEXT("exec"))
+                        if(Stage>0) for(const FWire& W:OutPlan.Wires) if(W.SourceNodeIndex==Lane[Stage-1] && W.TargetNodeIndex==Lane[Stage] && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec"))
                             N.PlannedY=AlignmentPinPosition(W.OutputPin).Y+OutPlan.Nodes[Lane[Stage-1]].PlannedY-OutPlan.Nodes[Lane[Stage-1]].Y-(AlignmentPinPosition(W.InputPin).Y-N.Y);
                         Bottom=FMath::Max(Bottom,N.PlannedY+N.Height);
                     }
@@ -2113,7 +2113,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 Candidates.Add(FVector2D(ShiftX, ShiftY));
                 // Break near-ties in favour of the incoming execution anchor.
                 // Large distance differences still dominate this small preference.
-                const bool ExecWire = Wire.OutputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec;
+                const bool ExecWire = !Wire.bControlFeedback && Wire.OutputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec;
                 AnchorPreferences.Add(ExecWire ? (SourceMoves ? 32.0 : 0.0) : 64.0);
             }
             if (Boundary.IsEmpty()) continue;
@@ -2194,7 +2194,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             const FWire* Incoming = nullptr;
             int32 IncomingCount = 0;
             for (const FWire& Wire : OutPlan.Wires)
-                if (Wire.TargetNodeIndex == NodeIndex && Wire.InputPin
+                if (!Wire.bControlFeedback && Wire.TargetNodeIndex == NodeIndex && Wire.InputPin
                     && Wire.InputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
                 { Incoming = &Wire; ++IncomingCount; }
             if (IncomingCount != 1 || Incoming == nullptr) continue;
@@ -2691,7 +2691,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		&& OutPlan.GetterCopies.Num() == 0;
 
     for(const FWire& W:OutPlan.Wires)
-        if(OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex) && W.OutputPin && W.OutputPin->PinType.PinCategory==TEXT("exec"))
+        if(OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex) && W.OutputPin && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec"))
         {
             const FNode& WrapSource=OutPlan.Nodes[W.SourceNodeIndex];
             const FNode& WrapTarget=OutPlan.Nodes[W.TargetNodeIndex];
@@ -2867,6 +2867,11 @@ static FString TidyRecoveryGuidance(bool bSelectedScope)
 FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 {
 	TArray<FString> Lines;
+    int32 FeedbackCount = 0;
+    for (const FWire& Wire : InPlan.Wires) if (Wire.bControlFeedback) ++FeedbackCount;
+    if (FeedbackCount > 0)
+        Lines.Add(FString::Printf(TEXT("control feedback: %d stock Break/Reset wire(s) preserved; excluded from forward ordering and alignment penalties, included in total wire length."), FeedbackCount));
+
 
 	// THE NUMBERS GO ON THE FIRST LINE, as the spec requires, AND THEY ARE LABELLED AS THE THING THAT
 	// WAS MEASURED. `D-LAY-4` settles that tidy is judged on TOTAL WIRE LENGTH and knots on WIRES
@@ -3275,6 +3280,11 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
     Graph->NotifyGraphChanged();
 
 	TArray<FString> Lines;
+    int32 FeedbackCount = 0;
+    for (const FWire& Wire : InPlan.Wires) if (Wire.bControlFeedback) ++FeedbackCount;
+    if (FeedbackCount > 0)
+        Lines.Add(FString::Printf(TEXT("control feedback: %d stock Break/Reset wire(s) preserved; excluded from forward ordering and alignment penalties, included in total wire length."), FeedbackCount));
+
 	const bool bWorse = MeasuredAfter >= InPlan.WireLengthBefore;
 	const bool bScoreMatchesPlan = FMath::IsNearlyEqual(MeasuredAfter, InPlan.WireLengthAfter, 1.0);
 	Lines.Add(FString::Printf(TEXT("changed: tidied %s in %s : total wire length %.1f -> %.1f%s"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, bWorse ? (InPlan.bForce ? TEXT(" (longer wires; Force enabled)") : TEXT(" (longer wires; structural quality improved)")) : TEXT("")));

@@ -978,19 +978,20 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * the score it actually measured after writing.
 	 *
 	 * WrapAfter optionally lists comma-separated execution node IDs at natural breaks (e.g. a latent call); their continuations start a new row. No links change.
-	 * HorizontalGap/VerticalGap set full-detail clearance; LanePitch is minimum Sequence row spacing, expanded for tall pure trees. MainPath accepts "auto" for the longest acyclic execution path, or comma-separated connected reader node IDs for the top exec lane. Auto refuses execution cycles.
+	 * HorizontalGap/VerticalGap set full-detail clearance; LanePitch is minimum Sequence row spacing, expanded for tall pure trees. MainPath accepts "auto" for the longest acyclic execution path, or comma-separated connected reader node IDs for the top exec lane. Auto refuses unsupported execution cycles.
 	 * Structural quality (including requested row breaks) takes priority; total wire length breaks ties.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
 	 * @param GraphName Existing graph name from the reader, including interface implementation and nested graphs. Matching is case-insensitive after trimming. Empty selects a unique EventGraph, or the only graph; missing or ambiguous names are refused.
 	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope, collision or fixed-boundary wire-growth limits.
 	 * @param NodeIds Array of reader node IDs; [] selects the whole graph. Unselected nodes remain fixed. ["@unboxed"] selects unboxed nodes; combine it with IDs to restrict those IDs to unboxed nodes.
-	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode. With NodeIds selection, only the first explicit path node may be outside the selection: it stays fixed and must connect to the next selected node. All later path nodes must be selected.
+	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Unsupported cycles are refused in auto mode. With NodeIds selection, only the first explicit path node may be outside the selection: it stays fixed and must connect to the next selected node. All later path nodes must be selected.
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
 	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
+     * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.
      */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphTidy(
@@ -1836,12 +1837,13 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * @param GraphName Existing graph name from the reader, including interface implementation and nested graphs. Matching is case-insensitive after trimming. Empty selects a unique EventGraph, or the only graph; missing or ambiguous names are refused.
 	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope, collision or fixed-boundary wire-growth limits.
 	 * @param NodeIds Array of reader node IDs; [] selects the whole graph. Unselected nodes remain fixed. ["@unboxed"] selects unboxed nodes; combine it with IDs to restrict those IDs to unboxed nodes.
-	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode. With NodeIds selection, only the first explicit path node may be outside the selection: it stays fixed and must connect to the next selected node. All later path nodes must be selected.
+	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Unsupported cycles are refused in auto mode. With NodeIds selection, only the first explicit path node may be outside the selection: it stays fixed and must connect to the next selected node. All later path nodes must be selected.
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
 	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
+     * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.
      */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphTidy(
