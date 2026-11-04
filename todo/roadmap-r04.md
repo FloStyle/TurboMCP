@@ -2100,3 +2100,8 @@ Readiness: ready. Assignment nov04-struct-fields addresses NOV04-02 (SF-05/SF-06
 ## Approved November delegate append repair (2026-11-04)
 
 Readiness: ready. Assignment nov04-delegate-append addresses NOV04-03/GC-83. Reproduce delegate assignment spawning an extra custom event when append explicitly binds an existing event. Preserve existing nodes and links; prevent orphaned auto-generated events when superseded by explicit requested binding, and report all retained engine-created nodes with usable IDs and accurate counts. Do not remove pre-existing or connected user nodes. Verify scratch preview parity, live append and failure cleanup with disposable fixtures through test-graph-append. Review output/help and preserve failed evidence; stock engine only.
+
+
+### November 4 pin container reporting repair
+
+Readiness: ready. Assignment nov04-pin-container-reporting addresses NOV04-04/NT-11 after the delegate append assignment is integrated. Source reconciliation confirms NodePins Plan serializes category/subcategory and array suffix only, omitting map/set kind, map value types and subtype object identity. Report complete scalar/array/set/map types and relevant object identities without claiming wildcard resolution. Append refusal must include the schema connection reason for incompatible pins. Preserve original report and failed evidence. Verify actual pin discovery on a disposable struct or Blueprint containing map/name, set and array members, plus incompatible map-to-scalar append preview with no live mutation and a valid compatible control. Run through the existing supervised test-graph-append suite. Review help, output and comments. Existing node-context behavior and stock engine remain unchanged. No broad discovery redesign.

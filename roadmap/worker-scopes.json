@@ -3344,6 +3344,17 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDelegateAppendTest.cpp"
           ]
+        },
+        "nov04-pin-container-reporting": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinContainerTest.cpp"
+          ]
         }
       },
       "preserve_rows": []

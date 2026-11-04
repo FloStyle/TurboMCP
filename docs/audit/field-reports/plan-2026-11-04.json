@@ -70,7 +70,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "reproduced_fix_candidate_testing",
       "source_ids": [
         "GC-83"
       ],
@@ -78,7 +78,29 @@
         "2026-11-03_S1/GC-83"
       ],
       "dependencies": [],
-      "next_step": "Reproduce AssignDelegate placement followed by explicit existing-event wiring. Stock UK2Node_AssignDelegate::PostPlacedNewNode creates an event; current append counts only returned nodes. Verify before attributing field cause."
+      "next_step": "Candidate 9349a05a corrects test-only private access for the new failure-cleanup check. Focused supervised rerun is active; integration and offline validation remain pending.",
+      "evidence": [
+        {
+          "run": "d82350a508684b99b7568b6116432397",
+          "result": "failed",
+          "scope": "Initial synthetic fixture correctly refused because assignment lacked an execution entry; not evidence of delegate regression."
+        },
+        {
+          "run": "c2486722bab6433da4487dfa4f2e5b02",
+          "result": "failed",
+          "scope": "Connected assignment created its companion event but did not report the engine-created addition. Production reporting defect reproduced."
+        },
+        {
+          "run": "1bdcdd001ad24828b537aa1f17ee792d",
+          "result": "passed",
+          "scope": "Built candidate 11f3cfdd; delegate companion ID reporting and explicit existing-handler binding preserve the handler and remove the superseded generated event. Existing append suite also passed. Expanded safety coverage pending."
+        },
+        {
+          "run": "18cebd28ca044bf8b7653377e502387d",
+          "result": "build_failed",
+          "scope": "New failure-injection test lacked friend access to private ExecuteGraph; corrected using the existing WITH_DEV_AUTOMATION_TESTS-only pattern. No runtime result from this run."
+        }
+      ]
     },
     {
       "id": "NOV04-04",
@@ -86,9 +108,9 @@
       "kind": "bug",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_confirmed_runtime_pending",
       "source_ids": [
         "NT-11"
       ],
@@ -96,7 +118,7 @@
         "2026-10-30_S4/NT-11"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Approved repair scope nov04-pin-container-reporting; start after delegate append integration to avoid overlapping source changes. Verify complete pin type output and schema mismatch details with map-to-scalar refusal and compatible control."
     },
     {
       "id": "NOV04-05",
