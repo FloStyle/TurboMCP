@@ -14,6 +14,7 @@
 #include "CoreTypes.h"
 #include "Math/Color.h"
 #include "Misc/Guid.h"
+#include "MaterialExpressionIO.h"
 
 class UMaterial;
 class UMaterialExpression;
@@ -134,6 +135,9 @@ public:
 	{
 		/** The expression producing the value. */
 		UMaterialExpression* Source = nullptr;
+
+		/** Exact selected output and channel mask forwarded by the label. */
+		FExpressionInput SourceConnection;
 
 		/** Its key, so the report and the check agree on identity. */
 		FString SourceKey;

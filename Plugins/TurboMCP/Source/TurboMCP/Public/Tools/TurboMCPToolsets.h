@@ -1278,7 +1278,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 		const FString& Force);
 
 	/**
-	 * Plan named reroutes for material values used by multiple expressions; loads and recompiles materials for baseline errors and may run editor callbacks, but does not add labels, rewire inputs or save.
+	 * Plan named reroutes for exact material outputs read by multiple expressions. Loads the Material but does not compile, change connections or save. Material functions and instances are refused.
 	 * Candidate names come from expression context. No candidates means no promotion. Expression and compile-error checks do not prove identical rendered output.
 	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; explicitly name the parent to edit its graph.
 	 */

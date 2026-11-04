@@ -25,6 +25,14 @@
 
 namespace
 {
+    // An expression can supply several different values. Never merge its output channels.
+    FString ConnectionKey(const FExpressionInput& Input)
+    {
+        return FString::Printf(TEXT("%s:%d:%d:%d:%d:%d:%d"),
+            *FTurboMCPMaterial::KeyOf(Input.Expression), Input.OutputIndex,
+            Input.Mask, Input.MaskR, Input.MaskG, Input.MaskB, Input.MaskA);
+    }
+
 	/** True when an expression is a label declaration, so this pass never promotes a label itself. */
 	bool IsDeclaration(const UMaterialExpression* InExpression)
 	{
@@ -122,13 +130,12 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 		return false;
 	}
 
-	// THE COMPILED-RESULT BASELINE IS TAKEN BEFORE ANYTHING IS PLANNED. Measuring afterwards and calling
-	// the result "before" is how a pass reports success on a material it already changed.
-	if (OutPlan.Material != nullptr)
+	if (OutPlan.Function != nullptr)
 	{
-		OutPlan.StateIdBefore = OutPlan.Material->StateId;
-		OutPlan.CompileErrorsBefore = UMaterialEditingLibrary::RecompileMaterial(OutPlan.Material);
+		OutError = TEXT("Material functions are not supported by Label Promote. Pass a Material asset.");
+		return false;
 	}
+	OutPlan.StateIdBefore = OutPlan.Material->StateId;
 
 	// ---------------------------------------------------------------------------------------------
 	// THE BASELINE KEY SET, AND THE TWO THINGS IT IS USED FOR.
@@ -184,7 +191,7 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 		{
 			continue;
 		}
-		DeclarationsBySource.Add(FTurboMCPMaterial::KeyOf(Declaration->Input.Expression), Declaration);
+		DeclarationsBySource.Add(ConnectionKey(Declaration->Input), Declaration);
 	}
 	OutPlan.DeclarationBySourceKey = DeclarationsBySource;
 
@@ -199,7 +206,8 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 	// are found with, so "in several boxes" is measured against the structure rather than guessed from
 	// geometry - a material expression stores no size and its position is whatever the author dragged.
 	// ---------------------------------------------------------------------------------------------
-	TMap<const UMaterialExpression*, TArray<FConsumer>> ConsumersBySource;
+	TMap<FString, TArray<FConsumer>> ConsumersBySource;
+	TMap<FString, FExpressionInput> Connections;
 
 	for (UMaterialExpression* Expression : Read.Expressions)
 	{
@@ -216,12 +224,11 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 				continue;
 			}
 
-			UMaterialExpression* Source = Input->Expression;
 
 			// A LABEL IS NOT PROMOTED AND NOT COUNTED AS A READER OF ITSELF. A declaration already
 			// names the value it forwards, and a usage forwards a name - so counting either would let a
 			// material that is already labelled propose a SECOND label for the same value.
-			if (IsDeclaration(Expression) || IsUsage(Expression))
+			if (IsDeclaration(Expression) || IsUsage(Expression) || IsDeclaration(Input->Expression) || IsUsage(Input->Expression))
 			{
 				continue;
 			}
@@ -233,30 +240,28 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 			Consumer.InputName = NameOfInput(Expression, It.Index);
 			Consumer.ReaderColumn = 0;
 
-			ConsumersBySource.FindOrAdd(Source).Add(MoveTemp(Consumer));
+			const FString Key = ConnectionKey(*Input);
+			Connections.Add(Key, *Input);
+			ConsumersBySource.FindOrAdd(Key).Add(MoveTemp(Consumer));
 		}
 	}
 
 	// Every value that anything reads is examined, and the count is reported so a Preview can say how
 	// many were considered and rejected rather than only what survived.
-	TArray<const UMaterialExpression*> Sources;
+	TArray<FString> Sources;
 	ConsumersBySource.GetKeys(Sources);
-	// SORTED BY KEY RATHER THAN BY POINTER. Pointer order is stable within one run and meaningless
-	// across two, so a plan built from it would not reproduce - and a Preview that disagrees with the
-	// Edit it precedes is the failure this project states a rule about.
-	Sources.Sort([](const UMaterialExpression& A, const UMaterialExpression& B)
-	{
-		return FTurboMCPMaterial::KeyOf(&A) < FTurboMCPMaterial::KeyOf(&B);
-	});
+	Sources.Sort();
 
 	OutPlan.ValuesExamined = Sources.Num();
 
-	for (const UMaterialExpression* Source : Sources)
+	for (const FString& SourceKey : Sources)
 	{
-		const TArray<FConsumer>& Consumers = ConsumersBySource[Source];
+		UMaterialExpression* Source = Connections[SourceKey].Expression;
+		const TArray<FConsumer>& Consumers = ConsumersBySource[SourceKey];
 
 		FPromotion Promotion;
-		Promotion.Source = const_cast<UMaterialExpression*>(Source);
+		Promotion.Source = Source;
+		Promotion.SourceConnection = Connections[SourceKey];
 		Promotion.SourceKey = FTurboMCPMaterial::KeyOf(Source);
 		Promotion.SourceCaption = FTurboMCPMaterial::CaptionOf(Source);
 		Promotion.Consumers = Consumers;
@@ -288,10 +293,11 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 		// already has one - which is the failure mode the reader would then report as two labels for one
 		// value.
 		if (UMaterialExpressionNamedRerouteDeclaration* const* Existing =
-				DeclarationsBySource.Find(Promotion.SourceKey))
+				DeclarationsBySource.Find(SourceKey))
 		{
 			Promotion.bAlreadyDeclared = true;
 			Promotion.ExistingDeclaration = *Existing;
+			Promotion.ProposedName = (*Existing)->GetEditableName();
 		}
 
 		OutPlan.InputsToRetarget += Promotion.Consumers.Num();
@@ -304,31 +310,6 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 
 	OutPlan.bNothingToPromote = OutPlan.Promotions.Num() == 0;
 
-	// EVERY CANDIDATE ALREADY NAMED IS ALSO NOTHING TO DO, and it is the case a SECOND RUN hits. Without
-	// this the second run would take the transaction, retarget every input onto the declaration that is
-	// already there - which is a no-op in effect but not in reporting, since it would answer `changed`
-	// for a material it did not change. `E-GRAPH-PATCH` recorded the same requirement from the other
-	// side: a diff that says `unchanged` on a second identical call is what proves it is a diff.
-	if (!OutPlan.bNothingToPromote)
-	{
-		bool bAllAlreadyDeclared = true;
-		for (const FPromotion& Promotion : OutPlan.Promotions)
-		{
-			if (!Promotion.bAlreadyDeclared)
-			{
-				bAllAlreadyDeclared = false;
-				break;
-			}
-		}
-		if (bAllAlreadyDeclared)
-		{
-			OutPlan.bNothingToPromote = true;
-			OutPlan.Refusals.Add(FString::Printf(
-				TEXT("every value worth a label in %s ALREADY HAS one, so there is nothing to add. %d ")
-				TEXT("value(s) were examined."),
-				*OutPlan.Asset, OutPlan.ValuesExamined));
-		}
-	}
 
 	if (OutPlan.Promotions.Num() == 0)
 	{
@@ -346,7 +327,7 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 FString FTurboMCPMaterialLabelsPromote::RenderPreview(const FPlan& InPlan)
 {
 	FString Out = FString::Printf(TEXT("preview: labels worth adding to %s"), *InPlan.Asset);
-	Out += TEXT("\n; Preview recompiles materials for baseline errors and may run editor callbacks; it does not add labels, rewire inputs or save.");
+	Out += TEXT("\n; Preview loads the material but does not compile, add labels, rewire inputs or save.");
 	Out += FString::Printf(
 		TEXT("\nvalues examined: %d, worth a label: %d, inputs that would be retargeted: %d"),
 		InPlan.ValuesExamined, InPlan.Promotions.Num(), InPlan.InputsToRetarget);
@@ -416,6 +397,9 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 	{
 		return FString::Printf(TEXT("error: %s has no material to write a label into"), *InPlan.Asset);
 	}
+
+	// Compile only for an actual edit. Preview and unchanged calls never compile.
+	const TArray<FString> CompileErrorsBefore = UMaterialEditingLibrary::RecompileMaterial(InPlan.Material);
 
 	// Group edits in one transaction; failure paths request undo without verifying restoration.
 	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "MaterialLabelsPromote",
@@ -495,9 +479,11 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 		// reader retargeted to it would compile to an unconnected input - a silently wrong material, and
 		// the exact thing the compiled-result check would then have to catch rather than it never
 		// happening.
-		Declaration->Input.Expression = Promotion.Source;
-		Declaration->Input.OutputIndex = 0;
-		Declaration->Input.InputName = NAME_None;
+		if (!Promotion.bAlreadyDeclared)
+		{
+			Declaration->Input = Promotion.SourceConnection;
+			Declaration->Input.InputName = NAME_None;
+		}
 
 		PlannedDeclarations.Add(FTurboMCPMaterial::KeyOf(Declaration));
 
@@ -559,7 +545,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 			for (FExpressionInputIterator It{ Consumer.Reader }; It; ++It)
 			{
 				FExpressionInput* Input = It.Input;
-				if (Input == nullptr || Input->Expression != Promotion.Source)
+				if (Input == nullptr || ConnectionKey(*Input) != ConnectionKey(Promotion.SourceConnection))
 				{
 					continue;
 				}
@@ -571,6 +557,8 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 				Consumer.Reader->Modify();
 				Input->Expression = Usage;
 				Input->OutputIndex = 0;
+				// The declaration already applies the original mask. Forward its full result.
+				Input->Mask = Input->MaskR = Input->MaskG = Input->MaskB = Input->MaskA = 0;
 				++InputsRetargeted;
 				break;
 			}
@@ -640,7 +628,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 	// A NEW ERROR IS THE FAILURE SIGNAL, not any error. A material that ALREADY had a compiler error
 	// before this pass must not make this pass fail - that would be blaming the edit for something it
 	// found.
-	TSet<FString> ErrorsBefore(InPlan.CompileErrorsBefore);
+	TSet<FString> ErrorsBefore(CompileErrorsBefore);
 	TArray<FString> NewErrors;
 	for (const FString& Error : CompileErrorsAfter)
 	{
@@ -694,7 +682,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 		TEXT("%d declaration(s) gained and all of them planned, and the engine reports %d error(s), none ")
 		TEXT("of them new. StateId %s -> %s (reported rather than asserted: it can change for reasons a ")
 		TEXT("label promotion does not control)."),
-		KeysAfter.Num(), InPlan.KeysBefore.Num(), GainedUnexpected.Num() == 0 ? Planned.Num() : 0,
+		InPlan.KeysBefore.Num() - Lost.Num(), InPlan.KeysBefore.Num(), Planned.Num(),
 		CompileErrorsAfter.Num(),
 		*InPlan.StateIdBefore.ToString(), *Material->StateId.ToString());
 
