@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "38ce7dcf256594098719ab2b4d120096a01cfc7d",
+  "plugin_tree": "0ef192e305a9c988a204dfcfcd3e8af622def0e3",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -3963,6 +3963,7 @@
         "Tools/test-material-blocks.py",
         "Tools/test-material-instance-quality.py",
         "Tools/test-material-label-promote.py",
+        "Tools/test-material-tidy.py",
         "Tools/test-material.py",
         "Tools/test-node-reader-output.py",
         "Tools/test-positions-review.py",
