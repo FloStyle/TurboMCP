@@ -12,13 +12,19 @@
   "scenario": "Inspect parameters, labels and comment blocks, then trace one connected output in a material and inspect a material function.",
   "source_findings": [
     "Shared instance refusal suggested a parameter absent from three reader schemas; candidate now directs callers to ReadTurboMCPMaterialInstance.",
-    "Legacy test described unchanged counts as proof of no graph mutation; claims now distinguish report stability from independent state verification."
+    "Legacy test described unchanged counts as proof of no graph mutation; claims now distinguish report stability from independent state verification.",
+    "Duplicate label declarations overwrite one another in the name map; promised ambiguity reporting is absent. Repair and focused evidence pending."
   ],
   "evidence": [
     {
       "run": "9328745269ee445b8526089482bd06ae",
       "result": "invalid",
       "scope": "Child assertions passed, but supervisor rejected candidate changes during validation. Not acceptance evidence."
+    },
+    {
+      "run": "2ba26936370f457db3c4692b87c541ed",
+      "result": "passed",
+      "scope": "Immutable candidate: material/function reading, four reader help checks and actionable instance refusal, constants, labels, trace choices, blocks and repeated report stability."
     }
   ],
   "remaining": [
