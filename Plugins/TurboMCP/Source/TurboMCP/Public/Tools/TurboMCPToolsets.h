@@ -352,16 +352,16 @@ public:
 	static FString ReadTurboMCPToolSchema(const FString& Toolset, const FString& Tool);
 
 	/**
-	 * Read named material reroute labels, writers and reader counts; no explicit edit, compile or save.
+	 * Read named material reroute labels, declarations, source expressions and usage counts. Duplicate declaration names are refused with node identities. No explicit edit, compile or save.
 	 * @param Asset Required Material or Material Function path or unique short name, e.g. /Game/Tests/M_TurboMCPFixture. Empty/unresolved assets are refused. Instances have no expression graph; read their parent or use ReadTurboMCPMaterialInstance.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPMaterialLabels(const FString& Asset);
 
 	/**
-	 * Read material parameters and connected output trees, or an instance override summary. Loads the asset; no explicit edit, compile or save. TokenBudget is advisory, not a hard cap.
+	 * Read material parameters and connected output trees, or the dedicated instance report. Loads the asset; no explicit edit, compile or save. TokenBudget is advisory, not a hard cap.
 	 * @param Asset Required Material, Material Function or constant Material Instance path or unique short name. Empty/unresolved values are refused; e.g. /Game/Tests/M_TurboMCPFixture.
-	 * @param bIncludeInstanceOverrides Required boolean. true permits constant Material Instances and lists their overrides; false refuses instances with parent guidance. Ignored for base materials/functions.
+	 * @param bIncludeInstanceOverrides Required boolean. true permits constant Material Instances and reports their parent chain, overrides and inherited values; false refuses instances with parent guidance. Ignored for base materials/functions.
 	 * @param TokenBudget Required integer advisory threshold in estimated tokens, e.g. 3000. Zero or negative disables the overrun warning. Output is not capped or reduced to this threshold; use Trace to narrow large graphs.
 	 */
 	UFUNCTION(meta = (AICallable))
@@ -371,7 +371,7 @@ public:
 		int32 TokenBudget);
 
 	/**
-	 * Read one connected material output tree; no explicit edit, compile or save. TokenBudget is advisory, not a hard cap.
+	 * Read one connected material output tree and its label definitions; unused-expression findings consider all connected outputs. No explicit edit, compile or save. TokenBudget is advisory, not a hard cap.
 	 * @param Asset Required Material or Material Function path or unique short name, e.g. /Game/Tests/M_TurboMCPFixture. Empty/unresolved assets are refused. Instances have no expression graph; read their parent or use ReadTurboMCPMaterialInstance.
 	 * @param OutputProperty Required connected output identifier from MaterialLoad, e.g. MP_BaseColor. Empty or unconnected output is refused; use MaterialLoad to discover connected outputs.
 	 * @param TokenBudget Required integer advisory threshold in estimated tokens, e.g. 3000. Zero or negative disables the overrun warning. Output is not capped or reduced to this threshold; use Trace to narrow large graphs.
@@ -383,7 +383,7 @@ public:
 		int32 TokenBudget);
 
 	/**
-	 * Read material logic grouped by comment boxes; no explicit edit, compile or save. TokenBudget is advisory, not a hard cap.
+	 * Read material logic grouped by comment boxes, with incoming and outgoing values. Membership uses node positions and the smallest containing box, not visual node bounds. No explicit edit, compile or save. TokenBudget is advisory, not a hard cap.
 	 * @param Asset Required Material or Material Function path or unique short name, e.g. /Game/Tests/M_TurboMCPFixture. Empty/unresolved assets are refused. Instances have no expression graph; read their parent or use ReadTurboMCPMaterialInstance.
 	 * @param TokenBudget Required integer advisory threshold in estimated tokens, e.g. 3000. Zero or negative disables the overrun warning. Output is not capped or reduced to this threshold; use Trace to narrow large graphs.
 	 */

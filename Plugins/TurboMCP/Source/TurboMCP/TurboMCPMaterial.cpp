@@ -405,38 +405,14 @@ FString FTurboMCPMaterial::ConstantForInput(const UMaterialExpression* InOwner,
 		return FString();
 	}
 
-	// MOST EXPRESSIONS KEEP AN UNLINKED INPUT CONSTANT IN A SEPARATE PROPERTY, AND NOT LOOKING FOR
-	// IT MADE EVERY SUCH INPUT READ AS UNSET.
-	//
-	// MEASURED, ON THE MATERIAL FIXTURE, which is why the fixture exists. `UMaterialExpressionAdd`
-	// stores its B constant in `float ConstB`, a SIBLING of `FExpressionInput B` carrying
-	// `meta = (OverridingInputProperty = "B")`. The scan below walks the INPUT STRUCT fields, so it
-	// never sees `ConstB`, and `R-MAT-LOAD` answered `B "B unset"` for an input whose constant was
-	// 0.375.
-	//
-	// `2.5` requires the constant an expression keeps to be printed, and this is the shape MOST
-	// expressions use - `Add`, `Multiply`, `Divide`, `Subtract` and `Power` all declare
-	// `ConstA`/`ConstB` this way. The old scan only ever found a constant for a class that put its
-	// value INSIDE the input struct, so the requirement was met for a minority and the text looked
-	// right.
-	//
-	// THE RELATIONSHIP COMES FROM THE ENGINE OWN METADATA rather than from a list of class names:
-	// the property that overrides an input SAYS which input it overrides. That is the same reason
-	// the reflected scan below exists at all.
+	// Find unlinked input defaults through the engine's OverridingInputProperty metadata.
+
 	static FName OverridingInputPropertyMetaData("OverridingInputProperty");
 	for (TFieldIterator<FProperty> OverrideIt(InOwner->GetClass(),
 			EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated);
 		OverrideIt; ++OverrideIt)
 	{
-		// NO NULL CHECK ON THE ITERATOR'S VALUE, AND ADDING ONE IS A BUILD ERROR. `TFieldIterator`
-		// never yields null - it walks until the iteration flag says stop - so a guard compiles to
-		// unreachable code, and this project builds with warnings as errors:
-		//
-		//     TurboMCPMaterial.cpp(418): error C4702: unreachable code
-		//     TurboMCPMaterial.cpp(423): error C4702: unreachable code
-		//
-		// It was removed rather than suppressed with a pragma. A check that cannot be false is noise
-		// that hides the checks that can.
+		// TFieldIterator yields valid fields until iteration ends.
 		FProperty* Override = *OverrideIt;
 		if (!Override->HasMetaData(OverridingInputPropertyMetaData))
 		{
@@ -971,7 +947,8 @@ FString FTurboMCPMaterial::RenderExpression(const UMaterialExpression* InExpress
 
 	if (InOutState.Defined.Num() + InOutState.DefinedLabels.Num() > MaxExpressions)
 	{
-		// `P6`: a cap, and the closing block names the call that returns the rest in full.
+		// Bound expression expansion independently of the advisory token budget.
+		InOutState.Notes.AddUnique(TEXT("; partial: expression expansion limit reached; capped nodes have omitted inputs. Inspect a narrower output with ReadTurboMCPMaterialTrace or use the Material Editor."));
 		return FString::Printf(TEXT("(capped %s)"), *KeyOf(InExpression));
 	}
 
@@ -1088,10 +1065,9 @@ void FTurboMCPMaterial::MarkReached(const UMaterialExpression* InExpression,
 		Stack.Add(InExpression);
 	}
 
-	int32 Steps = 0;
-	while (Stack.Num() > 0 && Steps < MaxExpressions * 4)
+	// The visited set bounds traversal, including cycles; do not truncate unused-node analysis.
+	while (Stack.Num() > 0)
 	{
-		++Steps;
 		const UMaterialExpression* Current = Stack.Pop();
 		if (Current == nullptr || Seen.Contains(Current))
 		{
@@ -1131,28 +1107,8 @@ void FTurboMCPMaterial::MarkReached(const UMaterialExpression* InExpression,
 			}
 		}
 
-		// A LABEL USAGE IS A LINK TOO, AND NOT FOLLOWING IT MADE THE UNREACHED REPORT WRONG.
-		//
-		// MEASURED, ON THE MATERIAL FIXTURE, which is why the fixture exists. `VerticalMix` is
-		// declared, read by two usages, and its declaration is reached from the BaseColor output
-		// through one of them. The report still listed EIGHT expressions as reaching no output,
-		// including `InnerProduct` - the shared value the fixture exists to have read twice:
-		//
-		//     8 expression(s) reach no output, so they do not affect what the material looks like:
-		//       afb219 MaterialExpressionScalarParameter Param (0.75) 'LazyScalar'
-		//       f8907d MaterialExpressionConstant3Vector 0.2,0.4,0.6
-		//       ecaedc MaterialExpressionMultiply Multiply
-		//       ...
-		//
-		// A named reroute's LINK IS ITS DECLARATION POINTER, not an `FExpressionInput`, so the input
-		// iterator above can never see it. The declaration is what carries the value, so marking it -
-		// and then its own inputs, which the loop then does - is what makes the reach set match the
-		// printed tree.
-		//
-		// A finding that fires on every labelled value is worth no more than one that never fires: a
-		// reader who sees eight unreached expressions learns nothing about which one is a mistake.
-		// `Declaration` is preferred over `DeclarationGuid` for the same reason `LabelOfUsage`
-		// prefers it - it is what the editor maintains, and the GUID is the reload fallback.
+		// Follow named reroutes through their declaration pointer, which is not a normal input.
+
 		if (const UMaterialExpressionNamedRerouteUsage* Usage =
 				Cast<UMaterialExpressionNamedRerouteUsage>(Current))
 		{
@@ -1242,19 +1198,8 @@ FString FTurboMCPMaterial::RenderLabels(const FPlan& InPlan)
 			Declaration != nullptr ? Declaration->MaterialExpressionEditorY : 0);
 		Out += FString::Printf(TEXT("\n    read in %d place(s)"), ReaderCount);
 
-		// WHAT THE DECLARATION FORWARDS, NAMED BY CLASS.
-		//
-		// *** THIS LINE EXISTS BECAUSE A BREAK TEST EXPOSED A BLIND SPOT, AND THE BLIND SPOT WAS IN THE
-		// TEST RATHER THAN IN THE TOOL. *** `P/E-MAT-LABEL-PROMOTE` was deliberately broken so that each
-		// declaration forwarded NOTHING - `Input.Expression` left null - and the suite that tests it
-		// STILL PASSED, because `read in N place(s)` counts USAGE NODES, and a usage pointing at a
-		// declaration that forwards nothing is still a usage. The material would have compiled to an
-		// unconnected input and NO READER WOULD HAVE SAID SO.
-		//
-		// SO THE READER NOW NAMES THE FORWARDING SOURCE'S CLASS. It is the ONE fact that separates a
-		// label that carries a value from a label that carries nothing, and it is readable without
-		// compiling the material. A caller who sees `forwards NOTHING` is looking at a broken label, and
-		// A READER THAT CANNOT DISTINGUISH THOSE TWO STATES IS NOT WITNESSING THE THING THAT MATTERS.
+		// Report the forwarding source; usage counts alone cannot reveal an empty declaration.
+
 		if (Declaration != nullptr && Declaration->Input.Expression != nullptr)
 		{
 			Out += FString::Printf(TEXT("\n    forwards %s"),
@@ -1467,29 +1412,7 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
     TArray<FString> Unreached;
 	for (UMaterialExpression* Expression : InPlan.Expressions)
 	{
-		// A FUNCTION OUTPUT NODE IS AN OUTPUT, SO IT CANNOT "REACH NO OUTPUT" - AND IT WAS LISTED
-		// AS ONE.
-		//
-		// MEASURED, ON THE MATERIAL FIXTURE. A function whose output was correctly wired, and whose
-		// value resolved to the right label, still answered:
-		//
-		//     connected outputs: 1 of 1
-		//     (Result
-		//         @FunctionTint)
-		//     1 expression(s) reach no output, so they do not affect what the material looks like:
-		//       f877ef MaterialExpressionFunctionOutput Output Result
-		//
-		// THE OUTPUT NODE WAS NAMED AS REACHING NO OUTPUT WHILE BEING THE OUTPUT. It could only
-		// happen on the function branch: a function output is an expression IN the function
-		// expression list, while a material output is a property of the material and never appears
-		// in that list. So the material branch can never lose its output this way and the function
-		// branch could.
-		//
-		// EXCLUDED BY ITS NATURE RATHER THAN BY MARKING IT REACHED, which is the honest rule: the
-		// node is a DESTINATION a value leaves through, not a value that feeds another. Saying it
-		// reaches no output is not a finding, it is a contradiction. The same reasoning applies to a
-		// function output whose `A` is unconnected - it is an empty output, which is a different
-		// report and not this one.
+		// Function output nodes are destinations, not unused computed values.
 		if (Cast<UMaterialExpressionFunctionOutput>(Expression) != nullptr)
 		{
 			continue;
@@ -1513,9 +1436,7 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 		{
 			Out += Line;
 		}
-		Out += TEXT("\n; a parameter in this list is a parameter nothing uses. That is a finding, ")
-			TEXT("not an omission: it is the one thing a material reader can say that the editor ")
-			TEXT("cannot show at a glance.");
+		Out += TEXT("\n; these expressions do not feed any connected output in the inspected graph. Review their purpose before removing them.");
 	}
 
 	// `2.1.12`: anything that could not be printed is a comment line, never a silent gap.
@@ -1993,6 +1914,24 @@ bool FTurboMCPMaterialDuplicateLabelTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Trace does not mislabel other output branch"), Trace.Contains(FTurboMCPMaterial::KeyOf(RoughnessValue)));
     TestTrue(TEXT("Trace retains requested branch"), Trace.Contains(FTurboMCPMaterial::KeyOf(ColorValue)));
     TestFalse(TEXT("Trace keeps fixture clean"), Package->IsDirty());
+    // More than 1,600 visited nodes must not turn a connected value into an unused finding.
+    FTurboMCPMaterial::FPlan LongPlan;
+    LongPlan.Material = Material; LongPlan.Asset = Material->GetPathName();
+    LongPlan.AssetName = Material->GetName(); LongPlan.GraphName = TEXT("Material");
+    LongPlan.OutputProperty = TEXT("MP_BaseColor");
+    UMaterialExpression* Previous = ColorValue;
+    LongPlan.Expressions.Add(ColorValue);
+    for (int32 Index = 0; Index < 1605; ++Index)
+    {
+        auto* Reroute = NewObject<UMaterialExpressionReroute>(Material);
+        Reroute->Input.Connect(0, Previous);
+        Previous = Reroute;
+        LongPlan.Expressions.Add(Reroute);
+    }
+    Material->GetEditorOnlyData()->BaseColor.Connect(0, Previous);
+    Material->GetEditorOnlyData()->Roughness.Expression = nullptr;
+    const FString LongTrace = FTurboMCPMaterial::RenderTree(LongPlan, true, 0);
+    TestFalse(TEXT("Long connected chain is not reported unused"), LongTrace.Contains(TEXT("reach no output")));
     return true;
 }
 #endif

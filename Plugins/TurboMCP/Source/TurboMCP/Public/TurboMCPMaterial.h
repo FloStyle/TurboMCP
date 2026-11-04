@@ -24,39 +24,12 @@ class UMaterialInterface;
 class UMaterialInstanceConstant;
 class UObject;
 
-/**
- * The material readers, behind `R-MAT-LABELS`, `R-MAT-LOAD`, `R-MAT-TRACE` and `R-MAT-BLOCKS`.
- *
- * ONE RENDERER FOR ALL FOUR, for the reason `04_FORMATS.md` gives and this project keeps
- * rediscovering: two tools that render the same thing agree until one of them is changed. Every
- * shared decision - how a node is named, when a value is defined once, how a label is written - is
- * made once here.
- *
- * THE TEXT IS `04_FORMATS.md` SECTION 2.5, WHICH IS SECTION 2 APPLIED TO MATERIALS. So the
- * S-expression shape, the `;` comments and the node-ID form are the ones `R-BP-LOAD` already uses:
- *
- *   (Constant3Vector ; 3fa91c
- *       ; class MaterialExpressionConstant3Vector
- *       Constant 0.5 0.5 0.5)
- *
- * A SECOND DIALECT THAT AGREES UNTIL IT DOES NOT IS THIS PROJECT'S RECURRING FAILURE, so where a
- * rendering question has an answer in `TurboMCPGraphText.cpp` the same answer is used here:
- *
- *  - a node's identifier rides in a comment on its head line, as `RenderNode` does;
- *  - a shared value is referred to as `$<key>`, which is `RenderPinValue`'s own marker;
- *  - a plain value reference is `(-> <key>)`;
- *  - an unlinked input at its default is not printed, which is `2.1.8`.
- *
- * WHAT IS DELIBERATELY DIFFERENT, AND WHY
- * ---------------------------------------
- * Materials have no exec chain, so there is no top-level "entry point" and `2.1.2` does not apply.
- * `2.5` gives the material shape instead: connected output properties as the top-level forms, a
- * labels section, parameters at the top. That is this file's structure.
- *
- * A LABEL REPLACES A NODE ID (`2.5`). Where `R-BP-LOAD` would print `$3fa91c`, a labelled value
- * prints `@SkyColour` and nothing else, because the spec says a value that has a label is referred
- * to ONLY by its label. That is the whole point of the labels feature: the material stays one
- * connected picture instead of islands.
+/** Shared planning and text rendering for material Load, Trace, Labels and Blocks.
+ * Reads do not assign GUIDs or edit graph objects. Missing GUIDs use a labelled fallback key.
+ * Named reroutes use @Label references with one reachable definition in tree output.
+ * Shared expressions use $key references. Comment membership uses the smallest box containing
+ * the expression's position, not measured visual bounds. Token budgets are advisory; explicit
+ * depth and expansion markers identify omitted tree content.
  */
 class FTurboMCPMaterial
 {
