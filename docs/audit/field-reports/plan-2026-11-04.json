@@ -673,7 +673,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reconciled_runtime_pending",
+      "validation": "native_run_in_progress",
       "source_ids": [
         "X-127",
         "FT-141"
@@ -683,7 +683,7 @@
         "2026-11-04_S2/FT-141"
       ],
       "dependencies": [],
-      "next_step": "Current ParseValue accepts scalar/value structs only; whole-array set is explicitly refused. Original failing tool remains unknown. Assignment nov04-array-shrink will reproduce 65 mappings and implement previewed revision-checked array_remove with exact retained-row and undo checks. FT-141 insertion remains explicitly pending."
+      "next_step": "Claim 2002415a3e3d4ad9822dc3dcc8180f44, base fc49cfd3. Candidate b87cc5ed adds revision-checked array_remove on a temporary copy with decimal index validation, before/after counts, help and reader operations. Native run b3d7c89cfeae423d867ee58b5b6329d0 building: generic InputMappingContext 65-to-64 removal, preview/invalid-index/stale-revision preservation, retained mappings and undo. No pass yet; not integrated. Whole-array set remains unsupported; original unidentified tool cause unresolved. FT-141 insertion remains pending."
     },
     {
       "id": "NOV04-29",
