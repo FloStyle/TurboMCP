@@ -118,10 +118,10 @@
       "title": "Report complete pin container types and link mismatch reasons",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "ready",
-      "owner": "unassigned",
-      "validation": "source_confirmed_runtime_pending",
+      "owner": "codex",
+      "validation": "candidate_testing",
       "source_ids": [
         "NT-11"
       ],
@@ -129,7 +129,7 @@
         "2026-10-30_S4/NT-11"
       ],
       "dependencies": [],
-      "next_step": "Approved repair scope nov04-pin-container-reporting; start after delegate append integration to avoid overlapping source changes. Verify complete pin type output and schema mismatch details with map-to-scalar refusal and compatible control."
+      "next_step": "Candidate dfc86f55 formats complete pin containers and subtype identities; append includes schema incompatibility reasons. Supervised test-graph-append build/workflow is active, covering scalar/map/set/array discovery, incompatible map-to-scalar preview and compatible map assignment. Review and integration pending."
     },
     {
       "id": "NOV04-05",
