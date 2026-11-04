@@ -33,6 +33,36 @@ namespace
             Input.Mask, Input.MaskR, Input.MaskG, Input.MaskB, Input.MaskA);
     }
 
+    FString ConnectionSnapshot(FTurboMCPMaterial::FPlan& Read)
+    {
+        TArray<FString> Entries;
+        for (UMaterialExpression* Expression : Read.Expressions)
+        {
+            if (!Expression) continue;
+            const FString Key = FTurboMCPMaterial::KeyOf(Expression);
+            Entries.Add(FString::Printf(TEXT("%s:%s:%d:%d"), *Key,
+                *Expression->GetClass()->GetName(), Expression->MaterialExpressionEditorX,
+                Expression->MaterialExpressionEditorY));
+            for (FExpressionInputIterator It{ Expression }; It; ++It)
+                if (It.Input) Entries.Add(FString::Printf(TEXT("%s#%d=%s"), *Key, It.Index, *ConnectionKey(*It.Input)));
+            if (const auto* Usage = Cast<UMaterialExpressionNamedRerouteUsage>(Expression))
+                Entries.Add(Key + TEXT("@") + Usage->DeclarationGuid.ToString());
+            if (const auto* Declaration = Cast<UMaterialExpressionNamedRerouteDeclaration>(Expression))
+                Entries.Add(Key + TEXT("name=") + Declaration->GetEditableName());
+        }
+        if (Read.Material)
+        {
+            for (int32 Index = 0; Index < MP_MAX; ++Index)
+                if (FExpressionInput* Input = Read.Material->GetExpressionInputForProperty(static_cast<EMaterialProperty>(Index)))
+                    Entries.Add(FString::Printf(TEXT("output%d=%s"), Index, *ConnectionKey(*Input)));
+            for (const UMaterialExpressionComment* Box : Read.Material->GetExpressionCollection().EditorComments)
+                if (Box) Entries.Add(FString::Printf(TEXT("box:%d:%d:%d:%d:%s"),
+                    Box->MaterialExpressionEditorX, Box->MaterialExpressionEditorY, Box->SizeX, Box->SizeY, *Box->Text));
+        }
+        Entries.Sort();
+        return FString::Join(Entries, TEXT("\n"));
+    }
+
 	/** True when an expression is a label declaration, so this pass never promotes a label itself. */
 	bool IsDeclaration(const UMaterialExpression* InExpression)
 	{
@@ -107,6 +137,7 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 		return false;
 	}
 
+	OutPlan.ConnectionSnapshot = ConnectionSnapshot(Read);
 	OutPlan.Asset = Read.Asset;
 	OutPlan.AssetName = Read.AssetName;
 	OutPlan.Material = Read.Material;
@@ -396,6 +427,15 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 	if (InPlan.Material == nullptr)
 	{
 		return FString::Printf(TEXT("error: %s has no material to write a label into"), *InPlan.Asset);
+	}
+
+	FTurboMCPMaterial::FPlan Current;
+	FString CurrentError;
+	if (!FTurboMCPMaterial::Plan(InPlan.Asset, FTurboMCPMaterial::ERead::Labels,
+		FString(), false, Current, CurrentError) || Current.Material != InPlan.Material ||
+		ConnectionSnapshot(Current) != InPlan.ConnectionSnapshot)
+	{
+		return TEXT("error: the material wiring, labels or layout changed after planning. Preview again. Nothing was changed by this call.");
 	}
 
 	// Compile only for an actual edit. Preview and unchanged calls never compile.

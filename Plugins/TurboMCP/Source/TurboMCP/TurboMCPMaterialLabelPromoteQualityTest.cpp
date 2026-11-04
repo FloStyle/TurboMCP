@@ -50,6 +50,12 @@ bool FTurboMCPMaterialLabelPromoteQualityTest::RunTest(const FString& Parameters
     TestFalse(TEXT("Preview does not dirty the package"), Package->IsDirty());
     TestEqual(TEXT("Preview preserves compilation state"), Material->StateId, BeforeState);
     TestEqual(TEXT("Red and green have separate promotions"), Plan.Promotions.Num(), 2);
+    Readers[0]->A.OutputIndex = 3;
+    const FString Stale = FTurboMCPMaterialLabelsPromote::Apply(Plan);
+    TestTrue(TEXT("Stale wiring is refused"), Stale.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Refusal preserves intervening edit"), Readers[0]->A.OutputIndex, 3);
+    TestFalse(TEXT("Stale refusal does not dirty the package"), Package->IsDirty());
+    Readers[0]->A.OutputIndex = 1;
     const FString Result = FTurboMCPMaterialLabelsPromote::Apply(Plan);
     TestTrue(TEXT("Apply succeeds"), Result.StartsWith(TEXT("changed:")));
     for (int32 Index = 0; Index < Readers.Num(); ++Index)
