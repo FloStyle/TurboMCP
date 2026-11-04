@@ -2064,3 +2064,7 @@ Standalone typed custom-event creation and append workflow passed native run c08
 ### OCT27-16 function flags
 
 Preview/edit pure and const flags accepted for the bounded helper/caller workflow. Native 94dab3763fb04d7c972470c0eccfb055 and offline 65032c7470f94e1a80ae4a4c6353cfb0 passed. Prior failures and unsupported macro/delegate/map conversion limits remain in docs/audit/function-flags-review.json.
+
+## Approved Widget Retarget quality review (2026-11-04)
+
+Review Preview/EditWidgetRetarget in a generic widget replacement workflow. Preserve valid single and multicast delegate bindings; remove only bindings whose widget or delegate is missing. Keep graphs and unrelated bindings unchanged. Delegate presence is not full signature or function validation. Call diagnostics must respect external function owners. Preview must not mutate; edits must state their in-memory effects, compile/save separation and validation limits. Review transaction behavior, refusal/no-op output, public help and comments. Use a native generic fixture to verify preservation, missing-widget/delegate removal, external-call diagnostics, preview and no-op behavior. Run the supervised focused widget-retarget suite and offline gate; record failures and untested limits. This assignment does not implement reparenting or rename targets.

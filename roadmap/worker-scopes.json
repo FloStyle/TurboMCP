@@ -3228,6 +3228,18 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructQualityTest.cpp",
             "Tools/test-struct-quality.py"
           ]
+        },
+        "widget-retarget-quality-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetarget.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPWidgetRetarget.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-widget-retarget.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetQualityTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
