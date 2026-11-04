@@ -17,6 +17,7 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialExpression.h"
 #include "Materials/MaterialExpressionComment.h"
+#include "Materials/MaterialExpressionNamedReroute.h"
 #include "Materials/MaterialFunctionInterface.h"
 #include "MaterialEditingLibrary.h"
 #include "Misc/Guid.h"
@@ -193,50 +194,31 @@ bool FTurboMCPMaterialTidy::Plan(const FString& InAsset, bool bInForce,
 			{
 				break;
 			}
+            if (Pass == MaxPasses - 1)
+            {
+                OutError = TEXT("Material Tidy cannot order cyclic expression dependencies. Repair the cycle before tidying. Nothing changed.");
+                return false;
+            }
 		}
 
-		// An expression nothing reaches gets its own column to the right of everything laid out, and it
-		// is MARKED. A layout that quietly folded it into a neighbouring column would be claiming it
-		// belongs somewhere it does not, and a reader would then believe the material is tidier than it
-		// is.
-		int32 MaxColumn = 0;
-		for (const FNode& Node : OutPlan.Nodes)
-		{
-			MaxColumn = FMath::Max(MaxColumn, Node.Column);
-		}
-		for (FNode& Node : OutPlan.Nodes)
-		{
-			if (Node.Column == 0)
-			{
-				// Column 0 is the output sources. Anything else still at 0 that nothing reads is unreached.
-				bool bReadByAnything = false;
-				for (const FNode& Other : OutPlan.Nodes)
-				{
-					if (Other.Expression == Node.Expression)
-					{
-						continue;
-					}
-					for (int32 InputIndex = 0; InputIndex < Other.Expression->CountInputs(); ++InputIndex)
-					{
-						const FExpressionInput* Input = Other.Expression->GetInput(InputIndex);
-						if (Input != nullptr && Input->Expression == Node.Expression)
-						{
-							bReadByAnything = true;
-							break;
-						}
-					}
-					if (bReadByAnything)
-					{
-						break;
-					}
-				}
-				if (!bReadByAnything)
-				{
-					Node.bUnreached = true;
-					Node.Column = MaxColumn + 1;
-				}
-			}
-		}
+        // Reachability follows actual material outputs, including named-reroute references.
+        TSet<const UMaterialExpression*> Reached;
+        TArray<const UMaterialExpression*> Pending;
+        for (const FString& Property : FTurboMCPMaterial::ConnectedOutputs(Read))
+            if (const UMaterialExpression* Root = FTurboMCPMaterial::OutputSource(Read, Property, false)) Pending.Add(Root);
+        while (!Pending.IsEmpty())
+        {
+            const UMaterialExpression* Expression = Pending.Pop();
+            if (!Expression || Reached.Contains(Expression)) continue;
+            Reached.Add(Expression);
+            for (int32 InputIndex = 0; InputIndex < Expression->CountInputs(); ++InputIndex)
+                if (const FExpressionInput* Input = Expression->GetInput(InputIndex))
+                    if (Input->Expression) Pending.Add(Input->Expression);
+            if (const auto* Usage = Cast<UMaterialExpressionNamedRerouteUsage>(Expression))
+                if (Usage->Declaration) Pending.Add(Usage->Declaration.Get());
+        }
+        for (FNode& Node : OutPlan.Nodes) Node.bUnreached = !Reached.Contains(Node.Expression);
+
 	}
 
 	// ---------------------------------------------------------------------------------------------
