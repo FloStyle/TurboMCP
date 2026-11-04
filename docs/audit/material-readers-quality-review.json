@@ -63,6 +63,16 @@
       "run": "ac0a5c6a319b40459f1d647b573a0920",
       "result": "failed",
       "scope": "Long connected reroute chain incorrectly reported unused. Traversal skips plain reroutes while unused classification includes them; retained failing regression. Documentation and explicit expansion warning updated."
+    },
+    {
+      "run": "99b5b398c9c94be2b766728157fa99db",
+      "result": "failed",
+      "scope": "Raw-link reachability change used a smart-pointer accessor on a stock raw expression pointer; compiler rejected it. Corrected both function and material output paths."
+    },
+    {
+      "run": "301e0ae44efd4fa482767ec0031c5ccf",
+      "result": "failed",
+      "scope": "Raw-link reachability change used a smart-pointer accessor on a stock raw expression pointer; compiler rejected it. Corrected both function and material output paths."
     }
   ],
   "remaining": [
