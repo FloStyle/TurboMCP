@@ -49,10 +49,16 @@ bool FTurboMCPPinContainerTest::RunTest(const FString& Parameters)
     {
         for (const FString& Id : Ids)
         {
-            if (!Id.Contains(Name)) continue;
+            if (!Id.Replace(TEXT(" "), TEXT("")).Contains(Name)) continue;
             FString Note;
             UEdGraphNode* Probe = FTurboMCPNodeType::BuildProbeNode(BP, Graph, Id, Note);
-            if (bSetter ? Cast<UK2Node_VariableSet>(Probe) != nullptr : Cast<UK2Node_VariableGet>(Probe) != nullptr) return Id;
+            if (bSetter)
+            {
+                if (const auto* Node = Cast<UK2Node_VariableSet>(Probe))
+                    if (Node->VariableReference.GetMemberName().ToString() == Name) return Id;
+            }
+            else if (const auto* Node = Cast<UK2Node_VariableGet>(Probe))
+                if (Node->VariableReference.GetMemberName().ToString() == Name) return Id;
         }
         return FString();
     };
