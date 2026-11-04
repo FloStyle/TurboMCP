@@ -66,10 +66,27 @@ bool FTurboMCPDelegateAppendTest::RunTest(const FString& Parameters)
         *TurboMCPNodeId::MakeForNode(Assignment, true), *Assignment->GetDelegatePin()->PinName.ToString(),
         *HandlerId, *UK2Node_CustomEvent::DelegateOutputName.ToString());
     if (!TestTrue(TEXT("Explicit existing handler plans"), FTurboMCPGraphAppend::Plan(BP->GetPathName(), Graph->GetName(), ExplicitText, Plan, Error))) { AddError(Error); return false; }
+    if (!TestTrue(TEXT("Explicit handler scratch preview succeeds"), FTurboMCPGraphAppend::Preflight(Plan, Report, Error))) { AddError(Error); return false; }
+    TestEqual(TEXT("Scratch preview leaves live nodes unchanged"), Graph->Nodes.Num(), BeforeExplicit);
+    TestTrue(TEXT("Scratch preview reports generated event cleanup"), Report.Contains(TEXT("1 superseded, disconnected engine-created event(s) removed")));
     if (!TestTrue(TEXT("Explicit existing handler applies"), FTurboMCPGraphAppend::Apply(Plan, Report, Error))) { AddError(Error); return false; }
     TestEqual(TEXT("Only requested assignment remains added"), Graph->Nodes.Num(), BeforeExplicit + 1);
     TestTrue(TEXT("Pre-existing handler retained"), Graph->Nodes.Contains(Handler));
     TestTrue(TEXT("Cleanup is reported"), Report.Contains(TEXT("1 superseded, disconnected engine-created event(s) removed")));
+    // Exercise failure after the spawner creates both nodes, bypassing only scratch
+    // preflight so the live transaction's cleanup is actually tested.
+    const int32 BeforeFailure = Graph->Nodes.Num();
+    FTurboMCPGraphAppend::FPlan FailurePlan;
+    if (!TestTrue(TEXT("Failure fixture plans"), FTurboMCPGraphAppend::Plan(BP->GetPathName(), Graph->GetName(), Text, FailurePlan, Error))) { AddError(Error); return false; }
+    TurboMCPGraphTextLex::FPinForm BadPin;
+    BadPin.Name = TEXT("MissingDelegatePinForFailureTest");
+    BadPin.Value = TEXT("42");
+    BadPin.Line = 2;
+    FailurePlan.Nodes[0].Pins.Add(BadPin);
+    TestFalse(TEXT("Live failure is reported"), FTurboMCPGraphAppend::ExecuteGraph(FailurePlan, BP, Graph, Report, Error, false, false));
+    TestTrue(TEXT("Failure reaches missing pin after spawning"), Error.Contains(BadPin.Name));
+    TestEqual(TEXT("Failed append removes both generated nodes"), Graph->Nodes.Num(), BeforeFailure);
+    TestTrue(TEXT("Failed append preserves existing handler"), Graph->Nodes.Contains(Handler));
     return !HasAnyErrors();
 }
 #endif

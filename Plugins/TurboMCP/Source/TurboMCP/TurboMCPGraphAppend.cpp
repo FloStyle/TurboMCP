@@ -403,8 +403,6 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		// list. `UBlueprintNodeSpawner::SpawnNode` calls `ParentGraph->Modify()`; using the real graph would
 		// mark the asset dirty even though the probe is removed again. A transient graph makes that
 		// `MarkPackageDirty` a no-op while preserving the same action filtering, class and pin resolution.
-        TSet<UEdGraphNode*> BeforeSpawn;
-        for (UEdGraphNode* Node : Graph->Nodes) if (Node) BeforeSpawn.Add(Node);
 		FString SpawnNote;
 		UEdGraphNode* Probe = FTurboMCPNodeType::BuildProbeNode(Blueprint, Graph, Form.TypeId,
 			SpawnNote);
