@@ -53,10 +53,15 @@
       "run": "73d51cfbd9b945e49e678801f187b25e",
       "result": "passed",
       "scope": "Block fixture verifies named-reroute incoming/outgoing values and direct material output destinations; clean package preserved. Full reader suite passed."
+    },
+    {
+      "run": "9c88e4c391e84836a3756586320d3cd8",
+      "result": "passed",
+      "scope": "Trace prints the requested branch, does not mislabel the other connected branch, and still identifies a genuinely unused expression; clean package preserved. Full reader suite passed."
     }
   ],
   "remaining": [
-    "Finish Blocks boundary-output and overall prose/code review.",
-    "Run final immutable candidate workflow and offline/scope gates before acceptance."
+    "Finish comments/help/output prose review and accurately document bounded behavior.",
+    "Run final offline and scope gates before acceptance."
   ]
 }
