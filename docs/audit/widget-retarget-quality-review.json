@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "workflow": "WF-WIDGET-RETARGET-QUALITY",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPWidgetRetarget",
+    "EditTurboMCPWidgetRetarget"
+  ],
+  "scenario": "Replace widget classes, inspect bindings, remove only missing widget/delegate targets, preserve graphs and supported bindings.",
+  "confirmed_failures": [
+    {
+      "run": "05ad2e9b8cf84c4f8d0bda4857a1b7a2",
+      "finding": "Legacy test setup uses binding creation that now correctly refuses malformed bindings; removal scenario was not reached."
+    },
+    {
+      "run": "8a1fa362ab9b462eb999c12baf04e775",
+      "finding": "Live help omitted signature validation limits because only the first sentence is exposed; summary corrected."
+    },
+    {
+      "run": "79d70811852244b3ac18cb457d250a8b",
+      "finding": "Help assertion rejected the grammatical form saving; corrected without changing tool behavior."
+    }
+  ],
+  "source_findings": [
+    "External function calls were checked against the widget class; now resolve the declared call target first.",
+    "Reusable plan accumulated old findings; reset before planning.",
+    "Comments and result wording implied full binding validity; narrowed to widget/delegate presence."
+  ],
+  "limitations": [
+    "No full signature or bound-function validation.",
+    "No dedicated undo transaction, compile or save; edits affect memory only.",
+    "Native fixture pending; no acceptance claimed."
+  ],
+  "remaining": [
+    "Complete native workflow and offline gate.",
+    "Regenerate capability inventory and integrate reviewed candidate."
+  ]
+}
