@@ -10,50 +10,10 @@
 #include "Containers/Array.h"
 #include "Containers/UnrealString.h"
 
-/**
- * `E-VCS-CHECKOUT`: what source control says about an asset, and taking the lock before a write.
- *
- * THE CHECKS ARE IN `Plan` AND NOT IN `Checkout`, so the Preview and its Edit twin refuse the same
- * input. `Checkout` consumes a plan and re-decides nothing.
- *
- * ---------------------------------------------------------------------------------------------
- * WHY BOTH QUESTIONS ARE ASKED, AND WHY ASKING THEM COSTS A PROVIDER NOTHING
- * ---------------------------------------------------------------------------------------------
- *
- * The engine's own gate is `VerifySourceControl` at `Engine/Source/Developer/SourceControl/Private/
- * SourceControlHelpers.cpp:61-85`, and it asks TWO questions in a fixed order:
- *
- *     :65  if (!SCModule.IsEnabled())        -> :67 "Revision control is not enabled."
- *     :74  if (!Provider->IsAvailable())     -> :76 "Revision control server is currently not available."
- *     :84  return Provider;   (nullptr on either refusal)
- *
- * BOTH ARE REQUIRED, AND THAT IS MEASURED RATHER THAN DEFENSIVE. Perforce
- * (`PerforceSourceControlProvider.cpp:232-235`), Plastic (`PlasticSourceControlProvider.cpp:283-286`) and
- * Subversion (`SubversionSourceControlProvider.cpp:79-82`) return `IsEnabled() == true` UNCONDITIONALLY,
- * while `IsAvailable()` is false - so asking only the first reports a working provider where there is none,
- * which is the one answer this tool must never give.
- *
- * AND A PROVIDER IS NEVER REACHED TO FIND OUT. With the default provider, `GetState` returns
- * `ECommandResult::Failed` and a NULL state (`DefaultSourceControlProvider.cpp:52-55`) that a reader can
- * mistake for "not under source control"; `CommandletSourceControlUtils.cpp:184-194` shows what that costs.
- * So the per-asset state is asked ONLY after both checks have passed, and a null state that arrives anyway
- * is reported as an ABSENT MEASUREMENT with its reason, which is `P1`: an absent measurement must be
- * distinguishable from a zero (`TurboMCPAssetCost.cpp:22-23`, `:101-105`).
- *
- * ---------------------------------------------------------------------------------------------
- * `UsesCheckout()` IS THE DIFFERENCE THAT DECIDES WHAT THE ANSWER MEANS
- * ---------------------------------------------------------------------------------------------
- *
- * `Spec/03_TOOLS.md:1348-1351` says "Perforce will refuse a save that is not checked out; git will not".
- * That is correct and it has lines: Perforce `:622-625` returns true, Git `:286-289` returns false with the
- * reason in words at `GitSourceControlModule.cpp:21` ("this provider does not uses the `CheckOut` command,
- * which is a Perforce `lock`, as Git has no lock command"). Subversion `:239-242` and Plastic `:498-501`
- * return true.
- *
- * SO A CHECKOUT ON A PROVIDER THAT DOES NOT USE CHECKOUT IS A NO-OP, AND THE ANSWER SAYS SO RATHER THAN
- * IMPLYING A LOCK WAS TAKEN. It is still asked of the provider and the provider's own answer is repeated
- * verbatim, because the honest form is "this is expected to be a no-op, and here is what it actually
- * answered" rather than either a prediction or a false claim of success.
+/** Provider state for asset checkout planning.
+ * Planning refreshes state only after checking provider availability. Missing state
+ * remains unknown. Checkout reports provider responses, not proof of an exclusive lock.
+ * Read/preview/edit wrappers each create a fresh plan; results are point-in-time observations.
  */
 struct FTurboMCPSourceControlAsset
 {
@@ -161,8 +121,7 @@ public:
 	/**
 	 * Works out everything: the module facts once, then one row per asset.
 	 *
-	 * This is the ONLY place a decision is made, which is what makes a Preview and its Edit twin
-	 * incapable of disagreeing.
+	 * Read, preview and edit each refresh the plan. Provider state may change between calls.
 	 */
 	static FTurboMCPSourceControlPlan Plan(const TArray<FString>& InAssets);
 

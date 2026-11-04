@@ -21,13 +21,7 @@
 
 namespace
 {
-	/**
-	 * The engine's two refusal strings, reproduced VERBATIM from its own gate.
-	 *
-	 * `SourceControlHelpers.cpp:67` and `:76`. They are copied rather than re-worded on purpose: a caller
-	 * who has seen the engine's message before must recognise this one, and `VerifySourceControl` is a
-	 * private helper, so there is no public call that would return them without first reaching a provider.
-	 */
+	// Match the engine readiness messages; check enabled before availability.
 	const TCHAR* const NotEnabledText = TEXT("Revision control is not enabled.");
 	const TCHAR* const NotAvailableText = TEXT("Revision control server is currently not available.");
 
@@ -37,20 +31,7 @@ namespace
 		return bValue ? TEXT("true") : TEXT("false");
 	}
 
-	/**
-	 * The absolute file on disk for one package path, or an empty string.
-	 *
-	 * TWO ROUTES, AND THE SECOND ONE EXISTS BECAUSE THE FIRST IS NOT ENOUGH ON ITS OWN.
-	 * `TurboMCPAcceptanceAssetCommandlet.cpp:1114-1118` records why: `FPackageName::LongPackageNameToFilename`
-	 * answered `../../../../(repo)/TestProject/Content/...`, a path RELATIVE TO THE
-	 * ENGINE DIRECTORY, and the save that used it failed while the package was complete in memory.
-	 * `TurboMCPTestMapCommandlet.cpp:325-334` records the same thing for the map path.
-	 *
-	 * SO ROUTE 1 IS THE ENGINE'S MOUNT-AWARE ANSWER, which is not the conversion that went wrong, and
-	 * ROUTE 2 IS THE HAND-BUILT `/Game` PATH the two commandlets use - and EACH IS VERIFIED WITH
-	 * `FileExists` before it is returned. A path that cannot be confirmed is reported as no path at all,
-	 * never as a path the caller might trust.
-	 */
+	// Resolve saved package files through mount points, with a checked /Game fallback.
 	FString FileForPackagePath(const FString& InPackagePath, FString& OutRoute)
 	{
 		OutRoute.Reset();
@@ -69,7 +50,7 @@ namespace
 
 		// ROUTE 2: built by hand for /Game, exactly as the two commandlets above do it.
 		const FString GameRoot = TEXT("/Game");
-		if (InPackagePath.StartsWith(GameRoot))
+		if (InPackagePath.StartsWith(GameRoot + TEXT("/")))
 		{
 			const FString Full = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir())
 				+ InPackagePath.RightChop(GameRoot.Len())
@@ -126,8 +107,8 @@ namespace
 		if (InRow.bStateUnknown)
 		{
 			Out.Add(FString::Printf(TEXT("      STATE: unknown - %s"), *InRow.StateUnknownReason));
-			Out.Add(TEXT("      THIS IS NOT 'not under source control'. An absent measurement and a"));
-			Out.Add(TEXT("      measured absence are different answers (P1)."));
+			Out.Add(TEXT("      Source-control status could not be determined. This does not mean the file is"));
+			Out.Add(TEXT("      untracked. Refresh the provider state before deciding how to proceed."));
 		}
 		else if (InRow.bStateRead)
 		{
@@ -144,7 +125,7 @@ namespace
 
 		if (bShowCheckoutIntent)
 		{
-			Out.Add(TEXT("      WHAT A CHECKOUT WOULD DO:"));
+			Out.Add(TEXT("      Checkout plan:"));
 			if (!InPlan.bUsesCheckout)
 			{
 				Out.Add(FString::Printf(
@@ -156,9 +137,9 @@ namespace
 			}
 			else if (InRow.bCheckedOut || InRow.bAdded)
 			{
-				Out.Add(TEXT("        nothing to do: the state says this file is already checked out here"));
-				Out.Add(TEXT("        (or open for add), which is the condition the engine's own"));
-				Out.Add(TEXT("        CheckOutFile returns true on - SourceControlHelpers.cpp:456-460."));
+				Out.Add(TEXT("        No checkout is needed: the file is already checked out here"));
+				Out.Add(TEXT("        or open for add."));
+				Out.Add(TEXT("        The edit will leave this file unchanged."));
 			}
 			else if (!InRow.bStateRead)
 			{
@@ -166,9 +147,9 @@ namespace
 			}
 			else if (!InRow.bCanCheckout)
 			{
-				Out.Add(TEXT("        the provider's state says this file CANNOT be checked out"));
-				Out.Add(TEXT("        (CanCheckout() == false). It would still be attempted, because"));
-				Out.Add(TEXT("        CanCheckout() is the provider's opinion and its answer is the fact."));
+				Out.Add(TEXT("        The provider currently reports that this file cannot be checked out."));
+				Out.Add(TEXT("        The edit will still request checkout and report the operation result;"));
+				Out.Add(TEXT("        the preview does not guarantee success."));
 			}
 			else
 			{
@@ -326,8 +307,8 @@ FString FTurboMCPSourceControl::Render(const FTurboMCPSourceControlPlan& InPlan,
 {
 	TArray<FString> Lines;
 	Lines.Add(TEXT("=== source control state ==="));
-	Lines.Add(TEXT("WHAT THIS ANSWER IS: the state source control holds for each asset, or, when there is"));
-	Lines.Add(TEXT("no usable provider, a REFUSAL NAMED PER ASSET. The refusal strings are the ENGINE'S OWN."));
+	Lines.Add(TEXT("Current provider state for each requested asset. If the provider is unavailable,"));
+	Lines.Add(TEXT("each asset reports why its state could not be read."));
 	Lines.Add(TEXT(""));
 
 	// ---------------------------------------------------------------------------------------------
@@ -376,14 +357,14 @@ FString FTurboMCPSourceControl::Render(const FTurboMCPSourceControlPlan& InPlan,
 	if (!InPlan.RunRefusal.IsEmpty())
 	{
 		Lines.Add(TEXT(""));
-		Lines.Add(FString::Printf(TEXT("REFUSAL, THE SAME FOR EVERY ASSET BELOW: %s"), *InPlan.RunRefusal));
-		Lines.Add(FString::Printf(TEXT("  the string is the engine's own: %s"), *InPlan.RunRefusalSource));
+		Lines.Add(FString::Printf(TEXT("Provider unavailable: %s"), *InPlan.RunRefusal));
+		Lines.Add(FString::Printf(TEXT("  Diagnostic source: %s"), *InPlan.RunRefusalSource));
 		Lines.Add(TEXT("  Per-file state was not requested because provider readiness checks failed."));
 	}
 	else
 	{
 		Lines.Add(TEXT(""));
-		Lines.Add(TEXT("BOTH QUESTIONS PASSED, so the provider was asked for each asset's state."));
+		Lines.Add(TEXT("The provider is enabled and available. Per-asset results below show whether state was obtained."));
 	}
 
 	Lines.Add(TEXT(""));
@@ -392,8 +373,8 @@ FString FTurboMCPSourceControl::Render(const FTurboMCPSourceControlPlan& InPlan,
 
 	if (InPlan.Assets.Num() == 0)
 	{
-		Lines.Add(TEXT("NO ASSET WAS GIVEN, so the lines above are the whole answer: they say whether the"));
-		Lines.Add(TEXT("project has source control on and which provider, which is the read half of this row."));
+		Lines.Add(TEXT("No assets were supplied. The report above describes the selected provider."));
+		Lines.Add(TEXT("Supply saved asset paths to inspect per-file state."));
 	}
 	else
 	{
@@ -419,14 +400,14 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 
 	if (InPlan.Assets.Num() == 0)
 	{
-		Lines.Add(TEXT("NO ASSET WAS GIVEN, so there is nothing to check out. The answer above is the read half."));
+		Lines.Add(TEXT("No assets were supplied. No checkout was attempted."));
 		return FString::Join(Lines, TEXT("\n"));
 	}
 
 	if (!InPlan.RunRefusal.IsEmpty())
 	{
 		Lines.Add(FString::Printf(TEXT("REFUSED FOR EVERY ASSET: %s"), *InPlan.RunRefusal));
-		Lines.Add(FString::Printf(TEXT("  the string is the engine's own: %s"), *InPlan.RunRefusalSource));
+		Lines.Add(FString::Printf(TEXT("  Diagnostic source: %s"), *InPlan.RunRefusalSource));
 		Lines.Add(TEXT("  No checkout was attempted; provider readiness checks failed."));
 		Lines.Add(TEXT("  Configure or reconnect revision control, then refresh with ReadTurboMCPVcsState."));
 		return FString::Join(Lines, TEXT("\n"));
@@ -461,18 +442,10 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 			continue;
 		}
 
-		// -----------------------------------------------------------------------------------------
-		// THE NO-OP BRANCH, AND IT IS THE HONEST FORM OF THE GIT ANSWER.
-		//
-		// `UsesCheckout() == false` means the provider has no lock concept at all, so a `CheckOut` is
-		// a no-op BY CONSTRUCTION. Saying that and stopping would be a prediction; the brief for this
-		// row requires the ANSWER. So the operation is still issued and the provider's own return
-		// value and error text are repeated verbatim - on Git that is `Failed` with
-		// "Operation 'CheckOut' not supported by revision control provider 'Git'", produced before any
-		// command runs (GitSourceControlProvider.cpp:225-238), so nothing on disk is touched.
-		// -----------------------------------------------------------------------------------------
-		const bool bNoOpExpected = !InPlan.bUsesCheckout;
-		if (bNoOpExpected)
+		// Capability flags do not prove an operation outcome or exclusive ownership.
+		// Preserve the provider response even when checkout is unsupported.
+		const bool bCheckoutUnsupported = !InPlan.bUsesCheckout;
+		if (bCheckoutUnsupported)
 		{
 			Lines.Add(TEXT("      UsesCheckout() == false: checkout is not a supported provider capability."));
 			Lines.Add(TEXT("      No lock is promised. The operation is submitted below;"));
@@ -481,9 +454,9 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 		}
 		else if (Row.bCheckedOut || Row.bAdded)
 		{
-			Lines.Add(TEXT("      ALREADY DONE: the state says this file is checked out here (or open for add)."));
-			Lines.Add(TEXT("      Nothing was issued, which is what the engine's own CheckOutFile does at"));
-			Lines.Add(TEXT("      SourceControlHelpers.cpp:456-460."));
+			Lines.Add(TEXT("      Unchanged: this file is already checked out here or open for add."));
+			Lines.Add(TEXT("      No checkout operation was issued."));
+			Lines.Add(TEXT("      No compile or save was requested."));
 			Lines.Add(TEXT(""));
 			continue;
 		}
@@ -503,7 +476,7 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 		}
 
 		Lines.Add(FString::Printf(TEXT("      provider answer, verbatim: ECommandResult::%s"), *ResultWord));
-		if (bNoOpExpected)
+		if (bCheckoutUnsupported)
 		{
 			Lines.Add(TEXT("      This is the selected provider response, not proof of a lock."));
 		}
@@ -511,7 +484,7 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 		const FSourceControlResultInfo& ResultInfo = Operation->GetResultInfo();
 		if (ResultInfo.ErrorMessages.Num() == 0 && ResultInfo.InfoMessages.Num() == 0)
 		{
-			Lines.Add(TEXT("      the provider attached NO message to the operation."));
+			Lines.Add(TEXT("      The provider supplied no additional message."));
 		}
 		for (const FText& Message : ResultInfo.ErrorMessages)
 		{
