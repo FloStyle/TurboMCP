@@ -8,6 +8,8 @@
 #include "UObject/Package.h"
 #include "UObject/StrongObjectPtr.h"
 #include "InputAction.h"
+#include "InputMappingContext.h"
+#include "InputCoreTypes.h"
 #include "Editor.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
@@ -169,6 +171,43 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("InputAction key settings creation accepted"), SettingsCreate.StartsWith(TEXT("edited:")));
     const auto* Settings = Action->GetPlayerMappableKeySettings().Get();
     TestTrue(TEXT("real InputAction settings independently verified"), Settings && Settings->GetOuter() == Action.Get() && Settings->GetMappingName() == FName(TEXT("TurboMCPJump")));
+    TStrongObjectPtr<UInputMappingContext> Context(NewObject<UInputMappingContext>(Package, TEXT("ArrayShrinkContext"), RF_Transactional));
+    for (int32 Index=0;Index<65;++Index) Context->MapKey(Action.Get(),Index%2==0?EKeys::A:EKeys::B);
+    const auto OriginalMappings=Context->GetMappings();
+    const FString MappingPath=TEXT("DefaultKeyMappings.Mappings");
+    auto MappingRevision=[&]()
+    {
+        const FString Read=UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(Context->GetPathName(),MappingPath);
+        TArray<FString> Lines;Read.ParseIntoArrayLines(Lines);
+        for (const FString& Line:Lines) if (Line.StartsWith(TEXT("revision: "))) return Line.Mid(10);
+        return FString();
+    };
+    const FString MappingStart=MappingRevision();
+    TestFalse(TEXT("Mapping reader returns revision"),MappingStart.IsEmpty());
+    Package->SetDirtyFlag(false);
+    const FString ArrayPreview=UTurboMCPPreviewToolset::PreviewTurboMCPDataAssetProperty(Context->GetPathName(),MappingPath,TEXT("array_remove"),TEXT("64"),TEXT(""),MappingStart);
+    TestTrue(TEXT("Array preview reports 65 to 64"),ArrayPreview.StartsWith(TEXT("preview:")) && ArrayPreview.Contains(TEXT("array_count: 65 -> 64")));
+    TestEqual(TEXT("Preview preserves mapping count"),Context->GetMappings().Num(),65);
+    TestFalse(TEXT("Preview preserves clean package"),Package->IsDirty());
+    for (const FString& Index:TArray<FString>{TEXT("65"),TEXT("-1"),TEXT("1.5"),TEXT(" 1"),TEXT("9999999999")})
+    {
+        const FString Refusal=UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Context->GetPathName(),MappingPath,TEXT("array_remove"),Index,TEXT(""),MappingStart);
+        TestTrue(TEXT("Invalid index refuses"),Refusal.StartsWith(TEXT("refused:")));
+        TestEqual(TEXT("Invalid index preserves revision"),MappingRevision(),MappingStart);
+        TestFalse(TEXT("Invalid index preserves clean package"),Package->IsDirty());
+    }
+    const FString ArrayEdit=UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Context->GetPathName(),MappingPath,TEXT("array_remove"),TEXT("64"),TEXT(""),MappingStart);
+    AddInfo(ArrayEdit);
+    TestTrue(TEXT("Array removal reports verified count"),ArrayEdit.StartsWith(TEXT("edited:")) && ArrayEdit.Contains(TEXT("array_count: 65 -> 64")));
+    TestEqual(TEXT("Last mapping removed"),Context->GetMappings().Num(),64);
+    for (int32 Index=0;Index<Context->GetMappings().Num() && Index<64;++Index)
+        TestTrue(TEXT("Retained mapping preserved"),Context->GetMappings()[Index]==OriginalMappings[Index]);
+    TestTrue(TEXT("Stale revision refuses second removal"),UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Context->GetPathName(),MappingPath,TEXT("array_remove"),TEXT("0"),TEXT(""),MappingStart).StartsWith(TEXT("refused:")));
+    TestEqual(TEXT("Stale request preserves count"),Context->GetMappings().Num(),64);
+    GEditor->UndoTransaction();
+    TestEqual(TEXT("Undo restores all mappings"),Context->GetMappings().Num(),65);
+    TestEqual(TEXT("Undo restores complete asset revision"),MappingRevision(),MappingStart);
+    Context->MarkAsGarbage();
     Action->MarkAsGarbage();
     Package->SetDirtyFlag(false);
     Asset->MarkAsGarbage();
