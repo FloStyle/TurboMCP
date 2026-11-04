@@ -1375,6 +1375,19 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 	{
 		const FString& Name = Change.Field.Name;
 
+        if (Change.Op == EFieldOp::Add)
+        {
+            FEdGraphPinType PinType;
+            FString Reason;
+            if (!ResolveType(Change.Field.TypeText, PinType, Reason) ||
+                !FStructureEditorUtils::CanHaveAMemberVariableOfType(Struct, PinType, &Reason))
+            {
+                OutError = FString::Printf(TEXT("Cannot add field '%s' with type '%s': %s. Nothing changed."),
+                    *Name, *Change.Field.TypeText, Reason.IsEmpty() ? TEXT("Unreal rejected this member type") : *Reason);
+                return false;
+            }
+        }
+
 		if (Change.Op != EFieldOp::Add)
 		{
 			const bool bExistsNow = OutPlan.CurrentFields.ContainsByPredicate(
@@ -1603,16 +1616,19 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 		{
 			FEdGraphPinType PinType;
 			FString TypeWhy;
-			if (!ResolveType(Change.Field.TypeText, PinType, TypeWhy))
-			{
-				Vanished.Add(Name);
-				continue;
-			}
-			if (!FStructureEditorUtils::AddVariable(Struct, PinType))
-			{
-				Vanished.Add(Name);
-				continue;
-			}
+            if (!ResolveType(Change.Field.TypeText, PinType, TypeWhy) ||
+                !FStructureEditorUtils::CanHaveAMemberVariableOfType(Struct, PinType, &TypeWhy))
+            {
+                Vanished.Add(FString::Printf(TEXT("%s (add type %s: %s)"), *Name, *Change.Field.TypeText,
+                    TypeWhy.IsEmpty() ? TEXT("Unreal rejected the member type") : *TypeWhy));
+                continue;
+            }
+            if (!FStructureEditorUtils::AddVariable(Struct, PinType))
+            {
+                Vanished.Add(FString::Printf(TEXT("%s (Unreal AddVariable rejected type %s after validation; inspect LogBlueprint for engine diagnostics)"),
+                    *Name, *Change.Field.TypeText));
+                continue;
+            }
 
 			// THE FIELD IS NAMED STRAIGHT AFTER THE ADD, BECAUSE `AddVariable` CANNOT NAME IT.
 			// `StructureEditorUtils.cpp:304` passes an EMPTY name base to
@@ -1838,3 +1854,4 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 
 	return Out;
 }
+
