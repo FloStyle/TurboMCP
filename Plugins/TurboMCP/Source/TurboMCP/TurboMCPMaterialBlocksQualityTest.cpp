@@ -171,7 +171,7 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
     auto* Third = NewObject<UMaterialExpressionReroute>(ChainMaterial, NAME_None, RF_Transactional);
     Third->MaterialExpressionGuid = FGuid::NewGuid(); Third->Input.Connect(0, Second);
     ChainMaterial->GetExpressionCollection().AddExpression(Third);
-    Consumer->MaterialExpressionGuid = FGuid::NewGuid(); Consumer->A.Connect(0, Third);
+    Consumer->MaterialExpressionGuid = FGuid::NewGuid(); Consumer->A.Connect(0, Third); Consumer->ConstB = 0.0f;
     ChainMaterial->GetExpressionCollection().AddExpression(Consumer);
     ChainMaterial->GetEditorOnlyData()->BaseColor.Connect(0, Consumer);
     ChainMaterial->GetEditorOnlyData()->Roughness.Connect(0, First);
@@ -179,6 +179,7 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
     ChainMaterial->GetEditorOnlyData()->EmissiveColor.Connect(0, Consumer);
     ChainMaterial->PostEditChange();
     const FColor ChainBefore = Capture(TEXT("chain-before.png"), ChainMaterial);
+    TestTrue(TEXT("Chain render is not clipped or blank"), ChainBefore.R > 100 && ChainBefore.R < 245 && ChainBefore.R == ChainBefore.G && ChainBefore.G == ChainBefore.B);
     FTurboMCPMaterialBlocks::FPlan ChainPlan;
     if (!TestTrue(TEXT("Chain plan succeeds"), FTurboMCPMaterialBlocks::Plan(ChainMaterial->GetPathName(), ChainPlan, Error))) return false;
     TestEqual(TEXT("Both internal reroutes are removed"), ChainPlan.InBlockReroutes.Num(), 2);
