@@ -366,25 +366,14 @@ def main():
     check("THE COMPILED RESULT IS STATED, so the requirement is claimed explicitly",
           "CHECK RESULTS (not proof of identical rendered output)" in edit,
           "the edit does not state the compiled result")
-    # *** THE TOOL'S OWN NUMBERS ARE REPORTED, NOT ASSERTED, AND THE REASON IS A MEASURED
-    # INCONSISTENCY THAT THIS WORKSTREAM COULD NOT SETTLE. *** It answers `22 of 16 pre-existing
-    # expression(s) still present` - MORE SURVIVORS THAN THE BASELINE IT NAMES, WHICH IS IMPOSSIBLE -
-    # while also reporting no loss and no unexpected gain. Four attempts to find the witness that
-    # agrees were each falsified (`R-MAT-BLOCKS` lists only what its block walk reaches and printed 10
-    # keys for a baseline of 16; `R-MAT-LOAD` printed no six-hex keys at all, and AN EMPTY SET MAKES
-    # EVERY SUBSET CHECK PASS FOR THE WRONG REASON; the tool's baseline is not published, so the suite
-    # cannot recompute it). SO IT IS RECORDED AS AN OPEN DEFECT IN THE TOOL'S REPORT rather than
-    # hidden behind an assertion that was loosened until it passed.
-    #
-    # WHAT IS ASSERTED INSTEAD IS THE PART THAT CAN BE WITNESSED INDEPENDENTLY: `R-MAT-BLOCKS`, the
-    # SAME READER BEFORE AND AFTER, shows every pre-existing key still present, and the labels and
-    # reader counts that follow are queries the tool does not compute at all.
+    # Check the report as well as the independent reader: survivors cannot exceed the baseline.
     match_survived = re.search(r"(\d+) of (\d+) pre-existing expression\(s\) still present", edit)
     survived = int(match_survived.group(1)) if match_survived else -1
     baseline_in_edit = int(match_survived.group(2)) if match_survived else -1
     new_errors = number_before(r"the engine reports (\d+) error\(s\)", edit)
-    print("    the tool states: %s of %s pre-existing expression(s) still present (reported, and see "
-          "the suite docstring: the pair is not self-consistent)" % (survived, baseline_in_edit))
+    check("the reported survivor count equals the nonempty baseline",
+          survived == baseline_in_edit and baseline_in_edit > 0,
+          f"survived={survived}, baseline={baseline_in_edit}")
     check("no pre-existing expression was LOST, witnessed by the READER on both sides",
           keys_before.issubset(keys_after),
           "the reader lost %s key(s): %s"
