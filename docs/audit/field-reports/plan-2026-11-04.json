@@ -258,10 +258,10 @@
       "title": "Handle loop break and reset back edges in scoped tidy",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "ready",
-      "owner": "unassigned",
-      "validation": "source_gap_confirmed_runtime_pending",
+      "owner": "codex",
+      "validation": "partial_candidate_untested",
       "source_ids": [
         "TD-51",
         "TD-53",
@@ -273,7 +273,7 @@
         "2026-11-04_S1/TD-59"
       ],
       "dependencies": [],
-      "next_step": "Source reconciliation: GraphTidy column ordering builds dependencies from every OutPlan.Wire and checks every node despite scoped selection; unrelated cycles can therefore block a selected edit. Break/reset feedback also needs explicit layout-edge treatment. Reproduce stock loop-break via reroutes and DoOnce reset, plus an unselected cycle and true data-cycle refusal; preserve all links. No implementation yet. Approved bounded assignment nov04-tidy-feedback follows interface-tidy integration."
+      "next_step": "Claim 5217d311f1084fb09e42757edff80dd2 at 9c46ef92. Candidate 3e17c256 identifies stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset inputs, preserves wires, excludes feedback from columns/auto-path, and ignores fixed-to-fixed column dependencies for selected tidy. Remaining: downstream forward-layout/quality traversal audit, output/help, native feedback and unrelated-cycle fixtures, genuine data-cycle refusal, screenshots and gates. Not integrated."
     },
     {
       "id": "NOV04-08",
