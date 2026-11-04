@@ -2128,3 +2128,8 @@ NOV04-06 integrated: source 32ab3675; final native b2d63e44b28440feaabcb46bffc3a
 ### NOV04-07 integrated evidence
 
 Stock Break/Reset feedback and scoped-cycle repair integrated from source 061fae0c. Final native run 5d6b6a4a15f940e2acaaa9fa2de2bb86 passed; offline 806ea34af7ca498190457fdae08eadc1 passed 26/26; source scope snapshot 93cc2fcc passed. Screenshots from 1a781a2a8bfc4a878cc6d83036d1c338 show feedback below node bodies. Earlier visual defect and fixture guard failure remain recorded in the field plan. Validation is limited to the recorded fixtures.
+
+
+### NOV04-28 array-shrink repair contract
+
+Readiness: ready. Assignment nov04-array-shrink. Reconcile the unknown original write with current DataAssetProperty refusal of array set. Reproduce using a generic UInputMappingContext with 65 mappings. Add a targeted array_remove operation using an exact zero-based index in Key and empty Value, preserving remaining elements, references and order. Require current revision; preview must not mutate or dirty. Reject malformed/out-of-range indices and stale revisions without mutation. Reuse existing transaction, post-edit verification and rollback; verify 65-to-64 count, exact retained mappings, read-back and undo. Report before/after counts and explain supported array operations in live help and reader output. Do not enable broad array text import or unsafe reference construction. Preserve unknown original cause and track requested insertion separately if not implemented. Run supervised test-data-asset-tools and offline gates. Stock engine, no user asset edits.

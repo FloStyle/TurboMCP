@@ -670,10 +670,10 @@
       "title": "Reproduce data-asset array shrink and define element edits",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
+      "validation": "source_reconciled_runtime_pending",
       "source_ids": [
         "X-127",
         "FT-141"
@@ -683,7 +683,7 @@
         "2026-11-04_S2/FT-141"
       ],
       "dependencies": [],
-      "next_step": "Exact failing tool and payload missing. First compare current DataAssetProperty array semantics and reproduce shrink on a generic Enhanced Input mapping context."
+      "next_step": "Current ParseValue accepts scalar/value structs only; whole-array set is explicitly refused. Original failing tool remains unknown. Assignment nov04-array-shrink will reproduce 65 mappings and implement previewed revision-checked array_remove with exact retained-row and undo checks. FT-141 insertion remains explicitly pending."
     },
     {
       "id": "NOV04-29",
