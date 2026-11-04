@@ -12,6 +12,21 @@
 #include "Materials/MaterialExpressionComment.h"
 #include "Materials/MaterialExpressionNamedReroute.h"
 #include "UObject/Package.h"
+#include "Materials/MaterialExpressionAppendVector.h"
+#include "Materials/MaterialExpressionConstant.h"
+#include "Materials/MaterialRenderProxy.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Slate/WidgetRenderer.h"
+#include "Widgets/Images/SImage.h"
+#include "Styling/SlateBrush.h"
+#include "ShaderCompiler.h"
+#include "ImageUtils.h"
+#include "Serialization/BufferArchive.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "HAL/FileManager.h"
+#include "Tools/TurboMCPToolsets.h"
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPMaterialBlocksQualityTest,
     "TurboMCP.Material.BlocksQuality", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
@@ -35,7 +50,7 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
         auto* Reader = NewObject<UMaterialExpressionAdd>(Material, NAME_None, RF_Transactional);
         Reader->MaterialExpressionGuid = FGuid::NewGuid();
         Reader->MaterialExpressionEditorX = Box->MaterialExpressionEditorX + 50;
-        Reader->MaterialExpressionEditorY = 100;
+        Reader->MaterialExpressionEditorY = 100 + (Index % 2) * 200;
         // Distinct outputs of one expression are distinct values, not one shared vector.
         Reader->A.Connect((Index % 2) + 1, Value);
         Reader->ConstB = 0.0f;
@@ -44,6 +59,49 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
     }
     Material->GetEditorOnlyData()->BaseColor.Connect(0, Readers[0]);
     Material->GetEditorOnlyData()->Roughness.Connect(0, Readers[1]);
+    Material->MaterialDomain = MD_UI;
+    auto* RG = NewObject<UMaterialExpressionAppendVector>(Material, NAME_None, RF_Transactional);
+    RG->MaterialExpressionGuid = FGuid::NewGuid(); RG->A.Connect(0, Readers[0]); RG->B.Connect(0, Readers[1]);
+    RG->MaterialExpressionEditorX = 1800;
+    Material->GetExpressionCollection().AddExpression(RG);
+    auto* Blue = NewObject<UMaterialExpressionConstant>(Material, NAME_None, RF_Transactional);
+    Blue->MaterialExpressionGuid = FGuid::NewGuid(); Blue->R = 0.0f; Blue->MaterialExpressionEditorX = 1800; Blue->MaterialExpressionEditorY = 200;
+    Material->GetExpressionCollection().AddExpression(Blue);
+    auto* RGB = NewObject<UMaterialExpressionAppendVector>(Material, NAME_None, RF_Transactional);
+    RGB->MaterialExpressionGuid = FGuid::NewGuid(); RGB->A.Connect(0, RG); RGB->B.Connect(0, Blue);
+    RGB->MaterialExpressionEditorX = 2100;
+    Material->GetExpressionCollection().AddExpression(RGB);
+    Material->GetEditorOnlyData()->EmissiveColor.Connect(0, RGB);
+    Material->EditorX = 2400; Material->EditorY = 0;
+    Material->PostEditChange();
+    const FString Folder = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("TurboMCP/MaterialBlocksQuality"), FPaths::GetCleanFilename(Package->GetName()));
+    IFileManager::Get().MakeDirectory(*Folder, true);
+    auto Capture = [&](const TCHAR* Name) -> FColor
+    {
+        if (GShaderCompilingManager) GShaderCompilingManager->FinishAllCompilation();
+        ENQUEUE_RENDER_COMMAND(BlocksUniforms)([](FRHICommandListImmediate& RHICmdList) {
+            FMaterialRenderProxy::UpdateDeferredCachedUniformExpressions(RHICmdList);
+        });
+        FlushRenderingCommands();
+        FSlateBrush Brush; Brush.SetResourceObject(Material); Brush.ImageSize = FVector2D(128,128);
+        TSharedRef<SWidget> Widget = SNew(SImage).Image(&Brush);
+        FWidgetRenderer Renderer(false);
+        UTextureRenderTarget2D* Target = FWidgetRenderer::CreateTargetFor(FVector2D(128,128), TF_Bilinear, false);
+        if (!TestNotNull(TEXT("Real render target"), Target)) return FColor::Black;
+        Renderer.DrawWidget(Target, Widget, FVector2D(128,128), 0.0f, false);
+        FlushRenderingCommands();
+        if (GShaderCompilingManager) GShaderCompilingManager->FinishAllCompilation();
+        Renderer.DrawWidget(Target, Widget, FVector2D(128,128), 0.0f, false);
+        FlushRenderingCommands();
+        TArray<FColor> Pixels;
+        TestTrue(TEXT("Rendered pixels readable"), Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels));
+        FBufferArchive PNG;
+        TestTrue(TEXT("PNG encoded"), FImageUtils::ExportRenderTarget2DAsPNG(Target, PNG));
+        TestTrue(TEXT("PNG saved"), FFileHelper::SaveArrayToFile(PNG, *FPaths::Combine(Folder, Name)));
+        return Pixels.IsValidIndex(64*128+64) ? Pixels[64*128+64] : FColor::Black;
+    };
+    const FColor BeforeColor = Capture(TEXT("before.png"));
+    TestTrue(TEXT("Fixture displays distinct red and green channels"), BeforeColor.G > BeforeColor.R && BeforeColor.R > 20 && BeforeColor.B < 10);
     Package->SetDirtyFlag(false);
     const FGuid BeforeState = Material->StateId;
     FTurboMCPMaterialBlocks::FPlan Plan;
@@ -72,6 +130,11 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Original source preserved"), Connection->Expression == Value);
         TestEqual(TEXT("Original source output preserved"), Connection->OutputIndex, (Index % 2) + 1);
     }
+    const FColor AfterColor = Capture(TEXT("after.png"));
+    TestEqual(TEXT("Rendered color preserved"), AfterColor, BeforeColor);
+    const FString GraphCapture = UTurboMCPLookToolset::LookTurboMCPCapture(Material->GetPathName(), TEXT(""), TEXT("asset-editor"), TEXT("fit"), TEXT(""));
+    TestFalse(TEXT("Material editor capture succeeds"), GraphCapture.StartsWith(TEXT("error:")));
+    FFileHelper::SaveStringToFile(GraphCapture, *FPaths::Combine(Folder, TEXT("graph-capture.txt")));
     FTurboMCPMaterialBlocks::FPlan RepeatPlan;
     TestTrue(TEXT("Repeat plan succeeds"), FTurboMCPMaterialBlocks::Plan(Material->GetPathName(), RepeatPlan, Error));
     TestTrue(TEXT("Cleanup is stable after one edit"), RepeatPlan.bNothingToChange);

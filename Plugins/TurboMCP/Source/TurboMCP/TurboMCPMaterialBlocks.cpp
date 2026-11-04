@@ -341,7 +341,14 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		Crossing.SourceKey = SourceKey;
 		Crossing.SourceConnection = SourceLinks[0]->SourceConnection;
 		Crossing.SourceCaption = FTurboMCPMaterial::CaptionOf(Source);
-		Crossing.ProposedName = NameFromCaption(Crossing.SourceCaption);
+		Crossing.ProposedName = NameFromCaption(Source->HasAParameterName() ? Source->GetParameterName().ToString() : Crossing.SourceCaption);
+        const auto& Outputs = Crossing.Source->GetOutputs();
+        if (Outputs.IsValidIndex(Crossing.SourceConnection.OutputIndex))
+        {
+            const FName OutputName = Outputs[Crossing.SourceConnection.OutputIndex].OutputName;
+            Crossing.ProposedName += TEXT("_") + (OutputName.IsNone()
+                ? FString::FromInt(Crossing.SourceConnection.OutputIndex) : NameFromCaption(OutputName.ToString()));
+        }
 
 		TArray<int32> SortedBlocks = Blocks.Array();
 		SortedBlocks.Sort([](int32 A, int32 B) { return A < B; });
@@ -864,6 +871,34 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	TMap<FString, UMaterialExpression*> ByKey;
 	IndexByKey(Read, ByKey);
 
+    // Reserve space for added nodes without moving existing expressions. Headless
+    // materials have no measured Slate geometry, so use conservative envelopes.
+    struct FOccupiedNode { int32 X, Y, Width, Height; };
+    TArray<FOccupiedNode> Occupied;
+    for (const UMaterialExpression* Expression : Read.Expressions)
+        if (Expression) Occupied.Add({Expression->MaterialExpressionEditorX,
+            Expression->MaterialExpressionEditorY, 260, 200});
+    auto ReservePosition = [&](int32 X, int32 Y, int32 Width) -> FIntPoint
+    {
+        bool bCollision;
+        do
+        {
+            bCollision = false;
+            for (const FOccupiedNode& Node : Occupied)
+            {
+                if (X < Node.X + Node.Width + 24 && X + Width + 24 > Node.X &&
+                    Y < Node.Y + Node.Height + 24 && Y + 100 + 24 > Node.Y)
+                {
+                    Y = Node.Y + Node.Height + 24;
+                    bCollision = true;
+                    break;
+                }
+            }
+        } while (bCollision);
+        Occupied.Add({X, Y, Width, 100});
+        return FIntPoint(X, Y);
+    };
+
 	int32 LabelsAdded = 0;
 	int32 UsagesCreated = 0;
 	int32 UsagesRemoved = 0;
@@ -884,12 +919,15 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				TEXT(""), *Crossing.SourceKey);
 		}
 
+        const int32 LabelWidth = FMath::Max(180, Crossing.ProposedName.Len() * 8 + 48);
+        const FIntPoint DeclarationPosition = ReservePosition(Source->MaterialExpressionEditorX,
+            Source->MaterialExpressionEditorY + 240, LabelWidth);
 		UMaterialExpression* const Created = UMaterialEditingLibrary::CreateMaterialExpressionEx(
 			Material, /*MaterialFunction=*/nullptr,
 			UMaterialExpressionNamedRerouteDeclaration::StaticClass(),
 			/*SelectedAsset=*/nullptr,
-			Source->MaterialExpressionEditorX,
-			Source->MaterialExpressionEditorY + 120,
+			DeclarationPosition.X,
+			DeclarationPosition.Y,
 			/*bAllowMarkingPackageDirty=*/true);
 
 		UMaterialExpressionNamedRerouteDeclaration* const Declaration =
@@ -945,12 +983,14 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
             UMaterialExpressionNamedRerouteUsage* Usage = UsageByReaderKey.FindRef(UsageGroup);
 			if (Usage == nullptr)
 			{
+                const FIntPoint UsagePosition = ReservePosition(Reader->MaterialExpressionEditorX - LabelWidth - 40,
+                    Reader->MaterialExpressionEditorY, LabelWidth);
 				UMaterialExpression* const CreatedUsage = UMaterialEditingLibrary::CreateMaterialExpressionEx(
 					Material, /*MaterialFunction=*/nullptr,
 					UMaterialExpressionNamedRerouteUsage::StaticClass(),
 					/*SelectedAsset=*/nullptr,
-					Reader->MaterialExpressionEditorX - 150,
-					Reader->MaterialExpressionEditorY,
+					UsagePosition.X,
+					UsagePosition.Y,
 					/*bAllowMarkingPackageDirty=*/true);
 
 				Usage = Cast<UMaterialExpressionNamedRerouteUsage>(CreatedUsage);
