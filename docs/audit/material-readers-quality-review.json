@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "workflow": "WF-MATERIAL-READERS-QUALITY",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPMaterialLoad",
+    "ReadTurboMCPMaterialTrace",
+    "ReadTurboMCPMaterialLabels",
+    "ReadTurboMCPMaterialBlocks"
+  ],
+  "scenario": "Inspect parameters, labels and comment blocks, then trace one connected output in a material and inspect a material function.",
+  "source_findings": [
+    "Shared instance refusal suggested a parameter absent from three reader schemas; candidate now directs callers to ReadTurboMCPMaterialInstance.",
+    "Legacy test described unchanged counts as proof of no graph mutation; claims now distinguish report stability from independent state verification."
+  ],
+  "evidence": [
+    {
+      "run": "9328745269ee445b8526089482bd06ae",
+      "result": "invalid",
+      "scope": "Child assertions passed, but supervisor rejected candidate changes during validation. Not acceptance evidence."
+    }
+  ],
+  "remaining": [
+    "Finish implementation and help review, including duplicate labels and graph preservation evidence.",
+    "Complete immutable focused run and final gates."
+  ]
+}
