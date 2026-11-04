@@ -58,10 +58,15 @@
       "run": "9c88e4c391e84836a3756586320d3cd8",
       "result": "passed",
       "scope": "Trace prints the requested branch, does not mislabel the other connected branch, and still identifies a genuinely unused expression; clean package preserved. Full reader suite passed."
+    },
+    {
+      "run": "ac0a5c6a319b40459f1d647b573a0920",
+      "result": "failed",
+      "scope": "Long connected reroute chain incorrectly reported unused. Traversal skips plain reroutes while unused classification includes them; retained failing regression. Documentation and explicit expansion warning updated."
     }
   ],
   "remaining": [
-    "Finish comments/help/output prose review and accurately document bounded behavior.",
-    "Run final offline and scope gates before acceptance."
+    "Repair reroute reachability classification; directly verify long non-reroute traversal.",
+    "Run final immutable workflow, offline and scope gates before acceptance."
   ]
 }
