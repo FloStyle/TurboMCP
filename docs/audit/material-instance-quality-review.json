@@ -60,6 +60,16 @@
       "run": "3ee7ea626b6c4b1faeaba6d4359756f8",
       "result": "passed",
       "scope": "Waiting for shader compilation after the preparation paint resolved all five color assertions. Base blue, child blue and edited child red PNGs visually inspected. Earlier failures retained. Cross-type reader change compiled, but focused identity assertions and final quality gate remain."
+    },
+    {
+      "run": "ca3d2c6ff9474db081a75c3a346d7b30",
+      "result": "passed",
+      "scope": "Same-name scalar/vector regression passed alongside material capture, texture editing and refusals."
+    },
+    {
+      "run": "124f9cfcbe79427ea16f4fc146a969cc",
+      "result": "failed",
+      "scope": "Offline gate failed catalog completeness; other checks passed. Registered the workflow and refreshed inventory; subsequent validate-repo passed. Full final gate still pending."
     }
   ],
   "limitations": [
