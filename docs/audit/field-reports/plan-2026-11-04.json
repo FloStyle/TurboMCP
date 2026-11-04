@@ -164,10 +164,10 @@
       "title": "Reconcile short node IDs across graph write tools",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "ready",
-      "owner": "unassigned",
-      "validation": "source_gap_confirmed_runtime_pending",
+      "owner": "codex",
+      "validation": "candidate_testing",
       "source_ids": [
         "ED-22",
         "ED-23",
@@ -185,7 +185,7 @@
         "2026-11-04_S1/GC-95"
       ],
       "dependencies": [],
-      "next_step": "Scope nov04-edit-node-keys follows pin-container integration. Connect already supports unique bare keys; copy/remove/tidy/position edit paths differ. Preserve qualification and ambiguity refusal; test each affected writer separately, including malformed JSON guidance."
+      "next_step": "Candidate e4fc650d shares key matching across copy/remove/tidy/positions, preserves qualification and refuses ambiguous selection/MainPath IDs. Adds malformed removal JSON examples and tool help. Focused editor suite active; validation and integration pending."
     },
     {
       "id": "NOV04-06",
