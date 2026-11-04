@@ -3297,6 +3297,18 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksQualityTest.cpp"
           ]
+        },
+        "material-label-promote-quality-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromote.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterialLabelsPromote.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromoteTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-material-label-promote.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelPromoteQualityTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
