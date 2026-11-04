@@ -89,7 +89,7 @@ namespace
 		return MaterialParameterTypeToString(InMetadata.Value.Type);
 	}
 
-	/** The four types this reader enumerates on every level. See CoveredTypes. */
+	/** The parameter types enumerated at each ancestor. See CoveredTypes. */
 	const TArray<FString>& CoveredTypeNames()
 	{
 		static const TArray<FString> Names = { TEXT("scalar"), TEXT("vector"), TEXT("double vector"), TEXT("texture"), TEXT("static switch") };
@@ -245,20 +245,17 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 		UMaterialInterface* Level = Levels[LevelIndex];
 		const FString LevelPath = Level->GetPathName();
 
-		TMap<FMaterialParameterInfo, FMaterialParameterMetadata> Parameters;
+		TArray<TPair<FMaterialParameterInfo, FMaterialParameterMetadata>> Parameters;
 		for (const EMaterialParameterType Type : { EMaterialParameterType::Scalar, EMaterialParameterType::Vector,
 			EMaterialParameterType::DoubleVector, EMaterialParameterType::Texture, EMaterialParameterType::StaticSwitch })
 		{
-			// A FRESH MAP PER TYPE, declared inside the loop, SO THE HAZARD OF REUSING ONE ACROSS FOUR CALLS
-			// CANNOT ARISE - nothing has to be cleared. The engine's own signature takes ONE type at a time
-			// (MaterialInterface.h:950). *** THE COMMENT USED TO READ "CLEARED PER TYPE", WHICH DESCRIBED A VERSION
-			// THAT REUSED ONE MAP: A READER TRUSTING IT WOULD LOOK FOR A CLEAR THAT DOES NOT EXIST AND MISS THAT
-			// THE HAZARD WAS DESIGNED AWAY. ***
+
+			// Keep each type separate: identical names and layer indices can belong to different types.
 			TMap<FMaterialParameterInfo, FMaterialParameterMetadata> ForType;
 			Level->GetAllParametersOfType(Type, ForType);
 			for (const TPair<FMaterialParameterInfo, FMaterialParameterMetadata>& Pair : ForType)
 			{
-				Parameters.Add(Pair.Key, Pair.Value);
+				Parameters.Emplace(Pair.Key, Pair.Value);
 			}
 		}
 

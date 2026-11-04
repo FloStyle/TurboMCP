@@ -5,6 +5,7 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "Materials/Material.h"
+#include "Materials/MaterialRenderProxy.h"
 #include "Materials/MaterialInstanceConstant.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
 #include "MaterialEditingLibrary.h"
@@ -17,6 +18,7 @@
 #include "Widgets/Images/SImage.h"
 #include "Styling/SlateBrush.h"
 #include "ShaderCompiler.h"
+#include "TextureCompiler.h"
 #include "ImageUtils.h"
 #include "Serialization/BufferArchive.h"
 #include "Misc/FileHelper.h"
@@ -41,6 +43,8 @@ bool FTurboMCPMaterialInstanceQualityTest::RunTest(const FString& Parameters)
     };
     UTexture* Texture = MakeTexture(TEXT("T_Red"), FColor::Red);
     UTexture* BlueTexture = MakeTexture(TEXT("T_Blue"), FColor::Blue);
+    FTextureCompilingManager::Get().FinishAllCompilation();
+    FlushRenderingCommands();
     if (!TestNotNull(TEXT("Stock texture loaded"), Texture)) return false;
     auto* TextureParameter = NewObject<UMaterialExpressionTextureSampleParameter2D>(Material);
     TextureParameter->ParameterName = TEXT("SurfaceTexture"); TextureParameter->Texture = BlueTexture;
@@ -70,27 +74,44 @@ bool FTurboMCPMaterialInstanceQualityTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Override not inherited"), Result.Inherited.Num(), 1);
     TestEqual(TEXT("Declared override not orphaned"), Result.Orphaned.Num(), 0);
     TestFalse(TEXT("Base material refused"), FTurboMCPMaterialInstance::Read(Material->GetPathName(), Result, Error));
-    auto Capture = [&](const TCHAR* Name, bool Red) {
+    auto Capture = [&](const TCHAR* Name, bool Red, UObject* Resource = nullptr) {
         if (GShaderCompilingManager) GShaderCompilingManager->FinishAllCompilation();
-        FSlateBrush Brush; Brush.SetResourceObject(Child); Brush.ImageSize = FVector2D(128, 128);
+        // Offscreen widget rendering does not run the window renderer's uniform-cache update.
+        // Flush newly compiled material values before measuring the fixture.
+        ENQUEUE_RENDER_COMMAND(PrepareMaterialQualityUniforms)([](FRHICommandListImmediate& RHICmdList) {
+            FMaterialRenderProxy::UpdateDeferredCachedUniformExpressions(RHICmdList);
+        });
+        FlushRenderingCommands();
+        FSlateBrush Brush; Brush.SetResourceObject(Resource ? Resource : Child); Brush.ImageSize = FVector2D(128, 128);
         TSharedRef<SWidget> Widget = SNew(SImage).Image(&Brush);
         FWidgetRenderer Renderer(false);
         UTextureRenderTarget2D* Target = FWidgetRenderer::CreateTargetFor(FVector2D(128,128), TF_Bilinear, false);
         if (!TestNotNull(TEXT("Real rendering target required"), Target)) return;
+        // Slate may initialize a material resource during its first paint.
+        // Render and flush one preparation frame before measuring the next frame.
+        Renderer.DrawWidget(Target, Widget, FVector2D(128,128), 0.0f, false);
+        FlushRenderingCommands();
         Renderer.DrawWidget(Target, Widget, FVector2D(128,128), 0.0f, false);
         FlushRenderingCommands();
         TArray<FColor> Pixels;
         TestTrue(TEXT("Capture pixels readable"), Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels));
         if (Pixels.Num() > 64*128+64) {
             const FColor Center = Pixels[64*128+64];
-            TestTrue(TEXT("Rendered override color"), Red ? Center.R > 180 && Center.B < 50 : Center.B > 180 && Center.R < 50);
+            TestTrue(FString::Printf(TEXT("Rendered color: %s"), Name), Red ? Center.R > 180 && Center.B < 50 : Center.B > 180 && Center.R < 50);
         }
         FBufferArchive Png;
         TestTrue(TEXT("PNG encoded"), FImageUtils::ExportRenderTarget2DAsPNG(Target, Png));
-        const FString Folder = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("TurboMCP/MaterialInstanceQuality"));
+        const FString Folder = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("TurboMCP/MaterialInstanceQuality"), FPaths::GetCleanFilename(Package->GetName()));
         IFileManager::Get().MakeDirectory(*Folder, true);
         TestTrue(TEXT("PNG saved"), FFileHelper::SaveArrayToFile(Png, *FPaths::Combine(Folder, Name)));
     };
+    // Finalize fixture-only parent and scalar changes before measuring appearance.
+    UMaterialEditingLibrary::UpdateMaterialInstance(Child);
+    UTexture* BeforeTexture = nullptr;
+    TestTrue(TEXT("Inherited blue texture resolves before render"), Child->GetTextureParameterValue(FMaterialParameterInfo(TEXT("SurfaceTexture")), BeforeTexture) && BeforeTexture == BlueTexture);
+    Capture(TEXT("texture-blue.png"), false, BlueTexture);
+    Capture(TEXT("base-blue.png"), false, Material);
+    Capture(TEXT("parent-blue.png"), false, Parent);
     Capture(TEXT("before-blue.png"), false);
     const FString Assignment = TEXT("SurfaceTexture = ") + Texture->GetPathName();
     const FString Mixed = UTurboMCPEditToolset::EditTurboMCPMaterialInstanceSet(Child->GetPathName(), {Assignment, TEXT("Missing = ") + Texture->GetPathName()});
