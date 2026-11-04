@@ -13,7 +13,7 @@
     "Name-only override identity ignored type, layer/blend association and index.",
     "Local static-switch overrides were missing.",
     "Repeated identical texture edits dirtied the instance and reported changed.",
-    "Combining per-type metadata in a map keyed without type could discard same-name parameters across types; candidate now preserves all entries. Focused evidence pending."
+    "Combining per-type metadata in a map keyed without type could discard same-name parameters across types; candidate now preserves all entries. Focused identity evidence passed in ca3d2c6ff9474db081a75c3a346d7b30 and the final native run."
   ],
   "evidence": [
     {
@@ -92,5 +92,6 @@
   "native_run": "df3830a46deb42b6a80e0611c322d2ac",
   "scope_gate": "PASS: source submission and follow-up checked separately; catalog/inventory changes reviewed by integrator",
   "offline_run": "b59a67b9a8034e59896f277defe90c85",
-  "offline_result": "25 checks passed; validate-repo initially failed stale inventory and passed after regeneration. Original failure retained."
+  "offline_result": "25 checks passed; validate-repo initially failed stale inventory and passed after regeneration. Original failure retained.",
+  "integration_offline_followup": "6de9b59b96694938a603931038d1b7b3: all 26 checks passed; original metadata failure retained."
 }

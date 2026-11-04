@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "date": "2026-11-04",
+  "status": "complete",
+  "scope": "Original remaining 17 tools: unique scenario-reviewed coverage from 148 to 165.",
+  "reviews": [
+    {
+      "review": "docs/audit/widget-retarget-quality-review.json",
+      "tools": [
+        "PreviewTurboMCPWidgetRetarget",
+        "EditTurboMCPWidgetRetarget"
+      ],
+      "native_run": "d37969e694174ab4b80de2d8117ad4bc",
+      "native_result": "passed",
+      "retained_offline_failures": []
+    },
+    {
+      "review": "docs/audit/vcs-quality-review.json",
+      "tools": [
+        "ReadTurboMCPVcsState",
+        "PreviewTurboMCPVcsCheckout",
+        "EditTurboMCPVcsCheckout"
+      ],
+      "native_run": "e70a2265163441d19e88ace2430cda99",
+      "native_result": "passed",
+      "retained_offline_failures": []
+    },
+    {
+      "review": "docs/audit/material-instance-quality-review.json",
+      "tools": [
+        "ReadTurboMCPMaterialInstance",
+        "EditTurboMCPMaterialInstanceSet"
+      ],
+      "native_run": "df3830a46deb42b6a80e0611c322d2ac",
+      "native_result": "passed",
+      "retained_offline_failures": [
+        "validate-repo"
+      ]
+    },
+    {
+      "review": "docs/audit/material-readers-quality-review.json",
+      "tools": [
+        "ReadTurboMCPMaterialLoad",
+        "ReadTurboMCPMaterialTrace",
+        "ReadTurboMCPMaterialLabels",
+        "ReadTurboMCPMaterialBlocks"
+      ],
+      "native_run": "f6b14f9866dd4fa08be613f70d99d933",
+      "native_result": "passed",
+      "retained_offline_failures": []
+    },
+    {
+      "review": "docs/audit/material-blocks-quality-review.json",
+      "tools": [
+        "PreviewTurboMCPMaterialBlocks",
+        "EditTurboMCPMaterialBlocks"
+      ],
+      "native_run": "3dbca27d798e479998871441581bc38a",
+      "native_result": "passed",
+      "retained_offline_failures": []
+    },
+    {
+      "review": "docs/audit/material-label-promote-quality-review.json",
+      "tools": [
+        "PreviewTurboMCPMaterialLabelPromote",
+        "EditTurboMCPMaterialLabelPromote"
+      ],
+      "native_run": "8cdfa304307943bc86e59659d09cd15a",
+      "native_result": "passed",
+      "retained_offline_failures": []
+    },
+    {
+      "review": "docs/audit/material-tidy-quality-review.json",
+      "tools": [
+        "PreviewTurboMCPMaterialTidy",
+        "EditTurboMCPMaterialTidy"
+      ],
+      "native_run": "e64e4039e92a4452897bf4bdde635dce",
+      "native_result": "passed",
+      "retained_offline_failures": []
+    }
+  ],
+  "inventory_match": true,
+  "final_offline_run": "6de9b59b96694938a603931038d1b7b3",
+  "final_offline_checks_passed": 26,
+  "dashboard_verified": {
+    "reviewed": 165,
+    "total": 165
+  },
+  "limits": [
+    "Scenario acceptance is not exhaustive correctness or public-release certification.",
+    "Per-tool reviews retain limits, prior failures and visual evidence.",
+    "New field-report plan remains separate work."
+  ],
+  "constraints": "No subagents or DSH dispatch; stock Unreal."
+}
