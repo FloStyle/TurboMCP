@@ -1,69 +1,9 @@
-# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-MAT-9
-#
-# NAMED HERE SO Spec/06_ACCEPTANCE.md CAN BE ANSWERED MECHANICALLY. Spec/WORKING_PLAN.md section 1.3 says a
-# capability is done when its acceptance row PASSES, WHICH MAKES THAT DOCUMENT THE DEFINITION OF DONE - and a
-# script over the tree measured 64 OF ITS 122 ROWS CITED BY NO SUITE AT ALL, so nothing could answer
-# 'is this row passing?' without a human reading it.
-#
-# *** AND THE SCRIPT IS NAMED NOW, BECAUSE A SCRIPT OVER THE TREE IS NOT A REFERENCE: ***
-#   python Tools/checks/count-acceptance-citations.py
-# IT STATES ITS CRITERION - a literal occurrence of the id in a Tools/test-*.py file - AND REPORTS 64. FOUR
-# EARLIER ATTEMPTS GAVE 91, 64, 66 AND 56 BECAUSE NONE OF THEM SAID WHAT CITED MEANT, AND THIS LINE CARRIED
-# THE 91. *** A NUMBER WITHOUT ITS CRITERION IS NOT A MEASUREMENT; IT IS A NUMBER. ***
-#
-# THE ID IS READ FROM THE DOCUMENT, NOT GUESSED. VERIFIED FOR THIS ONE:
-#   | T-MAT-9 | Tidy material | One box per block; result unchanged |
+# Acceptance coverage: T-MAT-9.
+"""Verify Material Tidy with a disposable rendered workflow and a restored fixture.
 
-"""`P/E-MAT-TIDY`: lay out a material, one comment box per block.
-
-WHAT THIS SUITE EXISTS TO PROVE, AND THE ONE CHECK THAT MATTERS MOST
---------------------------------------------------------------------
-`Spec/03_TOOLS.md` gives `P/E-MAT-TIDY` three requirements:
-`"One comment box per block. Same layout rules as graphs (section 6). Same compiled
-result check."`
-
-**THE THIRD IS THE ONE THAT MAKES THIS CAPABILITY SAFE.** A layout pass moves expressions and
-adds comment boxes. It CANNOT legitimately change what the material computes, so if the compiled
-result differs afterwards, THAT IS A BUG AND IT MUST BE CAUGHT RATHER THAN TOLERATED. Every other
-check here is secondary to that one, because a tidy that broke a material while reporting success
-would be the worst thing this plugin could do.
-
-THE COMPILED RESULT IS WITNESSED FROM OUTSIDE AND IN TWO WAYS:
-    - the SET OF EXPRESSIONS is gathered through `R-MAT-TRACE`, the READER, rather than from the
-      editor's own report - a tool's own report is not evidence in this project, and the reader is
-      a genuinely different code path from the writer;
-    - the engine's compiler reports no NEW error, and the material's own `StateId` is compared.
-      `StateId` is REPORTED rather than asserted, because it can legitimately change for reasons a
-      layout does not control - a background shader compile, a platform switch. Asserting on it
-      would make this suite fail for other people's reasons.
-
-THE FIXTURE IS RESTORED ON THE WAY IN AND ON THE WAY OUT, AND THE RESTORE IS ASSERTED.
-`Tools/make-material-asset.ps1` regenerates `/Game/Tests/TurboMCPMaterialFixture` from scratch, so
-running it FIRST makes this suite re-runnable from ANY state - including one where a previous run
-was interrupted halfway through a layout. THIS ARRANGEMENT IS COPIED FROM `test-graph-replace.py`
-RATHER THAN REDISCOVERED: that suite's first version left its graph mutated and the FULL RUN fell
-to 35 of 40 WITH THE FAILURES IN ITS NEIGHBOURS, because a mutating suite and a rebuilding suite
-were fighting over one asset. A material suite has the same hazard - `test-material.py` reads the
-same fixture - so the same discipline is applied here.
-
-THE ASSET'S NAME IS NOT THE FILE'S NAME, and this was MEASURED twice while writing this suite:
-`make-material-asset.ps1` writes `TurboMCPMaterialFixture.uasset`, and the asset INSIDE it is
-`M_TurboMCPFixture`. A reader pointed at the PACKAGE path answers "no asset named ...", so the
-bare asset name is what goes in `ASSET` below.
-
-WHAT MAKES A CHECK HERE ABLE TO FAIL, and this was PROVEN BY BREAKING IT
------------------------------------------------------------------------
-The set comparison was made to lie - the baseline set had a key removed, simulating a layout that
-had added or dropped an expression - and the tool answered:
-
-    FAILED: the layout changed the SET OF EXPRESSIONS, so it was ROLLED BACK.
-            0 lost (none), 1 gained (6a9cd6).
-
-and every other check still passed, which is the RIGHT SHAPE: the failure is isolated to the
-check that exists for it. THE SAME RUN ALSO PROVES THE BINARY WAS NOT STALE - the modified DLL
-produced different behaviour, where `Result: Succeeded` alone would have proven nothing. That trap
-has caught this project five times, so the probe is deliberate: A BREAK TEST THAT DOES NOT GO RED
-MEANS THE BINARY IS OLD, NOT THAT THE CHECK IS GOOD.
+The native workflow checks connections, values, layout direction, refusal and no-op
+behavior, and rendered pixels. The saved fixture checks box creation and read-back.
+These bounded scenarios do not prove semantic equivalence for every material.
 """
 
 import os
@@ -183,6 +123,11 @@ def main():
     print(raw)
     entry, _ = support["parse_run_tests_report"](raw, test_name)
     assert not entry["warnings"], entry["warnings"]
+    for toolset, tool in ((PREVIEW_TOOLSET, PREVIEW), (EDIT_TOOLSET, EDIT)):
+        help_text = quality_session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolset": toolset, "tool": tool})
+        assert "asset" in help_text.lower() and "save" in help_text.lower(), help_text
+        refusal = quality_session.call(toolset, tool, {"asset": "MF_TurboMCPFixture", "force": ""})
+        assert refusal.startswith("error:") and "not supported" in refusal, refusal
     print("=== checking whether the shared fixture needs rebuilding, WITHOUT stopping the editor ===")
     # THE FIXTURE IS INSPECTED BEFORE IT IS REBUILT, AND THAT ORDER IS THE WHOLE POINT OF THIS CHANGE.
     #
