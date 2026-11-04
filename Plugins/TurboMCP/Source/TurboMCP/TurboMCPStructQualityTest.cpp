@@ -9,6 +9,11 @@
 #include "ScopedTransaction.h"
 #include "UObject/Package.h"
 #include "Misc/PackageName.h"
+#include "Engine/Blueprint.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "Kismet2/KismetEditorUtilities.h"
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "EdGraphSchema_K2.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPStructQualityTest,
     "TurboMCP.Struct.Quality", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -64,6 +69,20 @@ bool FTurboMCPStructQualityTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Rejected default reports partial"),RejectedDefault.StartsWith(TEXT("partial:")));
     const FString InvalidNew=UTurboMCPEditToolset::EditTurboMCPStructNew(Path+TEXT("_InvalidDefault"),TEXT("Count: int, default=not_an_integer")); AddInfo(InvalidNew);
     TestTrue(TEXT("Rejected new default reports partial"),InvalidNew.StartsWith(TEXT("partial:")));
+    UPackage* DependentPackage = CreatePackage(*(Path + TEXT("_Dependent")));
+    UBlueprint* Dependent = FKismetEditorUtilities::CreateBlueprint(UObject::StaticClass(), DependentPackage,
+        TEXT("BP_StructDependent"), BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    if (!TestNotNull(TEXT("Loaded dependent Blueprint"), Dependent)) return false;
+    FEdGraphPinType StructType;
+    StructType.PinCategory = UEdGraphSchema_K2::PC_Struct; StructType.PinSubCategoryObject = Struct;
+    TestTrue(TEXT("Dependent contains struct member"), FBlueprintEditorUtils::AddMemberVariable(Dependent, TEXT("Settings"), StructType));
+    FKismetEditorUtilities::CompileBlueprint(Dependent);
+    const FString ObjectArrayChange = TEXT("AudioEvents: Array</Script/Engine.SoundBase>");
+    const FString ArrayPreview = UTurboMCPPreviewToolset::PreviewTurboMCPStructFields(Path, ObjectArrayChange); AddInfo(ArrayPreview);
+    TestTrue(TEXT("Object array preview accepted"), ArrayPreview.StartsWith(TEXT("preview:")));
+    TestTrue(TEXT("Object array addition succeeds with loaded dependent"), Edit(ObjectArrayChange).StartsWith(TEXT("changed:")));
+    TestTrue(TEXT("Object array field exists"), Names().Contains(TEXT("AudioEvents")));
+    DependentPackage->SetDirtyFlag(false);
     TestTrue(TEXT("Existing path refused"),UTurboMCPEditToolset::EditTurboMCPStructNew(Path,Fields).StartsWith(TEXT("unchanged:")));
     TestFalse(TEXT("No implicit save"),FPackageName::DoesPackageExist(Path));
     return true;
