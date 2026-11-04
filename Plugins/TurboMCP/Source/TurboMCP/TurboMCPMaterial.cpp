@@ -929,14 +929,10 @@ FString FTurboMCPMaterial::RenderExpression(const UMaterialExpression* InExpress
 	// reference to the same declaration prints only the label again - never `$nodeid` beside it,
 	// which is the specific mistake the spec names.
 	FString Label;
-	if (IsLabelDeclaration(InExpression, Label))
-	{
-		if (InOutState.DefinedLabels.Contains(Label))
-		{
-			return FString::Printf(TEXT("@%s"), *Label);
-		}
-		InOutState.DefinedLabels.Add(Label);
-	}
+    if (IsLabelDeclaration(InExpression, Label))
+    {
+        return FString::Printf(TEXT("@%s"), *Label);
+    }
 
 	// A USAGE always prints its label, because the declaration is what carries the value. A usage
 	// whose declaration is missing prints the dangling marker `LabelOfUsage` produced, so a broken
@@ -1056,16 +1052,11 @@ FString FTurboMCPMaterial::RenderInput(const UMaterialExpression* InOwner, int32
 		{
 			return FString::Printf(TEXT("@%s"), *Label);
 		}
-		if (Real != nullptr && IsLabelDeclaration(Real, Label))
-		{
-			if (InOutState.DefinedLabels.Contains(Label))
-			{
-				return FString::Printf(TEXT("@%s"), *Label);
-			}
-			// The declaration is being reached for the first time, so it is defined here rather than
-			// referred to. `2.5` says a named reroute gets one definition.
-			return RenderExpression(Real, InOutState, InDepth, InTokenBudget);
-		}
+        if (Real != nullptr && IsLabelDeclaration(Real, Label))
+        {
+            // Definitions are emitted once in RenderTree's label section.
+            return FString::Printf(TEXT("@%s"), *Label);
+        }
 
 		return RenderExpression(Real, InOutState, InDepth, InTokenBudget);
 	}
@@ -1444,14 +1435,23 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 		Out += TEXT(")");
 	}
 
-	// THE LABELS SECTION, when the tree reached any label. `2.5`: "Named reroute labels as `@Label`,
-	// defined once, in a labels section."
-	const int32 DefinedLabels = State.DefinedLabels.Num();
-	if (DefinedLabels > 0)
-	{
-		Out += FString::Printf(TEXT("\n\n; %d label(s) are defined inside the trees above"),
-			DefinedLabels);
-	}
+    // Every reachable label gets one definition, including labels reached only through usages.
+    // Sort names for stable output; nested labels remain references to their own definitions.
+    TArray<FString> ReachableLabels;
+    for (const auto& Pair : InPlan.DeclarationsByLabel)
+    {
+        if (State.Reached.Contains(Pair.Value)) ReachableLabels.Add(Pair.Key);
+    }
+    ReachableLabels.Sort();
+    if (ReachableLabels.Num() > 0) Out += TEXT("\n\n; label definitions");
+    for (const FString& Name : ReachableLabels)
+    {
+        const auto* Declaration = InPlan.DeclarationsByLabel[Name];
+        State.DefinedLabels.Add(Name);
+        const FString Value = RenderInput(Declaration, 0, Declaration->Input, State, 0, InTokenBudget);
+        Out += FString::Printf(TEXT("\n(@%s ; %s\n    %s)"), *Name,
+            *KeyOf(Declaration), *Value);
+    }
 
 	// UNREACHED EXPRESSIONS AND PARAMETERS, which `03_TOOLS.md` requires: "Parameters and expressions
 	// that reach no output are flagged."

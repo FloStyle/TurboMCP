@@ -181,6 +181,13 @@ def main():
     check("a material FUNCTION is read by the same reader",
           not fn.startswith("error:"), fn[:200])
 
+    for title, report in (("material", load), ("trace", trace), ("function", fn)):
+        references = set(re.findall(r"@([A-Za-z_][A-Za-z_0-9]*)", report))
+        definitions = re.findall(r"^\(@([A-Za-z_][A-Za-z_0-9]*)\s*;", report, re.MULTILINE)
+        check(title + " labels are defined exactly once", bool(references)
+              and references == set(definitions) and len(definitions) == len(set(definitions)), report)
+    check("function label exposes its source expression", "MaterialExpressionConstant3Vector" in fn, fn)
+
     print()
     print("=== READING DID NOT CHANGE THE MATERIAL ===")
     # Repeated label output detects visible report changes; it does not prove all in-memory state is unchanged.
