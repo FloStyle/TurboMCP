@@ -9,6 +9,7 @@
 #include "Materials/MaterialInstanceConstant.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
+#include "Materials/MaterialExpressionStaticSwitchParameter.h"
 #include "MaterialEditingLibrary.h"
 #include "Tools/TurboMCPToolsets.h"
 #include "Materials/MaterialExpressionTextureSampleParameter2D.h"
@@ -41,6 +42,10 @@ bool FTurboMCPMaterialInstanceQualityTest::RunTest(const FString& Parameters)
     Vector->ParameterName = TEXT("Amount");
     Vector->DefaultValue = FLinearColor::Green;
     Material->GetExpressionCollection().AddExpression(Vector);
+    auto* Switch = NewObject<UMaterialExpressionStaticSwitchParameter>(Material);
+    Switch->ParameterName = TEXT("UseDetail");
+    Switch->DefaultValue = false;
+    Material->GetExpressionCollection().AddExpression(Switch);
     auto MakeTexture = [&](const TCHAR* Name, const FColor Color) {
         UTexture2D* NewTexture = NewObject<UTexture2D>(Package, Name, RF_Public | RF_Standalone);
         TArray<FColor> Pixels; Pixels.Init(Color, 16);
@@ -70,14 +75,14 @@ bool FTurboMCPMaterialInstanceQualityTest::RunTest(const FString& Parameters)
     if (!TestTrue(TEXT("Read child"), FTurboMCPMaterialInstance::Read(Child->GetPathName(), Result, Error))) { AddError(Error); return false; }
     AddInfo(FTurboMCPMaterialInstance::Render(Result));
     TestEqual(TEXT("Three-level chain"), Result.Chain.Num(), 3);
-    TestEqual(TEXT("Three inherited parameters, independent of ancestor count"), Result.Inherited.Num(), 3);
+    TestEqual(TEXT("Four inherited parameters, independent of ancestor count"), Result.Inherited.Num(), 4);
     for (const auto& Value : Result.Inherited) if (Value.Name == TEXT("Amount") && Value.Type == TEXT("Scalar")) TestEqual(TEXT("Nearest parent's value"), Value.Value, FString(TEXT("0.75")));
     TestEqual(TEXT("No local overrides"), Result.Overridden.Num(), 0);
     TestFalse(TEXT("Reader does not dirty asset"), Package->IsDirty());
     Child->SetScalarParameterValueEditorOnly(TEXT("Amount"), 0.5f);
     TestTrue(TEXT("Read local override"), FTurboMCPMaterialInstance::Read(Child->GetPathName(), Result, Error));
     TestEqual(TEXT("One override"), Result.Overridden.Num(), 1);
-    TestEqual(TEXT("Scalar override preserves inherited vector and texture"), Result.Inherited.Num(), 2);
+    TestEqual(TEXT("Scalar override preserves other inherited types"), Result.Inherited.Num(), 3);
     TestTrue(TEXT("Same-name vector remains inherited"), Result.Inherited.ContainsByPredicate([](const FTurboMCPMaterialInstance::FParameter& Value) {
         return Value.Name == TEXT("Amount") && Value.Type == TEXT("Vector");
     }));
@@ -137,6 +142,18 @@ bool FTurboMCPMaterialInstanceQualityTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Same override unchanged"), UTurboMCPEditToolset::EditTurboMCPMaterialInstanceSet(Child->GetPathName(), {Assignment}).StartsWith(TEXT("unchanged:")));
     TestFalse(TEXT("No-op keeps clean state"), Package->IsDirty());
     TestTrue(TEXT("Parent preserved"), Child->Parent == Parent && Parent->Parent == Material);
+    // Stock 5.8.3 leaves this setter's return value false even after applying the override.
+    // Verify the effective value independently instead of trusting that return value.
+    UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Child, TEXT("UseDetail"), true);
+    TestTrue(TEXT("Fixture static-switch override read-back"), UMaterialEditingLibrary::GetMaterialInstanceStaticSwitchParameterValue(Child, TEXT("UseDetail")));
+    TestTrue(TEXT("Read static-switch override"), FTurboMCPMaterialInstance::Read(Child->GetPathName(), Result, Error));
+    TestTrue(TEXT("Static switch is a local true override"), Result.Overridden.ContainsByPredicate([](const FTurboMCPMaterialInstance::FParameter& Value) {
+        return Value.Name == TEXT("UseDetail") && Value.Value == TEXT("true");
+    }));
+    TestFalse(TEXT("Local static switch is not inherited"), Result.Inherited.ContainsByPredicate([](const FTurboMCPMaterialInstance::FParameter& Value) {
+        return Value.Name == TEXT("UseDetail");
+    }));
+    TestEqual(TEXT("Static-switch identity matches declaration"), Result.Orphaned.Num(), 0);
     return true;
 }
 #endif
