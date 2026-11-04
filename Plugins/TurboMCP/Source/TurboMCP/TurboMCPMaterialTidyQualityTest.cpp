@@ -7,6 +7,7 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
 #include "Materials/MaterialExpressionAdd.h"
+#include "Materials/MaterialExpressionComment.h"
 #include "Materials/MaterialExpressionNamedReroute.h"
 #include "UObject/Package.h"
 #include "Tools/TurboMCPToolsets.h"
@@ -24,10 +25,6 @@
 #include "ShaderCompiler.h"
 #include "ImageUtils.h"
 #include "Serialization/BufferArchive.h"
-#include "Misc/FileHelper.h"
-#include "Misc/Paths.h"
-#include "HAL/FileManager.h"
-#include "Tools/TurboMCPToolsets.h"
 
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPMaterialTidyQualityTest,
@@ -61,6 +58,14 @@ bool FTurboMCPMaterialTidyQualityTest::RunTest(const FString& Parameters)
     Existing->Input = Readers[0]->A;
     Material->GetExpressionCollection().AddExpression(Existing);
     Existing->MaterialExpressionEditorY = 300;
+    auto* Usage = NewObject<UMaterialExpressionNamedRerouteUsage>(Material, NAME_None, RF_Transactional);
+    Usage->MaterialExpressionGuid = FGuid::NewGuid();
+    Usage->Declaration = Existing; Usage->DeclarationGuid = Existing->VariableGuid;
+    Material->GetExpressionCollection().AddExpression(Usage);
+    auto* Note = NewObject<UMaterialExpressionComment>(Material, NAME_None, RF_Transactional);
+    Note->Text = TEXT("Author note"); Note->MaterialExpressionEditorX = -900; Note->MaterialExpressionEditorY = -600;
+    Note->SizeX = 400; Note->SizeY = 200;
+    Material->GetExpressionCollection().AddComment(Note);
     Material->EditorX = 1100; Material->EditorY = 0;
     Material->GetEditorOnlyData()->BaseColor.Connect(0, Readers[0]);
     Material->GetEditorOnlyData()->Roughness.Connect(0, Readers[1]);
@@ -123,6 +128,11 @@ bool FTurboMCPMaterialTidyQualityTest::RunTest(const FString& Parameters)
                     TestTrue(TEXT("Producer precedes consumer"), PlannedX[Input->Expression] < Node.PlannedX);
         if (Node.Expression == RGB) TestFalse(TEXT("Material output source is reachable"), Node.bUnreached);
     }
+    TestTrue(TEXT("Named declaration precedes usage"), PlannedX[Existing] < PlannedX[Usage]);
+    Readers[0]->A.Connect(0, Readers[0]);
+    FTurboMCPMaterialTidy::FPlan Cyclic;
+    TestFalse(TEXT("Cycle refuses planning"), FTurboMCPMaterialTidy::Plan(Material->GetPathName(), false, Cyclic, Error));
+    Readers[0]->A.Connect(1, Value);
     Readers[0]->A.OutputIndex = 3;
     TestTrue(TEXT("Stale plan refuses"), FTurboMCPMaterialTidy::Apply(Plan).StartsWith(TEXT("error:")));
     TestEqual(TEXT("Refusal preserves intervening edit"), Readers[0]->A.OutputIndex, 3);
@@ -133,6 +143,10 @@ bool FTurboMCPMaterialTidyQualityTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Reader source preserved"), Readers[Index]->A.Expression == Value);
         TestEqual(TEXT("Reader output preserved"), Readers[Index]->A.OutputIndex, Index % 2 + 1);
     }
+    TestEqual(TEXT("Parameter value preserved"), Value->DefaultValue, FLinearColor(0.2f, 0.7f, 0.9f));
+    TestTrue(TEXT("Material output source preserved"), Material->GetEditorOnlyData()->EmissiveColor.Expression == RGB);
+    TestEqual(TEXT("Existing comment text preserved"), Note->Text, FString(TEXT("Author note")));
+    TestEqual(TEXT("Existing comment position preserved"), Note->MaterialExpressionEditorX, -900);
     FTurboMCPMaterialTidy::FPlan Repeat;
     TestTrue(TEXT("Repeat plan succeeds"), FTurboMCPMaterialTidy::Plan(Material->GetPathName(), false, Repeat, Error));
     TestTrue(TEXT("Repeat unchanged"), FTurboMCPMaterialTidy::Apply(Repeat).StartsWith(TEXT("unchanged:")));

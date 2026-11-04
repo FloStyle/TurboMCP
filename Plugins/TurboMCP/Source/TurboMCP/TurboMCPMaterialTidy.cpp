@@ -33,14 +33,15 @@ namespace
             Input.Mask, Input.MaskR, Input.MaskG, Input.MaskB, Input.MaskA);
     }
 
-    FString ConnectionSnapshot(FTurboMCPMaterial::FPlan& Read)
+    FString ConnectionSnapshot(FTurboMCPMaterial::FPlan& Read, bool bIncludeLayout = true)
     {
         TArray<FString> Entries;
         for (UMaterialExpression* Expression : Read.Expressions)
         {
             if (!Expression) continue;
             const FString Key = FTurboMCPMaterial::KeyOf(Expression);
-            Entries.Add(FString::Printf(TEXT("%s:%s:%d:%d"), *Key,
+            Entries.Add(FString::Printf(TEXT("%s:%s"), *Key, *Expression->GetClass()->GetName()));
+            if (bIncludeLayout) Entries.Add(FString::Printf(TEXT("%s:%s:%d:%d"), *Key,
                 *Expression->GetClass()->GetName(), Expression->MaterialExpressionEditorX,
                 Expression->MaterialExpressionEditorY));
             for (FExpressionInputIterator It{ Expression }; It; ++It)
@@ -55,11 +56,11 @@ namespace
             for (int32 Index = 0; Index < MP_MAX; ++Index)
                 if (FExpressionInput* Input = Read.Material->GetExpressionInputForProperty(static_cast<EMaterialProperty>(Index)))
                     Entries.Add(FString::Printf(TEXT("output%d=%s"), Index, *ConnectionKey(*Input)));
-            for (const UMaterialExpressionComment* Box : Read.Material->GetExpressionCollection().EditorComments)
+            if (bIncludeLayout) for (const UMaterialExpressionComment* Box : Read.Material->GetExpressionCollection().EditorComments)
                 if (Box) Entries.Add(FString::Printf(TEXT("box:%d:%d:%d:%d:%s"),
                     Box->MaterialExpressionEditorX, Box->MaterialExpressionEditorY, Box->SizeX, Box->SizeY, *Box->Text));
         }
-        if (Read.Material) Entries.Add(FString::Printf(TEXT("root:%d:%d"), Read.Material->EditorX, Read.Material->EditorY));
+        if (bIncludeLayout && Read.Material) Entries.Add(FString::Printf(TEXT("root:%d:%d"), Read.Material->EditorX, Read.Material->EditorY));
         Entries.Sort();
         return FString::Join(Entries, TEXT("\n"));
     }
@@ -200,7 +201,7 @@ bool FTurboMCPMaterialTidy::Plan(const FString& InAsset, bool bInForce,
 			}
 		}
 
-		// Relax outward: an input sits at least one column right of everything that reads it. This is a
+		// Relax outward: a producer has a greater depth than its consumers; descending depth is placed left-to-right. This is a
 		// bounded relaxation rather than a recursion, so a malformed graph with a cycle terminates
 		// instead of overflowing the stack - the same guard `RenderExpression` carries for the readers.
 		const int32 MaxPasses = OutPlan.Nodes.Num() + 1;
@@ -472,6 +473,7 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
         ConnectionSnapshot(Current) != InPlan.ConnectionSnapshot)
         return TEXT("error: the material wiring, labels or layout changed after planning. Preview again. Nothing changed.");
 
+	const FString WiringBefore = ConnectionSnapshot(Current, false);
 	const TArray<FString> CompileErrorsBefore = UMaterialEditingLibrary::RecompileMaterial(InPlan.Material);
 
 	// Group geometry edits in a transaction; failure paths request undo without certifying restoration.
@@ -659,6 +661,12 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 			TEXT("FAILED: the material could not be read back after the layout (%s), so the compiled result ")
 			TEXT("could NOT be verified and undo was requested; restoration was not verified. Inspect the material before retrying or saving."), *ReadError);
 	}
+
+    if (ConnectionSnapshot(ReadAfter, false) != WiringBefore)
+    {
+        FTurboMCPRollback::EndAndUndoActiveTransaction();
+        return TEXT("FAILED: expression identities, labels or connections changed during layout. Undo was requested but restoration was not verified. Inspect the material before saving.");
+    }
 
 	if (!bSameSet)
 	{
