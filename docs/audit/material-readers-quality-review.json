@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-MATERIAL-READERS-QUALITY",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPMaterialLoad",
     "ReadTurboMCPMaterialTrace",
@@ -80,9 +80,17 @@
       "scope": "Both 1,605-node reroute and arithmetic chains preserve connected-node classification; deep-tree omission disclosed. Entire reader workflow passed."
     }
   ],
-  "remaining": [
-    "Await full offline gate and integrate accepted bounded workflow."
-  ],
+  "remaining": [],
   "candidate": "bdadc2398b02485819f9f75f974248919f090517",
-  "scope_gate": "PASS"
+  "scope_gate": "PASS",
+  "native_run": "f6b14f9866dd4fa08be613f70d99d933",
+  "offline_run": "b56b2eb8b701419dbd3037e510d491f7",
+  "offline_result": "26 passed",
+  "limitations": [
+    "Read workflows do not certify shader compilation or rendered appearance.",
+    "Comment membership uses expression positions, not measured node rectangles.",
+    "Token budget is advisory; deep/expansion markers identify omitted expression inputs.",
+    "Duplicate named-reroute labels are refused with both declaration identities; rename in the editor before retrying.",
+    "Tests cover saved material/function fixtures and generated structural cases, not every engine expression class or material layer configuration."
+  ]
 }

@@ -1334,6 +1334,33 @@
         "Visual evidence uses an offscreen UI material; it does not certify every scene material or rendering platform."
       ],
       "evidence": "df3830a46deb42b6a80e0611c322d2ac"
+    },
+    {
+      "id": "WF-MATERIAL-READERS-QUALITY",
+      "title": "Inspect material graphs, labels, blocks and output dependencies",
+      "status": "scenario_accepted",
+      "review": "docs/audit/material-readers-quality-review.json",
+      "focus_tools": [
+        "ReadTurboMCPMaterialLoad",
+        "ReadTurboMCPMaterialTrace",
+        "ReadTurboMCPMaterialLabels",
+        "ReadTurboMCPMaterialBlocks"
+      ],
+      "tools_used": [
+        "ReadTurboMCPMaterialLoad",
+        "ReadTurboMCPMaterialTrace",
+        "ReadTurboMCPMaterialLabels",
+        "ReadTurboMCPMaterialBlocks",
+        "ReadTurboMCPMaterialInstance"
+      ],
+      "limitations": [
+        "Read workflows do not certify shader compilation or rendered appearance.",
+        "Comment membership uses expression positions, not measured node rectangles.",
+        "Token budget is advisory; deep/expansion markers identify omitted expression inputs.",
+        "Duplicate named-reroute labels are refused with both declaration identities; rename in the editor before retrying.",
+        "Tests cover saved material/function fixtures and generated structural cases, not every engine expression class or material layer configuration."
+      ],
+      "evidence": "f6b14f9866dd4fa08be613f70d99d933"
     }
   ],
   "tool_usage": {
@@ -1880,13 +1907,26 @@
       "WF-VCS-QUALITY"
     ],
     "ReadTurboMCPMaterialInstance": [
-      "WF-MATERIAL-INSTANCE-QUALITY"
+      "WF-MATERIAL-INSTANCE-QUALITY",
+      "WF-MATERIAL-READERS-QUALITY"
     ],
     "EditTurboMCPMaterialInstanceSet": [
       "WF-MATERIAL-INSTANCE-QUALITY"
+    ],
+    "ReadTurboMCPMaterialLoad": [
+      "WF-MATERIAL-READERS-QUALITY"
+    ],
+    "ReadTurboMCPMaterialTrace": [
+      "WF-MATERIAL-READERS-QUALITY"
+    ],
+    "ReadTurboMCPMaterialLabels": [
+      "WF-MATERIAL-READERS-QUALITY"
+    ],
+    "ReadTurboMCPMaterialBlocks": [
+      "WF-MATERIAL-READERS-QUALITY"
     ]
   },
-  "unique_tools_scenario_reviewed": 155,
+  "unique_tools_scenario_reviewed": 159,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
