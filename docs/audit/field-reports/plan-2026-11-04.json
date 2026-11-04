@@ -129,12 +129,17 @@
         "2026-10-30_S4/NT-11"
       ],
       "dependencies": [],
-      "next_step": "Candidate 01414e8b corrects fixture discovery for spaced display names and verifies exact member identity. Focused rerun active; first candidate built but its test stopped at fixture type discovery before validating container output.",
+      "next_step": "Candidate 5c28ce36 registers the unsaved fixture variable actions before discovery, following existing alias-test setup. Focused rerun active. The prior display-name adjustment alone did not resolve fixture discovery; no container acceptance claim yet.",
       "evidence": [
         {
           "run": "d77af7b1bc174690a8962962b0bde4b7",
           "result": "failed",
           "scope": "Build passed. Container fixture found no variable creation ID because filter ignored spaced display names; corrected fixture, no passing behavior claim. Existing delegate and append checks passed."
+        },
+        {
+          "run": "3c6d20f5c7f6436d833d1470f377345b",
+          "result": "failed",
+          "scope": "Still no fixture variable creation ID after display-name adjustment. Added missing action-catalogue refresh; retains original assertions and valid-control requirement."
         }
       ]
     },
