@@ -223,12 +223,22 @@
         "2026-11-03_S1/TD-57"
       ],
       "dependencies": [],
-      "next_step": "Final candidate 114b559f removes obsolete NameMatches helper and asserts native capture success. Run 9a783da7851d43fb95ab5c6928320388 active; offline gate and integration pending.",
+      "next_step": "Candidate 32ab3675 makes null guards explicit. test-lookup-guards passes real tree plus positive/negative fixtures. Supervised native run b2d63e44b28440feaabcb46bffc3a407 active. Refresh inventory and verify offline gate before integration.",
       "evidence": [
         {
           "run": "4d62d0d383db48529f694271ef1fd5b5",
           "result": "passed",
           "scope": "Build and native interface reader/tidy workflow passed. Inspected BP_Tidy_ReadState_native_1600x900_B393E7E042CD0BFE4BB323BB7C182FAE.png: two nodes left-to-right, aligned execution pins, no overlap. Limited interface return-value fixture; not broad layout certification."
+        },
+        {
+          "run": "9a783da7851d43fb95ab5c6928320388",
+          "result": "passed",
+          "scope": "Native build/workflow passed after obsolete helper removal and explicit capture assertion."
+        },
+        {
+          "run": "5591f4bf23fd4731b5aa82ce13e9e50b",
+          "result": "failed",
+          "scope": "Offline 25/26 passed; lookup guard detector did not recognize member-pointer condition and TestNotNull-return guard. Inspection confirmed null handling existed; rewritten as explicit local pointer checks, checker unchanged."
         }
       ]
     },
