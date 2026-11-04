@@ -46,6 +46,13 @@ bool FTurboMCPAppendReachabilityTest::RunTest(const FString& Parameters)
     if (!TestTrue(TEXT("Wired edit succeeds"),FTurboMCPGraphAppend::Apply(Plan,Report,Error))) {AddError(Error);return false;}
     TestEqual(TEXT("Only requested node added"),Graph->Nodes.Num(),BeforeCount+1);
     TestEqual(TEXT("Entry connected to created node"),Entry->FindPin(UEdGraphSchema_K2::PN_Then)->LinkedTo.Num(),1);
+    FString PureId;
+    for (const FString& Id:FTurboMCPNodeType::AvailableTypeIds(BP,Graph)) if (Id.Contains(TEXT("GetObjectName"))) {PureId=Id;break;}
+    if (!TestFalse(TEXT("Pure data function discovered"),PureId.IsEmpty())) return false;
+    const FString PureText=FString::Printf(TEXT("(\"%s\")"),*PureId);
+    if (!TestTrue(TEXT("Pure-only append parses"),FTurboMCPGraphAppend::Plan(BP->GetPathName(),Graph->GetName(),PureText,Plan,Error))) {AddError(Error);return false;}
+    if (!TestTrue(TEXT("Pure-only preview succeeds"),FTurboMCPGraphAppend::Preflight(Plan,Report,Error))) {AddError(Error);return false;}
+    if (!TestTrue(TEXT("Pure-only edit succeeds"),FTurboMCPGraphAppend::Apply(Plan,Report,Error))) {AddError(Error);return false;}
     return !HasAnyErrors();
 }
 #endif
