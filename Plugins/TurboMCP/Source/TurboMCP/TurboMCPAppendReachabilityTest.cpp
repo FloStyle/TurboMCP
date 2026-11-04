@@ -14,6 +14,8 @@
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_MacroInstance.h"
+#include "K2Node_IfThenElse.h"
 #include "UObject/Package.h"
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPAppendReachabilityTest,
     "TurboMCP.GraphAppend.Reachability", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -53,6 +55,30 @@ bool FTurboMCPAppendReachabilityTest::RunTest(const FString& Parameters)
     if (!TestTrue(TEXT("Pure-only append parses"),FTurboMCPGraphAppend::Plan(BP->GetPathName(),Graph->GetName(),PureText,Plan,Error))) {AddError(Error);return false;}
     if (!TestTrue(TEXT("Pure-only preview succeeds"),FTurboMCPGraphAppend::Preflight(Plan,Report,Error))) {AddError(Error);return false;}
     if (!TestTrue(TEXT("Pure-only edit succeeds"),FTurboMCPGraphAppend::Apply(Plan,Report,Error))) {AddError(Error);return false;}
+    UBlueprint* Macros=LoadObject<UBlueprint>(nullptr,TEXT("/Engine/EditorBlueprintResources/StandardMacros.StandardMacros"));
+    if (Macros==nullptr) {AddError(TEXT("Stock macro library is unavailable."));return false;}
+    UEdGraph* DoOnceDefinition=nullptr;
+    for (UEdGraph* Definition:Macros->MacroGraphs) if (Definition && Definition->GetName()==TEXT("DoOnce")) DoOnceDefinition=Definition;
+    if (!TestNotNull(TEXT("Stock DoOnce definition"),DoOnceDefinition)) return false;
+    UEdGraph* MergeGraph=FBlueprintEditorUtils::CreateNewGraph(BP,TEXT("MergeGraph"),UEdGraph::StaticClass(),UEdGraphSchema_K2::StaticClass());BP->UbergraphPages.Add(MergeGraph);
+    auto MakeEvent=[&](const TCHAR* Name,int32 Y){auto* Event=NewObject<UK2Node_CustomEvent>(MergeGraph);Event->CustomFunctionName=Name;MergeGraph->AddNode(Event,false,false);Event->CreateNewGuid();Event->AllocateDefaultPins();Event->NodePosY=Y;return Event;};
+    auto* ExistingEntry=MakeEvent(TEXT("ExistingStart"),0);auto* NewEntry=MakeEvent(TEXT("NewStart"),500);
+    auto* Once=NewObject<UK2Node_MacroInstance>(MergeGraph);Once->SetMacroGraph(DoOnceDefinition);MergeGraph->AddNode(Once,false,false);Once->CreateNewGuid();Once->AllocateDefaultPins();Once->NodePosX=1000;
+    UEdGraphPin* OnceInput=nullptr;
+    for (UEdGraphPin* Pin:Once->Pins) if (Pin && Pin->Direction==EGPD_Input && Pin->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec && Pin->PinName!=TEXT("Reset")) OnceInput=Pin;
+    if (!TestNotNull(TEXT("DoOnce execution input"),OnceInput)) return false;
+    if (!TestTrue(TEXT("Existing event connected"),MergeGraph->GetSchema()->TryCreateConnection(ExistingEntry->FindPin(UEdGraphSchema_K2::PN_Then),OnceInput))) return false;
+    auto* BranchProbe=NewObject<UK2Node_IfThenElse>(MergeGraph);BranchProbe->AllocateDefaultPins();
+    const FString BranchId=TurboMCPNodeId::GetNodeTypeId(BranchProbe);
+    const FString MergeText=FString::Printf(TEXT("(\"%s\"\n execute (-> %s:then)) ; label Choice\n(\"%s\" ; %s\n %s (-> Choice:then)\n %s (-> Choice:else))"),*BranchId,*TurboMCPNodeId::MakeForNode(NewEntry,true),*TurboMCPNodeId::GetNodeTypeId(Once),*TurboMCPNodeId::MakeForNode(Once,true),*OnceInput->PinName.ToString(),*OnceInput->PinName.ToString());
+    const int32 MergeCount=MergeGraph->Nodes.Num();
+    if (!TestTrue(TEXT("Existing merge append parses"),FTurboMCPGraphAppend::Plan(BP->GetPathName(),MergeGraph->GetName(),MergeText,Plan,Error))) {AddError(Error);return false;}
+    if (!TestTrue(TEXT("Existing merge preview succeeds"),FTurboMCPGraphAppend::Preflight(Plan,Report,Error))) {AddError(Error);return false;}
+    TestEqual(TEXT("Merge preview preserves original input"),OnceInput->LinkedTo.Num(),1);
+    if (!TestTrue(TEXT("Existing merge edit succeeds"),FTurboMCPGraphAppend::Apply(Plan,Report,Error))) {AddError(Error);return false;}
+    TestEqual(TEXT("Merge adds only branch"),MergeGraph->Nodes.Num(),MergeCount+1);
+    TestEqual(TEXT("DoOnce receives existing and both branch outputs"),OnceInput->LinkedTo.Num(),3);
+    TestTrue(TEXT("Original execution link retained"),OnceInput->LinkedTo.Contains(ExistingEntry->FindPin(UEdGraphSchema_K2::PN_Then)));
     return !HasAnyErrors();
 }
 #endif
