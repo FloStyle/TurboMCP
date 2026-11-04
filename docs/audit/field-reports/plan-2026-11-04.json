@@ -98,7 +98,7 @@
       "kind": "bug",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "unassigned",
       "validation": "source_confirmed_runtime_pending",
       "source_ids": [
@@ -108,7 +108,7 @@
         "2026-10-30_S4/NT-11"
       ],
       "dependencies": [],
-      "next_step": "Source reconciliation: FTurboMCPNodePins::Plan in TurboMCPNodeType.cpp formats category/subcategory and arrays only; map value types, set containers and subtype objects are omitted. Scope a complete pin-type formatter and schema mismatch reason in append, then verify map-to-scalar refusal with a disposable fixture."
+      "next_step": "Approved repair scope nov04-pin-container-reporting; start after delegate append integration to avoid overlapping source changes. Verify complete pin type output and schema mismatch details with map-to-scalar refusal and compatible control."
     },
     {
       "id": "NOV04-05",
