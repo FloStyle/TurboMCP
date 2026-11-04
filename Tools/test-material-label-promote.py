@@ -82,6 +82,7 @@ That trap has caught this project five times, so the probe is deliberate.
 """
 
 import os
+import runpy
 import re
 import subprocess
 import sys
@@ -252,6 +253,15 @@ def keys_in(text):
 
 
 def main():
+    quality_session = Session()
+    quality_session.connect()
+    support = runpy.run_path(os.path.join(TOOLS, "test-widget-roundtrip.py"))
+    test_name = "TurboMCP.Material.LabelPromoteQuality"
+    quality_session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
+    raw = quality_session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [test_name]})
+    print(raw)
+    entry, _ = support["parse_run_tests_report"](raw, test_name)
+    assert not entry["warnings"], entry["warnings"]
     print("=== rebuilding the fixture so this suite is re-runnable from ANY state ===")
     # ON THE WAY IN, ALWAYS. A previous run that was interrupted leaves the material promoted, and a
     # suite that assumed a clean fixture would then test the wrong thing.
