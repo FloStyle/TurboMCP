@@ -254,7 +254,7 @@ namespace
 		Structs.Sort();
 
 		return FString::Printf(
-			TEXT("Basic types: %s. Struct names: %s. An enum or a struct asset is named by its path."),
+			TEXT("Basic types: %s. Struct names: %s. Use a full path for enum/struct types or an object class, such as /Script/Engine.SoundBase; Array</Script/Engine.SoundBase> is an object-reference array."),
 			*FString::Join(Basic, TEXT(", ")), *FString::Join(Structs, TEXT(", ")));
 	}
 
@@ -388,6 +388,11 @@ namespace
 			{
 				Resolved = UBlueprintEditorLibrary::GetStructType(AsStruct);
 			}
+            else if (UClass* ObjectClass = Cast<UClass>(TypeObject))
+            {
+                Resolved.PinCategory = UEdGraphSchema_K2::PC_Object;
+                Resolved.PinSubCategoryObject = ObjectClass;
+            }
 			else if (UEnum* AsEnum = Cast<UEnum>(TypeObject))
 			{
 				// THERE IS NO `GetEnumType`. The engine's library carries basic, struct, class-reference and
@@ -400,7 +405,7 @@ namespace
 			else
 			{
 				OutWhy = FString::Printf(
-					TEXT("%s is a %s, and a struct field can be an enum or a struct but not that."),
+					TEXT("%s is a %s, but a field type path must identify an enum, struct or object class."),
 					*Inner, *TypeObject->GetClass()->GetName());
 				return false;
 			}
