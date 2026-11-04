@@ -118,10 +118,10 @@
       "title": "Report complete pin container types and link mismatch reasons",
       "kind": "bug",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "candidate_testing",
+      "validation": "focused_workflow_passed_offline_checks_resolved",
       "source_ids": [
         "NT-11"
       ],
@@ -129,7 +129,7 @@
         "2026-10-30_S4/NT-11"
       ],
       "dependencies": [],
-      "next_step": "Candidate 5c28ce36 registers the unsaved fixture variable actions before discovery, following existing alias-test setup. Focused rerun active. The prior display-name adjustment alone did not resolve fixture discovery; no container acceptance claim yet.",
+      "next_step": "Implemented complete scalar/array/set/map descriptions including subtype identity and schema reason for incompatible append links. Focused fixture passed. No broad project certification; monitor field recurrence.",
       "evidence": [
         {
           "run": "d77af7b1bc174690a8962962b0bde4b7",
@@ -140,8 +140,24 @@
           "run": "3c6d20f5c7f6436d833d1470f377345b",
           "result": "failed",
           "scope": "Still no fixture variable creation ID after display-name adjustment. Added missing action-catalogue refresh; retains original assertions and valid-control requirement."
+        },
+        {
+          "run": "715eb64c8fe14a8ba3e025654d1b4088",
+          "result": "passed",
+          "scope": "Stock-engine build and graph-append suite; map/set/array/scalar discovery, map-to-scalar refusal without live graph growth, compatible map assignment."
+        },
+        {
+          "run": "dddb70bf954346bf849c353e2d1bab08",
+          "result": "failed_metadata_only",
+          "scope": "25 offline checks passed; validate-repo failed for stale generated capability inventory. Original result retained."
+        },
+        {
+          "commit": "fd2cc285",
+          "result": "passed",
+          "scope": "Regenerated capability inventory and reran validate-repo successfully; source unchanged. All offline checks now have passing evidence, not one clean full rerun."
         }
-      ]
+      ],
+      "source_commit": "5c28ce3608d3c113b3e5c7ae1616b32c60782494"
     },
     {
       "id": "NOV04-05",
