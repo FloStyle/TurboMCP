@@ -164,10 +164,10 @@
       "title": "Reconcile short node IDs across graph write tools",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "ready",
-      "owner": "unassigned",
-      "validation": "source_gap_confirmed_runtime_pending",
+      "owner": "codex",
+      "validation": "candidate_testing",
       "source_ids": [
         "ED-22",
         "ED-23",
@@ -185,7 +185,14 @@
         "2026-11-04_S1/GC-95"
       ],
       "dependencies": [],
-      "next_step": "Scope nov04-edit-node-keys follows pin-container integration. Connect already supports unique bare keys; copy/remove/tidy/position edit paths differ. Preserve qualification and ambiguity refusal; test each affected writer separately, including malformed JSON guidance."
+      "next_step": "Candidate 1e12c890 corrects removal refusal assertions to the existing contract, strengthens successful removal previews, and adds duplicate-GUID refusal, dirty-state preservation and actual tidy-edit checks. Supervised rerun active; integration pending.",
+      "evidence": [
+        {
+          "run": "9961a0540e314298bb35d01a9c4e9379",
+          "result": "failed",
+          "scope": "Build passed. Native EditNodeKeys failed three removal-refusal assertions: the test expected error:, but the existing contract returns unchanged followed by refused:. Other assertions passed. Failed evidence retained; this is not a passing workflow."
+        }
+      ]
     },
     {
       "id": "NOV04-06",
@@ -193,9 +200,9 @@
       "kind": "bug",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_gap_confirmed_runtime_pending",
       "source_ids": [
         "TD-50",
         "TD-57"
@@ -205,7 +212,7 @@
         "2026-11-03_S1/TD-57"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Scope nov04-interface-tidy follows node-key integration. Tidy manual enumeration omits ImplementedInterfaces; shared reader lookup includes them. Also clarify requested/moved/already-matching position counts from TD-57. Native fixture and refusal verification required."
     },
     {
       "id": "NOV04-07",
