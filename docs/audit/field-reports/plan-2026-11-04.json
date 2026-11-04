@@ -78,7 +78,7 @@
         "2026-11-03_S1/GC-83"
       ],
       "dependencies": [],
-      "next_step": "Candidate 11f3cfdd tracks engine-created companions and removes newly generated disconnected delegate events; supervised build/workflow run 1bdcdd001ad24828b537aa1f17ee792d is pending. Do not mark resolved until explicit-handler preservation and reporting pass.",
+      "next_step": "Candidate 61ed37b4 adds explicit scratch-preview and post-spawn failure cleanup checks; final run 18cebd28ca044bf8b7653377e502387d is pending. Prior candidate 11f3cfdd passed the delegate assignment/existing-handler workflow. Offline gate and integration remain pending.",
       "evidence": [
         {
           "run": "d82350a508684b99b7568b6116432397",
@@ -89,6 +89,11 @@
           "run": "c2486722bab6433da4487dfa4f2e5b02",
           "result": "failed",
           "scope": "Connected assignment created its companion event but did not report the engine-created addition. Production reporting defect reproduced."
+        },
+        {
+          "run": "1bdcdd001ad24828b537aa1f17ee792d",
+          "result": "passed",
+          "scope": "Built candidate 11f3cfdd; delegate companion ID reporting and explicit existing-handler binding preserve the handler and remove the superseded generated event. Existing append suite also passed. Expanded safety coverage pending."
         }
       ]
     },
