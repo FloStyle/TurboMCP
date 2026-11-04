@@ -37,9 +37,9 @@ bool FTurboMCPAppendReachabilityTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Refusal explains node and pin"),Error.Contains(TEXT("impure node")) && Error.Contains(TEXT("execute is disconnected")) && Error.Contains(TEXT("Print")) && Error.Contains(TEXT("label=Message")));
     TestEqual(TEXT("Preview preserves live nodes"),Graph->Nodes.Num(),BeforeCount);
     TestEqual(TEXT("Preview preserves dirty state"),Package->IsDirty(),BeforeDirty);
-    TestFalse(TEXT("Live execution rejects disconnected call"),FTurboMCPGraphAppend::ExecuteGraph(Plan,BP,Graph,Report,Error,false,false));
-    TestEqual(TEXT("Rollback preserves node count"),Graph->Nodes.Num(),BeforeCount);
-    TestTrue(TEXT("Rollback preserves entry output"),Entry->FindPin(UEdGraphSchema_K2::PN_Then)->LinkedTo.IsEmpty());
+    TestFalse(TEXT("Public edit rejects disconnected call"),FTurboMCPGraphAppend::Apply(Plan,Report,Error));
+    TestEqual(TEXT("Refused edit preserves node count"),Graph->Nodes.Num(),BeforeCount);
+    TestTrue(TEXT("Refused edit preserves entry output"),Entry->FindPin(UEdGraphSchema_K2::PN_Then)->LinkedTo.IsEmpty());
     const FString Wired=FString::Printf(TEXT("(\"%s\"\n execute (-> %s:then)) ; label Message"),*PrintId,*TurboMCPNodeId::MakeForNode(Entry,true));
     if (!TestTrue(TEXT("Wired call parses"),FTurboMCPGraphAppend::Plan(BP->GetPathName(),Graph->GetName(),Wired,Plan,Error))) {AddError(Error);return false;}
     if (!TestTrue(TEXT("Wired preview succeeds"),FTurboMCPGraphAppend::Preflight(Plan,Report,Error))) {AddError(Error);return false;}
