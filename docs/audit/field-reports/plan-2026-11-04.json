@@ -29,7 +29,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_workflow_passed",
       "source_ids": [
         "SF-05",
         "SF-06"
@@ -39,7 +39,23 @@
         "2026-11-03_S4/SF-06"
       ],
       "dependencies": [],
-      "next_step": "Claim nov04-struct-fields; reproduce object-array addition with a loaded Blueprint dependent. Current AddVariable failure loses the engine reason and records only a field name."
+      "next_step": "Focused run 3bde2ca39e144d4fb08a284756ad3687 passed exact object-array type, original fields, dependent compile/reference preservation and recursive-type refusal. Offline gate and integration pending. Historical partial-result cause remains unproven.",
+      "evidence": [
+        {
+          "run": "fad9cc9c56f940a5af7b6dd7bd73e38f",
+          "result": "failed",
+          "scope": "SoundBase object-array preview/add rejected with loaded Blueprint dependent; three native assertions failed."
+        },
+        {
+          "run": "3bde2ca39e144d4fb08a284756ad3687",
+          "result": "passed",
+          "scope": "Class-path object-array addition with loaded dependent; stored type, dependent preservation, preview refusal and prior struct quality checks."
+        }
+      ],
+      "followups": [
+        "Integrate after offline gate.",
+        "Historical partial-result cause cannot be confirmed without original payload/build; retain this limit."
+      ]
     },
     {
       "id": "NOV04-03",
