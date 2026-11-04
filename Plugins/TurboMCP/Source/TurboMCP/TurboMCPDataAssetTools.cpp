@@ -229,6 +229,11 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
                 if (Body.Len() > 32768) { Body += TEXT("\n[Remaining map entries omitted.]"); Result.bTruncated = true; break; }
             }
         }
+        else if (auto* Array = CastField<FArrayProperty>(Target.Property))
+        {
+            FScriptArrayHelper Elements(Array, Target.Address);
+            Body += FString::Printf(TEXT("\narray_count: %d\noperations: array_remove; Key is a zero-based index. Whole-array set and insertion are not supported."), Elements.Num());
+        }
         else if (auto* Object = CastField<FObjectProperty>(Target.Property))
         {
             UObject* Reference = Object->GetObjectPropertyValue(Target.Address);
@@ -245,6 +250,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
     FMapProperty* ChildMap = nullptr;
     TUniquePtr<FValue> ChildKey;
     FString ChildDescription;
+    FString ArrayDescription;
     TArray<FStoredField> ChildInitialFields;
     auto Parse = [&](FProperty* Property, const FString& Input, bool IsKey, void* Out, TStrongObjectPtr<UObject>& Held)
     {
@@ -255,6 +261,24 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
     {
         if (Operation == TEXT("set") && !Key.IsEmpty()) return Refuse(TEXT("Key must be empty for set."));
         if (!Parse(Target.Property, InputValue, false, Planned.Get(), HeldValue)) return Refuse(Error);
+    }
+    else if (Operation == TEXT("array_remove"))
+    {
+        auto* Array = CastField<FArrayProperty>(Target.Property);
+        if (!Array || !Value.IsEmpty() || Key.IsEmpty() || Key.Len() > 10)
+            return Refuse(TEXT("array_remove requires an array property, a zero-based decimal index in Key, and an empty Value."));
+        int64 Index = 0;
+        for (TCHAR Character : Key)
+        {
+            if (Character < '0' || Character > '9') return Refuse(TEXT("Array index must contain decimal digits only, without a sign or whitespace."));
+            Index = Index * 10 + Character - '0';
+        }
+        FScriptArrayHelper Elements(Array, Planned.Get());
+        const int32 BeforeCount = Elements.Num();
+        if (Index >= BeforeCount) return Refuse(FString::Printf(TEXT("Array index %lld is out of range for %d element(s)."), Index, BeforeCount));
+        // Remove from the owned temporary copy. All other values and references retain their order.
+        Elements.RemoveValues(static_cast<int32>(Index), 1);
+        ArrayDescription = FString::Printf(TEXT("\narray_count: %d -> %d\nremoved_index: %lld"), BeforeCount, Elements.Num(), Index);
     }
     else if (Operation == TEXT("map_upsert") || Operation == TEXT("map_remove"))
     {
@@ -337,9 +361,9 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
             return Respond(TEXT("failed: A project constructor changed live state while preparing the child. No planned write was applied. Inspect the asset; do not retry blindly."));
         }
     }
-    else return Refuse(TEXT("Operation must be set, map_upsert, map_remove, create_child or child_set."));
+    else return Refuse(TEXT("Operation must be set, array_remove, map_upsert, map_remove, create_child or child_set."));
     const FString Proposed = Export(Target.Property, Planned.Get(), Target.Owner);
-    const FString Detail = Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed + ChildDescription + SelectedChild;
+    const FString Detail = Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + ArrayDescription + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed + ChildDescription + SelectedChild;
     if (Mode == 1) { Result.Outcome = ETurboMCPResultOutcome::Planned; return Respond(TEXT("preview: Validated temporary values; live properties unchanged.\n") + Detail); }
     if (Target.Property->Identical(Target.Address, Planned.Get(), PPF_None))
     { Result.Outcome = ETurboMCPResultOutcome::Unchanged; return Respond(TEXT("unchanged: The requested value is already present.\n") + Detail); }
@@ -401,7 +425,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
     Asset->MarkPackageDirty();
     FSnapshot Final(Asset);
     Result.Outcome = ETurboMCPResultOutcome::Changed; Result.SetChanged(true);
-    return Respond(TEXT("edited: Property updated and readback verified. Not saved.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + SelectedChild + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Export(Target.Property, Target.Address, Target.Owner) + (CreatedChild.IsValid() ? TEXT("\ncreated_object: ") + CreatedChild->GetPathName() : FString()) + TEXT("\ncurrent_revision: ") + Final.Revision + TEXT("\ndirty: ") + (Asset->GetOutermost()->IsDirty() ? TEXT("true") : TEXT("false")) + TEXT("\nProject edit notifications ran; external callback effects are outside this asset snapshot."));
+    return Respond(TEXT("edited: Property updated and readback verified. Not saved.\n") + Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + ArrayDescription + SelectedChild + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Export(Target.Property, Target.Address, Target.Owner) + (CreatedChild.IsValid() ? TEXT("\ncreated_object: ") + CreatedChild->GetPathName() : FString()) + TEXT("\ncurrent_revision: ") + Final.Revision + TEXT("\ndirty: ") + (Asset->GetOutermost()->IsDirty() ? TEXT("true") : TEXT("false")) + TEXT("\nProject edit notifications ran; external callback effects are outside this asset snapshot."));
 }
 }
 FString UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(const FString& Asset, const FString& Property)
