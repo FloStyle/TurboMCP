@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPMaterialBlocks",
+    "EditTurboMCPMaterialBlocks"
+  ],
+  "candidate": "31c0a982",
+  "source_findings": [
+    "Preview compilation moved to nonempty edit path; native fixture preserves package dirty flag and material StateId.",
+    "Native regression reproduced source outputs 1 and 2 both replaced by output 0. Connection grouping now includes output and component mask; declaration copies the complete source input.",
+    "In-block reroute removal preserves the final source output and mask; reroutes directly feeding material outputs are retained as boundary routing.",
+    "Usage merging now includes material property consumers in preview and apply, preserving their connections. Newly created usages are shared per consumer block.",
+    "Apply checks connection/layout snapshots before compilation or mutation. Preview identifies source output and channel mask. Native tests verify refusal preserves an intervening edit and repeated cleanup reports unchanged."
+  ],
+  "evidence": [
+    {
+      "run": "9c5ca179c28a4cb9a54a41b09d93aa46",
+      "result": "failed",
+      "scope": "New fixture did not compile: TObjectPtr passed to TestNotNull; corrected with Get()."
+    },
+    {
+      "run": "76d88a23b3bf448eb66bba6d148e4e7d",
+      "result": "failed",
+      "scope": "Native regression: both source output indices became zero."
+    },
+    {
+      "run": "de6bbc78e36140aabb4ba8a16574a224",
+      "result": "passed",
+      "scope": "Expanded two-channel/two-block native fixture and existing Material Blocks merge suite."
+    },
+    {
+      "run": "e2240367ff1c4aea937f1a3b3da15944",
+      "result": "passed",
+      "scope": "Native reroute-chain output/mask preservation and retained material output routing, plus existing suite."
+    },
+    {
+      "run": "a566bdd9030547e0bc56c8238d99bfe4",
+      "result": "passed",
+      "scope": "Native material-output usage merge plus channel, reroute-chain and existing merge regressions."
+    },
+    {
+      "run": "f859ec53883144d2837005bf934ecf8b",
+      "result": "passed",
+      "scope": "Stale connection refusal and repeat/no-op native assertions, alongside channel, reroute and material-output merge regressions."
+    },
+    {
+      "run": "be39a2178a78410d96fcf8223a283b04",
+      "result": "passed",
+      "scope": "Blocks native and saved fixture suite after success-count correction, complete planned add/remove checks, function refusal and documentation cleanup."
+    }
+  ],
+  "remaining": [
+    "Expand chain coverage to multiple removals and verify masks/rendered values across all operations.",
+    "Verify rendered values and visual graph layout; review additional stale-plan cases and one-usage-per-block geometry.",
+    "Review rollback verification, functions, preview/edit reporting, help and historical comments.",
+    "Inspect graph/render screenshots; complete offline and trusted scope gates before integration."
+  ],
+  "limitations": [
+    "Focused passing run is not full pair acceptance.",
+    "Changes remain on the review branch; main contains tracking only."
+  ]
+}
