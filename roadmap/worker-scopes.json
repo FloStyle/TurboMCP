@@ -3263,6 +3263,18 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstanceQualityTest.cpp",
             "Tools/test-material-instance-quality.py"
           ]
+        },
+        "material-instance-quality-followup": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstance.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstanceTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterialInstance.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-material-texture-parameters.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstanceQualityTest.cpp",
+            "Tools/test-material-instance-quality.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
