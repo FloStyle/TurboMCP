@@ -231,7 +231,7 @@
       "kind": "bug",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "unassigned",
       "validation": "source_gap_confirmed_runtime_pending",
       "source_ids": [
@@ -245,7 +245,7 @@
         "2026-11-04_S1/TD-59"
       ],
       "dependencies": [],
-      "next_step": "Source reconciliation: GraphTidy column ordering builds dependencies from every OutPlan.Wire and checks every node despite scoped selection; unrelated cycles can therefore block a selected edit. Break/reset feedback also needs explicit layout-edge treatment. Reproduce stock loop-break via reroutes and DoOnce reset, plus an unselected cycle and true data-cycle refusal; preserve all links. No implementation yet."
+      "next_step": "Source reconciliation: GraphTidy column ordering builds dependencies from every OutPlan.Wire and checks every node despite scoped selection; unrelated cycles can therefore block a selected edit. Break/reset feedback also needs explicit layout-edge treatment. Reproduce stock loop-break via reroutes and DoOnce reset, plus an unselected cycle and true data-cycle refusal; preserve all links. No implementation yet. Approved bounded assignment nov04-tidy-feedback follows interface-tidy integration."
     },
     {
       "id": "NOV04-08",
