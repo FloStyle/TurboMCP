@@ -15,7 +15,8 @@
     "Legacy test described unchanged counts as proof of no graph mutation; claims now distinguish report stability from independent state verification.",
     "Duplicate label declarations overwrite one another in the name map; promised ambiguity reporting is absent. Repair and focused evidence pending.",
     "Load with instance overrides has a separate legacy table that omits parameter indices and double vectors and can imply complete equivalence with the parent. Reuse of the accepted instance reader is under review.",
-    "Connected output labels can be emitted without defining their upstream expressions. Complete label definitions are required before reader acceptance."
+    "Connected output labels can be emitted without defining their upstream expressions. Complete label definitions are required before reader acceptance.",
+    "Trace uses selected-output reachability for a global unused-expression claim; expressions feeding other outputs can be mislabeled. Repair pending."
   ],
   "evidence": [
     {
@@ -47,6 +48,11 @@
       "run": "f50cc7d4854746dc937d00b2326be9dc",
       "result": "passed",
       "scope": "Material Load, Trace and function Load have exactly one definition for each referenced label; function source expression is exposed. Subsequent equivalent obsolete-branch cleanup awaits final gate."
+    },
+    {
+      "run": "73d51cfbd9b945e49e678801f187b25e",
+      "result": "passed",
+      "scope": "Block fixture verifies named-reroute incoming/outgoing values and direct material output destinations; clean package preserved. Full reader suite passed."
     }
   ],
   "remaining": [
