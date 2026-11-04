@@ -14,6 +14,22 @@
 #include "Misc/FileHelper.h"
 #include "HAL/FileManager.h"
 
+#include "Materials/MaterialExpressionAppendVector.h"
+#include "Materials/MaterialExpressionConstant.h"
+#include "Materials/MaterialRenderProxy.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Slate/WidgetRenderer.h"
+#include "Widgets/Images/SImage.h"
+#include "Styling/SlateBrush.h"
+#include "ShaderCompiler.h"
+#include "ImageUtils.h"
+#include "Serialization/BufferArchive.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "HAL/FileManager.h"
+#include "Tools/TurboMCPToolsets.h"
+
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPMaterialLabelPromoteQualityTest,
     "TurboMCP.Material.LabelPromoteQuality", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPMaterialLabelPromoteQualityTest::RunTest(const FString& Parameters)
@@ -48,7 +64,49 @@ bool FTurboMCPMaterialLabelPromoteQualityTest::RunTest(const FString& Parameters
     Material->EditorX = 1100; Material->EditorY = 0;
     Material->GetEditorOnlyData()->BaseColor.Connect(0, Readers[0]);
     Material->GetEditorOnlyData()->Roughness.Connect(0, Readers[1]);
+    Material->MaterialDomain = MD_UI;
+    auto* RG = NewObject<UMaterialExpressionAppendVector>(Material, NAME_None, RF_Transactional);
+    RG->MaterialExpressionGuid = FGuid::NewGuid(); RG->A.Connect(0, Readers[0]); RG->B.Connect(0, Readers[1]);
+    RG->MaterialExpressionEditorX = 800;
+    Material->GetExpressionCollection().AddExpression(RG);
+    auto* Blue = NewObject<UMaterialExpressionConstant>(Material, NAME_None, RF_Transactional);
+    Blue->MaterialExpressionGuid = FGuid::NewGuid(); Blue->R = 0.0f; Blue->MaterialExpressionEditorX = 800; Blue->MaterialExpressionEditorY = 200;
+    Material->GetExpressionCollection().AddExpression(Blue);
+    auto* RGB = NewObject<UMaterialExpressionAppendVector>(Material, NAME_None, RF_Transactional);
+    RGB->MaterialExpressionGuid = FGuid::NewGuid(); RGB->A.Connect(0, RG); RGB->B.Connect(0, Blue);
+    RGB->MaterialExpressionEditorX = 1000;
+    Material->GetExpressionCollection().AddExpression(RGB);
+    Material->GetEditorOnlyData()->EmissiveColor.Connect(0, RGB);
+    Material->PostEditChange();
     Package->SetDirtyFlag(false);
+    const FString Folder = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("TurboMCP/MaterialLabelPromoteQuality"), FPaths::GetCleanFilename(Package->GetName()));
+    IFileManager::Get().MakeDirectory(*Folder, true);
+    auto Capture = [&](const TCHAR* Name, UMaterial* Resource = nullptr) -> FColor
+    {
+        if (GShaderCompilingManager) GShaderCompilingManager->FinishAllCompilation();
+        ENQUEUE_RENDER_COMMAND(LabelUniforms)([](FRHICommandListImmediate& RHICmdList) {
+            FMaterialRenderProxy::UpdateDeferredCachedUniformExpressions(RHICmdList);
+        });
+        FlushRenderingCommands();
+        FSlateBrush Brush; Brush.SetResourceObject(Resource ? Resource : Material); Brush.ImageSize = FVector2D(128,128);
+        TSharedRef<SWidget> Widget = SNew(SImage).Image(&Brush);
+        FWidgetRenderer Renderer(false);
+        UTextureRenderTarget2D* Target = FWidgetRenderer::CreateTargetFor(FVector2D(128,128), TF_Bilinear, false);
+        if (!TestNotNull(TEXT("Real render target"), Target)) return FColor::Black;
+        Renderer.DrawWidget(Target, Widget, FVector2D(128,128), 0.0f, false);
+        FlushRenderingCommands();
+        if (GShaderCompilingManager) GShaderCompilingManager->FinishAllCompilation();
+        Renderer.DrawWidget(Target, Widget, FVector2D(128,128), 0.0f, false);
+        FlushRenderingCommands();
+        TArray<FColor> Pixels;
+        TestTrue(TEXT("Rendered pixels readable"), Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels));
+        FBufferArchive PNG;
+        TestTrue(TEXT("PNG encoded"), FImageUtils::ExportRenderTarget2DAsPNG(Target, PNG));
+        TestTrue(TEXT("PNG saved"), FFileHelper::SaveArrayToFile(PNG, *FPaths::Combine(Folder, Name)));
+        return Pixels.IsValidIndex(64*128+64) ? Pixels[64*128+64] : FColor::Black;
+    };
+    const FColor BeforeColor = Capture(TEXT("before.png"));
+    TestTrue(TEXT("Nontrivial red and green reference"), BeforeColor.G > BeforeColor.R && BeforeColor.R > 20 && BeforeColor.B < 10);
     const FGuid BeforeState = Material->StateId;
     FTurboMCPMaterialLabelsPromote::FPlan Plan;
     FString Error;
@@ -78,8 +136,7 @@ bool FTurboMCPMaterialLabelPromoteQualityTest::RunTest(const FString& Parameters
     FTurboMCPMaterialLabelsPromote::FPlan Repeat;
     TestTrue(TEXT("Repeat plan succeeds"), FTurboMCPMaterialLabelsPromote::Plan(Material->GetPathName(), Repeat, Error));
     TestTrue(TEXT("Repeat is unchanged"), FTurboMCPMaterialLabelsPromote::Apply(Repeat).StartsWith(TEXT("unchanged:")));
-    const FString Folder = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("TurboMCP/MaterialLabelPromoteQuality"), FPaths::GetCleanFilename(Package->GetName()));
-    IFileManager::Get().MakeDirectory(*Folder, true);
+    TestEqual(TEXT("Rendered output preserved"), Capture(TEXT("after.png")), BeforeColor);
     const FString GraphCapture = UTurboMCPLookToolset::LookTurboMCPCapture(Material->GetPathName(), TEXT(""), TEXT("asset-editor"), TEXT("fit"), TEXT(""));
     TestFalse(TEXT("Graph capture succeeds"), GraphCapture.StartsWith(TEXT("error:")));
     FFileHelper::SaveStringToFile(GraphCapture, *FPaths::Combine(Folder, TEXT("graph-capture.txt")));

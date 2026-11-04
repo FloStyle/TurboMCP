@@ -1279,7 +1279,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 
 	/**
 	 * Plan named reroutes for exact material outputs read by multiple expressions. Loads the Material but does not compile, change connections or save. Material functions and instances are refused.
-	 * Candidate names come from expression context. No candidates means no promotion. Expression and compile-error checks do not prove identical rendered output.
+	 * Names use parameter/caption and output context. One exact output and mask must have at least two distinct direct readers; existing named-reroute readers are left alone. Existing positions are preserved; new nodes use conservative collision bounds, not full graph tidy or comment containment. Edit replans current state and compiles only when changing it. Compiler and identity checks do not prove identical rendered output.
 	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; explicitly name the parent to edit its graph.
 	 */
 	UFUNCTION(meta = (AICallable))
@@ -2166,7 +2166,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 
 	/**
 	 * Add named reroute declarations and usage nodes and rewire material inputs in an undo transaction; recompiles materials and runs editor callbacks, does not save, and cannot guarantee restoration after a failed edit.
-	 * Candidate names come from expression context. No candidates means no promotion. Expression and compile-error checks do not prove identical rendered output.
+	 * Names use parameter/caption and output context. One exact output and mask must have at least two distinct direct readers; existing named-reroute readers are left alone. Existing positions are preserved; new nodes use conservative collision bounds, not full graph tidy or comment containment. Edit replans current state and compiles only when changing it. Compiler and identity checks do not prove identical rendered output.
 	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; explicitly name the parent to edit its graph.
 	 */
 	UFUNCTION(meta = (AICallable))

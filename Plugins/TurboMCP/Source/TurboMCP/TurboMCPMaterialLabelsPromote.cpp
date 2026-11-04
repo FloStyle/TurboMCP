@@ -1,9 +1,3 @@
-// Copyright (c) 2026 FloStyle
-// SPDX-License-Identifier: MPL-2.0
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPMaterialLabelsPromote.h"
 
@@ -145,12 +139,6 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 	OutPlan.ParentPath = Read.ParentPath;
 	OutPlan.ExistingLabels = Read.DeclarationsByLabel.Num();
 
-	// ---------------------------------------------------------------------------------------------
-	// A REFUSAL RATHER THAN AN EMPTY ANSWER. An instance has no graph, so promoting inside it would
-	// add the declaration to its PARENT - an edit the caller did not ask for, on an asset they did not
-	// name. `RenderLabels` already reports that an instance has no labels; here that becomes a refusal,
-	// because a writer must not proceed on something a reader merely reports.
-	// ---------------------------------------------------------------------------------------------
 	if (OutPlan.Material == nullptr && OutPlan.Function == nullptr)
 	{
 		OutError = OutPlan.ParentPath.IsEmpty()
@@ -168,18 +156,6 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 	}
 	OutPlan.StateIdBefore = OutPlan.Material->StateId;
 
-	// ---------------------------------------------------------------------------------------------
-	// THE BASELINE KEY SET, AND THE TWO THINGS IT IS USED FOR.
-	//
-	// It is the comparison that proves nothing was lost, AND IT IS ALSO THE GUARD AGAINST THE EMPTY
-	// BASELINE. An empty baseline makes every subset check pass for the wrong reason, and this project
-	// has already paid for that lesson once: a suite whose output name was wrong produced an empty key
-	// set and seven checks passed or failed for reasons that had nothing to do with the tool. So the
-	// COUNT IS CARRIED and the plan refuses to claim a compiled-result proof over an empty set.
-	//
-	// Label declarations and usages are collected as keys too, because a promotion must not silently
-	// rewrite an existing label's wiring.
-	// ---------------------------------------------------------------------------------------------
 	for (UMaterialExpression* Expression : Read.Expressions)
 	{
 		if (Expression == nullptr)
@@ -203,17 +179,6 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 		return false;
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// WHICH VALUES ARE ALREADY NAMED, KEYED BY THE VALUE RATHER THAN BY THE LABEL.
-	//
-	// A DECLARATION IS FOUND BY WHAT IT FORWARDS. The engine may have made its name unique, so a lookup
-	// by the name this pass would propose can miss the declaration this pass already made - and a second
-	// run would then add a duplicate label for a value that already has one. The value's own key is the
-	// identity that cannot drift.
-	//
-	// A DECLARATION THAT FORWARDS NOTHING IS SKIPPED: it names no value, so there is nothing for it to
-	// make a no-op.
-	// ---------------------------------------------------------------------------------------------
 	TMap<FString, UMaterialExpressionNamedRerouteDeclaration*> DeclarationsBySource;
 	for (const TPair<FString, UMaterialExpressionNamedRerouteDeclaration*>& Pair : Read.DeclarationsByLabel)
 	{
@@ -224,19 +189,7 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 		}
 		DeclarationsBySource.Add(ConnectionKey(Declaration->Input), Declaration);
 	}
-	OutPlan.DeclarationBySourceKey = DeclarationsBySource;
 
-	// ---------------------------------------------------------------------------------------------
-	// WHICH VALUES ARE WORTH A NAME.
-	//
-	// THE RULE IS THE SPEC'S OWN: "used far away or in several boxes". A value read in exactly one place
-	// is not shared, so a label would add a node and a name and save nothing. A value read by
-	// `MinimumConsumers` distinct expressions IS shared.
-	//
-	// THE COLUMN IS THE DEPTH FROM THE OUTPUT SOURCE, computed here by the same walk the output roots
-	// are found with, so "in several boxes" is measured against the structure rather than guessed from
-	// geometry - a material expression stores no size and its position is whatever the author dragged.
-	// ---------------------------------------------------------------------------------------------
 	TMap<FString, TArray<FConsumer>> ConsumersBySource;
 	TMap<FString, FExpressionInput> Connections;
 
@@ -269,7 +222,6 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 			Consumer.ReaderKey = FTurboMCPMaterial::KeyOf(Expression);
 			Consumer.InputIndex = It.Index;
 			Consumer.InputName = NameOfInput(Expression, It.Index);
-			Consumer.ReaderColumn = 0;
 
 			const FString Key = ConnectionKey(*Input);
 			Connections.Add(Key, *Input);
@@ -297,19 +249,12 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 		Promotion.SourceCaption = FTurboMCPMaterial::CaptionOf(Source);
 		Promotion.Consumers = Consumers;
 
-		// DISTINCT READERS, NOT INPUTS. One expression may read the same value into two of its own
-		// inputs - a `Lerp` whose A and B are both the same constant - and that is ONE place the value
-		// is used, not two. Counting inputs would promote exactly those values, which is the opposite of
-		// what the spec asks for.
 		TSet<const UMaterialExpression*> DistinctReaders;
-		TSet<int32> DistinctColumns;
 		for (const FConsumer& Consumer : Consumers)
 		{
 			DistinctReaders.Add(Consumer.Reader);
-			DistinctColumns.Add(Consumer.ReaderColumn);
 		}
 		Promotion.DistinctReaders = DistinctReaders.Num();
-		Promotion.DistinctReaderColumns = DistinctColumns.Num();
 
 		if (Promotion.DistinctReaders < MinimumConsumers)
 		{
@@ -325,11 +270,6 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 			Name += FString::Printf(TEXT("_Output%d"), OutputIndex);
 		Promotion.ProposedName = NameFromCaption(Name);
 
-		// A VALUE ALREADY DECLARED IS NOT PROPOSED AGAIN, AND IT IS FOUND BY ITS KEY RATHER THAN BY THE
-		// NAME THIS PASS WOULD PROPOSE. The engine makes names unique, so a second run looking itself up
-		// by name would not find what it made and would add a duplicate declaration for a value that
-		// already has one - which is the failure mode the reader would then report as two labels for one
-		// value.
 		if (UMaterialExpressionNamedRerouteDeclaration* const* Existing =
 				DeclarationsBySource.Find(SourceKey))
 		{
@@ -520,11 +460,6 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 
 		if (Declaration == nullptr)
 		{
-			// THE DECLARATION IS CREATED THROUGH THE ENGINE'S OWN ENTRY POINT, which is what the fixture
-			// commandlet uses for every expression it builds. Reaching for `NewObject` directly would
-			// skip whatever bookkeeping that entry point does, and it is the one place this project has
-			// already measured a trap: `CreateMaterialExpressionEx` calls `AddExpression`, while a
-			// COMMENT belongs in a different array.
 			UMaterialExpression* Created = UMaterialEditingLibrary::CreateMaterialExpressionEx(
 				Material, /*MaterialFunction=*/nullptr,
 				UMaterialExpressionNamedRerouteDeclaration::StaticClass(),
@@ -550,12 +485,6 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 
 		Declaration->Modify();
 
-		// A REUSED DECLARATION KEEPS THE NAME IT HAS, AND THAT IS A CORRECTION RATHER THAN A CONVENIENCE.
-		// The engine makes names unique, so an earlier run may have produced `Value_1` rather than the
-		// `Value` proposed then. RENAMING IT NOW WOULD MOVE THE LABEL OUT FROM UNDER EVERY NAME THE
-		// AUTHOR HAS ALREADY READ - a caller asking for the same promotion twice would get a different
-		// label name the second time, and any note or comment referring to the first name would stop
-		// matching. A LABEL IS A PROPERTY OF THE VALUE, so the name it already carries is the right one.
 		if (!Promotion.bAlreadyDeclared)
 		{
 			// THE NAME IS SET THROUGH THE ENGINE'S OWN SETTER, which is the accessor the material
@@ -567,10 +496,6 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 			}
 		}
 
-		// THE DECLARATION READS THE VALUE IT NAMES. Without this the node forwards nothing, so every
-		// reader retargeted to it would compile to an unconnected input - a silently wrong material, and
-		// the exact thing the compiled-result check would then have to catch rather than it never
-		// happening.
 		if (!Promotion.bAlreadyDeclared)
 		{
 			Declaration->Input = Promotion.SourceConnection;
@@ -579,18 +504,6 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 
 		PlannedDeclarations.Add(FTurboMCPMaterial::KeyOf(Declaration));
 
-		// THE REWIRING. *** EACH READER GETS ITS OWN USAGE NODE, AND THAT IS THE ENGINE'S CONVENTION
-		// RATHER THAN A PREFERENCE. *** POINTING EVERY READER'S INPUT STRAIGHT AT THE DECLARATION COMPILES,
-		// PRESERVES THE VALUE, AND LEAVES `R-MAT-LABELS` ANSWERING `read in 0 place(s)` ABOUT THE LABEL IT
-		// HAS JUST CREATED - because A LABEL IS READ THROUGH `UMaterialExpressionNamedRerouteUsage`, and
-		// the reader counts those. That makes a label nothing reads and reports success for it. The
-		// engine's own editor creates ONE USAGE
-		// PER READER (`Editor/MaterialEditor/Private/MaterialEditor.cpp:4633-4643`), and this does the
-		// same: the usage carries the label, and the reader's input points at the usage.
-		//
-		// ONE USAGE PER DISTINCT READER EXPRESSION rather than per input, so an expression that reads the
-		// same value into two of its own inputs gets ONE usage node that both inputs share - which is
-		// what a reader count of "places this label is read" means.
 		TMap<const UMaterialExpression*, UMaterialExpressionNamedRerouteUsage*> UsageByReader;
 
 		for (const FConsumer& Consumer : Promotion.Consumers)
@@ -620,10 +533,6 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 						TEXT("submitted for undo; restoration was not verified. Inspect the material before retrying or saving."), *Promotion.ProposedName);
 				}
 
-				// THE USAGE POINTS AT THE DECLARATION, which is what makes it read the label rather
-				// than forward nothing. Both the pointer and the GUID are set, because the reader
-				// prefers the pointer and falls back to the GUID for a freshly loaded asset whose fixup
-				// has not run - `LabelOfUsage` records exactly that.
 				Usage->Declaration = Declaration;
 				Usage->DeclarationGuid = Declaration->VariableGuid;
 				UsageByReader.Add(Consumer.Reader, Usage);
@@ -657,16 +566,6 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 		}
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// THE COMPILED-RESULT CHECK. "The material's compiled result must be the same" IS THE REQUIREMENT
-	// AND IT IS MEASURED HERE.
-	//
-	// THE ASYMMETRY IS DELIBERATE. `FTurboMCPMaterialTidy` asserts the expression set is IDENTICAL
-	// because a layout cannot legitimately add an expression. THIS PASS LEGITIMATELY ADDS DECLARATIONS,
-	// so the assertion is that NO PRE-EXISTING EXPRESSION WAS LOST and that the expressions GAINED are
-	// EXACTLY THE DECLARATIONS THIS PASS PLANNED. A one-directional check would miss a dropped
-	// expression; a bare "the sets differ" check would fail every time it worked correctly.
-	// ---------------------------------------------------------------------------------------------
 	Material->PostEditChange();
 
 	TArray<FString> CompileErrorsAfter = UMaterialEditingLibrary::RecompileMaterial(Material);
