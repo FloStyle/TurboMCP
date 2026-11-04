@@ -366,10 +366,10 @@
       "title": "Diagnose append execution reachability and existing exec merges",
       "kind": "bug",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "partial_candidate_native_pending",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "GC-86",
         "GC-87"
@@ -379,7 +379,7 @@
         "2026-11-03_S2/GC-87"
       ],
       "dependencies": [],
-      "next_step": "Candidate 14a4ae4c: clearer impure-node refusal diagnostics and native disconnected/wired, pure-data and existing DoOnce merge fixtures. Run 48e900da3f3c40aaab0d1da4369808fb is validating corrected fixture syntax and actual graph mutation. No completion or integration claimed.",
+      "next_step": "Monitor recurrence with exact append text. Diagnostics implemented and generic disconnected/wired impure, pure-only and existing DoOnce merge behavior verified. Original field failure cause remains unconfirmed; no general reachability bypass was added.",
       "evidence": [
         {
           "run": "1091b75cfba24a80ae4ed3e2cab1938b",
@@ -400,7 +400,20 @@
           "run": "13307cf22fcb453bb9c54a6cde2b8a72",
           "result": "failed",
           "scope": "Explicit refusal showed Choice label on a pin line was not recognized. Fixture corrected to put label on its own closing-form line; no tool merge defect established by this failure."
+        },
+        {
+          "run": "48e900da3f3c40aaab0d1da4369808fb",
+          "result": "passed",
+          "scope": "Native append suite: disconnected impure refusal, wired mutation, pure-only actual node addition, existing DoOnce input retains its original link and receives both new branch outputs."
+        },
+        {
+          "run": "aaf915afa8d74c98a06b4ac5604e8147",
+          "result": "passed",
+          "scope": "All 26 offline checks; full-SHA candidate 14a4ae4c6ff7a05742ca02bb380b1e0fd6685fe3 passed trusted assignment scope gate."
         }
+      ],
+      "followups": [
+        "Original GC-87 field call was not recovered; generic reproduction passes, so its historical cause is not claimed fixed."
       ]
     },
     {
