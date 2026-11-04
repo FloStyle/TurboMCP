@@ -46,6 +46,16 @@
       "run": "b9023f2c093c4c58ad784edfa9fc0520",
       "result": "failed",
       "scope": "Offline source notice missing after comment cleanup; restored in bd0893b8. Other checks passed."
+    },
+    {
+      "run": "b0da3f79c0904541b81997408e882881",
+      "result": "failed",
+      "scope": "Native regression passed; live edit help omitted output contract because only first paragraph is exported. Corrected in 627acf39; rerun pending."
+    },
+    {
+      "run": "56ab6e632ff24e7c95dfe7c459c3cfde",
+      "result": "passed",
+      "scope": "26 offline checks passed after license restoration; final help-only change requires current metadata verification."
     }
   ],
   "remaining": [
