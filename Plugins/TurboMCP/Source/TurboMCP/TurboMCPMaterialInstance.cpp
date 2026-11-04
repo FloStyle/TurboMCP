@@ -10,8 +10,6 @@
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceConstant.h"
-// EMaterialParameterType, FMaterialParameterInfo and FMaterialParameterMetadata all live here; the metadata struct
-// was at MaterialParameters.h:446 and the enum at :187 WHEN THIS WAS WRITTEN.
 #include "Materials/MaterialParameters.h"
 #include "Materials/Material.h"
 #include "StaticParameterSet.h"
@@ -27,13 +25,7 @@ namespace
             static_cast<int32>(Info.Association), Info.Index, *Type.ToLower().Replace(TEXT(" "), TEXT("")));
     }
 
-	/**
-	 * A parameter association, as a word, so the text is stable.
-	 *
-	 * DUPLICATED DELIBERATELY: the other copy is in an anonymous namespace in `TurboMCPMaterial.cpp`, SO IT CANNOT
-	 * BE SHARED WITHOUT CHANGING THAT FILE. *** THE FUNCTION IS ELEVEN LINES AND BOTH OUTPUTS ARE ASSERTED BY A
-	 * SUITE, so a drift between the two copies is a CHECK FAILURE rather than a silent divergence. ***
-	 */
+	/** Stable, human-readable parameter association. */
 	FString AssociationName(EMaterialParameterAssociation InAssociation)
 	{
 		switch (InAssociation)
@@ -45,7 +37,7 @@ namespace
 		}
 	}
 
-	/** A metadata value as text, BY TYPE, because a scalar formatted as a colour would be a lie. */
+	/** Format each metadata value using its declared type. */
 	FString ValueOf(const FMaterialParameterMetadata& InMetadata)
 	{
 		switch (InMetadata.Value.Type)
@@ -55,9 +47,7 @@ namespace
 
 		case EMaterialParameterType::Vector:
 		{
-			// AsVector DOES NOT EXIST - measured: MaterialParameters.h:377 declares AsVector4d for DoubleVector
-			// only, and the Vector storage is Float[4]. Reading the four floats directly is the honest route rather
-			// than inventing an accessor name, which is how nine recalled engine names have been wrong here.
+			// Vector metadata stores four float components; DoubleVector uses AsVector4d.
 			return FString::Printf(TEXT("(%g, %g, %g, %g)"),
 				InMetadata.Value.Float[0], InMetadata.Value.Float[1],
 				InMetadata.Value.Float[2], InMetadata.Value.Float[3]);
@@ -71,7 +61,6 @@ namespace
 
 		case EMaterialParameterType::Texture:
 		{
-			// AsTextureObject is the declared accessor (MaterialParameters.h:381).
 			const UObject* Texture = InMetadata.Value.AsTextureObject();
 			return Texture != nullptr ? Texture->GetPathName() : TEXT("(none)");
 		}
@@ -139,10 +128,7 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 	UMaterialInstance* Instance = Cast<UMaterialInstance>(Interface);
 	if (Instance == nullptr)
 	{
-		// REFUSED RATHER THAN ANSWERED WITH EVERYTHING INHERITED, AND THE DISTINCTION IS THE POINT OF THE TOOL. A
-		// base material would make every parameter inherited, which is technically true and USELESS: an agent
-		// asking whether a value is on the asset it holds would be told NO about an asset it CAN edit. D-43 refuses
-		// the other direction for the same reason.
+		// A base material has no instance overrides; direct the caller to the graph reader.
 		OutError = FString::Printf(TEXT("error: %s is a %s, which is NOT a material instance. Every parameter of a ")
 			TEXT("base material is editable on the material itself, so the inherited-versus-overridden distinction ")
 			TEXT("this tool exists to make does not apply. Use ReadTurboMCPMaterialLoad for the graph."),
@@ -152,20 +138,14 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 
 	OutResult.Asset = Resolved.ObjectPath;
 
-	// -----------------------------------------------------------------------------------------------
-	// THE CHAIN, NEAREST FIRST, WALKED THROUGH Parent UNTIL A BASE MATERIAL.
-	//
-	// UMaterialInstance::Parent IS A UMaterialInterface (MaterialInstance.h:647), SO A CHAIN CAN PASS THROUGH
-	// ANOTHER INSTANCE AND NOT ONLY A BASE MATERIAL - which is why the loop tests for UMaterialInstance AT EVERY
-	// STEP rather than assuming the first parent is the end of it.
-	// -----------------------------------------------------------------------------------------------
+	// Follow parent instances to the base material, retaining nearest-first order.
 	TArray<UMaterialInterface*> Levels;
 	{
 		UMaterialInterface* Link = Interface;
 		TSet<const UMaterialInterface*> Guard;
 		while (Link != nullptr && !Guard.Contains(Link))
 		{
-			// A CYCLE IS IMPOSSIBLE IN A WELL-FORMED ASSET AND A LOOP FOREVER IS THE FAILURE MODE IF IT IS NOT.
+			// Guard against malformed cyclic parent chains.
 			Guard.Add(Link);
 			Levels.Add(Link);
 
@@ -180,13 +160,7 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 		}
 	}
 
-	// -----------------------------------------------------------------------------------------------
-	// EVERY PARAMETER THE INSTANCE OVERRIDES, WITH ITS VALUE.
-	//
-	// READ FROM THE INSTANCE OWN ARRAYS (MaterialInstance.h:773-785) BECAUSE THAT IS WHERE AN OVERRIDE LIVES, and an
-	// override is not a resolved value: GetScalarParameterValue would return a value that CAME FROM THE PARENT when
-	// the instance does not set one, WHICH IS EXACTLY THE DISTINCTION THIS TOOL MUST NOT BLUR.
-	// -----------------------------------------------------------------------------------------------
+	// Read local override arrays rather than resolved values, which can come from a parent.
 	TSet<FString> OverriddenNames;
 
 	auto AddOverride = [&OutResult, &OverriddenNames](const FMaterialParameterInfo& Info, const FString& InType, const FString& InValue)
@@ -225,14 +199,7 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 			Value.ParameterValue != nullptr ? Value.ParameterValue->GetPathName() : TEXT("(none)"));
 	}
 
-	// -----------------------------------------------------------------------------------------------
-	// AND THE INVERSE: EVERY PARAMETER THE CHAIN DECLARES THAT THIS INSTANCE DOES NOT OVERRIDE.
-	//
-	// THE LIST THE SPEC SAYS MATTERS AND THE ONE NOTHING PRINTED BEFORE. It is built by walking the ancestors FROM
-	// THE PARENT UP, so a parameter declared by a NEARER level wins over the same name declared further up - THE
-	// ORDER THE ENGINE ITSELF RESOLVES IN, and the order that makes DeclaredAt the answer to "which asset would I
-	// have to edit".
-	// -----------------------------------------------------------------------------------------------
+	// Read inherited values nearest-first; preserve type, association and layer index.
 	const FStaticParameterSet StaticParameters = static_cast<const UMaterialInstance*>(Instance)->GetStaticParameters();
     for (const FStaticSwitchParameter& Value : StaticParameters.StaticSwitchParameters)
     {
@@ -284,13 +251,7 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 		}
 	}
 
-	// -------------------------------------------------------------------------------------------
-	// ORPHANED: SET ON THIS INSTANCE, DECLARED NOWHERE IN THE CHAIN.
-	//
-	// REPORTED RATHER THAN DROPPED, per the spec own words: "a renamed parameter leaves one behind". An orphaned
-	// override still EXISTS on the instance and still does nothing, so dropping it would HIDE A REAL DEFECT IN THE
-	// CALLER ASSET.
-	// -------------------------------------------------------------------------------------------
+	// Report local overrides that no ancestor declares, including renamed parameters.
 	for (const FParameter& Parameter : OutResult.Overridden)
 	{
 		if (!DeclaredBySomeAncestor.Contains(Parameter.Identity))
@@ -309,8 +270,7 @@ FString FTurboMCPMaterialInstance::Render(const FResult& InResult)
 	Out += TEXT("\n\n; the parent chain, nearest first, up to the base material");
 	for (int32 Index = 0; Index < InResult.Chain.Num(); ++Index)
 	{
-		// self AND parent, parent xN, RATHER THAN ORDINALS: the RELATION is the whole point of a chain, and a
-		// reader has to know that the second level is the asset it would edit.
+		// Name each relationship relative to the requested instance.
 		FString Label;
 		if (Index == 0)
 		{
@@ -351,10 +311,7 @@ FString FTurboMCPMaterialInstance::Render(const FResult& InResult)
 	}
 	for (const FParameter& Parameter : InResult.Inherited)
 	{
-		// THE WORD inherited IS ON EVERY LINE RATHER THAN ONLY IN THE HEADING: A LINE THAT READS name = value IS
-		// INDISTINGUISHABLE FROM AN OVERRIDE when it is read alone. THE SPEC SAYS THIS LIST MATTERS BECAUSE
-		// AN AGENT MUST TELL WHETHER A VALUE IS REALLY ON THIS INSTANCE - SO THE DISTINCTION HAS TO SURVIVE BEING
-		// READ ONE LINE AT A TIME, which is how an agent reads it.
+		// Keep inheritance explicit when a caller reads a single output line.
 		Out += FString::Printf(TEXT("\n%s = %s  [%s, %s, index=%d, inherited, resolved from %s]"),
 			*Parameter.Name, *Parameter.Value, *Parameter.Type, *Parameter.Association, Parameter.Index, *Parameter.DeclaredAt);
 	}
@@ -370,9 +327,7 @@ FString FTurboMCPMaterialInstance::Render(const FResult& InResult)
 			*Parameter.Name, *Parameter.Value, *Parameter.Type, *Parameter.Association, Parameter.Index);
 	}
 
-	// THE DENOMINATOR, ON THE MODEL R-BP-LINT SETTLED: a count with no denominator cannot be told apart from a
-	// reader that looked at nothing. IT NAMES THE LEVELS TOO, because naming four types is the denominator for ONE
-	// level and a chain of three multiplies it.
+	// State the inspected ancestor count and supported parameter types.
 	const TArray<FString>& Types = FTurboMCPMaterialInstance::CoveredTypes();
 	Out += FString::Printf(TEXT("\n\n; looked at %d level(s) in the chain, each for: %s"),
 		FMath::Max(0, InResult.Chain.Num() - 1), *FString::Join(Types, TEXT(", ")));

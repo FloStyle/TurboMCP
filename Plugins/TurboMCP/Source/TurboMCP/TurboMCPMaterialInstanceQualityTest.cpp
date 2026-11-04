@@ -91,6 +91,7 @@ bool FTurboMCPMaterialInstanceQualityTest::RunTest(const FString& Parameters)
         // Render and flush one preparation frame before measuring the next frame.
         Renderer.DrawWidget(Target, Widget, FVector2D(128,128), 0.0f, false);
         FlushRenderingCommands();
+        if (GShaderCompilingManager) GShaderCompilingManager->FinishAllCompilation();
         Renderer.DrawWidget(Target, Widget, FVector2D(128,128), 0.0f, false);
         FlushRenderingCommands();
         TArray<FColor> Pixels;
