@@ -213,7 +213,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "implementation_pending_workflow",
+      "validation": "candidate_testing",
       "source_ids": [
         "TD-50",
         "TD-57"
@@ -223,7 +223,7 @@
         "2026-11-03_S1/TD-57"
       ],
       "dependencies": [],
-      "next_step": "Claim 32543367db2b4758a537114d176a8a4d at base 9bcb29a5. Candidate now uses complete graph enumeration and shared reader lookup, including interface graphs, with ambiguity refusal and trimmed input. Position output reports requested/moved/already_matching counts. Native interface fixture, refusal checks, help review and capture remain before integration."
+      "next_step": "Candidate b92412f5 adds interface return-value fixture, reader/tidy preview/edit, mixed and repeated position counts, missing/duplicate-name refusal and native capture. Supervised run 4d62d0d383db48529f694271ef1fd5b5 is building; screenshot review and integration pending."
     },
     {
       "id": "NOV04-07",
@@ -233,7 +233,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_gap_confirmed_runtime_pending",
       "source_ids": [
         "TD-51",
         "TD-53",
@@ -245,7 +245,7 @@
         "2026-11-04_S1/TD-59"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Source reconciliation: GraphTidy column ordering builds dependencies from every OutPlan.Wire and checks every node despite scoped selection; unrelated cycles can therefore block a selected edit. Break/reset feedback also needs explicit layout-edge treatment. Reproduce stock loop-break via reroutes and DoOnce reset, plus an unselected cycle and true data-cycle refusal; preserve all links. No implementation yet."
     },
     {
       "id": "NOV04-08",
