@@ -990,7 +990,8 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
 	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
-	 */
+	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphTidy(
 		const FString& Asset,
@@ -1183,7 +1184,8 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
 	 * @param Nodes JSON array encoded as a string, e.g. ["exact reader node ID"]. Use [] when removing only links, not an empty string. Duplicate, missing and non-deletable nodes are refused.
 	 * @param Links JSON array encoded as a string. Each object requires sourceNodeId, sourcePin, targetNodeId and targetPin for an existing link. Use [] when removing only nodes. Do not repeat links already removed by a selected node deletion.
-	 */
+	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
+     */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
@@ -1314,6 +1316,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
      * @param TargetAsset Required destination Blueprint path or unique short name. It must already exist and declare compatible members needed by copied nodes; self functions need compiled signatures with matching parameter names and types. Empty or ambiguous input is refused.
      * @param TargetGraph Required existing destination graph name. This is not a new graph name; choose a different graph from the source. Example: EventGraph in another Blueprint.
      * @param AnchorNodeId Required string; pass empty. Anchor wiring is not implemented and any nonempty value is refused.
+     * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      */
     UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphCopy(
@@ -1838,7 +1841,8 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
 	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
-	 */
+	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphTidy(
 		const FString& Asset,
@@ -1991,7 +1995,8 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
-	*/
+	* Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphPositions(const FString& Asset, const FString& GraphName, const FString& Positions);
 
@@ -2055,7 +2060,8 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
 	 * @param Nodes JSON array encoded as a string, e.g. ["exact reader node ID"]. Use [] when removing only links, not an empty string. Duplicate, missing and non-deletable nodes are refused.
 	 * @param Links JSON array encoded as a string. Each object requires sourceNodeId, sourcePin, targetNodeId and targetPin for an existing link. Use [] when removing only nodes. Do not repeat links already removed by a selected node deletion.
-	 */
+	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
@@ -2211,6 +2217,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
      * @param TargetAsset Required destination Blueprint path or unique short name. It must already exist and declare compatible members needed by copied nodes; self functions need compiled signatures with matching parameter names and types. Empty or ambiguous input is refused.
      * @param TargetGraph Required existing destination graph name. This is not a new graph name; choose a different graph from the source. Example: EventGraph in another Blueprint.
      * @param AnchorNodeId Required string; pass empty. Anchor wiring is not implemented and any nonempty value is refused.
+     * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      */
     UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphCopy(

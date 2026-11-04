@@ -89,9 +89,9 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphPositions(const FString& Asset, c
 			return TEXT("error: each position requires exactly the keys node (reader ID), x and y (integer graph coordinates); example [{\"node\":\"exact reader node ID\",\"x\":100,\"y\":200}]; unchanged");
 		UEdGraphNode* Found = nullptr;
 		for (UEdGraphNode* Node : Graph->Nodes)
-			if (Node && (TurboMCPNodeId::MakeForNode(Node, true) == Id || TurboMCPNodeId::MakeForNode(Node, false) == Id))
+			if (TurboMCPNodeId::MatchesNode(Node, Id))
 			{ if (Found) return TEXT("error: ambiguous node ID; unchanged"); Found = Node; }
-		if (!Found || Seen.Contains(Found)) return TEXT("error: node missing or repeated; unchanged");
+		if (!Found || Seen.Contains(Found)) return TEXT("error: node missing or repeated; use a unique hexadecimal key of at least six digits or an exact reader ID in this graph; unchanged");
 		Seen.Add(Found);
 		if (Found->NodePosX != int32(X) || Found->NodePosY != int32(Y)) Moves.Add({Found, int32(X), int32(Y)});
 	}

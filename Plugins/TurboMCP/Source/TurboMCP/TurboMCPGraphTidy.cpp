@@ -385,9 +385,7 @@ namespace
 	/** Accept both node-id forms emitted by the graph readers. */
 	bool NodeAnswersToId(const UEdGraphNode* InNode, const FString& InId)
 	{
-		return InNode != nullptr
-			&& (TurboMCPNodeId::MakeForNode(InNode, /*bLongForm=*/true).Equals(InId, ESearchCase::CaseSensitive)
-				|| TurboMCPNodeId::MakeForNode(InNode, /*bLongForm=*/false).Equals(InId, ESearchCase::CaseSensitive));
+        return TurboMCPNodeId::MatchesNode(InNode, InId);
 	}
 
 	/**
@@ -746,10 +744,13 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			const FString Id = RequestedId.TrimStartAndEnd();
             if (Id == TEXT("@unboxed")) continue;
             bExplicitNodes = true;
-			const FNode* Found = OutPlan.Nodes.FindByPredicate([&Id](const FNode& Candidate)
-			{
-				return NodeAnswersToId(Candidate.Node, Id);
-			});
+            const FNode* Found = nullptr;
+            int32 MatchCount = 0;
+            for (const FNode& Candidate : OutPlan.Nodes)
+                if (NodeAnswersToId(Candidate.Node, Id)) { Found = &Candidate; ++MatchCount; }
+            if (MatchCount > 1)
+            { OutError = TEXT("Ambiguous node ID; use a longer unique key or an exact reader ID: ") + Id; return false; }
+
 			if (Found == nullptr)
 			{
 				OutError = FString::Printf(TEXT("no node with id '%s' in graph '%s'; tidy did not move anything."),
@@ -1007,7 +1008,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
     for(const FString& Id:MainIds)
     {
         int32 Current=INDEX_NONE;
-        for(int32 I=0;I<OutPlan.Nodes.Num();++I) if(NodeAnswersToId(OutPlan.Nodes[I].Node,Id)) { Current=I; break; }
+        for(int32 I=0;I<OutPlan.Nodes.Num();++I) if(NodeAnswersToId(OutPlan.Nodes[I].Node,Id))
+        { if(Current!=INDEX_NONE) { OutError=TEXT("Ambiguous MainPath node ID: ")+Id; return false; } Current=I; }
         // An explicit path may start at an immovable predecessor. It supplies direction,
         // not selection ownership; every subsequent node must belong to the selection.
         const bool bFixedFirstAnchor = !bAutoMainPath && Previous == INDEX_NONE && MainIds.Num() > 1;

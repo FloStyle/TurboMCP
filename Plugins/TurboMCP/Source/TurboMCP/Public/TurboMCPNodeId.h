@@ -205,4 +205,10 @@ namespace TurboMCPNodeId
 	 * so the caller refuses rather than printing an ID that will not resolve.
 	 */
 	FString GetVariableNodeTypeId(const class UK2Node_Variable* InNode);
+    /** Match an exact qualified reader ID or a bare hexadecimal key of at least six digits.
+     * Callers must count matches and refuse ambiguity before editing. Qualified IDs
+     * are never reduced to keys, so a wrong asset or graph cannot match accidentally.
+     */
+    bool MatchesNode(const UEdGraphNode* Node, const FString& Id);
+
 }

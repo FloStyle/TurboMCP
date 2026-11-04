@@ -603,4 +603,13 @@ namespace TurboMCPNodeId
 
 		return FString::Printf(TEXT("%s|%s"), *Category, *Title);
 	}
+    bool MatchesNode(const UEdGraphNode* Node, const FString& Id)
+    {
+        if (!Node) return false;
+        const FString Requested = Id.TrimStartAndEnd();
+        const FString Key = NormaliseKey(Requested);
+        if (!Key.IsEmpty()) return Node->NodeGuid.ToString(EGuidFormats::DigitsLower).StartsWith(Key);
+        return MakeForNode(Node, true) == Requested || MakeForNode(Node, false) == Requested;
+    }
+
 }

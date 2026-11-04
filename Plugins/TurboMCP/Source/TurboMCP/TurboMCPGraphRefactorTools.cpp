@@ -30,8 +30,13 @@ namespace
 using FOperation=TFunction<bool(UEdGraph*,UEdGraph*,FString&,FString&)>;
 UEdGraphNode* ResolveNode(UEdGraph* Graph,UEdGraph* Identity,const FString& Id)
 {
-    UEdGraphNode* Original=TurboMCPGraphScratch::Find(Identity,Id);
-    return Original?TurboMCPGraphScratch::ByGuid(Graph,Original->NodeGuid):nullptr;
+    UEdGraphNode* Original = nullptr;
+    if (Identity) for (UEdGraphNode* Node : Identity->Nodes)
+        if (TurboMCPNodeId::MatchesNode(Node, Id)) { if (Original) return nullptr; Original = Node; }
+    UEdGraphNode* Found = nullptr;
+    if (Original && Graph) for (UEdGraphNode* Node : Graph->Nodes)
+        if (Node && Node->NodeGuid == Original->NodeGuid) { if (Found) return nullptr; Found = Node; }
+    return Found;
 }
 /** Resolve edit endpoints without dropping asset/graph qualifiers or guessing a match.
  * Bare hexadecimal keys are scoped by the already resolved graph. Exact reader
@@ -397,7 +402,7 @@ bool Remove(UEdGraph* Graph,UEdGraph* Identity,const FString& Nodes,const FStrin
     TArray<TSharedPtr<FJsonValue>> NodeJson, LinkJson;
     if(!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Nodes),NodeJson)
         || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Links),LinkJson))
-    { Error=TEXT("Nodes and Links must be JSON arrays; use [] for an unused selection"); return false; }
+    { Error=TEXT("Nodes and Links must be JSON arrays. Nodes example: [\"unique node key or reader ID\"]. Links example: [{\"sourceNodeId\":\"source ID\",\"sourcePin\":\"then\",\"targetNodeId\":\"target ID\",\"targetPin\":\"execute\"}]. Use [] for an unused selection"); return false; }
     TArray<UEdGraphNode*> Delete;
     struct FLink { UEdGraphPin* From; UEdGraphPin* To; };
     TArray<FLink> Break;

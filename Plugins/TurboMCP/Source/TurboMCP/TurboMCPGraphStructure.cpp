@@ -143,8 +143,7 @@ namespace
 		{
 			return false;
 		}
-		return KeyOf(InNode).Equals(InKey, ESearchCase::CaseSensitive)
-			|| TurboMCPNodeId::MakeForNode(InNode, /*bLongForm=*/false).Equals(InKey, ESearchCase::CaseSensitive);
+		return TurboMCPNodeId::MatchesNode(InNode, InKey);
 	}
 
 	/**
