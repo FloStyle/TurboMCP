@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "PreviewTurboMCPMaterialBlocks",
+    "EditTurboMCPMaterialBlocks"
+  ],
+  "candidate": "174ca9a8c1ce125663f9b434090be72140cb53ed",
+  "source_findings": [
+    "Preview compilation moved to nonempty edit path; native fixture preserves package dirty flag and material StateId.",
+    "Native regression reproduced source outputs 1 and 2 both replaced by output 0. Connection grouping now includes output and component mask; declaration copies the complete source input."
+  ],
+  "evidence": [
+    {
+      "run": "9c5ca179c28a4cb9a54a41b09d93aa46",
+      "result": "failed",
+      "scope": "New fixture did not compile: TObjectPtr passed to TestNotNull; corrected with Get()."
+    },
+    {
+      "run": "76d88a23b3bf448eb66bba6d148e4e7d",
+      "result": "failed",
+      "scope": "Native regression: both source output indices became zero."
+    },
+    {
+      "run": "de6bbc78e36140aabb4ba8a16574a224",
+      "result": "passed",
+      "scope": "Expanded two-channel/two-block native fixture and existing Material Blocks merge suite."
+    }
+  ],
+  "remaining": [
+    "Exercise in-block reroute removal with output indices, masks, chains and material output consumers.",
+    "Verify complete channel-mask and value preservation, no-op stability, one usage per consuming block and stale-plan refusal.",
+    "Review rollback verification, functions, preview/edit reporting, help and historical comments.",
+    "Inspect graph/render screenshots; complete offline and trusted scope gates before integration."
+  ],
+  "limitations": [
+    "Focused passing run is not full pair acceptance.",
+    "Changes remain on the review branch; main contains tracking only."
+  ]
+}
