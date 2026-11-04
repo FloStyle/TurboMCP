@@ -67,10 +67,10 @@
       "title": "Prevent or identify delegate append side-effect events",
       "kind": "bug",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reproduced_fix_candidate_testing",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "GC-83"
       ],
@@ -78,7 +78,7 @@
         "2026-11-03_S1/GC-83"
       ],
       "dependencies": [],
-      "next_step": "Candidate 9349a05a corrects test-only private access for the new failure-cleanup check. Focused supervised rerun is active; integration and offline validation remain pending.",
+      "next_step": "Implemented: report retained engine-created companions with IDs and accurate counts; remove only newly generated delegate events left disconnected by explicit binding. Existing nodes remain. Monitor field recurrence; no arbitrary project or save/reload certification.",
       "evidence": [
         {
           "run": "d82350a508684b99b7568b6116432397",
@@ -99,8 +99,19 @@
           "run": "18cebd28ca044bf8b7653377e502387d",
           "result": "build_failed",
           "scope": "New failure-injection test lacked friend access to private ExecuteGraph; corrected using the existing WITH_DEV_AUTOMATION_TESTS-only pattern. No runtime result from this run."
+        },
+        {
+          "run": "2c8dfdd5c3184a6aa3f15977fcf8d054",
+          "result": "passed",
+          "scope": "Final stock-engine build and graph-append suite; companion reporting, explicit handler preservation, scratch/live parity and post-spawn rollback cleanup."
+        },
+        {
+          "run": "98fe00100ded41c0b5703dc350de24f0",
+          "result": "passed",
+          "scope": "Offline integration gate, 26 checks; final source assignment scope gate also passed."
         }
-      ]
+      ],
+      "source_commit": "9349a05ab7ed871660a42829d568d0ee28696141"
     },
     {
       "id": "NOV04-04",
