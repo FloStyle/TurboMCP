@@ -39,20 +39,36 @@ bool FTurboMCPEditNodeKeysTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Qualified copy preview control"),Copy(Full).StartsWith(TEXT("would change")));
     TestFalse(TEXT("Unique key tidy resolves"),Tidy(Key).StartsWith(TEXT("error:")));
     TestFalse(TEXT("Qualified tidy control resolves"),Tidy(Full).StartsWith(TEXT("error:")));
-    TestFalse(TEXT("Unique key removal preview resolves"),Remove(Key).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Unique key removal preview resolves"),Remove(Key).Contains(TEXT("preview (transient graph)")));
+    TestTrue(TEXT("Qualified removal preview control"),Remove(Full).Contains(TEXT("preview (transient graph)")));
     B->NodeGuid=FGuid(0xAABBCC22,4,5,6);
     for(const FString& Id:TArray<FString>{Key,TEXT("ffffff"),TEXT("/Game/Wrong.Wrong:Source:aabbcc")})
     {
-        const int32 X=A->NodePosX, Count=Graph->Nodes.Num(), TargetCount=Target->Nodes.Num();
+        const int32 X=A->NodePosX, Y=A->NodePosY, Count=Graph->Nodes.Num(), TargetCount=Target->Nodes.Num();
+        const bool Dirty=Package->IsDirty();
         TestTrue(TEXT("Invalid or ambiguous position ID refuses"),Positions(Id).StartsWith(TEXT("error:")));
         TestFalse(TEXT("Invalid or ambiguous copy ID refuses"),Copy(Id).StartsWith(TEXT("would change")));
         TestTrue(TEXT("Invalid or ambiguous tidy ID refuses"),Tidy(Id).StartsWith(TEXT("error:")));
-        TestTrue(TEXT("Invalid or ambiguous removal ID refuses"),Remove(Id).StartsWith(TEXT("error:")));
-        TestEqual(TEXT("Refusal preserves position"),A->NodePosX,X);
+        TestTrue(TEXT("Invalid or ambiguous removal ID refuses"),Remove(Id).StartsWith(TEXT("unchanged\nrefused:")));
+        TestEqual(TEXT("Refusal preserves X"),A->NodePosX,X);
+        TestEqual(TEXT("Refusal preserves Y"),A->NodePosY,Y);
+        TestEqual(TEXT("Refusal preserves dirty state"),Package->IsDirty(),Dirty);
         TestEqual(TEXT("Refusal preserves source nodes"),Graph->Nodes.Num(),Count);
         TestEqual(TEXT("Refusal preserves destination nodes"),Target->Nodes.Num(),TargetCount);
     }
+    // Identical GUIDs must refuse even when the caller uses a qualified reader ID.
+    B->NodeGuid=A->NodeGuid;
+    TestTrue(TEXT("Duplicate identity positions refuse"),Positions(Full).StartsWith(TEXT("error:")));
+    TestFalse(TEXT("Duplicate identity copy refuses"),Copy(Full).StartsWith(TEXT("would change")));
+    TestTrue(TEXT("Duplicate identity tidy refuses"),Tidy(Full).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Duplicate identity removal refuses"),Remove(Full).StartsWith(TEXT("unchanged\nrefused:")));
+    TestEqual(TEXT("Duplicate refusal preserves source nodes"),Graph->Nodes.Num(),2);
+    TestEqual(TEXT("Duplicate refusal preserves target nodes"),Target->Nodes.Num(),0);
     B->NodeGuid=FGuid(0xDDEEFF11,4,5,6);
+    const FString Tidied=UTurboMCPEditToolset::EditTurboMCPGraphTidy(Asset,Graph->GetName(),true,{Key});
+    TestFalse(TEXT("Unique key tidy edit resolves"),Tidied.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Tidy preserves source nodes"),Graph->Nodes.Num(),2);
+    TestTrue(TEXT("Tidy preserves other node"),Graph->Nodes.Contains(B));
     const FString Copied=UTurboMCPEditToolset::EditTurboMCPGraphCopy(Asset,Graph->GetName(),{Key},Asset,Target->GetName(),TEXT(""));
     TestTrue(TEXT("Unique key copy edit"),Copied.StartsWith(TEXT("changed")));
     TestEqual(TEXT("Exactly one node copied"),Target->Nodes.Num(),1);
