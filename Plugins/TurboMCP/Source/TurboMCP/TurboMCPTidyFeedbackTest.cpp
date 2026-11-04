@@ -59,6 +59,8 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         const FString Preview=UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(BP->GetPathName(),Graph->GetName(),true,{});
         TestTrue(TEXT("Feedback preview succeeds"),Preview.Contains(TEXT("preview:")) && Preview.Contains(TEXT("control feedback: 1")));
         for (const auto& Pair:Positions) TestTrue(TEXT("Preview preserves positions"),Pair.Value==FIntPoint(Pair.Key->NodePosX,Pair.Key->NodePosY));
+        const FString AutoPreview=UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(BP->GetPathName(),Graph->GetName(),true,{},TEXT("auto"));
+        TestTrue(TEXT("Automatic main path accepts stock feedback"),AutoPreview.Contains(TEXT("preview:")));
         const FString Edit=UTurboMCPEditToolset::EditTurboMCPGraphTidy(BP->GetPathName(),Graph->GetName(),true,{});
         TestTrue(TEXT("Feedback edit succeeds"),Edit.StartsWith(TEXT("changed:")) && Edit.Contains(TEXT("control feedback: 1")));
         TestTrue(TEXT("Feedback leaves the body on its right"),First->NodePosX>Body->NodePosX);
@@ -93,6 +95,14 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Refusal preserves positions"),BeforeA==FIntPoint(A->NodePosX,A->NodePosY) && BeforeB==FIntPoint(B->NodePosX,B->NodePosY));
     TestEqual(TEXT("Refusal preserves dirty state"),Package->IsDirty(),DirtyBefore);
     TestTrue(TEXT("Cycle links preserved"),C->FindPin(UEdGraphSchema_K2::PN_Then)->LinkedTo.Contains(D->FindPin(UEdGraphSchema_K2::PN_Execute)) && D->FindPin(UEdGraphSchema_K2::PN_Then)->LinkedTo.Contains(C->FindPin(UEdGraphSchema_K2::PN_Execute)));
+    // Data cycles are not control feedback, even when represented by reroutes.
+    auto MakeDataKnot=[&](int32 X){auto* Knot=NewObject<UK2Node_Knot>(Scoped);Scoped->AddNode(Knot,false,false);Knot->CreateNewGuid();Knot->AllocateDefaultPins();Knot->NodePosX=X;Knot->NodePosY=2000;for (UEdGraphPin* Pin:Knot->Pins) {Pin->PinType.PinCategory=UEdGraphSchema_K2::PC_Int;}return Knot;};
+    auto* DataA=MakeDataKnot(0);auto* DataB=MakeDataKnot(300);
+    DataA->GetOutputPin()->MakeLinkTo(DataB->GetInputPin());DataB->GetOutputPin()->MakeLinkTo(DataA->GetInputPin());
+    const TArray<FString> DataSelection={TurboMCPNodeId::MakeForNode(DataA),TurboMCPNodeId::MakeForNode(DataB)};
+    TestTrue(TEXT("Data cycle preview refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(BP->GetPathName(),Scoped->GetName(),true,DataSelection).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Data cycle edit refuses"),UTurboMCPEditToolset::EditTurboMCPGraphTidy(BP->GetPathName(),Scoped->GetName(),true,DataSelection).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Data refusal preserves positions and links"),DataA->NodePosX==0 && DataB->NodePosX==300 && DataA->NodePosY==2000 && DataB->NodePosY==2000 && DataA->GetOutputPin()->LinkedTo.Contains(DataB->GetInputPin()) && DataB->GetOutputPin()->LinkedTo.Contains(DataA->GetInputPin()));
     return !HasAnyErrors();
 }
 #endif
