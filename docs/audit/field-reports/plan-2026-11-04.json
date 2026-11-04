@@ -164,10 +164,10 @@
       "title": "Reconcile short node IDs across graph write tools",
       "kind": "bug",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "candidate_testing",
+      "validation": "focused_workflow_passed",
       "source_ids": [
         "ED-22",
         "ED-23",
@@ -185,14 +185,25 @@
         "2026-11-04_S1/GC-95"
       ],
       "dependencies": [],
-      "next_step": "Candidate 1e12c890 corrects removal refusal assertions to the existing contract, strengthens successful removal previews, and adds duplicate-GUID refusal, dirty-state preservation and actual tidy-edit checks. Supervised rerun active; integration pending.",
+      "next_step": "Implemented and integrated. Unique hexadecimal keys and qualified reader IDs work consistently in copy, remove, tidy and positions; ambiguous or missing identities refuse. Broader field validation remains separate.",
       "evidence": [
         {
           "run": "9961a0540e314298bb35d01a9c4e9379",
           "result": "failed",
           "scope": "Build passed. Native EditNodeKeys failed three removal-refusal assertions: the test expected error:, but the existing contract returns unchanged followed by refused:. Other assertions passed. Failed evidence retained; this is not a passing workflow."
+        },
+        {
+          "run": "15c5b853acca49f7a92771b90c622dec",
+          "result": "passed",
+          "scope": "Build and native graph-append suite, including key success, qualified controls, missing/wrong-qualified/ambiguous IDs, duplicate GUID refusal, state preservation, actual copy/remove/tidy edits. Earlier failed assertions retained."
+        },
+        {
+          "run": "9e0262c358aa427baa371957f5e7fed2",
+          "result": "passed",
+          "scope": "Offline validation 26/26; exact candidate scope check also passed."
         }
-      ]
+      ],
+      "source_commit": "1e12c8909e3fe62dbf4b527ca7ef5f6b6c1b2116"
     },
     {
       "id": "NOV04-06",
