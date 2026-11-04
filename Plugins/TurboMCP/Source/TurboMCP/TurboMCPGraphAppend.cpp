@@ -1668,12 +1668,30 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
     for (const UEdGraphNode* Node : Created)
     {
         if (!Node || !Graph->Nodes.Contains(Node) || Reachable.Contains(Node)) continue;
-        bool HasExecutionInput = false;
+        TArray<FString> ExecutionInputs;
         for (const UEdGraphPin* Pin : Node->Pins)
-            if (Pin && !Pin->bOrphanedPin && Pin->Direction == EGPD_Input
-                && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-                HasExecutionInput = true;
-        if (HasExecutionInput) UnreachableCreated.Add(TurboMCPNodeId::MakeForNode(Node, true));
+        {
+            if (!Pin || Pin->bOrphanedPin || Pin->Direction != EGPD_Input
+                || Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec) continue;
+            TArray<FString> Sources;
+            for (const UEdGraphPin* Source : Pin->LinkedTo)
+                if (Source && Source->GetOwningNode())
+                    Sources.Add(TurboMCPNodeId::MakeForNode(Source->GetOwningNode(), true) + TEXT(":") + Source->PinName.ToString());
+            ExecutionInputs.Add(Pin->PinName.ToString() + (Sources.IsEmpty()
+                ? TEXT(" is disconnected")
+                : TEXT(" is linked from an unreachable source: ") + FString::Join(Sources, TEXT(", "))));
+        }
+        if (!ExecutionInputs.IsEmpty())
+        {
+            FString Label;
+            for (int32 Index=0; Index<CreatedByForm.Num(); ++Index)
+                if (CreatedByForm[Index]==Node && InPlan.Nodes.IsValidIndex(Index) && !InPlan.Nodes[Index].LocalLabel.IsEmpty())
+                    Label=TEXT("; label=")+InPlan.Nodes[Index].LocalLabel;
+            // Capture readable details before rollback destroys the temporary/new nodes.
+            UnreachableCreated.Add(FString::Printf(TEXT("%s [%s; type=%s%s]: impure node; %s"),
+                *TurboMCPNodeId::GetNodeTitle(Node), *TurboMCPNodeId::MakeForNode(Node,true),
+                *TurboMCPNodeId::GetNodeTypeId(Node), *Label, *FString::Join(ExecutionInputs,TEXT("; "))));
+        }
     }
     if (!UnreachableCreated.IsEmpty())
     {
@@ -1681,7 +1699,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
         const bool Undone = Rollback();
         OutError = FString::Printf(TEXT("%s: newly created execution nodes have no path from recognized entries: %s"),
             RollbackStatus(Undone), *NodeList);
-        OutReport = TEXT("compile=not_run; save=not_requested; connect new execution chains to an entry before applying");
+        OutReport = TEXT("compile=not_run; save=not_requested; connect each impure node through its execution input to a recognized event or function entry; data links alone do not execute it");
         return false;
     }
     Out += TEXT("\nnew_execution_nodes=structurally_reachable; runtime_behavior=not_verified");
