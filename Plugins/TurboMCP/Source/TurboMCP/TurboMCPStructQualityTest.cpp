@@ -53,6 +53,17 @@ bool FTurboMCPStructQualityTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Remove unused field"),Edit(TEXT("remove:Price")).StartsWith(TEXT("changed:")));
     TestFalse(TEXT("Removed field absent"),Names().Contains(TEXT("Price")));
     TestTrue(TEXT("Unrelated fields preserved"),Names().Contains(TEXT("Count")) && Names().Contains(TEXT("Label")) && Names().Contains(TEXT("Offset")));
+    TestTrue(TEXT("Valid default and metadata change"),Edit(TEXT("Count: int, default=5, tooltip=Item count, category=Item")).StartsWith(TEXT("changed:")));
+    for (const auto& D:FStructureEditorUtils::GetVarDesc(Struct)) if(D.FriendlyName==TEXT("Count"))
+    {
+        TestEqual(TEXT("Default observed"),D.DefaultValue,FString(TEXT("5")));
+        TestEqual(TEXT("Tooltip observed"),D.ToolTip,FString(TEXT("Item count")));
+        TestEqual(TEXT("Category observed"),D.Category,FName(TEXT("Item")));
+    }
+    const FString RejectedDefault=Edit(TEXT("Count: int, default=not_an_integer"));
+    TestTrue(TEXT("Rejected default reports partial"),RejectedDefault.StartsWith(TEXT("partial:")));
+    const FString InvalidNew=UTurboMCPEditToolset::EditTurboMCPStructNew(Path+TEXT("_InvalidDefault"),TEXT("Count: int, default=not_an_integer")); AddInfo(InvalidNew);
+    TestTrue(TEXT("Rejected new default reports partial"),InvalidNew.StartsWith(TEXT("partial:")));
     TestTrue(TEXT("Existing path refused"),UTurboMCPEditToolset::EditTurboMCPStructNew(Path,Fields).StartsWith(TEXT("unchanged:")));
     TestFalse(TEXT("No implicit save"),FPackageName::DoesPackageExist(Path));
     return true;
