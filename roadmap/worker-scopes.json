@@ -3401,6 +3401,15 @@
             "Tools/test-data-asset-tools.py"
           ],
           "new_files": []
+        },
+        "nov04-append-reachability": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAppendReachabilityTest.cpp"
+          ]
         }
       },
       "preserve_rows": []

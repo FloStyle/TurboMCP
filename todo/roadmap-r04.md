@@ -2138,3 +2138,8 @@ Readiness: ready. Assignment nov04-array-shrink. Reconcile the unknown original 
 ### NOV04-28 removal integration evidence
 
 Source b87cc5ed integrated: targeted array removal passes native b3d7c89cfeae423d867ee58b5b6329d0 and offline f62b888e15094e2cad2b00f71dd60945 (26/26); scope PASS. Verified 65-to-64 mapping removal, unchanged preview and invalid requests, retained mappings, stale revision refusal and undo. Original tool cause remains unknown. Insertion FT-141 remains open; combined topic remains in progress.
+
+
+### NOV04-12 append reachability repair contract
+
+Readiness: ready. Assignment nov04-append-reachability. Current append rejects newly created impure nodes unreachable from recognized entries, but reports only identities without pin-level causes. Improve refusal to identify node title/type/local label when available and execution input names, distinguishing disconnected inputs from linked but unreachable sources. Preserve rollback and do not accept dead impure chains merely to pass a test. Native generic fixtures must exercise disconnected impure use, a correctly wired equivalent, a pure-data-only append, and new branch outputs merging into a stock DoOnce input already linked from a reachable event. Verify preview/edit agreement and unchanged graph/links on refusal. Reconcile GC-87 against actual native evidence; repair a demonstrated defect only within append scope. Run supervised test-graph-append and offline gates. No engine edits or unrelated feature additions.
