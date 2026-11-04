@@ -782,7 +782,7 @@ bool FTurboMCPMaterial::Plan(const FString& InAsset, ERead InKind,
 			OutError = FString::Printf(
 				TEXT("%s is a Material Instance, not a Material: it has no expression graph of its ")
 				TEXT("own, only overrides of its parent. Read the parent's graph instead, at %s, ")
-				TEXT("or pass includeInstanceOverrides=true to list this instance's overrides."),
+				TEXT("or use ReadTurboMCPMaterialInstance to inspect its overrides and inherited values."),
 				*Resolved.ObjectPath,
 				OutPlan.ParentPath.IsEmpty() ? TEXT("(its parent is not set)")
 					: *OutPlan.ParentPath);

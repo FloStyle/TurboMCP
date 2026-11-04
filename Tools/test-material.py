@@ -1,53 +1,9 @@
-# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-MAT-3
-#
-# NAMED HERE SO Spec/06_ACCEPTANCE.md CAN BE ANSWERED MECHANICALLY. Spec/WORKING_PLAN.md section 1.3 says a
-# capability is done when its acceptance row PASSES, WHICH MAKES THAT DOCUMENT THE DEFINITION OF DONE - and a
-# script over the tree measured 64 OF ITS 122 ROWS CITED BY NO SUITE AT ALL, so nothing could answer
-# 'is this row passing?' without a human reading it.
-#
-# *** AND THE SCRIPT IS NAMED NOW, BECAUSE A SCRIPT OVER THE TREE IS NOT A REFERENCE: ***
-#   python Tools/checks/count-acceptance-citations.py
-# IT STATES ITS CRITERION - a literal occurrence of the id in a Tools/test-*.py file - AND REPORTS 64. FOUR
-# EARLIER ATTEMPTS GAVE 91, 64, 66 AND 56 BECAUSE NONE OF THEM SAID WHAT CITED MEANT, AND THIS LINE CARRIED
-# THE 91. *** A NUMBER WITHOUT ITS CRITERION IS NOT A MEASUREMENT; IT IS A NUMBER. ***
-#
-# THE ID IS READ FROM THE DOCUMENT, NOT GUESSED. VERIFIED FOR THIS ONE:
-#   | T-MAT-3 | Constants | Every lerp prints A, B and alpha, linked or constant |
+# Acceptance coverage: T-MAT-3 (linked and constant material inputs).
+"""Exercise material graph readers against the saved material/function fixture.
 
-"""Drive the four material readers against the fixture built for them.
-
-WHY THIS SUITE EXISTS
----------------------
-`Tools/test-batch-tools.py` proves the four material readers REFUSE a non-material asset, and says in
-its own docstring that this is not a test of the READING. This suite is that test: the fixture at
-`/Game/Tests/TurboMCPMaterialFixture` carries the structures each reader exists to find.
-
-THE ASSET'S NAME IS NOT THE FILE'S NAME, and every check below depends on knowing that.
-`Tools/make-material-asset.ps1` writes `TurboMCPMaterialFixture.uasset`, and the asset INSIDE it is
-`M_TurboMCPFixture`. A reader pointed at `TurboMCPMaterialFixture` answers "no asset named ..." while the
-file sits on disk, which cost a round of confusion before the search output showed
-`/Game/Tests/TurboMCPMaterialFixture.M_TurboMCPFixture [Material]`.
-
-WHAT EACH CHECK PROVES, AND HOW IT COULD FAIL
----------------------------------------------
-- `R-MAT-LABELS` reports the UNREAD label BY NAME. The fixture declares `UnusedTint` and reads it zero
-  times. Fails if the unread rule stops firing, which is the single finding this reader exists for;
-- `R-MAT-LABELS` reports `VerticalMix` as read MORE THAN ONCE. Fails if the reader counts declarations
-  as reads;
-- `R-MAT-LOAD` names both parameters with their group and prints the constant an UNLINKED input keeps.
-  The fixture leaves `0.375` on a Multiply's B input. Fails if the reflection constant path breaks,
-  which is what `04_FORMATS.md` 2.5 requires by name and which a class-name list would silently miss;
-- `R-MAT-LOAD` flags expressions that reach NO output. The fixture has `LazyScalar` and `UnusedTint`
-  among them. Fails if the reachability walk stops reporting;
-- `R-MAT-TRACE` REFUSES an output that is not connected, and LISTS the ones that are. Fails if the
-  refusal becomes a silent empty tree;
-- `R-MAT-BLOCKS` reports the NESTING, and the fixture has `INNER` inside `OUTER`. It must also say how
-  many expressions are inside NO box, because a block view that dropped them would look complete;
-- and READING MUST NOT CHANGE THE MATERIAL, checked by comparing the label count before and after.
-
-The suite does NOT check the exact expression text. That would pin it to the fixture's layout and break
-on any change to the reader's wording, which is the "pinned literal" mistake this project has recorded
-five times. It checks the FACTS the readers are supposed to surface.
+Checks labels, constants, reachability, connected-output tracing and comment boxes.
+The fixture object name differs from its package filename. Tests use the object name.
+This suite checks reported facts; graph preservation needs independent state evidence.
 """
 
 import os
@@ -75,6 +31,17 @@ def check(name, ok, detail=""):
 def main():
     session = Session()
     session.connect()
+
+    for tool, extra in (("ReadTurboMCPMaterialLoad", {"bIncludeInstanceOverrides": False, "tokenBudget": 0}),
+                        ("ReadTurboMCPMaterialTrace", {"outputProperty": "MP_BaseColor", "tokenBudget": 0}),
+                        ("ReadTurboMCPMaterialLabels", {}),
+                        ("ReadTurboMCPMaterialBlocks", {"tokenBudget": 0})):
+        help_text = session.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {"toolset": READ_TOOLSET, "tool": tool})
+        check(tool + " help documents asset", "asset" in help_text.lower(), help_text)
+        refusal = session.call(READ_TOOLSET, tool, dict(asset=INSTANCE, **extra))
+        check(tool + " instance refusal gives usable recovery", refusal.startswith("error:")
+              and "ReadTurboMCPMaterialInstance" in refusal
+              and "includeInstanceOverrides=true" not in refusal, refusal)
 
     print("=== R-MAT-LABELS: the unread label, which is the whole point of this reader ===")
     labels = session.call(READ_TOOLSET, "ReadTurboMCPMaterialLabels", {"asset": ASSET})
@@ -201,9 +168,9 @@ def main():
 
     print()
     print("=== READING DID NOT CHANGE THE MATERIAL ===")
-    # The readers must not add a probe node or move anything. The label report is taken again and
-    # compared, because a reader that wrote would change what the next read sees.
+    # Repeated label output detects visible report changes; it does not prove all in-memory state is unchanged.
     labels_after = session.call(READ_TOOLSET, "ReadTurboMCPMaterialLabels", {"asset": ASSET})
+    check("label report is stable across reads", labels == labels_after, labels_after)
     before_counts = re.search(r"(\d+) expression\(s\) in the graph, (\d+) comment box", labels)
     after_counts = re.search(r"(\d+) expression\(s\) in the graph, (\d+) comment box",
                              labels_after)
