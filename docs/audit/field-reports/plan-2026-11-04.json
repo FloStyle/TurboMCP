@@ -673,7 +673,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_run_in_progress",
+      "validation": "native_and_offline_passed_for_removal",
       "source_ids": [
         "X-127",
         "FT-141"
@@ -683,7 +683,25 @@
         "2026-11-04_S2/FT-141"
       ],
       "dependencies": [],
-      "next_step": "Claim 2002415a3e3d4ad9822dc3dcc8180f44, base fc49cfd3. Candidate b87cc5ed adds revision-checked array_remove on a temporary copy with decimal index validation, before/after counts, help and reader operations. Native run b3d7c89cfeae423d867ee58b5b6329d0 building: generic InputMappingContext 65-to-64 removal, preview/invalid-index/stale-revision preservation, retained mappings and undo. No pass yet; not integrated. Whole-array set remains unsupported; original unidentified tool cause unresolved. FT-141 insertion remains pending."
+      "next_step": "Removal implemented and integrated from b87cc5ed: array_remove with exact zero-based index, revision check, temporary preview, retained values/order, verified edit and undo. Scope PASS; native b3d7c89cfeae423d867ee58b5b6329d0 PASS; offline f62b888e15094e2cad2b00f71dd60945 26/26 PASS. Generic InputMappingContext 65-to-64 reproduction succeeds with preview/invalid-index/stale-revision preservation and full undo restoration. X-127 has a verified TurboMCP removal route. Original unidentified tool failure cause remains unknown. FT-141 insertion is still open, so the combined topic is not closed. Whole-array set remains unsupported.",
+      "subtopics": [
+        {
+          "id": "X-127",
+          "state": "done",
+          "validation": "native_passed",
+          "note": "Verified targeted removal route; original tool and failure cause unknown."
+        },
+        {
+          "id": "FT-141-remove",
+          "state": "done",
+          "validation": "native_passed"
+        },
+        {
+          "id": "FT-141-insert",
+          "state": "open",
+          "validation": "not_implemented"
+        }
+      ]
     },
     {
       "id": "NOV04-29",

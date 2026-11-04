@@ -2133,3 +2133,8 @@ Stock Break/Reset feedback and scoped-cycle repair integrated from source 061fae
 ### NOV04-28 array-shrink repair contract
 
 Readiness: ready. Assignment nov04-array-shrink. Reconcile the unknown original write with current DataAssetProperty refusal of array set. Reproduce using a generic UInputMappingContext with 65 mappings. Add a targeted array_remove operation using an exact zero-based index in Key and empty Value, preserving remaining elements, references and order. Require current revision; preview must not mutate or dirty. Reject malformed/out-of-range indices and stale revisions without mutation. Reuse existing transaction, post-edit verification and rollback; verify 65-to-64 count, exact retained mappings, read-back and undo. Report before/after counts and explain supported array operations in live help and reader output. Do not enable broad array text import or unsafe reference construction. Preserve unknown original cause and track requested insertion separately if not implemented. Run supervised test-data-asset-tools and offline gates. Stock engine, no user asset edits.
+
+
+### NOV04-28 removal integration evidence
+
+Source b87cc5ed integrated: targeted array removal passes native b3d7c89cfeae423d867ee58b5b6329d0 and offline f62b888e15094e2cad2b00f71dd60945 (26/26); scope PASS. Verified 65-to-64 mapping removal, unchanged preview and invalid requests, retained mappings, stale revision refusal and undo. Original tool cause remains unknown. Insertion FT-141 remains open; combined topic remains in progress.
