@@ -193,9 +193,9 @@
       "kind": "bug",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_gap_confirmed_runtime_pending",
       "source_ids": [
         "TD-50",
         "TD-57"
@@ -205,7 +205,7 @@
         "2026-11-03_S1/TD-57"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Scope nov04-interface-tidy follows node-key integration. Tidy manual enumeration omits ImplementedInterfaces; shared reader lookup includes them. Also clarify requested/moved/already-matching position counts from TD-57. Native fixture and refusal verification required."
     },
     {
       "id": "NOV04-07",

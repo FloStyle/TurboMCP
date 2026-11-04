@@ -3370,6 +3370,17 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEditNodeKeysTest.cpp"
           ]
+        },
+        "nov04-interface-tidy": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPInterfaceTidyTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
