@@ -982,7 +982,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * Structural quality (including requested row breaks) takes priority; total wire length breaks ties.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
-	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param GraphName Existing graph name from the reader, including interface implementation and nested graphs. Matching is case-insensitive after trimming. Empty selects a unique EventGraph, or the only graph; missing or ambiguous names are refused.
 	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope, collision or fixed-boundary wire-growth limits.
 	 * @param NodeIds Array of reader node IDs; [] selects the whole graph. Unselected nodes remain fixed. ["@unboxed"] selects unboxed nodes; combine it with IDs to restrict those IDs to unboxed nodes.
 	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode. With NodeIds selection, only the first explicit path node may be outside the selection: it stays fixed and must connect to the next selected node. All later path nodes must be selected.
@@ -1833,7 +1833,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * WrapAfter is the same comma-separated execution-node row-break option as the preview; links remain unchanged.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
-	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param GraphName Existing graph name from the reader, including interface implementation and nested graphs. Matching is case-insensitive after trimming. Empty selects a unique EventGraph, or the only graph; missing or ambiguous names are refused.
 	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope, collision or fixed-boundary wire-growth limits.
 	 * @param NodeIds Array of reader node IDs; [] selects the whole graph. Unselected nodes remain fixed. ["@unboxed"] selects unboxed nodes; combine it with IDs to restrict those IDs to unboxed nodes.
 	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode. With NodeIds selection, only the first explicit path node may be outside the selection: it stays fixed and must connect to the next selected node. All later path nodes must be selected.
@@ -1996,6 +1996,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	* Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
+     * Reports requested, moved and already_matching counts; nodes already at their requested position are successful no-ops.
      */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphPositions(const FString& Asset, const FString& GraphName, const FString& Positions);
