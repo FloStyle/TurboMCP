@@ -358,6 +358,19 @@ bool FTurboMCPMaterialTidy::Plan(const FString& InAsset, bool bInForce,
 				break;
 			}
 		}
+        for (const FBlock& Block : OutPlan.Blocks)
+        {
+            bool bMatchingBox = false;
+            for (const UMaterialExpressionComment* Comment : Read.Material->GetExpressionCollection().EditorComments)
+            {
+                if (Comment && Comment->MaterialExpressionEditorX == FMath::RoundToInt(Block.Left) &&
+                    Comment->MaterialExpressionEditorY == FMath::RoundToInt(Block.Top) &&
+                    Comment->SizeX == FMath::RoundToInt(Block.Right - Block.Left) &&
+                    Comment->SizeY == FMath::RoundToInt(Block.Bottom - Block.Top) && HasText(Comment->Text))
+                { bMatchingBox = true; break; }
+            }
+            bAllInPlace = bAllInPlace && bMatchingBox;
+        }
 		OutPlan.bAlreadyTidy = bAllInPlace;
 	}
 
@@ -380,7 +393,7 @@ FString FTurboMCPMaterialTidy::RenderPreview(const FPlan& InPlan)
 	{
 		// SAID IN THE FIRST TWO LINES, because a caller reading only the head must not conclude an edit
 		// is coming. This mirrors `FTurboMCPGraphTidy`'s own `unchanged` answer.
-		Out += TEXT("\nunchanged: every expression is already where this pass would put it.");
+		Out += TEXT("\nunchanged: all expressions and required comment boxes already match the plan.");
 		return Out;
 	}
 
@@ -405,7 +418,7 @@ FString FTurboMCPMaterialTidy::RenderPreview(const FPlan& InPlan)
 			Substituted, InPlan.Nodes.Num(), FallbackWidth, FallbackHeight);
 	}
 
-	Out += FString::Printf(TEXT("\n%d existing box(es) will be used rather than added to"),
+	Out += FString::Printf(TEXT("\n%d existing box(es); boxes at planned left edges are reused, other boxes are preserved"),
 		InPlan.ExistingBoxes);
 
 	for (const FBlock& Block : InPlan.Blocks)
@@ -424,7 +437,7 @@ FString FTurboMCPMaterialTidy::RenderPreview(const FPlan& InPlan)
 		}
 		Out += FString::Printf(TEXT("\n  %s (%d,%d) -> (%.0f,%.0f)%s"),
 			*Node.Key, Node.X, Node.Y, Node.PlannedX, Node.PlannedY,
-			Node.bUnreached ? TEXT("  it reaches no output, so it is placed to the right of the rest") : TEXT(""));
+			Node.bUnreached ? TEXT("  not reachable from a material output; preserved in the layout") : TEXT(""));
 	}
 
 	if (InPlan.Refusals.Num() > 0)
