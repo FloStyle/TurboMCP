@@ -686,6 +686,7 @@ def main():
          "the placement test reported no errors"),
     )
     automation_tests += (("TurboMCP.GraphAppend.DelegateSideEffects", "delegate test discovered", "delegate report parsed", "delegate workflow succeeds", "delegate workflow has no errors"),)
+    automation_tests += (("TurboMCP.GraphAppend.Reachability", "reachability discovered", "reachability report parsed", "reachability workflow succeeds", "reachability workflow has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.TidyFeedback", "feedback test discovered", "feedback report parsed", "feedback workflow succeeds", "feedback workflow has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.InterfaceTidy", "interface tidy discovered", "interface tidy report parsed", "interface tidy succeeds", "interface tidy has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.EditNodeKeys", "node key test discovered", "node key report parsed", "node key workflow succeeds", "node key workflow has no errors"),)
