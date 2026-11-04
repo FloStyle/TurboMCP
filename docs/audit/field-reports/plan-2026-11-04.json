@@ -129,7 +129,14 @@
         "2026-10-30_S4/NT-11"
       ],
       "dependencies": [],
-      "next_step": "Candidate dfc86f55 formats complete pin containers and subtype identities; append includes schema incompatibility reasons. Supervised test-graph-append build/workflow is active, covering scalar/map/set/array discovery, incompatible map-to-scalar preview and compatible map assignment. Review and integration pending."
+      "next_step": "Candidate 01414e8b corrects fixture discovery for spaced display names and verifies exact member identity. Focused rerun active; first candidate built but its test stopped at fixture type discovery before validating container output.",
+      "evidence": [
+        {
+          "run": "d77af7b1bc174690a8962962b0bde4b7",
+          "result": "failed",
+          "scope": "Build passed. Container fixture found no variable creation ID because filter ignored spaced display names; corrected fixture, no passing behavior claim. Existing delegate and append checks passed."
+        }
+      ]
     },
     {
       "id": "NOV04-05",
