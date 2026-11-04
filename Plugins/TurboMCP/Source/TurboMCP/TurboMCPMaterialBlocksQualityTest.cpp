@@ -53,6 +53,11 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Preview keeps package clean"), Package->IsDirty());
     TestTrue(TEXT("Preview preserves material state ID"), Material->StateId == BeforeState);
     FString Rollback;
+    Readers[0]->A.Connect(3, Value);
+    const FString StaleResult = FTurboMCPMaterialBlocks::Apply(Plan, Rollback);
+    TestTrue(TEXT("Stale plan refused"), StaleResult.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Stale refusal preserves new connection"), Readers[0]->A.OutputIndex, 3);
+    Readers[0]->A.Connect(1, Value);
     const FString Result = FTurboMCPMaterialBlocks::Apply(Plan, Rollback);
     AddInfo(Result + Rollback);
     TestFalse(TEXT("Edit does not fail"), Result.Contains(TEXT("FAILED")) || Result.StartsWith(TEXT("error:")));
@@ -67,6 +72,10 @@ bool FTurboMCPMaterialBlocksQualityTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Original source preserved"), Connection->Expression == Value);
         TestEqual(TEXT("Original source output preserved"), Connection->OutputIndex, (Index % 2) + 1);
     }
+    FTurboMCPMaterialBlocks::FPlan RepeatPlan;
+    TestTrue(TEXT("Repeat plan succeeds"), FTurboMCPMaterialBlocks::Plan(Material->GetPathName(), RepeatPlan, Error));
+    TestTrue(TEXT("Cleanup is stable after one edit"), RepeatPlan.bNothingToChange);
+    TestTrue(TEXT("Repeat edit reports unchanged"), FTurboMCPMaterialBlocks::Apply(RepeatPlan, Rollback).StartsWith(TEXT("unchanged:")));
     // A separate in-block chain carries the green output to an expression and a material output.
     auto* ChainMaterial = NewObject<UMaterial>(Package, TEXT("M_Chain"), RF_Public | RF_Standalone | RF_Transactional);
     auto* Box = NewObject<UMaterialExpressionComment>(ChainMaterial, NAME_None, RF_Transactional);

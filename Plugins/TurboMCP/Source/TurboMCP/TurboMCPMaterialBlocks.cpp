@@ -150,6 +150,34 @@ namespace
             Input.Mask, Input.MaskR, Input.MaskG, Input.MaskB, Input.MaskA);
     }
 
+    FString ConnectionSnapshot(FTurboMCPMaterial::FPlan& Read)
+    {
+        TArray<FString> Entries;
+        for (UMaterialExpression* Expression : Read.Expressions)
+        {
+            if (!Expression) continue;
+            const FString Key = FTurboMCPMaterial::KeyOf(Expression);
+            Entries.Add(FString::Printf(TEXT("%s:%s:%d:%d"), *Key,
+                *Expression->GetClass()->GetName(), Expression->MaterialExpressionEditorX,
+                Expression->MaterialExpressionEditorY));
+            for (FExpressionInputIterator It{ Expression }; It; ++It)
+                if (It.Input) Entries.Add(FString::Printf(TEXT("%s#%d=%s"), *Key, It.Index, *ConnectionKey(*It.Input)));
+            if (const auto* Usage = Cast<UMaterialExpressionNamedRerouteUsage>(Expression))
+                Entries.Add(Key + TEXT("@") + Usage->DeclarationGuid.ToString());
+        }
+        if (Read.Material)
+        {
+            for (int32 Index = 0; Index < MP_MAX; ++Index)
+                if (FExpressionInput* Input = Read.Material->GetExpressionInputForProperty(static_cast<EMaterialProperty>(Index)))
+                    Entries.Add(FString::Printf(TEXT("output%d=%s"), Index, *ConnectionKey(*Input)));
+            for (const UMaterialExpressionComment* Box : Read.Material->GetExpressionCollection().EditorComments)
+                if (Box) Entries.Add(FString::Printf(TEXT("box:%d:%d:%d:%d:%s"),
+                    Box->MaterialExpressionEditorX, Box->MaterialExpressionEditorY, Box->SizeX, Box->SizeY, *Box->Text));
+        }
+        Entries.Sort();
+        return FString::Join(Entries, TEXT("\n"));
+    }
+
 	/** Every input of every expression in the plan, resolved through plain reroutes. */
 	void GatherLinks(const FTurboMCPMaterial::FPlan& InRead, TArray<FLink>& OutLinks)
 	{
@@ -227,6 +255,7 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 	OutPlan.Function = Read.Function;
 	OutPlan.ParentPath = Read.ParentPath;
 	OutPlan.BlockCount = FTurboMCPMaterial::BlockCount(Read);
+	OutPlan.ConnectionSnapshot = ConnectionSnapshot(Read);
 
 	// ---------------------------------------------------------------------------------------------
 	// A REFUSAL RATHER THAN AN EMPTY ANSWER, for the reason `LabelsPromote` records: an instance has no
@@ -650,8 +679,10 @@ FString FTurboMCPMaterialBlocks::RenderPreview(const FPlan& InPlan)
 		Out += TEXT("a named reroute:");
 		for (const FCrossing& Crossing : InPlan.Crossings)
 		{
-			Out += FString::Printf(TEXT("\n  + @%s  <- %s  (%s)"),
-				*Crossing.ProposedName, *Crossing.SourceKey, *Crossing.SourceCaption);
+			Out += FString::Printf(TEXT("\n  + @%s  <- %s output %d mask %d:%d%d%d%d (%s)"),
+				*Crossing.ProposedName, *Crossing.SourceKey, Crossing.SourceConnection.OutputIndex,
+                Crossing.SourceConnection.Mask, Crossing.SourceConnection.MaskR, Crossing.SourceConnection.MaskG,
+                Crossing.SourceConnection.MaskB, Crossing.SourceConnection.MaskA, *Crossing.SourceCaption);
 			Out += FString::Printf(TEXT("\n      read from %d block(s)"), Crossing.ReaderBlocks.Num());
 			for (const FString& Ref : Crossing.ConsumerRefs)
 			{
@@ -951,6 +982,13 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	// "rollback" they announced never happened. They set this instead, and the guard below performs a REAL
 	// revert once the transaction has been ended.
 	bool bOutRolledBack = false;
+
+    FTurboMCPMaterial::FPlan Current;
+    FString CurrentError;
+    if (!FTurboMCPMaterial::Plan(InPlan.Asset, FTurboMCPMaterial::ERead::Blocks, FString(), false, Current, CurrentError))
+        return FString::Printf(TEXT("error: cannot recheck the material before editing: %s"), *CurrentError);
+    if (ConnectionSnapshot(Current) != InPlan.ConnectionSnapshot)
+        return TEXT("error: material connections or layout changed after planning. Nothing was edited. Request a new preview.");
 
 	if (InPlan.bNothingToChange)
 	{

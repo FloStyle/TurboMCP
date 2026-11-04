@@ -21,71 +21,10 @@ class UMaterialExpressionNamedRerouteDeclaration;
 class UMaterialExpressionNamedRerouteUsage;
 class UMaterialFunctionInterface;
 
-/**
- * `P/E-MAT-BLOCKS`: make labels follow blocks.
- *
- * `Spec/03_TOOLS.md` gives it three requirements and each is load-bearing:
- *
- *   1. Preview: "the labels to add, usage nodes to merge, in-block reroutes to remove, following the
- *      block rule in `05_DECISIONS.md` D-17."
- *   2. Edit: "changes EXACTLY THE ITEMS IN THE PREVIEW LIST, NOTHING MORE."
- *   3. "Same compiled result check."
- *
- * *** D-17 IS THE WHOLE SHAPE OF THIS CAPABILITY, AND ITS SIX BULLETS ARE THE SPECIFICATION. ***
- *
- *   - each comment box holds one piece of logic (a block);
- *   - when a value LEAVES its block for another block it travels as a NAMED REROUTE - the producing
- *     block declares it, the consuming block reads it;
- *   - WITHIN a block use DIRECT WIRES, because READING A LABEL INSIDE THE BLOCK THAT DECLARES IT ADDS
- *     NOTHING;
- *   - A BLOCK READS EACH LABEL THROUGH A SINGLE USAGE NODE;
- *   - PLAIN REROUTE DOTS ARE FOR ROUTING LONG WIRES AND NEVER STAND FOR A VALUE;
- *   - LABEL NAMES DESCRIBE THE VALUE; BOX TITLES DESCRIBE WHAT THE BLOCK DOES.
- *
- * EACH OF THE THREE THINGS THIS PASS CHANGES IS ONE OF THOSE BULLETS VIOLATED, AND THE MAPPING IS THE
- * DESIGN RATHER THAN A COINCIDENCE:
- *
- *   - a value read from SEVERAL BLOCKS with no label breaks "it travels as a named reroute", so this
- *     pass ADDS a label. `FCrossing`.
- *   - a label read through TWO OR MORE usage nodes in ONE block breaks "each label through a single
- *     usage node", so this pass MERGES them onto one. `FMerge`.
- *   - a PLAIN reroute used as a value breaks "plain reroute dots never stand for a value", so this
- *     pass REMOVES it and wires its readers to what it passed along. `FInBlockReroute`.
- *
- * *** THE SECOND REQUIREMENT IS THE ONE THAT MAKES THIS CAPABILITY HONEST, AND IT IS A CONSTRAINT ON
- * WHAT THE EDIT MAY DO RATHER THAN ON WHAT IT REPORTS. *** "Changes exactly the items in the Preview
- * list, nothing more" means Applies reads the list it was given and touches those keys. IT ALSO MEANS
- * THE KEYS ARE RE-RESOLVED AT APPLY TIME, which is `05_DECISIONS.md` D-45: "it re-resolves every node
- * by key at apply time rather than trusting a plan from an earlier call", BECAUSE A PLAN IS MADE AND
- * APPLIED IN TWO CALLS AND THE MATERIAL CAN CHANGE BETWEEN THEM. A node this pass cannot re-resolve is
- * REFUSED BY NAME rather than skipped, because silently skipping it would make the edit differ from the
- * preview it was authorised by.
- *
- * *** AND D-45 ALSO GOVERNS THE REMOVAL, WHICH IS WHY THE INNER REROUTE LIST CARRIES KEYS AND CLASSES
- * RATHER THAN A COUNT: "a writer that removes anything lists each removal by key with its class and
- * title, never a count... a count says how much is gone and a list says what." ***
- *
- * WHAT IS MEASURED, FOLLOWING `FTurboMCPMaterialTidy` AND `FTurboMCPMaterialLabelsPromote` DELIBERATELY.
- * `UMaterial::StateId` (`Runtime/Engine/Public/Materials/Material.h:1239`) is the engine's identifier for
- * the compiled state and `UMaterialEditingLibrary::RecompileMaterial`
- * (`Editor/MaterialEditor/Public/MaterialEditingLibrary.h:267`) returns the compiler's own error lines.
- * So the compiled-result check is: the engine reports NO NEW ERROR, and NO EXPRESSION THAT EXISTED
- * BEFORE WAS LOST. `StateId` is REPORTED RATHER THAN ASSERTED, for the reason both earlier passes
- * record: it can change for reasons this pass does not control - a shader compiling in the background, a
- * platform switch - so asserting on it would make this pass fail for other people's reasons.
- *
- * THE SET COMPARISON HAS THE ASYMMETRY `LabelsPromote` RECORDS, AND FOR THE SAME REASON. This pass
- * legitimately ADDS declarations and usages, and it legitimately REMOVES usage nodes and reroutes. So
- * the assertion is that NO PRE-EXISTING EXPRESSION WAS LOST EXCEPT THE ONES THIS PASS PLANNED TO REMOVE,
- * and that the expressions GAINED are exactly the ones it planned to add. A bare "the sets differ" check
- * would fail every time it worked; a one-directional check would miss a dropped expression.
- *
- * WHY THE REWIRING IS DONE ON `FExpressionInput` AND NOT ON GRAPH PINS. `LabelsPromote` measured this:
- * the engine's own editor works through `UEdGraph` pins, and a material built headlessly by
- * `UMaterialEditingLibrary::CreateMaterialExpressionEx` HAS NO GRAPH AT ALL - the fixture commandlet
- * never creates one. The compiler does not read pins either: `FExpressionInput::Compile` reads
- * `Expression` and `OutputIndex`, which is exactly what this pass retargets. SO THE EDIT IS MADE WHERE
- * THE COMPILER READS IT, and whether graph nodes exist is REPORTED rather than assumed.
+/** Plans and applies material comment-block cleanup.
+ * Preview only reads the loaded graph. Apply recompiles, edits in a transaction,
+ * and checks expression identities and new compiler errors. These checks do not
+ * prove identical rendered output. Failed edits attempt undo and report its limits.
  */
 class FTurboMCPMaterialBlocks
 {
@@ -217,11 +156,9 @@ public:
 		TArray<FMerge> Merges;
 		TArray<FInBlockReroute> InBlockReroutes;
 
-		/** The engine's compiled-state identifier BEFORE any edit. Reported, never asserted. */
-		FGuid StateIdBefore;
+		/** Connection and layout state used to reject stale plans before mutation. */
+		FString ConnectionSnapshot;
 
-		/** The recompiler's own error lines before the edit, so a NEW error is what is refused. */
-		TArray<FString> CompileErrorsBefore;
 
 		/** Every expression key as this pass found them, so the caller can compare sets. */
 		TArray<FString> KeysBefore;
@@ -268,20 +205,9 @@ public:
 	 */
 	static FString RenderPreview(const FPlan& InPlan);
 
-	/**
-	 * Makes exactly the planned changes, then PROVES THE COMPILED RESULT IS UNCHANGED.
-	 *
-	 * Returns the report. An edit that lost more than it planned, added something unplanned, or
-	 * introduced a compile error is REPORTED AS A FAILURE with the difference named - never as a success
-	 * with a note.
-	 *
-	 * @param OutRollbackNote  WHEN THE EDIT IS ROLLED BACK, this receives the MEASUREMENT that the material
-	 *                         actually came back - or the statement that it did not. It is empty on every
-	 *                         other path. IT IS AN OUT-PARAMETER RATHER THAN PART OF THE RETURN VALUE because
-	 *                         the measurement runs in a destructor, after the returned report has already
-	 *                         been built, and the caller appends it. Nineteen `Cancel()` sites return
-	 *                         nineteen different messages, and `Cancel()` returns `void`, so this is the one
-	 *                         place every cancelled path reaches.
-	 */
+    /** Apply the current plan after rechecking connections and layout.
+     * Compiles before and after a nonempty edit; does not save.
+     * OutRollbackNote reports identity checks after attempted undo, not full restoration.
+     */
 	static FString Apply(const FPlan& InPlan, FString& OutRollbackNote);
 };
