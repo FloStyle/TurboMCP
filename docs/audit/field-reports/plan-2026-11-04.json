@@ -258,10 +258,10 @@
       "title": "Handle loop break and reset back edges in scoped tidy",
       "kind": "bug",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_pass_visual_followup_required",
+      "validation": "native_and_visual_passed",
       "source_ids": [
         "TD-51",
         "TD-53",
@@ -273,7 +273,7 @@
         "2026-11-04_S1/TD-59"
       ],
       "dependencies": [],
-      "next_step": "Candidate 5338fc35: supervised run 743a68def983484a8db948754abd4a91 passed build and graph-append suite, including stock loop Break/DoOnce Reset through two reroutes, links/defaults/identities and preview position preservation. Both native screenshots inspected: feedback return wire crosses the macro body; visual layout is NOT accepted. Repair feedback routing/placement, add selected acyclic region beside fixed cycle and unsupported data-cycle refusal coverage, rerun native tests/screenshots, scope/offline gates, then integrate. Claim 5217d311f1084fb09e42757edff80dd2 remains active. Not integrated."
+      "next_step": "Implemented and integrated: stock loop Break/DoOnce Reset feedback no longer blocks forward ordering; scoped tidy ignores unrelated fixed cycles; existing exclusive unboxed feedback reroutes are placed below graph bodies. Links/defaults/identities preserved. Unsupported execution/data cycles still refuse. Final source 061fae0c; scope snapshot 93cc2fcc PASS; native 5d6b6a4a15f940e2acaaa9fa2de2bb86 PASS; offline 806ea34af7ca498190457fdae08eadc1 26/26 PASS. Earlier run 743a68def983484a8db948754abd4a91 passed behavior but screenshots exposed body-crossing feedback, repaired and visually checked in 1a781a2a8bfc4a878cc6d83036d1c338. Expanded auto-path/data refusal run 0f1e940c004543bf8311f7f318f1f34e PASS. Offline 6dd5907f01fd42968b6cf0302d48da7e failed fixture lookup guard; explicit null guard fixed, checker unchanged. Limits: reroute repositioning requires at least two exclusive movable unboxed existing knots; no new routing nodes are inserted. Native fixtures are bounded evidence, not all-project certification."
     },
     {
       "id": "NOV04-08",
