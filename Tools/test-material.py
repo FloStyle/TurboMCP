@@ -7,6 +7,7 @@ This suite checks reported facts; graph preservation needs independent state evi
 """
 
 import os
+import runpy
 import re
 import sys
 
@@ -31,6 +32,13 @@ def check(name, ok, detail=""):
 def main():
     session = Session()
     session.connect()
+    support = runpy.run_path(os.path.join(os.path.dirname(__file__), "test-widget-roundtrip.py"))
+    test_name = "TurboMCP.Material.DuplicateLabel"
+    session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
+    raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [test_name]})
+    print(raw)
+    entry, _ = support["parse_run_tests_report"](raw, test_name)
+    assert not entry["warnings"], entry["warnings"]
 
     for tool, extra in (("ReadTurboMCPMaterialLoad", {"bIncludeInstanceOverrides": False, "tokenBudget": 0}),
                         ("ReadTurboMCPMaterialTrace", {"outputProperty": "MP_BaseColor", "tokenBudget": 0}),

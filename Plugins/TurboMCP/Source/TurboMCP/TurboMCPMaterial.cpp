@@ -862,11 +862,17 @@ bool FTurboMCPMaterial::Plan(const FString& InAsset, ERead InKind,
 		FString Label;
 		if (IsLabelDeclaration(Expression, Label))
 		{
-			// A DUPLICATE LABEL IS KEPT AS THE FIRST DECLARATION and the reader count still counts
-			// every usage, so the count is right even when the declaration is ambiguous. Reporting
-			// the ambiguity is `R-MAT-LABELS`'s job rather than a silent pick.
-			OutPlan.DeclarationsByLabel.Add(Label,
-				Cast<UMaterialExpressionNamedRerouteDeclaration>(Expression));
+            // Text references use @Label, so two declarations with the same label cannot
+            // be represented unambiguously. Name both nodes instead of silently picking one.
+            if (const auto* Existing = OutPlan.DeclarationsByLabel.Find(Label))
+            {
+                OutError = FString::Printf(TEXT("duplicate named reroute label '@%s' in %s: declarations %s and %s. Rename one declaration in the material editor, then read again. No graph changes were requested."),
+                    *Label, *OutPlan.Asset, *IdOf(*Existing, OutPlan.AssetName, OutPlan.GraphName),
+                    *IdOf(Expression, OutPlan.AssetName, OutPlan.GraphName));
+                return false;
+            }
+            OutPlan.DeclarationsByLabel.Add(Label,
+                Cast<UMaterialExpressionNamedRerouteDeclaration>(Expression));
 		}
 	}
 	for (UMaterialExpression* Expression : OutPlan.Expressions)
@@ -1932,3 +1938,35 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 	Out += BudgetNote(Out, InTokenBudget, TEXT("R-MAT-BLOCKS"));
 	return Out;
 }
+
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Misc/AutomationTest.h"
+#include "UObject/Package.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPMaterialDuplicateLabelTest,
+    "TurboMCP.Material.DuplicateLabel", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPMaterialDuplicateLabelTest::RunTest(const FString& Parameters)
+{
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/MaterialDuplicate_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    UMaterial* Material = NewObject<UMaterial>(Package, TEXT("M_Duplicate"), RF_Public | RF_Standalone);
+    for (int32 Index = 0; Index < 2; ++Index)
+    {
+        auto* Declaration = NewObject<UMaterialExpressionNamedRerouteDeclaration>(Material);
+        Declaration->Name = TEXT("SharedValue");
+        Declaration->MaterialExpressionGuid = FGuid::NewGuid();
+        Material->GetExpressionCollection().AddExpression(Declaration);
+    }
+    Package->SetDirtyFlag(false);
+    for (const auto Kind : {FTurboMCPMaterial::ERead::Labels, FTurboMCPMaterial::ERead::Load,
+        FTurboMCPMaterial::ERead::Trace, FTurboMCPMaterial::ERead::Blocks})
+    {
+        FTurboMCPMaterial::FPlan Plan; FString Error;
+        TestFalse(TEXT("Ambiguous labels refused"), FTurboMCPMaterial::Plan(Material->GetPathName(), Kind, TEXT("MP_BaseColor"), false, Plan, Error));
+        TestTrue(TEXT("Refusal identifies label and recovery"), Error.Contains(TEXT("@SharedValue")) && Error.Contains(TEXT("Rename one declaration")));
+        for (const TObjectPtr<UMaterialExpression>& Expression : Material->GetExpressionCollection().Expressions)
+            TestTrue(TEXT("Refusal identifies each declaration"), Error.Contains(FTurboMCPMaterial::KeyOf(Expression)));
+    }
+    TestEqual(TEXT("Both declarations preserved"), Material->GetExpressionCollection().Expressions.Num(), 2);
+    TestFalse(TEXT("Reader does not dirty fixture"), Package->IsDirty());
+    return true;
+}
+#endif
