@@ -10,6 +10,7 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "BlueprintActionDatabase.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
@@ -44,6 +45,8 @@ bool FTurboMCPPinContainerTest::RunTest(const FString& Parameters)
     UK2Node_VariableGet* Getter = NewObject<UK2Node_VariableGet>(Graph, NAME_None, RF_Transactional);
     Getter->VariableReference.SetSelfMember(TEXT("NameMap")); Graph->AddNode(Getter, false, false); Getter->CreateNewGuid(); Getter->AllocateDefaultPins();
     FKismetEditorUtilities::CompileBlueprint(BP);
+    // New unsaved fixture variables need registration before action discovery.
+    FBlueprintActionDatabase::Get().RefreshAssetActions(BP);
     const TArray<FString> Ids = FTurboMCPNodeType::AvailableTypeIds(BP, Graph);
     auto FindId = [&](const FString& Name, bool bSetter)
     {
