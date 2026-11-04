@@ -149,9 +149,9 @@
       "kind": "bug",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_gap_confirmed_runtime_pending",
       "source_ids": [
         "ED-22",
         "ED-23",
@@ -169,7 +169,7 @@
         "2026-11-04_S1/GC-95"
       ],
       "dependencies": [],
-      "next_step": "docs/audit/unique-edit-ids-review.json verifies GraphConnect short keys; GraphCopy review documents exact reader IDs. Field build unknown; compare each affected tool separately, not one assumed shared cause."
+      "next_step": "Scope nov04-edit-node-keys follows pin-container integration. Connect already supports unique bare keys; copy/remove/tidy/position edit paths differ. Preserve qualification and ambiguity refusal; test each affected writer separately, including malformed JSON guidance."
     },
     {
       "id": "NOV04-06",
