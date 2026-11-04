@@ -32,6 +32,25 @@
 
 namespace
 {
+    // Read requested options back because engine setters can reject a value or return
+    // false for an already-matching value. Their return code alone is not the result.
+    void VerifyFieldOptions(UUserDefinedStruct* Struct, const FGuid& Guid,
+        const FTurboMCPStruct::FField& Field, TArray<FString>& Failures)
+    {
+        const FStructVariableDescription* Observed = FStructureEditorUtils::GetVarDescByGuid(Struct, Guid);
+        if (!Observed)
+        {
+            Failures.Add(Field.Name + TEXT(" (field missing during option verification)"));
+            return;
+        }
+        if (!Field.Default.IsEmpty() && Observed->DefaultValue != Field.Default)
+            Failures.Add(Field.Name + TEXT(" (requested default was not applied)"));
+        if (!Field.Tooltip.IsEmpty() && Observed->ToolTip != Field.Tooltip)
+            Failures.Add(Field.Name + TEXT(" (requested tooltip was not applied)"));
+        if (!Field.Category.IsEmpty() && Observed->Category != FName(*Field.Category))
+            Failures.Add(Field.Name + TEXT(" (requested category was not applied)"));
+    }
+
 	/** Trims, so every comparison below is against a trimmed string. */
 	FString Trim(const FString& In)
 	{
@@ -1092,8 +1111,16 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 	TArray<FField> ReadBack;
 	ReadFields(Struct, ReadBack);
 
-	FString Out = FString::Printf(TEXT("changed: created struct %s"), *InPlan.PackagePath);
-	Out += TEXT("\nVerification: observed fields are listed below; requested defaults and metadata were not fully verified.");
+    TArray<FString> OptionFailures;
+    for (int32 Index = 0; Index < InPlan.Fields.Num(); ++Index)
+    {
+        const FString& ActualName = GivenNames.IsValidIndex(Index) ? GivenNames[Index] : InPlan.Fields[Index].Name;
+        VerifyFieldOptions(Struct, GuidOfField(Struct, ActualName), InPlan.Fields[Index], OptionFailures);
+    }
+    FString Out = OptionFailures.IsEmpty()
+        ? FString::Printf(TEXT("changed: created struct %s"), *InPlan.PackagePath)
+        : FString::Printf(TEXT("partial: created struct %s, but requested settings were not applied: %s; inspect the unsaved asset before retrying; no rollback was attempted"), *InPlan.PackagePath, *FString::Join(OptionFailures, TEXT(", ")));
+	Out += TEXT("\nVerification: observed fields are listed below; requested nonempty defaults, tooltips and categories were read back; dependent assets were not verified.");
 	Out += FString::Printf(TEXT("\nfields asked for: %d"), InPlan.Fields.Num());
 	Out += FString::Printf(TEXT("\nfields added: %d"), Added);
 	if (!bCreatorFieldRemoved)
@@ -1772,6 +1799,13 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 			Added, Changed, Moved, Removed);
 	}
 
+    // Field changes may have succeeded even when an option setter rejected a value.
+    for (const FFieldChange& Change : InPlan.Changes)
+        if (Change.Op == EFieldOp::Add || Change.Op == EFieldOp::Change)
+            VerifyFieldOptions(Struct, GuidOfField(Struct, Change.Field.Name), Change.Field, Vanished);
+    if (!Vanished.IsEmpty())
+        return FString::Printf(TEXT("partial: requested settings were not applied: %s; other field changes may remain; inspect the unsaved struct before retrying or saving; no rollback was attempted"), *FString::Join(Vanished, TEXT(", ")));
+
 	// Compile the final field list; individual editor operations may also compile.
 	FStructureEditorUtils::CompileStructure(Struct);
 	Struct->MarkPackageDirty();
@@ -1781,7 +1815,7 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 	ReadFields(Struct, ReadBack);
 
 	FString Out = FString::Printf(TEXT("changed: struct %s"), *InPlan.ObjectPath);
-	Out += TEXT("\nVerification: operation counts and observed fields follow; defaults, metadata and dependent assets were not fully verified.");
+	Out += TEXT("\nVerification: operation counts and observed fields follow; requested nonempty defaults, tooltips and categories were read back; dependent assets were not verified.");
 	Out += FString::Printf(TEXT("\nadded: %d"), Added);
 	Out += FString::Printf(TEXT("\nchanged: %d"), Changed);
 	Out += FString::Printf(TEXT("\nmoved: %d"), Moved);
