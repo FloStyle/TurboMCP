@@ -195,6 +195,7 @@ private:
 #if WITH_DEV_AUTOMATION_TESTS
     // Exercise failures after scratch preflight without exposing a runtime bypass.
     friend class FTurboMCPAppendFailureTest;
+    friend class FTurboMCPDelegateAppendTest;
 #endif
     static bool ExecuteGraph(const FPlan& InPlan, UBlueprint* Blueprint, UEdGraph* Graph,
         FString& OutReport, FString& OutError, bool bScratch, bool bJoinCallerTransaction, TArray<UEdGraphNode*>* OutCreatedByForm = nullptr);
