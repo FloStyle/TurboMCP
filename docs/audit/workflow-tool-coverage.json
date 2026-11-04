@@ -1391,6 +1391,29 @@
         "Editor screenshot preview panels can lag shader compilation. Independent offscreen renders, not the black editor preview panel, establish the recorded color preservation."
       ],
       "evidence": "3dbca27d798e479998871441581bc38a"
+    },
+    {
+      "id": "WF-MATERIAL-LABEL-PROMOTE-QUALITY",
+      "title": "Material label promotion with exact channels and existing declarations",
+      "status": "scenario_accepted",
+      "review": "docs/audit/material-label-promote-quality-review.json",
+      "focus_tools": [
+        "PreviewTurboMCPMaterialLabelPromote",
+        "EditTurboMCPMaterialLabelPromote"
+      ],
+      "tools_used": [
+        "PreviewTurboMCPMaterialLabelPromote",
+        "EditTurboMCPMaterialLabelPromote"
+      ],
+      "limitations": [
+        "Material assets only; functions and instances refused.",
+        "At least two distinct direct readers per exact output/mask; existing named-reroute readers left alone.",
+        "Conservative collision bounds; no full tidy or comment containment; existing positions preserved.",
+        "Compiler/identity checks are not general semantic-equivalence proof.",
+        "Failure requests undo but does not certify complete restoration; compilation may invoke editor callbacks.",
+        "No persistent approval token; edit replans current state."
+      ],
+      "evidence": "8cdfa304307943bc86e59659d09cd15a"
     }
   ],
   "tool_usage": {
@@ -1965,9 +1988,15 @@
     ],
     "EditTurboMCPMaterialBlocks": [
       "WF-MATERIAL-BLOCKS-QUALITY"
+    ],
+    "PreviewTurboMCPMaterialLabelPromote": [
+      "WF-MATERIAL-LABEL-PROMOTE-QUALITY"
+    ],
+    "EditTurboMCPMaterialLabelPromote": [
+      "WF-MATERIAL-LABEL-PROMOTE-QUALITY"
     ]
   },
-  "unique_tools_scenario_reviewed": 161,
+  "unique_tools_scenario_reviewed": 163,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

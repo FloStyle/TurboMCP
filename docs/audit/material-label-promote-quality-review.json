@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPMaterialLabelPromote",
     "EditTurboMCPMaterialLabelPromote"
   ],
-  "candidate": "4c66d970d592fbe03a0ecaebcd007b935e92ce56",
+  "candidate": "627acf392492ae253cf39b2df590b0b5935047c6",
   "source_findings": [
     "Preserved source output indices and masks instead of merging all outputs of an expression.",
     "Preview and unchanged calls no longer compile.",
@@ -56,12 +56,14 @@
       "run": "56ab6e632ff24e7c95dfe7c459c3cfde",
       "result": "passed",
       "scope": "26 offline checks passed after license restoration; final help-only change requires current metadata verification."
+    },
+    {
+      "run": "8cdfa304307943bc86e59659d09cd15a",
+      "result": "passed",
+      "scope": "Native workflow, rendering, live help and preview/edit function refusal; saved-fixture 23 checks."
     }
   ],
-  "remaining": [
-    "Final live help/refusal run and offline rerun pending.",
-    "Integration and coverage acceptance pending."
-  ],
+  "remaining": [],
   "limitations": [
     "Material assets only; functions and instances refused.",
     "At least two distinct direct readers per exact output/mask; existing named-reroute readers left alone.",
@@ -69,5 +71,9 @@
     "Compiler/identity checks are not general semantic-equivalence proof.",
     "Failure requests undo but does not certify complete restoration; compilation may invoke editor callbacks.",
     "No persistent approval token; edit replans current state."
-  ]
+  ],
+  "native_run": "8cdfa304307943bc86e59659d09cd15a",
+  "offline_run": "56ab6e632ff24e7c95dfe7c459c3cfde",
+  "offline_result": "26 checks passed; final help-only change followed by passing validate-repo and check-language",
+  "scope_gate": "PASS: dfac4455315ae70e368ccc9119522c026cbf7399 to 627acf392492ae253cf39b2df590b0b5935047c6"
 }
