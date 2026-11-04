@@ -23,7 +23,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPTidyFeedbackTest,
 bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
 {
     UBlueprint* Macros=LoadObject<UBlueprint>(nullptr,TEXT("/Engine/EditorBlueprintResources/StandardMacros.StandardMacros"));
-    if (!TestNotNull(TEXT("Stock macro library"),Macros)) return false;
+    if (Macros == nullptr)
+    {
+        AddError(TEXT("The stock macro library could not be loaded; no fixture edits were attempted."));
+        return false;
+    }
     UPackage* Package=CreatePackage(*(TEXT("/Game/Tests/TidyFeedback_")+FGuid::NewGuid().ToString(EGuidFormats::Digits)));
     ON_SCOPE_EXIT { Package->SetDirtyFlag(false); };
     UBlueprint* BP=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("BP_Feedback"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
