@@ -3275,6 +3275,16 @@
             "Tools/test-material-instance-quality.py"
           ],
           "new_files": []
+        },
+        "material-readers-quality-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterial.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterial.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-material.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

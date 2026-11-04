@@ -2076,3 +2076,7 @@ Review ReadVcsState and Preview/EditVcsCheckout before editing saved assets. Che
 ## Approved material-instance quality review (2026-11-04)
 
 Review ReadMaterialInstance and EditMaterialInstanceSet in a material appearance workflow. Inspect inherited versus overridden scalar/vector/texture values, parameter identity, parsing, refusal-before-mutation and truthful read-back. Verify valid edits, invalid and mixed requests, no-op behavior, parent preservation, help and result English with a native generic fixture. Inspect a rendered appearance capture where practical, using existing vision helpers. Do not claim every sampler or layered-material configuration from a simple fixture. Run the supervised focused suite and offline gate. No parent material rewrite, implicit save, engine change or public release is authorized by this assignment.
+
+## Approved material reader workflow review (2026-11-04)
+
+Review Load, Trace, Labels and Blocks through inspection of the existing material/function fixture: parameters and defaults, labels and shared values, connected-output tracing, comment membership, refusals, accurate limitations and no read mutation. Inspect shared implementation, comments, help and English output. Fix confirmed defects within the assigned scope; use the supervised test-material suite and offline gate. Retain failed evidence and do not count the tools until accepted. No engine changes, asset edits or implicit saves are authorized by reader calls.
