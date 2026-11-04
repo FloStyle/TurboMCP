@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "workflow": "WF-VCS-QUALITY",
+  "status": "in_progress",
+  "counted_as_reviewed": false,
+  "focus_tools": [
+    "ReadTurboMCPVcsState",
+    "PreviewTurboMCPVcsCheckout",
+    "EditTurboMCPVcsCheckout"
+  ],
+  "scenario": "Inspect saved asset source-control state, preview checkout, observe disabled-provider refusal and real Git unsupported-checkout response, and restore the provider.",
+  "confirmed_failures": [
+    {
+      "run": "2b501cc04745457191cd91eba8e1ddaa",
+      "finding": "Legacy suite failed 24/55 checks; editor restarts were skipped by supervisor ownership, invalidating requested provider selection."
+    },
+    {
+      "run": "6c5766ed285342c0ac62227c5040ca15",
+      "finding": "Native test reached Git but its expected unsupported-checkout log was treated as an unexpected automation error. Added an exact one-occurrence expectation and asserted Failed in the tool response."
+    }
+  ],
+  "intermediate_pass": "cb3fec85fe604ba1b4cef0eb67b4c579",
+  "source_fixes": [
+    "Restrict fallback package mapping to /Game/ instead of any /Game prefix.",
+    "Distinguish provider readiness from whether each asset was actually queried.",
+    "Remove misleading guaranteed-no-op and lock claims from comments; simplify result prose."
+  ],
+  "limitations": [
+    "Live Perforce, Plastic and SVN checkout and exclusive locks are not verified by local Git testing.",
+    "Provider messages are preserved; their language depends on the provider.",
+    "No submission, revert, asset save or compilation is requested by these tools."
+  ],
+  "remaining": [
+    "Final native run with unchanged asset-file hashes.",
+    "Offline gate, scope check and integration."
+  ]
+}
