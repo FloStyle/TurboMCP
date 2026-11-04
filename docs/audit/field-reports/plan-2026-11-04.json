@@ -185,7 +185,14 @@
         "2026-11-04_S1/GC-95"
       ],
       "dependencies": [],
-      "next_step": "Candidate e4fc650d shares key matching across copy/remove/tidy/positions, preserves qualification and refuses ambiguous selection/MainPath IDs. Adds malformed removal JSON examples and tool help. Focused editor suite active; validation and integration pending."
+      "next_step": "Candidate 1e12c890 corrects removal refusal assertions to the existing contract, strengthens successful removal previews, and adds duplicate-GUID refusal, dirty-state preservation and actual tidy-edit checks. Supervised rerun active; integration pending.",
+      "evidence": [
+        {
+          "run": "9961a0540e314298bb35d01a9c4e9379",
+          "result": "failed",
+          "scope": "Build passed. Native EditNodeKeys failed three removal-refusal assertions: the test expected error:, but the existing contract returns unchanged followed by refused:. Other assertions passed. Failed evidence retained; this is not a passing workflow."
+        }
+      ]
     },
     {
       "id": "NOV04-06",
