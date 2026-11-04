@@ -3355,6 +3355,21 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinContainerTest.cpp"
           ]
+        },
+        "nov04-edit-node-keys": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPNodeId.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEditNodeKeysTest.cpp"
+          ]
         }
       },
       "preserve_rows": []

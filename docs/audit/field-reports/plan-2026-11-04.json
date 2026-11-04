@@ -118,10 +118,10 @@
       "title": "Report complete pin container types and link mismatch reasons",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "ready",
-      "owner": "unassigned",
-      "validation": "source_confirmed_runtime_pending",
+      "owner": "codex",
+      "validation": "candidate_testing",
       "source_ids": [
         "NT-11"
       ],
@@ -129,7 +129,19 @@
         "2026-10-30_S4/NT-11"
       ],
       "dependencies": [],
-      "next_step": "Approved repair scope nov04-pin-container-reporting; start after delegate append integration to avoid overlapping source changes. Verify complete pin type output and schema mismatch details with map-to-scalar refusal and compatible control."
+      "next_step": "Candidate 5c28ce36 registers the unsaved fixture variable actions before discovery, following existing alias-test setup. Focused rerun active. The prior display-name adjustment alone did not resolve fixture discovery; no container acceptance claim yet.",
+      "evidence": [
+        {
+          "run": "d77af7b1bc174690a8962962b0bde4b7",
+          "result": "failed",
+          "scope": "Build passed. Container fixture found no variable creation ID because filter ignored spaced display names; corrected fixture, no passing behavior claim. Existing delegate and append checks passed."
+        },
+        {
+          "run": "3c6d20f5c7f6436d833d1470f377345b",
+          "result": "failed",
+          "scope": "Still no fixture variable creation ID after display-name adjustment. Added missing action-catalogue refresh; retains original assertions and valid-control requirement."
+        }
+      ]
     },
     {
       "id": "NOV04-05",
@@ -137,9 +149,9 @@
       "kind": "bug",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_gap_confirmed_runtime_pending",
       "source_ids": [
         "ED-22",
         "ED-23",
@@ -157,7 +169,7 @@
         "2026-11-04_S1/GC-95"
       ],
       "dependencies": [],
-      "next_step": "docs/audit/unique-edit-ids-review.json verifies GraphConnect short keys; GraphCopy review documents exact reader IDs. Field build unknown; compare each affected tool separately, not one assumed shared cause."
+      "next_step": "Scope nov04-edit-node-keys follows pin-container integration. Connect already supports unique bare keys; copy/remove/tidy/position edit paths differ. Preserve qualification and ambiguity refusal; test each affected writer separately, including malformed JSON guidance."
     },
     {
       "id": "NOV04-06",
