@@ -1292,6 +1292,28 @@
         "Native fixture checks binding records and graph-node preservation, not visual layout; no visual changes are made."
       ],
       "evidence": "d37969e694174ab4b80de2d8117ad4bc"
+    },
+    {
+      "id": "WF-VCS-QUALITY",
+      "title": "Inspect and request source-control checkout",
+      "status": "scenario_accepted",
+      "review": "docs/audit/vcs-quality-review.json",
+      "focus_tools": [
+        "ReadTurboMCPVcsState",
+        "PreviewTurboMCPVcsCheckout",
+        "EditTurboMCPVcsCheckout"
+      ],
+      "tools_used": [
+        "ReadTurboMCPVcsState",
+        "PreviewTurboMCPVcsCheckout",
+        "EditTurboMCPVcsCheckout"
+      ],
+      "limitations": [
+        "Live Perforce, Plastic and SVN checkout and exclusive locks are not verified by local Git testing.",
+        "Provider messages are preserved; their language depends on the provider.",
+        "No submission, revert, asset save or compilation is requested by these tools."
+      ],
+      "evidence": "e70a2265163441d19e88ace2430cda99"
     }
   ],
   "tool_usage": {
@@ -1827,9 +1849,18 @@
     ],
     "EditTurboMCPWidgetRetarget": [
       "WF-WIDGET-RETARGET-QUALITY"
+    ],
+    "ReadTurboMCPVcsState": [
+      "WF-VCS-QUALITY"
+    ],
+    "PreviewTurboMCPVcsCheckout": [
+      "WF-VCS-QUALITY"
+    ],
+    "EditTurboMCPVcsCheckout": [
+      "WF-VCS-QUALITY"
     ]
   },
-  "unique_tools_scenario_reviewed": 150,
+  "unique_tools_scenario_reviewed": 153,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

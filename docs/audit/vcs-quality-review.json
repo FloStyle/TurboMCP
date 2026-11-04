@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "workflow": "WF-VCS-QUALITY",
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "ReadTurboMCPVcsState",
     "PreviewTurboMCPVcsCheckout",
@@ -30,8 +30,10 @@
     "Provider messages are preserved; their language depends on the provider.",
     "No submission, revert, asset save or compilation is requested by these tools."
   ],
-  "remaining": [
-    "Final native run with unchanged asset-file hashes.",
-    "Offline gate, scope check and integration."
-  ]
+  "remaining": [],
+  "candidate": "4450948c7d73b234ceb9ed4d0e26b373e703ea6a",
+  "native_run": "e70a2265163441d19e88ace2430cda99",
+  "scope_gate": "PASS",
+  "offline_run": "f2b0e161f1174ce99e4d619a549ab3f7",
+  "offline_result": "26 passed"
 }
