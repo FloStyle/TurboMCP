@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "a955f8e3e4b52ed33c98eb3155bed1b1ca2e8293",
+  "plugin_tree": "070a48cbc573f1a33477175a4c3472ab5fa6a8a1",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -1066,7 +1066,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp",
-          "line": 38
+          "line": 34
         }
       ],
       "test_references": [
@@ -3960,6 +3960,7 @@
         "Tools/test-graph-dead.py",
         "Tools/test-graph-edit-workflow.py",
         "Tools/test-knots-review.py",
+        "Tools/test-material-blocks.py",
         "Tools/test-material-instance-quality.py",
         "Tools/test-material.py",
         "Tools/test-node-reader-output.py",
