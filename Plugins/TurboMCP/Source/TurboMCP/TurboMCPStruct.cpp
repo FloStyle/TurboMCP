@@ -32,6 +32,16 @@
 
 namespace
 {
+    // Successful setters may normalize literals (for example 2 to 2.000000).
+    // A false return is also valid when the exact default is already present.
+    void ApplyFieldDefault(UUserDefinedStruct* Struct, const FGuid& Guid,
+        const FTurboMCPStruct::FField& Field, TArray<FString>& Failures)
+    {
+        if (FStructureEditorUtils::ChangeVariableDefaultValue(Struct, Guid, Field.Default)) return;
+        const FStructVariableDescription* Observed = FStructureEditorUtils::GetVarDescByGuid(Struct, Guid);
+        if (!Observed || Observed->DefaultValue != Field.Default)
+            Failures.Add(Field.Name + TEXT(" (requested default was rejected)"));
+    }
     // Read requested options back because engine setters can reject a value or return
     // false for an already-matching value. Their return code alone is not the result.
     void VerifyFieldOptions(UUserDefinedStruct* Struct, const FGuid& Guid,
@@ -43,8 +53,6 @@ namespace
             Failures.Add(Field.Name + TEXT(" (field missing during option verification)"));
             return;
         }
-        if (!Field.Default.IsEmpty() && Observed->DefaultValue != Field.Default)
-            Failures.Add(Field.Name + TEXT(" (requested default was not applied)"));
         if (!Field.Tooltip.IsEmpty() && Observed->ToolTip != Field.Tooltip)
             Failures.Add(Field.Name + TEXT(" (requested tooltip was not applied)"));
         if (!Field.Category.IsEmpty() && Observed->Category != FName(*Field.Category))
@@ -1064,6 +1072,7 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 		}
 	}
 
+    TArray<FString> OptionFailures;
 	// The default, tooltip and category live on the description rather than on the add call, so they are set after,
 	// by re-resolving each field's own NAME to the GUID the editor data now holds. Re-resolving rather than indexing
 	// is the same `D-45` rule the field editor follows below.
@@ -1079,7 +1088,7 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 
 		if (!Field.Default.IsEmpty())
 		{
-			FStructureEditorUtils::ChangeVariableDefaultValue(Struct, Guid, Field.Default);
+			ApplyFieldDefault(Struct, Guid, Field, OptionFailures);
 		}
 		if (!Field.Tooltip.IsEmpty())
 		{
@@ -1111,7 +1120,6 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 	TArray<FField> ReadBack;
 	ReadFields(Struct, ReadBack);
 
-    TArray<FString> OptionFailures;
     for (int32 Index = 0; Index < InPlan.Fields.Num(); ++Index)
     {
         const FString& ActualName = GivenNames.IsValidIndex(Index) ? GivenNames[Index] : InPlan.Fields[Index].Name;
@@ -1120,7 +1128,7 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
     FString Out = OptionFailures.IsEmpty()
         ? FString::Printf(TEXT("changed: created struct %s"), *InPlan.PackagePath)
         : FString::Printf(TEXT("partial: created struct %s, but requested settings were not applied: %s; inspect the unsaved asset before retrying; no rollback was attempted"), *InPlan.PackagePath, *FString::Join(OptionFailures, TEXT(", ")));
-	Out += TEXT("\nVerification: observed fields are listed below; requested nonempty defaults, tooltips and categories were read back; dependent assets were not verified.");
+	Out += TEXT("\nVerification: observed fields are listed below; requested defaults were checked against setter results; nonempty tooltips and categories were read back; dependent assets were not verified.");
 	Out += FString::Printf(TEXT("\nfields asked for: %d"), InPlan.Fields.Num());
 	Out += FString::Printf(TEXT("\nfields added: %d"), Added);
 	if (!bCreatorFieldRemoved)
@@ -1654,7 +1662,7 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 			{
 				if (!Change.Field.Default.IsEmpty())
 				{
-					FStructureEditorUtils::ChangeVariableDefaultValue(Struct, Guid, Change.Field.Default);
+					ApplyFieldDefault(Struct, Guid, Change.Field, Vanished);
 				}
 				if (!Change.Field.Tooltip.IsEmpty())
 				{
@@ -1725,7 +1733,7 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 
 			if (!Change.Field.Default.IsEmpty())
 			{
-				FStructureEditorUtils::ChangeVariableDefaultValue(Struct, Guid, Change.Field.Default);
+				ApplyFieldDefault(Struct, Guid, Change.Field, Vanished);
 			}
 			if (!Change.Field.Tooltip.IsEmpty())
 			{
@@ -1815,7 +1823,7 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 	ReadFields(Struct, ReadBack);
 
 	FString Out = FString::Printf(TEXT("changed: struct %s"), *InPlan.ObjectPath);
-	Out += TEXT("\nVerification: operation counts and observed fields follow; requested nonempty defaults, tooltips and categories were read back; dependent assets were not verified.");
+	Out += TEXT("\nVerification: operation counts and observed fields follow; requested defaults were checked against setter results; nonempty tooltips and categories were read back; dependent assets were not verified.");
 	Out += FString::Printf(TEXT("\nadded: %d"), Added);
 	Out += FString::Printf(TEXT("\nchanged: %d"), Changed);
 	Out += FString::Printf(TEXT("\nmoved: %d"), Moved);
