@@ -1,18 +1,19 @@
 {
   "schema": 1,
-  "status": "in_progress",
-  "counted_as_reviewed": false,
+  "status": "scenario_accepted",
+  "counted_as_reviewed": true,
   "focus_tools": [
     "PreviewTurboMCPMaterialBlocks",
     "EditTurboMCPMaterialBlocks"
   ],
-  "candidate": "402f1af0",
+  "candidate": "a72e4c2fd1a5f12c6860d170089ce6b76ef13798",
   "source_findings": [
     "Preview compilation moved to nonempty edit path; native fixture preserves package dirty flag and material StateId.",
     "Native regression reproduced source outputs 1 and 2 both replaced by output 0. Connection grouping now includes output and component mask; declaration copies the complete source input.",
     "In-block reroute removal preserves the final source output and mask; reroutes directly feeding material outputs are retained as boundary routing.",
     "Usage merging now includes material property consumers in preview and apply, preserving their connections. Newly created usages are shared per consumer block.",
-    "Apply checks connection/layout snapshots before compilation or mutation. Preview identifies source output and channel mask. Native tests verify refusal preserves an intervening edit and repeated cleanup reports unchanged."
+    "Apply checks connection/layout snapshots before compilation or mutation. Preview identifies source output and channel mask. Native tests verify refusal preserves an intervening edit and repeated cleanup reports unchanged.",
+    "Visual overlap and block-membership defects resolved with preplanned collision checks and block-contained usage placement. Names use parameter and output identifiers. Final rendered values were inspected and matched in all three operations."
   ],
   "evidence": [
     {
@@ -69,22 +70,55 @@
       "run": "b6028415e0054051951b7fee7b3b20aa",
       "result": "passed_with_visual_defect",
       "scope": "Rendering preserved and screenshot shows no node overlap. Usage nodes can land outside their consuming comment block; placement still needs repair."
+    },
+    {
+      "run": "9d14bad35b7e4710940d6663a5437d55",
+      "result": "passed",
+      "scope": "Block-constrained placement, membership assertions and inspected editor capture."
+    },
+    {
+      "run": "463e1d6e259f40039c1eeca16ca2667f",
+      "result": "passed",
+      "scope": "Live parameter help and matching preview/edit material-function refusals."
+    },
+    {
+      "run": "2a61d6d1bff5453cae37100a4a57e6d1",
+      "result": "passed_with_weak_render_evidence",
+      "scope": "Three operation tests passed, but chain and merge images were clipped white due to fixture Add default; strengthened next run."
+    },
+    {
+      "run": "3dbca27d798e479998871441581bc38a",
+      "result": "passed",
+      "scope": "All three cleanup operations, non-clipped rendering preservation, multiple reroute removals, source channels/masks, material outputs, stale refusal, cramped-block refusal, repeatability, live help and saved merge fixture."
+    },
+    {
+      "run": "f2e637370967424d9627fb8188479f40",
+      "result": "passed",
+      "scope": "Offline gate: 26 checks."
     }
   ],
-  "remaining": [
-    "P1: reserve usage positions inside their consuming block; current collision avoidance can place them outside or inside another block. Verify geometry and editor capture.",
-    "Expand chain coverage to multiple removals and verify masks/rendered values across all operations.",
-    "Verify rendered values and visual graph layout; review additional stale-plan cases and one-usage-per-block geometry.",
-    "Review rollback verification, functions, preview/edit reporting, help and historical comments.",
-    "Inspect graph/render screenshots; complete offline and trusted scope gates before integration."
-  ],
+  "remaining": [],
   "limitations": [
-    "Focused passing run is not full pair acceptance.",
-    "Changes remain on the review branch; main contains tracking only."
+    "Acceptance covers the recorded generated and saved material workflows, not every material expression class or rendering platform.",
+    "Materials only; material functions and instances are refused.",
+    "Cleanup preserves existing node positions. Placement uses conservative node envelopes, can produce backward wires, and refuses when a usage cannot fit inside its block. Full graph organization belongs to Material Tidy.",
+    "Labels are proposed for values read by multiple comment blocks; this is not general material graph authoring.",
+    "Edit replans from current state; there is no persisted preview approval token. In-process connection/layout changes invalidate the plan.",
+    "Failed edits attempt undo and report expression-identity checks only; links, values and external callback effects are not fully verified after rollback.",
+    "Compilation and editor callbacks occur on nonempty edits; no save is performed.",
+    "Editor screenshot preview panels can lag shader compilation. Independent offscreen renders, not the black editor preview panel, establish the recorded color preservation."
   ],
   "visual_evidence": [
-    "TestProject/Saved/TurboMCP/MaterialBlocksQuality/BlocksQuality_68B3E04F409A6227721868873D4D84E2/before.png",
-    "TestProject/Saved/TurboMCP/MaterialBlocksQuality/BlocksQuality_68B3E04F409A6227721868873D4D84E2/after.png",
-    "TestProject/Saved/TurboMCP/Captures/BlocksQuality_68B3E04F409A6227721868873D4D84E2_asset-editor_2560x1336_E8D319B74C9322CB5F44688C795E80BE.png"
-  ]
+    "TestProject/Saved/TurboMCP/MaterialBlocksQuality/BlocksQuality_95F7194347B40A69719B6E8452400D6F/before.png",
+    "TestProject/Saved/TurboMCP/MaterialBlocksQuality/BlocksQuality_95F7194347B40A69719B6E8452400D6F/after.png",
+    "TestProject/Saved/TurboMCP/MaterialBlocksQuality/BlocksQuality_95F7194347B40A69719B6E8452400D6F/chain-before.png",
+    "TestProject/Saved/TurboMCP/MaterialBlocksQuality/BlocksQuality_95F7194347B40A69719B6E8452400D6F/chain-after.png",
+    "TestProject/Saved/TurboMCP/MaterialBlocksQuality/BlocksQuality_95F7194347B40A69719B6E8452400D6F/merge-before.png",
+    "TestProject/Saved/TurboMCP/MaterialBlocksQuality/BlocksQuality_95F7194347B40A69719B6E8452400D6F/merge-after.png",
+    "TestProject/Saved/TurboMCP/Captures/BlocksQuality_25AB37204ED1649888B88A9DCC0797D2_asset-editor_2560x1336_2CB7858D42F799DA3F75D8997751ECC4.png"
+  ],
+  "native_run": "3dbca27d798e479998871441581bc38a",
+  "offline_run": "f2e637370967424d9627fb8188479f40",
+  "offline_result": "26 passed",
+  "scope_gate": "PASS against reconciled main 2ca7936c15a62e455cace6fbb82d07f8c73e1a6b with unchanged approved assignment"
 }

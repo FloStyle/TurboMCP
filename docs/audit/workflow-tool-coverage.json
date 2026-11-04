@@ -1361,6 +1361,36 @@
         "Tests cover saved material/function fixtures and generated structural cases, not every engine expression class or material layer configuration."
       ],
       "evidence": "f6b14f9866dd4fa08be613f70d99d933"
+    },
+    {
+      "id": "WF-MATERIAL-BLOCKS-QUALITY",
+      "title": "Clean up material block labels, usages and internal reroutes",
+      "status": "scenario_accepted",
+      "review": "docs/audit/material-blocks-quality-review.json",
+      "focus_tools": [
+        "PreviewTurboMCPMaterialBlocks",
+        "EditTurboMCPMaterialBlocks"
+      ],
+      "tools_used": [
+        "PreviewTurboMCPMaterialBlocks",
+        "EditTurboMCPMaterialBlocks",
+        "ReadTurboMCPMaterialLoad",
+        "ReadTurboMCPMaterialLabels",
+        "ReadTurboMCPMaterialBlocks",
+        "ReadTurboMCPToolHelp",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "Acceptance covers the recorded generated and saved material workflows, not every material expression class or rendering platform.",
+        "Materials only; material functions and instances are refused.",
+        "Cleanup preserves existing node positions. Placement uses conservative node envelopes, can produce backward wires, and refuses when a usage cannot fit inside its block. Full graph organization belongs to Material Tidy.",
+        "Labels are proposed for values read by multiple comment blocks; this is not general material graph authoring.",
+        "Edit replans from current state; there is no persisted preview approval token. In-process connection/layout changes invalidate the plan.",
+        "Failed edits attempt undo and report expression-identity checks only; links, values and external callback effects are not fully verified after rollback.",
+        "Compilation and editor callbacks occur on nonempty edits; no save is performed.",
+        "Editor screenshot preview panels can lag shader compilation. Independent offscreen renders, not the black editor preview panel, establish the recorded color preservation."
+      ],
+      "evidence": "3dbca27d798e479998871441581bc38a"
     }
   ],
   "tool_usage": {
@@ -1440,7 +1470,8 @@
       "WF-GRAPH-SEQUENCE",
       "WF-GRAPH-SPLIT-VALUE",
       "WF-BIND-FUNCTION",
-      "WF-GRAPH-COPY"
+      "WF-GRAPH-COPY",
+      "WF-MATERIAL-BLOCKS-QUALITY"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -1753,7 +1784,8 @@
       "WF-DISCOVERY-01",
       "WF-GRAPH-SEQUENCE",
       "WF-GRAPH-SPLIT-VALUE",
-      "WF-BIND-FUNCTION"
+      "WF-BIND-FUNCTION",
+      "WF-MATERIAL-BLOCKS-QUALITY"
     ],
     "ReadTurboMCPToolSchema": [
       "WF-DISCOVERY-01"
@@ -1914,19 +1946,28 @@
       "WF-MATERIAL-INSTANCE-QUALITY"
     ],
     "ReadTurboMCPMaterialLoad": [
-      "WF-MATERIAL-READERS-QUALITY"
+      "WF-MATERIAL-READERS-QUALITY",
+      "WF-MATERIAL-BLOCKS-QUALITY"
     ],
     "ReadTurboMCPMaterialTrace": [
       "WF-MATERIAL-READERS-QUALITY"
     ],
     "ReadTurboMCPMaterialLabels": [
-      "WF-MATERIAL-READERS-QUALITY"
+      "WF-MATERIAL-READERS-QUALITY",
+      "WF-MATERIAL-BLOCKS-QUALITY"
     ],
     "ReadTurboMCPMaterialBlocks": [
-      "WF-MATERIAL-READERS-QUALITY"
+      "WF-MATERIAL-READERS-QUALITY",
+      "WF-MATERIAL-BLOCKS-QUALITY"
+    ],
+    "PreviewTurboMCPMaterialBlocks": [
+      "WF-MATERIAL-BLOCKS-QUALITY"
+    ],
+    "EditTurboMCPMaterialBlocks": [
+      "WF-MATERIAL-BLOCKS-QUALITY"
     ]
   },
-  "unique_tools_scenario_reviewed": 159,
+  "unique_tools_scenario_reviewed": 161,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
