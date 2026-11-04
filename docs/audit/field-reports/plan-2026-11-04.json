@@ -379,7 +379,29 @@
         "2026-11-03_S2/GC-87"
       ],
       "dependencies": [],
-      "next_step": "Claim 373d803fc7064c26b06db350d73e7496 at 6e4f4ae2. Candidate fe69b71d improves unreachable-node diagnostics with title/type/label and exec-input causes; native disconnected/wired fixture added. Run 1091b75cfba24a80ae4ed3e2cab1938b failed compilation because the new fixture called private ExecuteGraph; corrected to public Apply without widening access. Rerun active. Pure-data-only and existing DoOnce merge fixtures remain required; no completion or integration claimed."
+      "next_step": "Candidate 14a4ae4c: clearer impure-node refusal diagnostics and native disconnected/wired, pure-data and existing DoOnce merge fixtures. Run 48e900da3f3c40aaab0d1da4369808fb is validating corrected fixture syntax and actual graph mutation. No completion or integration claimed.",
+      "evidence": [
+        {
+          "run": "1091b75cfba24a80ae4ed3e2cab1938b",
+          "result": "failed",
+          "scope": "Fixture attempted private ExecuteGraph access; corrected to public Apply without widening API access."
+        },
+        {
+          "run": "2ee4fde42d4c456788ed7f8a8c81f47b",
+          "result": "passed",
+          "scope": "Disconnected impure refusal and correctly wired append; does not cover the later merge fixture."
+        },
+        {
+          "run": "22033ee57ebc479b8826b3a1c9a1308c",
+          "result": "failed",
+          "scope": "Existing-flow merge did not mutate graph; strengthened plan acceptance assertions to expose refusal."
+        },
+        {
+          "run": "13307cf22fcb453bb9c54a6cde2b8a72",
+          "result": "failed",
+          "scope": "Explicit refusal showed Choice label on a pin line was not recognized. Fixture corrected to put label on its own closing-form line; no tool merge defect established by this failure."
+        }
+      ]
     },
     {
       "id": "NOV04-13",
