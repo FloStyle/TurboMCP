@@ -6,7 +6,7 @@
     "PreviewTurboMCPMaterialBlocks",
     "EditTurboMCPMaterialBlocks"
   ],
-  "candidate": "31c0a982",
+  "candidate": "402f1af0",
   "source_findings": [
     "Preview compilation moved to nonempty edit path; native fixture preserves package dirty flag and material StateId.",
     "Native regression reproduced source outputs 1 and 2 both replaced by output 0. Connection grouping now includes output and component mask; declaration copies the complete source input.",
@@ -49,9 +49,30 @@
       "run": "be39a2178a78410d96fcf8223a283b04",
       "result": "passed",
       "scope": "Blocks native and saved fixture suite after success-count correction, complete planned add/remove checks, function refusal and documentation cleanup."
+    },
+    {
+      "run": "ecf93d7a91c24694bd2d98ef7de7a5ab",
+      "result": "passed_with_visual_defect",
+      "scope": "Rendered before/after color matched; screenshot showed overlapping long label nodes."
+    },
+    {
+      "run": "dd95c820c43c49259082c390d388ced5",
+      "result": "failed",
+      "scope": "Build: GetOutputs is not const; corrected API call."
+    },
+    {
+      "run": "c1ff0b06df334f8a96053e364b5c553f",
+      "result": "passed_with_visual_defect",
+      "scope": "Names shortened; fixed offsets still overlapped the source parameter."
+    },
+    {
+      "run": "b6028415e0054051951b7fee7b3b20aa",
+      "result": "passed_with_visual_defect",
+      "scope": "Rendering preserved and screenshot shows no node overlap. Usage nodes can land outside their consuming comment block; placement still needs repair."
     }
   ],
   "remaining": [
+    "P1: reserve usage positions inside their consuming block; current collision avoidance can place them outside or inside another block. Verify geometry and editor capture.",
     "Expand chain coverage to multiple removals and verify masks/rendered values across all operations.",
     "Verify rendered values and visual graph layout; review additional stale-plan cases and one-usage-per-block geometry.",
     "Review rollback verification, functions, preview/edit reporting, help and historical comments.",
@@ -60,5 +81,10 @@
   "limitations": [
     "Focused passing run is not full pair acceptance.",
     "Changes remain on the review branch; main contains tracking only."
+  ],
+  "visual_evidence": [
+    "TestProject/Saved/TurboMCP/MaterialBlocksQuality/BlocksQuality_68B3E04F409A6227721868873D4D84E2/before.png",
+    "TestProject/Saved/TurboMCP/MaterialBlocksQuality/BlocksQuality_68B3E04F409A6227721868873D4D84E2/after.png",
+    "TestProject/Saved/TurboMCP/Captures/BlocksQuality_68B3E04F409A6227721868873D4D84E2_asset-editor_2560x1336_E8D319B74C9322CB5F44688C795E80BE.png"
   ]
 }
