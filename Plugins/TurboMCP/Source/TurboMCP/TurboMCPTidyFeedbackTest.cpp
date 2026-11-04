@@ -4,6 +4,7 @@
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
+#include "TurboMCPNodeId.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
@@ -60,12 +61,38 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         for (const auto& Pair:Positions) TestTrue(TEXT("Preview preserves positions"),Pair.Value==FIntPoint(Pair.Key->NodePosX,Pair.Key->NodePosY));
         const FString Edit=UTurboMCPEditToolset::EditTurboMCPGraphTidy(BP->GetPathName(),Graph->GetName(),true,{});
         TestTrue(TEXT("Feedback edit succeeds"),Edit.StartsWith(TEXT("changed:")) && Edit.Contains(TEXT("control feedback: 1")));
+        TestTrue(TEXT("Feedback leaves the body on its right"),First->NodePosX>Body->NodePosX);
+        TestTrue(TEXT("Feedback returns from the macro left"),Second->NodePosX<Macro->NodePosX);
+        TestTrue(TEXT("Feedback routed below the macro"),First->NodePosY>Macro->NodePosY+120 && Second->NodePosY==First->NodePosY);
         TestEqual(TEXT("Node count preserved"),Graph->Nodes.Num(),Identities.Num());
         for (const auto& Pair:Identities) TestEqual(TEXT("Identity preserved"),Pair.Key->NodeGuid,Pair.Value);
         for (const auto& Pair:Links) {TestTrue(TEXT("Links preserved"),Pair.Key->LinkedTo==Pair.Value);TestEqual(TEXT("Default preserved"),Pair.Key->DefaultValue,Defaults[Pair.Key]);}
         const FString Capture=UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(),Graph->GetName(),TEXT("graph"),TEXT(""),TEXT("1600x900"));
         TestTrue(TEXT("Native capture produced"),Capture.Contains(TEXT("renderer: native Slate")) && Capture.Contains(TEXT("image:")));AddInfo(Capture);
     }
+    // An unrelated fixed cycle must not block an explicitly selected acyclic flow.
+    UEdGraph* Scoped=FBlueprintEditorUtils::CreateNewGraph(BP,TEXT("ScopedCycle"),UEdGraph::StaticClass(),UEdGraphSchema_K2::StaticClass());
+    BP->UbergraphPages.Add(Scoped);
+    auto MakeCall=[&](int32 X,int32 Y){auto* Node=NewObject<UK2Node_CallFunction>(Scoped);Node->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));Scoped->AddNode(Node,false,false);Node->CreateNewGuid();Node->AllocateDefaultPins();Node->NodePosX=X;Node->NodePosY=Y;return Node;};
+    auto* A=MakeCall(0,0);auto* B=MakeCall(-400,100);
+    auto* C=MakeCall(0,1000);auto* D=MakeCall(500,1000);
+    // Direct pin links deliberately model a pre-existing cycle, independent of editor connection guards.
+    A->FindPin(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(B->FindPin(UEdGraphSchema_K2::PN_Execute));
+    C->FindPin(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(D->FindPin(UEdGraphSchema_K2::PN_Execute));
+    D->FindPin(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(C->FindPin(UEdGraphSchema_K2::PN_Execute));
+    const TArray<FString> Selection={TurboMCPNodeId::MakeForNode(A),TurboMCPNodeId::MakeForNode(B)};
+    const FString ScopedPreview=UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(BP->GetPathName(),Scoped->GetName(),true,Selection,TEXT("auto"));
+    TestTrue(TEXT("Fixed unrelated cycle allows selected preview"),ScopedPreview.Contains(TEXT("preview:")));
+    const FString ScopedEdit=UTurboMCPEditToolset::EditTurboMCPGraphTidy(BP->GetPathName(),Scoped->GetName(),true,Selection,TEXT("auto"));
+    TestTrue(TEXT("Fixed unrelated cycle allows selected edit"),ScopedEdit.StartsWith(TEXT("changed:")));
+    TestTrue(TEXT("Fixed cycle positions preserved"),C->NodePosX==0 && C->NodePosY==1000 && D->NodePosX==500 && D->NodePosY==1000);
+    const FIntPoint BeforeA(A->NodePosX,A->NodePosY),BeforeB(B->NodePosX,B->NodePosY);
+    const bool DirtyBefore=Package->IsDirty();
+    const FString Refused=UTurboMCPEditToolset::EditTurboMCPGraphTidy(BP->GetPathName(),Scoped->GetName(),true,{});
+    TestTrue(TEXT("Unsupported whole-graph cycle refuses"),Refused.StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Refusal preserves positions"),BeforeA==FIntPoint(A->NodePosX,A->NodePosY) && BeforeB==FIntPoint(B->NodePosX,B->NodePosY));
+    TestEqual(TEXT("Refusal preserves dirty state"),Package->IsDirty(),DirtyBefore);
+    TestTrue(TEXT("Cycle links preserved"),C->FindPin(UEdGraphSchema_K2::PN_Then)->LinkedTo.Contains(D->FindPin(UEdGraphSchema_K2::PN_Execute)) && D->FindPin(UEdGraphSchema_K2::PN_Then)->LinkedTo.Contains(C->FindPin(UEdGraphSchema_K2::PN_Execute)));
     return !HasAnyErrors();
 }
 #endif

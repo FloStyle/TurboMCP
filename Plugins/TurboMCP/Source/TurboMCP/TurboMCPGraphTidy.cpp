@@ -994,7 +994,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         TArray<int32> Longest;
         for(int32 I=0;I<OutPlan.Nodes.Num();++I) if(Eligible(I))
         {
-            if(!Visit(I)) { OutError=TEXT("MainPath auto cannot choose through execution cycles; pass an explicit comma-separated path."); return false; }
+            if(!Visit(I)) { OutError=TEXT("MainPath auto found an unsupported execution cycle in the selected scope. Select an acyclic region or use explicit node positions; no nodes moved."); return false; }
             if(Paths[I].Num()>Longest.Num()) Longest=Paths[I];
         }
         for(int32 I:Longest) MainIds.Add(TurboMCPNodeId::MakeForNode(OutPlan.Nodes[I].Node));
@@ -2576,6 +2576,59 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		}
         }
 	}
+
+    // Route an existing exclusive feedback reroute chain below the graph body.
+    // Keep its topology: the first reroute receives the body output on the right,
+    // and the last returns to the macro input from the left. Fixed or boxed knots
+    // retain their existing positions; this pass never expands selection ownership.
+    for (const FWire& Feedback : OutPlan.Wires)
+    {
+        if (!Feedback.bControlFeedback) continue;
+        TArray<int32> ReverseChain;
+        int32 Cursor = Feedback.SourceNodeIndex;
+        TSet<int32> Seen;
+        bool Supported = true;
+        while (OutPlan.Nodes.IsValidIndex(Cursor) && OutPlan.Nodes[Cursor].bIsKnot)
+        {
+            if (Seen.Contains(Cursor)) { Supported = false; break; }
+            Seen.Add(Cursor);
+            const FNode& Knot = OutPlan.Nodes[Cursor];
+            if (Knot.bUnreachable || (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(Knot.Key)))
+            { Supported = false; break; }
+            for (const FBox& Box : OutPlan.Boxes)
+                if (Box.MemberKeys.Contains(Knot.Key)) Supported = false;
+            int32 IncomingCount = 0, OutgoingCount = 0, Predecessor = INDEX_NONE;
+            for (const FWire& Wire : OutPlan.Wires)
+            {
+                if (Wire.TargetNodeIndex == Cursor) { ++IncomingCount; Predecessor = Wire.SourceNodeIndex; }
+                if (Wire.SourceNodeIndex == Cursor) ++OutgoingCount;
+            }
+            if (!Supported || IncomingCount != 1 || OutgoingCount != 1) { Supported = false; break; }
+            ReverseChain.Add(Cursor);
+            Cursor = Predecessor;
+        }
+        if (!Supported || ReverseChain.Num() < 2 || !OutPlan.Nodes.IsValidIndex(Cursor)) continue;
+        const FNode& Body = OutPlan.Nodes[Cursor];
+        const FNode& Macro = OutPlan.Nodes[Feedback.TargetNodeIndex];
+        double Below = FMath::Max(Body.PlannedY + Body.Height, Macro.PlannedY + Macro.Height);
+        for (int32 Index = 0; Index < OutPlan.Nodes.Num(); ++Index)
+            if (!Seen.Contains(Index))
+                Below = FMath::Max(Below, OutPlan.Nodes[Index].PlannedY + OutPlan.Nodes[Index].Height);
+        for (const FBox& Box : OutPlan.Boxes) Below = FMath::Max(Below, Box.Y + Box.PlannedHeight);
+        for (const FGetterCopy& Copy : OutPlan.GetterCopies) Below = FMath::Max(Below, Copy.PlannedY + Copy.Height);
+        Below += VerticalNodeGap;
+        const double Left = Macro.PlannedX - HorizontalNodeGap - OutPlan.Nodes[ReverseChain[0]].Width;
+        const double Right = Body.PlannedX + Body.Width + HorizontalNodeGap;
+        if (!FMath::IsFinite(Left) || !FMath::IsFinite(Right) || !FMath::IsFinite(Below)
+            || Left < MIN_int32 || Right > MAX_int32 || Below > MAX_int32)
+        { OutError = TEXT("Feedback routing exceeds graph coordinate limits; no nodes moved."); return false; }
+        for (int32 Index = 0; Index < ReverseChain.Num(); ++Index)
+        {
+            FNode& Knot = OutPlan.Nodes[ReverseChain[Index]];
+            Knot.PlannedX = FMath::Lerp(Left, Right, static_cast<double>(Index) / (ReverseChain.Num() - 1));
+            Knot.PlannedY = Below;
+        }
+    }
 
 	// -----------------------------------------------------------------------------------------
 	// STEP 8: the measure, on the PLANNED positions.
