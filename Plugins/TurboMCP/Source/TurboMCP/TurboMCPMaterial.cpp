@@ -13,6 +13,7 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionComment.h"
 #include "Materials/MaterialExpressionConstant.h"
+#include "Materials/MaterialExpressionAdd.h"
 #include "Materials/MaterialExpressionFunctionOutput.h"
 #include "Materials/MaterialExpressionNamedReroute.h"
 #include "Materials/MaterialExpressionParameter.h"
@@ -624,7 +625,7 @@ TArray<FString> FTurboMCPMaterial::AllOutputProperties(FPlan& InPlan)
 	return Out;
 }
 
-UMaterialExpression* FTurboMCPMaterial::OutputSource(FPlan& InPlan, const FString& InProperty)
+UMaterialExpression* FTurboMCPMaterial::OutputSource(FPlan& InPlan, const FString& InProperty, bool bResolveReroutes)
 {
 	// A MATERIAL FUNCTION IS RESOLVED FIRST, because a plan carries either a material or a function
 	// and never both. Its output is the `FunctionOutput` node whose `OutputName` was asked for, and
@@ -653,7 +654,7 @@ UMaterialExpression* FTurboMCPMaterial::OutputSource(FPlan& InPlan, const FStrin
 			}
 			// A plain reroute feeding the output is looked through, for the same reason the material
 			// branch does it: `2.5` says plain reroutes are invisible.
-			return ResolveThroughReroutes(FunctionOutput->A.Expression);
+			return bResolveReroutes ? ResolveThroughReroutes(FunctionOutput->A.Expression) : FunctionOutput->A.Expression;
 		}
 		return nullptr;
 	}
@@ -686,7 +687,7 @@ UMaterialExpression* FTurboMCPMaterial::OutputSource(FPlan& InPlan, const FStrin
 			// A plain reroute feeding an output is looked through, because `2.5` says plain reroutes
 			// are invisible. The OUTPUT is what the reader asked about, so resolving here keeps the
 			// caller from having to know the rule.
-			return ResolveThroughReroutes(Input->Expression);
+			return bResolveReroutes ? ResolveThroughReroutes(Input->Expression) : Input->Expression;
 		}
 
 		// The property is real but unconnected. Answering null is the honest result, and it is what
@@ -1076,34 +1077,12 @@ void FTurboMCPMaterial::MarkReached(const UMaterialExpression* InExpression,
 		Seen.Add(Current);
 		InOutState.Reached.Add(Current);
 
-		// A FUNCTION OUTPUT IS AN EXPRESSION AND REACHES ITSELF.
-		//
-		// MEASURED, ON THE MATERIAL FIXTURE. A function whose output node was correctly wired
-		// answered:
-		//
-		//     connected outputs: 1 of 1
-		//     (Result
-		//         @FunctionTint)
-		//     1 expression(s) reach no output, so they do not affect what the material looks like:
-		//       f877ef MaterialExpressionFunctionOutput Output Result
-		//
-		// THE OUTPUT NODE WAS NAMED AS REACHING NO OUTPUT, WHILE BEING THE OUTPUT. A function output
-		// is a NODE in its expression list, unlike a material output which is a property of the
-		// material and never appears in that list - so the material branch could not lose its output
-		// this way and the function branch could.
-		//
-		// `RenderTree` marks each output SOURCE, which is the value feeding the node. For a material
-		// that source is the whole story; for a function there is one more node between the source
-		// and the output, and it is the one that makes the value leave. Marking it where the walk
-		// starts covers every caller without each having to remember.
-
 		for (FExpressionInputIterator It(const_cast<UMaterialExpression*>(Current)); It; ++It)
 		{
 			if (It.Input != nullptr && It.Input->Expression != nullptr)
 			{
-				// A plain reroute is transparent, so marking through it keeps the reach set the same
-				// shape as the printed tree.
-				Stack.Add(ResolveThroughReroutes(It.Input->Expression));
+				// Keep reroute nodes in the reach set even though text rendering skips them.
+				Stack.Add(It.Input->Expression);
 			}
 		}
 
@@ -1347,7 +1326,7 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 		{
 			continue;
 		}
-		MarkReached(Source, State);
+		MarkReached(OutputSource(InPlan, Property, false), State);
 	}
 
 	for (const FString& Property : Properties)
@@ -1408,7 +1387,7 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
     // A Trace prints one tree, but an unused-expression finding must consider every output.
     FRenderState AllOutputState;
     for (const FString& Property : ConnectedOutputs(InPlan))
-        MarkReached(OutputSource(InPlan, Property), AllOutputState);
+        MarkReached(OutputSource(InPlan, Property, false), AllOutputState);
     TArray<FString> Unreached;
 	for (UMaterialExpression* Expression : InPlan.Expressions)
 	{
@@ -1932,6 +1911,20 @@ bool FTurboMCPMaterialDuplicateLabelTest::RunTest(const FString& Parameters)
     Material->GetEditorOnlyData()->Roughness.Expression = nullptr;
     const FString LongTrace = FTurboMCPMaterial::RenderTree(LongPlan, true, 0);
     TestFalse(TEXT("Long connected chain is not reported unused"), LongTrace.Contains(TEXT("reach no output")));
+    LongPlan.Expressions.Reset();
+    LongPlan.Expressions.Add(ColorValue);
+    Previous = ColorValue;
+    for (int32 Index = 0; Index < 1605; ++Index)
+    {
+        auto* Add = NewObject<UMaterialExpressionAdd>(Material);
+        Add->A.Connect(0, Previous);
+        Previous = Add;
+        LongPlan.Expressions.Add(Add);
+    }
+    Material->GetEditorOnlyData()->BaseColor.Connect(0, Previous);
+    const FString ArithmeticTrace = FTurboMCPMaterial::RenderTree(LongPlan, true, 0);
+    TestFalse(TEXT("Long arithmetic chain is not reported unused"), ArithmeticTrace.Contains(TEXT("reach no output")));
+    TestTrue(TEXT("Deep tree omission is explicit"), ArithmeticTrace.Contains(TEXT("deeper than")));
     return true;
 }
 #endif

@@ -185,21 +185,11 @@ public:
 	 */
 	static UMaterialExpression* ResolveThroughReroutes(const UMaterialExpression* InExpression);
 
-	/**
-	 * The expression feeding one output property, or null.
-	 *
-	 * THE PLAN IS MUTABLE HERE, AND THAT IS FORCED BY THE ENGINE. The output lookup goes through
-	 * `UMaterial::GetExpressionInputForProperty` (`Material.h:1890`), which is a NON-CONST member, so
-	 * a `const FPlan&` cannot reach it. The alternatives were to hold a second non-const `UMaterial*`
-	 * in the plan - two pointers to one object, which is the shape of bug this project keeps fixing -
-	 * or to make the one pointer honest about what the engine requires. This takes the second.
-	 *
-	 * The property is found by asking the engine about EVERY `EMaterialProperty` in turn, rather than
-	 * from a hand-written switch or a list this file maintains, so an output added by a future engine
-	 * version is found without this file being touched. Deriving it from a switch is what the audit of
-	 * `TurboMCPLocalVars.cpp` found to be this project's most expensive habit.
-	 */
-	static UMaterialExpression* OutputSource(FPlan& InPlan, const FString& InProperty);
+    /** Return the expression feeding a material or function output, or null.
+     * Rendering resolves plain reroutes by default. Reachability passes false so the
+     * walk retains the reroute nodes themselves. Named reroutes are not collapsed.
+     */
+	static UMaterialExpression* OutputSource(FPlan& InPlan, const FString& InProperty, bool bResolveReroutes = true);
 
 	/**
 	 * True when an expression is a label declaration, with the label it names.
