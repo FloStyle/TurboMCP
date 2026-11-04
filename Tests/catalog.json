@@ -9,8 +9,29 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-append-failure",
+      "path": "Tools/test-append-failure.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-asset-cost",
       "path": "Tools/test-asset-cost.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-asset-describe-metadata",
+      "path": "Tools/test-asset-describe-metadata.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-asset-recovery",
+      "path": "Tools/test-asset-recovery.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -23,6 +44,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-backward-review",
+      "path": "Tools/test-backward-review.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-batch-edit",
       "path": "Tools/test-batch-edit.py",
       "tier": "engine",
@@ -30,8 +58,36 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-batch-rollback",
+      "path": "Tools/test-batch-rollback.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-batch-sequence",
+      "path": "Tools/test-batch-sequence.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-batch-tools",
       "path": "Tools/test-batch-tools.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-bind-event-workflow",
+      "path": "Tools/test-bind-event-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-bind-function-review",
+      "path": "Tools/test-bind-function-review.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -79,6 +135,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-call-swap-workflow",
+      "path": "Tools/test-call-swap-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-capture",
       "path": "Tools/test-capture.py",
       "tier": "engine",
@@ -93,6 +156,20 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-capture-framing",
+      "path": "Tools/test-capture-framing.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-capture-selection-state",
+      "path": "Tools/test-capture-selection-state.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-capture-selectors",
       "path": "Tools/test-capture-selectors.py",
       "tier": "engine",
@@ -100,10 +177,24 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-checkout-output",
+      "path": "Tools/test-checkout-output.py",
+      "tier": "engine",
+      "timeout_seconds": 120,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-client-retry",
       "path": "Tools/test-client-retry.py",
       "tier": "offline",
       "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-collapse-function",
+      "path": "Tools/test-collapse-function.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
       "acceptance": "not_mapped"
     },
     {
@@ -121,8 +212,22 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-common-button-workflow",
+      "path": "Tools/test-common-button-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-compile-ensure",
       "path": "Tools/test-compile-ensure.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-copy-failure",
+      "path": "Tools/test-copy-failure.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -135,8 +240,43 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-custom-event",
+      "path": "Tools/test-custom-event.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-data-asset-safety",
+      "path": "Tools/test-data-asset-safety.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-data-asset-tools",
+      "path": "Tools/test-data-asset-tools.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-data-value-planning",
+      "path": "Tools/test-data-value-planning.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-datatable",
       "path": "Tools/test-datatable.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-datatable-quality",
+      "path": "Tools/test-datatable-quality.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -149,10 +289,52 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-diagnostic-console",
+      "path": "Tools/test-diagnostic-console.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-edit-readiness",
+      "path": "Tools/test-edit-readiness.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-editor-log",
+      "path": "Tools/test-editor-log.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-enum-add",
       "path": "Tools/test-enum-add.py",
       "tier": "engine",
       "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-enum-creation",
+      "path": "Tools/test-enum-creation.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-event-connect-workflow",
+      "path": "Tools/test-event-connect-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-execution-recovery",
+      "path": "Tools/test-execution-recovery.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
       "acceptance": "not_mapped"
     },
     {
@@ -170,8 +352,29 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-field-open-diagnostic",
+      "path": "Tools/test-field-open-diagnostic.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-function",
       "path": "Tools/test-function.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-function-flags",
+      "path": "Tools/test-function-flags.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-function-remove-review",
+      "path": "Tools/test-function-remove-review.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -198,10 +401,24 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-graph-copy-review",
+      "path": "Tools/test-graph-copy-review.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-graph-dead",
       "path": "Tools/test-graph-dead.py",
       "tier": "engine",
       "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-edit-workflow",
+      "path": "Tools/test-graph-edit-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 300,
       "acceptance": "not_mapped"
     },
     {
@@ -275,13 +492,6 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-widget-append-acceptance",
-      "path": "Tools/test-widget-append-acceptance.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
       "id": "test-graph-tidy",
       "path": "Tools/test-graph-tidy.py",
       "tier": "engine",
@@ -291,6 +501,13 @@
     {
       "id": "test-graph-tidy-scope",
       "path": "Tools/test-graph-tidy-scope.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-input-entry",
+      "path": "Tools/test-input-entry.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -310,6 +527,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-knots-review",
+      "path": "Tools/test-knots-review.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-language-policy",
       "path": "Tools/test-language-policy.py",
       "tier": "offline",
@@ -324,8 +548,29 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-layout-output",
+      "path": "Tools/test-layout-output.py",
+      "tier": "engine",
+      "timeout_seconds": 120,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-local-vars",
       "path": "Tools/test-local-vars.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-localvars-analysis",
+      "path": "Tools/test-localvars-analysis.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-localvars-promotion",
+      "path": "Tools/test-localvars-promotion.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -359,6 +604,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-material-instance-quality",
+      "path": "Tools/test-material-instance-quality.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-material-label-promote",
       "path": "Tools/test-material-label-promote.py",
       "tier": "engine",
@@ -380,6 +632,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-monday-disk-loop",
+      "path": "Tools/test-monday-disk-loop.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-next-task",
       "path": "Tools/test-next-task.py",
       "tier": "offline",
@@ -394,8 +653,29 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-node-reader-output",
+      "path": "Tools/test-node-reader-output.py",
+      "tier": "engine",
+      "timeout_seconds": 120,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-override-add",
       "path": "Tools/test-override-add.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-override-remove-workflow",
+      "path": "Tools/test-override-remove-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-override-workflow",
+      "path": "Tools/test-override-workflow.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -417,6 +697,13 @@
     {
       "id": "test-panel",
       "path": "Tools/test-panel.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-panel-history",
+      "path": "Tools/test-panel-history.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -457,6 +744,34 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-plugin-identity",
+      "path": "Tools/test-plugin-identity.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-positions-review",
+      "path": "Tools/test-positions-review.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-process-cleanup",
+      "path": "Tools/test-process-cleanup.py",
+      "tier": "offline",
+      "timeout_seconds": 90,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-purchase-workflow",
+      "path": "Tools/test-purchase-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-pure-checks",
       "path": "Tools/test-pure-checks.py",
       "tier": "engine",
@@ -485,10 +800,24 @@
       "acceptance": "infrastructure-regression"
     },
     {
+      "id": "test-replace-plan",
+      "path": "Tools/test-replace-plan.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-repo-boundaries",
       "path": "Tools/test-repo-boundaries.py",
       "tier": "offline",
       "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-repoint-failure",
+      "path": "Tools/test-repoint-failure.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
       "acceptance": "not_mapped"
     },
     {
@@ -513,8 +842,71 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-save-undo-workflow",
+      "path": "Tools/test-save-undo-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-scoped-tidy",
+      "path": "Tools/test-scoped-tidy.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-sequence-review",
+      "path": "Tools/test-sequence-review.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-split-value-review",
+      "path": "Tools/test-split-value-review.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-struct",
       "path": "Tools/test-struct.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-struct-quality",
+      "path": "Tools/test-struct-quality.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-task-claims",
+      "path": "Tools/test-task-claims.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-task-review",
+      "path": "Tools/test-task-review.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-tool-controls",
+      "path": "Tools/test-tool-controls.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-tool-text-inventory",
+      "path": "Tools/test-tool-text-inventory.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -534,8 +926,22 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-type-discovery",
+      "path": "Tools/test-type-discovery.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-uncovered-tools",
       "path": "Tools/test-uncovered-tools.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-variable-flags",
+      "path": "Tools/test-variable-flags.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -562,6 +968,35 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-vision-workflow",
+      "path": "Tools/test-vision-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-append-acceptance",
+      "path": "Tools/test-widget-append-acceptance.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-binding-workflow",
+      "path": "Tools/test-widget-binding-workflow.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-persistence",
+      "path": "Tools/test-widget-persistence.py",
+      "tier": "engine",
+      "timeout_seconds": 900,
+      "acceptance": "not_mapped",
+      "note": "Disabled native admission; expected BLOCKED until R04-FOLLOWUP-PERSISTENCE is resolved. Not acceptance evidence."
+    },
+    {
       "id": "test-widget-preview",
       "path": "Tools/test-widget-preview.py",
       "tier": "engine",
@@ -569,8 +1004,22 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-widget-preview-inputs",
+      "path": "Tools/test-widget-preview-inputs.py",
+      "tier": "engine",
+      "timeout_seconds": 120,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-widget-retarget",
       "path": "Tools/test-widget-retarget.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-roundtrip",
+      "path": "Tools/test-widget-roundtrip.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -597,273 +1046,6 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-widgets-as-vars",
-      "path": "Tools/test-widgets-as-vars.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-process-cleanup",
-      "path": "Tools/test-process-cleanup.py",
-      "tier": "offline",
-      "timeout_seconds": 90,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-execution-recovery",
-      "path": "Tools/test-execution-recovery.py",
-      "tier": "offline",
-      "timeout_seconds": 60,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-task-claims",
-      "path": "Tools/test-task-claims.py",
-      "tier": "offline",
-      "timeout_seconds": 60,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-plugin-identity",
-      "path": "Tools/test-plugin-identity.py",
-      "tier": "offline",
-      "timeout_seconds": 60,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-task-review",
-      "path": "Tools/test-task-review.py",
-      "tier": "offline",
-      "timeout_seconds": 300,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-worker-scope",
-      "path": "Tools/test-worker-scope.py",
-      "tier": "offline",
-      "timeout_seconds": 120,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-widget-roundtrip",
-      "path": "Tools/test-widget-roundtrip.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-panel-history",
-      "path": "Tools/test-panel-history.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-monday-disk-loop",
-      "path": "Tools/test-monday-disk-loop.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-widget-persistence",
-      "path": "Tools/test-widget-persistence.py",
-      "tier": "engine",
-      "timeout_seconds": 900,
-      "acceptance": "not_mapped",
-      "note": "Disabled native admission; expected BLOCKED until R04-FOLLOWUP-PERSISTENCE is resolved. Not acceptance evidence."
-    },
-    {
-      "id": "test-field-open-diagnostic",
-      "path": "Tools/test-field-open-diagnostic.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-tool-text-inventory",
-      "path": "Tools/test-tool-text-inventory.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-widget-preview-inputs",
-      "path": "Tools/test-widget-preview-inputs.py",
-      "tier": "engine",
-      "timeout_seconds": 120,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-node-reader-output",
-      "path": "Tools/test-node-reader-output.py",
-      "tier": "engine",
-      "timeout_seconds": 120,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-layout-output",
-      "path": "Tools/test-layout-output.py",
-      "tier": "engine",
-      "timeout_seconds": 120,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-checkout-output",
-      "path": "Tools/test-checkout-output.py",
-      "tier": "engine",
-      "timeout_seconds": 120,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-variable-flags",
-      "path": "Tools/test-variable-flags.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-enum-creation",
-      "path": "Tools/test-enum-creation.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-datatable-quality",
-      "path": "Tools/test-datatable-quality.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-localvars-analysis",
-      "path": "Tools/test-localvars-analysis.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-repoint-failure",
-      "path": "Tools/test-repoint-failure.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-copy-failure",
-      "path": "Tools/test-copy-failure.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-append-failure",
-      "path": "Tools/test-append-failure.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-replace-plan",
-      "path": "Tools/test-replace-plan.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-batch-sequence",
-      "path": "Tools/test-batch-sequence.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-batch-rollback",
-      "path": "Tools/test-batch-rollback.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-localvars-promotion",
-      "path": "Tools/test-localvars-promotion.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-capture-framing",
-      "path": "Tools/test-capture-framing.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-capture-selection-state",
-      "path": "Tools/test-capture-selection-state.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-asset-describe-metadata",
-      "path": "Tools/test-asset-describe-metadata.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-purchase-workflow",
-      "path": "Tools/test-purchase-workflow.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-event-connect-workflow",
-      "path": "Tools/test-event-connect-workflow.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-call-swap-workflow",
-      "path": "Tools/test-call-swap-workflow.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-common-button-workflow",
-      "path": "Tools/test-common-button-workflow.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-bind-event-workflow",
-      "path": "Tools/test-bind-event-workflow.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-override-workflow",
-      "path": "Tools/test-override-workflow.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-override-remove-workflow",
-      "path": "Tools/test-override-remove-workflow.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
       "id": "test-widget-variable-workflow",
       "path": "Tools/test-widget-variable-workflow.py",
       "tier": "engine",
@@ -871,192 +1053,17 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-widget-binding-workflow",
-      "path": "Tools/test-widget-binding-workflow.py",
+      "id": "test-widgets-as-vars",
+      "path": "Tools/test-widgets-as-vars.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-vision-workflow",
-      "path": "Tools/test-vision-workflow.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-data-asset-safety",
-      "path": "Tools/test-data-asset-safety.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-data-value-planning",
-      "path": "Tools/test-data-value-planning.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-data-asset-tools",
-      "path": "Tools/test-data-asset-tools.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-asset-recovery",
-      "path": "Tools/test-asset-recovery.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-input-entry",
-      "path": "Tools/test-input-entry.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-scoped-tidy",
-      "path": "Tools/test-scoped-tidy.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-editor-log",
-      "path": "Tools/test-editor-log.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-diagnostic-console",
-      "path": "Tools/test-diagnostic-console.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-custom-event",
-      "path": "Tools/test-custom-event.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-function-flags",
-      "path": "Tools/test-function-flags.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-collapse-function",
-      "path": "Tools/test-collapse-function.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-tool-controls",
-      "path": "Tools/test-tool-controls.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-save-undo-workflow",
-      "path": "Tools/test-save-undo-workflow.py",
-      "tier": "engine",
-      "timeout_seconds": 300,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-graph-edit-workflow",
-      "path": "Tools/test-graph-edit-workflow.py",
-      "tier": "engine",
-      "timeout_seconds": 300,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-edit-readiness",
-      "path": "Tools/test-edit-readiness.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-type-discovery",
-      "path": "Tools/test-type-discovery.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-backward-review",
-      "path": "Tools/test-backward-review.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-positions-review",
-      "path": "Tools/test-positions-review.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-knots-review",
-      "path": "Tools/test-knots-review.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-sequence-review",
-      "path": "Tools/test-sequence-review.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-split-value-review",
-      "path": "Tools/test-split-value-review.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-bind-function-review",
-      "path": "Tools/test-bind-function-review.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-graph-copy-review",
-      "path": "Tools/test-graph-copy-review.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-function-remove-review",
-      "path": "Tools/test-function-remove-review.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-struct-quality",
-      "path": "Tools/test-struct-quality.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
+      "id": "test-worker-scope",
+      "path": "Tools/test-worker-scope.py",
+      "tier": "offline",
+      "timeout_seconds": 120,
       "acceptance": "not_mapped"
     }
   ]
