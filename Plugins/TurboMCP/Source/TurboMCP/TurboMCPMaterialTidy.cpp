@@ -324,7 +324,16 @@ bool FTurboMCPMaterialTidy::Plan(const FString& InAsset, bool bInForce,
 			Block.Bottom = (Top - VerticalNodeGap) + FitPadding;
 
             // Keep generated titles short enough to remain readable at graph zoom.
-            Block.Text = FString::Printf(TEXT("Stage %d"), Columns.Num() - Column);
+            TArray<FString> Names;
+            for (const int32 Index : Members)
+            {
+                FString Name = OutPlan.Nodes[Index].Expression->GetClass()->GetName();
+                Name.RemoveFromStart(TEXT("MaterialExpression"));
+                Names.AddUnique(Name);
+            }
+            Names.Sort();
+            const FString Summary = Names.Num() == 1 ? Names[0] : Names[0] + TEXT(" and others");
+            Block.Text = FString::Printf(TEXT("%d: %s"), Columns.Num() - Column, *Summary);
 
 			OutPlan.Blocks.Add(MoveTemp(Block));
 			ColumnLeft = OutPlan.Blocks.Last().Right + BoxGap;
@@ -403,11 +412,8 @@ FString FTurboMCPMaterialTidy::RenderPreview(const FPlan& InPlan)
 				++Substituted;
 			}
 		}
-		Out += FString::Printf(
-			TEXT("\n; GEOMETRY IS A FALLBACK: %d of %d expression(s) store no size, so they are planned as ")
-			TEXT("%.0f x %.0f. The positions are therefore RELATIVE, and the plan under-reports the space ")
-			TEXT("it needs rather than inventing a measurement."),
-			Substituted, InPlan.Nodes.Num(), FallbackWidth, FallbackHeight);
+        Out += FString::Printf(TEXT("\n; FALLBACK geometry: %d of %d expressions use estimated bounds: 240 units wide, 260 units high for parameters and 140 for other expressions. Actual editor sizes may differ."),
+            Substituted, InPlan.Nodes.Num());
 	}
 
 	Out += FString::Printf(TEXT("\n%d existing box(es); boxes at planned left edges are reused, other boxes are preserved"),
@@ -441,7 +447,7 @@ FString FTurboMCPMaterialTidy::RenderPreview(const FPlan& InPlan)
 		}
 	}
 
-	Out += TEXT("\n; Preview does not apply layout or save; it recompiles materials for baseline errors and may run editor callbacks. ")
+	Out += TEXT("\n; Preview loads the material but does not compile, apply layout or save. ")
 		TEXT("It does not prove identical rendered output.");
 	return Out;
 }

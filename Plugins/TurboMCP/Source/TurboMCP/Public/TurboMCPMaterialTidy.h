@@ -19,48 +19,11 @@ class UMaterialExpressionComment;
 class UMaterialFunctionInterface;
 
 /**
- * `P/E-MAT-TIDY`: lay out a material, ONE COMMENT BOX PER BLOCK.
- *
- * `Spec/03_TOOLS.md` gives it three requirements and each one is load-bearing:
- *
- *   1. "One comment box per block."
- *   2. "Same layout rules as graphs (section 6)."
- *   3. "Same compiled result check."
- *
- * THE THIRD IS THE ONE THAT MAKES THIS CAPABILITY SAFE, AND IT IS WHY THIS PASS MEASURES INSTEAD OF
- * ASSUMING. A layout pass moves expressions and adds comment boxes. It CANNOT legitimately change what
- * the material computes, so if the compiled result differs afterwards, THAT IS A BUG AND IT MUST BE
- * CAUGHT RATHER THAN TOLERATED. `FTurboMCPGraphTidy` already established the shape - plan, measure
- * before, measure after, and REFUSE when the measure is not at least as good - and a material needs the
- * same discipline for the same reason: an edit that reports success while changing the material is the
- * worst outcome this plugin can produce.
- *
- * WHAT IS MEASURED, AND WHY IT IS THE RIGHT WITNESS. `UMaterial::StateId`
- * (`Runtime/Engine/Public/Materials/Material.h:1239`) is the engine's own identifier for the compiled
- * state, and `UMaterialEditingLibrary::RecompileMaterial` (`MaterialEditingLibrary.h:267`) returns the
- * compiler's error and warning lines. So the compiled-result check is:
- *
- *   - the engine reports NO NEW ERROR after the layout than before it, and
- *   - the SET OF EXPRESSIONS is identical, which a layout cannot change and which is the strongest
- *     statement available without comparing shader bytecode.
- *
- * THE EXPRESSION SET IS THE PART THAT ACTUALLY PROVES IT. `StateId` can legitimately differ for
- * reasons that have nothing to do with this pass - a shader compiling in the background, a platform
- * switch - so it is REPORTED rather than ASSERTED, and the assertion rests on the set of expressions,
- * their classes and their input links, which is exactly what a layout pass must leave alone.
- *
- * WHAT A "BLOCK" IS HERE, AND WHY IT IS COMPUTED RATHER THAN READ. `R-MAT-BLOCKS` records the
- * measurement: A MATERIAL COMMENT BOX HOLDS NO LIST OF MEMBERS. The editor decides membership when it
- * lays the graph out, exactly as `SGraphNodeComment` does for a Blueprint, and this project has already
- * measured that the Blueprint side's cache is filled from RENDERED widgets and is therefore empty
- * headlessly. So membership is GEOMETRIC, and `RenderBlocks` computes a box's rectangle from its
- * position and size and compares it against each expression.
- *
- * THIS PASS THEREFORE CREATES THE STRUCTURE IT LAYS OUT, RATHER THAN READING AN EXISTING ONE: the
- * blocks are the COLUMNS of the dependency graph (depth from the output roots), and one comment box is
- * placed around each column. That is what "one comment box per block" asks for and it is the only
- * reading that works on a material that has no boxes yet - which is the common case, since the material
- * editor is the only thing that could have added them.
+ * Plans left-to-right dependency columns and one descriptive comment box per column.
+ * Preview loads a Material without compiling or editing it. Apply uses a transaction,
+ * recompiles before and after changes, and checks expression identities and new errors.
+ * Those checks do not prove identical rendered output or guaranteed rollback.
+ * Node bounds are estimates; existing boxes outside planned column edges are preserved.
  */
 class FTurboMCPMaterialTidy
 {
@@ -230,7 +193,7 @@ public:
 	static FString RenderPreview(const FPlan& InPlan);
 
 	/**
-	 * Writes the layout, then PROVES IT CHANGED NOTHING BUT GEOMETRY.
+	 * Writes the layout and checks expression identities and new compiler errors.
 	 *
 	 * Returns the report. A layout that added or removed an expression, or that introduced a compile
 	 * error, is REPORTED AS A FAILURE with the difference named - never as a success with a note.

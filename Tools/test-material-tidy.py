@@ -228,8 +228,8 @@ def main():
     print("=== the PREVIEW writes nothing and says what it would do ===")
     preview = session.call(PREVIEW_TOOLSET, PREVIEW, {"asset": ASSET, "force": ""})
     print(preview[:1400])
-    check("preview discloses compilation", "recompiles materials for baseline errors" in preview)
-    check("preview discloses callbacks", "editor callbacks" in preview)
+    check("preview explains that it does not compile", "does not compile, apply layout or save" in preview)
+    check("preview does not claim to recompile", "recompiles materials" not in preview)
 
 
     # ONE COMMENT BOX PER BLOCK IS THE REQUIREMENT, so the preview must NAME blocks rather than
@@ -364,7 +364,7 @@ def main():
     # A BOX MUST SAY WHAT IT HOLDS. A box labelled only "block 3" tells a reader nothing, and the
     # whole value of a block box is that it names the block of logic.
     check("the boxes NAME what they hold rather than being numbered only",
-          "block 1:" in after_blocks or "block 0:" in after_blocks,
+          any(name in after_blocks for name in ("Multiply", "Add", "TextureSample", "Constant")),
           "at least one box should carry a name, not just a number")
 
     print()
