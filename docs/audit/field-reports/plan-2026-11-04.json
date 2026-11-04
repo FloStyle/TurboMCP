@@ -261,7 +261,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_run_in_progress",
+      "validation": "native_pass_visual_followup_required",
       "source_ids": [
         "TD-51",
         "TD-53",
@@ -273,7 +273,7 @@
         "2026-11-04_S1/TD-59"
       ],
       "dependencies": [],
-      "next_step": "Candidate 5338fc35 (claim 5217d311f1084fb09e42757edff80dd2 at 9c46ef92): feedback ordering/metrics/help updated; changed status prefix preserved. Native stock loop Break and DoOnce Reset fixtures through two reroutes assert links/defaults/identities and preview positions, and request native images. Supervised run 743a68def983484a8db948754abd4a91 is building; no passing result yet. Still required: selected acyclic region beside fixed cycle, unsupported data-cycle refusal, inspect screenshots, scope/offline gates and integration. Implementation remains partial and is not on main."
+      "next_step": "Candidate 5338fc35: supervised run 743a68def983484a8db948754abd4a91 passed build and graph-append suite, including stock loop Break/DoOnce Reset through two reroutes, links/defaults/identities and preview position preservation. Both native screenshots inspected: feedback return wire crosses the macro body; visual layout is NOT accepted. Repair feedback routing/placement, add selected acyclic region beside fixed cycle and unsupported data-cycle refusal coverage, rerun native tests/screenshots, scope/offline gates, then integrate. Claim 5217d311f1084fb09e42757edff80dd2 remains active. Not integrated."
     },
     {
       "id": "NOV04-08",
