@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "date": "2026-11-04",
-  "status": "triaged_needs_reconciliation",
+  "status": "in_progress",
   "tasks": [
     {
       "id": "NOV04-01",
@@ -10,7 +10,7 @@
       "priority": "P0",
       "state": "open",
       "readiness": "needs_reconciliation",
-      "owner": "unassigned",
+      "owner": "codex",
       "validation": "reported_not_reproduced",
       "source_ids": [
         "X-123"
@@ -19,16 +19,16 @@
         "2026-11-03_S4/X-123"
       ],
       "dependencies": [],
-      "next_step": "The crash occurred in a stock engine delete tool. Cause and stack evidence are not available. Do not attribute it to TurboMCP or repeat deletion on user assets."
+      "next_step": "Original report identifies an access violation during stock-engine reference replacement but supplies no stack or exact delete tool. Requested those details; keep crash cause unresolved and do not delete user assets."
     },
     {
       "id": "NOV04-02",
       "title": "Explain and repair failed struct field additions",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
       "validation": "reported_not_reproduced",
       "source_ids": [
         "SF-05",
@@ -39,7 +39,7 @@
         "2026-11-03_S4/SF-06"
       ],
       "dependencies": [],
-      "next_step": "Recent struct review covers basic add and rejected defaults, not this object-array field with a loaded dependent. Keep SF-05/SF-06 open; reproduce that specific setup."
+      "next_step": "Claim nov04-struct-fields; reproduce object-array addition with a loaded Blueprint dependent. Current AddVariable failure loses the engine reason and records only a field name."
     },
     {
       "id": "NOV04-03",

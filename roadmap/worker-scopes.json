@@ -3321,6 +3321,17 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyQualityTest.cpp"
           ]
+        },
+        "nov04-struct-fields": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPStruct.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructQualityTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-struct-quality.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
