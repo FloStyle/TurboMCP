@@ -502,7 +502,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 			Declaration->Input.InputName = NAME_None;
 		}
 
-		PlannedDeclarations.Add(FTurboMCPMaterial::KeyOf(Declaration));
+		if (!Promotion.bAlreadyDeclared) PlannedDeclarations.Add(FTurboMCPMaterial::KeyOf(Declaration));
 
 		TMap<const UMaterialExpression*, UMaterialExpressionNamedRerouteUsage*> UsageByReader;
 
@@ -598,6 +598,20 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 	TSet<FString> After(KeysAfter);
 	TSet<FString> Planned(PlannedDeclarations);
 
+    for (const FString& Key : Planned)
+    {
+        if (!After.Contains(Key))
+        {
+            FTurboMCPRollback::EndAndUndoActiveTransaction();
+            return TEXT("FAILED: a planned label node is missing after the edit. Undo was requested; restoration was not verified. Inspect before retrying or saving.");
+        }
+    }
+    if (InputsRetargeted != InPlan.InputsToRetarget || UsagesCreated != InPlan.UsagesToAdd)
+    {
+        FTurboMCPRollback::EndAndUndoActiveTransaction();
+        return TEXT("FAILED: not all planned label connections were created. Undo was requested; restoration was not verified. Inspect before retrying or saving.");
+    }
+
 	TArray<FString> Lost;
 	for (const FString& Key : InPlan.KeysBefore)
 	{
@@ -670,7 +684,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 	// THE COMPILED-RESULT EVIDENCE, STATED WITH ITS OWN LIMITS RATHER THAN AS A BARE CLAIM.
 	Out += FString::Printf(
 		TEXT("\nCHECK RESULTS (not proof of identical rendered output): %d of %d pre-existing expression(s) still present with none lost, ")
-		TEXT("%d declaration(s) gained and all of them planned, and the engine reports %d error(s), none ")
+		TEXT("%d label node(s) gained and all of them planned, and the engine reports %d error(s), none ")
 		TEXT("of them new. StateId %s -> %s (reported rather than asserted: it can change for reasons a ")
 		TEXT("label promotion does not control)."),
 		InPlan.KeysBefore.Num() - Lost.Num(), InPlan.KeysBefore.Num(), Planned.Num(),
