@@ -73,6 +73,7 @@ bool FTurboMCPAppendReachabilityTest::RunTest(const FString& Parameters)
     const FString MergeText=FString::Printf(TEXT("(\"%s\"\n execute (-> %s:then)) ; label Choice\n(\"%s\" ; %s\n %s (-> Choice:then)\n %s (-> Choice:else))"),*BranchId,*TurboMCPNodeId::MakeForNode(NewEntry,true),*TurboMCPNodeId::GetNodeTypeId(Once),*TurboMCPNodeId::MakeForNode(Once,true),*OnceInput->PinName.ToString(),*OnceInput->PinName.ToString());
     const int32 MergeCount=MergeGraph->Nodes.Num();
     if (!TestTrue(TEXT("Existing merge append parses"),FTurboMCPGraphAppend::Plan(BP->GetPathName(),MergeGraph->GetName(),MergeText,Plan,Error))) {AddError(Error);return false;}
+    if (!TestTrue(TEXT("Existing merge plan is acceptable"),Plan.bAcceptable())) {AddError(FTurboMCPGraphAppend::RenderPreview(Plan));return false;}
     if (!TestTrue(TEXT("Existing merge preview succeeds"),FTurboMCPGraphAppend::Preflight(Plan,Report,Error))) {AddError(Error);return false;}
     TestEqual(TEXT("Merge preview preserves original input"),OnceInput->LinkedTo.Num(),1);
     if (!TestTrue(TEXT("Existing merge edit succeeds"),FTurboMCPGraphAppend::Apply(Plan,Report,Error))) {AddError(Error);return false;}
