@@ -2165,7 +2165,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 		const FString& Force);
 
 	/**
-	 * Add named reroute declarations and usage nodes and rewire material inputs in an undo transaction; recompiles materials and runs editor callbacks, does not save, and cannot guarantee restoration after a failed edit.
+	 * Promote each exact material output and mask read by at least two distinct direct expressions to named reroutes. Reuse matching declarations, preserve existing positions, and place new usages without conservative-bound overlaps. Replans current state; a nonempty edit compiles and runs editor callbacks in an undo transaction. Does not save. Material functions and instances are refused. Failed-edit restoration is not guaranteed.
 	 * Names use parameter/caption and output context. One exact output and mask must have at least two distinct direct readers; existing named-reroute readers are left alone. Existing positions are preserved; new nodes use conservative collision bounds, not full graph tidy or comment containment. Edit replans current state and compiles only when changing it. Compiler and identity checks do not prove identical rendered output.
 	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; explicitly name the parent to edit its graph.
 	 */
