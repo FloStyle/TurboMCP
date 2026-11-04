@@ -8,6 +8,7 @@
 #include "Materials/MaterialRenderProxy.h"
 #include "Materials/MaterialInstanceConstant.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
+#include "Materials/MaterialExpressionVectorParameter.h"
 #include "MaterialEditingLibrary.h"
 #include "Tools/TurboMCPToolsets.h"
 #include "Materials/MaterialExpressionTextureSampleParameter2D.h"
@@ -35,6 +36,11 @@ bool FTurboMCPMaterialInstanceQualityTest::RunTest(const FString& Parameters)
     auto* Scalar = NewObject<UMaterialExpressionScalarParameter>(Material);
     Scalar->ParameterName = TEXT("Amount"); Scalar->DefaultValue = 0.25f;
     Material->GetExpressionCollection().AddExpression(Scalar);
+    // A scalar and vector may share a name; neither may hide the other in the reader.
+    auto* Vector = NewObject<UMaterialExpressionVectorParameter>(Material);
+    Vector->ParameterName = TEXT("Amount");
+    Vector->DefaultValue = FLinearColor::Green;
+    Material->GetExpressionCollection().AddExpression(Vector);
     auto MakeTexture = [&](const TCHAR* Name, const FColor Color) {
         UTexture2D* NewTexture = NewObject<UTexture2D>(Package, Name, RF_Public | RF_Standalone);
         TArray<FColor> Pixels; Pixels.Init(Color, 16);
@@ -64,14 +70,17 @@ bool FTurboMCPMaterialInstanceQualityTest::RunTest(const FString& Parameters)
     if (!TestTrue(TEXT("Read child"), FTurboMCPMaterialInstance::Read(Child->GetPathName(), Result, Error))) { AddError(Error); return false; }
     AddInfo(FTurboMCPMaterialInstance::Render(Result));
     TestEqual(TEXT("Three-level chain"), Result.Chain.Num(), 3);
-    TestEqual(TEXT("One inherited parameter, not one per ancestor"), Result.Inherited.Num(), 2);
-    for (const auto& Value : Result.Inherited) if (Value.Name == TEXT("Amount")) TestEqual(TEXT("Nearest parent's value"), Value.Value, FString(TEXT("0.75")));
+    TestEqual(TEXT("Three inherited parameters, independent of ancestor count"), Result.Inherited.Num(), 3);
+    for (const auto& Value : Result.Inherited) if (Value.Name == TEXT("Amount") && Value.Type == TEXT("Scalar")) TestEqual(TEXT("Nearest parent's value"), Value.Value, FString(TEXT("0.75")));
     TestEqual(TEXT("No local overrides"), Result.Overridden.Num(), 0);
     TestFalse(TEXT("Reader does not dirty asset"), Package->IsDirty());
     Child->SetScalarParameterValueEditorOnly(TEXT("Amount"), 0.5f);
     TestTrue(TEXT("Read local override"), FTurboMCPMaterialInstance::Read(Child->GetPathName(), Result, Error));
     TestEqual(TEXT("One override"), Result.Overridden.Num(), 1);
-    TestEqual(TEXT("Override not inherited"), Result.Inherited.Num(), 1);
+    TestEqual(TEXT("Scalar override preserves inherited vector and texture"), Result.Inherited.Num(), 2);
+    TestTrue(TEXT("Same-name vector remains inherited"), Result.Inherited.ContainsByPredicate([](const FTurboMCPMaterialInstance::FParameter& Value) {
+        return Value.Name == TEXT("Amount") && Value.Type == TEXT("Vector");
+    }));
     TestEqual(TEXT("Declared override not orphaned"), Result.Orphaned.Num(), 0);
     TestFalse(TEXT("Base material refused"), FTurboMCPMaterialInstance::Read(Material->GetPathName(), Result, Error));
     auto Capture = [&](const TCHAR* Name, bool Red, UObject* Resource = nullptr) {
