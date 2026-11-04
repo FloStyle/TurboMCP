@@ -24,6 +24,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "GraphEditor.h"
 #include "K2Node_Knot.h"
+#include "K2Node_MacroInstance.h"
 #include "K2Node_ExecutionSequence.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_Self.h"
@@ -50,6 +51,19 @@
 
 namespace
 {
+    // Only known stock control inputs are feedback. A user pin called Reset or
+    // an arbitrary execution/data cycle must not silently become a layout hint.
+    bool IsControlFeedbackInput(const UEdGraphPin* Pin)
+    {
+        if (!Pin || Pin->Direction != EGPD_Input || Pin->PinType.PinCategory != TEXT("exec")) return false;
+        const UK2Node_MacroInstance* Macro = Cast<UK2Node_MacroInstance>(Pin->GetOwningNode());
+        const UEdGraph* Definition = Macro ? Macro->GetMacroGraph() : nullptr;
+        if (!Definition || Definition->GetOutermost()->GetName() != TEXT("/Engine/EditorBlueprintResources/StandardMacros")) return false;
+        const FString Name = Definition->GetName();
+        return (Pin->PinName == TEXT("Break") && (Name == TEXT("ForLoopWithBreak") || Name == TEXT("ForEachLoopWithBreak")))
+            || (Pin->PinName == TEXT("Reset") && Name == TEXT("DoOnce"));
+    }
+
     constexpr double GetterClearance = 16.0; // Local readers need space, not a whole execution lane.
 
     // Keep value readers below the incoming exec wire, not below the consumer body.
@@ -933,6 +947,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				{
 					Wire.TargetNodeIndex = *Target;
 				}
+                Wire.bControlFeedback = IsControlFeedbackInput(Wire.InputPin);
 				OutPlan.Wires.Add(Wire);
 			}
 		}
@@ -969,7 +984,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             if(Paths.Contains(I)) return true;
             if(Visiting.Contains(I)) return false;
             Visiting.Add(I); TArray<int32> Best;
-            for(const FWire& W:OutPlan.Wires) if(W.SourceNodeIndex==I && W.OutputPin->PinType.PinCategory==TEXT("exec") && Eligible(W.TargetNodeIndex))
+            for(const FWire& W:OutPlan.Wires) if(!W.bControlFeedback && W.SourceNodeIndex==I && W.OutputPin->PinType.PinCategory==TEXT("exec") && Eligible(W.TargetNodeIndex))
             {
                 if(!Visit(W.TargetNodeIndex)) return false;
                 if(Paths[W.TargetNodeIndex].Num()>Best.Num()) Best=Paths[W.TargetNodeIndex];
@@ -1027,6 +1042,12 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			{
 				continue;
 			}
+            if (Wire.bControlFeedback) continue;
+            // Fixed nodes remain obstacles/anchors, but a cycle wholly outside
+            // the selection is not a dependency of the requested layout.
+            if (!OutPlan.SelectedNodeKeys.IsEmpty()
+                && !OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[Wire.SourceNodeIndex].Key)
+                && !OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[Wire.TargetNodeIndex].Key)) continue;
 			// Exec and data pins can create parallel wires between the same nodes. They are one
 			// directed dependency, so count the edge once in both adjacency and indegree.
 			if (!Outgoing[Wire.SourceNodeIndex].Contains(Wire.TargetNodeIndex))

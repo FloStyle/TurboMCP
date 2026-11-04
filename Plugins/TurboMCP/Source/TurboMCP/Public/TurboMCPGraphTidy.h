@@ -138,6 +138,9 @@ public:
 		UEdGraphPin* OutputPin = nullptr;
 		UEdGraphPin* InputPin = nullptr;
 
+        /** Stock loop Break/DoOnce Reset control feedback: preserved, not a forward layout dependency. */
+        bool bControlFeedback = false;
+
 		/** Index into `FPlan::Nodes`, so a planned position can be looked up. */
 		int32 SourceNodeIndex = INDEX_NONE;
 		int32 TargetNodeIndex = INDEX_NONE;
