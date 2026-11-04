@@ -223,7 +223,14 @@
         "2026-11-03_S1/TD-57"
       ],
       "dependencies": [],
-      "next_step": "Candidate b92412f5 adds interface return-value fixture, reader/tidy preview/edit, mixed and repeated position counts, missing/duplicate-name refusal and native capture. Supervised run 4d62d0d383db48529f694271ef1fd5b5 is building; screenshot review and integration pending."
+      "next_step": "Final candidate 114b559f removes obsolete NameMatches helper and asserts native capture success. Run 9a783da7851d43fb95ab5c6928320388 active; offline gate and integration pending.",
+      "evidence": [
+        {
+          "run": "4d62d0d383db48529f694271ef1fd5b5",
+          "result": "passed",
+          "scope": "Build and native interface reader/tidy workflow passed. Inspected BP_Tidy_ReadState_native_1600x900_B393E7E042CD0BFE4BB323BB7C182FAE.png: two nodes left-to-right, aligned execution pins, no overlap. Limited interface return-value fixture; not broad layout certification."
+        }
+      ]
     },
     {
       "id": "NOV04-07",
