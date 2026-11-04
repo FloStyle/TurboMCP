@@ -56,7 +56,9 @@ bool FTurboMCPInterfaceTidyTest::RunTest(const FString& Parameters)
     const FString Edit=UTurboMCPEditToolset::EditTurboMCPGraphTidy(Asset,Graph->GetName(),true,{});
     TestTrue(TEXT("Tidy applies interface layout"),Edit.StartsWith(TEXT("changed")));
     TestEqual(TEXT("Tidy preserves nodes"),Graph->Nodes.Num(),NodeCount);
-    AddInfo(UTurboMCPLookToolset::LookTurboMCPCapture(Asset,Graph->GetName(),TEXT("graph"),TEXT(""),TEXT("1600x900")));
+    const FString Capture=UTurboMCPLookToolset::LookTurboMCPCapture(Asset,Graph->GetName(),TEXT("graph"),TEXT(""),TEXT("1600x900"));
+    TestTrue(TEXT("Native graph image produced"),Capture.Contains(TEXT("renderer: native Slate")) && Capture.Contains(TEXT("image:")));
+    AddInfo(Capture);
     const int32 X=Entry->NodePosX, Y=Entry->NodePosY;
     const FString Positions=FString::Printf(TEXT("[{\"node\":\"%s\",\"x\":%d,\"y\":%d},{\"node\":\"%s\",\"x\":%d,\"y\":%d}]"),*TurboMCPNodeId::MakeForNode(Entry),X,Y,*TurboMCPNodeId::MakeForNode(Result),Result->NodePosX+32,Result->NodePosY);
     const FString Positioned=UTurboMCPEditToolset::EditTurboMCPGraphPositions(Asset,Graph->GetName(),Positions);

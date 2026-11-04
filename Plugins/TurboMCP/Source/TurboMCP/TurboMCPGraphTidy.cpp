@@ -255,13 +255,6 @@ namespace
     TMap<const UEdGraphPin*, FVector2D> MeasuredPinOffsets;
     TWeakObjectPtr<UEdGraph> AlignmentGraph;
 
-	/** Case-folded, whitespace-trimmed comparison, matching the other graph tools. */
-	bool NameMatches(const FString& InLeft, const FString& InRight)
-	{
-		return InLeft.TrimStartAndEnd().Equals(InRight.TrimStartAndEnd(),
-			ESearchCase::IgnoreCase);
-	}
-
 	/** True when the node is a comment box rather than a node that carries flow. */
 	bool IsCommentNode(const UEdGraphNode* InNode)
 	{
