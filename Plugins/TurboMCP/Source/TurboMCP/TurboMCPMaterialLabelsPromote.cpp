@@ -316,7 +316,14 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 			continue;
 		}
 
-		Promotion.ProposedName = NameFromCaption(Promotion.SourceCaption);
+		FString Name = Source->HasAParameterName() ? Source->GetParameterName().ToString() : Promotion.SourceCaption;
+		const auto& Outputs = Source->GetOutputs();
+		const int32 OutputIndex = Promotion.SourceConnection.OutputIndex;
+		if (Outputs.IsValidIndex(OutputIndex) && !Outputs[OutputIndex].OutputName.IsNone())
+			Name += TEXT("_") + Outputs[OutputIndex].OutputName.ToString();
+		else
+			Name += FString::Printf(TEXT("_Output%d"), OutputIndex);
+		Promotion.ProposedName = NameFromCaption(Name);
 
 		// A VALUE ALREADY DECLARED IS NOT PROPOSED AGAIN, AND IT IS FOUND BY ITS KEY RATHER THAN BY THE
 		// NAME THIS PASS WOULD PROPOSE. The engine makes names unique, so a second run looking itself up
@@ -390,8 +397,8 @@ FString FTurboMCPMaterialLabelsPromote::RenderPreview(const FPlan& InPlan)
 		Out += FString::Printf(TEXT("\n\nLABEL @%s"), *Promotion.ProposedName);
 		Out += FString::Printf(TEXT("\n    value: %s  (%s)"),
 			*Promotion.SourceKey, *Promotion.SourceCaption);
-		Out += FString::Printf(TEXT("\n    read by %d distinct expression(s) in %d column(s)"),
-			Promotion.DistinctReaders, Promotion.DistinctReaderColumns);
+		Out += FString::Printf(TEXT("\n    read by %d distinct expression(s); source output %d"),
+			Promotion.DistinctReaders, Promotion.SourceConnection.OutputIndex);
 		if (Promotion.bAlreadyDeclared)
 		{
 			Out += TEXT("\n    ALREADY DECLARED: this name exists, so the edit reuses it rather than ")
@@ -406,10 +413,13 @@ FString FTurboMCPMaterialLabelsPromote::RenderPreview(const FPlan& InPlan)
 		}
 	}
 
+	int32 NewDeclarations = 0;
+	for (const FPromotion& Promotion : InPlan.Promotions)
+		if (!Promotion.bAlreadyDeclared) ++NewDeclarations;
 	Out += FString::Printf(
 		TEXT("\n\nthis edit ADDS %d declaration(s) and REWIRES %d input(s). It removes nothing, and the ")
 		TEXT("expression identities and compile errors are checked afterwards; failed checks request undo without proving restoration."),
-		InPlan.Promotions.Num(), InPlan.InputsToRetarget);
+		NewDeclarations, InPlan.InputsToRetarget);
 
 	return Out;
 }
