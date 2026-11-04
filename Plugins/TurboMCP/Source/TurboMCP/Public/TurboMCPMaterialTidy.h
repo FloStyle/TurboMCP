@@ -161,6 +161,7 @@ public:
 	{
 		FString Asset;
 		FString AssetName;
+		FString ConnectionSnapshot;
 
 		/** The material, when the asset is one. Null for a material function. */
 		UMaterial* Material = nullptr;

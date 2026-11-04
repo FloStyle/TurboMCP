@@ -26,6 +26,44 @@
 
 namespace
 {
+    FString ConnectionKey(const FExpressionInput& Input)
+    {
+        return FString::Printf(TEXT("%s:%d:%d:%d:%d:%d:%d"),
+            *FTurboMCPMaterial::KeyOf(Input.Expression), Input.OutputIndex,
+            Input.Mask, Input.MaskR, Input.MaskG, Input.MaskB, Input.MaskA);
+    }
+
+    FString ConnectionSnapshot(FTurboMCPMaterial::FPlan& Read)
+    {
+        TArray<FString> Entries;
+        for (UMaterialExpression* Expression : Read.Expressions)
+        {
+            if (!Expression) continue;
+            const FString Key = FTurboMCPMaterial::KeyOf(Expression);
+            Entries.Add(FString::Printf(TEXT("%s:%s:%d:%d"), *Key,
+                *Expression->GetClass()->GetName(), Expression->MaterialExpressionEditorX,
+                Expression->MaterialExpressionEditorY));
+            for (FExpressionInputIterator It{ Expression }; It; ++It)
+                if (It.Input) Entries.Add(FString::Printf(TEXT("%s#%d=%s"), *Key, It.Index, *ConnectionKey(*It.Input)));
+            if (const auto* Usage = Cast<UMaterialExpressionNamedRerouteUsage>(Expression))
+                Entries.Add(Key + TEXT("@") + Usage->DeclarationGuid.ToString());
+            if (const auto* Declaration = Cast<UMaterialExpressionNamedRerouteDeclaration>(Expression))
+                Entries.Add(Key + TEXT("name=") + Declaration->GetEditableName());
+        }
+        if (Read.Material)
+        {
+            for (int32 Index = 0; Index < MP_MAX; ++Index)
+                if (FExpressionInput* Input = Read.Material->GetExpressionInputForProperty(static_cast<EMaterialProperty>(Index)))
+                    Entries.Add(FString::Printf(TEXT("output%d=%s"), Index, *ConnectionKey(*Input)));
+            for (const UMaterialExpressionComment* Box : Read.Material->GetExpressionCollection().EditorComments)
+                if (Box) Entries.Add(FString::Printf(TEXT("box:%d:%d:%d:%d:%s"),
+                    Box->MaterialExpressionEditorX, Box->MaterialExpressionEditorY, Box->SizeX, Box->SizeY, *Box->Text));
+        }
+        Entries.Sort();
+        return FString::Join(Entries, TEXT("\n"));
+    }
+
+
 	/**
 	 * The size this pass uses for an expression, and whether it is a substitution.
 	 *
@@ -76,6 +114,7 @@ bool FTurboMCPMaterialTidy::Plan(const FString& InAsset, bool bInForce,
 		return false;
 	}
 
+	OutPlan.ConnectionSnapshot = ConnectionSnapshot(Read);
 	OutPlan.Asset = Read.Asset;
 	OutPlan.AssetName = Read.AssetName;
 	OutPlan.Material = Read.Material;
@@ -170,6 +209,15 @@ bool FTurboMCPMaterialTidy::Plan(const FString& InAsset, bool bInForce,
 			for (int32 Index = 0; Index < OutPlan.Nodes.Num(); ++Index)
 			{
 				const UMaterialExpression* Expression = OutPlan.Nodes[Index].Expression;
+                if (const auto* Usage = Cast<UMaterialExpressionNamedRerouteUsage>(Expression))
+                {
+                    if (const int32* DeclarationIndex = IndexByExpression.Find(Usage->Declaration.Get()))
+                    {
+                        const int32 Wanted = OutPlan.Nodes[Index].Column + 1;
+                        if (OutPlan.Nodes[*DeclarationIndex].Column < Wanted)
+                        { OutPlan.Nodes[*DeclarationIndex].Column = Wanted; bChanged = true; }
+                    }
+                }
 				for (int32 InputIndex = 0; InputIndex < Expression->CountInputs(); ++InputIndex)
 				{
 					const FExpressionInput* Input = Expression->GetInput(InputIndex);
@@ -405,6 +453,13 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 	{
 		return FString::Printf(TEXT("error: %s has no material to write into"), *InPlan.Asset);
 	}
+
+    FTurboMCPMaterial::FPlan Current;
+    FString CurrentError;
+    if (!FTurboMCPMaterial::Plan(InPlan.Asset, FTurboMCPMaterial::ERead::Blocks,
+        FString(), false, Current, CurrentError) || Current.Material != InPlan.Material ||
+        ConnectionSnapshot(Current) != InPlan.ConnectionSnapshot)
+        return TEXT("error: the material wiring, labels or layout changed after planning. Preview again. Nothing changed.");
 
 	const TArray<FString> CompileErrorsBefore = UMaterialEditingLibrary::RecompileMaterial(InPlan.Material);
 
