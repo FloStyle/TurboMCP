@@ -478,10 +478,10 @@
       "title": "Reproduce integer zero default refusal",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
+      "validation": "reproduction_pending",
       "source_ids": [
         "GC-89"
       ],
@@ -489,7 +489,7 @@
         "2026-11-03_S2/GC-89"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Reported numeric refusal originates in stock K2 integer validation. Exact callback node ID and append text are absent. Test bare/quoted zero, omitted defaults and malformed input on a stock integer pin; keep historical cause unresolved unless reproduced."
     },
     {
       "id": "NOV04-15",

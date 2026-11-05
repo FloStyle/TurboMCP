@@ -3459,6 +3459,14 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTidyOverlapDiagnosticTest.cpp"
           ]
+        },
+        "nov04-integer-zero": {
+          "files": [
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPIntegerDefaultTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
