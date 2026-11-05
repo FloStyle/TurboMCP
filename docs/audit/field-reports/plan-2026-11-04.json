@@ -1058,10 +1058,10 @@
       "title": "Make play input state output compact and filterable",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reviewed_implementation_pending",
+      "validation": "focused_workflow_passed_offline_repaired",
       "source_ids": [
         "PI-10"
       ],
@@ -1069,7 +1069,23 @@
         "2026-11-04_S1/PI-10"
       ],
       "dependencies": [],
-      "next_step": "Implement bounded default button output, path filtering, summary-only limit zero and diagnostic-first ordering under nov04-input-state-compact. Current reader caps at 64 but lists buttons before key diagnostic sections."
+      "next_step": "Implemented diagnostics-first output, ButtonFilter path substring and ButtonLimit 0..64 (default 16). Counts distinguish candidates/matches/shown/omitted; zero returns no button paths. Local visibility is explicitly not proof of on-screen visibility or routing eligibility.",
+      "source_commit": "bea35b11b200fc681ce9262d027c47d476beb8f0",
+      "evidence": [
+        {
+          "result": "native_pass",
+          "run": "c5e1945a73a245e29864e6a5ffe1ea93",
+          "scope": "Stock build and CommonUI play workflow passed, including summary-only output, case-insensitive known button path filter, unmatched filter, invalid limits, diagnostic order, unchanged fixture state and live help."
+        },
+        {
+          "result": "offline_failed_then_targeted_repair",
+          "run": "6909eae2672c45f0ae967e3a2ec9f605",
+          "scope": "25 checks passed; validate-repo failed for stale generated capability inventory. Refreshed inventory in 2f8de2cb and reran validate-repo successfully. Original failed run retained; full offline rerun not claimed."
+        }
+      ],
+      "followups": [
+        "Not an effective-visibility or focused-screen filter. Widget candidates can have hidden ancestors. Focused native fixture is small; no 600-button performance certification."
+      ]
     },
     {
       "id": "NOV04-27",
