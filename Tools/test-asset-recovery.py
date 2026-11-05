@@ -18,9 +18,9 @@ for toolset, tool in ((PREVIEW_TOOLSET, "PreviewTurboMCPAssetRevert"), (EDIT_TOO
     for phrase in ("data-asset", "60 seconds", "confirmation"):
         if phrase not in help_text:
             raise RuntimeError(f"{tool} help lacks {phrase}: {help_text}")
-name = "TurboMCP.DataAsset.SavedRecovery"
 session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
-raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})
-print(raw)
-support["parse_run_tests_report"](raw, name)
+for name in ("TurboMCP.DataAsset.SavedRecovery", "TurboMCP.DataAsset.CheckedDelete"):
+    raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})
+    print(raw)
+    support["parse_run_tests_report"](raw, name)
 print("RESULT: PASS")
