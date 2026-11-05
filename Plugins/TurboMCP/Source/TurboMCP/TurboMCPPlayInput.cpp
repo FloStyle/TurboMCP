@@ -162,12 +162,22 @@ void ReleaseOwnedInput(FHeldPlayInput Input)
         if (UPlayerInput* OriginalInput=Input.PlayerInput.Get())
         {
             if (FKeyState* State=OriginalInput->GetKeyState(Input.Key))
+            {
                 State->RawValueAccumulator.X=0.f;
+                // Public readback uses the last processed Value. Clear the owned
+                // component immediately; queued zero alone waits for another frame.
+                State->RawValue.X=0.f;
+                State->Value.X=0.f;
+            }
             const EPairedAxis Component=Input.Key.GetPairedAxis();
             const int32 Index=Component==EPairedAxis::X?0:Component==EPairedAxis::Y?1:Component==EPairedAxis::Z?2:INDEX_NONE;
             if (Index!=INDEX_NONE)
                 if (FKeyState* Pair=OriginalInput->GetKeyState(Input.Key.GetPairedAxisKey()))
+                {
                     Pair->RawValueAccumulator[Index]=0.f;
+                    Pair->RawValue[Index]=0.f;
+                    Pair->Value[Index]=0.f;
+                }
         }
     }
     // Never route cleanup into an editor control after focus leaves this viewport.
@@ -239,7 +249,9 @@ bool TickSequence(float)
     while (PendingInputs.Num() && Now>=SequenceStart+PendingInputs[0].At)
     {
         const FTimedPlayEvent Event=PendingInputs[0];
-        if (Now>=SequenceStart+Event.At+Event.Duration)
+        if (!InputTargetHasFocus(Event.Input))
+        { CancelSequence(TEXT("focus left PIE during input dispatch")); return false; }
+        if (FPlatformTime::Seconds()>=SequenceStart+Event.At+Event.Duration)
         { CancelSequence(TEXT("scheduled input expired before dispatch; remaining events cancelled")); return false; }
         UPlayerInput* Player=Event.Input.PlayerInput.Get();
         const FKeyState* State=Player?Player->GetKeyState(Event.Input.Key):nullptr;
