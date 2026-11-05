@@ -17,3 +17,9 @@ Check both registry dependencies and live references. Registry referencers alone
 Stock source reviewed: UnrealEd/Public/ObjectTools.h documents DeleteObjectsUnchecked as bypassing use checks and not intended for direct calls; DeleteAssets exposes the checked deletion system. AssetRegistry/IAssetRegistry.h exposes dependency referencer queries, not a complete live-reference safety proof. The internal checked deletion route and its interaction with editor state still require review before implementation approval.
 
 Required isolated evidence: unreferenced disposable asset; hard/soft/live referenced refusal; dirty/open asset handling; stale preview; source-control or read-only failure; exact post-deletion registry/file state; unaffected neighboring assets. Preserve failed evidence. A successful synthetic deletion cannot explain the original crash without its exact call and stack.
+
+## Checked route findings
+
+Stock ObjectTools.cpp constructs FAssetDeleteModel and ticks its scan before calling DoDelete in the noninteractive route. AssetDeleteModel.cpp CanDelete refuses when non-undo live references or on-disk references exist; DoDelete calls the unchecked primitive only after that check. Undo-only references do not block CanDelete, so undo-history effects must be examined and disclosed before exposing this route. A plugin must use the checked model/system rather than calling its internal unchecked primitive directly. No execution or safety certification follows from this source review.
+
+UBlueprintFactory exposes ParentClass, BlueprintType and bSkipClassPicker. This provides a candidate stock creation route; the implementation still needs inspection for function-library restrictions and compiler behavior.
