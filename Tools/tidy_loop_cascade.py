@@ -473,6 +473,27 @@ def record_compact_candidates(call, evidence, persist, comments_only=False):
         row['after_graph']=read_complete_graph(call,asset,graph)
         row['after_positions']=read_positions(call,asset,graph)
         row['reader_equal']=row['after_graph']==row['before_graph']
+        if name == 'J4':
+            row['comment_checks'] = []
+            for box in evidence['regressions']['J4']['boxes']:
+                matches = [identity for identity in row['after_positions']
+                           if identity == box['id'] or identity.endswith(':' + box['id'])]
+                if len(matches) != 1:
+                    raise RuntimeError('J4 compact comment identity is missing or ambiguous')
+                rect = row['after_positions'][matches[0]]
+                readback = call('ReadTurboMCPCommentList', asset=asset, graphName=graph,
+                                scope='box:' + matches[0], offset=0, limit=80)
+                missing = [identity for identity in box['original_members']
+                           if identity not in row['after_positions'] or not (
+                               row['after_positions'][identity]['x'] >= rect['x']
+                               and row['after_positions'][identity]['y'] >= rect['y']
+                               and row['after_positions'][identity]['x'] + row['after_positions'][identity]['width'] <= rect['x'] + rect['width']
+                               and row['after_positions'][identity]['y'] + row['after_positions'][identity]['height'] <= rect['y'] + rect['height'])]
+                row['comment_checks'].append(dict(id=matches[0], title=box['title'],
+                                                  readback=readback, missing_members=missing))
+                persist()
+                if box['title'] not in readback or missing:
+                    raise RuntimeError('J4 compact layout lost a comment title or original member')
         planned = {identity: dict(x=int(x), y=int(y)) for identity,x,y in
             re.findall(r'^planned (\S+) x=(-?\d+) y=(-?\d+)$', row['preview'], re.M)}
         resolved = {}

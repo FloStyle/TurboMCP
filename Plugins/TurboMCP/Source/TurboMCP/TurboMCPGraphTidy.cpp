@@ -2625,7 +2625,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 }
             }
             const double PreferredCopyX = CopyRightLimit;
-            const double MinimumCopyX = ConsumerBoxIndex == INDEX_NONE ? static_cast<double>(MIN_int32)
+            const double MinimumCopyX = (bFlowComments || ConsumerBoxIndex == INDEX_NONE) ? static_cast<double>(MIN_int32)
                 : OutPlan.Boxes[ConsumerBoxIndex].X + FitPadding;
             TArray<double> CopyColumns;
             if (PreferredCopyX >= MinimumCopyX) CopyColumns.Add(PreferredCopyX);
@@ -2819,13 +2819,23 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             Box.PlannedY = FMath::FloorToDouble(Top - TitleBarHeight - FitPadding);
             Box.PlannedWidth = FMath::CeilToDouble(Right + FitPadding - Box.PlannedX);
             Box.PlannedHeight = FMath::CeilToDouble(Bottom + FitPadding - Box.PlannedY);
+            if (!FMath::IsFinite(Box.PlannedX) || !FMath::IsFinite(Box.PlannedY)
+                || !FMath::IsFinite(Box.PlannedWidth) || !FMath::IsFinite(Box.PlannedHeight)
+                || Box.PlannedX < MIN_int32 || Box.PlannedX > MAX_int32
+                || Box.PlannedY < MIN_int32 || Box.PlannedY > MAX_int32
+                || Box.PlannedWidth <= 0 || Box.PlannedWidth > MAX_int32
+                || Box.PlannedHeight <= 0 || Box.PlannedHeight > MAX_int32)
+            { OutError = TEXT("Compact comment rectangle exceeds graph coordinate limits; unchanged."); return false; }
             Box.bWouldFit = Box.PlannedX != Box.X || Box.PlannedY != Box.Y
                 || Box.PlannedWidth != Box.Width || Box.PlannedHeight != Box.Height;
             for (FNode& Node : OutPlan.Nodes)
                 if (Node.Node == Box.Comment) { Node.PlannedX = Box.PlannedX; Node.PlannedY = Box.PlannedY; }
             for (const FNode& Node : OutPlan.Nodes)
             {
-                if (Node.bIsComment || Box.MemberKeys.Contains(Node.Key)) continue;
+                // MembersOf returns engine object names; FNode.Key is the public
+                // stable ID. Resolve the same identity convention used by fitting.
+                if (Node.bIsComment || Box.MemberKeys.Contains(Node.Key)
+                    || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName()))) continue;
                 if (Node.PlannedX < Box.PlannedX + Box.PlannedWidth && Node.PlannedX + Node.Width > Box.PlannedX
                     && Node.PlannedY < Box.PlannedY + Box.PlannedHeight && Node.PlannedY + Node.Height > Box.PlannedY)
                 {
