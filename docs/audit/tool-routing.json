@@ -117,7 +117,51 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPCommonButtonStyle",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPCompile",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPCustomEventAdd",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/custom-event-review.json"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPDataAssetProperty",
       "family": "asset-and-data",
       "epic_5_8_3": {
         "status": "unverified",
@@ -143,6 +187,22 @@
       },
       "preference": "unverified",
       "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPDiagnosticConsole",
+      "family": "diagnostics",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/diagnostic-console-review.json"
+      ]
     },
     {
       "tool": "EditTurboMCPDispatcherAdd",
@@ -204,8 +264,38 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPFunctionFlags",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/function-flags-review.json"
+      ]
+    },
+    {
       "tool": "EditTurboMCPFunctionRemove",
       "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPFunctionRename",
+      "family": "blueprint",
       "epic_5_8_3": {
         "status": "unverified",
         "equivalent_tools": []
@@ -788,6 +878,20 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPVariableRemove",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPVarsAdd",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -830,7 +934,63 @@
       "runtime_parity": "unverified"
     },
     {
+      "tool": "EditTurboMCPWidgetAdd",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPWidgetBindAdd",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPWidgetProperty",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPWidgetRemove",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPWidgetRename",
       "family": "widget",
       "epic_5_8_3": {
         "status": "unverified",
@@ -1054,6 +1214,50 @@
       "evidence": []
     },
     {
+      "tool": "PreviewTurboMCPCommonButtonStyle",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPCustomEventAdd",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/custom-event-review.json"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPDataAssetProperty",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "PreviewTurboMCPDataTableRows",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -1066,6 +1270,22 @@
       },
       "preference": "unverified",
       "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPDiagnosticConsole",
+      "family": "diagnostics",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/diagnostic-console-review.json"
+      ]
     },
     {
       "tool": "PreviewTurboMCPDispatcherAdd",
@@ -1108,6 +1328,36 @@
         }
       ],
       "runtime_parity": "unverified"
+    },
+    {
+      "tool": "PreviewTurboMCPFunctionFlags",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/function-flags-review.json"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPFunctionRename",
+      "family": "blueprint",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
     },
     {
       "tool": "PreviewTurboMCPGraphAppend",
@@ -1600,6 +1850,20 @@
       "evidence": []
     },
     {
+      "tool": "PreviewTurboMCPVariableRemove",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "PreviewTurboMCPVarsAdd",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -1643,6 +1907,48 @@
         }
       ],
       "runtime_parity": "unverified"
+    },
+    {
+      "tool": "PreviewTurboMCPWidgetAdd",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPWidgetProperty",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPWidgetRemove",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
     },
     {
       "tool": "PreviewTurboMCPWidgetRetarget",
@@ -1785,6 +2091,34 @@
       "evidence": []
     },
     {
+      "tool": "ReadTurboMCPCommonButtonStyle",
+      "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "ReadTurboMCPDataAssetProperty",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "ReadTurboMCPDataTable",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -1825,6 +2159,22 @@
       },
       "preference": "unverified",
       "evidence": []
+    },
+    {
+      "tool": "ReadTurboMCPEditorLog",
+      "family": "diagnostics",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": [
+        "docs/audit/editor-log-review.json"
+      ]
     },
     {
       "tool": "ReadTurboMCPGraphLoad",
@@ -2139,90 +2489,6 @@
       "freshness_limit": "A null GetState is handled explicitly, but ForceUpdate does not prove a successful refresh. The pinned Perforce provider can ignore the FUpdateStatus result and return cached state. This is diagnostic detail, not stale-proof measurement. Failed-refresh coverage belongs under the R04 tool audit."
     },
     {
-      "tool": "ReadTurboMCPWidgetTree",
-      "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "EditTurboMCPWidgetRename",
-      "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "PreviewTurboMCPWidgetRemove",
-      "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "EditTurboMCPWidgetRemove",
-      "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "PreviewTurboMCPWidgetAdd",
-      "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "EditTurboMCPWidgetAdd",
-      "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
       "tool": "ReadTurboMCPWidgetProperty",
       "family": "widget",
       "epic_5_8_3": {
@@ -2237,7 +2503,7 @@
       "evidence": []
     },
     {
-      "tool": "PreviewTurboMCPWidgetProperty",
+      "tool": "ReadTurboMCPWidgetTree",
       "family": "widget",
       "epic_5_8_3": {
         "status": "unverified",
@@ -2249,244 +2515,6 @@
       },
       "preference": "unverified",
       "evidence": []
-    },
-    {
-      "tool": "EditTurboMCPWidgetProperty",
-      "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "EditTurboMCPFunctionRename",
-      "family": "blueprint",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "PreviewTurboMCPFunctionRename",
-      "family": "blueprint",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "ReadTurboMCPCommonButtonStyle",
-      "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "PreviewTurboMCPCommonButtonStyle",
-      "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "EditTurboMCPCommonButtonStyle",
-      "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "ReadTurboMCPDataAssetProperty",
-      "family": "asset-and-data",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "PreviewTurboMCPDataAssetProperty",
-      "family": "asset-and-data",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "EditTurboMCPDataAssetProperty",
-      "family": "asset-and-data",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "ReadTurboMCPEditorLog",
-      "family": "diagnostics",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": [
-        "docs/audit/editor-log-review.json"
-      ]
-    },
-    {
-      "tool": "PreviewTurboMCPDiagnosticConsole",
-      "family": "diagnostics",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": [
-        "docs/audit/diagnostic-console-review.json"
-      ]
-    },
-    {
-      "tool": "EditTurboMCPDiagnosticConsole",
-      "family": "diagnostics",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": [
-        "docs/audit/diagnostic-console-review.json"
-      ]
-    },
-    {
-      "tool": "PreviewTurboMCPCustomEventAdd",
-      "family": "blueprint",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": [
-        "docs/audit/custom-event-review.json"
-      ]
-    },
-    {
-      "tool": "EditTurboMCPCustomEventAdd",
-      "family": "blueprint",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": [
-        "docs/audit/custom-event-review.json"
-      ]
-    },
-    {
-      "tool": "PreviewTurboMCPFunctionFlags",
-      "family": "blueprint",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": [
-        "docs/audit/function-flags-review.json"
-      ]
-    },
-    {
-      "tool": "EditTurboMCPFunctionFlags",
-      "family": "blueprint",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": [
-        "docs/audit/function-flags-review.json"
-      ]
     }
   ],
   "source_comparison": {
