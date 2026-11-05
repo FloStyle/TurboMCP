@@ -19,6 +19,8 @@ def build_graph(call, evidence, persist):
     initial = evidence['initial_graph']
     ids = {'N01': re.search(r'\(fn LoopCascade ; ([^\s;]+)', initial).group(1),
            'N80': re.search(r'\(Function\|Result ; ([^\s;]+)', initial).group(1)}
+    # Remove only the factory's template edge; the recipe specifies both final exits.
+    call('EditTurboMCPGraphRemove',asset=asset,graphName=graph,nodes='[]',links=json.dumps([{'sourceNodeId':ids['N01'],'sourcePin':'then','targetNodeId':ids['N80'],'targetPin':'execute'}]))
     # Connections are source-label:pin strings; numbers are literal defaults.
     rows = []
     def n(label, query, **pins):
@@ -48,6 +50,8 @@ def build_graph(call, evidence, persist):
         text = '\n'.join(forms)
         args = dict(asset=asset, graphName=graph, text=text, continuation='auto', placement='local')
         preview = call('PreviewTurboMCPGraphAppend', **args)
+        if not preview.startswith('preview:'):
+            raise RuntimeError('Append preview did not approve construction: ' + preview)
         result = call('EditTurboMCPGraphAppend', **args)
         created = re.findall(r'^created (.*?): type (.*)$', result, re.M)
         if len(created) != len(rows) or [x[1] for x in created] != types:
@@ -57,7 +61,7 @@ def build_graph(call, evidence, persist):
         evidence['label_ids'] = ids.copy()
         persist()
         compiled = call('EditTurboMCPCompile', assets=asset)
-        if not re.search(r'0 error', compiled, re.I):
+        if not re.search(r'0 with errors', compiled, re.I):
             raise RuntimeError('Compile did not explicitly report zero errors: ' + compiled)
         rows.clear()
 
