@@ -535,7 +535,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_reconciled_runtime_pending",
       "source_ids": [
         "FA-14"
       ],
@@ -543,7 +543,7 @@
         "2026-10-30_S3/FA-14"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Source finding: TurboMCPMergeMemberTools.cpp LocalAdd searches only BP->FunctionGraphs, so owned interface implementation graphs stored elsewhere are excluded. Reproduce with a disposable implemented interface, then resolve unique owned function-entry graphs without allowing event/inherited graphs. No fix or native proof yet."
     },
     {
       "id": "NOV04-18",
