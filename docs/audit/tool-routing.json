@@ -75,6 +75,20 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPBlueprintReparent",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPCallLog",
       "family": "schema-and-observability",
       "epic_5_8_3": {
@@ -1229,6 +1243,20 @@
     },
     {
       "tool": "PreviewTurboMCPBindNewEvent",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPBlueprintReparent",
       "family": "asset-and-data",
       "epic_5_8_3": {
         "status": "unverified",

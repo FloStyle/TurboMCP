@@ -1409,7 +1409,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_reviewed_intentional_guards_feature_pending",
       "source_ids": [
         "TD-54"
       ],
@@ -1417,7 +1417,13 @@
         "2026-11-03_S1/TD-54"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Current tidy explicitly rejects partial comment membership and excessive fixed-boundary wire growth; Force does not bypass either guard. Report confirms both messages were actionable. Preserve safeguards; investigate an explicit placement workflow for moving the selected chain without moving unselected comment contents. Feature remains open; no new native reproduction or repair claimed.",
+      "source_review": [
+        "TurboMCPGraphTidy.cpp:222-262: individual and aggregate boundary growth limits independent of Force",
+        "TurboMCPGraphTidy.cpp:1780: partial comment refusal advises whole comment selection or @unboxed",
+        "TurboMCPGraphTidy.cpp:2065-2164: existing per-component boundary anchoring and candidate safety checks",
+        "TurboMCPGraphTidyTools.cpp:367-368: explicit position edits also preserve unselected comment boundaries"
+      ]
     },
     {
       "id": "NOV04-36",
