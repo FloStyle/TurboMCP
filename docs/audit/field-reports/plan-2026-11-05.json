@@ -112,7 +112,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Finish editor verification of scoped chain fix 1a042d80, then implement integrated routing. Native screenshot FBDEB5CF41F6524FEFC72C97F540F4C7 confirms the unrelated teal wire still crosses the readable Flatten path points box. No visual acceptance.",
+      "next_step": "Implement opt-in integrated routing. Retain scoped fixed-loop Body drift and unreadable dense-block capture as open limitations; independently verify scores and intended-handoff classification.",
       "evidence": [
         {
           "run": "b04c38d19d264d37b7aa9613ed09eacd",
@@ -169,6 +169,12 @@
           "run": "4234ebfb64f84583b91d0cf4cc61adc7",
           "result": "build_passed_editor_verification_running",
           "scope": "Scoped compact placement no longer realigns a single node to a fixed predecessor when it has a selected execution successor. This preserves internal chain rows; default rows unchanged. Editor outcome pending. Harness dc40b1e2 also compares all seven preview/edit scores; saved-evidence replay passed, not independent geometry validation."
+        },
+        {
+          "run": "4234ebfb64f84583b91d0cf4cc61adc7",
+          "commit": "a22b6b69",
+          "result": "integrated_partial_fix_not_visual_acceptance",
+          "scope": "Integrated a22b6b69. Native run 4234ebfb64f84583b91d0cf4cc61adc7 passed on candidate 1a042d80, 396 calls. J5 applies with row breaks 0 to 0, unchanged 57 outside nodes, identical graph read-back, exact preview/edit positions and seven scores, exact undo. Pure-input conflicts remain 0. Body drift increases 3513 to 3696 and full-block screenshot 9AF838014478D14AB96FE1AD405C85FB remains too spread out for readable labels; retain these limitations. Offline run e8ac186b233345028e7dcb33f444593b: 25/26 passed, stale inventory corrected and validate-repo rerun passed. Scope gate passed against b547f112. Routing, independent score validation and visual acceptance remain open."
         }
       ],
       "design_notes": [
@@ -203,7 +209,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Independently cross-check the seven measures, classify intended handoffs, and repair routing. J5 now safely refuses its row regression; repair the scoped placement rather than bypassing the refusal.",
+      "next_step": "Implement opt-in integrated routing. Retain scoped fixed-loop Body drift and unreadable dense-block capture as open limitations; independently verify scores and intended-handoff classification.",
       "evidence": [
         {
           "commit": "fb6c2228",
@@ -215,6 +221,12 @@
           "commit": "fb6c2228",
           "result": "passed_workflow_not_layout_acceptance",
           "scope": "Run ae1f59a59cdc4385bde34676ad43b11a passed build and workflow checks on fb6c2228. Cascade/J3/J4 preserve reader output, exact planned node positions and undo. J5 correctly refuses a new within-block row break (0 to 1); it is not a successful scoped layout. J4 still has one unrelated box crossing and 5268.5 units of diagonal execution wire. Independent score verification, intended-handoff classification, routing and visual acceptance remain open."
+        },
+        {
+          "run": "4234ebfb64f84583b91d0cf4cc61adc7",
+          "commit": "a22b6b69",
+          "result": "integrated_partial_fix_not_visual_acceptance",
+          "scope": "Integrated a22b6b69. Native run 4234ebfb64f84583b91d0cf4cc61adc7 passed on candidate 1a042d80, 396 calls. J5 applies with row breaks 0 to 0, unchanged 57 outside nodes, identical graph read-back, exact preview/edit positions and seven scores, exact undo. Pure-input conflicts remain 0. Body drift increases 3513 to 3696 and full-block screenshot 9AF838014478D14AB96FE1AD405C85FB remains too spread out for readable labels; retain these limitations. Offline run e8ac186b233345028e7dcb33f444593b: 25/26 passed, stale inventory corrected and validate-repo rerun passed. Scope gate passed against b547f112. Routing, independent score validation and visual acceptance remain open."
         }
       ],
       "design_notes": [

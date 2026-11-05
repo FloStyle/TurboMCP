@@ -6559,7 +6559,8 @@
           "scope": "Compact placement, comment fitting and required-parameter help are on main. Scope gate passed against current main 554547f9 with the unchanged assignment path set. Editor b091c2182a204e82830757b20e9e1bd3 passed preservation and comment checks. Offline 789103a7853a4059ba06a97c0290d3d8 passed 25/26; stale generated inventory was corrected and validate-repo then passed. Production source unchanged since tested a13b31f7. Routing, full scoring, public block previews, local promotion and visual acceptance remain open."
         }
       ],
-      "next_step": "Finish editor verification of scoped chain fix 1a042d80, then implement integrated routing. Native screenshot FBDEB5CF41F6524FEFC72C97F540F4C7 confirms the unrelated teal wire still crosses the readable Flatten path points box. No visual acceptance."
+      "next_step": "Integrated partial fix. Remaining: routing, scoped Body alignment, readable previews, independent scoring and visual acceptance.",
+      "latest_evidence": "Integrated a22b6b69. Native run 4234ebfb64f84583b91d0cf4cc61adc7 passed on candidate 1a042d80, 396 calls. J5 applies with row breaks 0 to 0, unchanged 57 outside nodes, identical graph read-back, exact preview/edit positions and seven scores, exact undo. Pure-input conflicts remain 0. Body drift increases 3513 to 3696 and full-block screenshot 9AF838014478D14AB96FE1AD405C85FB remains too spread out for readable labels; retain these limitations. Offline run e8ac186b233345028e7dcb33f444593b: 25/26 passed, stale inventory corrected and validate-repo rerun passed. Scope gate passed against b547f112. Routing, independent score validation and visual acceptance remain open."
     },
     {
       "id": "NOV05-03",
@@ -6595,8 +6596,8 @@
           "scope": "Compact mode now reports seven straight-segment measures, compares fixed block membership, uses 5-percent ranking ties and refuses every >10-percent regression unless Force is explicit. Default row ranking unchanged. Workflow requires all measures and checks accepted edits for regressions. Native verification pending; independent score validation, intended-handoff classification and complete visual acceptance remain open."
         }
       ],
-      "next_step": "Independently cross-check the seven measures, classify intended handoffs, and repair routing. J5 now safely refuses its row regression; repair the scoped placement rather than bypassing the refusal.",
-      "latest_evidence": "Run ae1f59a59cdc4385bde34676ad43b11a passed build and workflow checks on fb6c2228. Cascade/J3/J4 preserve reader output, exact planned node positions and undo. J5 correctly refuses a new within-block row break (0 to 1); it is not a successful scoped layout. J4 still has one unrelated box crossing and 5268.5 units of diagonal execution wire. Independent score verification, intended-handoff classification, routing and visual acceptance remain open."
+      "next_step": "Integrated partial fix. Remaining: routing, scoped Body alignment, readable previews, independent scoring and visual acceptance.",
+      "latest_evidence": "Integrated a22b6b69. Native run 4234ebfb64f84583b91d0cf4cc61adc7 passed on candidate 1a042d80, 396 calls. J5 applies with row breaks 0 to 0, unchanged 57 outside nodes, identical graph read-back, exact preview/edit positions and seven scores, exact undo. Pure-input conflicts remain 0. Body drift increases 3513 to 3696 and full-block screenshot 9AF838014478D14AB96FE1AD405C85FB remains too spread out for readable labels; retain these limitations. Offline run e8ac186b233345028e7dcb33f444593b: 25/26 passed, stale inventory corrected and validate-repo rerun passed. Scope gate passed against b547f112. Routing, independent score validation and visual acceptance remain open."
     },
     {
       "id": "NOV05-04",
