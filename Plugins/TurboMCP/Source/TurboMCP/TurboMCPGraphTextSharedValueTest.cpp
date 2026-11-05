@@ -858,9 +858,9 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		const FString PrintTargetPath = PrintFunction != nullptr ? PrintFunction->GetPathName() : FString();
 		TestTrue(TEXT("exact fixture PrintString has a real target function"), !PrintTargetPath.IsEmpty());
 		TestEqual(TEXT("exact fixture PrintString type ID is the expected literal"),
-			TurboMCPNodeId::GetNodeTypeId(Print), TEXT("Development|PrintString"));
+			TurboMCPNodeId::GetNodeTypeId(Print), FString(TEXT("Function|/Script/Engine.KismetSystemLibrary:PrintString")));
 		TestEqual(TEXT("exact fixture getter type ID is the expected literal"),
-			TurboMCPNodeId::GetNodeTypeId(Getter), TEXT("Variables|Default|GetExactValue"));
+			TurboMCPNodeId::GetNodeTypeId(Getter), FString(TEXT("Variable|")) + AssetPath + TEXT("|Get|ExactValue"));
 		if (PrintTargetPath.IsEmpty())
 		{
 			return false;
@@ -870,7 +870,7 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		const FString First = RenderBodies(Graph, AssetPath, Notes);
 		TArray<FString> SecondNotes;
 		const FString Second = RenderBodies(Graph, AssetPath, SecondNotes);
-		// Provenance: this literal is the approved-base RenderNode shape derived
+		// Provenance: this literal is the current documented RenderNode shape derived
 		// from source, including the unconditional `; target <UFunction path>`
 		// annotation for UK2Node_CallFunction and the ordinary single-use inline.
 		// It is not derived from candidate Render output; the fixture metadata
@@ -881,12 +881,12 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		const FString GetterId = TurboMCPNodeId::MakeForNode(Getter);
 		const FString Expected = FString::Printf(
 			TEXT("; graph %s.ExactSingleUse\n"
-				"(fn ExactSingleUse\n"
-				"  (Development|PrintString ; %s ; target %s\n"
+				"(fn ExactSingleUse ; %s\n"
+				"  (Function|/Script/Engine.KismetSystemLibrary:PrintString ; %s ; target %s\n"
 				"      execute (-> %s)\n"
-				"      InString (Variables|Default|GetExactValue ; %s)))"),
-			*AssetPath, *PrintId, *PrintTargetPath, *EntryId, *GetterId);
-		TestEqual(TEXT("ordinary single-use text exactly matches the legacy shape"), First, Expected);
+				"      InString (Variable|%s|Get|ExactValue ; %s\n  )\n  )\n  (:then\n  )\n)"),
+			*AssetPath, *TurboMCPNodeId::MakeForNode(Entry, true), *PrintId, *PrintTargetPath, *EntryId, *AssetPath, *GetterId);
+		TestEqual(TEXT("ordinary single-use text exactly matches the reflected identity shape"), First, Expected);
 		TestEqual(TEXT("ordinary single-use text is repeatable"), First, Second);
 		TestFalse(TEXT("ordinary single-use text emits no $id"), First.Contains(TEXT("$")));
 	}

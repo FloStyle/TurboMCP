@@ -98,6 +98,7 @@ def parse_run_tests_report(payload, expected_test):
 def read_graph(session, graph):
     return session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", {
         "asset": ASSET, "graphName": graph, "format": "", "detail": "bodies",
+        "revision": "", "entryFilter": "",
     })
 
 
@@ -149,13 +150,13 @@ def main():
     print("=== the large graph is not reduced to a tiny input ===")
     large = read_graph(session, "LargeGraphProbe")
     check("large graph returns a read result",
-          isinstance(large, str) and large.startswith("read: "), str(large)[:120])
+          isinstance(large, str) and large.startswith("; partial: graph page;"), str(large)[:120])
     node_count = re.search(r"(\d+) node\(s\)", large)
     check("large graph reports a genuinely large fixture",
           node_count is not None and int(node_count.group(1)) >= 1200,
           node_count.group(1) if node_count else large[:180])
     check("large graph reaches the normal output cap",
-          "more character(s) were dropped" in large, large[-180:])
+          re.search(r"revision=[A-Fa-f0-9]+ offset=0 count=24000 total=\d+ nextOffset=24000", large) is not None, large[-180:])
     check("large graph has no exec-chain guard error",
           "exec chain did not end" not in large, large[-300:])
     check("large graph result is bounded", len(large) < 25000, str(len(large)))
