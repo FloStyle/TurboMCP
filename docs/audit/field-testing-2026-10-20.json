@@ -6608,7 +6608,7 @@
       "kind": "feature",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "internal_route_planner_build_only_not_exposed",
+      "validation": "routing_batch_implemented_unbuilt_untested",
       "remaining": "Implement explicit orthogonal handoff routing, including J2 lower Sequence wires crossing pure readers. Preserve feedback and graph semantics; verify screenshots and undo.",
       "source_keys": [
         "2026-11-05_S1/TD-65",
@@ -6653,9 +6653,15 @@
           "commit": "506ca07b",
           "result": "static_review_found_fanout_order_defect",
           "scope": "Route expansion currently removes an original edge and appends its replacement, which can reorder a shared output fan-out. Must replace the original link-array slot and verify ordered contracted fan-out, not only edge-set equality. Identified during the active editor run; source kept unchanged to preserve run provenance. Not approved for integration."
+        },
+        {
+          "commit": "c7255e2d",
+          "run": "1fb0a2aca9684c66b2fe9cc3cccb16a3",
+          "result": "batch_implemented_unbuilt_untested",
+          "scope": "Prior run failed after 434 calls: NodeContext emits an empty creation type ID for reroutes, so the checker omitted them and raised KeyError. Routing reached edit/coordinate checks; connectivity and undo remain unverified. Batch preserves endpoint fan-out slots, checks contracted fan-out order, resolves concrete knot classes, includes route nodes in detail bounds and adds tracked focused routing selection. No new build or editor run started; remaining fixes are being batched as requested."
         }
       ],
-      "next_step": "After active run completes, fix replacement-edge ordering and add ordered fan-out validation before integration. Retain runtime failures and continue cascade/scoped routing and geometry checks.",
+      "next_step": "Batch remaining fixes before focused verification. Latest run failed in reroute identity parsing; no visual acceptance.",
       "latest_evidence": "Route expansion currently removes an original edge and appends its replacement, which can reorder a shared output fan-out. Must replace the original link-array slot and verify ordered contracted fan-out, not only edge-set equality. Identified during the active editor run; source kept unchanged to preserve run provenance. Not approved for integration."
     },
     {
