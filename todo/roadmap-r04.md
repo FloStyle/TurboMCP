@@ -2189,3 +2189,5 @@ NOV04-14 reproduction integrated: native 8655f468c64d4e4ca0fa7ecf570c2a2a and of
 ### NOV04-09 node discovery reconciliation
 
 Readiness: ready. Assignment nov04-node-discovery. Reconcile member-variable search, arithmetic aliases and dispatcher-owner discovery against current filtered action collection. Begin with a fresh disposable Blueprint member and queries for its name, getter and setter; verify returned IDs create the intended owner/member rather than just matching text. Check arithmetic words against actual promotable actions and preserve owner identities. Add missing discovery keywords only where observed; never fuzzy-resolve writer IDs or bypass graph action filtering. Inspect dispatcher class identity separately and retain any unverified report subtopic. Review help/output. Run supervised test-graph-append and offline gates; no engine edits or saves.
+
+NOV04-09 partial integration: discovery keywords and reflected dispatcher ownership verified by native 5ea15c7e58e84d85b4acbbea92f4af9e; offline 40132f87ccbe48b3b8f8253d0bc302fa passed. NT-14 wrong-class link diagnostics remain outstanding; topic stays in progress. All prior failures retained.

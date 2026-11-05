@@ -318,7 +318,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reproduced_fixes_under_validation",
+      "validation": "partial_discovery_workflow_and_offline_passed",
       "source_ids": [
         "NT-12",
         "NT-14",
@@ -330,7 +330,7 @@
         "2026-11-03_S4/NT-15"
       ],
       "dependencies": [],
-      "next_step": "Reproduced missing getter/setter and plus/minus terms, then the button dispatcher omission. Candidate adds discovery keywords, preserves keyword text across pipe separators, and includes reflected dispatcher name/declaring class. Member/operator repair passed native; combined dispatcher validation running. Not integrated.",
+      "next_step": "Discovery repairs integrated: getter/setter and plus/minus keywords, preserved keyword text across pipes, reflected dispatcher names and declaring classes. Native probes verify self-member identity and CommonButtonBase bind owner. Remaining NT-14 requirement: reproduce incompatible target link and provide explicit expected/actual class mismatch diagnostics. Keep topic in progress.",
       "evidence": [
         {
           "run": "744c071259eb4baaa86cf1ca7a1a926c",
@@ -351,7 +351,20 @@
           "run": "a7d5c8b372084e6d9ee50083e75f1d60",
           "result": "failed",
           "scope": "Reflected button dispatcher search returned only CommonButtonGroupBase actions, not CommonButtonBase; owner assertion failed."
+        },
+        {
+          "run": "5ea15c7e58e84d85b4acbbea92f4af9e",
+          "result": "passed",
+          "scope": "Combined native member/operator/dispatcher discovery; returned bind probe references CommonButtonBase.OnButtonBaseClicked."
+        },
+        {
+          "run": "40132f87ccbe48b3b8f8253d0bc302fa",
+          "result": "passed",
+          "scope": "26 offline gates and exact-file scope gate passed for 839bdd55329d2cedd0c99358ac9ac8852455f684."
         }
+      ],
+      "followups": [
+        "NT-14 incompatible target-object link refusal still needs explicit class diagnostics and preservation tests. Discovery alone does not establish link compatibility."
       ]
     },
     {
