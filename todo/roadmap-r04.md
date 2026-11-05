@@ -2356,3 +2356,8 @@ Approved bounded implementation: accept Format=json in GraphLoad while preservin
 ### NOV04-27 scoped runtime invocation
 
 Implement the contract in docs/audit/field-reports/nov04-pie-invocation-design.md. Add signature discovery, non-mutating argument preview and explicit confirmed invocation for exact existing PIE-world/object identities, including local-player subsystems. No arbitrary console or Python executor. Validate BlueprintCallable flags, parameter directions/types and all arguments before dispatch; refuse unsupported references/latent/RPC cases explicitly. Return actual return/out data and an honest dispatched result, not gameplay success. Admit only the new runtime edit tool through the central PIE gate; retain asset-edit refusal. Extend owned CommonPlay fixture with a non-auto-created local-player subsystem and observable call state, refusal controls, live help and dispatcher verification. No engine changes. Any unsupported field need remains explicit rather than falsely closed.
+
+
+### NOV04-38 stock asset lookup reproduction
+
+Readiness: ready. Assignment nov04-stock-asset-lookup. Extend the existing supervised asset-tools suite with read-only calls to stock AssetTools.find_assets and get_referencers on the owned TA11_TestEnum fixture. Compare exact package/object paths, short name and missing path; compare literal substring and wildcard-like search. Record actual returned data/errors and assert documented controls, without inventing the unavailable original field arguments. Check TurboMCP search/describe supporting behavior and dirty-state preservation. Do not delete assets, change engine code or claim the field cause from a generic passing control.

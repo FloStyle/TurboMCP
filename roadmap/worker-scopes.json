@@ -3703,6 +3703,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInvoke.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPPlayInvokeFixture.h"
           ]
+        },
+        "nov04-stock-asset-lookup": {
+          "files": [
+            "Tools/test-asset-tools.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
