@@ -23,6 +23,7 @@ public class TurboMCP : ModuleRules
 			new string[]
 			{
 				"AssetRegistry",
+                "SourceControl",
 				"BlueprintEditorLibrary",
 				"BlueprintGraph",
 				"KismetCompiler",

@@ -629,6 +629,13 @@ UCLASS()
 class UTurboMCPPreviewToolset : public UToolsetDefinition
 {
 	GENERATED_BODY()
+public:
+    /** Check one saved asset for deletion without deleting it; loading and garbage collection may run. Refuses referenced, dirty, open, read-only or unsafe source-control targets, maps, redirectors and multi-asset packages. Never force-deletes or removes imported source files.
+     * @param AssetPath Exact saved /Game asset object path, for example /Game/Tests/Unused.Unused. No short names, folders or package-only paths.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPAssetDelete(const FString& AssetPath);
+
 
 public:
     /** Validate a new Blueprint function library at an unused destination; no disk save or overwrite. Never copies another asset. Preview creates nothing; edit uses the stock factory, which initializes the Blueprint class. No disk save or reliable creation-undo guarantee. Refuses PIE and active transactions.
@@ -1473,6 +1480,14 @@ UCLASS()
 class UTurboMCPEditToolset : public UToolsetDefinition
 {
 	GENERATED_BODY()
+public:
+    /** Permanently delete one saved asset after fresh checks and preview confirmation; no undo or automatic retry. Refuses referenced, dirty, open, read-only or unsafe source-control targets, maps, redirectors and multi-asset packages. Never force-deletes or removes imported source files.
+     * @param AssetPath Exact saved /Game asset object path, for example /Game/Tests/Unused.Unused. No short names, folders or package-only paths.
+     * @param Confirmation Copy the separate preview token within 60 seconds. Target identity and file contents must remain unchanged. The token is consumed before deletion.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPAssetDelete(const FString& AssetPath, const FString& Confirmation);
+
 
 public:
     /** Create a new Blueprint function library at an unused destination; no disk save or overwrite. Never copies another asset. Preview creates nothing; edit uses the stock factory, which initializes the Blueprint class. No disk save or reliable creation-undo guarantee. Refuses PIE and active transactions.
