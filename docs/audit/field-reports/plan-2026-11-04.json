@@ -1092,10 +1092,10 @@
       "title": "Flag empty required object inputs without self fallback",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_validation_running",
+      "validation": "focused_native_pass",
       "source_ids": [
         "GL-24",
         "FT-132"
@@ -1105,12 +1105,27 @@
         "2026-10-30_S1/FT-132"
       ],
       "dependencies": [],
-      "next_step": "Expose empty scalar object inputs in bodies/full without guessing requiredness. Distinguish resolved DefaultToSelf/WorldContext metadata; native subsystem fixture checks visible PlayerController, context fallback, connected control and read-only preservation.",
+      "next_step": "Implemented empty scalar object/interface input notes in bodies/full. Known self/context metadata distinguished. Nullability is not inferred; linked runtime values, arbitrary custom-node fallback and container semantics are not proven by this diagnostic.",
       "evidence": [
         {
           "result": "build_failure_corrected_pending_native",
           "run": "e548b31adc3e496797e360538ac4cc0e",
           "scope": "Checked FString::Printf requires a literal format; replaced conditional format pointer with literal prefix plus conditional prose. No failed evidence discarded."
+        },
+        {
+          "result": "failed_fixture_retained",
+          "run": "5b05b5d721e94f019c5d1c30d0cba685",
+          "scope": "Original fixture lacked an entry point; reader correctly emitted graph summary. Replaced with reachable function outputs instead of changing reader traversal."
+        },
+        {
+          "result": "native_pass",
+          "run": "d95d67c53a354dffb4d26fa51ae44663",
+          "scope": "Bodies/full player-controller empty note, metadata context fallback, connected control, node/link/dirty preservation. Stock build and graph-append suite passed."
+        },
+        {
+          "result": "offline_pass",
+          "run": "09abafefc0464e46b057d4e2d35e242e",
+          "scope": "26 checks; exact scope passed for f814990a1f42184523cec5fd2544e48fd0acbe29."
         }
       ]
     },
