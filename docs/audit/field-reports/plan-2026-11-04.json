@@ -1618,10 +1618,10 @@
       "title": "Design function-library creation and safe asset deletion tools",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "source_review_design_pending",
+      "owner": "codex",
+      "validation": "creation_candidate_native_validation_pending",
       "source_ids": [
         "FT-138"
       ],
@@ -1629,7 +1629,19 @@
         "2026-11-03_S4/FT-138"
       ],
       "dependencies": [],
-      "next_step": "Design constraints recorded in docs/audit/field-reports/nov04-asset-lifecycle-design.md. Review checked stock deletion internals and function-library factory before implementation; registry referencers alone are insufficient. No asset deletion performed and no original crash cause claimed."
+      "next_step": "Function-library preview/create candidate e58cafb1 is implemented in the isolated worktree and awaiting native validation. Keep this combined task open: safe asset deletion is not implemented. Reviewed deletion model must reject referenced/dirty/open/undo-owned assets, avoid force deletion and external source-file deletion, and verify actual registry/file outcome.",
+      "evidence": [
+        {
+          "run": "849ad4fc382c4cd1a04eb38eb7fb241a",
+          "result": "failed_build",
+          "scope": "Fixture variable shadowing; renamed the local without changing production behavior."
+        },
+        {
+          "run": "4f5e1bef751a451fb3e705ea1d05efdf",
+          "result": "failed_native",
+          "scope": "Creation checks passed but compact help omitted the no-save guarantee. Moved it to the first sentence; rerun pending."
+        }
+      ]
     },
     {
       "id": "NOV04-41",
