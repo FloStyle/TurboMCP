@@ -6693,8 +6693,8 @@
           "scope": "RenderPreview currently emits aggregate move counts and whole-graph images but no per-node planned coordinates or block table. Current harness verifies preview non-mutation, not exact preview/edit coordinate agreement. Add auditable plan geometry and readable block captures before claiming parity or readable previews."
         }
       ],
-      "next_step": "Build and verify e2f298a4; inspect native detail screenshots for correct outlines, pins and labels. Retain failed visual evidence.",
-      "latest_evidence": "396 calls passed including preview immutability, score/position parity and undo. Cascade generated 18 before and 13 after tiles with no image-cap omissions. Inspected C0DCD6414C73D5A9CAD4E391B238E593-after-block-0-row-0-col-0.png: full-detail labels clipped and pins outside compact outlines after overview zoom. Candidate e2f298a4 adds layout settling after zoom changes and before detail bounds; not yet compiled or editor-verified. Do not merge or accept the tile fix on workflow pass alone."
+      "next_step": "Verify 08748d50 title/icons in next editor batch. Full routing and visual reference acceptance remain open. Focused subset must use an explicit supported runner path; do not claim environment selection worked.",
+      "latest_evidence": "Full 396-call suite passed (executor stripped requested subset environment; focused mode did not run). Inspected 8C5962E34436D080DD671A826C1D74B1-after-block-0-row-0-col-0.png: node outlines, labels and pin geometry now correct after zoom settling; scratch function title still wrong. Follow-up 08748d50 preserves graph name and refreshes vector atlas using existing capture approach; build fc2143578df54ce7a52053e937578f6b passed. Follow-up screenshot verification pending. No visual acceptance or integration yet."
     },
     {
       "id": "NOV05-08",
