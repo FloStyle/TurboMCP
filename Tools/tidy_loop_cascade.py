@@ -124,6 +124,314 @@ def build_graph(call, evidence, persist):
     persist()
 
 
+def record_baseline(call, evidence, persist):
+    """Record the default result, including refusal; never force a passing layout."""
+    asset = evidence['asset']
+    graph = 'LoopCascade'
+    ids = evidence['label_ids']
+    merged = call('ReadTurboMCPNodeResolve', nodeIds=ids['N80'])
+    for label in ('N71', 'N88'):
+        if ids[label].rsplit(':', 1)[-1] not in merged:
+            raise RuntimeError('Return merge lost source ' + label + ': ' + merged)
+    evidence['merge_readback'] = merged
+    # Read all pages: the full graph exceeds the reader's per-call text budget.
+    offset, revision, bodies = 0, '', []
+    while True:
+        page = json.loads(call('ReadTurboMCPGraphLoad', asset=asset, graphName=graph, format='json', detail='full', offset=offset, maxChars=24000, revision=revision, entryFilter=''))
+        bodies.append(page['body'])
+        revision = page['revision']
+        offset = page['nextOffset']
+        if offset == -1:
+            break
+    evidence['complete_graph_before_tidy'] = ''.join(bodies)
+    geometry = {}
+    offset = 0
+    while True:
+        page = call('LookTurboMCPGraphPositions', asset=asset, graphName=graph, nodeIds='', maxNodes=256, offset=offset)
+        for match in re.finditer(r'^(\S+) x=(-?\d+) y=(-?\d+) width=(\d+) height=(\d+)$', page, re.M):
+            identity, x, y, w, h = match.groups()
+            geometry[identity] = dict(x=int(x), y=int(y), width=int(w), height=int(h))
+        next_page = re.search(r'next_offset=(-?\d+)', page)
+        if not next_page:
+            raise RuntimeError('Position page has no explicit continuation')
+        offset = int(next_page.group(1))
+        if offset == -1:
+            break
+    if set(geometry) != set(ids.values()):
+        raise RuntimeError('Measured graph identities differ from the 83-node recipe')
+    state = 20261105
+    def draw():
+        nonlocal state
+        state = (1103515245 * state + 12345) % (2 ** 31)
+        return state
+    planned = []
+    for label, identity in sorted(ids.items()):
+        planned.append(dict(node=identity, label=label, x=draw()%9000, y=draw()%3000, **{k:geometry[identity][k] for k in ('width','height')}))
+    placed = []
+    for item in sorted(planned, key=lambda x:(x['x'],x['label'])):
+        while any(item['x'] < old['x']+old['width'] and item['x']+item['width'] > old['x'] and item['y'] < old['y']+old['height'] and item['y']+item['height'] > old['y'] for old in placed):
+            item['y'] += item['height'] + 40
+        placed.append(item)
+    evidence['scrambled_positions'] = placed
+    persist()
+    call('EditTurboMCPGraphPositions',asset=asset,graphName=graph,positions=json.dumps([{k:r[k] for k in ('node','x','y')} for r in placed]))
+    call('EditTurboMCPCompile',assets=asset)
+    call('EditTurboMCPSave',assets=asset)
+    evidence['baseline_before'] = call('LookTurboMCPLayoutDoneCheck',asset=asset,graphName=graph,alignmentTolerance=64.0)
+    args = dict(asset=asset,graphName=graph,bForce=False,nodeIds=[],mainPath='',horizontalGap=120.0,verticalGap=100.0,lanePitch=280.0,wrapAfter='')
+    evidence['baseline_preview'] = call('PreviewTurboMCPGraphTidy',**args)
+    # Refusal is valid baseline evidence, not layout acceptance.
+    evidence['baseline_edit'] = call('EditTurboMCPGraphTidy',**args)
+    evidence['baseline_after'] = call('LookTurboMCPLayoutDoneCheck',asset=asset,graphName=graph,alignmentTolerance=64.0)
+    evidence['baseline_capture'] = call('LookTurboMCPCapture',asset=asset,graphName=graph,mode='graph',target='',size='1600x900')
+    evidence['stage'] = 'default_baseline_recorded_regressions_pending'
+    persist()
+
+
+
+def read_positions(call, asset, graph):
+    result, offset = {}, 0
+    while True:
+        page = call('LookTurboMCPGraphPositions', asset=asset, graphName=graph,
+                    nodeIds='', maxNodes=256, offset=offset)
+        for match in re.finditer(r'^(\S+) x=(-?\d+) y=(-?\d+) width=(\d+) height=(\d+)$', page, re.M):
+            identity, *values = match.groups()
+            result[identity] = dict(zip(('x', 'y', 'width', 'height'), map(int, values)))
+        continuation = re.search(r'next_offset=(-?\d+)', page)
+        if not continuation:
+            raise RuntimeError('Position response has no explicit continuation')
+        offset = int(continuation.group(1))
+        if offset == -1:
+            return result
+
+def record_scoped_regression(call, evidence, persist):
+    """J5: record a scoped baseline and require every outside rectangle to stay fixed.
+
+    This checks the scope boundary, not compact-layout acceptance. Restore the
+    original baseline coordinates after recording the scoped result.
+    """
+    asset, graph = evidence['asset'], 'LoopCascade'
+    labels = next(block['labels'] for block in evidence['blocks'] if block['name'] == 'L3B')
+    selected = [evidence['label_ids'][label] for label in labels]
+
+    def positions():
+        return read_positions(call, asset, graph)
+
+    row = dict(selected_labels=labels, selected_ids=selected, acceptance=False)
+    evidence.setdefault('regressions', {})['J5'] = row
+    row['before'] = positions()
+    if set(row['before']) != set(evidence['label_ids'].values()):
+        raise RuntimeError('J5 baseline node set differs from the recipe')
+    persist()
+    args = dict(asset=asset, graphName=graph, bForce=False, nodeIds=selected,
+                mainPath='', horizontalGap=120.0, verticalGap=100.0,
+                lanePitch=280.0, wrapAfter='')
+    row['preview'] = call('PreviewTurboMCPGraphTidy', **args)
+    row['edit'] = call('EditTurboMCPGraphTidy', **args)
+    row['edit_changed'] = row['edit'].startswith('changed:')
+    row['edit_unchanged'] = row['edit'].startswith('unchanged:')
+    row['after'] = positions()
+    persist()
+    if set(row['after']) != set(row['before']):
+        raise RuntimeError('J5 changed the graph node set')
+    changed_outside = [identity for identity in row['before']
+                       if identity not in selected and row['before'][identity] != row['after'][identity]]
+    row['changed_outside'] = changed_outside
+    persist()
+    if changed_outside:
+        raise RuntimeError('J5 moved or resized unselected nodes: ' + ', '.join(changed_outside))
+    row['scope_boundary_passed'] = True
+    row['capture'] = call('LookTurboMCPCapture', asset=asset, graphName=graph,
+                          mode='graph', target='', size='1600x900')
+    call('EditTurboMCPGraphPositions', asset=asset, graphName=graph,
+         positions=json.dumps([dict(node=identity, x=rect['x'], y=rect['y'])
+                               for identity, rect in row['before'].items()]))
+    row['restored'] = positions()
+    if row['restored'] != row['before']:
+        raise RuntimeError('J5 failed to restore baseline geometry')
+    row['baseline_restored'] = True
+    row['remaining'] = 'Compact rectangle placement and connection readability require candidate comparison and visual review.'
+    persist()
+
+
+
+def record_comment_regression(call, evidence, persist):
+    """J4 records existing titled boxes; containment is checked independently of Tidy's summary."""
+    asset, graph = evidence['asset'], 'LoopCascade'
+    row = dict(acceptance=False, boxes=[])
+    evidence.setdefault('regressions', {})['J4'] = row
+    for block_name, title in [('S', 'Validate input'), ('L1B', 'Flatten path points')]:
+        labels = next(block['labels'] for block in evidence['blocks'] if block['name'] == block_name)
+        members = [evidence['label_ids'][label] for label in labels]
+        args = dict(asset=asset, graphName=graph, action='create', nodes=','.join(members),
+                    box='', text=title, color='', size='')
+        call('PreviewTurboMCPComment', **args)
+        answer = call('EditTurboMCPComment', **args)
+        match = re.search(r'created comment box (\S+) in ', answer)
+        if not match:
+            raise RuntimeError('J4 comment creation returned no identity: ' + answer)
+        row['boxes'].append(dict(id=match.group(1), title=title, original_members=members))
+        persist()
+    row['before'] = read_positions(call, asset, graph)
+    args = dict(asset=asset, graphName=graph, bForce=False, nodeIds=[], mainPath='',
+                horizontalGap=120.0, verticalGap=100.0, lanePitch=280.0, wrapAfter='')
+    row['preview'] = call('PreviewTurboMCPGraphTidy', **args)
+    row['edit'] = call('EditTurboMCPGraphTidy', **args)
+    row['after'] = read_positions(call, asset, graph)
+    persist()
+    if set(row['before']) != set(row['after']):
+        raise RuntimeError('J4 changed the node or comment identity set')
+    for box in row['boxes']:
+        matches = [key for key in row['after'] if key == box['id'] or key.endswith(':' + box['id'])]
+        if len(matches) != 1:
+            raise RuntimeError('J4 cannot resolve comment geometry: ' + box['id'])
+        rect = row['after'][matches[0]]
+        box['readback'] = call('ReadTurboMCPCommentList', asset=asset, graphName=graph,
+                               scope='box:' + matches[0], offset=0, limit=80)
+        if box['title'] not in box['readback']:
+            raise RuntimeError('J4 lost comment title: ' + box['title'])
+        box['contained_original_members'] = [identity for identity in box['original_members']
+            if row['after'][identity]['x'] >= rect['x']
+            and row['after'][identity]['y'] >= rect['y']
+            and row['after'][identity]['x'] + row['after'][identity]['width'] <= rect['x'] + rect['width']
+            and row['after'][identity]['y'] + row['after'][identity]['height'] <= rect['y'] + rect['height']]
+        persist()
+        if not box['contained_original_members']:
+            raise RuntimeError('J4 left a titled box empty of its original nodes')
+    row['titles_and_nonempty_passed'] = True
+    row['capture'] = call('LookTurboMCPCapture', asset=asset, graphName=graph,
+                          mode='graph', target='', size='1600x900')
+    row['remaining'] = 'Inspect box fit and candidate layout; title and nonempty checks alone are not visual acceptance.'
+    persist()
+
+
+
+def record_break_regression(call, evidence, persist):
+    """J3 uses a real loop Break input, retaining that edge as execution feedback."""
+    asset, graph = evidence['asset'], 'J3BreakFeedback'
+    row = dict(acceptance=False)
+    evidence.setdefault('regressions', {})['J3'] = row
+    call('EditTurboMCPFunctionAdd', asset=asset, name=graph, inputs='Items: array<double>', outputs='Done: bool')
+    call('EditTurboMCPCompile', assets=asset)
+    initial = call('ReadTurboMCPGraphLoad', asset=asset, graphName=graph, format='read',
+                   detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
+    entry = re.search(r'\(fn J3BreakFeedback ; ([^\s;]+)', initial).group(1)
+    result = re.search(r'\(Function\|Result ; ([^\s;]+)', initial).group(1)
+    discovery = call('PreviewTurboMCPNodeType', asset=asset, graphName=graph, words='ForEachLoop', limit='40')
+    choices = [line for line in discovery.splitlines() if line == 'Utilities|Array|ForEachLoopwithBreak']
+    if len(choices) != 1:
+        raise RuntimeError('J3 cannot discover the array loop with Break')
+    loop_type = choices[0]
+    row['loop_pins'] = call('PreviewTurboMCPNodePins', asset=asset, graphName=graph, typeId=loop_type)
+    for pin in ('Exec', 'Array', 'Break', 'LoopBody', 'Completed'):
+        if not re.search(r'\b' + pin + r'\b', row['loop_pins']):
+            raise RuntimeError('J3 missing discovered loop pin ' + pin)
+    input_discovery = call('PreviewTurboMCPNodeType', asset=asset, graphName=graph, words='Items', limit='40')
+    inputs = [line for line in input_discovery.splitlines() if line.startswith('FunctionInput|') and line.endswith('|J3BreakFeedback|Items')]
+    if len(inputs) != 1:
+        raise RuntimeError('J3 input getter discovery is ambiguous')
+    call('EditTurboMCPGraphRemove', asset=asset, graphName=graph, nodes='[]',
+         links=json.dumps([dict(sourceNodeId=entry,sourcePin='then',targetNodeId=result,targetPin='execute')]))
+    text = ('(' + inputs[0] + ' ; label ItemsRead\n)\n('
+            + loop_type + ' ; label Loop\n "Exec" (-> ' + entry
+            + ':"then")\n "Array" (-> ItemsRead:"Items")\n)\n'
+            '(Utilities|FlowControl|Branch ; label Stop\n "execute" (-> Loop:"LoopBody")\n "Condition" true\n)')
+    args = dict(asset=asset,graphName=graph,text=text,continuation='auto',placement='local')
+    row['append_preview'] = call('PreviewTurboMCPGraphAppend', **args)
+    if not row['append_preview'].startswith('preview:'):
+        raise RuntimeError('J3 construction preview refused: ' + row['append_preview'])
+    appended = call('EditTurboMCPGraphAppend', **args)
+    created = re.findall(r'^created (.*?): type (.*)$', appended, re.M)
+    if [kind for _,kind in created] != [inputs[0],loop_type,'Utilities|FlowControl|Branch']:
+        raise RuntimeError('J3 construction identities do not match the recipe')
+    loop, stop = created[1][0], created[2][0]
+    row['loop_id'], row['stop_id'] = loop, stop
+    call('EditTurboMCPGraphConnect',asset=asset,graphName=graph,sourceNodeId=stop,sourcePin='then',targetNodeId=loop,targetPin='Break')
+    call('EditTurboMCPGraphConnect',asset=asset,graphName=graph,sourceNodeId=loop,sourcePin='Completed',targetNodeId=result,targetPin='execute')
+    row['compile'] = call('EditTurboMCPCompile',assets=asset)
+    row['before'] = call('ReadTurboMCPNodeResolve',nodeIds=loop)
+    persist()
+    args = dict(asset=asset,graphName=graph,bForce=False,nodeIds=[],mainPath='',horizontalGap=120.0,verticalGap=100.0,lanePitch=280.0,wrapAfter='')
+    row['preview'] = call('PreviewTurboMCPGraphTidy',**args)
+    row['edit'] = call('EditTurboMCPGraphTidy',**args)
+    row['after'] = call('ReadTurboMCPNodeResolve',nodeIds=loop)
+    row['positions'] = read_positions(call,asset,graph)
+    row['capture'] = call('LookTurboMCPCapture',asset=asset,graphName=graph,mode='graph',target='',size='1600x900')
+    row['remaining'] = 'Compare exact feedback and Completed links, Body pin alignment and Completed placement; no automatic visual acceptance.'
+    persist()
+
+
+def record_event_regressions(call, evidence, persist):
+    """Record J1/J2/J6 on fresh Actor event graphs, never substitute functions."""
+    engine_tools = 'editor_toolset.toolsets.blueprint.BlueprintTools'
+    for case, entries, calls_per_entry in [('J1', 1, 3), ('J2', 1, 2), ('J6A', 3, 2), ('J6B', 3, 2)]:
+        name = 'TidyFixture_' + case + '_' + uuid.uuid4().hex
+        asset, graph = '/Game/Tests/' + name, 'EventGraph'
+        row = dict(asset=asset, graph=graph, acceptance=False, chains=[])
+        evidence.setdefault('regressions', {})[case] = row
+        call('create', _toolset=engine_tools, folder_path='/Game/Tests', asset_name=name,
+             asset_type={'refPath': '/Script/Engine.Actor'})
+        factory_nodes = read_positions(call, asset, graph)
+        if factory_nodes:
+            call('EditTurboMCPGraphRemove',asset=asset,graphName=graph,nodes=json.dumps(list(factory_nodes)),links='[]')
+        call('EditTurboMCPVarsAdd', asset=asset, variables='Message: string')
+        call('EditTurboMCPCompile', assets=asset)
+        def discover(words, predicate):
+            answer = call('PreviewTurboMCPNodeType',asset=asset,graphName=graph,words=words,limit='80')
+            choices = [line for line in answer.splitlines() if predicate(line)]
+            if len(choices) != 1:
+                raise RuntimeError(case + ': ambiguous node discovery for ' + words)
+            call('PreviewTurboMCPNodePins',asset=asset,graphName=graph,typeId=choices[0])
+            return choices[0]
+        getter = discover('Message',lambda line: line.startswith('Variable|' + asset + '.') and line.endswith('|Get|Message'))
+        printer = discover('PrintString',lambda line: line.startswith('Function|/Script/Engine.') and line.endswith(':PrintString'))
+        def append(forms, expected):
+            args=dict(asset=asset,graphName=graph,text='\n'.join(forms),continuation='auto',placement='local')
+            preview=call('PreviewTurboMCPGraphAppend',**args)
+            if not preview.startswith('preview:'):
+                raise RuntimeError(case + ': append preview refused: ' + preview)
+            answer=call('EditTurboMCPGraphAppend',**args)
+            created=re.findall(r'^created (.*?): type (.*)$',answer,re.M)
+            if [kind for _,kind in created] != expected:
+                raise RuntimeError(case + ': created node types differ from request')
+            return [identity for identity,_ in created]
+        for index in range(entries):
+            event=call('EditTurboMCPCustomEventAdd',asset=asset,graphName=graph,name='Start'+str(index),inputs='')
+            match=re.search(r'^node: (\S+)',event,re.M)
+            if not match:
+                raise RuntimeError(case + ': missing event identity')
+            entry=match.group(1)
+            starts=[(entry,'then')]
+            if case == 'J2':
+                sequence=discover('Sequence',lambda line: line == 'Utilities|FlowControl|Sequence')
+                seq=append(['('+sequence+' ; label Sequence\n "execute" (-> '+entry+':"then")\n)'],[sequence])[0]
+                call('PreviewTurboMCPNodePinGrowth',asset=asset,graphName=graph,nodeId=seq,count='3')
+                call('EditTurboMCPNodePinGrowth',asset=asset,graphName=graph,nodeId=seq,count='3')
+                row['sequence_readback']=call('ReadTurboMCPNodeResolve',nodeIds=seq)
+                starts=[(seq,'then_'+str(i)) for i in range(3)]
+            for lane,(source,pin) in enumerate(starts):
+                forms, expected=[],[]
+                for stage in range(calls_per_entry):
+                    label='Call'+str(stage)
+                    forms.append('('+getter+' ; label Read'+str(stage)+'\n)')
+                    forms.append('('+printer+' ; label '+label+'\n "execute" (-> '+source+':'+json.dumps(pin)+')\n "InString" (-> Read'+str(stage)+':"Message")\n)')
+                    expected.extend([getter,printer])
+                    source,pin=label,'then'
+                row['chains'].append(dict(entry=entry,lane=lane,nodes=append(forms,expected)))
+                persist()
+        row['compile']=call('EditTurboMCPCompile',assets=asset)
+        row['before']=read_positions(call,asset,graph)
+        args=dict(asset=asset,graphName=graph,bForce=False,nodeIds=[],mainPath='',horizontalGap=120.0,verticalGap=100.0,lanePitch=280.0,wrapAfter='')
+        row['preview']=call('PreviewTurboMCPGraphTidy',**args)
+        row['edit']=call('EditTurboMCPGraphTidy',**args)
+        row['after']=read_positions(call,asset,graph)
+        if set(row['before']) != set(row['after']):
+            raise RuntimeError(case + ': Tidy changed the node identity set')
+        row['capture']=call('LookTurboMCPCapture',asset=asset,graphName=graph,mode='graph',target='',size='1600x900')
+        row['remaining']='Verify exact links, lane order, row alignment and candidate comparison from the recorded baseline.'
+        persist()
+
+
 def run():
     root = Path(__file__).resolve().parents[1]
     context = json.loads(Path(os.environ['TURBOMCP_EXECUTION_CONTEXT']).read_text(encoding='utf-8'))
@@ -134,16 +442,20 @@ def run():
     directory.mkdir(parents=True)
     session = Session()
     session.connect()
-    evidence = {'stage': 'discovery', 'layout_acceptance': False, 'calls': []}
+    subset = os.environ.get('TURBOMCP_TIDY_BASELINE_SUBSET', 'all')
+    if subset not in ('all', 'events'):
+        raise RuntimeError('Unknown baseline subset; expected all or events')
+    evidence = {'stage': 'discovery', 'layout_acceptance': False, 'subset': subset, 'calls': []}
 
     def persist():
         (directory / 'evidence.json').write_text(json.dumps(evidence, indent=2), encoding='utf-8')
 
     def call(tool, **args):
-        row = {'tool': tool, 'arguments': args, 'outcome': 'pending'}
+        toolset = args.pop('_toolset', None) or toolset_for(tool)
+        row = {'toolset': toolset, 'tool': tool, 'arguments': args, 'outcome': 'pending'}
         evidence['calls'].append(row)
         persist()
-        answer = session.call(toolset_for(tool), tool, args)
+        answer = session.call(toolset, tool, args)
         row['answer'] = answer
         row['outcome'] = 'returned'
         persist()
@@ -157,6 +469,13 @@ def run():
             response = session.rpc('tools/call', {'name': 'describe_toolset', 'arguments': {'toolset_name': toolset}})
             (directory / (toolset.split('.')[-1] + '.json')).write_text(json.dumps(response, indent=2), encoding='utf-8')
         call('ReadTurboMCPStatus')
+        if subset == 'events':
+            record_event_regressions(call, evidence, persist)
+            evidence['stage'] = 'event_baselines_recorded_acceptance_pending'
+            persist()
+            print('Evidence: ' + str(directory), flush=True)
+            print('RESULT: PASS (J1/J2/J6 baseline checkpoint only; full fixture and acceptance not run)')
+            return
         asset = '/Game/Tests/TidyFixture_LoopCascade_' + uuid.uuid4().hex
         evidence['asset'] = asset
         call('PreviewTurboMCPFunctionLibraryCreate', packagePath=asset)
@@ -215,10 +534,15 @@ def run():
                     evidence['pins'][candidate] = call('PreviewTurboMCPNodePins', asset=asset, graphName='LoopCascade', typeId=candidate)
             cache_path.write_text(json.dumps(dict(signature_version=1, asset=asset, evidence=str(directory), **{k:evidence[k] for k in ('discovery','types','pins')}), indent=2), encoding='utf-8')
         evidence['initial_graph'] = call('ReadTurboMCPGraphLoad', asset=asset, graphName='LoopCascade', format='read', detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
-        build_graph(call, evidence, persist) 
+        build_graph(call, evidence, persist)
+        record_baseline(call, evidence, persist)
+        record_scoped_regression(call, evidence, persist)
+        record_comment_regression(call, evidence, persist)
+        record_break_regression(call, evidence, persist)
+        record_event_regressions(call, evidence, persist)
         persist()
         print('Evidence: ' + str(directory), flush=True)
-        print('RESULT: PASS (construction checkpoint only; layout acceptance remains false)')
+        print('RESULT: PASS (baseline evidence checkpoint only; layout acceptance remains false)')
     except Exception as error:
         evidence['failure'] = str(error)
         evidence['stage'] = 'failed'
