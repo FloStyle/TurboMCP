@@ -340,6 +340,30 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 			Pin.Line = Line.Number;
 			Pin.Column = PinColumn;
 			OutPlan.Nodes[CurrentIndex].Pins.Add(Pin);
+            // A trailing label may follow the final pin and closing delimiter.
+            // Scan outside quoted literals so a semicolon inside a value is not a comment.
+            bool bInQuotedValue = false;
+            bool bValueEscape = false;
+            for (int32 CharacterIndex = 0; CharacterIndex < Line.Text.Len(); ++CharacterIndex)
+            {
+                const TCHAR Character = Line.Text[CharacterIndex];
+                if (bValueEscape) { bValueEscape = false; continue; }
+                if (bInQuotedValue && Character == TEXT('\\')) { bValueEscape = true; continue; }
+                if (Character == TEXT('"')) { bInQuotedValue = !bInQuotedValue; continue; }
+                if (Character != TEXT(';') || bInQuotedValue) continue;
+                const FString TrailingLabel = TurboMCPGraphTextLex::LocalLabelFromComment(Line.Text.Mid(CharacterIndex));
+                if (!TrailingLabel.IsEmpty())
+                {
+                    FString& ExistingLabel = OutPlan.Nodes[CurrentIndex].LocalLabel;
+                    if (!ExistingLabel.IsEmpty() && ExistingLabel != TrailingLabel)
+                    {
+                        OutError = FString::Printf(TEXT("line %d: node already has label '%s'; conflicting label '%s' was refused. Use one label per node."), Line.Number, *ExistingLabel, *TrailingLabel);
+                        return false;
+                    }
+                    ExistingLabel = TrailingLabel;
+                }
+                break;
+            }
 		}
 	}
 

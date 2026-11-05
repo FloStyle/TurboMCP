@@ -1051,6 +1051,11 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * does not guarantee a later edit: the target state and edit guards can change.
      * Local labels name the PRECEDING node form. Prefer `(TypeId) ; label Name` for a pinless node,
      * or put `; label Name` on its own line after the closed form. Never put a label before its node.
+     * A multiline form may end with `Value 1) ; label Name`; one node cannot have conflicting labels.
+     * Quote creation IDs containing spaces: `("Exact Type ID")`. Use flat node forms, not nested reader values.
+     * Flat example: `(TypeId` then `InputPin 1) ; label ValueNode`, followed by a separate consumer form
+     * containing `DestinationInput (-> ValueNode:OutputPin)`. Substitute discovered type IDs and pin names.
+     * Do not write `(TypeId ; label Name)` on one line: the comment hides its closing parenthesis.
      * Every link is written on its destination INPUT: InputPin (-> SourceId:OutputPin).
      * To feed an existing node, copy its reader form header with its node ID, then add that input link.
      * Do not write a reverse link on a source output pin. Discover creation IDs with PreviewTurboMCPNodeType;
@@ -1915,6 +1920,11 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
      * Repeating new node forms creates another set of nodes; this is not idempotent.
      * Local labels name the PRECEDING node form. Prefer `(TypeId) ; label Name` for a pinless node,
      * or put `; label Name` on its own line after the closed form. Never put a label before its node.
+     * A multiline form may end with `Value 1) ; label Name`; one node cannot have conflicting labels.
+     * Quote creation IDs containing spaces: `("Exact Type ID")`. Use flat node forms, not nested reader values.
+     * Flat example: `(TypeId` then `InputPin 1) ; label ValueNode`, followed by a separate consumer form
+     * containing `DestinationInput (-> ValueNode:OutputPin)`. Substitute discovered type IDs and pin names.
+     * Do not write `(TypeId ; label Name)` on one line: the comment hides its closing parenthesis.
      * Every link is written on its destination INPUT: InputPin (-> SourceId:OutputPin).
      * To feed an existing node, copy its reader form header with its node ID, then add that input link.
      * Do not write a reverse link on a source output pin. Discover creation IDs with PreviewTurboMCPNodeType;

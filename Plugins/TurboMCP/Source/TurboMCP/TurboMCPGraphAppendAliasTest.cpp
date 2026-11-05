@@ -582,11 +582,22 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
         const FString Request = FString::Printf(TEXT("(%s\n    Value %s\n)"),
             *TypeId, *TurboMCPGraphTextLex::QuoteLiteral(Expected));
         // Exercise the help template's new-to-existing link, not just a detached literal.
-        const FString LinkedRequest = bTag ? Request : Request + FString::Printf(
-            TEXT(" ; label AddedValue\n(%s ; %s\n    InString (-> AddedValue:ReturnValue))"),
+        // A final pin can share the closing line with the label. Quoted semicolons remain literal content.
+        const FString InlineLabelRequest = FString::Printf(TEXT("(%s\n    Value %s) ; label AddedValue"),
+            *TypeId, *TurboMCPGraphTextLex::QuoteLiteral(Expected));
+        const FString LinkedRequest = bTag ? Request : InlineLabelRequest + FString::Printf(
+            TEXT("\n(%s ; %s\n    InString (-> AddedValue:ReturnValue))"),
             *TurboMCPNodeId::GetNodeTypeId(Fixture.UniqueNode),
             *TurboMCPNodeId::MakeForNode(Fixture.UniqueNode, true));
         const FString Before = SerializeGraph(Fixture.Unique);
+        if (!bTag)
+        {
+            FTurboMCPGraphAppend::FPlan ConflictPlan; FString ConflictError;
+            const FString ConflictText = LinkedRequest.Replace(TEXT("\n    Value"), TEXT(" ; label Other\n    Value"));
+            TestFalse(TEXT("Conflicting header and trailing labels refuse"), FTurboMCPGraphAppend::Plan(Fixture.AssetPath, Fixture.Unique->GetName(), ConflictText, ConflictPlan, ConflictError));
+            TestTrue(TEXT("Conflicting label refusal explains correction"), ConflictError.Contains(TEXT("one label per node")));
+            TestEqual(TEXT("Conflicting label refusal preserves graph"), SerializeGraph(Fixture.Unique), Before);
+        }
         const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Fixture.AssetPath, Fixture.Unique->GetName(), LinkedRequest);
         TestTrue(FString::Printf(TEXT("literal preview accepted: %s"), *Preview), Preview.StartsWith(TEXT("preview:")));
         TestEqual(TEXT("literal preview preserves graph"), SerializeGraph(Fixture.Unique), Before);
