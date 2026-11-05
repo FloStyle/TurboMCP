@@ -1196,6 +1196,7 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
         for (const TCHAR* Tool:{TEXT("PreviewTurboMCPGraphAppend"),TEXT("EditTurboMCPGraphAppend")})
         {
             const FString Help=UTurboMCPReadToolset::ReadTurboMCPToolHelp(FString(Tool).StartsWith(TEXT("Preview"))?TEXT("TurboMCP.TurboMCPPreviewToolset"):TEXT("TurboMCP.TurboMCPEditToolset"),Tool);
+            AddInfo(Help);
             TestTrue(TEXT("Append help exposes placement choice"),Help.Contains(TEXT("Placement")) && Help.Contains(TEXT("outside")));
         }
     }
