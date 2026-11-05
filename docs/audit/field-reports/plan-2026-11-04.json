@@ -626,10 +626,10 @@
       "title": "Preserve or explicitly transfer menu keyboard focus",
       "kind": "bug",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "implementation_native_validation_running",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "PI-04"
       ],
@@ -637,7 +637,30 @@
         "2026-10-30_S1/PI-04"
       ],
       "dependencies": [],
-      "next_step": "Candidate 7a137272 adds before/after focus reporting and CommonUI hold-preservation/viewport-transfer assertions. Focused native run 53f70cfd45624b6b9e09795f8db1f36e active. Review caught an incorrect recovery tool name in new output; correct after the active run before integration. No completion claimed."
+      "next_step": "Integrated explicit viewport focus reporting with previous/current widget types and displaced child/menu indication. Help documents hold directly to preserve current menu focus. MenuActivate is explicitly not focus-only. OS activation remains separately bounded and not guaranteed.",
+      "evidence": [
+        {
+          "run": "53f70cfd45624b6b9e09795f8db1f36e",
+          "result": "passed_with_review_correction",
+          "scope": "CommonUI behavior assertions passed; output review found nonexistent recovery-tool reference, corrected before final validation."
+        },
+        {
+          "run": "e9c8e952524e427b9f24163ff7cbe3ec",
+          "result": "passed",
+          "scope": "Focused CommonUI workflow: hold preserves focus identity, navigation changes menu focus as expected, explicit transfer reports SCommonButton to SPIEViewport and displaced=yes; final recovery wording checked."
+        },
+        {
+          "run": "dcc5846556564efc990a8ce1a0a0a144",
+          "result": "passed",
+          "scope": "26 offline checks; trusted scope gate passed."
+        }
+      ],
+      "visual_evidence": [
+        "Inspected final menu capture pie_19786D184A61DC21F4D5519B3D99A3A2.png: focused Settings button visible; disabled action and Resume displayed."
+      ],
+      "followups": [
+        "Explicit focus intentionally transfers focus. For a menu already focused inside PIE, send hold directly. Arbitrary project-specific key-handler behavior is not certified."
+      ]
     },
     {
       "id": "NOV04-23",
