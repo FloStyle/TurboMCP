@@ -1265,6 +1265,15 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPBlueprintReparent(const FString& Asset, const FString& NewParent);
 
+    /** Preview the function selected by an existing Create Event node in place; preserves its identity, object input and consumers, with no compile or save.
+     * @param Asset Blueprint path or unique asset name. Loading may execute project callbacks. Requires an idle editor outside PIE or compilation.
+     * @param GraphName Exact unique K2 graph name from the reader.
+     * @param NodeId Exact full or short reader ID for a Create Event node in GraphName. Missing, ambiguous or unconnected delegate signatures refuse.
+     * @param FunctionName Existing compatible function on the node's actual object scope. Same function is a clean no-op. Does not change the object or register a runtime delegate; the consuming Bind or Timer node must execute. Unlike BindFunction, this keeps the existing node and all consumers.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPDelegateRetarget(const FString& Asset,const FString& GraphName,const FString& NodeId,const FString& FunctionName);
+
 
 
     /**
@@ -2201,6 +2210,15 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPBlueprintReparent(const FString& Asset, const FString& NewParent, const FString& ExpectedParent, const FString& Confirmation);
+
+    /** Edit the function selected by an existing Create Event node in place; preserves its identity, object input and consumers, with no compile or save.
+     * @param Asset Blueprint path or unique asset name. Loading may execute project callbacks. Requires an idle editor outside PIE or compilation.
+     * @param GraphName Exact unique K2 graph name from the reader.
+     * @param NodeId Exact full or short reader ID for a Create Event node in GraphName. Missing, ambiguous or unconnected delegate signatures refuse.
+     * @param FunctionName Existing compatible function on the node's actual object scope. Same function is a clean no-op. Does not change the object or register a runtime delegate; the consuming Bind or Timer node must execute. Unlike BindFunction, this keeps the existing node and all consumers.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPDelegateRetarget(const FString& Asset,const FString& GraphName,const FString& NodeId,const FString& FunctionName);
 
 
 
