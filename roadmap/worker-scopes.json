@@ -3674,6 +3674,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDelegateRetarget.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDelegateRetargetTest.cpp"
           ]
+        },
+        "nov04-remove-object-path": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEditNodeKeysTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
