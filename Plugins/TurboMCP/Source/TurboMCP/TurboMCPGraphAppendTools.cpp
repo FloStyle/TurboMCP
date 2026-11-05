@@ -15,11 +15,11 @@
 // and construct temporary nodes; toolset membership does not enforce side effects.
 // Apply performs additional live checks and reports execution failures separately.
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
-	const FString& Asset, const FString& GraphName, const FString& Text, const FString& Continuation)
+	const FString& Asset, const FString& GraphName, const FString& Text, const FString& Continuation, const FString& Placement)
 {
 	FTurboMCPGraphAppend::FPlan Plan;
 	FString Error;
-	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error, /*bRequestPlacement=*/true, Continuation))
+	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error, /*bRequestPlacement=*/true, Continuation, Placement))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
@@ -32,12 +32,12 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPGraphAppend(
-	const FString& Asset, const FString& GraphName, const FString& Text, const FString& Continuation)
+	const FString& Asset, const FString& GraphName, const FString& Text, const FString& Continuation, const FString& Placement)
 {
 	// Rebuild the plan against current state; a previous preview may be stale.
 	FTurboMCPGraphAppend::FPlan Plan;
 	FString Error;
-	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error, /*bRequestPlacement=*/true, Continuation))
+	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error, /*bRequestPlacement=*/true, Continuation, Placement))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}

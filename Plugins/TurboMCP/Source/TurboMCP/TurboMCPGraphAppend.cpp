@@ -181,10 +181,14 @@ namespace
 }
 
 bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphName,
-	const FString& InText, FPlan& OutPlan, FString& OutError, bool bRequestPlacement, const FString& Continuation)
+	const FString& InText, FPlan& OutPlan, FString& OutError, bool bRequestPlacement, const FString& Continuation, const FString& Placement)
 {
 	OutError.Empty();
 	OutPlan = FPlan();
+    const FString PlacementMode=Placement.TrimStartAndEnd();
+    if (!PlacementMode.IsEmpty() && PlacementMode!=TEXT("local") && PlacementMode!=TEXT("outside"))
+    { OutError=TEXT("Placement must be local or outside. No graph changes were made."); return false; }
+    OutPlan.bPlaceOutside=PlacementMode==TEXT("outside");
     // Placement preflight executes the proposed links, so it must use the caller's continuation.
     OutPlan.Continuation = Continuation.TrimStartAndEnd();
     if (OutPlan.Continuation.IsEmpty()) OutPlan.Continuation = TEXT("auto");
@@ -739,7 +743,7 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		{
 			FString PlacementRefusal;
 			if (!PlanPlacement(Graph, OutPlan.Nodes, OutPlan.PlannedPositions,
-				OutPlan.bPlacementUsedEstimatedSize, PlacementRefusal, &OutPlan.Links))
+				OutPlan.bPlacementUsedEstimatedSize, PlacementRefusal, &OutPlan.Links, OutPlan.bPlaceOutside))
 			{
 				OutPlan.Refusals.Add(PlacementRefusal);
 			}
@@ -824,7 +828,7 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 
 	if (InPlan.bPlacementRequested && InPlan.PlannedPositions.Num() > 0)
 	{
-		Out += TEXT("\nplacement:");
+		Out += InPlan.bPlaceOutside ? TEXT("\nplacement: outside; existing nodes stay fixed. Boundary wires may be long; inspect the layout before compiling or saving.") : TEXT("\nplacement:");
 		for (const FPlannedPosition& Position : InPlan.PlannedPositions)
 		{
 			if (!InPlan.Nodes.IsValidIndex(Position.FormIndex))
@@ -1027,7 +1031,7 @@ bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FS
                         }
                     }
                     Accepted = PlanPlacement(Original, OutMeasuredPlan->Nodes, OutMeasuredPlan->PlannedPositions,
-                        OutMeasuredPlan->bPlacementUsedEstimatedSize, OutError, &LayoutLinks);
+                        OutMeasuredPlan->bPlacementUsedEstimatedSize, OutError, &LayoutLinks, OutMeasuredPlan->bPlaceOutside);
                 }
             }
         }
@@ -1675,7 +1679,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 	// Placement evidence is appended only when the caller asked for it, so the legacy report is unchanged.
 	if (InPlan.bPlacementRequested)
 	{
-		Out += TEXT("\nplacement:");
+		Out += InPlan.bPlaceOutside ? TEXT("\nplacement: outside; existing nodes stay fixed. Boundary wires may be long; inspect the layout before compiling or saving.") : TEXT("\nplacement:");
 		for (int32 FormIndex = 0; FormIndex < InPlan.Nodes.Num(); ++FormIndex)
 		{
 			if (InPlan.Nodes[FormIndex].bLinksToExisting

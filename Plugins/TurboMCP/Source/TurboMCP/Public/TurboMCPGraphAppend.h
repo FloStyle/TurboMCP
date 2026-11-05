@@ -137,6 +137,7 @@ public:
 		 * leave it false and keep the legacy origin placement.
 		 */
 		bool bPlacementRequested = false;
+        bool bPlaceOutside = false;
 
 		/** One entry per created form, in input order. Empty when placement was not requested. */
 		TArray<FPlannedPosition> PlannedPositions;
@@ -159,7 +160,7 @@ public:
 	 *                           the legacy behavior and no positions are computed.
 	 */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, const FString& InText,
-		FPlan& OutPlan, FString& OutError, bool bRequestPlacement = false, const FString& Continuation = FString());
+		FPlan& OutPlan, FString& OutError, bool bRequestPlacement = false, const FString& Continuation = FString(), const FString& Placement = TEXT("local"));
 
 	/**
 	 * Plans an attachment-relative block when links identify an existing exec source; otherwise a deterministic column.
@@ -173,7 +174,7 @@ public:
 	 */
 	static bool PlanPlacement(const UEdGraph* InGraph, const TArray<FNewNode>& InNodes,
 		TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal,
-        const TArray<FNewLink>* InLinks = nullptr);
+        const TArray<FNewLink>* InLinks = nullptr, bool bPlaceOutside = false);
 
 	/**
 	 * Applies an accepted plan: one transaction, create, link, lay out, then read back and compare. Compile is separate.

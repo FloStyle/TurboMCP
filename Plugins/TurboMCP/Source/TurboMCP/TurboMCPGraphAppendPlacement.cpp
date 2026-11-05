@@ -47,7 +47,7 @@ namespace
 }
 
 bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<FNewNode>& InNodes,
-	TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal, const TArray<FNewLink>* InLinks)
+	TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal, const TArray<FNewLink>* InLinks, bool bPlaceOutside)
 {
 	OutPositions.Reset();
 	bOutUsedEstimatedSize = false;
@@ -162,7 +162,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
     // A single inserted execution node should use the available gap in its own
     // flow before the general block layout searches below unrelated events.
     // Existing nodes remain fixed. If no local slot fits, retain the general fallback.
-    if (Attachment && !bDataAttachment && CreatedCount == 1 && InLinks)
+    if (!bPlaceOutside && Attachment && !bDataAttachment && CreatedCount == 1 && InLinks)
     {
         const UEdGraphNode* Consumer = nullptr;
         for (const FNewLink& Link : *InLinks)
@@ -425,6 +425,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
             int64 LocalShiftX = 0;
             // Four footprint-sized rows on either side bound the search to the
             // attachment's neighbourhood. Failure asks for space, not a remote placement.
+            if (!bPlaceOutside)
             for (const FLocalAnchor& Anchor : LocalAnchors)
                 for (int32 Column = -1; Column <= 1; ++Column)
                     for (int32 Row = -4; Row <= 4; ++Row)
@@ -461,6 +462,16 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                         if (!bFoundLocal || Score < BestLocalScore)
                         { bFoundLocal = true; BestLocalScore = Score; LocalShiftX = DX; ShiftY = DY; }
                     }
+            if (bPlaceOutside)
+            {
+                // Translate the dependency layout as a unit beyond all existing
+                // rectangles, including comments. Never move the fixed graph.
+                int64 MinX=MAX_int64, MinY=MAX_int64;
+                for (int32 I : Order) { MinX=FMath::Min(MinX,X[I]); MinY=FMath::Min(MinY,Y[I]); }
+                LocalShiftX=Right+PlacementHorizontalGap-MinX;
+                ShiftY=Top-MinY;
+                bFoundLocal=true;
+            }
             if (!bFoundLocal)
             {
                 OutRefusal = TEXT("placement: no collision-free local space was found near the fixed connections. Free space around the target flow or append a smaller connected block; existing nodes were not moved.");

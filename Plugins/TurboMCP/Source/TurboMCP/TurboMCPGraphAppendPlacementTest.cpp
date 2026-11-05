@@ -1147,6 +1147,20 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
             FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Positions, Estimated, Error, &Links));
         TestTrue(TEXT("Blocked placement explains how to proceed"), Error.Contains(TEXT("Free space")));
         TestEqual(TEXT("Refusal emits no partial positions"), Positions.Num(), 0);
+        const FGraphSnapshot BlockedBefore=CaptureGraph(Graph);
+        TestTrue(TEXT("Explicit outside mode escapes blocked neighbourhood"),
+            FTurboMCPGraphAppend::PlanPlacement(Graph,Forms,Positions,Estimated,Error,&Links,true));
+        TestEqual(TEXT("Outside positions both nodes"),Positions.Num(),2);
+        for (const auto& Position:Positions) TestTrue(TEXT("Outside clears obstruction"),Position.X>=20000+HorizontalGap);
+        if (Positions.Num()==2) TestTrue(TEXT("Dependency chain remains left to right"),Positions[1].X>=Positions[0].X+200+HorizontalGap);
+        TestTrue(TEXT("Outside planning preserves existing graph"),SameGraph(BlockedBefore,CaptureGraph(Graph)));
+        Obstacle->NodePosX=MAX_int32-10;Obstacle->NodeWidth=100;
+        TestFalse(TEXT("Outside refuses coordinate overflow"),
+            FTurboMCPGraphAppend::PlanPlacement(Graph,Forms,Positions,Estimated,Error,&Links,true));
+        FTurboMCPGraphAppend::FPlan BadPlan;
+        TestFalse(TEXT("Unknown placement mode refuses before graph lookup"),FTurboMCPGraphAppend::Plan(TEXT(""),TEXT(""),TEXT(""),BadPlan,Error,true,TEXT("auto"),TEXT("guess")));
+        TestTrue(TEXT("Unknown mode guidance"),Error.Contains(TEXT("local or outside")));
+
     }
 
 	return true;
