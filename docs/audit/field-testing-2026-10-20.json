@@ -6407,13 +6407,20 @@
       "kind": "housekeeping",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "source_preparation_no_native_run",
-      "remaining": "Approved bounded clean-room fixture scope; build all recipe nodes using discovered public schemas, then capture default baseline and J1-J6. No production change or passing baseline claimed.",
+      "validation": "native_discovery_blocked_baseline_pending",
+      "remaining": "83-node recipe captured. Supervised fixture creation, signature, local declarations and compile succeeded. Stock ForLoop was absent from discovery; array ForEachLoop also absent. Test explicit stock macro Blueprint loading before concluding a production defect. Full graph, baseline and J1-J6 are not built.",
       "source_keys": [
         "2026-11-05_S1/FT-156"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        {
+          "run": "cb08f716863b4e86a7240897464386fa",
+          "result": "failed",
+          "scope": "Public tool discovery checkpoint stopped at missing ForLoop; no default layout or acceptance claim. Evidence .local/tidy-cascade/13cbf8e15ae4403ea4ae9002392f632d in widget-roundtrip-review worktree."
+        }
+      ]
     },
     {
       "id": "NOV05-02",
