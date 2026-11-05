@@ -1438,7 +1438,9 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     for(const UEdGraphPin* Pin:N.Node->Pins)
                         if(Pin && Pin->Direction==EGPD_Output && Pin->PinType.PinCategory==TEXT("exec") && !Pin->LinkedTo.IsEmpty())
                         {
-                            if(!IsSequence && Pin==MainOutput) OutputLane.Add(Pin,Lane);
+                            // Compact Sequence output zero continues the current row;
+                            // subsequent outputs reserve lower child blocks.
+                            if((!IsSequence || OutPlan.bCompactBlocks) && Pin==MainOutput) OutputLane.Add(Pin,Lane);
                             else {LaneParent.Add(NextLane,Lane);LaneSource.Add(NextLane,I);OutputLane.Add(Pin,NextLane++);}
                         }
 
@@ -3091,6 +3093,15 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 	// `Plan` refuses before reaching this point unless the graph panel has measured every outline.
 	Lines.Add(TEXT("geometry: every node has a Slate-measured size; no estimate was used."));
 
+
+    if (InPlan.bCompactBlocks)
+    {
+        Lines.Add(TEXT("planned node positions (graph units; compare with post-edit GraphPositions):"));
+        for (const FNode& Node : InPlan.Nodes)
+            if (!Node.bIsComment)
+                Lines.Add(FString::Printf(TEXT("planned %s x=%.0f y=%.0f"), *Node.Key,
+                    FMath::RoundToDouble(Node.PlannedX), FMath::RoundToDouble(Node.PlannedY)));
+    }
 
     FString Images;
     if (!RenderNativePreview(InPlan, Images)) Lines.Add(TEXT("preview images unavailable: ") + Images);

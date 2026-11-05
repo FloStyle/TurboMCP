@@ -446,7 +446,7 @@ def read_complete_graph(call, asset, graph):
             return ''.join(bodies)
 
 
-def record_compact_candidates(call, evidence, persist):
+def record_compact_candidates(call, evidence, persist, comments_only=False):
     """Retain failures and verify read-back/undo; visual acceptance is separate."""
     cases = [('cascade', evidence['asset'], 'LoopCascade', []),
              ('J3', evidence['asset'], 'J3BreakFeedback', [])]
@@ -455,6 +455,8 @@ def record_compact_candidates(call, evidence, persist):
     for name in ('J1','J2','J6A','J6B'):
         item=evidence['regressions'][name]
         cases.append((name,item['asset'],item['graph'],[]))
+    if comments_only:
+        cases = [('J4', evidence['asset'], 'LoopCascade', [])]
     for name,asset,graph,selection in cases:
         row=dict(acceptance=False)
         evidence.setdefault('compact',{})[name]=row
@@ -471,6 +473,18 @@ def record_compact_candidates(call, evidence, persist):
         row['after_graph']=read_complete_graph(call,asset,graph)
         row['after_positions']=read_positions(call,asset,graph)
         row['reader_equal']=row['after_graph']==row['before_graph']
+        planned = {identity: dict(x=int(x), y=int(y)) for identity,x,y in
+            re.findall(r'^planned (\S+) x=(-?\d+) y=(-?\d+)$', row['preview'], re.M)}
+        row['preview_plan_positions'] = planned
+        if not planned:
+            raise RuntimeError(name+': preview omitted its planned positions')
+        if row['edit'].startswith('changed:'):
+            row['preview_edit_mismatches'] = [identity for identity, point in planned.items()
+                if identity not in row['after_positions'] or
+                any(row['after_positions'][identity][axis] != point[axis] for axis in ('x','y'))]
+            persist()
+            if row['preview_edit_mismatches']:
+                raise RuntimeError(name+': preview/edit coordinate mismatch')
         row['changed_outside']=[identity for identity in row['before_positions']
             if selection and identity not in selection and row['after_positions'].get(identity)!=row['before_positions'][identity]]
         persist()
@@ -618,10 +632,11 @@ def run():
         build_graph(call, evidence, persist)
         record_baseline(call, evidence, persist)
         record_scoped_regression(call, evidence, persist)
-        record_comment_regression(call, evidence, persist)
         record_break_regression(call, evidence, persist)
         record_event_regressions(call, evidence, persist)
         record_compact_candidates(call, evidence, persist)
+        record_comment_regression(call, evidence, persist)
+        record_compact_candidates(call, evidence, persist, comments_only=True)
         persist()
         print('Evidence: ' + str(directory), flush=True)
         print('RESULT: PASS (baseline evidence checkpoint only; layout acceptance remains false)')
