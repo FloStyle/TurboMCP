@@ -98,6 +98,53 @@ bool SupportedValue(const FProperty* P,int32 Depth=0)
     }
     return false;
 }
+// The engine converter is permissive even in strict mode. Validate JSON shapes
+// and numeric ranges first, including nested values, before it can coerce them.
+bool ValidValue(const FProperty* P,const TSharedPtr<FJsonValue>& V,int32 Depth=0)
+{
+    if (!V.IsValid() || V->Type==EJson::Null || Depth>16) return false;
+    const FNumericProperty* N=CastField<FNumericProperty>(P);
+    const UEnum* Enum=CastField<FEnumProperty>(P)?CastField<FEnumProperty>(P)->GetEnum():(N?N->GetIntPropertyEnum():nullptr);
+    if (Enum) return V->Type==EJson::String && Enum->GetValueByName(FName(*V->AsString()),EGetByNameFlags::CheckAuthoredName)!=INDEX_NONE;
+    if (N)
+    {
+        if (V->Type!=EJson::Number) return false;
+        const double Number=V->AsNumber();
+        if (!FMath::IsFinite(Number)) return false;
+        if (N->IsFloatingPoint()) return N->GetSize()!=4 || FMath::Abs(Number)<=3.402823466e38;
+        if (FMath::FloorToDouble(Number)!=Number || FMath::Abs(Number)>9007199254740991.0) return false;
+        const double Limit=FMath::Pow(2.0,N->GetSize()*8-(N->IsUnsigned()?0:1));
+        return Number >= (N->IsUnsigned()?0.0:-Limit) && Number<Limit;
+    }
+    if (CastField<FBoolProperty>(P)) return V->Type==EJson::Boolean;
+    if (CastField<FStrProperty>(P) || CastField<FNameProperty>(P) || CastField<FTextProperty>(P)) return V->Type==EJson::String;
+    const FProperty* Element=nullptr;
+    if (const auto* A=CastField<FArrayProperty>(P)) Element=A->Inner;
+    if (const auto* A=CastField<FSetProperty>(P)) Element=A->ElementProp;
+    if (Element)
+    {
+        if (V->Type!=EJson::Array) return false;
+        for (const auto& Item:V->AsArray()) if (!ValidValue(Element,Item,Depth+1)) return false;
+        return true;
+    }
+    if (V->Type!=EJson::Object) return false;
+    if (const auto* M=CastField<FMapProperty>(P))
+    {
+        for (const auto& Pair:V->AsObject()->Values)
+            if (!ValidValue(M->KeyProp,MakeShared<FJsonValueString>(FString(*Pair.Key)),Depth+1) || !ValidValue(M->ValueProp,Pair.Value,Depth+1)) return false;
+        return true;
+    }
+    if (const auto* S=CastField<FStructProperty>(P))
+    {
+        for (const auto& Pair:V->AsObject()->Values)
+        {
+            const FProperty* Field=FindFProperty<FProperty>(S->Struct,FName(*Pair.Key));
+            if (!Field || !ValidValue(Field,Pair.Value,Depth+1)) return false;
+        }
+        return true;
+    }
+    return false;
+}
 bool IsInput(const FProperty* P)
 {
     return !P->HasAnyPropertyFlags(CPF_ReturnParm) &&
@@ -122,13 +169,14 @@ FString Invoke(bool Edit,const FString& WorldPath,const FString& ObjectPath,cons
         if (!SupportedValue(P)) return Refuse(TEXT("Unsupported parameter type (object references, delegates and custom-imported structs are not accepted): ")+P->GetName()+TEXT(" (")+P->GetCPPType()+TEXT(")"));
         if (!IsInput(P)) continue;
         Inputs.Add(P->GetName());
-        const TSharedPtr<FJsonValue>* Value=Values->Values.Find(P->GetName());
+        const TSharedPtr<FJsonValue> Value=Values->TryGetField(P->GetName());
         if (!Value) return Refuse(TEXT("Missing required input: ")+P->GetName());
+        if (!ValidValue(P,Value)) return Refuse(TEXT("Wrong JSON type or out-of-range value for input: ")+P->GetName());
         FText Reason;
-        if (!FJsonObjectConverter::JsonValueToUProperty(*Value,P,P->ContainerPtrToValuePtr<void>(Storage.GetStructMemory()),0,0,true,&Reason))
+        if (!FJsonObjectConverter::JsonValueToUProperty(Value,P,P->ContainerPtrToValuePtr<void>(Storage.GetStructMemory()),0,0,true,&Reason))
             return Refuse(TEXT("Invalid input ")+P->GetName()+TEXT(": ")+Reason.ToString());
     }
-    for (const auto& Pair:Values->Values) if (!Inputs.Contains(Pair.Key)) return Refuse(TEXT("Unknown or output-only parameter: ")+Pair.Key);
+    for (const auto& Pair:Values->Values) if (!Inputs.Contains(FString(*Pair.Key))) return Refuse(TEXT("Unknown or output-only parameter: ")+FString(*Pair.Key));
     const FString Signature=DescribeInvocation(Target);
     const FString Intent=Signature+Arguments+FString::Printf(TEXT("/%u/%u"),Target.World->GetUniqueID(),Target.Object->GetUniqueID());
     FSHAHash Digest;FSHA1::HashBuffer(*Intent,Intent.Len()*sizeof(TCHAR),Digest.Hash);
