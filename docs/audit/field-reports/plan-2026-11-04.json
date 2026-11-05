@@ -1074,10 +1074,10 @@
       "title": "Clarify delegate node write-back support and safe surrounding edits",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
+      "validation": "native_gate_failed",
       "source_ids": [
         "X-124"
       ],
@@ -1085,7 +1085,14 @@
         "2026-11-03_S4/X-124"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Reader guidance implemented on review branch. Repair stale graph-text-guards calls (required Revision/EntryFilter) and legacy display-based type-ID expectations before accepting native evidence. Preserve partial reconstruction warnings and exact-pin compatibility checks.",
+      "evidence": [
+        {
+          "result": "native_failure_retained",
+          "run": "c222f2f944db4e03b732518cbb854ef7",
+          "scope": "Build passed; graph-text suite failed 14 checks. Public read calls omit required revision/entryFilter; SharedValueRepair still expects Development|PrintString and Variables|Default|GetExactValue instead of current reflected path IDs. Not an accepted runtime pass; guidance remains unintegrated."
+        }
+      ]
     },
     {
       "id": "NOV04-31",
