@@ -532,10 +532,10 @@
       "title": "Allow locals in implemented interface functions",
       "kind": "bug",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reproduced_fix_under_validation",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "FA-14"
       ],
@@ -543,7 +543,48 @@
         "2026-10-30_S3/FA-14"
       ],
       "dependencies": [],
-      "next_step": "Original native run 15b8d739ce7e4fccb6ffdd4e58d59698 reproduced preview/edit rejection and zero locals. Candidate admits owned interface function graphs and updates help. Run 67d5ebff52aa41b69523e19a7b0bc125 passed creation/type/default/preview checks but failed the duplicate-name fixture: its graph was uniquified. Fixture corrected to a distinct outer with exact-name assertion; native rerun pending. Not integrated or closed."
+      "next_step": "Integrated unique owned interface-function lookup, explicit null refusal and corrected preview/edit help. Native tests verify local name/type/default, clean preview, repeat no-op, conflicting defaults/parameters, event/missing graph refusals and ambiguity without mutation. No implicit save or engine changes. Existing structural refresh limitations remain documented.",
+      "evidence": [
+        {
+          "run": "15b8d739ce7e4fccb6ffdd4e58d59698",
+          "result": "failed",
+          "scope": "Original code rejected interface-function preview and edit; no local was created."
+        },
+        {
+          "run": "67d5ebff52aa41b69523e19a7b0bc125",
+          "result": "failed",
+          "scope": "Creation passed; duplicate graph fixture was uniquified, so ambiguity assertion failed. Corrected fixture outer and added exact-name assertion."
+        },
+        {
+          "run": "2634534023824271bb422ba90e569ae9",
+          "result": "passed",
+          "scope": "Native creation and refusal checks passed before explicit null-guard readability followup."
+        },
+        {
+          "run": "38b31e7d89024f00acf663ab72ee8d5c",
+          "result": "failed",
+          "scope": "Offline guard checker could not recognize indirect null checks. Added explicit checks without changing the checker."
+        },
+        {
+          "run": "d96b88f5b5354d248e838bae7f0061b6",
+          "result": "passed",
+          "scope": "Final candidate native graph-append suite including interface-local checks."
+        },
+        {
+          "run": "f7e06dba68804ce48ca602fdbc06ba89",
+          "result": "failed",
+          "scope": "Stale inventory and runner-verdict failures during concurrent native run. Inventory refreshed; runner failure cause not independently proven. Kept failure evidence."
+        },
+        {
+          "run": "81bdce939d39477da76babc261d186ed",
+          "result": "passed",
+          "scope": "All 26 offline gates after inventory refresh, with native execution finished. Trusted exact-file scope check passed for 86a3357cd0a8b2d3f3da06e49c3b081b3f0f2013."
+        }
+      ],
+      "followups": [
+        "Generic implemented interface fixture validated; no claim that arbitrary project-specific compilation or structural undo is safe.",
+        "Investigate runner-verdict missing-manifest failure if it recurs; later isolated pass does not establish the original cause."
+      ]
     },
     {
       "id": "NOV04-18",
