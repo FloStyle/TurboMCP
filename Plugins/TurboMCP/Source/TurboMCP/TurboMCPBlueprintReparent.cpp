@@ -14,6 +14,18 @@
 
 namespace
 {
+const TCHAR* CompilerStatus(EBlueprintStatus Status)
+{
+    switch (Status)
+    {
+    case BS_UpToDate: return TEXT("up to date");
+    case BS_UpToDateWithWarnings: return TEXT("up to date with warnings");
+    case BS_Error: return TEXT("compile error");
+    case BS_Dirty: return TEXT("requires compilation");
+    case BS_BeingCreated: return TEXT("being created");
+    default: return TEXT("unknown");
+    }
+}
 // Reparenting includes compilation and reinstancing. It is not a normal undoable
 // graph edit; do not wrap it in a transaction and imply reliable rollback.
 FString Reparent(bool Edit, const FString& Asset, const FString& NewParent,
@@ -28,6 +40,8 @@ FString Reparent(bool Edit, const FString& Asset, const FString& NewParent,
     UClass* Parent=LoadObject<UClass>(nullptr,*NewParent);
     if (!BP || BP->GetPathName()!=Asset || !Parent || Parent->GetPathName()!=NewParent)
         return Refuse(TEXT("Could not resolve the exact Blueprint asset and parent class paths."));
+    if (BP->GetClass()!=UBlueprint::StaticClass() && BP->GetClass()!=UWidgetBlueprint::StaticClass())
+        return Refuse(TEXT("Specialized Blueprint types, such as animation or level Blueprints, are unsupported."));
     if (BP->BlueprintType!=BPTYPE_Normal || !BP->ParentClass || BP->bBeingCompiled || BP->bQueuedForCompilation)
         return Refuse(TEXT("Requires a normal Blueprint with an existing parent that is not compiling."));
     if (Parent->HasAnyClassFlags(CLASS_Deprecated|CLASS_NewerVersionExists|CLASS_Interface)
@@ -67,7 +81,7 @@ FString Reparent(bool Edit, const FString& Asset, const FString& NewParent,
     return TEXT("changed\nreparent result: ")+FString(ParentMatches && GeneratedMatches && Compiled?TEXT("compiled"):TEXT("failed or incomplete; inspect the asset before further edits"))
         +Details+TEXT("\nactual parent: ")+GetPathNameSafe(BP->ParentClass)
         +TEXT("\ngenerated parent: ")+GetPathNameSafe(BP->GeneratedClass?BP->GeneratedClass->GetSuperClass():nullptr)
-        +FString::Printf(TEXT("\ncompiler status: %d; warnings: %d; errors: %d"),int32(BP->Status),Capture.WarningCount(),Capture.ErrorCount())
+        +FString::Printf(TEXT("\ncompiler status: %s; warnings: %d; errors: %d"),CompilerStatus(BP->Status),Capture.WarningCount(),Capture.ErrorCount())
         +TEXT("\n")+Capture.SummariseSince(0)+TEXT("\n")+Capture.SummariseErrorsSince(0)
         +TEXT("\nCompilation and reinstancing were requested. No rollback or save was performed. Inspect diagnostics and inherited defaults before explicitly saving.");
 }

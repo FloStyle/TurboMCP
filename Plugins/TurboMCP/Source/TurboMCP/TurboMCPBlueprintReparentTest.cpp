@@ -77,6 +77,7 @@ bool FTurboMCPBlueprintReparentTest::RunTest(const FString&)
     TestFalse(TEXT("Refusals clean"),Package->IsDirty());
     const FString Result=UTurboMCPEditToolset::EditTurboMCPBlueprintReparent(Asset,NewParent,OldParent,Consent);AddInfo(Result);
     TestTrue(TEXT("Reparent compiled"),Result.StartsWith(TEXT("changed\nreparent result: compiled")));
+    TestTrue(TEXT("Compiler status uses clear English"),Result.Contains(TEXT("compiler status: up to date")));
     TestTrue(TEXT("Actual parent changed"),BP->ParentClass==Parent);
     TestTrue(TEXT("Generated parent changed"),BP->GeneratedClass && BP->GeneratedClass->GetSuperClass()==Parent);
     TestEqual(TEXT("Graph identities, positions, defaults and links retained"),GraphSnapshot(),GraphBefore);
