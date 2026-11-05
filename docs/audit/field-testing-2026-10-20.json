@@ -6397,6 +6397,348 @@
       "task_plan": "docs/audit/field-reports/plan-2026-11-04.json",
       "canonical_issue": "NOV04-28",
       "planned_task": "NOV04-28"
+    },
+    {
+      "id": "NOV05-01",
+      "key": "NOV05-01",
+      "canonical_issue": "NOV05-01",
+      "report": "2026-11-05 intake",
+      "title": "Reproduce loop-cascade layout with a deterministic fixture and baseline",
+      "kind": "housekeeping",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "FIRST: inspect current fixture helpers and assign exact scope; discover creation IDs and pins; build Appendix F incrementally, compile, record corrections, scramble with seed 20261105, capture default preview/apply and E1-E7 metrics. Build J1-J6 controls before changing tidy. No baseline exists yet.",
+      "source_keys": [
+        "2026-11-05_S1/FT-156"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV05-02",
+      "key": "NOV05-02",
+      "canonical_issue": "NOV05-02",
+      "report": "2026-11-05 intake",
+      "title": "Place compact loop blocks with nested Completed continuations",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "Keep Body and True on their control row; Completed below its body; inner Completed inside outer body. Preserve feedback and merge semantics. Never implement withdrawn Completed-on-main-row rule.",
+      "source_keys": [
+        "2026-11-05_S1/TD-62",
+        "2026-11-05_S1/TD-70",
+        "2026-11-05_S1/FT-149",
+        "2026-11-05_S1/FT-150"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": [
+        "NOV05-01"
+      ]
+    },
+    {
+      "id": "NOV05-03",
+      "key": "NOV05-03",
+      "canonical_issue": "NOV05-03",
+      "report": "2026-11-05 intake",
+      "title": "Report meaningful layout regressions and distinguish intended handoffs",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "Implement and verify Appendix H measures, distinguish intended handoffs from defects and nested-box occupancy; preserve every worsened measure. Source findings contain inconsistent totals; do not use those totals as ground truth.",
+      "source_keys": [
+        "2026-11-05_S1/TD-63",
+        "2026-11-05_S1/TD-64",
+        "2026-11-05_S1/TD-73",
+        "2026-11-05_S1/LR-21",
+        "2026-11-05_S1/LR-22",
+        "2026-11-05_S1/FT-154"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": [
+        "NOV05-01"
+      ]
+    },
+    {
+      "id": "NOV05-04",
+      "key": "NOV05-04",
+      "canonical_issue": "NOV05-04",
+      "report": "2026-11-05 intake",
+      "title": "Route block handoffs and fallback merges without long diagonal wires",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-05_S1/TD-65",
+        "2026-11-05_S1/TD-71",
+        "2026-11-05_S1/FT-151"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": [
+        "NOV05-02"
+      ]
+    },
+    {
+      "id": "NOV05-05",
+      "key": "NOV05-05",
+      "canonical_issue": "NOV05-05",
+      "report": "2026-11-05 intake",
+      "title": "Offer safe explicit local promotion for shared values and loop indexes",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "Candidate report first; promotion explicitly selected and separate from geometry. Prove evaluation timing, dominance and loop frequency preservation; refuse unsafe caching. Do not automatically cache arbitrary pure expressions.",
+      "source_keys": [
+        "2026-11-05_S1/TD-66",
+        "2026-11-05_S1/TD-72",
+        "2026-11-05_S1/FT-152"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": [
+        "NOV05-01"
+      ]
+    },
+    {
+      "id": "NOV05-06",
+      "key": "NOV05-06",
+      "canonical_issue": "NOV05-06",
+      "report": "2026-11-05 intake",
+      "title": "Create optional nested block comments while preserving existing titles",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-05_S1/TD-67",
+        "2026-11-05_S1/FT-153"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": [
+        "NOV05-02"
+      ]
+    },
+    {
+      "id": "NOV05-07",
+      "key": "NOV05-07",
+      "canonical_issue": "NOV05-07",
+      "report": "2026-11-05 intake",
+      "title": "Provide readable block previews for dense graphs",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-05_S1/TD-68",
+        "2026-11-05_S1/FT-155"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": [
+        "NOV05-02"
+      ]
+    },
+    {
+      "id": "NOV05-08",
+      "key": "NOV05-08",
+      "canonical_issue": "NOV05-08",
+      "report": "2026-11-05 intake",
+      "title": "Keep every required parameter visible in compact help",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-05_S1/X-129"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV05-09",
+      "key": "NOV05-09",
+      "canonical_issue": "NOV05-09",
+      "report": "2026-11-05 intake",
+      "title": "Review loop-cascade reference and complete visual regression acceptance",
+      "kind": "housekeeping",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "Capture candidate and reference in editor; obtain user visual review of rebuilt reference. E8/E9 remain pending without approved comparable reference; original A crossing count unknown. Preserve J1-J6 regressions and preview/edit parity, undo and scope checks.",
+      "source_keys": [],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": [
+        "NOV05-02",
+        "NOV05-03",
+        "NOV05-04",
+        "NOV05-05",
+        "NOV05-06",
+        "NOV05-07",
+        "NOV05-08"
+      ]
+    },
+    {
+      "id": "NOV05-10",
+      "key": "NOV05-10",
+      "canonical_issue": "NOV05-10",
+      "report": "2026-11-05 intake",
+      "title": "Avoid excessive dependent-package refusals for rename and pure flags",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-04_S3/FA-18",
+        "2026-11-04_S3/FA-19"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV05-11",
+      "key": "NOV05-11",
+      "canonical_issue": "NOV05-11",
+      "report": "2026-11-05 intake",
+      "title": "Rebind copied local variables or refuse incompatible target scopes",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-04_S3/GC-97"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV05-12",
+      "key": "NOV05-12",
+      "canonical_issue": "NOV05-12",
+      "report": "2026-11-05 intake",
+      "title": "Support or clearly refuse format-text graph copy",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-04_S3/GC-96"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV05-13",
+      "key": "NOV05-13",
+      "canonical_issue": "NOV05-13",
+      "report": "2026-11-05 intake",
+      "title": "Support additional function return nodes in append",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-04_S3/GC-98"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV05-14",
+      "key": "NOV05-14",
+      "canonical_issue": "NOV05-14",
+      "report": "2026-11-05 intake",
+      "title": "Support quoted pin names containing spaces",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-04_S3/GC-99"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV05-15",
+      "key": "NOV05-15",
+      "canonical_issue": "NOV05-15",
+      "report": "2026-11-05 intake",
+      "title": "Target a specific local PIE client for input and console requests",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Design explicit stable world/client targeting and read-back; retain ambiguity refusal. General console execution is a separate capability/safety decision, not an implied widening of diagnostic commands.",
+      "source_keys": [
+        "2026-11-04_S3/X-128",
+        "2026-11-04_S3/FT-142"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV05-16",
+      "key": "NOV05-16",
+      "canonical_issue": "NOV05-16",
+      "report": "2026-11-05 intake",
+      "title": "Replace placed widget class while preserving compatible structure",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-04_S3/WT-17",
+        "2026-11-04_S3/FT-143"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV05-17",
+      "key": "NOV05-17",
+      "canonical_issue": "NOV05-17",
+      "report": "2026-11-05 intake",
+      "title": "Support object and class widget-property paths",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "source_keys": [
+        "2026-11-04_S3/WT-18"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV05-18",
+      "key": "NOV05-18",
+      "canonical_issue": "NOV05-18",
+      "report": "2026-11-05 intake",
+      "title": "Reconcile variable removal, rename and short struct-name needs",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Check tools added since unknown field build before creating duplicates. Separate member/local remove, rename and type alias coverage; link existing evidence where applicable.",
+      "source_keys": [
+        "2026-11-04_S3/VA-11",
+        "2026-11-04_S3/FT-144"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
+      "dependencies": []
     }
   ],
   "prototype": {
