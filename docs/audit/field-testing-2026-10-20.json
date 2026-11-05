@@ -6407,8 +6407,8 @@
       "kind": "housekeeping",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "native_discovery_blocked_baseline_pending",
-      "remaining": "83-node recipe captured. Supervised fixture creation, signature, local declarations and compile succeeded. Stock ForLoop was absent from discovery; array ForEachLoop also absent. Test explicit stock macro Blueprint loading before concluding a production defect. Full graph, baseline and J1-J6 are not built.",
+      "validation": "discovery_checkpoint_passed_full_fixture_pending",
+      "remaining": "Live creation, signature, locals and discovery passed after explicitly loading stock StandardMacros. Record that prerequisite; build all 83 nodes with inspected pins next. No layout baseline, J1-J6 or visual acceptance yet.",
       "source_keys": [
         "2026-11-05_S1/FT-156"
       ],
@@ -6419,6 +6419,11 @@
           "run": "cb08f716863b4e86a7240897464386fa",
           "result": "failed",
           "scope": "Public tool discovery checkpoint stopped at missing ForLoop; no default layout or acceptance claim. Evidence .local/tidy-cascade/13cbf8e15ae4403ea4ae9002392f632d in widget-roundtrip-review worktree."
+        },
+        {
+          "run": "1b7e513995ae46378770c8b1e529bdb0",
+          "result": "passed_checkpoint_only",
+          "scope": "Fixture shell and discovery after stock macro read. Earlier missing ForLoop failure retained. Not full graph construction or Tidy validation."
         }
       ]
     },

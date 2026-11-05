@@ -1065,6 +1065,13 @@
       "tier": "offline",
       "timeout_seconds": 120,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-tidy-loop-cascade",
+      "path": "Tools/test-tidy-loop-cascade.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
     }
   ]
 }
