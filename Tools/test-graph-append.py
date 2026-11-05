@@ -699,6 +699,7 @@ def main():
     automation_tests += (("TurboMCP.GraphAppend.NodeDiscovery", "node discovery found", "node discovery report parsed", "node discovery succeeds", "node discovery has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.LinkClassDiagnostic", "link class found", "link class report parsed", "link class succeeds", "link class has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.VariableRemove", "variable remove discovered", "variable remove report parsed", "variable remove succeeds", "variable remove has no errors"),)
+    automation_tests += (("TurboMCP.GraphAppend.EmptyObjectRead", "empty object discovered", "empty object report parsed", "empty object succeeds", "empty object has no errors"),)
     for test_path, discovered_name, report_name, success_name, errors_name in automation_tests:
         check(discovered_name, test_path in listed, listed[:240])
         if test_path not in listed:

@@ -692,6 +692,26 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 			continue;
 		}
 
+        // Empty object inputs can be significant even at bodies detail. Report
+        // the stored state without guessing whether a function accepts null.
+        const bool EmptyObject = Pin->LinkedTo.IsEmpty() && Pin->DefaultObject == nullptr
+            && Pin->DefaultValue.IsEmpty() && Pin->DefaultTextValue.IsEmpty()
+            && !Pin->PinType.IsContainer() && !Pin->ParentPin && Pin->SubPins.IsEmpty()
+            && (Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Object
+                || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Interface);
+        if (EmptyObject && !IsImplicitPin(Pin))
+        {
+            const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(InNode);
+            const UFunction* Function = Call ? Call->GetTargetFunction() : nullptr;
+            const FString Name = Pin->PinName.ToString();
+            const bool ContextDefault = Function &&
+                (Function->GetMetaData(TEXT("DefaultToSelf")) == Name || Function->GetMetaData(TEXT("WorldContext")) == Name);
+            Out += FString::Printf(TEXT("\n    ; object input %s: "), *Name);
+            Out += ContextDefault
+                ? TEXT("unconnected; function metadata supplies self/context (runtime validity not checked)")
+                : TEXT("unconnected with no stored default; inspect nullability before use (no self/context fallback identified)");
+        }
+
 		if (IsImplicitPin(Pin))
 		{
 			continue;
