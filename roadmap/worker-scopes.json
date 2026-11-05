@@ -3753,7 +3753,7 @@
           "new_files": [
             "Tools/test-tidy-loop-cascade.py",
             "Tools/tidy_loop_cascade.py",
-            "Tests/fixtures/tidy-loop-cascade.json"
+            "Tests/tidy-loop-cascade.json"
           ]
         }
       },
