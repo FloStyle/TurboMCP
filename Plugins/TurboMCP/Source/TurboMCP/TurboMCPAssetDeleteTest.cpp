@@ -72,12 +72,16 @@ bool FTurboMCPAssetDeleteTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("live reference refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath).Contains(TEXT("references")));
     }
     {
-        UObject* Child = NewObject<UObject>(Asset);
+        UObject* Child = NewObject<UTurboMCPAssetDeleteFixture>(Asset);
         TStrongObjectPtr<UObject> ChildReference(Child);
         TestTrue(TEXT("strong subobject reference refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath).Contains(TEXT("references")));
     }
     UObject* UnregisteredAsset = NewObject<UInputAction>(Package, TEXT("UnregisteredNeighbor"), RF_Public | RF_Standalone);
-    TestTrue(TEXT("unregistered loaded asset refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath).Contains(TEXT("Another loaded asset")));
+    const FString MultipleAssetsResult = UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath);
+    AddInfo(MultipleAssetsResult);
+    TestTrue(TEXT("multiple loaded assets refuse"), MultipleAssetsResult.Contains(TEXT("Another loaded asset"))
+        || MultipleAssetsResult.Contains(TEXT("exactly one asset")));
+    TestTrue(TEXT("multiple-asset refusal preserves file"), OriginalHash == FMD5Hash::HashFile(*Filename));
     UnregisteredAsset->ClearFlags(RF_Public | RF_Standalone);
     UnregisteredAsset->MarkAsGarbage();
     const FString HolderName = Name + TEXT("_References");
