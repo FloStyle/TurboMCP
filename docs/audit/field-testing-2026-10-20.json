@@ -6608,7 +6608,7 @@
       "kind": "feature",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "visual_defect_confirmed",
+      "validation": "internal_route_planner_build_only_not_exposed",
       "remaining": "Implement explicit orthogonal handoff routing, including J2 lower Sequence wires crossing pure readers. Preserve feedback and graph semantics; verify screenshots and undo.",
       "source_keys": [
         "2026-11-05_S1/TD-65",
@@ -6624,10 +6624,16 @@
           "run": "dd045dabee7f44dab9de90d46565d7ab",
           "result": "visual_routing_defect_confirmed",
           "scope": "Inspected native J2 image 9A9E26AB4464E86C426A33B073524CE4: three ordered rows and aligned first output, but Then 2 execution spline crosses the middle-row Message getter. Preservation passes do not certify routing. Keep unresolved under NOV05-04."
+        },
+        {
+          "commit": "d0cd7473",
+          "run": "19a1df7a8489400283d950b9f877024f",
+          "result": "build_passed_not_runtime_validated",
+          "scope": "Routing candidates now use integer stored positions, generated reader obstacle identities, prior-route knot obstacles, same-route knot clearance and segment checks. Internal planner remains disabled in public tools. Scoring, preview/apply integration, rollback and runtime routing verification remain incomplete."
         }
       ],
       "next_step": "Complete internal route validation and connect the exact route plan to scoring, scratch preview and transactional apply/rollback behind explicit opt-in. Verify original connectivity after contracting added knots and exact undo.",
-      "latest_evidence": "Added FWireRoute and internal PlanOrthogonalRoutes: measured knot pin offsets, two/four-knot channel candidates, node and unrelated-box obstacles, fixed-boundary exclusions, explicit skips. Not invoked by public tools and no live wire mutation enabled. Still requires generated-reader/prior-route obstacle treatment, integer-coordinate parity, route scoring, scratch preview, apply/rollback, contracted connectivity tests and editor image review. Do not classify routing as implemented."
+      "latest_evidence": "Routing candidates now use integer stored positions, generated reader obstacle identities, prior-route knot obstacles, same-route knot clearance and segment checks. Internal planner remains disabled in public tools. Scoring, preview/apply integration, rollback and runtime routing verification remain incomplete."
     },
     {
       "id": "NOV05-05",

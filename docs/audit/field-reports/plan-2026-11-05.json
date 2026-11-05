@@ -269,6 +269,12 @@
           "run": "a907bf7be42946a689c29102b2cbf7c4",
           "result": "build_passed_internal_foundation_only",
           "scope": "Added FWireRoute and internal PlanOrthogonalRoutes: measured knot pin offsets, two/four-knot channel candidates, node and unrelated-box obstacles, fixed-boundary exclusions, explicit skips. Not invoked by public tools and no live wire mutation enabled. Still requires generated-reader/prior-route obstacle treatment, integer-coordinate parity, route scoring, scratch preview, apply/rollback, contracted connectivity tests and editor image review. Do not classify routing as implemented."
+        },
+        {
+          "commit": "d0cd7473",
+          "run": "19a1df7a8489400283d950b9f877024f",
+          "result": "build_passed_not_runtime_validated",
+          "scope": "Routing candidates now use integer stored positions, generated reader obstacle identities, prior-route knot obstacles, same-route knot clearance and segment checks. Internal planner remains disabled in public tools. Scoring, preview/apply integration, rollback and runtime routing verification remain incomplete."
         }
       ],
       "implementation_contract": [
