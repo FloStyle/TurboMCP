@@ -311,7 +311,7 @@ def record_break_regression(call, evidence, persist):
     asset, graph = evidence['asset'], 'J3BreakFeedback'
     row = dict(acceptance=False)
     evidence.setdefault('regressions', {})['J3'] = row
-    call('EditTurboMCPFunctionAdd', asset=asset, name=graph, inputs='Items: array<double>', outputs='')
+    call('EditTurboMCPFunctionAdd', asset=asset, name=graph, inputs='Items: array<double>', outputs='Done: bool')
     call('EditTurboMCPCompile', assets=asset)
     initial = call('ReadTurboMCPGraphLoad', asset=asset, graphName=graph, format='read',
                    detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
@@ -361,6 +361,77 @@ def record_break_regression(call, evidence, persist):
     persist()
 
 
+def record_event_regressions(call, evidence, persist):
+    """Record J1/J2/J6 on fresh Actor event graphs, never substitute functions."""
+    engine_tools = 'editor_toolset.toolsets.blueprint.BlueprintTools'
+    for case, entries, calls_per_entry in [('J1', 1, 3), ('J2', 1, 2), ('J6A', 3, 2), ('J6B', 3, 2)]:
+        name = 'TidyFixture_' + case + '_' + uuid.uuid4().hex
+        asset, graph = '/Game/Tests/' + name, 'EventGraph'
+        row = dict(asset=asset, graph=graph, acceptance=False, chains=[])
+        evidence.setdefault('regressions', {})[case] = row
+        call('create', _toolset=engine_tools, folder_path='/Game/Tests', asset_name=name,
+             asset_type={'refPath': '/Script/Engine.Actor'})
+        factory_nodes = read_positions(call, asset, graph)
+        if factory_nodes:
+            call('EditTurboMCPGraphRemove',asset=asset,graphName=graph,nodes=json.dumps(list(factory_nodes)),links='[]')
+        call('EditTurboMCPVarsAdd', asset=asset, variables='Message: string')
+        call('EditTurboMCPCompile', assets=asset)
+        def discover(words, predicate):
+            answer = call('PreviewTurboMCPNodeType',asset=asset,graphName=graph,words=words,limit='80')
+            choices = [line for line in answer.splitlines() if predicate(line)]
+            if len(choices) != 1:
+                raise RuntimeError(case + ': ambiguous node discovery for ' + words)
+            call('PreviewTurboMCPNodePins',asset=asset,graphName=graph,typeId=choices[0])
+            return choices[0]
+        getter = discover('Message',lambda line: line.startswith('Variable|') and line.endswith('|Get|Message'))
+        printer = discover('PrintString',lambda line: line.startswith('Function|/Script/Engine.') and line.endswith(':PrintString'))
+        def append(forms, expected):
+            args=dict(asset=asset,graphName=graph,text='\n'.join(forms),continuation='auto',placement='local')
+            preview=call('PreviewTurboMCPGraphAppend',**args)
+            if not preview.startswith('preview:'):
+                raise RuntimeError(case + ': append preview refused: ' + preview)
+            answer=call('EditTurboMCPGraphAppend',**args)
+            created=re.findall(r'^created (.*?): type (.*)$',answer,re.M)
+            if [kind for _,kind in created] != expected:
+                raise RuntimeError(case + ': created node types differ from request')
+            return [identity for identity,_ in created]
+        for index in range(entries):
+            event=call('EditTurboMCPCustomEventAdd',asset=asset,graphName=graph,name='Start'+str(index),inputs='')
+            match=re.search(r'^node: (\S+)',event,re.M)
+            if not match:
+                raise RuntimeError(case + ': missing event identity')
+            entry=match.group(1)
+            starts=[(entry,'then')]
+            if case == 'J2':
+                sequence=discover('Sequence',lambda line: line == 'Utilities|FlowControl|Sequence')
+                seq=append(['('+sequence+' ; label Sequence\n "execute" (-> '+entry+':"then")\n)'],[sequence])[0]
+                call('PreviewTurboMCPNodePinGrowth',asset=asset,graphName=graph,nodeId=seq,count='3')
+                call('EditTurboMCPNodePinGrowth',asset=asset,graphName=graph,nodeId=seq,count='3')
+                row['sequence_readback']=call('ReadTurboMCPNodeResolve',nodeIds=seq)
+                starts=[(seq,'then_'+str(i)) for i in range(3)]
+            for lane,(source,pin) in enumerate(starts):
+                forms, expected=[],[]
+                for stage in range(calls_per_entry):
+                    label='Call'+str(stage)
+                    forms.append('('+getter+' ; label Read'+str(stage)+'\n)')
+                    forms.append('('+printer+' ; label '+label+'\n "execute" (-> '+source+':'+json.dumps(pin)+')\n "InString" (-> Read'+str(stage)+':"Message")\n)')
+                    expected.extend([getter,printer])
+                    source,pin=label,'then'
+                row['chains'].append(dict(entry=entry,lane=lane,nodes=append(forms,expected)))
+                persist()
+        row['compile']=call('EditTurboMCPCompile',assets=asset)
+        row['before']=read_positions(call,asset,graph)
+        args=dict(asset=asset,graphName=graph,bForce=False,nodeIds=[],mainPath='',horizontalGap=120.0,verticalGap=100.0,lanePitch=280.0,wrapAfter='')
+        row['preview']=call('PreviewTurboMCPGraphTidy',**args)
+        row['edit']=call('EditTurboMCPGraphTidy',**args)
+        row['after']=read_positions(call,asset,graph)
+        if set(row['before']) != set(row['after']):
+            raise RuntimeError(case + ': Tidy changed the node identity set')
+        row['capture']=call('LookTurboMCPCapture',asset=asset,graphName=graph,mode='graph',target='',size='1600x900')
+        row['remaining']='Verify exact links, lane order, row alignment and candidate comparison from the recorded baseline.'
+        persist()
+
+
 def run():
     root = Path(__file__).resolve().parents[1]
     context = json.loads(Path(os.environ['TURBOMCP_EXECUTION_CONTEXT']).read_text(encoding='utf-8'))
@@ -377,10 +448,11 @@ def run():
         (directory / 'evidence.json').write_text(json.dumps(evidence, indent=2), encoding='utf-8')
 
     def call(tool, **args):
-        row = {'tool': tool, 'arguments': args, 'outcome': 'pending'}
+        toolset = args.pop('_toolset', None) or toolset_for(tool)
+        row = {'toolset': toolset, 'tool': tool, 'arguments': args, 'outcome': 'pending'}
         evidence['calls'].append(row)
         persist()
-        answer = session.call(toolset_for(tool), tool, args)
+        answer = session.call(toolset, tool, args)
         row['answer'] = answer
         row['outcome'] = 'returned'
         persist()
@@ -457,6 +529,7 @@ def run():
         record_scoped_regression(call, evidence, persist)
         record_comment_regression(call, evidence, persist)
         record_break_regression(call, evidence, persist)
+        record_event_regressions(call, evidence, persist)
         persist()
         print('Evidence: ' + str(directory), flush=True)
         print('RESULT: PASS (baseline evidence checkpoint only; layout acceptance remains false)')
