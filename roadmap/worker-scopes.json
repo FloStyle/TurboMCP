@@ -3477,6 +3477,15 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeDiscoveryTest.cpp"
           ]
+        },
+        "nov04-link-class-diagnostic": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLinkClassDiagnosticTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
