@@ -1163,6 +1163,41 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 
     }
 
+    // Public workflow: use a reachable existing flow, not an isolated geometry
+    // array, so scratch measurement and live link application are both exercised.
+    {
+        UEdGraph* Graph=Fixture.Legacy;
+        PlaceComment(Graph,0x93000001,-3000,-3000,6000,6000);
+        const FString Text=ConnectedForms(Graph,2);
+        const FGraphSnapshot Before=CaptureGraph(Graph);
+        TMap<UEdGraphNode*,FIntPoint> Existing;
+        for (UEdGraphNode* Node:Graph->Nodes) if (Node) Existing.Add(Node,FIntPoint(Node->NodePosX,Node->NodePosY));
+        Fixture.Package->SetDirtyFlag(false);
+        const FString Local=UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Fixture.AssetPath,Graph->GetName(),Text);
+        TestTrue(TEXT("Crowded public local preview refuses"),Local.Contains(TEXT("no collision-free local space")));
+        const FString Preview=UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Fixture.AssetPath,Graph->GetName(),Text,TEXT("auto"),TEXT("outside"));AddInfo(Preview);
+        TestTrue(TEXT("Outside preview describes placement"),Preview.Contains(TEXT("placement: outside")));
+        TestTrue(TEXT("Public preview preserves graph"),SameGraph(Before,CaptureGraph(Graph)));
+        TestFalse(TEXT("Outside preview clean"),Fixture.Package->IsDirty());
+        const FString Applied=UTurboMCPEditToolset::EditTurboMCPGraphAppend(Fixture.AssetPath,Graph->GetName(),Text,TEXT("auto"),TEXT("outside"));AddInfo(Applied);
+        TestTrue(TEXT("Outside public edit changes graph"),Applied.StartsWith(TEXT("changed")));
+        TestEqual(TEXT("Two appended nodes"),Graph->Nodes.Num(),Existing.Num()+2);
+        for (const auto& Item:Existing) TestTrue(TEXT("Existing position unchanged"),Item.Key->NodePosX==Item.Value.X && Item.Key->NodePosY==Item.Value.Y);
+        for (UEdGraphNode* Node:Graph->Nodes) if (Node && !Existing.Contains(Node))
+        {
+            TestTrue(TEXT("Measured node outside existing bounds"),Node->NodePosX>=3000+HorizontalGap);
+            UEdGraphPin* Input=Node->FindPin(TEXT("execute"),EGPD_Input);
+            TestTrue(TEXT("Appended execution input linked"),Input && Input->LinkedTo.Num()==1);
+        }
+        const FString Capture=UTurboMCPLookToolset::LookTurboMCPCapture(Fixture.AssetPath,Graph->GetName(),TEXT("graph"),TEXT(""),TEXT("1600x900"));AddInfo(Capture);
+        TestTrue(TEXT("Outside placement capture generated"),Capture.Contains(TEXT("image:")));
+        for (const TCHAR* Tool:{TEXT("PreviewTurboMCPGraphAppend"),TEXT("EditTurboMCPGraphAppend")})
+        {
+            const FString Help=UTurboMCPReadToolset::ReadTurboMCPToolHelp(FString(Tool).StartsWith(TEXT("Preview"))?TEXT("TurboMCP.TurboMCPPreviewToolset"):TEXT("TurboMCP.TurboMCPEditToolset"),Tool);
+            TestTrue(TEXT("Append help exposes placement choice"),Help.Contains(TEXT("Placement")) && Help.Contains(TEXT("outside")));
+        }
+    }
+
 	return true;
 }
 
