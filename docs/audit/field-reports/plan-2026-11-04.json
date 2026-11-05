@@ -1227,10 +1227,10 @@
       "title": "Track engine PIE stop state versus script errors",
       "kind": "external",
       "priority": "P2",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "source_reviewed_not_reproduced",
+      "owner": "codex",
+      "validation": "partially_reproduced",
       "source_ids": [
         "X-119"
       ],
@@ -1238,11 +1238,16 @@
         "2026-10-30_S3/X-119"
       ],
       "dependencies": [],
-      "next_step": "Controlled disposable EndPlay script-error reproduction versus clean control; retain raw stop response and independently observed PIE state. Stock watcher already waits for ShutdownPIE with 30-second timeout, so immediate success is not an established cause.",
+      "next_step": "Stock StopPIE returns a Blueprint null-reference error despite completed shutdown; outer RunTests response is also replaced. Investigate result interception and preserve independent session-state evidence. The reported still-running case remains unreproduced; no engine fix claimed.",
       "evidence": [
         {
           "result": "source_review",
           "scope": "Stock EditorAppToolset.cpp StopPIE ~965 and FPIEShutdownWatcher ~831 inspected; file locally unmodified. Shutdown event or timeout controls completion. Engine follow-up documented in docs/audit/engine-issues-ue59-proposal.md; no fix or reproduction claimed."
+        },
+        {
+          "result": "failed_reproduction_run_with_confirmed_observation",
+          "run": "fc8d5b53ec3746bab9a54082abc7cca7",
+          "scope": "Build passed. Clean control returned returnValue:null. EndPlay null actor case returned Accessed None while PlayWorld was absent and IsPlaySessionInProgress false. Outer RunTests returned the same script-error text, failing JSON report parsing. This proves response/state disagreement, not a persistent PIE session or a passing suite."
         }
       ]
     },
