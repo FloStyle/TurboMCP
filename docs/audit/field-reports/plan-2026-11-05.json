@@ -96,7 +96,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "preservation_passed_comment_layout_repair_under_verification",
+      "validation": "comment_identity_fix_implemented_runtime_pending",
       "source_ids": [
         "TD-62",
         "TD-70",
@@ -112,7 +112,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Verify candidate b4950172: whole-graph compact planning spans existing comments and refits their original members. Inspect J4 captures and any membership refusal. Routing, full scoring and visual acceptance remain open.",
+      "next_step": "Verify a13b31f7 compact comment identity and full-content checks; inspect J4 captures. Routing, Appendix H scoring and user visual acceptance remain open.",
       "evidence": [
         {
           "run": "b04c38d19d264d37b7aa9613ed09eacd",
@@ -148,6 +148,11 @@
           "run": "0a3a7dcdf21e46c5a6e2642fb8c4d4b4",
           "result": "build_passed_editor_running",
           "scope": "Candidate b4950172 built successfully in 123.13 seconds; supervised editor suite started. Compact comment planning is not yet runtime accepted. Read-only projection of the prior plain-cascade positions into both J4 comment member sets found no unrelated-node intersections; this supports the approach but is not live verification."
+        },
+        {
+          "run": "0a3a7dcdf21e46c5a6e2642fb8c4d4b4",
+          "result": "failed_compact_comment_identity_guard",
+          "scope": "Candidate b4950172: plain cascade graph equality, exact coordinates and undo passed. J4 preview refused original member N20 as unrelated because MembersOf returns engine object names while the guard compared public IDs. Candidate a13b31f7 resolves both identities, removes stale old-corner reader constraint, adds rectangle bounds checks and verifies all J4 original members and titles. Failure retained; corrected runtime result pending."
         }
       ],
       "design_notes": [
