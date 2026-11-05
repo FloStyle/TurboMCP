@@ -631,7 +631,14 @@
         "2026-11-03_S2/NT-13"
       ],
       "dependencies": [],
-      "next_step": "Native stock Increment discovery/pin preview probe running under nov04-unnamed-pin-reproduction. NodePins uses internal PinName, not friendly label. Record exact action IDs and blank/whitespace names before choosing a compatible addressing repair; no cause or fix claimed yet."
+      "next_step": "Confirmed blank-looking execution pin names on stock increment macros. Investigate exact quoted-name representation through pin preview and link parser; preserve actual engine names, avoid guessed aliases, verify both directions and resulting increment workflow. Value/Result pins are named in this baseline.",
+      "evidence": [
+        {
+          "run": "15796f9928a54c91a6397b83fdd05853",
+          "result": "failed",
+          "scope": "Stock Math|Integer|IncrementInt and Math|Float|IncrementFloat each have whitespace-only execution input/output names; public pin preview renders them blank. Value and Result names are present; reported missing value name did not reproduce."
+        }
+      ]
     },
     {
       "id": "NOV04-17",
