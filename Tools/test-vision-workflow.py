@@ -19,9 +19,15 @@ if os.environ.get('TMCP_PIE_STOP_ONLY') == '1':
     result = s.call(support['AUTO_TOOLSET'], 'RunTests', {'testNames': [name]})
     print(result)
     if evidence.exists(): print(evidence.read_text(encoding='utf-8-sig'))
-    support['parse_run_tests_report'](result, name)
+    # The reproduced stock registry defect replaces the outer RunTests result.
+    # Query the completed report separately; never infer a test pass from the error.
+    if 'Accessed None trying to read (real) property NullActor' not in result:
+        raise RuntimeError('Expected outer registry interception was not observed: ' + result)
+    report = s.call(support['AUTO_TOOLSET'], 'GetTestResults', {})
+    print('Independent automation report:', report)
+    support['parse_run_tests_report'](report, name)
     if not evidence.exists(): raise RuntimeError('Fresh PIE stop evidence missing')
-    print('RESULT: PASS controlled PIE stop workflow; original cause remains unconfirmed')
+    print('RESULT: PASS reproduction assertions; stock stop result defect remains present')
     raise SystemExit(0)
 
 if os.environ.get('TMCP_RENAME_HELP_ONLY') == '1':

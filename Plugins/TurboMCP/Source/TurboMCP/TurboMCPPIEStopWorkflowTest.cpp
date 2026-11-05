@@ -35,6 +35,8 @@ class FTurboMCPStopProbe : public IAutomationLatentCommand
     double Deadline = FPlatformTime::Seconds() + 90;
     FString Evidence;
     bool OwnsPlay = false;
+    int32 ShutdownEvents = 0;
+    FDelegateHandle ShutdownHandle;
     void Record(const FString& Text)
     {
         Evidence += Text + TEXT("\n");
@@ -42,7 +44,11 @@ class FTurboMCPStopProbe : public IAutomationLatentCommand
         Test->AddInfo(Text);
     }
 public:
-    FTurboMCPStopProbe(FAutomationTestBase* InTest, UBlueprint* InBlueprint) : Test(InTest), Blueprint(InBlueprint) {}
+    FTurboMCPStopProbe(FAutomationTestBase* InTest, UBlueprint* InBlueprint) : Test(InTest), Blueprint(InBlueprint)
+    {
+        ShutdownHandle = FEditorDelegates::ShutdownPIE.AddLambda([this](bool) { ++ShutdownEvents; });
+    }
+    ~FTurboMCPStopProbe() { FEditorDelegates::ShutdownPIE.Remove(ShutdownHandle); }
     virtual bool Update() override
     {
         if (FPlatformTime::Seconds() > Deadline)
@@ -79,6 +85,9 @@ public:
         if (!Pending->IsReady()) return false;
         auto Result = Pending->Get(); Pending.Reset();
         Record(Result.HasError() ? TEXT("Stock stop error: ") + Result.GetError() : TEXT("Stock stop result: ") + Result.GetValue());
+        if (Case == 0) Test->TestFalse(TEXT("Clean control has no stock tool error"), Result.HasError());
+        else Test->TestTrue(TEXT("Stock result reproduces the fixture script error"), Result.HasError() && Result.GetError().Contains(TEXT("property NullActor")));
+        Test->TestEqual(TEXT("Shutdown event observed for each stop"), ShutdownEvents, Case + 1);
         const bool Running = GEditor->IsPlaySessionInProgress();
         Record(FString::Printf(TEXT("Independent state: PlayWorld=%s; session_in_progress=%s"), GEditor->PlayWorld ? TEXT("present") : TEXT("absent"), Running ? TEXT("yes") : TEXT("no")));
         Test->TestFalse(TEXT("Stop leaves no active PIE session"), Running);
@@ -113,7 +122,7 @@ bool FTurboMCPPIEStopTest::RunTest(const FString& Parameters)
     FKismetEditorUtilities::CompileBlueprint(BP);
     if (BP->Status == BS_Error) { AddError(TEXT("Fixture compile failed.")); return false; }
     Package->SetDirtyFlag(false);
-    AddExpectedError(TEXT("Accessed None trying to read property NullActor"), EAutomationExpectedErrorFlags::Contains, 1);
+    AddExpectedErrorPlain(TEXT("Accessed None trying to read (real) property NullActor"), EAutomationExpectedErrorFlags::Contains, 2);
     ADD_LATENT_AUTOMATION_COMMAND(FTurboMCPStopProbe(this, BP));
     return true;
 }
