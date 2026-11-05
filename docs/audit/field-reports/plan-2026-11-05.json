@@ -9,7 +9,7 @@
       "kind": "housekeeping",
       "priority": "P0",
       "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "full_fixture_and_J1_J6_baselines_recorded_not_visual_acceptance",
       "source_ids": [
@@ -86,7 +86,8 @@
           "result": "offline_gate_failed",
           "scope": "25/26 offline suites passed; runner-verdicts failed with missing child manifests during concurrent editor work. Isolated rerun passed; original cause not proven and failure retained. Repeat full gate serially before integration."
         }
-      ]
+      ],
+      "readiness_review": "The clean-room 83-node construction and J1-J6 baseline are recorded. Remaining exact acceptance checks are specified by the report and current harness; visual acceptance remains separate."
     },
     {
       "id": "NOV05-02",
@@ -187,7 +188,7 @@
       "kind": "bug",
       "priority": "P0",
       "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "workflow_passed_independent_scoring_and_visual_acceptance_pending",
       "source_ids": [
@@ -231,17 +232,18 @@
       ],
       "design_notes": [
         "Candidate BodyRowDrift and CompletedAboveBody are partial diagnostics, not Appendix H scoring. Still required: unrelated box crossings, exec segment crossings, diagonal exec length, block row breaks, data crossings, total length, area, 5-percent tie handling and every greater-than-10-percent regression warning."
-      ]
+      ],
+      "readiness_review": "Appendix H defines the seven measures and thresholds. Straight-segment scoring is integrated; independent geometry checks and intended handoff classification remain specified work."
     },
     {
       "id": "NOV05-04",
       "title": "Route block handoffs and fallback merges without long diagonal wires",
       "kind": "feature",
       "priority": "P0",
-      "state": "open",
-      "readiness": "needs_reconciliation",
+      "state": "in_progress",
+      "readiness": "ready",
       "owner": "codex",
-      "validation": "visual_defect_confirmed",
+      "validation": "internal_route_planner_build_only_not_exposed",
       "source_ids": [
         "TD-65",
         "TD-71",
@@ -255,12 +257,24 @@
       "dependencies": [
         "NOV05-02"
       ],
-      "next_step": "Implement explicit orthogonal handoff routing, including J2 lower Sequence wires crossing pure readers. Preserve feedback and graph semantics; verify screenshots and undo.",
+      "next_step": "Complete internal route validation and connect the exact route plan to scoring, scratch preview and transactional apply/rollback behind explicit opt-in. Verify original connectivity after contracting added knots and exact undo.",
       "evidence": [
         {
           "run": "dd045dabee7f44dab9de90d46565d7ab",
           "result": "visual_routing_defect_confirmed",
           "scope": "Inspected native J2 image 9A9E26AB4464E86C426A33B073524CE4: three ordered rows and aligned first output, but Then 2 execution spline crosses the middle-row Message getter. Preservation passes do not certify routing. Keep unresolved under NOV05-04."
+        },
+        {
+          "commit": "095f7be6",
+          "run": "a907bf7be42946a689c29102b2cbf7c4",
+          "result": "build_passed_internal_foundation_only",
+          "scope": "Added FWireRoute and internal PlanOrthogonalRoutes: measured knot pin offsets, two/four-knot channel candidates, node and unrelated-box obstacles, fixed-boundary exclusions, explicit skips. Not invoked by public tools and no live wire mutation enabled. Still requires generated-reader/prior-route obstacle treatment, integer-coordinate parity, route scoring, scratch preview, apply/rollback, contracted connectivity tests and editor image review. Do not classify routing as implemented."
+        },
+        {
+          "commit": "d0cd7473",
+          "run": "19a1df7a8489400283d950b9f877024f",
+          "result": "build_passed_not_runtime_validated",
+          "scope": "Routing candidates now use integer stored positions, generated reader obstacle identities, prior-route knot obstacles, same-route knot clearance and segment checks. Internal planner remains disabled in public tools. Scoring, preview/apply integration, rollback and runtime routing verification remain incomplete."
         }
       ],
       "implementation_contract": [
@@ -273,7 +287,8 @@
         "Score actual routed segments and knot footprints, not the removed direct wire. Check preview/edit seven-measure agreement and independently validate routing geometry.",
         "Compare connectivity after contracting only added reroute chains, preserving original pin identities, types, defaults and non-reroute nodes. Exact raw reader equality remains required for no-routing cases. Verify exact undo restores the original graph.",
         "Inspect Completed, fallback merge and unrelated-box screenshots. Retain failures and obtain user reference review before visual acceptance."
-      ]
+      ],
+      "readiness_review": "Routing rules R3/R6/R8 and the implementation_contract define opt-in behavior, exact pin preservation, scoped exclusions, rollback, preview parity and visual checks. Implement within the reviewed Tidy assignment; do not reuse the single-knot tool as a complete router."
     },
     {
       "id": "NOV05-05",
@@ -298,7 +313,12 @@
         "NOV05-01"
       ],
       "next_step": "Candidate report first; promotion explicitly selected and separate from geometry. Prove evaluation timing, dominance and loop frequency preservation; refuse unsafe caching. Do not automatically cache arbitrary pure expressions.",
-      "evidence": [],
+      "evidence": [
+        {
+          "result": "source_review_only",
+          "scope": "TurboMCPLocalVars.cpp currently restricts promotion to reviewed repeated scalar calculations and assigns at function entry (Apply entry successor checks and setter chain). It rejects impure producers/unreviewed ancestry. Do not reuse entry-time assignment for loop Index: the value changes per iteration. NOV05 requires separate producer/body-scoped assignment, explicit selected output IDs and downstream dominance/frequency checks; no implementation or editor evidence for that extension yet."
+        }
+      ],
       "design_notes": [
         "Appendix F.8 puts PointCount setter after the guard but replaces all N02 consumers, including the guard condition N04. That creates read-before-write if applied literally. The reference must place the cache before every replaced read, or retain the guard direct read. Preserve dominance and evaluation timing; do not silently implement the contradictory recipe."
       ]
@@ -332,9 +352,9 @@
       "kind": "feature",
       "priority": "P0",
       "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
-      "validation": "exact_node_parity_verified_public_block_previews_incomplete",
+      "validation": "geometry_visual_fix_verified_title_and_icon_followup_build_only",
       "source_ids": [
         "TD-68",
         "FT-155"
@@ -346,11 +366,31 @@
       "dependencies": [
         "NOV05-02"
       ],
-      "next_step": "Exact node preview/edit agreement passed in dd045dabee7f44dab9de90d46565d7ab. Scenario captures are per block; public block table and readable per-block previews remain incomplete.",
-      "evidence": [],
+      "next_step": "Verify 08748d50 title/icons in next editor batch. Full routing and visual reference acceptance remain open. Focused subset must use an explicit supported runner path; do not claim environment selection worked.",
+      "evidence": [
+        {
+          "commit": "74bf04cc",
+          "run": "dfd1d6c8105d450aaf73ded14c0a5468",
+          "result": "build_passed_not_visual_acceptance",
+          "scope": "Compact preview adds native 1:1 block tiles with an 80-unit border, 24-image-per-side cap and explicit omissions. Whole-graph overview retained when native zoom supports it. Empty wire-only tiles skipped; long routes must still be inspected in overview. Tile grids bounded at 64 x 64. Default rows unchanged. Native workflow and screenshot review pending."
+        },
+        {
+          "run": "0158243a013f464184f1fd3025c88c00",
+          "commit": "74bf04cc",
+          "result": "workflow_passed_visual_review_failed",
+          "scope": "396 calls passed including preview immutability, score/position parity and undo. Cascade generated 18 before and 13 after tiles with no image-cap omissions. Inspected C0DCD6414C73D5A9CAD4E391B238E593-after-block-0-row-0-col-0.png: full-detail labels clipped and pins outside compact outlines after overview zoom. Candidate e2f298a4 adds layout settling after zoom changes and before detail bounds; not yet compiled or editor-verified. Do not merge or accept the tile fix on workflow pass alone."
+        },
+        {
+          "run": "ccfb1a993559417da366dbfde8038778",
+          "commit": "054e19b1",
+          "result": "workflow_passed_partial_visual_improvement",
+          "scope": "Full 396-call suite passed (executor stripped requested subset environment; focused mode did not run). Inspected 8C5962E34436D080DD671A826C1D74B1-after-block-0-row-0-col-0.png: node outlines, labels and pin geometry now correct after zoom settling; scratch function title still wrong. Follow-up 08748d50 preserves graph name and refreshes vector atlas using existing capture approach; build fc2143578df54ce7a52053e937578f6b passed. Follow-up screenshot verification pending. No visual acceptance or integration yet."
+        }
+      ],
       "design_notes": [
         "RenderPreview currently emits aggregate move counts and whole-graph images but no per-node planned coordinates or block table. Current harness verifies preview non-mutation, not exact preview/edit coordinate agreement. Add auditable plan geometry and readable block captures before claiming parity or readable previews."
-      ]
+      ],
+      "readiness_review": "Native 1:1 detail tiles are the current candidate for readable compact previews. Build passes; editor evidence and image inspection remain pending. Preserve default row-mode output."
     },
     {
       "id": "NOV05-08",
@@ -358,7 +398,7 @@
       "kind": "bug",
       "priority": "P0",
       "state": "done",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "tested_live_required_parameter_summary",
       "source_ids": [
@@ -382,7 +422,8 @@
       ],
       "design_notes": [
         "Source cause confirmed in TurboMCPAgentHelp.cpp: properties are alphabetically ordered, then the entire Help string is cut to HelpBudgetChars. This can remove required parameter lines. Preserve a complete required-parameter name/type summary outside descriptive-text truncation; keep effects and refusal guidance, and test against the live schema for every named report tool. Sorting required parameters first alone is insufficient when the prefix consumes the budget."
-      ]
+      ],
+      "readiness_review": "Required-parameter help was verified against live schemas and integrated. Readiness metadata reconciled; existing done state and evidence retained."
     },
     {
       "id": "NOV05-09",
