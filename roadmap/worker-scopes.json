@@ -3765,7 +3765,10 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
             "Tools/tidy_loop_cascade.py",
             "Tools/test-tidy-loop-cascade.py",
-            "Tests/tidy-loop-cascade.json"
+            "Tests/tidy-loop-cascade.json",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVars.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLocalVars.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp"
           ],
           "new_files": []
         }

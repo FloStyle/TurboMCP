@@ -6608,7 +6608,7 @@
       "kind": "feature",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "internal_route_planner_build_only_not_exposed",
+      "validation": "focused_safety_passed_visual_routing_unresolved",
       "remaining": "Implement explicit orthogonal handoff routing, including J2 lower Sequence wires crossing pure readers. Preserve feedback and graph semantics; verify screenshots and undo.",
       "source_keys": [
         "2026-11-05_S1/TD-65",
@@ -6630,10 +6630,57 @@
           "run": "19a1df7a8489400283d950b9f877024f",
           "result": "build_passed_not_runtime_validated",
           "scope": "Routing candidates now use integer stored positions, generated reader obstacle identities, prior-route knot obstacles, same-route knot clearance and segment checks. Internal planner remains disabled in public tools. Scoring, preview/apply integration, rollback and runtime routing verification remain incomplete."
+        },
+        {
+          "commit": "a46acea5",
+          "run": "db2007dde48740548d31d6c8a23aa2c1",
+          "result": "build_passed_route_chain_preview_integration_only",
+          "scope": "Added shared existing-edge chain expansion and transient-preview mapping, including generated-reader source mapping, typed knot pins, integer positions, duplicate-edge refusal, whole-original-pin link-array read-back and failure restoration of link ordering and snapped-child relationships through stock public APIs. Public planning still produces no routes; live edits and scoring are not integrated, so no runtime routing success is claimed. Build 52efce617a6740329e491ed2e97eff6a failed on private snapping flags and was corrected to public APIs; keep that failure."
+        },
+        {
+          "commit": "2a9cc308",
+          "run": "6e003ae286f0431dbd14573407918c03",
+          "result": "build_passed_measured_route_scoring_not_runtime_verified",
+          "scope": "Added native transient-knot measurement with mandatory source-geometry-cache restoration; route segment expansion for planned length and compact measures; knot footprints in area/overlap metrics; original-edge row classification and once-per-wire/box crossing counts. Routed metrics use native endpoint positions consistently. Actual segment evaluation requires created-knot identities. Live Apply explicitly refuses routed plans until transaction, rollback and actual mapping are integrated. Default no-route path retained by source review; editor regression and independent routing oracle still pending."
+        },
+        {
+          "commit": "506ca07b",
+          "run": "1fb0a2aca9684c66b2fe9cc3cccb16a3",
+          "result": "editor_workflow_running_not_accepted",
+          "scope": "Candidate connects RouteWires=off|orthogonal and ChannelWidth=60 to shared measured planning, preview chains, live insertion and checked rollback. Build 91fab4c7ec6843f99e43ca9310f5f3c6 passed. New J2 test checks original node/default preservation, contracted logical pin connectivity, planned knot positions, score parity and exact undo. It explicitly uses Force for mechanics and retains score regressions; no quality or visual acceptance implied. Candidate is on task branch, not main."
+        },
+        {
+          "commit": "506ca07b",
+          "result": "static_review_found_fanout_order_defect",
+          "scope": "Route expansion currently removes an original edge and appends its replacement, which can reorder a shared output fan-out. Must replace the original link-array slot and verify ordered contracted fan-out, not only edge-set equality. Identified during the active editor run; source kept unchanged to preserve run provenance. Not approved for integration."
+        },
+        {
+          "commit": "c7255e2d",
+          "run": "1fb0a2aca9684c66b2fe9cc3cccb16a3",
+          "result": "batch_implemented_unbuilt_untested",
+          "scope": "Prior run failed after 434 calls: NodeContext emits an empty creation type ID for reroutes, so the checker omitted them and raised KeyError. Routing reached edit/coordinate checks; connectivity and undo remain unverified. Batch preserves endpoint fan-out slots, checks contracted fan-out order, resolves concrete knot classes, includes route nodes in detail bounds and adds tracked focused routing selection. No new build or editor run started; remaining fixes are being batched as requested."
+        },
+        {
+          "commit": "f6ac2b19",
+          "run": "278ce9f4c5424e1898f7848e2f70a35f",
+          "result": "focused_preservation_passed_visual_failed",
+          "scope": "Focused J2 routing: build passed, preview/edit coordinates and measures agree, contracted links and fan-out order preserved, exact undo passed. Inspected native image 39A02089418A33D758F6CC8576A5E418: lower Sequence route crosses middle branch. Forced mechanics test reported execution crossings regression. Not layout acceptance."
+        },
+        {
+          "commit": "49ffc584",
+          "run": "8f6fef8dc26c4df4a35afb88c89c869b",
+          "result": "focused_preservation_passed_visual_failed",
+          "scope": "Crossing-aware route selection and shorter execution handoffs built and passed focused preservation checks. Native image 0A30335A42BF71D28D951F9CF53FF9D6 still shows competing fan-out channels; crossing and length regressions retained. Candidate 2ff27e5e now reserves inner channels for lower destinations; focused verification running. No full cascade rerun."
+        },
+        {
+          "commit": "2ff27e5e",
+          "run": "9e20496b55244178b4b0a1673ff9979f",
+          "result": "focused_preservation_passed_routing_incomplete",
+          "scope": "Focused J2 build, preview/edit coordinates and measures, contracted connections/fan-out order and exact undo passed. Inspected native 57A952B547E81A62A30135B48B762513: lower-first routing moves lower channel near source, but middle handoff remains unrouted and crossing regression persists. Candidate 2aaea7d3 adds bounded intermediate channel positions to fit between adjacent knot footprints and getters; unbuilt/untested. No visual acceptance or complete-report claim."
         }
       ],
-      "next_step": "Complete internal route validation and connect the exact route plan to scoring, scratch preview and transactional apply/rollback behind explicit opt-in. Verify original connectivity after contracting added knots and exact undo.",
-      "latest_evidence": "Routing candidates now use integer stored positions, generated reader obstacle identities, prior-route knot obstacles, same-route knot clearance and segment checks. Internal planner remains disabled in public tools. Scoring, preview/apply integration, rollback and runtime routing verification remain incomplete."
+      "next_step": "Finish the remaining implementation batch, including routing candidate 2aaea7d3, then focused verification. Preserve the latest J2 crossing failure; locals, nested boxes and full cascade remain incomplete.",
+      "latest_evidence": "Route expansion currently removes an original edge and appends its replacement, which can reorder a shared output fan-out. Must replace the original link-array slot and verify ordered contracted fan-out, not only edge-set equality. Identified during the active editor run; source kept unchanged to preserve run provenance. Not approved for integration."
     },
     {
       "id": "NOV05-05",
