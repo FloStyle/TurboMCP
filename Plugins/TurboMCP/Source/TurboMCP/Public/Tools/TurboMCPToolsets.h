@@ -1235,6 +1235,17 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPNodePinGrowth(const FString& Asset,const FString& GraphName,const FString& NodeId,const FString& Count);
 
+    /** Preview flags on an existing owned member variable; preserves identity and graph references, without compile or save.
+     * @param Asset Blueprint path or unique name. Asset loading may run project callbacks.
+     * @param Name Exact case-sensitive owned member name; inherited/native/component/widget-generated variables refuse.
+     * @param InstanceEditable Exact true/false; empty preserves. Controls per-instance editing, not Blueprint access.
+     * @param ExposeOnSpawn Exact true/false; empty preserves. Compile separately to update generated spawn behavior; inspect diagnostics before saving.
+     * @param Private Exact true/false; empty preserves. Blueprint access metadata, not a security boundary. External references are not validated. Specify at least one flag.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPVariableFlags(const FString& Asset,const FString& Name,const FString& InstanceEditable,const FString& ExposeOnSpawn,const FString& Private);
+
+
 
     /**
      * Preview creating a typed custom event wired to an existing delegate input, such as the Event pin of a Bind Event node. No live graph edits, compile or save.
@@ -2140,6 +2151,17 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPNodePinGrowth(const FString& Asset,const FString& GraphName,const FString& NodeId,const FString& Count);
+
+    /** Edit flags on an existing owned member variable; preserves identity and graph references, without compile or save.
+     * @param Asset Blueprint path or unique name. Asset loading may run project callbacks.
+     * @param Name Exact case-sensitive owned member name; inherited/native/component/widget-generated variables refuse.
+     * @param InstanceEditable Exact true/false; empty preserves. Controls per-instance editing, not Blueprint access.
+     * @param ExposeOnSpawn Exact true/false; empty preserves. Compile separately to update generated spawn behavior; inspect diagnostics before saving.
+     * @param Private Exact true/false; empty preserves. Blueprint access metadata, not a security boundary. External references are not validated. Specify at least one flag.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPVariableFlags(const FString& Asset,const FString& Name,const FString& InstanceEditable,const FString& ExposeOnSpawn,const FString& Private);
+
 
 
     /**
