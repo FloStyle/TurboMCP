@@ -11,6 +11,20 @@ before = set(folder.glob('*/vision-review.txt'))
 s = Session(); s.connect()
 # A focused review must not rerun unrelated mutation/PIE scenarios.
 import os
+if os.environ.get('TMCP_SLATE_VISIBILITY_ONLY') == '1':
+    name = 'TurboMCP.Workflow.SlateVisibility'
+    evidence = folder / 'slate-visibility.txt'
+    folder.mkdir(parents=True, exist_ok=True)
+    if evidence.exists(): evidence.unlink()
+    s.call(support['AUTO_TOOLSET'], 'DiscoverTests', {})
+    result = s.call(support['AUTO_TOOLSET'], 'RunTests', {'testNames': [name]})
+    print(result)
+    if evidence.exists(): print(evidence.read_text(encoding='utf-8-sig'))
+    support['parse_run_tests_report'](result, name)
+    if not evidence.exists(): raise RuntimeError('Fresh visibility evidence missing')
+    print('RESULT: PASS reproduction; stock visibility mismatch remains unresolved')
+    raise SystemExit(0)
+
 if os.environ.get('TMCP_PIE_STOP_ONLY') == '1':
     name = 'TurboMCP.Workflow.PIEStop'
     evidence = folder / 'pie-stop.txt'
