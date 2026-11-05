@@ -620,8 +620,8 @@
       "title": "Address unnamed pins in append and pin previews",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
+      "state": "in_progress",
+      "readiness": "ready",
       "owner": "unassigned",
       "validation": "reported_not_reproduced",
       "source_ids": [
@@ -631,7 +631,14 @@
         "2026-11-03_S2/NT-13"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Confirmed blank-looking execution pin names on stock increment macros. Investigate exact quoted-name representation through pin preview and link parser; preserve actual engine names, avoid guessed aliases, verify both directions and resulting increment workflow. Value/Result pins are named in this baseline.",
+      "evidence": [
+        {
+          "run": "15796f9928a54c91a6397b83fdd05853",
+          "result": "failed",
+          "scope": "Stock Math|Integer|IncrementInt and Math|Float|IncrementFloat each have whitespace-only execution input/output names; public pin preview renders them blank. Value and Result names are present; reported missing value name did not reproduce."
+        }
+      ]
     },
     {
       "id": "NOV04-17",
