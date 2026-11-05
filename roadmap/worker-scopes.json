@@ -3502,6 +3502,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "nov04-unnamed-pin-reproduction": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeDiscoveryTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
