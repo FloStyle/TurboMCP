@@ -34,6 +34,15 @@ class UTurboMCPReadToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+    /** Inspect currently mounted Slate text and ancestor visibility without waiting, focusing or sending input. Searches visible top-level windows, including hidden descendants when requested. Text comes from STextBlock or available accessibility text; custom text without either source is not covered. Visibility is not proof of clipping, hit testing, enabled input or OS foreground. Results are JSON; incomplete traversal cannot prove absence.
+     * @param Text Required nonempty case-insensitive literal substring, at most 256 characters. No wildcard syntax.
+     * @param IncludeHidden Include matches hidden by the widget or an ancestor. False returns effectively visible matches only.
+     * @param MatchLimit Maximum returned matches, 1..100. More matches set resultsTruncated.
+     * @param MaxDepth Maximum tree depth, 1..128. Children beyond it set traversalTruncated. At most 20000 widgets are visited.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString ReadTurboMCPSlateText(const FString& Text, bool IncludeHidden = true, int32 MatchLimit = 32, int32 MaxDepth = 64);
+
 
     /** Inspect one exact Blueprint-callable function on an existing PIE runtime object without invoking it.
      * @param WorldPath Exact current PIE world object path, not an editor world or guessed player index.
