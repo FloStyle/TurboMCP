@@ -2196,3 +2196,5 @@ NOV04-09 partial integration: discovery keywords and reflected dispatcher owners
 ### NOV04-09 wrong-class link diagnostic
 
 Readiness: ready. Assignment nov04-link-class-diagnostic. Complete NT-14 after discovery integration. Current append schema-disallow path already names pin types; reproduce incompatible CommonUI object-to-dispatcher target link in a disposable graph and verify preview/edit refusal names actual/expected classes and preserves nodes, links and dirty state. Add diagnostics only if current output lacks required context; keep generic failure and rollback reporting truthful. Test through append Plan/Preflight/Apply, with a compatible target control where feasible. Run supervised test-graph-append and offline gates. No engine changes or saves.
+
+NOV04-09 completed: discovery repairs plus CommonUI wrong-class append diagnostic verified. Native 3181b5c9ee8f4e8680141065eec4492c and offline 077f94215bf640878f0c0c266a0ace65 passed; scope passed for e9e058f3. Existing diagnostic names both classes and preserves graph state; compatible binding control succeeds. Failed fixture attempts remain in the plan. No broad delegate acceptance claim.

@@ -315,10 +315,10 @@
       "title": "Improve operator, variable and dispatcher type discovery",
       "kind": "bug",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "partial_discovery_workflow_and_offline_passed",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "NT-12",
         "NT-14",
@@ -330,7 +330,7 @@
         "2026-11-03_S4/NT-15"
       ],
       "dependencies": [],
-      "next_step": "Discovery repairs integrated: getter/setter and plus/minus keywords, preserved keyword text across pipes, reflected dispatcher names and declaring classes. Native probes verify self-member identity and CommonButtonBase bind owner. Remaining NT-14 requirement: reproduce incompatible target link and provide explicit expected/actual class mismatch diagnostics. Keep topic in progress.",
+      "next_step": "Discovery repairs and NT-14 diagnostic verification integrated. Member/operator queries return verified actions; dispatcher discovery identifies the declaring class. Wrong-class CommonUI append refuses with both classes and unchanged nodes, links and dirty state; compatible control creates one connected binding. Monitor field recurrence; this is bounded workflow evidence, not universal graph acceptance.",
       "evidence": [
         {
           "run": "744c071259eb4baaa86cf1ca7a1a926c",
@@ -376,10 +376,20 @@
           "run": "34c4f3af44234bd791ccc7d06758fabf",
           "result": "failed",
           "scope": "Valid dispatcher ID resolved, but an existing-node-only append is intentionally a no-op. Fixture changed to append a new binding action, with invalid and valid target-class controls. Diagnostic acceptance remains pending."
+        },
+        {
+          "run": "3181b5c9ee8f4e8680141065eec4492c",
+          "result": "passed",
+          "scope": "Exact discovered CommonButtonGroupBase dispatcher append: incompatible CommonButtonBase target refused with actual/expected classes, unchanged nodes/links/clean package; compatible group target creates one connected binding. Existing production diagnostics sufficient."
+        },
+        {
+          "run": "077f94215bf640878f0c0c266a0ace65",
+          "result": "passed",
+          "scope": "26 offline checks passed; scope gate passed for source e9e058f303b5594d50fe1a66ea49ed1a403e48a5."
         }
       ],
       "followups": [
-        "NT-14 incompatible target-object link refusal still needs explicit class diagnostics and preservation tests. Discovery alone does not establish link compatibility."
+        "Focused stock CommonUI fixture; does not certify every project-specific delegate or automatic conversion. Historical failed fixture runs retained, not counted as product fixes."
       ]
     },
     {
