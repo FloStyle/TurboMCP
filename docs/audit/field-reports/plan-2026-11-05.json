@@ -124,6 +124,9 @@
           "result": "failed_suite_timeout",
           "scope": "Suite killed at its 600-second deadline during J6A Append. No compact checks reached. Runner restored fixtures. Preserve this failure; a later pass does not erase it. Integrator sets a scenario-specific 1200-second ceiling; other suites and shorter timeout probes retain their deadlines."
         }
+      ],
+      "design_notes": [
+        "Source review of candidate 7d17aa67: CompletedAboveBody currently bounds only forward execution members, excluding pure input trees. This does not prove Completed lies below the full block rectangle required by Appendix H. Expand and independently verify full-body membership before acceptance."
       ]
     },
     {
@@ -155,7 +158,10 @@
         "NOV05-01"
       ],
       "next_step": "Implement and verify Appendix H measures, distinguish intended handoffs from defects and nested-box occupancy; preserve every worsened measure. Source findings contain inconsistent totals; do not use those totals as ground truth.",
-      "evidence": []
+      "evidence": [],
+      "design_notes": [
+        "Candidate BodyRowDrift and CompletedAboveBody are partial diagnostics, not Appendix H scoring. Still required: unrelated box crossings, exec segment crossings, diagonal exec length, block row breaks, data crossings, total length, area, 5-percent tie handling and every greater-than-10-percent regression warning."
+      ]
     },
     {
       "id": "NOV05-04",
@@ -254,7 +260,10 @@
         "NOV05-02"
       ],
       "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
-      "evidence": []
+      "evidence": [],
+      "design_notes": [
+        "RenderPreview currently emits aggregate move counts and whole-graph images but no per-node planned coordinates or block table. Current harness verifies preview non-mutation, not exact preview/edit coordinate agreement. Add auditable plan geometry and readable block captures before claiming parity or readable previews."
+      ]
     },
     {
       "id": "NOV05-08",

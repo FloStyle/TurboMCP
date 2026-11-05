@@ -6513,6 +6513,10 @@
           "run": "b04c38d19d264d37b7aa9613ed09eacd",
           "result": "failed_suite_timeout",
           "scope": "Suite killed at its 600-second deadline during J6A Append. No compact checks reached. Runner restored fixtures. Preserve this failure; a later pass does not erase it. Integrator sets a scenario-specific 1200-second ceiling; other suites and shorter timeout probes retain their deadlines."
+        },
+        {
+          "result": "source_review_gap",
+          "scope": "Source review of candidate 7d17aa67: CompletedAboveBody currently bounds only forward execution members, excluding pure input trees. This does not prove Completed lies below the full block rectangle required by Appendix H. Expand and independently verify full-body membership before acceptance."
         }
       ]
     },
@@ -6538,6 +6542,12 @@
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
       "dependencies": [
         "NOV05-01"
+      ],
+      "evidence": [
+        {
+          "result": "source_review_gap",
+          "scope": "Candidate BodyRowDrift and CompletedAboveBody are partial diagnostics, not Appendix H scoring. Still required: unrelated box crossings, exec segment crossings, diagonal exec length, block row breaks, data crossings, total length, area, 5-percent tie handling and every greater-than-10-percent regression warning."
+        }
       ]
     },
     {
@@ -6620,6 +6630,12 @@
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
       "dependencies": [
         "NOV05-02"
+      ],
+      "evidence": [
+        {
+          "result": "source_review_gap",
+          "scope": "RenderPreview currently emits aggregate move counts and whole-graph images but no per-node planned coordinates or block table. Current harness verifies preview non-mutation, not exact preview/edit coordinate agreement. Add auditable plan geometry and readable block captures before claiming parity or readable previews."
+        }
       ]
     },
     {
