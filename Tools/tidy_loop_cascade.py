@@ -124,6 +124,70 @@ def build_graph(call, evidence, persist):
     persist()
 
 
+def record_baseline(call, evidence, persist):
+    """Record the default result, including refusal; never force a passing layout."""
+    asset = evidence['asset']
+    graph = 'LoopCascade'
+    ids = evidence['label_ids']
+    merged = call('ReadTurboMCPNodeResolve', nodeIds=ids['N80'])
+    for label in ('N71', 'N88'):
+        if ids[label].rsplit(':', 1)[-1] not in merged:
+            raise RuntimeError('Return merge lost source ' + label + ': ' + merged)
+    evidence['merge_readback'] = merged
+    # Read all pages: the full graph exceeds the reader's per-call text budget.
+    offset, revision, bodies = 0, '', []
+    while True:
+        page = json.loads(call('ReadTurboMCPGraphLoad', asset=asset, graphName=graph, format='json', detail='full', offset=offset, maxChars=24000, revision=revision, entryFilter=''))
+        bodies.append(page['body'])
+        revision = page['revision']
+        offset = page['nextOffset']
+        if offset == -1:
+            break
+    evidence['complete_graph_before_tidy'] = ''.join(bodies)
+    geometry = {}
+    offset = 0
+    while True:
+        page = call('LookTurboMCPGraphPositions', asset=asset, graphName=graph, nodeIds='', maxNodes=256, offset=offset)
+        for match in re.finditer(r'^(\S+) x=(-?\d+) y=(-?\d+) width=(\d+) height=(\d+)$', page, re.M):
+            identity, x, y, w, h = match.groups()
+            geometry[identity] = dict(x=int(x), y=int(y), width=int(w), height=int(h))
+        next_page = re.search(r'next_offset=(-?\d+)', page)
+        if not next_page:
+            raise RuntimeError('Position page has no explicit continuation')
+        offset = int(next_page.group(1))
+        if offset == -1:
+            break
+    if set(geometry) != set(ids.values()):
+        raise RuntimeError('Measured graph identities differ from the 83-node recipe')
+    state = 20261105
+    def draw():
+        nonlocal state
+        state = (1103515245 * state + 12345) % (2 ** 31)
+        return state
+    planned = []
+    for label, identity in sorted(ids.items()):
+        planned.append(dict(node=identity, label=label, x=draw()%9000, y=draw()%3000, **{k:geometry[identity][k] for k in ('width','height')}))
+    placed = []
+    for item in sorted(planned, key=lambda x:(x['x'],x['label'])):
+        while any(item['x'] < old['x']+old['width'] and item['x']+item['width'] > old['x'] and item['y'] < old['y']+old['height'] and item['y']+item['height'] > old['y'] for old in placed):
+            item['y'] += item['height'] + 40
+        placed.append(item)
+    evidence['scrambled_positions'] = placed
+    persist()
+    call('EditTurboMCPGraphPositions',asset=asset,graphName=graph,positions=json.dumps([{k:r[k] for k in ('node','x','y')} for r in placed]))
+    call('EditTurboMCPCompile',assets=asset)
+    call('EditTurboMCPSave',assets=asset)
+    evidence['baseline_before'] = call('LookTurboMCPLayoutDoneCheck',asset=asset,graphName=graph,alignmentTolerance=64.0)
+    args = dict(asset=asset,graphName=graph,bForce=False,nodeIds=[],mainPath='',horizontalGap=120.0,verticalGap=100.0,lanePitch=280.0,wrapAfter='')
+    evidence['baseline_preview'] = call('PreviewTurboMCPGraphTidy',**args)
+    # Refusal is valid baseline evidence, not layout acceptance.
+    evidence['baseline_edit'] = call('EditTurboMCPGraphTidy',**args)
+    evidence['baseline_after'] = call('LookTurboMCPLayoutDoneCheck',asset=asset,graphName=graph,alignmentTolerance=64.0)
+    evidence['baseline_capture'] = call('LookTurboMCPCapture',asset=asset,graphName=graph,mode='graph',target='',size='1600x900')
+    evidence['stage'] = 'default_baseline_recorded_regressions_pending'
+    persist()
+
+
 def run():
     root = Path(__file__).resolve().parents[1]
     context = json.loads(Path(os.environ['TURBOMCP_EXECUTION_CONTEXT']).read_text(encoding='utf-8'))
@@ -215,10 +279,11 @@ def run():
                     evidence['pins'][candidate] = call('PreviewTurboMCPNodePins', asset=asset, graphName='LoopCascade', typeId=candidate)
             cache_path.write_text(json.dumps(dict(signature_version=1, asset=asset, evidence=str(directory), **{k:evidence[k] for k in ('discovery','types','pins')}), indent=2), encoding='utf-8')
         evidence['initial_graph'] = call('ReadTurboMCPGraphLoad', asset=asset, graphName='LoopCascade', format='read', detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
-        build_graph(call, evidence, persist) 
+        build_graph(call, evidence, persist)
+        record_baseline(call, evidence, persist)
         persist()
         print('Evidence: ' + str(directory), flush=True)
-        print('RESULT: PASS (construction checkpoint only; layout acceptance remains false)')
+        print('RESULT: PASS (baseline evidence checkpoint only; layout acceptance remains false)')
     except Exception as error:
         evidence['failure'] = str(error)
         evidence['stage'] = 'failed'
