@@ -58,7 +58,11 @@ bool FTurboMCPInterfaceLocalTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Edit accepts implemented interface function"), Edit.StartsWith(TEXT("edited:")));
     // Structural refresh can replace objects; reacquire the function before inspection.
     Graph = TurboMCPNodeId::FindGraphByName(BP, TEXT("ReadState"), Matches);
-    if (!TestNotNull(TEXT("Implementation remains available"), Graph)) return false;
+    if (Graph == nullptr)
+    {
+        AddError(TEXT("Implementation disappeared after adding the local."));
+        return false;
+    }
     Entries.Reset(); Graph->GetNodesOfClass(Entries);
     if (!TestEqual(TEXT("One refreshed implementation entry"), Entries.Num(), 1)) return false;
     if (TestEqual(TEXT("One local declared"), Entries[0]->LocalVariables.Num(), 1))

@@ -88,6 +88,7 @@ static FString LocalAdd(const FString& Asset, const FString& Function, const FSt
     if (!Error.IsEmpty()) return Error;
     int32 Matches = 0;
     UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(BP, Function, Matches);
+    if (Graph == nullptr) return TEXT("error: No owned function matches Function. Read the Blueprint graph names and use an implemented function. Nothing changed.");
     if (Matches > 1) return TEXT("error: Function name is ambiguous. Nothing changed.");
     // Interface implementations live outside FunctionGraphs. Admit only graphs
     // registered as functions on this Blueprint, never inherited or event graphs.
