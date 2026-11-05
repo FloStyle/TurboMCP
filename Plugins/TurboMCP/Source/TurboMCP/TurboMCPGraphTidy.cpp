@@ -83,6 +83,8 @@ namespace
     {
         int32 Overlaps=0;
         int32 UnwrappedBreaks=0;
+        double BodyRowDrift=0.0;
+        int32 CompletedAboveBody=0;
         int32 BackwardExec=0;
         double LinearExecDrift=0;
         int32 PureInputRowConflicts=0;
@@ -168,7 +170,46 @@ namespace
             int32 Outputs=0;
             for(const UEdGraphPin* P:S.Node->Pins) if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==TEXT("exec")) ++Outputs;
             // Branch/Sequence fan-out and merge inputs deliberately occupy separate rows.
+            if (Plan.bCompactBlocks && W.OutputPin->PinName == TEXT("LoopBody"))
+                Q.BodyRowDrift += FMath::Max(0.0, FMath::Abs(End.Y-Start.Y)-16.0);
             if(Outputs==1 && W.InputPin->LinkedTo.Num()==1) Q.LinearExecDrift+=FMath::Max(0.0,FMath::Abs(End.Y-Start.Y)-16.0);
+        }
+        if (Plan.bCompactBlocks)
+        {
+            // Exclude the loop's continuation and merge descendants from its body.
+            // Feedback edges never expand either forward reachability set.
+            for (int32 Controller = 0; Controller < Plan.Nodes.Num(); ++Controller)
+            {
+                TArray<int32> BodyStarts, CompletedStarts;
+                for (const auto& Wire : Plan.Wires)
+                    if (Wire.SourceNodeIndex == Controller && Wire.OutputPin && !Wire.bControlFeedback)
+                    {
+                        if (Wire.OutputPin->PinName == TEXT("LoopBody")) BodyStarts.Add(Wire.TargetNodeIndex);
+                        if (Wire.OutputPin->PinName == TEXT("Completed")) CompletedStarts.Add(Wire.TargetNodeIndex);
+                    }
+                if (BodyStarts.IsEmpty() || CompletedStarts.IsEmpty()) continue;
+                auto Reach = [&](TArray<int32> Pending, const TSet<int32>& Excluded)
+                {
+                    TSet<int32> Seen;
+                    while (!Pending.IsEmpty())
+                    {
+                        const int32 Current = Pending.Pop(EAllowShrinking::No);
+                        if (Seen.Contains(Current) || Excluded.Contains(Current) || !Plan.Nodes.IsValidIndex(Current)) continue;
+                        Seen.Add(Current);
+                        for (const auto& Wire : Plan.Wires)
+                            if (Wire.SourceNodeIndex == Current && !Wire.bControlFeedback && Wire.OutputPin
+                                && Wire.OutputPin->PinType.PinCategory == TEXT("exec")) Pending.Add(Wire.TargetNodeIndex);
+                    }
+                    return Seen;
+                };
+                const TSet<int32> Continuation = Reach(CompletedStarts, TSet<int32>());
+                const TSet<int32> Body = Reach(BodyStarts, Continuation);
+                double BodyBottom = Position(Plan.Nodes[Controller]).Y + Plan.Nodes[Controller].Height;
+                for (int32 Member : Body)
+                    BodyBottom = FMath::Max(BodyBottom, Position(Plan.Nodes[Member]).Y + Plan.Nodes[Member].Height);
+                for (int32 Completed : CompletedStarts)
+                    if (Position(Plan.Nodes[Completed]).Y <= BodyBottom) ++Q.CompletedAboveBody;
+            }
         }
         // Distinct fan-out paths need separate bands. A shared immediate target
         // is a merge, not two lanes, so do not penalize it for coincident endpoints.
@@ -201,6 +242,8 @@ namespace
         const FCriterion Criteria[] = {
             {TEXT("node overlaps"), double(Before.Overlaps), double(After.Overlaps), 0.0},
             {TEXT("requested row breaks not respected"), double(Before.UnwrappedBreaks), double(After.UnwrappedBreaks), 0.0},
+            {TEXT("loop Body row drift"), Before.BodyRowDrift, After.BodyRowDrift, 1.0},
+            {TEXT("Completed continuations above body bottom"), double(Before.CompletedAboveBody), double(After.CompletedAboveBody), 0.0},
             {TEXT("linear execution alignment drift"), Before.LinearExecDrift, After.LinearExecDrift, 1.0},
             {TEXT("fan-out row conflicts"), double(Before.FanOutRowConflicts), double(After.FanOutRowConflicts), 0.0},
             {TEXT("backward execution wires"), double(Before.BackwardExec), double(After.BackwardExec), 0.0},
@@ -638,7 +681,7 @@ FVector2D FTurboMCPGraphTidy::AlignmentPinPosition(const UEdGraphPin* Pin)
 }
 
 bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath, double InHorizontalGap, double InVerticalGap, double InLanePitch, const FString& WrapAfter)
+	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath, double InHorizontalGap, double InVerticalGap, double InLanePitch, const FString& WrapAfter, const FString& LayoutMode)
 {
     if(!FMath::IsFinite(InHorizontalGap) || !FMath::IsFinite(InVerticalGap) || !FMath::IsFinite(InLanePitch)
         || InHorizontalGap<40 || InHorizontalGap>2000 || InVerticalGap<40 || InVerticalGap>2000 || InLanePitch<100 || InLanePitch>10000)
@@ -649,6 +692,10 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
 	OutPlan.GraphName = InGraphName.TrimStartAndEnd();
 	OutPlan.bForce = bInForce;
+    const FString Mode = LayoutMode.TrimStartAndEnd().ToLower();
+    if (Mode != TEXT("rows") && Mode != TEXT("blocks"))
+    { OutError = TEXT("LayoutMode must be rows or blocks; unchanged."); return false; }
+    OutPlan.bCompactBlocks = Mode == TEXT("blocks");
 	OutPlan.bMergeGettersRequested = bInMergeGetters;
 
 	if (OutPlan.Asset.IsEmpty())
@@ -1340,6 +1387,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 TMap<const UEdGraphPin*,int32> OutputLane;
                 int32 NextLane=1;
                 TMap<int32,int32> LaneParent;
+                TMap<int32,int32> LaneSource;
                 auto CommonLane=[&LaneParent](int32 A,int32 B)
                 {
                     TSet<int32> Ancestors;
@@ -1379,7 +1427,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     for(const UEdGraphPin* Pin:N.Node->Pins)
                         if(Pin && Pin->Direction==EGPD_Output && Pin->PinType.PinCategory==TEXT("exec") && !Pin->LinkedTo.IsEmpty())
                         {
-                            if(!MainOutput || Pin->PinName==TEXT("Completed")) MainOutput=Pin;
+                            if (!MainOutput || (!OutPlan.bCompactBlocks && Pin->PinName == TEXT("Completed"))
+                                || (OutPlan.bCompactBlocks && Pin->PinName == TEXT("LoopBody"))) MainOutput=Pin;
                         }
                     for(const FWire& W:OutPlan.Wires)
                         if(W.SourceNodeIndex==I && W.OutputPin && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec")
@@ -1390,7 +1439,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         if(Pin && Pin->Direction==EGPD_Output && Pin->PinType.PinCategory==TEXT("exec") && !Pin->LinkedTo.IsEmpty())
                         {
                             if(!IsSequence && Pin==MainOutput) OutputLane.Add(Pin,Lane);
-                            else {LaneParent.Add(NextLane,Lane);OutputLane.Add(Pin,NextLane++);}
+                            else {LaneParent.Add(NextLane,Lane);LaneSource.Add(NextLane,I);OutputLane.Add(Pin,NextLane++);}
                         }
 
 					double PureSpace=0;
@@ -1404,10 +1453,18 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         return Width;
                     };
                     PureSpace=Required(I);
-                    // Each lane advances independently; sequence siblings share their left edge.
+                    int32 IncomingExecCount = 0;
+                    for (const FWire& Edge : OutPlan.Wires)
+                        if (Edge.TargetNodeIndex == I && !Edge.bControlFeedback && Edge.OutputPin
+                            && Edge.OutputPin->PinType.PinCategory == TEXT("exec")) ++IncomingExecCount;
+                    const bool bCompactHandoff = OutPlan.bCompactBlocks && Incoming && IncomingExecCount == 1
+                        && LaneOf.Contains(Incoming->SourceNodeIndex) && LaneOf[Incoming->SourceNodeIndex] != Lane;
+                    // A continuation block starts beneath its controller, rather than
+                    // extending the width of the preceding body. Merges still honor all predecessors.
                     if(!LaneCursor.Contains(Lane))
                     {
-                        const double Start=Incoming ? OutPlan.Nodes[Incoming->SourceNodeIndex].PlannedX+OutPlan.Nodes[Incoming->SourceNodeIndex].Width+SpacingX : FreeStartX;
+                        const double Start=Incoming ? OutPlan.Nodes[Incoming->SourceNodeIndex].PlannedX
+                            + (bCompactHandoff ? 0.0 : OutPlan.Nodes[Incoming->SourceNodeIndex].Width+SpacingX) : FreeStartX;
                         LaneCursor.Add(Lane,Start);
                     }
                     // A merge stays on its main lane but follows every already
@@ -1418,7 +1475,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             && LaneOf.Contains(W.SourceNodeIndex) && W.SourceNodeIndex!=I)
                         {
                             const FNode& Predecessor=OutPlan.Nodes[W.SourceNodeIndex];
-                            IncomingRight=FMath::Max(IncomingRight,Predecessor.PlannedX+Predecessor.Width+SpacingX);
+                            if (!bCompactHandoff) IncomingRight=FMath::Max(IncomingRight,Predecessor.PlannedX+Predecessor.Width+SpacingX);
                         }
                     CursorX=IncomingRight+PureSpace;
                     N.PlannedX = CursorX; N.PlannedY = RowY + Lane * LaneHeight;
@@ -1465,8 +1522,22 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     const int32 CurrentLane = PendingLanes.Last();
                     PendingLanes.RemoveAt(PendingLanes.Num() - 1);
                     if (ActiveLanes.Contains(CurrentLane)) LaneOrder.Add(CurrentLane);
-                    for (int32 ChildLane = NextLane - 1; ChildLane > 0; --ChildLane)
-                        if (LaneParent.FindRef(ChildLane) == CurrentLane) PendingLanes.Add(ChildLane);
+                    TArray<int32> Children;
+                    for (int32 ChildLane = 1; ChildLane < NextLane; ++ChildLane)
+                        if (LaneParent.FindRef(ChildLane) == CurrentLane) Children.Add(ChildLane);
+                    if (OutPlan.bCompactBlocks)
+                    {
+                        // Later control nodes belong to the current body's inner flow.
+                        // Visit their continuations before an earlier outer exit. Outputs
+                        // of the same Sequence retain their declared order.
+                        Children.Sort([&](int32 A, int32 B)
+                        {
+                            const int32 SourceA = LaneSource.FindRef(A), SourceB = LaneSource.FindRef(B);
+                            const int32 ColumnA = OutPlan.Nodes[SourceA].Column, ColumnB = OutPlan.Nodes[SourceB].Column;
+                            return ColumnA != ColumnB ? ColumnA > ColumnB : A < B;
+                        });
+                    }
+                    for (int32 Child = Children.Num() - 1; Child >= 0; --Child) PendingLanes.Add(Children[Child]);
                 }
                 TMap<int32,double> InputFloorByLane;
                 double BandTop=RowY;
@@ -2922,6 +2993,7 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
     const FStructuralQuality QualityBefore=StructuralQuality(InPlan,0), QualityAfter=StructuralQuality(InPlan,1);
     for(int32 I:InPlan.WrapAfterNodes)
         Lines.Add(FString::Printf(TEXT("row break after %s (execution links preserved)"),*InPlan.Nodes[I].Key));
+    if (InPlan.bCompactBlocks) Lines.Add(FString::Printf(TEXT("compact criteria (after overlaps and requested breaks): Body row drift %.1f -> %.1f; Completed above body bottom %d -> %d. Remaining quality measures follow below."), QualityBefore.BodyRowDrift, QualityAfter.BodyRowDrift, QualityBefore.CompletedAboveBody, QualityAfter.CompletedAboveBody));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift,QualityBefore.FanOutRowConflicts,QualityAfter.FanOutRowConflicts,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.BackwardData,QualityAfter.BackwardData,QualityBefore.PureInputRowConflicts,QualityAfter.PureInputRowConflicts,QualityBefore.InputPinDrift,QualityAfter.InputPinDrift));
 	Lines.Add(FString::Printf(TEXT("preview: %s in %s : total wire length %.1f -> %.1f across %d wire(s)"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter, InPlan.WireCount));
     int32 FeedbackCount = 0;
@@ -3335,6 +3407,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
     if (FeedbackCount > 0)
         Lines.Add(FString::Printf(TEXT("control feedback: %d stock Break/Reset wire(s) preserved; excluded from forward ordering and alignment penalties, included in total wire length."), FeedbackCount));
 	Lines.Add(FString::Printf(TEXT("wire length: current plan predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("matches the current plan") : TEXT("differs from the current plan")));
+    if (InPlan.bCompactBlocks) Lines.Add(FString::Printf(TEXT("compact criteria (after overlaps and requested breaks): Body row drift %.1f -> %.1f; Completed above body bottom %d -> %d. Remaining quality measures follow below."), OriginalQuality.BodyRowDrift, ActualQuality.BodyRowDrift, OriginalQuality.CompletedAboveBody, ActualQuality.CompletedAboveBody));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),OriginalQuality.Overlaps,ActualQuality.Overlaps,OriginalQuality.LinearExecDrift,ActualQuality.LinearExecDrift,OriginalQuality.FanOutRowConflicts,ActualQuality.FanOutRowConflicts,OriginalQuality.BackwardExec,ActualQuality.BackwardExec,OriginalQuality.BackwardData,ActualQuality.BackwardData,OriginalQuality.PureInputRowConflicts,ActualQuality.PureInputRowConflicts,OriginalQuality.InputPinDrift,ActualQuality.InputPinDrift));
     const auto CrossBoxAfter = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
     Lines.Add(FString::Printf(TEXT("cross-box: estimated straight-line length %.1f -> %.1f (delta %+.1f); connections %d -> %d. Ownership uses the smallest enclosing comment at each state; copies or box growth can change the count."), CrossBoxBefore.Length, CrossBoxAfter.Length, CrossBoxAfter.Length-CrossBoxBefore.Length, CrossBoxBefore.Count, CrossBoxAfter.Count));

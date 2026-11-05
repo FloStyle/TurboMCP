@@ -432,6 +432,71 @@ def record_event_regressions(call, evidence, persist):
         persist()
 
 
+
+def read_complete_graph(call, asset, graph):
+    """Reconstruct one revision rather than compare a truncated reader page."""
+    offset, revision, bodies = 0, '', []
+    while True:
+        page = json.loads(call('ReadTurboMCPGraphLoad',asset=asset,graphName=graph,
+                              format='json',detail='full',offset=offset,maxChars=24000,
+                              revision=revision,entryFilter=''))
+        bodies.append(page['body'])
+        offset, revision = page['nextOffset'], page['revision']
+        if offset == -1:
+            return ''.join(bodies)
+
+
+def record_compact_candidates(call, evidence, persist):
+    """Retain failures and verify read-back/undo; visual acceptance is separate."""
+    cases = [('cascade', evidence['asset'], 'LoopCascade', []),
+             ('J3', evidence['asset'], 'J3BreakFeedback', [])]
+    selected = evidence['regressions']['J5']['selected_ids']
+    cases.append(('J5',evidence['asset'],'LoopCascade',selected))
+    for name in ('J1','J2','J6A','J6B'):
+        item=evidence['regressions'][name]
+        cases.append((name,item['asset'],item['graph'],[]))
+    for name,asset,graph,selection in cases:
+        row=dict(acceptance=False)
+        evidence.setdefault('compact',{})[name]=row
+        row['before_graph']=read_complete_graph(call,asset,graph)
+        row['before_positions']=read_positions(call,asset,graph)
+        args=dict(asset=asset,graphName=graph,bForce=False,nodeIds=selection,mainPath='',
+                  horizontalGap=120.0,verticalGap=100.0,lanePitch=280.0,wrapAfter='',layoutMode='blocks')
+        row['preview']=call('PreviewTurboMCPGraphTidy',**args)
+        row['after_preview_positions']=read_positions(call,asset,graph)
+        row['after_preview_graph']=read_complete_graph(call,asset,graph)
+        if row['after_preview_positions'] != row['before_positions'] or row['after_preview_graph'] != row['before_graph']:
+            raise RuntimeError(name+': compact preview changed the graph')
+        row['edit']=call('EditTurboMCPGraphTidy',**args)
+        row['after_graph']=read_complete_graph(call,asset,graph)
+        row['after_positions']=read_positions(call,asset,graph)
+        row['reader_equal']=row['after_graph']==row['before_graph']
+        row['changed_outside']=[identity for identity in row['before_positions']
+            if selection and identity not in selection and row['after_positions'].get(identity)!=row['before_positions'][identity]]
+        persist()
+        if row['changed_outside']:
+            raise RuntimeError(name+': compact layout changed fixed outside geometry')
+        if not row['reader_equal']:
+            raise RuntimeError(name+': complete graph read-back changed; inspect evidence before accepting semantics')
+        row['capture']=call('LookTurboMCPCapture',asset=asset,graphName=graph,mode='graph',target='',size='1600x900')
+        if row['edit'].startswith('changed:'):
+            undo_preview=call('PreviewTurboMCPAssetUndo',asset=asset)
+            confirm=re.search(r'Confirm=([0-9A-Fa-f-]+)',undo_preview)
+            if not confirm:
+                raise RuntimeError(name+': undo preview returned no confirmation')
+            row['undo']=call('EditTurboMCPAssetUndo',asset=asset,confirm=confirm.group(1))
+            row['undo_graph']=read_complete_graph(call,asset,graph)
+            row['undo_positions']=read_positions(call,asset,graph)
+            row['undo_restored']=row['undo_graph']==row['before_graph'] and row['undo_positions']==row['before_positions']
+            if not row['undo_restored']:
+                raise RuntimeError(name+': undo did not restore graph and geometry')
+        else:
+            row['unchanged_verified']=row['after_positions']==row['before_positions']
+            if not row['unchanged_verified']:
+                raise RuntimeError(name+': unchanged response left geometry modified')
+        persist()
+
+
 def run():
     root = Path(__file__).resolve().parents[1]
     context = json.loads(Path(os.environ['TURBOMCP_EXECUTION_CONTEXT']).read_text(encoding='utf-8'))
@@ -540,6 +605,7 @@ def run():
         record_comment_regression(call, evidence, persist)
         record_break_regression(call, evidence, persist)
         record_event_regressions(call, evidence, persist)
+        record_compact_candidates(call, evidence, persist)
         persist()
         print('Evidence: ' + str(directory), flush=True)
         print('RESULT: PASS (baseline evidence checkpoint only; layout acceptance remains false)')
