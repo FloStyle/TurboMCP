@@ -570,6 +570,26 @@ def run():
         for toolset in (READ_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET, LOOK_TOOLSET):
             response = session.rpc('tools/call', {'name': 'describe_toolset', 'arguments': {'toolset_name': toolset}})
             (directory / (toolset.split('.')[-1] + '.json')).write_text(json.dumps(response, indent=2), encoding='utf-8')
+        # Compare compact help with the live schema, not a hand-maintained
+        # parameter list. All tools named by X-129 must retain required names.
+        evidence['required_help'] = {}
+        for tool in ('PreviewTurboMCPGraphTidy', 'EditTurboMCPGraphTidy',
+                     'LookTurboMCPGraphPositions', 'PreviewTurboMCPNodeType', 'LookTurboMCPCapture'):
+            toolset = toolset_for(tool)
+            response = json.loads((directory / (toolset.split('.')[-1] + '.json')).read_text())
+            schemas = [json.loads(item['text']) for item in response['content'] if item.get('type') == 'text']
+            matches = [item for schema in schemas for item in schema.get('tools', [])
+                       if item['name'].split('.')[-1] == tool]
+            if len(matches) != 1:
+                raise RuntimeError('Missing unique live schema for ' + tool)
+            required = matches[0].get('inputSchema', {}).get('required', [])
+            help_text = call('ReadTurboMCPToolHelp', toolsetName=toolset, toolName=tool)
+            summary = help_text.split('required parameters (live schema):', 1)[-1]
+            missing = [name for name in required if not re.search(r'^  ' + re.escape(name) + r': ', summary, re.M)]
+            evidence['required_help'][tool] = dict(required=required, missing=missing, text=help_text)
+            persist()
+            if missing:
+                raise RuntimeError(tool + ': compact help omitted required parameters: ' + ', '.join(missing))
         call('ReadTurboMCPStatus')
         if subset == 'events':
             record_event_regressions(call, evidence, persist)
