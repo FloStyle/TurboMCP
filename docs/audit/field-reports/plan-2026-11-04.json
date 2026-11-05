@@ -941,7 +941,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reviewed_implementation_pending",
+      "validation": "native_failure_repair_pending",
       "source_ids": [
         "PI-07",
         "FT-140"
@@ -951,11 +951,21 @@
         "2026-11-04_S1/FT-140"
       ],
       "dependencies": [],
-      "next_step": "Implement the bounded timed-input contract in todo/roadmap-r04.md. Source confirms a single global held input and an explicit second-hold refusal. No runtime sequence support or passing sequence test is claimed.",
+      "next_step": "Review candidate ea64ae86 in widget-roundtrip-review. Build passed; CommonUI sequence workflow exposed retained axis value after explicit cancellation. Cached owned axis cleanup repaired, pending rerun and remaining focus-loss/late-event coverage. Not integrated.",
       "evidence": [
         {
           "result": "source_review",
           "scope": "TurboMCPPlayInput.cpp stores one FHeldPlayInput and refuses a second hold. Cleanup currently owns one original player/key and avoids routing releases into editor controls after focus loss. The sequence repair must extend ownership and cleanup together."
+        },
+        {
+          "result": "build_pass",
+          "run": "a3a8f2f569b645019b0c050b9e690f82",
+          "scope": "Initial bounded sequence implementation compiles on stock engine."
+        },
+        {
+          "result": "native_failed",
+          "run": "e634433597414e019dcd4534eeb1fff6",
+          "scope": "Actual scheduled pause/resume and completion assertions passed, but explicit cancellation retained original player axis value 0.333333 instead of zero. Repair must pass unchanged assertion; this run is not acceptance."
         }
       ]
     },
