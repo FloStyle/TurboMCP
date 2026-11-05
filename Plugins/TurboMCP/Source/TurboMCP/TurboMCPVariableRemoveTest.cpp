@@ -10,6 +10,7 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
 #include "UObject/Package.h"
@@ -45,12 +46,42 @@ bool FTurboMCPVariableRemoveTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Refusal retains getter"), Graph->Nodes.Num(), 1);
     TestEqual(TEXT("Refusal retains declarations"), BP->NewVariables.Num(), 2);
     Graph->RemoveNode(Getter);
+    // Keep an unrelated data connection present across structural refresh.
+    UK2Node_VariableGet* KeepGet = NewObject<UK2Node_VariableGet>(Graph);
+    KeepGet->VariableReference.SetSelfMember(TEXT("KeepValue"));
+    KeepGet->CreateNewGuid(); Graph->AddNode(KeepGet, false, false); KeepGet->AllocateDefaultPins();
+    UK2Node_VariableSet* KeepSet = NewObject<UK2Node_VariableSet>(Graph);
+    KeepSet->VariableReference.SetSelfMember(TEXT("KeepValue"));
+    KeepSet->CreateNewGuid(); Graph->AddNode(KeepSet, false, false); KeepSet->AllocateDefaultPins();
+    UEdGraphPin* Output = KeepGet->FindPin(TEXT("KeepValue"), EGPD_Output);
+    UEdGraphPin* Input = KeepSet->FindPin(TEXT("KeepValue"), EGPD_Input);
+    if (!Output || !Input) { AddError(TEXT("Unrelated fixture pins are missing.")); return false; }
+    Output->MakeLinkTo(Input);
+    const FGuid GetId = KeepGet->NodeGuid, SetId = KeepSet->NodeGuid;
     const FString FinalPreview = Preview(); AddInfo(FinalPreview);
     const FString Edited = UTurboMCPEditToolset::EditTurboMCPVariableRemove(Asset, TEXT("UnusedValue"), Token(FinalPreview)); AddInfo(Edited);
     TestTrue(TEXT("Confirmed unused removal succeeds"), Edited.StartsWith(TEXT("edited:")));
     TestEqual(TEXT("Only one declaration removed"), BP->NewVariables.Num(), 1);
     if (BP->NewVariables.Num() == 1) TestEqual(TEXT("Unrelated declaration retained"), BP->NewVariables[0].VarName, FName(TEXT("KeepValue")));
     TestTrue(TEXT("Missing variable refuses"), Preview().StartsWith(TEXT("error:")));
+    TArray<UEdGraph*> Graphs; BP->GetAllGraphs(Graphs);
+    UK2Node_VariableGet* PreservedGet = nullptr;
+    UK2Node_VariableSet* PreservedSet = nullptr;
+    for (UEdGraph* Current : Graphs) if (Current) for (UEdGraphNode* Node : Current->Nodes) if (Node)
+    {
+        if (Node->NodeGuid == GetId) PreservedGet = Cast<UK2Node_VariableGet>(Node);
+        if (Node->NodeGuid == SetId) PreservedSet = Cast<UK2Node_VariableSet>(Node);
+    }
+    if (!PreservedGet || !PreservedSet) { AddError(TEXT("Unrelated nodes disappeared.")); return false; }
+    UEdGraphPin* PreservedOutput = PreservedGet->FindPin(TEXT("KeepValue"), EGPD_Output);
+    UEdGraphPin* PreservedInput = PreservedSet->FindPin(TEXT("KeepValue"), EGPD_Input);
+    TestTrue(TEXT("Unrelated link preserved"), PreservedOutput && PreservedInput && PreservedOutput->LinkedTo.Contains(PreservedInput));
+    UBlueprint* Child = FKismetEditorUtilities::CreateBlueprint(BP->GeneratedClass, Package, TEXT("WBP_Child"), BPTYPE_Normal, UWidgetBlueprint::StaticClass(), UWidgetBlueprintGeneratedClass::StaticClass());
+    if (!Child) { AddError(TEXT("Inherited fixture creation failed.")); return false; }
+    TestTrue(TEXT("Inherited member refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPVariableRemove(Child->GetPathName(), TEXT("KeepValue")).Contains(TEXT("Inherited")));
+    const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCPEditToolset"), TEXT("EditTurboMCPVariableRemove"));
+    AddInfo(Help);
+    TestTrue(TEXT("Help explains confirmation"), Help.Contains(TEXT("Confirm")) && Help.Contains(TEXT("token")));
     return !HasAnyErrors();
 }
 #endif
