@@ -635,7 +635,7 @@ public:
      * @param WorldPath Exact current PIE world object path.
      * @param ObjectPath Exact existing runtime object path in that world; local-player subsystems are supported.
      * @param FunctionName Exact Blueprint-callable function name. Inspect ReadTurboMCPPlayFunction first.
-     * @param Arguments JSON object with every input parameter by exact name; use {} for no inputs. Supports reflected reference-free values; unknown, missing or unsupported arguments refuse before dispatch.
+     * @param Arguments JSON object with every input parameter by exact name; use {} for no inputs. Use JSON numbers for numbers (integers must be exact and within +/-9007199254740991), booleans for bools, and strings for text/name/enum names. Arrays and sets use JSON arrays; reflected structs and maps use JSON objects. Map keys must be text/name/enum values. Object references, custom-imported structs and null values are unsupported. Supply all inputs, including defaults; omit output-only and return parameters. Example: {"Amount":3,"Label":"debug event"}. Unknown, missing or unsupported arguments refuse before dispatch.
      */
     UFUNCTION(meta=(AICallable))
     static FString PreviewTurboMCPPlayInvoke(const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName,const FString& Arguments);
@@ -1471,7 +1471,7 @@ public:
      * @param WorldPath Exact current PIE world object path.
      * @param ObjectPath Exact existing runtime object path in that world; local-player subsystems are supported.
      * @param FunctionName Exact Blueprint-callable function name. Inspect ReadTurboMCPPlayFunction first.
-     * @param Arguments JSON object with every input parameter by exact name; use {} for no inputs. Supports reflected reference-free values; unknown, missing or unsupported arguments refuse before dispatch.
+     * @param Arguments JSON object with every input parameter by exact name; use {} for no inputs. Use JSON numbers for numbers (integers must be exact and within +/-9007199254740991), booleans for bools, and strings for text/name/enum names. Arrays and sets use JSON arrays; reflected structs and maps use JSON objects. Map keys must be text/name/enum values. Object references, custom-imported structs and null values are unsupported. Supply all inputs, including defaults; omit output-only and return parameters. Example: {"Amount":3,"Label":"debug event"}. Unknown, missing or unsupported arguments refuse before dispatch.
      * @param Confirmation Copy the preview confirmation with identical arguments within 120 seconds. It is consumed before invocation; never automatically retry.
      */
     UFUNCTION(meta=(AICallable))

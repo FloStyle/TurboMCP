@@ -63,7 +63,7 @@ FString DescribeInvocation(const FInvocationTarget& Target)
         const FProperty* Property=*It;
         if (!Property->HasAnyPropertyFlags(CPF_Parm)) continue;
         const TCHAR* Direction=Property->HasAnyPropertyFlags(CPF_ReturnParm)?TEXT("return"):
-            Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm)?TEXT("out/ref"):TEXT("input");
+            Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm)?Property->HasAnyPropertyFlags(CPF_ReferenceParm)?TEXT("input/output; required in Arguments"):TEXT("output; omit from Arguments"):TEXT("input; required in Arguments");
         Out+=FString::Printf(TEXT("\n  %s: %s (%s)"),*Property->GetName(),*Property->GetCPPType(),Direction);
     }
     return Out+TEXT("\nRuntime calls can change gameplay state; they have no general undo guarantee.");
