@@ -1497,10 +1497,10 @@
       "title": "Track engine Slate visibility disagreement",
       "kind": "external",
       "priority": "P3",
-      "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "state": "done",
+      "readiness": "ready",
       "owner": "codex",
-      "validation": "native_reproduced_external_defect",
+      "validation": "plugin_alternative_native_and_offline_passed",
       "source_ids": [
         "X-118"
       ],
@@ -1508,7 +1508,7 @@
         "2026-10-30_S1/X-118"
       ],
       "dependencies": [],
-      "next_step": "Implement a plugin-owned bounded Slate text inspection query with explicit presence and effective-visibility results, including hidden/collapsed ancestors. Reuse the existing visible/collapsed/revealed fixture. Do not modify or claim to repair stock WaitFor/Snapshot. Runtime button candidates are insufficient: current ReadPlayInputState explicitly does not verify ancestor visibility.",
+      "next_step": "ReadTurboMCPSlateText provides explicit local and ancestor-effective visibility, hidden-match inspection, visible-only filtering and bounded JSON output. Use it to distinguish present text from visible text; it does not wait or prove clickability. Stock WaitFor/Snapshot disagreement remains tracked in the UE 5.9 proposal and is not an engine-fix claim.",
       "evidence": [
         {
           "result": "source_review",
@@ -1523,6 +1523,21 @@
           "result": "offline_pass",
           "run": "0e81cf619b874adc992beff5ff1df123",
           "scope": "26 checks and exact source scope passed for 182c0aa27752cf9720dcbe046204d944b23f2c4e."
+        },
+        {
+          "run": "d483027074fb4c4a9dd7f779dcc444ee",
+          "result": "passed",
+          "scope": "Initial registered-tool visible/collapsed/ancestor/revealed, output limit and depth-truncation controls passed."
+        },
+        {
+          "run": "bab8c420149e46a3b4c392e30c8c2cf9",
+          "result": "passed",
+          "scope": "Final native build/workflow: visible-only output explicitly excludes hidden matches; prior visibility and preservation controls retained."
+        },
+        {
+          "run": "6c26386f26ea4836b2f3cbc4f2ab78fe",
+          "result": "passed",
+          "scope": "All 26 offline integration checks passed; scope gate passed for cfdd0b9783b5c8331481f6907ad0a2f16869d617."
         }
       ],
       "plugin_repair_contract": {
@@ -1531,7 +1546,14 @@
         "output": "Distinguish text presence, effective visibility and unknown clickability. State that visibility does not establish hit testing, clipping, OS foreground or enabled input.",
         "tests": "Actual registered tool: visible text; locally collapsed text; visible child under collapsed ancestor; revealed controls; missing text; traversal/output limits; unchanged widget visibility. Retain the stock discrepancy reproduction.",
         "engine": "Stock engine unchanged; this is a plugin workflow alternative, not an upstream repair."
-      }
+      },
+      "upstream_status": "Stock engine discrepancy remains open; plugin workflow alternative implemented.",
+      "limitations": [
+        "Mounted STextBlock or accessibility text in visible top-level windows only. Custom text without these sources is not covered.",
+        "Effective visibility does not establish clipping, hit testing, enabled input or OS foreground.",
+        "No new screenshot was required: this query changes no visual layout; existing stock discrepancy and registered JSON responses are the evidence.",
+        "The 20000-widget cap and 1024-character row cap are source-reviewed; native controls exercised depth and match-count limits, not every bound."
+      ]
     },
     {
       "id": "NOV04-37",

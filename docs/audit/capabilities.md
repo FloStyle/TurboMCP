@@ -179,6 +179,7 @@ Generated from declarations, definitions and static test references. All runtime
 | ReadTurboMCPPlayInputState | [TurboMCPPlayInput.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPPureChecks | [TurboMCPPureChecksTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPureChecksTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPRefs | [TurboMCPRefs.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefs.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| ReadTurboMCPSlateText | [TurboMCPSlateText.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPSlateText.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPStatus | [TurboMCPToolsets.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPToolHelp | [TurboMCPAgentHelp.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPToolIndex | [TurboMCPAgentHelp.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |

@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "plugin_tree": "b3063888b92bb7bfc45b1083ccc87e1a8d86d0e2",
+  "plugin_tree": "4f7b3b66c50a24feeb2c12789881e7846ecc82b6",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 184,
+    "tools": 185,
     "by_toolset": {
       "UTurboMCPEditToolset": 77,
       "UTurboMCPLookToolset": 6,
       "UTurboMCPPreviewToolset": 64,
-      "UTurboMCPReadToolset": 37
+      "UTurboMCPReadToolset": 38
     }
   },
   "tools": [
@@ -4322,6 +4322,29 @@
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "ReadTurboMCPSlateText",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "Text",
+        "IncludeHidden",
+        "MatchLimit",
+        "MaxDepth"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSlateText.cpp",
+          "line": 9
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
