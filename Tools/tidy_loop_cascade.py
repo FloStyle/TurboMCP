@@ -225,6 +225,8 @@ def record_scoped_regression(call, evidence, persist):
                 lanePitch=280.0, wrapAfter='')
     row['preview'] = call('PreviewTurboMCPGraphTidy', **args)
     row['edit'] = call('EditTurboMCPGraphTidy', **args)
+    row['edit_changed'] = row['edit'].startswith('changed:')
+    row['edit_unchanged'] = row['edit'].startswith('unchanged:')
     row['after'] = positions()
     persist()
     if set(row['after']) != set(row['before']):

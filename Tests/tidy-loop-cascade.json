@@ -2,7 +2,7 @@
   "schema": 1,
   "scenario": "LoopCascade",
   "source": "docs/audit/field-reports/2026-11-05-loop-cascade-scenario.md",
-  "status": "recipe_not_built",
+  "status": "recipe_built_baseline_recorded_acceptance_pending",
   "seed": 20261105,
   "nodes": [
     {
