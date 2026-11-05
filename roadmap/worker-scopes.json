@@ -3565,6 +3565,15 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPIEStopWorkflowTest.cpp"
           ]
+        },
+        "nov04-empty-object-read": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEmptyObjectReadTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
