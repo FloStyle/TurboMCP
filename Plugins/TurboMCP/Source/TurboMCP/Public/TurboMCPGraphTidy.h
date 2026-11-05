@@ -8,6 +8,7 @@
 #pragma once
 
 #include "Containers/UnrealString.h"
+#include "Containers/Map.h"
 #include "Math/Vector2D.h"
 
 class UEdGraph;
@@ -88,12 +89,22 @@ public:
 
 	};
 
+    /** A semantic execution block; spatial rows may contain several blocks. */
+    struct FBlock
+    {
+        FString Kind;
+        FString Handoff;
+        int32 ParentIndex = INDEX_NONE;
+        int32 LoopContext = INDEX_NONE;
+    };
+
 	/** One comment box, with its nesting parent resolved GEOMETRICALLY. */
 	struct FBox
 	{
 		FString Key;
 		FString Text;
 		UEdGraphNode_Comment* Comment = nullptr;
+        bool bGenerated = false;
 
 		/** The TIGHTEST box around this one, or `INDEX_NONE`. Resolved geometrically. */
 		int32 ParentIndex = INDEX_NONE;
@@ -199,6 +210,9 @@ public:
         /** Explicit compact control-flow placement; omitted mode preserves row behavior. */
         bool bCompactBlocks = false;
         int32 BlockCount = 0;
+        TArray<FBlock> Blocks;
+        /** Primary incoming source for a compact merge; other exits route back to this row. */
+        TMap<int32,int32> MergePredecessors;
 
 		/** Empty means the whole graph; otherwise only these nodes may move. */
 		TSet<FString> SelectedNodeKeys;
@@ -260,7 +274,7 @@ public:
 	 * `error:` and names what stopped it.
 	 */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-		bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath = FString(), double InHorizontalGap = 120.0, double InVerticalGap = 100.0, double InLanePitch = 280.0, const FString& WrapAfter = FString(), const FString& LayoutMode = TEXT("rows"), const FString& RouteWires = TEXT("off"), double ChannelWidth = 60.0);
+		bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath = FString(), double InHorizontalGap = 120.0, double InVerticalGap = 100.0, double InLanePitch = 280.0, const FString& WrapAfter = FString(), const FString& LayoutMode = TEXT("rows"), const FString& RouteWires = TEXT("off"), double ChannelWidth = 60.0, bool bCreateBoxes = false);
 
     /** Acquire native node/pin geometry when a graphical editor is available. */
     static bool PrepareAlignment(UBlueprint* Blueprint, UEdGraph* Graph, FString& Error);

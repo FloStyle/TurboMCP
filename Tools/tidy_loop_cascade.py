@@ -5,6 +5,7 @@ Discovery is a checkpoint, not successful acceptance of the layout scenario.
 """
 import json
 import hashlib
+import math
 import os
 from pathlib import Path
 import re
@@ -448,6 +449,63 @@ def read_complete_graph(call, asset, graph):
             return ''.join(bodies)
 
 
+def independently_score_geometry(text, context):
+    """Appendix H oracle over exported physical geometry, independent of C++ scoring."""
+    result = {}
+    for side in ('before', 'after'):
+        rows = {}
+        for kind, fields in re.findall(r'^score (rect|box|edge|segment) (.+)$', text, re.M):
+            values = dict(field.split('=', 1) for field in fields.split())
+            if values.pop('side') == side:
+                rows.setdefault(kind, []).append(values)
+        if not rows.get('rect') or not rows.get('segment'):
+            raise RuntimeError(context + ': missing auditable ' + side + ' geometry')
+        segments = [(int(x['wire']), int(x['exec']),
+                     (float(x['ax']), float(x['ay'])), (float(x['bx']), float(x['by'])))
+                    for x in rows['segment']]
+        def cross(a, b, c):
+            return (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])
+        def intersects(a, b, c, d):
+            q = cross(a, b, c), cross(a, b, d), cross(c, d, a), cross(c, d, b)
+            return ((q[0] > .001 and q[1] < -.001) or (q[0] < -.001 and q[1] > .001)) and ((q[2] > .001 and q[3] < -.001) or (q[2] < -.001 and q[3] > .001))
+        def clips(a, b, rect):
+            low, high = 0., 1.
+            for axis, start, size in ((0, float(rect['x']), float(rect['w'])), (1, float(rect['y']), float(rect['h']))):
+                minimum, maximum = start + .001, start + size - .001
+                delta = b[axis] - a[axis]
+                if abs(delta) < 1e-6:
+                    if not minimum < a[axis] < maximum:
+                        return False
+                else:
+                    first, last = sorted(((minimum-a[axis])/delta, (maximum-a[axis])/delta))
+                    low, high = max(low, first), min(high, last)
+                    if low >= high:
+                        return False
+            return low < high
+        box_crossings = set()
+        score = [0., 0., 0., 0., 0., 0., 0.]
+        for i, (wire, execution, a, b) in enumerate(segments):
+            length = math.dist(a, b)
+            score[5] += length
+            # Use the specified angle boundary rather than the C++ tangent comparison.
+            angle = math.degrees(math.atan2(abs(b[1]-a[1]), abs(b[0]-a[0])))
+            if execution and 10 < angle < 80:
+                score[2] += length
+            for _, other_execution, c, d in segments[:i]:
+                if execution == other_execution and intersects(a, b, c, d):
+                    score[1 if execution else 4] += 1
+            for box in rows.get('box', []):
+                owned = {int(x) for x in box.get('owned', '').split(',') if x}
+                if wire not in owned and length > .001 and clips(a, b, box):
+                    box_crossings.add((wire, box['index']))
+        score[0] = len(box_crossings)
+        score[3] = sum(int(x['row']) and abs(float(x['by'])-float(x['ay'])) > 16 for x in rows.get('edge', []))
+        rects = [(float(x['x']), float(x['y']), float(x['w']), float(x['h'])) for x in rows['rect']]
+        score[6] = (max(x+w for x,y,w,h in rects)-min(x for x,y,w,h in rects)) * (max(y+h for x,y,w,h in rects)-min(y for x,y,w,h in rects))
+        result[side] = score
+    return result
+
+
 def read_compact_measures(text, context):
     """Read the documented score table; absent or invalid values are failures."""
     names = ('unrelated box crossings', 'execution segment crossings',
@@ -459,15 +517,20 @@ def read_compact_measures(text, context):
         if len(matches) != 1:
             raise RuntimeError(context + ': expected exactly one compact measure: ' + name)
         result[name] = dict(before=float(matches[0][0]), after=float(matches[0][1]))
+    oracle = independently_score_geometry(text, context)
+    for i, name in enumerate(names):
+        for side in ('before', 'after'):
+            if abs(result[name][side] - oracle[side][i]) > .11:
+                raise RuntimeError(context + ': independent ' + side + ' score mismatch for ' + name + ': ' + str(oracle[side][i]) + ' vs ' + str(result[name][side]))
     return result
 
 
-def record_routing_candidate(call, evidence, persist):
+def record_routing_candidate(call, evidence, persist, case='J2'):
     """Exercise J2 routing mechanics; keep Force and visual acceptance explicit."""
-    item = evidence['regressions']['J2']
+    item = evidence['regressions']['J2'] if case == 'J2' else dict(asset=evidence['asset'], graph='LoopCascade')
     asset, graph = item['asset'], item['graph']
     row = dict(acceptance=False, forced_mechanics_check=True)
-    evidence['routing_J2'] = row
+    evidence['routing_' + case] = row
 
     def key(identity):
         match = re.search(r'[:.]([0-9a-fA-F]{6,32})$', identity)
@@ -604,6 +667,154 @@ def record_routing_candidate(call, evidence, persist):
         raise RuntimeError('Routing undo did not restore original graph and coordinates')
 
 
+def record_loop_locals(call, evidence, persist, keep_for_layout=False):
+    asset, graph = evidence['asset'], 'LoopCascade'
+    row = dict(acceptance=False)
+    evidence['explicit_layout_locals' if keep_for_layout else 'explicit_loop_local'] = row
+    call('EditTurboMCPCompile', assets=asset)
+    row['preview'] = call('PreviewTurboMCPLocalVars', asset=asset, graphName=graph, names='{}')
+    ids = re.findall(r'^output ID: (.+?); local name:', row['preview'], re.M)
+    row['reported_shared_outputs'] = {}
+    for label in ('N02', 'N07', 'N27'):
+        key = evidence['label_ids'][label].rsplit(':', 1)[-1]
+        row['reported_shared_outputs'][label] = [identity for identity in ids if re.search(':' + re.escape(key) + r'[0-9a-fA-F]*:', identity)]
+    persist()
+    if any(not values for values in row['reported_shared_outputs'].values()):
+        raise RuntimeError('Local preview omitted a required shared value; unsafe values must still be reported')
+    outputs = [identity for identity in row['reported_shared_outputs']['N27'] if identity.endswith(':Index')]
+    if len(outputs) != 1:
+        raise RuntimeError('Missing unique explicit loop-index output identity')
+    selected = {outputs[0]: 'CurrentIndex'}
+    if keep_for_layout:
+        counts = [identity for identity in row['reported_shared_outputs']['N02'] if identity.endswith(':ReturnValue')]
+        if len(counts) != 1:
+            raise RuntimeError('Missing unique stable array-length identity')
+        selected[counts[0]] = 'PointCount'
+    names = json.dumps(selected)
+    row['selected_preview'] = call('PreviewTurboMCPLocalVars', asset=asset, graphName=graph, names=names)
+    row['before_positions'] = read_positions(call,asset,graph)
+    row['before_graph'] = read_complete_graph(call,asset,graph)
+    row['edit'] = call('EditTurboMCPLocalVars', asset=asset, graphName=graph, names=names)
+    row['after_positions'] = read_positions(call,asset,graph)
+    row['after_graph'] = read_complete_graph(call,asset,graph)
+    persist()
+    if not row['edit'].startswith('changed:') or 'compile=passed' not in row['edit']:
+        raise RuntimeError('Explicit cascade loop promotion did not compile successfully')
+    if len(row['after_positions']) != len(row['before_positions']) + 2 * len(selected) or any(row['after_positions'].get(identity) != rect for identity,rect in row['before_positions'].items()):
+        raise RuntimeError('Explicit loop promotion changed original geometry or promoted additional values')
+    if 'CurrentIndex' not in row['after_graph']:
+        raise RuntimeError('Meaningful local name missing from graph readback')
+    if keep_for_layout:
+        row['undo_pending_for_layout'] = True
+        persist()
+        return row
+    preview = call('PreviewTurboMCPAssetUndo',asset=asset)
+    confirm = re.search(r'Confirm=([0-9A-Fa-f-]+)',preview)
+    if not confirm:
+        raise RuntimeError('Missing explicit-local undo confirmation')
+    row['undo'] = call('EditTurboMCPAssetUndo',asset=asset,confirm=confirm.group(1))
+    row['undo_restored'] = read_positions(call,asset,graph) == row['before_positions'] and read_complete_graph(call,asset,graph) == row['before_graph']
+    persist()
+    if not row['undo_restored']:
+        raise RuntimeError('Explicit loop local undo did not restore exact original graph')
+
+
+def record_generated_comments(call, evidence, persist, case='J2'):
+    item = evidence['regressions'][case] if case in evidence['regressions'] else dict(asset=evidence['asset'], graph='LoopCascade')
+    asset, graph = item.get('asset', evidence.get('asset')), item.get('graph', 'J3BreakFeedback' if case == 'J3' else 'LoopCascade')
+    row = dict(acceptance=False, forced_mechanics_check=True)
+    evidence.setdefault('generated_comments', {})[case] = row
+    row['before_positions'] = read_positions(call, asset, graph)
+    row['before_graph'] = read_complete_graph(call, asset, graph)
+    args = dict(asset=asset, graphName=graph, bForce=True, nodeIds=[], mainPath='',
+                horizontalGap=120., verticalGap=100., lanePitch=280., wrapAfter='',
+                layoutMode='blocks', routeWires='orthogonal' if case == 'cascade' else 'off', channelWidth=60., bCreateBoxes=True)
+    row['preview'] = call('PreviewTurboMCPGraphTidy', **args)
+    row['preview_measures'] = read_compact_measures(row['preview'], case + ' comments preview')
+    plans = re.findall(r'^generated box (\S+) title="(.*?)" x=(-?\d+) y=(-?\d+) width=(\d+) height=(\d+) members=(.*)$', row['preview'], re.M)
+    row['plans'] = [dict(key=k,title=t,x=int(x),y=int(y),width=int(w),height=int(h),members=m.split(',')) for k,t,x,y,w,h,m in plans]
+    persist()
+    if not plans:
+        raise RuntimeError(case + ': requested new comments but no plans were produced')
+    if read_positions(call,asset,graph) != row['before_positions'] or read_complete_graph(call,asset,graph) != row['before_graph']:
+        raise RuntimeError(case + ': comment preview mutated the graph')
+    row['edit'] = call('EditTurboMCPGraphTidy', **args)
+    row['after_positions'] = read_positions(call,asset,graph)
+    if not row['edit'].startswith('changed:'):
+        raise RuntimeError(case + ': comment edit refused; retained evidence is not acceptance')
+    row['edit_measures'] = read_compact_measures(row['edit'], case + ' comments edit')
+    if row['edit_measures'] != row['preview_measures']:
+        raise RuntimeError(case + ': generated-comment preview/edit score mismatch')
+    added = set(row['after_positions']) - set(row['before_positions'])
+    planned_rects = sorted(tuple(plan[key] for key in ('x','y','width','height')) for plan in row['plans'])
+    actual_boxes = {identity for identity in added if tuple(row['after_positions'][identity][key] for key in ('x','y','width','height')) in planned_rects}
+    actual_rects = sorted(tuple(row['after_positions'][identity][key] for key in ('x','y','width','height')) for identity in actual_boxes)
+    if actual_rects != planned_rects:
+        raise RuntimeError(case + ': created comments differ from their planned rectangles')
+    planned_knots = sorted(tuple(map(int, point)) for point in re.findall(r'^route knot wire=\d+ index=\d+ x=(-?\d+) y=(-?\d+)$', row['preview'], re.M))
+    planned_readers = [tuple(map(int, point)) for point in re.findall(r'^planned reader copy index=\d+ x=(-?\d+) y=(-?\d+) width=', row['preview'], re.M)]
+    if sorted((row['after_positions'][identity]['x'],row['after_positions'][identity]['y']) for identity in added-actual_boxes) != sorted(planned_knots + planned_readers):
+        raise RuntimeError(case + ': combined comment/router knot coordinates differ from the preview')
+    def contains(a,b):
+        return a['x'] <= b['x'] and a['y'] <= b['y'] and a['x']+a['width'] >= b['x']+b['width'] and a['y']+a['height'] >= b['y']+b['height']
+    row['nested_pairs'] = []
+    for i,a in enumerate(row['plans']):
+        for b in row['plans'][i+1:]:
+            overlap = a['x'] < b['x']+b['width'] and a['x']+a['width'] > b['x'] and a['y'] < b['y']+b['height'] and a['y']+a['height'] > b['y']
+            if overlap and not contains(a,b) and not contains(b,a):
+                raise RuntimeError(case + ': generated comments partially overlap')
+            if contains(a,b): row['nested_pairs'].append((a['key'],b['key']))
+            if contains(b,a): row['nested_pairs'].append((b['key'],a['key']))
+    if case == 'cascade':
+        def members(plan):
+            return {identity.rsplit(':',1)[-1] for identity in plan['members']}
+        labels = {label: identity.rsplit(':',1)[-1] for label,identity in evidence['label_ids'].items()}
+        outer = [plan for plan in row['plans'] if all(labels[label] in members(plan) for label in ('N26','N27','N30','N33','N56'))]
+        falloff = [plan for plan in row['plans'] if labels['N56'] in members(plan) and labels['N26'] not in members(plan)]
+        closest = [plan for plan in row['plans'] if labels['N30'] in members(plan) and labels['N33'] in members(plan) and labels['N26'] not in members(plan)]
+        if len(outer) != 1 or len(falloff) != 1 or len(closest) != 1 or not contains(outer[0],falloff[0]) or not contains(outer[0],closest[0]):
+            raise RuntimeError('Cascade Falloff and Closest segment boxes are not nested in the outer body')
+        row['required_nesting_verified'] = True
+        if row['edit_measures']['unrelated box crossings']['after'] != 0:
+            raise RuntimeError('Combined cascade routing crosses an unrelated generated box')
+    row['comment_pages'] = []
+    offset = 0
+    for _ in range(80):
+        page = call('ReadTurboMCPCommentList', asset=asset, graphName=graph, scope='', offset=offset, limit=80)
+        if not page.startswith('read:'):
+            raise RuntimeError(case + ': comment readback failed')
+        row['comment_pages'].append(page)
+        continuation = re.search(r'nextOffset=(\d+)', page)
+        if not continuation:
+            break
+        next_offset = int(continuation.group(1))
+        if next_offset <= offset:
+            raise RuntimeError(case + ': comment pagination did not advance')
+        offset = next_offset
+    else:
+        raise RuntimeError(case + ': comment pagination exceeded its bound')
+    row['comments'] = '\n'.join(row['comment_pages'])
+    for plan in row['plans']:
+        if plan['title'] not in row['comments']:
+            raise RuntimeError(case + ': created comment title is missing')
+    # Native whole-graph capture can hit its zoom floor. The preview exports
+    # an overview and 1:1 tiles; live captures cover each generated region.
+    row['captures'] = {}
+    for plan in row['plans']:
+        target = f"{plan['x']-40},{plan['y']-40},{plan['width']+80},{plan['height']+80}"
+        row['captures'][plan['key']] = call('LookTurboMCPCapture', asset=asset, graphName=graph,
+                                          mode='region', target=target, size='1600x900')
+    undo = call('PreviewTurboMCPAssetUndo', asset=asset)
+    confirm = re.search(r'Confirm=([0-9A-Fa-f-]+)',undo)
+    if not confirm:
+        raise RuntimeError(case + ': missing generated-comment undo confirmation')
+    row['undo'] = call('EditTurboMCPAssetUndo', asset=asset, confirm=confirm.group(1))
+    row['undo_restored'] = read_positions(call,asset,graph) == row['before_positions'] and read_complete_graph(call,asset,graph) == row['before_graph']
+    persist()
+    if not row['undo_restored']:
+        raise RuntimeError(case + ': generated-comment undo did not restore exact original state')
+
+
 def record_compact_candidates(call, evidence, persist, comments_only=False):
     """Retain failures and verify read-back/undo; visual acceptance is separate."""
     cases = [('cascade', evidence['asset'], 'LoopCascade', []),
@@ -632,6 +843,12 @@ def record_compact_candidates(call, evidence, persist, comments_only=False):
         row['after_graph']=read_complete_graph(call,asset,graph)
         row['after_positions']=read_positions(call,asset,graph)
         row['reader_equal']=row['after_graph']==row['before_graph']
+        if name == 'cascade':
+            branch = row['after_positions'][evidence['label_ids']['N30']]
+            setter = row['after_positions'][evidence['label_ids']['N33']]
+            row['shared_calculation_exec_gap'] = setter['x'] - branch['x'] - branch['width']
+            if not row['edit'].startswith('changed:') or row['shared_calculation_exec_gap'] > args['horizontalGap'] + 1:
+                raise RuntimeError('Cascade re-reserved a shared calculation tree between its branch and setter')
         if name == 'J4':
             row['comment_checks'] = []
             for box in evidence['regressions']['J4']['boxes']:
@@ -752,6 +969,7 @@ def run():
         if tool in ('PreviewTurboMCPGraphTidy', 'EditTurboMCPGraphTidy'):
             args.setdefault('routeWires', 'off')
             args.setdefault('channelWidth', 60.0)
+            args.setdefault('bCreateBoxes', False)
         toolset = args.pop('_toolset', None) or toolset_for(tool)
         row = {'toolset': toolset, 'tool': tool, 'arguments': args, 'outcome': 'pending'}
         evidence['calls'].append(row)
@@ -793,6 +1011,7 @@ def run():
         if subset == 'routing':
             record_event_regressions(call, evidence, persist, only_case='J2')
             record_routing_candidate(call, evidence, persist)
+            record_generated_comments(call, evidence, persist)
             evidence['stage'] = 'focused_routing_checks_passed_visual_acceptance_pending'
             persist()
             print('Evidence: ' + str(directory), flush=True)
@@ -887,10 +1106,25 @@ def run():
         evidence['initial_graph'] = call('ReadTurboMCPGraphLoad', asset=asset, graphName='LoopCascade', format='read', detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
         build_graph(call, evidence, persist)
         record_baseline(call, evidence, persist)
+        record_loop_locals(call, evidence, persist)
         record_scoped_regression(call, evidence, persist)
         record_break_regression(call, evidence, persist)
         record_event_regressions(call, evidence, persist)
         record_compact_candidates(call, evidence, persist)
+        record_routing_candidate(call, evidence, persist, case='cascade')
+        record_loop_locals(call, evidence, persist, keep_for_layout=True)
+        record_generated_comments(call, evidence, persist, case='cascade')
+        local_row = evidence['explicit_layout_locals']
+        undo_preview = call('PreviewTurboMCPAssetUndo', asset=evidence['asset'])
+        confirmation = re.search(r'Confirm=([0-9A-Fa-f-]+)', undo_preview)
+        if not confirmation:
+            raise RuntimeError('Missing combined promotion undo confirmation')
+        local_row['undo'] = call('EditTurboMCPAssetUndo', asset=evidence['asset'], confirm=confirmation.group(1))
+        local_row['undo_restored'] = read_positions(call,evidence['asset'],'LoopCascade') == local_row['before_positions'] and read_complete_graph(call,evidence['asset'],'LoopCascade') == local_row['before_graph']
+        persist()
+        if not local_row['undo_restored']:
+            raise RuntimeError('Combined promotion/layout undo did not restore the original graph')
+        record_generated_comments(call, evidence, persist, case='J3')
         record_comment_regression(call, evidence, persist)
         record_compact_candidates(call, evidence, persist, comments_only=True)
         record_routing_candidate(call, evidence, persist)

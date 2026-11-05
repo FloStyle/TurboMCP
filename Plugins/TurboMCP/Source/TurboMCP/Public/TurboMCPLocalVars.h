@@ -19,7 +19,7 @@ class UEdGraph;
 /**
  * Analyze repeatedly consumed pure-node outputs in function graphs.
  * Promotion supports reviewed scalar arithmetic with stable input ancestry.
- * It retains calculations, assigns at function entry and replaces consumer reads.
+ * It retains calculations, assigns stable arithmetic at entry or reviewed loop values at LoopBody, and replaces consumer reads.
  * Unsupported value lifetimes and execution entry shapes are refused.
  */
 class FTurboMCPLocalVars
@@ -34,6 +34,13 @@ public:
         /** Full node and output identity: different outputs must never share a local. */
         FGuid NodeGuid;
         FName OutputPinName;
+        /** Assignment output: entry Then, or a reviewed stock loop LoopBody. */
+        FGuid AnchorGuid;
+        FName AnchorPinName;
+        bool bSelected = true;
+        bool bBodyScoped = false;
+        bool bRequiresExplicitSelection = false;
+        bool bEntryArrayCount = false;
 
 		/** The node's title, so a reader knows what the value is. */
 		FString Title;
@@ -71,6 +78,7 @@ public:
 		FString GraphName;
         /** Exact output IDs to human-readable local names; preserved when the edit replans. */
         FString Names = TEXT("{}");
+        bool bExplicitSelection = false;
 		TArray<FCandidate> Candidates;
 		int32 NodeCountBefore = 0;
 

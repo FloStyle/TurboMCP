@@ -432,8 +432,8 @@
   ],
   "limits": [
     "Discover creation IDs and pins live; descriptions are not executable IDs.",
-    "No native construction, compilation or baseline has run."
+    "The fixture is exercised by test-tidy-loop-cascade; user-reference layout acceptance remains pending."
   ],
   "recipe_node_count": 83,
-  "run_subset": "routing"
+  "run_subset": "all"
 }
