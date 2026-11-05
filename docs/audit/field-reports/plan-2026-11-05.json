@@ -257,7 +257,7 @@
       "dependencies": [
         "NOV05-02"
       ],
-      "next_step": "Finish editor run 1fb0a2aca9684c66b2fe9cc3cccb16a3, inspect routing failures and images, then extend checks to cascade/scoped routing and independently verify geometry. Do not integrate the routing candidate before runtime review.",
+      "next_step": "After active run completes, fix replacement-edge ordering and add ordered fan-out validation before integration. Retain runtime failures and continue cascade/scoped routing and geometry checks.",
       "evidence": [
         {
           "run": "dd045dabee7f44dab9de90d46565d7ab",
@@ -293,6 +293,11 @@
           "run": "1fb0a2aca9684c66b2fe9cc3cccb16a3",
           "result": "editor_workflow_running_not_accepted",
           "scope": "Candidate connects RouteWires=off|orthogonal and ChannelWidth=60 to shared measured planning, preview chains, live insertion and checked rollback. Build 91fab4c7ec6843f99e43ca9310f5f3c6 passed. New J2 test checks original node/default preservation, contracted logical pin connectivity, planned knot positions, score parity and exact undo. It explicitly uses Force for mechanics and retains score regressions; no quality or visual acceptance implied. Candidate is on task branch, not main."
+        },
+        {
+          "commit": "506ca07b",
+          "result": "static_review_found_fanout_order_defect",
+          "scope": "Route expansion currently removes an original edge and appends its replacement, which can reorder a shared output fan-out. Must replace the original link-array slot and verify ordered contracted fan-out, not only edge-set equality. Identified during the active editor run; source kept unchanged to preserve run provenance. Not approved for integration."
         }
       ],
       "implementation_contract": [
