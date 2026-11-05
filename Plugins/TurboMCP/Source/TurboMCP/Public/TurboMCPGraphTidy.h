@@ -260,7 +260,7 @@ public:
 	 * `error:` and names what stopped it.
 	 */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-		bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath = FString(), double InHorizontalGap = 120.0, double InVerticalGap = 100.0, double InLanePitch = 280.0, const FString& WrapAfter = FString(), const FString& LayoutMode = TEXT("rows"));
+		bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath = FString(), double InHorizontalGap = 120.0, double InVerticalGap = 100.0, double InLanePitch = 280.0, const FString& WrapAfter = FString(), const FString& LayoutMode = TEXT("rows"), const FString& RouteWires = TEXT("off"), double ChannelWidth = 60.0);
 
     /** Acquire native node/pin geometry when a graphical editor is available. */
     static bool PrepareAlignment(UBlueprint* Blueprint, UEdGraph* Graph, FString& Error);

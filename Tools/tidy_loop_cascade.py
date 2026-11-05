@@ -462,6 +462,119 @@ def read_compact_measures(text, context):
     return result
 
 
+def record_routing_candidate(call, evidence, persist):
+    """Exercise J2 routing mechanics; keep Force and visual acceptance explicit."""
+    item = evidence['regressions']['J2']
+    asset, graph = item['asset'], item['graph']
+    row = dict(acceptance=False, forced_mechanics_check=True)
+    evidence['routing_J2'] = row
+
+    def key(identity):
+        match = re.search(r'[:.]([0-9a-fA-F]{6,32})$', identity)
+        if not match:
+            raise RuntimeError('Unrecognized node identity: ' + identity)
+        return match.group(1).lower()
+
+    def topology(positions):
+        nodes, edges = {}, set()
+        for identity in positions:
+            text = call('ReadTurboMCPNodeContext', asset=asset, graphName=graph,
+                        nodeId=identity, nextHops=0)
+            current = None
+            observed = {}
+            for line in text.splitlines():
+                match = re.match(r'^node (.+) type=(.+)$', line)
+                if match:
+                    current = key(match.group(1))
+                    observed[current] = dict(type=match.group(2), defaults=[])
+                elif current and line.startswith('  input ') and ' default=' in line:
+                    observed[current]['defaults'].append(line)
+                elif current:
+                    match = re.match(r'^  output (.+?) -> (.+):([^:]+)$', line)
+                    if match:
+                        edges.add((current, match.group(1), key(match.group(2)), match.group(3)))
+            for identity, metadata in observed.items():
+                metadata['defaults'].sort()
+                if identity in nodes and nodes[identity] != metadata:
+                    raise RuntimeError('Inconsistent context snapshots for ' + identity)
+                nodes[identity] = metadata
+        return dict(nodes=nodes, edges=sorted(edges))
+
+    row['before_positions'] = read_positions(call, asset, graph)
+    row['before_graph'] = read_complete_graph(call, asset, graph)
+    row['before_topology'] = topology(row['before_positions'])
+    args = dict(asset=asset, graphName=graph, bForce=True, nodeIds=[], mainPath='',
+                horizontalGap=120.0, verticalGap=100.0, lanePitch=280.0, wrapAfter='',
+                layoutMode='blocks', routeWires='orthogonal', channelWidth=60.0)
+    row['preview'] = call('PreviewTurboMCPGraphTidy', **args)
+    row['preview_measures'] = read_compact_measures(row['preview'], 'routing J2 preview')
+    planned = re.findall(r'^route knot wire=\d+ index=\d+ x=(-?\d+) y=(-?\d+)$', row['preview'], re.M)
+    row['planned_knots'] = [tuple(map(int, point)) for point in planned]
+    persist()
+    if not planned:
+        raise RuntimeError('J2 routing planned no knots; the crossing case remains unresolved')
+    if read_positions(call, asset, graph) != row['before_positions'] or read_complete_graph(call, asset, graph) != row['before_graph']:
+        raise RuntimeError('Routing preview mutated the graph')
+    row['edit'] = call('EditTurboMCPGraphTidy', **args)
+    row['after_positions'] = read_positions(call, asset, graph)
+    row['after_graph'] = read_complete_graph(call, asset, graph)
+    persist()
+    if not row['edit'].startswith('changed:'):
+        raise RuntimeError('J2 routed edit did not apply; inspect retained preview and rollback evidence')
+    row['edit_measures'] = read_compact_measures(row['edit'], 'routing J2 edit')
+    if row['preview_measures'] != row['edit_measures']:
+        raise RuntimeError('Routing preview/edit score mismatch')
+    row['score_regressions'] = [name for name, value in row['edit_measures'].items()
+                               if value['after'] > value['before'] * 1.1 + 0.11]
+    added = set(row['after_positions']) - set(row['before_positions'])
+    if not set(row['before_positions']) <= set(row['after_positions']):
+        raise RuntimeError('Routing removed an original node')
+    if sorted((row['after_positions'][node]['x'], row['after_positions'][node]['y']) for node in added) != sorted(row['planned_knots']):
+        raise RuntimeError('Added knot coordinates differ from the preview')
+    row['after_topology'] = topology(row['after_positions'])
+    original = row['before_topology']['nodes']
+    actual = row['after_topology']['nodes']
+    added_keys = {key(node) for node in added}
+    for identity in added_keys:
+        if not any(word in actual[identity]['type'].lower() for word in ('knot', 'reroute')):
+            raise RuntimeError('Routing added a non-reroute node')
+    if {identity: actual.get(identity) for identity in original} != original:
+        raise RuntimeError('Routing changed original node types or input defaults')
+    edges = row['after_topology']['edges']
+    outgoing = {}
+    for source, pin, target, target_pin in edges:
+        outgoing.setdefault(source, []).append((source, pin, target, target_pin))
+    for identity in added_keys:
+        if len(outgoing.get(identity, [])) != 1 or sum(edge[2] == identity for edge in edges) != 1:
+            raise RuntimeError('Added reroute is orphaned or branches')
+    contracted = set()
+    for source, pin, target, target_pin in edges:
+        if source in added_keys:
+            continue
+        seen = set()
+        while target in added_keys:
+            if target in seen:
+                raise RuntimeError('Added reroutes form a cycle')
+            seen.add(target)
+            _, _, target, target_pin = outgoing[target][0]
+        contracted.add((source, pin, target, target_pin))
+    row['contracted_edges'] = sorted(contracted)
+    row['connectivity_equal'] = row['contracted_edges'] == row['before_topology']['edges']
+    persist()
+    if not row['connectivity_equal']:
+        raise RuntimeError('Routing changed logical pin connections')
+    row['capture'] = call('LookTurboMCPCapture', asset=asset, graphName=graph, mode='graph', target='', size='1600x900')
+    undo = call('PreviewTurboMCPAssetUndo', asset=asset)
+    confirm = re.search(r'Confirm=([0-9A-Fa-f-]+)', undo)
+    if not confirm:
+        raise RuntimeError('Routing undo preview returned no confirmation')
+    row['undo'] = call('EditTurboMCPAssetUndo', asset=asset, confirm=confirm.group(1))
+    row['undo_restored'] = read_positions(call, asset, graph) == row['before_positions'] and read_complete_graph(call, asset, graph) == row['before_graph']
+    persist()
+    if not row['undo_restored']:
+        raise RuntimeError('Routing undo did not restore original graph and coordinates')
+
+
 def record_compact_candidates(call, evidence, persist, comments_only=False):
     """Retain failures and verify read-back/undo; visual acceptance is separate."""
     cases = [('cascade', evidence['asset'], 'LoopCascade', []),
@@ -605,6 +718,9 @@ def run():
         (directory / 'evidence.json').write_text(json.dumps(evidence, indent=2), encoding='utf-8')
 
     def call(tool, **args):
+        if tool in ('PreviewTurboMCPGraphTidy', 'EditTurboMCPGraphTidy'):
+            args.setdefault('routeWires', 'off')
+            args.setdefault('channelWidth', 60.0)
         toolset = args.pop('_toolset', None) or toolset_for(tool)
         row = {'toolset': toolset, 'tool': tool, 'arguments': args, 'outcome': 'pending'}
         evidence['calls'].append(row)
@@ -738,6 +854,7 @@ def run():
         record_compact_candidates(call, evidence, persist)
         record_comment_regression(call, evidence, persist)
         record_compact_candidates(call, evidence, persist, comments_only=True)
+        record_routing_candidate(call, evidence, persist)
         evidence['stage'] = 'workflow_checks_passed_visual_acceptance_pending'
         persist()
         print('Evidence: ' + str(directory), flush=True)

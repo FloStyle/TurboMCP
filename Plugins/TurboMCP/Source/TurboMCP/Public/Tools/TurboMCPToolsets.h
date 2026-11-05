@@ -1043,7 +1043,9 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
-	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. It does not add reroutes, comments or locals.
+	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. It does not create comments or locals. Reroutes require explicit RouteWires=orthogonal.
+	 * @param RouteWires off (default) preserves existing connections. orthogonal plans measured reroute chains for blocked or long diagonal connections; skipped boundary/unrouteable links are reported. No automatic compile or save.
+	 * @param ChannelWidth Finite routing channel clearance in graph units, 20..400; default 60. Used only when RouteWires=orthogonal.
 	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.
@@ -1054,7 +1056,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 		const FString& GraphName,
 		bool bForce,
 		const TArray<FString>& NodeIds,
-		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""), const FString& LayoutMode = TEXT("rows"));
+		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""), const FString& LayoutMode = TEXT("rows"), const FString& RouteWires = TEXT("off"), double ChannelWidth = 60.0);
 
 	/**
      * Preview supported position repairs across one Blueprint graph; loads and measures transient graph widgets, but does not move live nodes, compile or save.
@@ -1988,7 +1990,9 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
-	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. It does not add reroutes, comments or locals.
+	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. It does not create comments or locals. Reroutes require explicit RouteWires=orthogonal.
+	 * @param RouteWires off (default) preserves existing connections. orthogonal plans measured reroute chains for blocked or long diagonal connections; skipped boundary/unrouteable links are reported. No automatic compile or save.
+	 * @param ChannelWidth Finite routing channel clearance in graph units, 20..400; default 60. Used only when RouteWires=orthogonal.
 	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.
@@ -1999,7 +2003,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 		const FString& GraphName,
 		bool bForce,
 		const TArray<FString>& NodeIds,
-		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""), const FString& LayoutMode = TEXT("rows"));
+		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""), const FString& LayoutMode = TEXT("rows"), const FString& RouteWires = TEXT("off"), double ChannelWidth = 60.0);
 
 	/**
      * Replan and apply supported position repairs across one Blueprint graph in one undo transaction; marks the Blueprint modified, but does not compile or save.
