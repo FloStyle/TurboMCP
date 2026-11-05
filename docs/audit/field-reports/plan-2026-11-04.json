@@ -532,10 +532,10 @@
       "title": "Allow locals in implemented interface functions",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "source_reconciled_runtime_pending",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
+      "validation": "reproduced_fix_under_validation",
       "source_ids": [
         "FA-14"
       ],
@@ -543,7 +543,7 @@
         "2026-10-30_S3/FA-14"
       ],
       "dependencies": [],
-      "next_step": "Source finding: TurboMCPMergeMemberTools.cpp LocalAdd searches only BP->FunctionGraphs, so owned interface implementation graphs stored elsewhere are excluded. Reproduce with a disposable implemented interface, then resolve unique owned function-entry graphs without allowing event/inherited graphs. No fix or native proof yet."
+      "next_step": "Original native run 15b8d739ce7e4fccb6ffdd4e58d59698 reproduced preview/edit rejection and zero locals. Candidate admits owned interface function graphs and updates help. Run 67d5ebff52aa41b69523e19a7b0bc125 passed creation/type/default/preview checks but failed the duplicate-name fixture: its graph was uniquified. Fixture corrected to a distinct outer with exact-name assertion; native rerun pending. Not integrated or closed."
     },
     {
       "id": "NOV04-18",
