@@ -6537,6 +6537,11 @@
           "run": "fcf1b64b9ef1491c9ddbe58802bcc940",
           "result": "build_passed",
           "scope": "5071e169 includes upstream pure expressions and generated readers in the compact body-bottom diagnostic. Runtime verification pending with b4950172."
+        },
+        {
+          "run": "0a3a7dcdf21e46c5a6e2642fb8c4d4b4",
+          "result": "build_passed_editor_running",
+          "scope": "Candidate b4950172 built successfully in 123.13 seconds; supervised editor suite started. Compact comment planning is not yet runtime accepted. Read-only projection of the prior plain-cascade positions into both J4 comment member sets found no unrelated-node intersections; this supports the approach but is not live verification."
         }
       ]
     },
@@ -6579,8 +6584,8 @@
       "kind": "feature",
       "state": "open",
       "priority": "P0",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "visual_defect_confirmed",
+      "remaining": "Implement explicit orthogonal handoff routing, including J2 lower Sequence wires crossing pure readers. Preserve feedback and graph semantics; verify screenshots and undo.",
       "source_keys": [
         "2026-11-05_S1/TD-65",
         "2026-11-05_S1/TD-71",
@@ -6589,6 +6594,13 @@
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
       "dependencies": [
         "NOV05-02"
+      ],
+      "evidence": [
+        {
+          "run": "dd045dabee7f44dab9de90d46565d7ab",
+          "result": "visual_routing_defect_confirmed",
+          "scope": "Inspected native J2 image 9A9E26AB4464E86C426A33B073524CE4: three ordered rows and aligned first output, but Then 2 execution spline crosses the middle-row Message getter. Preservation passes do not certify routing. Keep unresolved under NOV05-04."
+        }
       ]
     },
     {
