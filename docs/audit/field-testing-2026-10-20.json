@@ -6657,8 +6657,8 @@
       "kind": "bug",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "implemented_build_passed_live_help_check_pending",
-      "remaining": "Candidate 10cc3579 preserves the complete required parameter name/type summary outside descriptive truncation. Build 8eec02d427ae43c99992f31d4d220557 passed. Verify against live required arrays for all reported tools before closing.",
+      "validation": "live_required_parameter_checks_passed_in_candidate",
+      "remaining": "Integrate the reviewed help fix after candidate gates. Live checks in .local/tidy-cascade/ca8c953407ed474483bfef28e8d83ab0 passed for Preview/EditGraphTidy, GraphPositions, NodeType and Capture against their actual required schema arrays. Remaining scenario execution is unrelated to this help result.",
       "source_keys": [
         "2026-11-05_S1/X-129"
       ],
@@ -6668,6 +6668,10 @@
         {
           "result": "source_cause_confirmed",
           "scope": "Source cause confirmed in TurboMCPAgentHelp.cpp: properties are alphabetically ordered, then the entire Help string is cut to HelpBudgetChars. This can remove required parameter lines. Preserve a complete required-parameter name/type summary outside descriptive-text truncation; keep effects and refusal guidance, and test against the live schema for every named report tool. Sorting required parameters first alone is insufficient when the prefix consumes the budget."
+        },
+        {
+          "result": "passed_live_required_parameters",
+          "scope": "Candidate 324c365c; evidence .local/tidy-cascade/ca8c953407ed474483bfef28e8d83ab0/evidence.json required_help. All five reported tools have zero missing required names. Build passed. Full compact-layout suite is still running, so this is a bounded help result only."
         }
       ]
     },
