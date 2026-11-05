@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "626ff793ee7e9fcaaa86800c89195a52e0a7f155",
+  "plugin_tree": "6433a152c46f13995153e7c8bddf17530e1cae38",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 171,
@@ -508,7 +508,8 @@
         "Asset",
         "GraphName",
         "Text",
-        "Continuation"
+        "Continuation",
+        "Placement"
       ],
       "family": "graph",
       "definitions": [
@@ -2254,7 +2255,8 @@
         "Asset",
         "GraphName",
         "Text",
-        "Continuation"
+        "Continuation",
+        "Placement"
       ],
       "family": "graph",
       "definitions": [
