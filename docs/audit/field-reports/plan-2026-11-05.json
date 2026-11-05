@@ -257,7 +257,7 @@
       "dependencies": [
         "NOV05-02"
       ],
-      "next_step": "Verify lower-first routing candidate 2ff27e5e. Keep previous forced mechanics passes separate from visual failures. Locals, nested boxes and full cascade acceptance remain open.",
+      "next_step": "Finish the remaining implementation batch, including routing candidate 2aaea7d3, then focused verification. Preserve the latest J2 crossing failure; locals, nested boxes and full cascade remain incomplete.",
       "evidence": [
         {
           "run": "dd045dabee7f44dab9de90d46565d7ab",
@@ -316,6 +316,12 @@
           "run": "8f6fef8dc26c4df4a35afb88c89c869b",
           "result": "focused_preservation_passed_visual_failed",
           "scope": "Crossing-aware route selection and shorter execution handoffs built and passed focused preservation checks. Native image 0A30335A42BF71D28D951F9CF53FF9D6 still shows competing fan-out channels; crossing and length regressions retained. Candidate 2ff27e5e now reserves inner channels for lower destinations; focused verification running. No full cascade rerun."
+        },
+        {
+          "commit": "2ff27e5e",
+          "run": "9e20496b55244178b4b0a1673ff9979f",
+          "result": "focused_preservation_passed_routing_incomplete",
+          "scope": "Focused J2 build, preview/edit coordinates and measures, contracted connections/fan-out order and exact undo passed. Inspected native 57A952B547E81A62A30135B48B762513: lower-first routing moves lower channel near source, but middle handoff remains unrouted and crossing regression persists. Candidate 2aaea7d3 adds bounded intermediate channel positions to fit between adjacent knot footprints and getters; unbuilt/untested. No visual acceptance or complete-report claim."
         }
       ],
       "implementation_contract": [
