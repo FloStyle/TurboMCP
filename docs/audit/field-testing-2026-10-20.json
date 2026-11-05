@@ -6491,8 +6491,8 @@
       "kind": "bug",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "comment_identity_fix_implemented_runtime_pending",
-      "remaining": "Verify a13b31f7 compact comment identity and full-content checks; inspect J4 captures. Routing, Appendix H scoring and user visual acceptance remain open.",
+      "validation": "compact_comment_contents_and_undo_verified_routing_pending",
+      "remaining": "Compact comment identity and full-content checks pass. Implement full Appendix H scoring and routing; retain scoped pure-input regression and inspect all block captures before visual acceptance.",
       "source_keys": [
         "2026-11-05_S1/TD-62",
         "2026-11-05_S1/TD-70",
@@ -6547,6 +6547,11 @@
           "run": "0a3a7dcdf21e46c5a6e2642fb8c4d4b4",
           "result": "failed_compact_comment_identity_guard",
           "scope": "Candidate b4950172: plain cascade graph equality, exact coordinates and undo passed. J4 preview refused original member N20 as unrelated because MembersOf returns engine object names while the guard compared public IDs. Candidate a13b31f7 resolves both identities, removes stale old-corner reader constraint, adds rectangle bounds checks and verifies all J4 original members and titles. Failure retained; corrected runtime result pending."
+        },
+        {
+          "run": "b091c2182a204e82830757b20e9e1bd3",
+          "result": "passed_preservation_and_comment_contents_not_full_acceptance",
+          "scope": "a13b31f7: editor suite passed. J4 kept both titles and every original member, exact node preview/edit coordinates matched, and undo restored graph plus all geometry. Body drift 3513 -> 0, Completed-above-body 3 -> 0, wire length 84132.8 -> 81702.1. Native Flatten path points image 0803F423411226F3B6BEF188BD734C7D inspected: fitted readable comment, but unrelated long data wire still crosses it. Cross-box length 23270.9 -> 24806.8; routing and Appendix H remain unresolved. Earlier identity failure retained."
         }
       ]
     },
