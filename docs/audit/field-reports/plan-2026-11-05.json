@@ -96,7 +96,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "candidate_failed_visual_and_capture_checks",
+      "validation": "partial_geometry_improvement_remaining_join_and_comment_defects",
       "source_ids": [
         "TD-62",
         "TD-70",
@@ -112,7 +112,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Repair block placement: full cascade preserves graph reader content but remains too wide, Body drift 733, one Completed above body, three backward exec wires and new row/fan-out regressions. Preview image inspected and rejected. Continue with per-block captures; do not accept aggregate structural improvement as completion.",
+      "next_step": "Build and verify candidate 832141f4 join ordering, then inspect per-block captures and undo. Preserve boxed-layout defects and full Appendix H scoring requirements.",
       "evidence": [
         {
           "run": "b04c38d19d264d37b7aa9613ed09eacd",
@@ -128,6 +128,11 @@
           "run": "48d85c387be34bfcb6bce1d80a996cb1",
           "result": "failed_capture_after_unacceptable_layout",
           "scope": "Evidence .local/tidy-cascade/5d4a716def3a442dbbc84fc5e6ab4b82. Full reader equality passed. Wire length 84132.8 -> 100883.4; Body drift 3513 -> 733; Completed-above-body 3 -> 1; linear drift 0 -> 24; backward exec 0 -> 3. Whole graph capture exceeded native zoom range, stopping before undo and remaining compact cases. Preview image inspected: wide cascade, not accepted."
+        },
+        {
+          "run": "4f0f7a01d739436cb69bf3caf979480c",
+          "result": "failed_harness_identity_comparison",
+          "scope": "Plain cascade: Body drift 3513 -> 0, Completed above body 3 -> 0, no new overlaps/linear drift/fan-out conflicts. One backward exec wire remains; wire length 84132.8 -> 85127.1. Checker compared shortened preview IDs to full reader IDs and stopped before capture/undo. Offline unique suffix reconciliation found all 83 coordinates equal. Failure retained; candidate 832141f4 resolves identities and gives compact joins a lane after incoming blocks. Not visually accepted."
         }
       ],
       "design_notes": [
