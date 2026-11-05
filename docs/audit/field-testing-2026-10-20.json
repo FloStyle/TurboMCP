@@ -6407,8 +6407,8 @@
       "kind": "housekeeping",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "discovery_checkpoint_passed_full_fixture_pending",
-      "remaining": "Live creation, signature, locals and discovery passed after explicitly loading stock StandardMacros. Record that prerequisite; build all 83 nodes with inspected pins next. No layout baseline, J1-J6 or visual acceptance yet.",
+      "validation": "pin_discovery_passed_construction_in_progress",
+      "remaining": "All 38 creation variants inspected live. Full 83-node builder authored. Initial setup correctly refused ambiguous replacement of the factory Entry-to-Return edge; retain refusal. Revised builder explicitly removes that owned template edge and stops on refused preview. Native construction rerun active; no baseline yet.",
       "source_keys": [
         "2026-11-05_S1/FT-156"
       ],
@@ -6424,6 +6424,16 @@
           "run": "1b7e513995ae46378770c8b1e529bdb0",
           "result": "passed_checkpoint_only",
           "scope": "Fixture shell and discovery after stock macro read. Earlier missing ForLoop failure retained. Not full graph construction or Tidy validation."
+        },
+        {
+          "run": "8c2267525afd49d1b3089744b7ec6baa",
+          "result": "passed_checkpoint_only",
+          "scope": "Exact live discovery and temporary pin probes for all 38 creation variants; setter Output_Get confirmed. Not graph construction."
+        },
+        {
+          "run": "cc825dc469c9497a9b27bb58307a20bd",
+          "result": "failed",
+          "scope": "First setup append refused ambiguous template continuation; live graph unchanged. Harness corrected to remove owned template edge explicitly and stop after refused preview."
         }
       ]
     },

@@ -11,7 +11,7 @@
       "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "discovery_checkpoint_passed_full_fixture_pending",
+      "validation": "pin_discovery_passed_construction_in_progress",
       "source_ids": [
         "FT-156"
       ],
@@ -19,7 +19,7 @@
         "2026-11-05_S1/FT-156"
       ],
       "dependencies": [],
-      "next_step": "Live creation, signature, locals and discovery passed after explicitly loading stock StandardMacros. Record that prerequisite; build all 83 nodes with inspected pins next. No layout baseline, J1-J6 or visual acceptance yet.",
+      "next_step": "All 38 creation variants inspected live. Full 83-node builder authored. Initial setup correctly refused ambiguous replacement of the factory Entry-to-Return edge; retain refusal. Revised builder explicitly removes that owned template edge and stops on refused preview. Native construction rerun active; no baseline yet.",
       "evidence": [
         {
           "run": "cb08f716863b4e86a7240897464386fa",
@@ -30,6 +30,16 @@
           "run": "1b7e513995ae46378770c8b1e529bdb0",
           "result": "passed_checkpoint_only",
           "scope": "Fixture shell and discovery after stock macro read. Earlier missing ForLoop failure retained. Not full graph construction or Tidy validation."
+        },
+        {
+          "run": "8c2267525afd49d1b3089744b7ec6baa",
+          "result": "passed_checkpoint_only",
+          "scope": "Exact live discovery and temporary pin probes for all 38 creation variants; setter Output_Get confirmed. Not graph construction."
+        },
+        {
+          "run": "cc825dc469c9497a9b27bb58307a20bd",
+          "result": "failed",
+          "scope": "First setup append refused ambiguous template continuation; live graph unchanged. Harness corrected to remove owned template edge explicitly and stop after refused preview."
         }
       ]
     },
@@ -139,7 +149,10 @@
         "NOV05-01"
       ],
       "next_step": "Candidate report first; promotion explicitly selected and separate from geometry. Prove evaluation timing, dominance and loop frequency preservation; refuse unsafe caching. Do not automatically cache arbitrary pure expressions.",
-      "evidence": []
+      "evidence": [],
+      "design_notes": [
+        "Appendix F.8 puts PointCount setter after the guard but replaces all N02 consumers, including the guard condition N04. That creates read-before-write if applied literally. The reference must place the cache before every replaced read, or retain the guard direct read. Preserve dominance and evaluation timing; do not silently implement the contradictory recipe."
+      ]
     },
     {
       "id": "NOV05-06",
