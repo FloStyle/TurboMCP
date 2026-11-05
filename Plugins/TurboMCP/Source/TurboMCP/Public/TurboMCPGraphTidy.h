@@ -233,7 +233,7 @@ public:
 		/** Getter copies and knots, created before the measure because they change the node set. */
 		TArray<FGetterCopy> GetterCopies;
 		TArray<FKnotAdded> KnotsAdded;
-        /** Orthogonal route candidates; not exposed until preview/apply support is complete. */
+        /** Explicit orthogonal route candidates shared by preview and apply. */
         TArray<FWireRoute> WireRoutes;
 
 		/** False when the planned layout is not better and `bForce` is not set. */

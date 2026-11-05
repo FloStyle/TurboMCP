@@ -1046,7 +1046,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. It does not create comments or locals. Reroutes require explicit RouteWires=orthogonal.
 	 * @param RouteWires off (default) preserves existing connections. orthogonal plans measured reroute chains for blocked or long diagonal connections; skipped boundary/unrouteable links are reported. No automatic compile or save.
 	 * @param ChannelWidth Finite routing channel clearance in graph units, 20..400; default 60. Used only when RouteWires=orthogonal.
-	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
+	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row. Logical connections are preserved; explicit routing may insert reroute nodes.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.
      */
@@ -1993,7 +1993,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. It does not create comments or locals. Reroutes require explicit RouteWires=orthogonal.
 	 * @param RouteWires off (default) preserves existing connections. orthogonal plans measured reroute chains for blocked or long diagonal connections; skipped boundary/unrouteable links are reported. No automatic compile or save.
 	 * @param ChannelWidth Finite routing channel clearance in graph units, 20..400; default 60. Used only when RouteWires=orthogonal.
-	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
+	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row. Logical connections are preserved; explicit routing may insert reroute nodes.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.
      */

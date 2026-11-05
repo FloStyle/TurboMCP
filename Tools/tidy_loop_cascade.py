@@ -476,29 +476,36 @@ def record_routing_candidate(call, evidence, persist):
         return match.group(1).lower()
 
     def topology(positions):
-        nodes, edges = {}, set()
+        nodes, edges, fanout = {}, set(), {}
         for identity in positions:
             text = call('ReadTurboMCPNodeContext', asset=asset, graphName=graph,
                         nodeId=identity, nextHops=0)
             current = None
             observed = {}
             for line in text.splitlines():
-                match = re.match(r'^node (.+) type=(.+)$', line)
+                match = re.match(r'^node (.+) type=(.*)$', line)
                 if match:
                     current = key(match.group(1))
                     observed[current] = dict(type=match.group(2), defaults=[])
+                    observed[current]['fanout'] = {}
                 elif current and line.startswith('  input ') and ' default=' in line:
                     observed[current]['defaults'].append(line)
                 elif current:
                     match = re.match(r'^  output (.+?) -> (.+):([^:]+)$', line)
                     if match:
-                        edges.add((current, match.group(1), key(match.group(2)), match.group(3)))
+                        edge = (current, match.group(1), key(match.group(2)), match.group(3))
+                        edges.add(edge)
+                        observed[current]['fanout'].setdefault(match.group(1), []).append(edge[2:])
             for identity, metadata in observed.items():
                 metadata['defaults'].sort()
+                ordered = metadata.pop('fanout')
+                if identity in fanout and fanout[identity] != ordered:
+                    raise RuntimeError('Inconsistent fan-out order for ' + identity)
+                fanout[identity] = ordered
                 if identity in nodes and nodes[identity] != metadata:
                     raise RuntimeError('Inconsistent context snapshots for ' + identity)
                 nodes[identity] = metadata
-        return dict(nodes=nodes, edges=sorted(edges))
+        return dict(nodes=nodes, edges=sorted(edges), fanout=fanout)
 
     row['before_positions'] = read_positions(call, asset, graph)
     row['before_graph'] = read_complete_graph(call, asset, graph)
@@ -535,9 +542,12 @@ def record_routing_candidate(call, evidence, persist):
     original = row['before_topology']['nodes']
     actual = row['after_topology']['nodes']
     added_keys = {key(node) for node in added}
-    for identity in added_keys:
-        if not any(word in actual[identity]['type'].lower() for word in ('knot', 'reroute')):
-            raise RuntimeError('Routing added a non-reroute node')
+    # NodeContext may have no creation type ID for a reroute. Resolve its
+    # concrete class instead of treating an empty creation ID as a missing node.
+    for node in added:
+        resolved = call('ReadTurboMCPNodeResolve', nodeIds=node)
+        if not re.search(r'^    class: UK2Node_Knot$', resolved, re.M) and not re.search(r'^    class: K2Node_Knot$', resolved, re.M):
+            raise RuntimeError('Routing added a node whose concrete class is not K2Node_Knot')
     if {identity: actual.get(identity) for identity in original} != original:
         raise RuntimeError('Routing changed original node types or input defaults')
     edges = row['after_topology']['edges']
@@ -558,6 +568,25 @@ def record_routing_candidate(call, evidence, persist):
             seen.add(target)
             _, _, target, target_pin = outgoing[target][0]
         contracted.add((source, pin, target, target_pin))
+    contracted_fanout = {}
+    for source, pins in row['after_topology']['fanout'].items():
+        if source in added_keys:
+            continue
+        contracted_fanout[source] = {}
+        for pin, destinations in pins.items():
+            restored = []
+            for target, target_pin in destinations:
+                seen = set()
+                while target in added_keys:
+                    if target in seen:
+                        raise RuntimeError('Added reroutes form a cycle')
+                    seen.add(target)
+                    _, _, target, target_pin = outgoing[target][0]
+                restored.append((target, target_pin))
+            contracted_fanout[source][pin] = restored
+    row['fanout_order_equal'] = contracted_fanout == row['before_topology']['fanout']
+    if not row['fanout_order_equal']:
+        raise RuntimeError('Routing changed logical fan-out ordering')
     row['contracted_edges'] = sorted(contracted)
     row['connectivity_equal'] = row['contracted_edges'] == row['before_topology']['edges']
     persist()
@@ -709,9 +738,11 @@ def run():
     directory.mkdir(parents=True)
     session = Session()
     session.connect()
-    subset = os.environ.get('TURBOMCP_TIDY_BASELINE_SUBSET', 'all')
-    if subset not in ('all', 'events', 'preview'):
-        raise RuntimeError('Unknown baseline subset; expected all, events or preview')
+    # A tracked selection survives the supervisor's deliberate environment filter.
+    scenario = json.loads((root / 'Tests' / 'tidy-loop-cascade.json').read_text(encoding='utf-8'))
+    subset = os.environ.get('TURBOMCP_TIDY_BASELINE_SUBSET', scenario.get('run_subset', 'all'))
+    if subset not in ('all', 'events', 'preview', 'routing'):
+        raise RuntimeError('Unknown baseline subset; expected all, events, preview or routing')
     evidence = {'stage': 'discovery', 'layout_acceptance': False, 'subset': subset, 'calls': []}
 
     def persist():
@@ -759,6 +790,14 @@ def run():
             if missing:
                 raise RuntimeError(tool + ': compact help omitted required parameters: ' + ', '.join(missing))
         call('ReadTurboMCPStatus')
+        if subset == 'routing':
+            record_event_regressions(call, evidence, persist, only_case='J2')
+            record_routing_candidate(call, evidence, persist)
+            evidence['stage'] = 'focused_routing_checks_passed_visual_acceptance_pending'
+            persist()
+            print('Evidence: ' + str(directory), flush=True)
+            print('RESULT: PASS (focused J2 routing only; full cascade and visual acceptance remain pending)')
+            return
         if subset == 'preview':
             # Narrow native rendering check, not a substitute for cascade acceptance.
             record_event_regressions(call, evidence, persist, only_case='J2')

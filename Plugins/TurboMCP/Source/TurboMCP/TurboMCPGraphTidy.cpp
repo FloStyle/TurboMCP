@@ -3345,10 +3345,18 @@ namespace
     Previous->MakeLinkTo(Knot->GetInputPin()); Previous=Knot->GetOutputPin();
    }
    Previous->MakeLinkTo(Route.Target);
-   ExpectedLinks.FindChecked(Route.Source).Remove(Route.Target);
-   ExpectedLinks.FindChecked(Route.Source).Add(Chain[0]->GetInputPin());
-   ExpectedLinks.FindChecked(Route.Target).Remove(Route.Source);
-   ExpectedLinks.FindChecked(Route.Target).Add(Chain.Last()->GetOutputPin());
+   // Replace the original slots rather than appending: output fan-out order
+   // can determine execution order. Preserve input ordering as well.
+   auto& SourceLinks=ExpectedLinks.FindChecked(Route.Source);
+   auto& TargetLinks=ExpectedLinks.FindChecked(Route.Target);
+   const int32 SourceSlot=SourceLinks.IndexOfByKey(Route.Target);
+   const int32 TargetSlot=TargetLinks.IndexOfByKey(Route.Source);
+   if (SourceSlot==INDEX_NONE || TargetSlot==INDEX_NONE)
+   { Error=TEXT("The original connection order changed during routing; route expansion stopped."); if (!RestoreTidyRouteChains(Graph,Created,Undo)) Error+=TEXT(" Rollback is incomplete."); return false; }
+   SourceLinks[SourceSlot]=Chain[0]->GetInputPin();
+   TargetLinks[TargetSlot]=Chain.Last()->GetOutputPin();
+   Route.Source->LinkedTo=SourceLinks;
+   Route.Target->LinkedTo=TargetLinks;
    for (int32 Index=0;Index<Chain.Num();++Index)
    {
     UEdGraphPin* Upstream=Index==0?Route.Source:Chain[Index-1]->GetOutputPin();
@@ -3413,6 +3421,7 @@ namespace
   Result=TEXT("Native graph previews (transient copy; no live asset changes):");
   for(int32 Side=0;Side<2;++Side)
   {
+   TMap<int32,TArray<UK2Node_Knot*>> PreviewRouteKnots;
    if(Side)
    {
     TMap<const UEdGraphPin*,UEdGraphPin*> ReaderOutputs;
@@ -3447,6 +3456,10 @@ namespace
     TArray<UK2Node_Knot*> PreviewKnots;
     FTidyRouteUndo PreviewUndo;
     if (!CreateTidyRouteChains(Graph,Routes,RF_Transient,PreviewKnots,PreviewUndo,Result)) return false;
+    int32 KnotIndex=0;
+    for (const FResolvedTidyRoute& Route:Routes)
+     for (int32 I=0;I<Route.Plan->KnotPositions.Num();++I)
+      PreviewRouteKnots.FindOrAdd(Route.Plan->WireIndex).Add(PreviewKnots[KnotIndex++]);
    }
    const TSharedRef<SGraphEditor> Editor=SNew(SGraphEditor).GraphToEdit(Graph).IsEditable(false).ShowGraphStateOverlay(false);
    const FVector2D Size(2048,1536);
@@ -3559,6 +3572,14 @@ namespace
          UEdGraphPin* Input=FindPin(ByGuid.FindRef(Node.Node->NodeGuid),Copy.ConsumerPin);
          if(Input) for(const UEdGraphPin* Link:Input->LinkedTo) if(Link) AddBounds(Link->GetOwningNode());
         }
+     // Include route nodes in both endpoint blocks so their channels remain
+     // inspectable even when a route extends beyond the original node bounds.
+     if(Side) for(const auto& Pair:PreviewRouteKnots)
+     {
+      const auto& Wire=Plan.Wires[Pair.Key];
+      if(Plan.Nodes[Wire.SourceNodeIndex].BlockIndex==Block || Plan.Nodes[Wire.TargetNodeIndex].BlockIndex==Block)
+       for(UK2Node_Knot* Knot:Pair.Value) AddBounds(Knot);
+     }
      if(Rectangles.IsEmpty()) continue;
      double MinX=Rectangles[0].Left,MinY=Rectangles[0].Top,MaxX=Rectangles[0].Right,MaxY=Rectangles[0].Bottom;
      for(const FSlateRect& Rect:Rectangles)
