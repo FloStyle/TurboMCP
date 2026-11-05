@@ -6558,7 +6558,8 @@
           "result": "integrated_partial_batch",
           "scope": "Compact placement, comment fitting and required-parameter help are on main. Scope gate passed against current main 554547f9 with the unchanged assignment path set. Editor b091c2182a204e82830757b20e9e1bd3 passed preservation and comment checks. Offline 789103a7853a4059ba06a97c0290d3d8 passed 25/26; stale generated inventory was corrected and validate-repo then passed. Production source unchanged since tested a13b31f7. Routing, full scoring, public block previews, local promotion and visual acceptance remain open."
         }
-      ]
+      ],
+      "next_step": "Finish editor verification of scoped chain fix 1a042d80, then implement integrated routing. Native screenshot FBDEB5CF41F6524FEFC72C97F540F4C7 confirms the unrelated teal wire still crosses the readable Flatten path points box. No visual acceptance."
     },
     {
       "id": "NOV05-03",

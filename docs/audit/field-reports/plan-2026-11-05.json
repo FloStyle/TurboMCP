@@ -112,7 +112,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Compact comment identity and full-content checks pass. Implement full Appendix H scoring and routing; retain scoped pure-input regression and inspect all block captures before visual acceptance.",
+      "next_step": "Finish editor verification of scoped chain fix 1a042d80, then implement integrated routing. Native screenshot FBDEB5CF41F6524FEFC72C97F540F4C7 confirms the unrelated teal wire still crosses the readable Flatten path points box. No visual acceptance.",
       "evidence": [
         {
           "run": "b04c38d19d264d37b7aa9613ed09eacd",
@@ -163,6 +163,12 @@
           "commit": "536b9ae7",
           "result": "integrated_partial_batch",
           "scope": "Compact placement, comment fitting and required-parameter help are on main. Scope gate passed against current main 554547f9 with the unchanged assignment path set. Editor b091c2182a204e82830757b20e9e1bd3 passed preservation and comment checks. Offline 789103a7853a4059ba06a97c0290d3d8 passed 25/26; stale generated inventory was corrected and validate-repo then passed. Production source unchanged since tested a13b31f7. Routing, full scoring, public block previews, local promotion and visual acceptance remain open."
+        },
+        {
+          "commit": "1a042d80",
+          "run": "4234ebfb64f84583b91d0cf4cc61adc7",
+          "result": "build_passed_editor_verification_running",
+          "scope": "Scoped compact placement no longer realigns a single node to a fixed predecessor when it has a selected execution successor. This preserves internal chain rows; default rows unchanged. Editor outcome pending. Harness dc40b1e2 also compares all seven preview/edit scores; saved-evidence replay passed, not independent geometry validation."
         }
       ],
       "design_notes": [
