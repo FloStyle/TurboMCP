@@ -1043,7 +1043,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
-	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; it does not add reroutes, comments or locals.
+	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. It does not add reroutes, comments or locals.
 	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.
@@ -1970,7 +1970,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	/**
      * Recompute and apply a layout using the same options as PreviewTurboMCPGraphTidy.
      * A previous preview is not a reservation: the current graph is checked again before editing.
-     * Reports measured results, preserves comment corners, and may duplicate variable getters.
+     * Reports measured results and may duplicate variable getters. Rows/scoped layouts preserve comment corners; whole-graph blocks mode refits comments around their original members.
      * Within safety limits, structural quality takes priority over total wire length. Force permits a non-improving score,
      * but does not bypass scope, collision or fixed-boundary wire-growth limits. Changes are undoable and are not compiled or saved.
      * Scoped groups are placed near their fixed connections. Boundary growth is checked before and after editing.
@@ -1988,7 +1988,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
-	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; it does not add reroutes, comments or locals.
+	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. It does not add reroutes, comments or locals.
 	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.

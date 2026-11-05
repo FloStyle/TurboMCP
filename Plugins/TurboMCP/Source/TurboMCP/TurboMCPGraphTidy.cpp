@@ -899,7 +899,9 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			double BoxHeight = 0.0;
 			BoxRect(Comment, BoxX, BoxY, BoxWidth, BoxHeight);
 			Box.X = BoxX;
+            Box.PlannedX = BoxX;
 			Box.Y = BoxY;
+            Box.PlannedY = BoxY;
 			Box.Width = BoxWidth;
 			Box.Height = BoxHeight;
 			Box.PlannedWidth = BoxWidth;
@@ -1907,8 +1909,12 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             }
 	};
 
+	const bool bFlowComments = OutPlan.bCompactBlocks && OutPlan.SelectedNodeKeys.IsEmpty();
 	for (const int32 BoxIndex : BoxOrder)
 	{
+        // Whole-graph compact mode plans connected nodes together, then fits
+        // comments to their original members. Scoped and rows modes keep anchors.
+        if (bFlowComments) continue;
 		FBox& Box = OutPlan.Boxes[BoxIndex];
 		if (OutPlan.SelectedNodeKeys.Num() > 0)
 		{
@@ -2053,7 +2059,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					Free.Add(NodeIndex);
 				}
 			}
-			else if (OwnerOfNode[NodeIndex] == INDEX_NONE)
+			else if (bFlowComments || OwnerOfNode[NodeIndex] == INDEX_NONE)
 			{
 				Free.Add(NodeIndex);
 			}
@@ -2083,6 +2089,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			}
 			for (const FBox& Box : OutPlan.Boxes)
 			{
+                if (bFlowComments && !Box.MemberKeys.IsEmpty()) continue;
 				const double Right = Box.X + Box.PlannedWidth + FTurboMCPGraphTidy::BoxGap;
 				FreeStartX = FMath::Max(FreeStartX, Right);
 			}
@@ -2572,7 +2579,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			Planned.PlannedX = FMath::RoundToDouble(Planned.PlannedX);
             TSet<int32> ContainingBoxes;
             for (int32 B = ConsumerBoxIndex; B != INDEX_NONE; B = OutPlan.Boxes[B].ParentIndex) ContainingBoxes.Add(B);
-            if (ConsumerBoxIndex != INDEX_NONE)
+            if (ConsumerBoxIndex != INDEX_NONE && !bFlowComments)
             {
                 const FBox& ConsumerBox = OutPlan.Boxes[ConsumerBoxIndex];
                 Planned.PlannedX = FMath::Max(Planned.PlannedX, ConsumerBox.X + FitPadding);
@@ -2582,7 +2589,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             // Child/sibling notes are solid obstacles; only the consumer's box
             // and its ancestors may contain the new reader.
             for (int32 B = 0; B < OutPlan.Boxes.Num(); ++B)
-                if (!ContainingBoxes.Contains(B))
+                if (!ContainingBoxes.Contains(B) && (!bFlowComments || OutPlan.Boxes[B].MemberKeys.IsEmpty()))
                 {
                     const FBox& OtherBox = OutPlan.Boxes[B];
                     CopyObstacles.Add({OtherBox.X, OtherBox.Y, OtherBox.PlannedWidth, OtherBox.PlannedHeight});
@@ -2680,7 +2687,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             if (bFunctionInput && BestCopyScore >= PlannedConsumerDistance(*ConsumerPin)) continue;
             double RequiredRight = Planned.PlannedX + Planned.Width + FitPadding;
             double RequiredBottom = Planned.PlannedY + Planned.Height + FitPadding;
-            for (int32 B = ConsumerBoxIndex; B != INDEX_NONE; B = OutPlan.Boxes[B].ParentIndex)
+            for (int32 B = ConsumerBoxIndex; B != INDEX_NONE && !bFlowComments; B = OutPlan.Boxes[B].ParentIndex)
             {
                 FBox& Container = OutPlan.Boxes[B];
                 const double NewWidth = FMath::Max(Container.PlannedWidth, RequiredRight - Container.X);
@@ -2776,6 +2783,59 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         }
     }
 
+    if (bFlowComments)
+    {
+        // Fit inside-out using measured outlines. Membership is captured before
+        // planning; a new position must never silently acquire unrelated nodes.
+        for (int32 BoxIndex : BoxOrder)
+        {
+            FBox& Box = OutPlan.Boxes[BoxIndex];
+            if (Box.MemberKeys.IsEmpty()) continue; // Empty notes remain anchors.
+            double Left = TNumericLimits<double>::Max(), Top = Left;
+            double Right = -Left, Bottom = -Left;
+            auto Include = [&](double X, double Y, double Width, double Height)
+            {
+                Left = FMath::Min(Left, X); Top = FMath::Min(Top, Y);
+                Right = FMath::Max(Right, X + Width); Bottom = FMath::Max(Bottom, Y + Height);
+            };
+            for (const FString& Key : Box.MemberKeys)
+                if (const int32* Index = NodeIndexByKey.Find(Key))
+                {
+                    const FNode& Member = OutPlan.Nodes[*Index];
+                    if (!Member.bIsComment) Include(Member.PlannedX, Member.PlannedY, Member.Width, Member.Height);
+                }
+            for (int32 ChildIndex : Box.ChildBoxIndices)
+            {
+                const FBox& Child = OutPlan.Boxes[ChildIndex];
+                Include(Child.PlannedX, Child.PlannedY, Child.PlannedWidth, Child.PlannedHeight);
+            }
+            for (const FGetterCopy& Copy : OutPlan.GetterCopies)
+                for (const FString& Key : Box.MemberKeys)
+                    if (const int32* Index = NodeIndexByKey.Find(Key))
+                        if (Copy.ConsumerPin && Copy.ConsumerPin->GetOwningNode() == OutPlan.Nodes[*Index].Node)
+                        { Include(Copy.PlannedX, Copy.PlannedY, Copy.Width, Copy.Height); break; }
+            if (Left == TNumericLimits<double>::Max()) continue;
+            Box.PlannedX = FMath::FloorToDouble(Left - FitPadding);
+            Box.PlannedY = FMath::FloorToDouble(Top - TitleBarHeight - FitPadding);
+            Box.PlannedWidth = FMath::CeilToDouble(Right + FitPadding - Box.PlannedX);
+            Box.PlannedHeight = FMath::CeilToDouble(Bottom + FitPadding - Box.PlannedY);
+            Box.bWouldFit = Box.PlannedX != Box.X || Box.PlannedY != Box.Y
+                || Box.PlannedWidth != Box.Width || Box.PlannedHeight != Box.Height;
+            for (FNode& Node : OutPlan.Nodes)
+                if (Node.Node == Box.Comment) { Node.PlannedX = Box.PlannedX; Node.PlannedY = Box.PlannedY; }
+            for (const FNode& Node : OutPlan.Nodes)
+            {
+                if (Node.bIsComment || Box.MemberKeys.Contains(Node.Key)) continue;
+                if (Node.PlannedX < Box.PlannedX + Box.PlannedWidth && Node.PlannedX + Node.Width > Box.PlannedX
+                    && Node.PlannedY < Box.PlannedY + Box.PlannedHeight && Node.PlannedY + Node.Height > Box.PlannedY)
+                {
+                    OutError = FString::Printf(TEXT("Compact comment %s would overlap unrelated node %s; unchanged. The block plan needs more space before this comment can be fitted."), *Box.Key, *Node.Key);
+                    return false;
+                }
+            }
+        }
+    }
+
 	// -----------------------------------------------------------------------------------------
 	// STEP 8: the measure, on the PLANNED positions.
 	//
@@ -2842,8 +2902,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             if (N.bIsComment) continue;
             // Existing overflow on an untouched anchor is not caused by this tidy.
             if (N.PlannedX == N.X && N.PlannedY == N.Y && !Box.bWouldFit) continue;
-			if (N.PlannedX < Box.X || N.PlannedY < Box.Y + TitleBarHeight
-				|| N.PlannedX + N.Width > Box.X + Box.PlannedWidth || N.PlannedY + N.Height > Box.Y + Box.PlannedHeight)
+			if (N.PlannedX < Box.PlannedX || N.PlannedY < Box.PlannedY + TitleBarHeight
+				|| N.PlannedX + N.Width > Box.PlannedX + Box.PlannedWidth || N.PlannedY + N.Height > Box.PlannedY + Box.PlannedHeight)
 			{ OutError = FString::Printf(TEXT("tidy would move node %s outside comment %s; unchanged. Include @unboxed with nodeIds to tidy only unboxed nodes and leave boxed continuations fixed."), *N.Key, *Box.Key); return false; }
 		}
 
@@ -2978,7 +3038,7 @@ namespace
     for(const auto& N:Plan.Nodes) if(N.Node)
      if(UEdGraphNode** Copy=ByGuid.Find(N.Node->NodeGuid)) { (*Copy)->NodePosX=FMath::RoundToInt(N.PlannedX); (*Copy)->NodePosY=FMath::RoundToInt(N.PlannedY); }
     for(const auto& B:Plan.Boxes) if(B.Comment)
-     if(UEdGraphNode** Copy=ByGuid.Find(B.Comment->NodeGuid)) { (*Copy)->NodeWidth=FMath::RoundToInt(B.PlannedWidth); (*Copy)->NodeHeight=FMath::RoundToInt(B.PlannedHeight); }
+     if(UEdGraphNode** Copy=ByGuid.Find(B.Comment->NodeGuid)) { (*Copy)->NodePosX=FMath::RoundToInt(B.PlannedX); (*Copy)->NodePosY=FMath::RoundToInt(B.PlannedY); (*Copy)->NodeWidth=FMath::RoundToInt(B.PlannedWidth); (*Copy)->NodeHeight=FMath::RoundToInt(B.PlannedHeight); }
     for(const auto& C:Plan.GetterCopies)
     {
      UEdGraphNode* Source=ByGuid.FindRef(C.Original->NodeGuid);
@@ -3141,15 +3201,14 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 		Lines.Add(TEXT("Force is set and wire length is not shorter. Structural metrics above explain whether the layout improves independently of wire length."));
 	}
 
-	// A BOX'S TOP-LEFT CORNER IS NEVER MOVED, and the preview says so WITH THE SIZES IT WOULD SET, so
-	// the claim is checkable rather than decorative.
+	// Report both positions and sizes so compact comment movement is explicit.
 	if (InPlan.Boxes.Num() > 0)
 	{
-		Lines.Add(FString::Printf(TEXT("boxes: %d, of which %d would be fitted. A box's TOP-LEFT CORNER is never moved; only its size changes."), InPlan.Boxes.Num(), InPlan.BoxesToFit));
+		Lines.Add(FString::Printf(TEXT("boxes: %d, of which %d would be fitted. Rows/scoped layouts preserve corners; whole-graph blocks mode fits comments to their original members."), InPlan.Boxes.Num(), InPlan.BoxesToFit));
 		for (const FBox& Box : InPlan.Boxes)
 		{
 			const FString Label = Box.Text.IsEmpty() ? Box.Key : Box.Text;
-			Lines.Add(FString::Printf(TEXT("  %s at (%.0f,%.0f) depth %d%s : %.0fx%.0f -> %.0fx%.0f"), *Label, Box.X, Box.Y, Box.Depth, Box.ParentIndex == INDEX_NONE ? TEXT("") : TEXT(" (nested)"), Box.Width, Box.Height, Box.PlannedWidth, Box.PlannedHeight));
+			Lines.Add(FString::Printf(TEXT("  %s at (%.0f,%.0f) -> (%.0f,%.0f) depth %d%s : %.0fx%.0f -> %.0fx%.0f"), *Label, Box.X, Box.Y, Box.PlannedX, Box.PlannedY, Box.Depth, Box.ParentIndex == INDEX_NONE ? TEXT("") : TEXT(" (nested)"), Box.Width, Box.Height, Box.PlannedWidth, Box.PlannedHeight));
 		}
 	}
 
@@ -3449,8 +3508,8 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	}
 
 	// -----------------------------------------------------------------------------------------
-	// APPLIED. The sizes of the boxes are written now, and ONLY their sizes: the corner is the one the
-	// user placed, which is what "never moves a user's box as a whole" means in a checkable form.
+	// Apply comment rectangles only after node placement passes the post-write checks.
+    // Modify keeps comment movement and resizing in the same undo transaction.
 	// -----------------------------------------------------------------------------------------
 	int32 BoxesResized = 0;
 	for (const FBox& Box : InPlan.Boxes)
@@ -3460,6 +3519,8 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			continue;
 		}
 		Box.Comment->Modify();
+        Box.Comment->NodePosX = FMath::RoundToInt(Box.PlannedX);
+        Box.Comment->NodePosY = FMath::RoundToInt(Box.PlannedY);
 		Box.Comment->NodeWidth = static_cast<int32>(FMath::RoundToDouble(Box.PlannedWidth));
 		Box.Comment->NodeHeight = static_cast<int32>(FMath::RoundToDouble(Box.PlannedHeight));
 		++BoxesResized;
@@ -3495,7 +3556,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),OriginalQuality.Overlaps,ActualQuality.Overlaps,OriginalQuality.LinearExecDrift,ActualQuality.LinearExecDrift,OriginalQuality.FanOutRowConflicts,ActualQuality.FanOutRowConflicts,OriginalQuality.BackwardExec,ActualQuality.BackwardExec,OriginalQuality.BackwardData,ActualQuality.BackwardData,OriginalQuality.PureInputRowConflicts,ActualQuality.PureInputRowConflicts,OriginalQuality.InputPinDrift,ActualQuality.InputPinDrift));
     const auto CrossBoxAfter = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
     Lines.Add(FString::Printf(TEXT("cross-box: estimated straight-line length %.1f -> %.1f (delta %+.1f); connections %d -> %d. Ownership uses the smallest enclosing comment at each state; copies or box growth can change the count."), CrossBoxBefore.Length, CrossBoxAfter.Length, CrossBoxAfter.Length-CrossBoxBefore.Length, CrossBoxBefore.Count, CrossBoxAfter.Count));
-	Lines.Add(FString::Printf(TEXT("moved %d node(s). Fitted %d of %d box(es), preserving their top-left corners and changing only their sizes."), OriginalPositions.Num(), BoxesResized, InPlan.Boxes.Num()));
+	Lines.Add(FString::Printf(TEXT("moved %d node(s). Fitted %d of %d box(es), using the planned comment rectangles."), OriginalPositions.Num(), BoxesResized, InPlan.Boxes.Num()));
 	if (InPlan.SelectedNodeKeys.Num() > 0)
 	{
 		Lines.Add(FString::Printf(TEXT("scope: only the %d selected node(s) were eligible to move; %d surrounding node(s) and all comment boxes remained fixed anchors."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount));

@@ -19,25 +19,12 @@ class UK2Node_VariableGet;
 class UBlueprint;
 
 /**
- * `P/E-GRAPH-TIDY`: lay out one graph, inside the comment boxes the user made.
- *
- * FILE SHAPE. This is a plain `class` with `static` members rather than a `UCLASS`, exactly like
- * `FTurboMCPComment` and `FTurboMCPGraphDead`. There is no engine reason to register state, and the
- * tools in `TurboMCPGraphTidyTools.cpp` call `Plan` then either `RenderPreview` or `Apply`.
- *
- * THE PREVIEW AND THE EDIT SHARE ONE CODE PATH UP TO THE WRITE (`D-02`). Every refusal is decided in
- * `Plan`, so a Preview cannot offer a plan the Edit then declines - a disagreement this project has
- * been caught by twice.
- *
- * THE ORDER OF OPERATIONS IS THE PART MOST LIKELY TO BE WRONG. Read `Plan`'s body comment before
- * changing anything in it: the pass is INSIDE-OUT, the innermost boxes are arranged and fitted first,
- * and an outer box then treats each child box as ONE BLOCK. Fitting an outer box before its children
- * were arranged would compute its rectangle from stale child sizes, and the second pass would then have
- * to move the outer box - which the spec forbids.
- *
- * NEVER MOVES A USER'S BOX AS A WHOLE. A box's TOP-LEFT CORNER is preserved and only `NodeWidth` and
- * `NodeHeight` change, which is what `P/E-COMMENT`'s `fit` already does. That is the checkable form of
- * the rule, and the suite asserts it.
+ * Plan, preview and apply graph layout without compiling or saving the asset.
+ * Preview and edit share the planner; Apply also checks post-write geometry and
+ * restores rejected changes. A preview is not a guarantee against a later refusal.
+ * Rows mode and scoped layouts preserve comment corners. Whole-graph blocks
+ * mode plans connected nodes together and fits comments to their original
+ * members, retaining titles and nesting. Empty comments remain fixed notes.
  */
 class FTurboMCPGraphTidy
 {
@@ -124,7 +111,9 @@ public:
 		double Width = 0.0;
 		double Height = 0.0;
 
-		/** The size `Plan` computed for this box. Its CORNER is never changed. */
+		/** Planned rectangle. Whole-graph blocks mode may move the corner; rows keeps it. */
+        double PlannedX = 0.0;
+        double PlannedY = 0.0;
 		double PlannedWidth = 0.0;
 		double PlannedHeight = 0.0;
 
