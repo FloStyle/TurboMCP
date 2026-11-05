@@ -3605,6 +3605,16 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSlateVisibilityTest.cpp"
           ]
+        },
+        "nov04-node-pin-growth": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodePinGrowth.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodePinGrowthTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
