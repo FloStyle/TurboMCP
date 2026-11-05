@@ -340,7 +340,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reconciled_runtime_pending",
+      "validation": "implementation_native_validation_running",
       "source_ids": [
         "X-120",
         "GL-26",
@@ -352,7 +352,7 @@
         "2026-11-03_S1/FT-135"
       ],
       "dependencies": [],
-      "next_step": "Confirmed GraphPositions truncates without continuation. Approved nov04-graph-inventory: deterministic pagination, entry IDs across detail levels, and existing NodeFind discovery in a large disposable graph."
+      "next_step": "Candidate 240fe48f adds GraphPositions Offset/next_offset and entry IDs at every GraphText detail level. Native run b87e4de47e854537b322e5beb40b18f5 is building/running a 200-event fixture to verify text-budget paging, complete unique retrieval, offset refusal, empty-entry IDs and existing NodeFind. Keep open pending evidence and integration."
     },
     {
       "id": "NOV04-11",
@@ -609,7 +609,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_reconciled_runtime_pending",
       "source_ids": [
         "PI-04"
       ],
@@ -617,7 +617,7 @@
         "2026-10-30_S1/PI-04"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Source reconciliation: TurboMCPPlayInput.cpp focus action unconditionally SetUserFocus to the PIE viewport and gives only a generic menu warning afterward. activate separately requests OS foreground without explicit Slate focus. Reproduce a focused menu key handler, report previous/current focus explicitly, and provide/document a focus-preserving route; do not assume OS activation guarantees key handling. No fix or runtime reproduction yet."
     },
     {
       "id": "NOV04-23",
