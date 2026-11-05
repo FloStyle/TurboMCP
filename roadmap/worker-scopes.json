@@ -3682,6 +3682,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEditNodeKeysTest.cpp"
           ],
           "new_files": []
+        },
+        "nov04-graph-json": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphJsonTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
