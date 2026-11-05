@@ -1258,6 +1258,13 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPWidgetEvent(const FString& Asset,const FString& GraphName,const FString& WidgetName,const FString& EventName);
 
+    /** Preview Blueprint reparenting; execution refreshes nodes and compiles but never saves, and undo is not guaranteed across reinstancing.
+     * @param Asset Exact Blueprint asset path. Normal actor/object/widget Blueprints only; loading may execute project callbacks.
+     * @param NewParent Exact class object path, including _C for Blueprint-generated classes. Incompatible families, cycles and declaration conflicts refuse.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPBlueprintReparent(const FString& Asset, const FString& NewParent);
+
 
 
     /**
@@ -2185,6 +2192,15 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPWidgetEvent(const FString& Asset,const FString& GraphName,const FString& WidgetName,const FString& EventName);
+
+    /** Edit Blueprint reparenting; execution refreshes nodes and compiles but never saves, and undo is not guaranteed across reinstancing.
+     * @param Asset Exact Blueprint asset path. Normal actor/object/widget Blueprints only; loading may execute project callbacks.
+     * @param NewParent Exact class object path, including _C for Blueprint-generated classes. Incompatible families, cycles and declaration conflicts refuse.
+     * @param ExpectedParent Exact current parent class path returned by preview. A changed parent refuses before mutation.
+     * @param Confirmation Exact confirmation text returned by preview, authorizing this asset/parent change and compilation. Compilation may execute project code and reinstance objects. Failure after mutation is reported as changed; no rollback or save is implied.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPBlueprintReparent(const FString& Asset, const FString& NewParent, const FString& ExpectedParent, const FString& Confirmation);
 
 
 
