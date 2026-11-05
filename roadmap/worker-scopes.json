@@ -3692,6 +3692,17 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphJsonTest.cpp"
           ]
+        },
+        "nov04-pie-invoke": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInvoke.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPPlayInvokeFixture.h"
+          ]
         }
       },
       "preserve_rows": []
