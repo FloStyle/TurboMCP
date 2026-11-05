@@ -737,7 +737,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_review_in_progress",
+      "validation": "partial_native_pass",
       "source_ids": [
         "VA-10",
         "FT-134"
@@ -747,11 +747,17 @@
         "2026-10-30_S4/FT-134"
       ],
       "dependencies": [],
-      "next_step": "Approved bounded member-removal implementation: preview confirmation, reference inspection, no implicit node deletion, transactional declaration change and verified preservation/rollback. Native widget fixture will exercise accepted unused removal and reference/stale/inherited refusals.",
+      "next_step": "Complete inherited-variable, unrelated linked-node preservation and live help coverage; review dependency discovery and rollback limits, then run integration gates. Implementation remains on the review branch, not main.",
       "evidence": [
         {
           "result": "source_review",
           "scope": "Pinned stock BlueprintEditorUtils.cpp RemoveMemberVariable around 4790 deletes variable nodes; IsVariableUsed around 6004 returns false when skeleton GUID is unavailable. These helpers alone do not prove removal safe."
+        },
+        {
+          "result": "partial_native_pass",
+          "commit": "c22f93ebd984101fe7d772de906a028e0889820e",
+          "run": "ac4011d99cfd4cedb150069c415291f0",
+          "scope": "Stock engine build and graph-append suite passed. New disposable WidgetBlueprint fixture proves unused removal, clean preview, wrong/stale confirmation refusal, disconnected getter refusal and retained unrelated declaration. Does not yet complete all acceptance coverage."
         }
       ]
     },
