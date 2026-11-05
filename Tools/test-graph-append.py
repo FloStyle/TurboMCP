@@ -695,6 +695,7 @@ def main():
     automation_tests += (("TurboMCP.GraphAppend.PinContainers", "container test discovered", "container report parsed", "container workflow succeeds", "container workflow has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.InterfaceLocal", "interface local discovered", "interface local report parsed", "interface local succeeds", "interface local has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.TidyOverlapDiagnostic", "tidy overlap discovered", "tidy overlap report parsed", "tidy overlap succeeds", "tidy overlap has no errors"),)
+    automation_tests += (("TurboMCP.GraphAppend.IntegerDefault", "integer default discovered", "integer default report parsed", "integer default succeeds", "integer default has no errors"),)
     for test_path, discovered_name, report_name, success_name, errors_name in automation_tests:
         check(discovered_name, test_path in listed, listed[:240])
         if test_path not in listed:
