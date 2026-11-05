@@ -3718,6 +3718,16 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionLibraryCreate.cpp"
           ]
+        },
+        "nov04-safe-asset-delete": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-asset-recovery.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetDelete.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetDeleteTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
