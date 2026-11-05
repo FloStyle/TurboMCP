@@ -1043,10 +1043,10 @@
       "title": "Validate graph-position filters and unknown arguments",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "ready",
+      "owner": "codex",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "LR-20"
       ],
@@ -1054,7 +1054,17 @@
         "2026-10-30_S1/LR-20"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Reconciled against NOV04-10: the supported NodeIds newline-separated filter returns only selected nodes, deduplicates IDs and refuses missing or ambiguous selections. This satisfies the report alternative of supporting a node filter; no new implementation was needed.",
+      "evidence": [
+        {
+          "run": "d397141b44eb46568a1ee9df6c900c52",
+          "result": "passed",
+          "scope": "Verified saved native verdict and Inventory suite entry at 2bfe921098a09e219ac1c0e91b1ba6158097eb4d. Two selected IDs in a 200-node fixture are returned without other rows; duplicates collapse and an invalid ID refuses."
+        }
+      ],
+      "followups": [
+        "Original argument name was not recorded. Unknown JSON argument rejection at the engine dispatch boundary is not established by this native C++ test; do not claim that historical cause was reproduced. Use the documented NodeIds string, not an invented array argument."
+      ]
     },
     {
       "id": "NOV04-34",
