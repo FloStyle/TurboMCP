@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "65e67808f279c81d03e218c33cc8dd7d7a2244a0",
+  "plugin_tree": "27319c1388b0840589224aa39799fdfaac7d978f",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -976,7 +976,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
-          "line": 132
+          "line": 136
         }
       ],
       "test_references": [],
@@ -998,7 +998,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
-          "line": 159
+          "line": 163
         }
       ],
       "test_references": [],
@@ -1022,7 +1022,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
-          "line": 134
+          "line": 138
         }
       ],
       "test_references": [],
@@ -2678,7 +2678,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
-          "line": 131
+          "line": 135
         }
       ],
       "test_references": [],
@@ -2699,7 +2699,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
-          "line": 158
+          "line": 162
         }
       ],
       "test_references": [],
@@ -2723,7 +2723,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp",
-          "line": 133
+          "line": 137
         }
       ],
       "test_references": [],
