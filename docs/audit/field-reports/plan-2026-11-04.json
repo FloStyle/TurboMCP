@@ -1621,7 +1621,7 @@
       "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "partial_creation_native_passed_deletion_pending",
+      "validation": "partial_creation_integrated_deletion_native_passed_review_pending",
       "source_ids": [
         "FT-138"
       ],
@@ -1629,7 +1629,7 @@
         "2026-11-03_S4/FT-138"
       ],
       "dependencies": [],
-      "next_step": "Function-library creation is integrated and tested. Safe-deletion candidate fbdb60e1 is implemented but unaccepted: initial build passed, fixture API compile failure corrected, supervised disposable-asset run pending. Hard/soft registry references, open-editor and source-control controls still need full evidence. Original deletion crash remains unresolved.",
+      "next_step": "Function-library creation is integrated. Safe-deletion candidate 2e711d45 passes focused native checks for dirty/read-only/open assets, saved hard/soft references, strong references, stale file fingerprints, deletion and neighbor preservation. Final integration review and offline gates remain pending; undo-reference and unsupported-package controls require explicit review. No source-control-provider runtime coverage or original crash cause is claimed.",
       "evidence": [
         {
           "run": "849ad4fc382c4cd1a04eb38eb7fb241a",
@@ -1660,6 +1660,26 @@
           "run": "9b50efe25fb74ebda57cfe6628199156",
           "result": "failed_build",
           "scope": "Disposable fixture used IFileManager.SetReadOnly instead of platform-file API. Corrected; no native deletion executed in this run."
+        },
+        {
+          "run": "f8635934ed004663b227892e15313355",
+          "result": "failed_native",
+          "scope": "StrongObjectPtr reference was not refused by the checked engine model. Added explicit rooting/ref-count protection; failure retained."
+        },
+        {
+          "run": "f4f4ae61717c419fb0084526b54b92ce",
+          "result": "passed",
+          "scope": "Same strong-reference refusal control passed after production protection; basic deletion, stale fingerprint and neighbor checks passed."
+        },
+        {
+          "run": "69222eb5578b481899f4d33cab57a5bf",
+          "result": "passed",
+          "scope": "Build and expanded native suite including saved hard/soft references and open-editor refusal on 44e21005."
+        },
+        {
+          "run": "3cbfa7d9149d4702a6f5d66b8fab56fb",
+          "result": "passed",
+          "scope": "Build and focused native suite on 2e711d45 after confirmation lifetime correction. Expiry after scan is source-reviewed, not a timed-expiry runtime assertion."
         }
       ]
     },
