@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPNodeType.h"
+#include "TurboMCPGraphTextLex.h"
 #include "K2Node_PromotableOperator.h"
 #include "TurboMCPBlueprintRead.h"
 
@@ -1247,8 +1248,12 @@ FString FTurboMCPNodePins::Render(const FPlan& InPlan)
 
 	for (const FPin& Pin : InPlan.Pins)
 	{
-		Out += FString::Printf(TEXT("\n  %-8s %2d  %-22s %s"),
-			*Pin.Direction, Pin.Position, *Pin.Name, *Pin.Type);
+        const FString DisplayName = Pin.Name.TrimStartAndEnd().IsEmpty()
+            ? TurboMCPGraphTextLex::QuoteLiteral(Pin.Name) : Pin.Name;
+        Out += FString::Printf(TEXT("\n  %-8s %2d  %-22s %s"),
+            *Pin.Direction, Pin.Position, *DisplayName, *Pin.Type);
+        if (Pin.Name.TrimStartAndEnd().IsEmpty())
+            Out += TEXT("  [whitespace name: copy the quotes exactly]");
 		if (Pin.bExec)
 		{
 			Out += TEXT("  exec");

@@ -1,6 +1,9 @@
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 #include "TurboMCPNodeType.h"
+#include "TurboMCPGraphTextLex.h"
+#include "TurboMCPNodeId.h"
+#include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
@@ -13,6 +16,10 @@
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
 #include "K2Node_Variable.h"
+#include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
+#include "K2Node_CustomEvent.h"
+#include "UObject/UnrealType.h"
 #include "K2Node_PromotableOperator.h"
 #include "K2Node_AddDelegate.h"
 #include "UObject/Package.h"
@@ -28,6 +35,7 @@ bool FTurboMCPNodeDiscoveryTest::RunTest(const FString& Parameters)
     if (!TestNotNull(TEXT("Fixture Blueprint"), BP)) return false;
     FEdGraphPinType Type; Type.PinCategory = UEdGraphSchema_K2::PC_Int;
     if (!TestTrue(TEXT("Member created"), FBlueprintEditorUtils::AddMemberVariable(BP, TEXT("AvailableFunds"), Type))) return false;
+    FBlueprintEditorUtils::AddMemberVariable(BP, TEXT("Observed"), Type);
     UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("Discovery"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
     BP->UbergraphPages.Add(Graph);
     FKismetEditorUtilities::CompileBlueprint(BP);
@@ -99,6 +107,7 @@ bool FTurboMCPNodeDiscoveryTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Increment discovery query succeeds"), FTurboMCPNodeType::Plan(BP->GetPathName(), Graph->GetName(), TEXT("increment"), TEXT("100"), IncrementPlan, IncrementError));
     AddInfo(IncrementError + FTurboMCPNodeType::Render(IncrementPlan));
     bool FoundIncrement = false;
+    bool TestedIntegerWorkflow = false;
     for (const auto& Match : IncrementPlan.Matches)
     {
         if (!Match.TypeId.Contains(TEXT("Increment"), ESearchCase::IgnoreCase)) continue;
@@ -106,10 +115,45 @@ bool FTurboMCPNodeDiscoveryTest::RunTest(const FString& Parameters)
         if (!FTurboMCPNodePins::Plan(BP->GetPathName(), Graph->GetName(), Match.TypeId, Pins, PinError)) { AddError(PinError); continue; }
         FoundIncrement = true;
         AddInfo(FTurboMCPNodePins::Render(Pins));
+        FString ExecInput, ExecOutput;
         for (const auto& Pin : Pins.Pins)
-            TestFalse(*FString::Printf(TEXT("Increment pin is addressable: %s %s position %d"), *Match.TypeId, *Pin.Direction, Pin.Position), Pin.Name.TrimStartAndEnd().IsEmpty());
+        {
+            if (Pin.Name.TrimStartAndEnd().IsEmpty())
+                TestTrue(TEXT("Whitespace pin is visibly quoted"), FTurboMCPNodePins::Render(Pins).Contains(TurboMCPGraphTextLex::QuoteLiteral(Pin.Name)));
+            if (Pin.bExec && Pin.Direction == TEXT("EGPD_Input")) ExecInput = Pin.Name;
+            if (Pin.bExec && Pin.Direction == TEXT("EGPD_Output")) ExecOutput = Pin.Name;
+        }
+        if (Match.TypeId != TEXT("Math|Integer|IncrementInt")) continue;
+        auto Init = [&](UEdGraphNode* Node) { Graph->AddNode(Node, false, false); Node->CreateNewGuid(); Node->AllocateDefaultPins(); };
+        auto* Entry = NewObject<UK2Node_CustomEvent>(Graph); Entry->CustomFunctionName = TEXT("Advance"); Init(Entry);
+        auto* Getter = NewObject<UK2Node_VariableGet>(Graph); Getter->VariableReference.SetSelfMember(TEXT("AvailableFunds")); Init(Getter);
+        auto* Setter = NewObject<UK2Node_VariableSet>(Graph); Setter->VariableReference.SetSelfMember(TEXT("Observed")); Init(Setter);
+        const FString Request = FString::Printf(TEXT("(\"%s\"\n %s (-> %s:then)\n Value (-> %s:AvailableFunds)\n) ; label Increment\n(\"%s\" ; %s\n execute (-> Increment:%s)\n Observed (-> Increment:Result))"),
+            *Match.TypeId, *TurboMCPGraphTextLex::QuoteLiteral(ExecInput), *TurboMCPNodeId::MakeForNode(Entry, true),
+            *TurboMCPNodeId::MakeForNode(Getter, true), *TurboMCPNodeId::GetNodeTypeId(Setter), *TurboMCPNodeId::MakeForNode(Setter, true), *TurboMCPGraphTextLex::QuoteLiteral(ExecOutput));
+        const int32 NodeCount = Graph->Nodes.Num(); Package->SetDirtyFlag(false);
+        const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(BP->GetPathName(), Graph->GetName(), Request);
+        TestTrue(*FString::Printf(TEXT("Increment preview accepted: %s"), *Preview), Preview.StartsWith(TEXT("preview:")));
+        TestEqual(TEXT("Increment preview preserves node count"), Graph->Nodes.Num(), NodeCount);
+        TestFalse(TEXT("Increment preview preserves clean state"), Package->IsDirty());
+        const FString Edit = UTurboMCPEditToolset::EditTurboMCPGraphAppend(BP->GetPathName(), Graph->GetName(), Request);
+        if (!TestTrue(*FString::Printf(TEXT("Increment edit applied: %s"), *Edit), Edit.StartsWith(TEXT("changed:")))) return false;
+        TestEqual(TEXT("Increment adds one macro node"), Graph->Nodes.Num(), NodeCount + 1);
+        FKismetEditorUtilities::CompileBlueprint(BP);
+        if (!TestTrue(TEXT("Increment Blueprint compiles"), BP->Status != BS_Error && BP->GeneratedClass != nullptr)) return false;
+        UObject* Instance = BP->GeneratedClass->GetDefaultObject();
+        auto* Funds = FindFProperty<FIntProperty>(BP->GeneratedClass, TEXT("AvailableFunds"));
+        auto* Observed = FindFProperty<FIntProperty>(BP->GeneratedClass, TEXT("Observed"));
+        UFunction* Advance = Instance->FindFunction(TEXT("Advance"));
+        if (!Funds || !Observed || !Advance) { AddError(TEXT("Compiled increment fixture members are missing.")); return false; }
+        Funds->SetPropertyValue_InContainer(Instance, 5);
+        Instance->ProcessEvent(Advance, nullptr);
+        TestEqual(TEXT("By-reference increment updates original value"), Funds->GetPropertyValue_InContainer(Instance), 6);
+        TestEqual(TEXT("Quoted execution output reaches consumer"), Observed->GetPropertyValue_InContainer(Instance), 6);
+        TestedIntegerWorkflow = true;
     }
     TestTrue(TEXT("At least one stock increment action inspected"), FoundIncrement);
+    TestTrue(TEXT("Stock integer increment workflow executed"), TestedIntegerWorkflow);
     return !HasAnyErrors();
 }
 #endif

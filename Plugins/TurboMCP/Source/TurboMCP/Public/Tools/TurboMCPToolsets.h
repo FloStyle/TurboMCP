@@ -1057,6 +1057,8 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
      * containing `DestinationInput (-> ValueNode:OutputPin)`. Substitute discovered type IDs and pin names.
      * Do not write `(TypeId ; label Name)` on one line: the comment hides its closing parenthesis.
      * Every link is written on its destination INPUT: InputPin (-> SourceId:OutputPin).
+     * Whitespace-only pin names are quoted exactly as shown by NodePins: `" " (-> Source:" ")`.
+     * Preserve the spaces inside those quotes; they are engine pin names, not missing values.
      * To feed an existing node, copy its reader form header with its node ID, then add that input link.
      * Do not write a reverse link on a source output pin. Discover creation IDs with PreviewTurboMCPNodeType;
      * use PreviewTurboMCPNodePins for exact pin names. Native engine search IDs are not interchangeable.
@@ -1926,6 +1928,8 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
      * containing `DestinationInput (-> ValueNode:OutputPin)`. Substitute discovered type IDs and pin names.
      * Do not write `(TypeId ; label Name)` on one line: the comment hides its closing parenthesis.
      * Every link is written on its destination INPUT: InputPin (-> SourceId:OutputPin).
+     * Whitespace-only pin names are quoted exactly as shown by NodePins: `" " (-> Source:" ")`.
+     * Preserve the spaces inside those quotes; they are engine pin names, not missing values.
      * To feed an existing node, copy its reader form header with its node ID, then add that input link.
      * Do not write a reverse link on a source output pin. Discover creation IDs with PreviewTurboMCPNodeType;
      * use PreviewTurboMCPNodePins for exact pin names. Native engine search IDs are not interchangeable.

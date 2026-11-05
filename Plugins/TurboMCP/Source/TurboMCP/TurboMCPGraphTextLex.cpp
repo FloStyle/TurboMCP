@@ -357,6 +357,13 @@ namespace TurboMCPGraphTextLex
 
 		OutLink.FromNode = Body.Left(Split).TrimStartAndEnd();
 		OutLink.FromPin = Body.Mid(Split + 1).TrimStartAndEnd();
+        // Quotes preserve whitespace-only engine pin names such as macro execution pins.
+        if (OutLink.FromPin.StartsWith(TEXT("\"")))
+        {
+            FString DecodedPin;
+            if (!DecodeLiteral(OutLink.FromPin, DecodedPin, OutReason)) return false;
+            OutLink.FromPin = MoveTemp(DecodedPin);
+        }
 
 		if (OutLink.FromNode.IsEmpty() || OutLink.FromPin.IsEmpty())
 		{
