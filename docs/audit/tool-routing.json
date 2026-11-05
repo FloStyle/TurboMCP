@@ -308,6 +308,20 @@
       ]
     },
     {
+      "tool": "EditTurboMCPFunctionLibraryCreate",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPFunctionRemove",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -1456,6 +1470,20 @@
       "evidence": [
         "docs/audit/function-flags-review.json"
       ]
+    },
+    {
+      "tool": "PreviewTurboMCPFunctionLibraryCreate",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
     },
     {
       "tool": "PreviewTurboMCPFunctionRename",

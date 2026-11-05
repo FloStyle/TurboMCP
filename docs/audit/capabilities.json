@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "d4573a47e8603cb1298f161979377dddad8f6db0",
+  "plugin_tree": "6fa75cfe13f555983a9e579d2975106b2044bedf",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 180,
+    "tools": 182,
     "by_toolset": {
-      "UTurboMCPEditToolset": 75,
+      "UTurboMCPEditToolset": 76,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 62,
+      "UTurboMCPPreviewToolset": 63,
       "UTurboMCPReadToolset": 37
     }
   },
@@ -492,6 +492,26 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlags.cpp",
           "line": 285
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPFunctionLibraryCreate",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "PackagePath"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionLibraryCreate.cpp",
+          "line": 52
         }
       ],
       "test_references": [],
@@ -2354,6 +2374,26 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlags.cpp",
           "line": 283
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPFunctionLibraryCreate",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "PackagePath"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionLibraryCreate.cpp",
+          "line": 48
         }
       ],
       "test_references": [],
