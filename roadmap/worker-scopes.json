@@ -3581,6 +3581,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextSharedValueTest.cpp"
           ],
           "new_files": []
+        },
+        "nov04-reader-harness": {
+          "files": [
+            "Tools/test-graph-text-guards.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextSharedValueTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

@@ -2269,3 +2269,7 @@ Readiness: ready. Assignment nov04-empty-object-read. In bodies/full graph rende
 ### NOV04-30 unsupported-node edit guidance
 
 Readiness: ready. Assignment nov04-unsupported-node-guidance. Preserve partial evidence and read-only pin/link detail for nodes without a reconstructible type ID. Explain that the missing form limits reconstruction, not all surrounding edits: retain the node, use NodeContext and preview/apply GraphConnect with exact stored node/pin identities, and inspect compatibility/replacement before mutation. Never claim every connection is safe or synthesize unsupported node IDs. Extend the existing unsupported shared-node native reader assertions for precise guidance and unchanged graph/link inventory. Use the existing graph text workflow suite covering that test; no engine edits or new node support is implied.
+
+### NOV04-30 reader harness reconciliation
+
+Readiness: ready. Assignment nov04-reader-harness. Preserve failed run c222f2f944db4e03b732518cbb854ef7. Supply required Revision and EntryFilter for first-page GraphLoad calls. Replace retired display-category type IDs with independently constructed reflected-function and asset-owned-variable identities in exact-output assertions. Retain exact formatting, cycle/depth/size guard, partial-evidence and unsupported-node guidance checks; do not weaken checks to accept schema errors or arbitrary output. Run native graph-text-guards and offline gates.
