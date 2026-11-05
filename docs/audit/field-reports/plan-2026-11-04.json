@@ -735,7 +735,7 @@
       "kind": "feature",
       "priority": "P1",
       "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "source_review_in_progress",
       "source_ids": [
@@ -747,7 +747,7 @@
         "2026-10-30_S4/FT-134"
       ],
       "dependencies": [],
-      "next_step": "Confirmed no member-removal tool. Stock RemoveMemberVariable also removes variable nodes; stock IsVariableUsed returns false without a valid skeleton variable GUID. Design preview/confirmed removal with explicit reference/identity checks and refusal on incomplete discovery, preserving all graph content. Reuse existing function rename/reference safety patterns; native widget fixture required before integration.",
+      "next_step": "Approved bounded member-removal implementation: preview confirmation, reference inspection, no implicit node deletion, transactional declaration change and verified preservation/rollback. Native widget fixture will exercise accepted unused removal and reference/stale/inherited refusals.",
       "evidence": [
         {
           "result": "source_review",

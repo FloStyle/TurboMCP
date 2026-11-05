@@ -3547,6 +3547,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPDataAssetSafetyFixture.h"
           ],
           "new_files": []
+        },
+        "nov04-member-remove": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemoveTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
