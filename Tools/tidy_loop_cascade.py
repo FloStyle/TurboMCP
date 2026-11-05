@@ -55,7 +55,10 @@ def run():
         for name, kind in [('FlatPoints', 'array<vector>'), ('WorkWeights', 'array<double>'), ('BestDistSq', 'double'), ('ResultScale', 'double')]:
             call('EditTurboMCPLocalVariableAdd', asset=asset, function='LoopCascade', name=name, type=kind, default='')
         call('EditTurboMCPCompile', assets=asset)
-        queries = ['PathPoints', 'PathTransform', 'SamplePoints', 'InnerDistance', 'FalloffDistance', 'FallbackWeight', 'Scale', 'FlatPoints', 'WorkWeights', 'BestDistSq', 'ResultScale', 'Length', 'MakeLiteralInt', 'GreaterEqual', 'Branch', 'Clear', 'ForEachLoop', 'TransformLocation', 'BreakVector', 'MakeVector', 'Array Add', 'Subtract', 'ForLoop', 'Get (a copy)', 'Add', 'Equal', 'Select', 'FindClosestPointOnSegment', 'Multiply', 'Less', 'Sqrt', 'MapRangeClamped', 'MakeLiteralDouble', 'FClamp']
+        # Stock macro actions may be absent until their owning Blueprint is loaded.
+        # This is an explicit read-only prerequisite probe, not direct node construction.
+        call('ReadTurboMCPBlueprintLoad', assets='/Engine/EditorBlueprintResources/StandardMacros.StandardMacros', detail='manifest', graphFilter='', format='read', tokenBudget='4000')
+        queries = ['PathPoints', 'PathTransform', 'SamplePoints', 'InnerDistance', 'FalloffDistance', 'FallbackWeight', 'Scale', 'FlatPoints', 'WorkWeights', 'BestDistSq', 'ResultScale', 'Length', 'MakeLiteralInt', 'GreaterEqual', 'Branch', 'Clear', 'ForEachLoop', 'TransformLocation', 'BreakVector', 'MakeVector', 'Array_Add', 'Subtract', 'ForLoop', 'Get (a copy)', 'Add', 'Equal', 'Select', 'FindClosestPointOnSegment', 'Multiply', 'Less', 'Sqrt', 'MapRangeClamped', 'MakeLiteralDouble', 'FClamp']
         evidence['discovery'] = {}
         for query in queries:
             answer = call('PreviewTurboMCPNodeType', asset=asset, graphName='LoopCascade', words=query, limit='40')
