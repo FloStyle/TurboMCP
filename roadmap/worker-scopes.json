@@ -3747,6 +3747,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "nov05-tidy-cascade-fixture": {
+          "files": [],
+          "new_files": [
+            "Tools/test-tidy-loop-cascade.py",
+            "Tools/tidy_loop_cascade.py",
+            "Tests/fixtures/tidy-loop-cascade.json"
+          ]
         }
       },
       "preserve_rows": []

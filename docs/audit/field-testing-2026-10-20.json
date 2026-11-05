@@ -6405,10 +6405,10 @@
       "report": "2026-11-05 intake",
       "title": "Reproduce loop-cascade layout with a deterministic fixture and baseline",
       "kind": "housekeeping",
-      "state": "open",
+      "state": "in_progress",
       "priority": "P0",
-      "validation": "reported_not_reproduced",
-      "remaining": "FIRST: inspect current fixture helpers and assign exact scope; discover creation IDs and pins; build Appendix F incrementally, compile, record corrections, scramble with seed 20261105, capture default preview/apply and E1-E7 metrics. Build J1-J6 controls before changing tidy. No baseline exists yet.",
+      "validation": "source_preparation_no_native_run",
+      "remaining": "Approved bounded clean-room fixture scope; build all recipe nodes using discovered public schemas, then capture default baseline and J1-J6. No production change or passing baseline claimed.",
       "source_keys": [
         "2026-11-05_S1/FT-156"
       ],

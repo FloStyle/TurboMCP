@@ -8,10 +8,10 @@
       "title": "Reproduce loop-cascade layout with a deterministic fixture and baseline",
       "kind": "housekeeping",
       "priority": "P0",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "source_preparation_no_native_run",
       "source_ids": [
         "FT-156"
       ],
@@ -19,7 +19,7 @@
         "2026-11-05_S1/FT-156"
       ],
       "dependencies": [],
-      "next_step": "FIRST: inspect current fixture helpers and assign exact scope; discover creation IDs and pins; build Appendix F incrementally, compile, record corrections, scramble with seed 20261105, capture default preview/apply and E1-E7 metrics. Build J1-J6 controls before changing tidy. No baseline exists yet.",
+      "next_step": "Approved bounded clean-room fixture scope; build all recipe nodes using discovered public schemas, then capture default baseline and J1-J6. No production change or passing baseline claimed.",
       "evidence": []
     },
     {
