@@ -174,10 +174,10 @@
       "title": "Report meaningful layout regressions and distinguish intended handoffs",
       "kind": "bug",
       "priority": "P0",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "scoring_implemented_verification_pending",
       "source_ids": [
         "TD-63",
         "TD-64",
@@ -197,8 +197,14 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Implement and verify Appendix H measures, distinguish intended handoffs from defects and nested-box occupancy; preserve every worsened measure. Source findings contain inconsistent totals; do not use those totals as ground truth.",
-      "evidence": [],
+      "next_step": "Verify fb6c2228 score output and regression refusals. Independently cross-check measures, distinguish intended handoffs from defects, and retain all routing regressions. No full scoring or visual acceptance claim.",
+      "evidence": [
+        {
+          "commit": "fb6c2228",
+          "result": "implemented_verification_running",
+          "scope": "Compact mode now reports seven straight-segment measures, compares fixed block membership, uses 5-percent ranking ties and refuses every >10-percent regression unless Force is explicit. Default row ranking unchanged. Workflow requires all measures and checks accepted edits for regressions. Native verification pending; independent score validation, intended-handoff classification and complete visual acceptance remain open."
+        }
+      ],
       "design_notes": [
         "Candidate BodyRowDrift and CompletedAboveBody are partial diagnostics, not Appendix H scoring. Still required: unrelated box crossings, exec segment crossings, diagonal exec length, block row breaks, data crossings, total length, area, 5-percent tie handling and every greater-than-10-percent regression warning."
       ]
