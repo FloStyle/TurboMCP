@@ -6407,8 +6407,8 @@
       "kind": "housekeeping",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "pin_discovery_passed_construction_in_progress",
-      "remaining": "All 38 creation variants inspected live. Full 83-node builder authored. Initial setup correctly refused ambiguous replacement of the factory Entry-to-Return edge; retain refusal. Revised builder explicitly removes that owned template edge and stops on refused preview. Native construction rerun active; no baseline yet.",
+      "validation": "83_node_construction_passed_baseline_running",
+      "remaining": "All 83 recipe labels constructed through public preview/append; every block compiled, final zero warnings/errors and zero unreachable execution-input nodes. Record paginated full graph, explicit merge read-back, deterministic scramble and default Tidy captures next. J1-J6 and visual acceptance remain pending.",
       "source_keys": [
         "2026-11-05_S1/FT-156"
       ],
@@ -6434,6 +6434,21 @@
           "run": "cc825dc469c9497a9b27bb58307a20bd",
           "result": "failed",
           "scope": "First setup append refused ambiguous template continuation; live graph unchanged. Harness corrected to remove owned template edge explicitly and stop after refused preview."
+        },
+        {
+          "run": "b2939d5cf6ff48ae90ec890d888855df",
+          "result": "failed",
+          "scope": "Append refused because suite was not registered for rendering. Runner registration corrected; no production bypass."
+        },
+        {
+          "run": "986df8bec8ea45f8bf431fdae9100a9f",
+          "result": "failed",
+          "scope": "Six blocks compiled; recipe builder confused array Get (a copy) with local getters. Builder corrected."
+        },
+        {
+          "run": "25da0af5075b4e529d47101cf35f9e19",
+          "result": "passed_construction_only",
+          "scope": "83 label identities created; per-block compile; final zero warnings/errors and unreachable execution inputs. No default baseline or visual certification."
         }
       ]
     },
