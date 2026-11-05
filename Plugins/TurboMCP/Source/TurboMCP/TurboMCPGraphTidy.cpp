@@ -4248,7 +4248,24 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
         };
         return Clip(A.X,B.X-A.X,Rect.L,Rect.R) && Clip(A.Y,B.Y-A.Y,Rect.T,Rect.B);
     };
-    for(int32 WireIndex=0;WireIndex<Plan.Wires.Num();++WireIndex)
+    // Route lower fan-out destinations first. Their long drop belongs nearest
+    // the source; upper destinations can then use an outer channel without
+    // crossing the lower route. This changes planning order, never link order.
+    TArray<int32> RouteOrder;
+    for(int32 I=0;I<Plan.Wires.Num();++I) RouteOrder.Add(I);
+    RouteOrder.StableSort([&](int32 L,int32 R)
+    {
+        const FWire& A=Plan.Wires[L]; const FWire& B=Plan.Wires[R];
+        if(A.SourceNodeIndex!=B.SourceNodeIndex) return A.SourceNodeIndex<B.SourceNodeIndex;
+        if(Plan.Nodes.IsValidIndex(A.TargetNodeIndex) && Plan.Nodes.IsValidIndex(B.TargetNodeIndex))
+        {
+            const double AY=Plan.Nodes[A.TargetNodeIndex].PlannedY;
+            const double BY=Plan.Nodes[B.TargetNodeIndex].PlannedY;
+            if(AY!=BY) return AY>BY;
+        }
+        return L<R;
+    });
+    for(int32 WireIndex:RouteOrder)
     {
         const FWire& Wire=Plan.Wires[WireIndex];
         if(!Wire.OutputPin || !Wire.InputPin || !Plan.Nodes.IsValidIndex(Wire.SourceNodeIndex)
