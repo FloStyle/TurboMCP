@@ -241,7 +241,7 @@ public:
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty is refused.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Empty is refused; no graph is guessed.
-	 * @param Format read is the only supported format and the default; empty also means read. write is refused.
+	 * @param Format read (default, including empty) or json. JSON returns a standalone object per page with body text, body_notes, revision, offset/count/total and nextOffset (-1 at end). Concatenate body strings; this is inspection data, not write-back input. MaxChars bounds unescaped UTF-16 body units, not JSON envelope or escaping. write is refused.
 	 * @param Detail manifest, signatures, bodies or full; default or empty means bodies. Each level adds detail.
 	 * @param Offset Zero-based character offset. Start at 0; for later pages use the returned nextOffset and Revision together. Negative values are refused.
 	 * @param MaxChars Maximum page characters, 256..24000 inclusive; default 24000. Partial pages are inspection-only, not standalone write-back input.
