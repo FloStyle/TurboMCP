@@ -11,7 +11,7 @@
       "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "baseline_recorded_visual_defects_confirmed_regressions_pending",
+      "validation": "baseline_recorded_J5_boundary_passed_layout_rolled_back",
       "source_ids": [
         "FT-156"
       ],
@@ -19,7 +19,7 @@
         "2026-11-05_S1/FT-156"
       ],
       "dependencies": [],
-      "next_step": "Complete J1-J6 small regression scenarios before production placement changes. Baseline recorded from all 83 nodes with paginated read-back and merge inspection; native capture inspected. Compact layout, readable block captures, graph invariants and visual acceptance remain pending.",
+      "next_step": "Build and record J1-J4 and J6. J5 preserved all 57 outside nodes but rolled back the 26-node candidate because pure-input row conflicts increased from 0 to 1; scoped compact layout remains unresolved. No visual acceptance.",
       "evidence": [
         {
           "run": "cb08f716863b4e86a7240897464386fa",
@@ -60,6 +60,11 @@
           "run": "e6e8213df1f64e888e30ab1a601c580f",
           "result": "passed_baseline_checkpoint_not_layout_acceptance",
           "scope": "Default Tidy reduced reported wire length from 320337.4 to 84132.8 across 102 wires. Three Body handoffs have vertical offsets 1081, 860 and 1620 graph units. Native 1600x900 capture inspected: diagonal cascade and unreadable whole-graph labels at zoom -12. Reported zero linear exec drift does not establish the requested Body-row alignment. Evidence: .local/tidy-cascade/8b69cad350e7464bb798ba31785863ad/evidence.json in widget-roundtrip-review. No J1-J6 or visual acceptance claim."
+        },
+        {
+          "run": "4b7155be5b954c6a8df051f64351e3aa",
+          "result": "boundary_checkpoint_passed_layout_not_accepted",
+          "scope": "J5: 26 selected nodes, 57 fixed surrounding nodes. Candidate wire length 84132.8 -> 77241.9, but pure-input row conflicts 0 -> 1 caused rollback. Outside geometry and baseline restoration verified. Evidence .local/tidy-cascade/9a48b05e06a44cac87c98f1b1607b27a/evidence.json. Passing runner result does not certify compact placement."
         }
       ]
     },
