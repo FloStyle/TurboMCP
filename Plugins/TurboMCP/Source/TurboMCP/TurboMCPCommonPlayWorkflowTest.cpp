@@ -32,6 +32,7 @@ class FCommonPlayLoop : public IAutomationLatentCommand
     TSharedPtr<SWindow> FocusWindow;
     TSharedPtr<SButton> OutsideButton;
     int32 FocusStep=0;
+    int32 AnalogMenuStep=0;
     int32 DeactivationStep=0;
     bool SimulatedInactive=false;
     bool RestoreFocusGuard=false;
@@ -64,7 +65,7 @@ class FCommonPlayLoop : public IAutomationLatentCommand
     void Hold(const TCHAR* Key,const TCHAR* Value=TEXT(""),const TCHAR* Duration=TEXT("0.15"))
     {
         FString Out=Dispatch(TEXT("EditTurboMCPPlayInput"),FString::Printf(TEXT("{\"Target\":\"pie:0\",\"Action\":\"hold\",\"Key\":\"%s\",\"Value\":\"%s\",\"Seconds\":\"%s\"}"),Key,Value,Duration));
-        Record(Out);Test->TestFalse(TEXT("Input accepted"),Out.StartsWith(TEXT("error:")));
+        Record(Out);Test->TestTrue(TEXT("Input route accepted inside registry response"),Out.Contains(TEXT("play input: routed ")) && !Out.Contains(TEXT("error:")));
     }
 public:
     explicit FCommonPlayLoop(FAutomationTestBase* InTest):Test(InTest) {}
@@ -149,7 +150,7 @@ public:
                 {
                     const TSharedPtr<SWidget> MenuFocus = FSlateApplication::Get().GetUserFocusedWidget(0);
                     Test->TestTrue(TEXT("Menu has a focused widget before input"), MenuFocus.IsValid());
-                    Hold(TEXT("F13"));
+                    Hold(TEXT("LeftShift"));
                     Test->TestTrue(TEXT("Hold preserves menu focus identity"),
                         FSlateApplication::Get().GetUserFocusedWidget(0) == MenuFocus);
                     Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"), TEXT("release"), TEXT(""), TEXT(""), TEXT("")));
@@ -168,6 +169,25 @@ public:
                 }
                 Hold(FocusStep==0?TEXT("Gamepad_DPad_Down"):TEXT("Gamepad_DPad_Up"));
                 ++FocusStep;return false;
+            }
+            if (Step==2 && AnalogMenuStep<3)
+            {
+                const FString MenuState = State();
+                if (AnalogMenuStep==0)
+                {
+                    Test->TestTrue(TEXT("Analog control starts on Settings"), MenuState.Contains(TEXT("focused button: Settings")));
+                    Hold(TEXT("Gamepad_LeftY"),TEXT("-1"),TEXT("0.3"));
+                }
+                else if (AnalogMenuStep==1)
+                {
+                    Test->TestTrue(TEXT("Analog down moves actual menu focus to Resume"), MenuState.Contains(TEXT("focused button: Resume")));
+                    const FString Released = UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));
+                    Record(Released);
+                    Test->TestTrue(TEXT("Analog menu hold released"), Released.Contains(TEXT("tool-held input: none")));
+                    Hold(TEXT("Gamepad_DPad_Up"));
+                }
+                else Test->TestTrue(TEXT("D-pad control restores Settings after analog"), MenuState.Contains(TEXT("focused button: Settings")));
+                ++AnalogMenuStep;return false;
             }
             if (Step==10 && FocusStep<6)
             {
