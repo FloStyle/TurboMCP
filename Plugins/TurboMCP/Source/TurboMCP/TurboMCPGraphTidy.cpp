@@ -3257,8 +3257,22 @@ namespace
     if(First) { Left=Rect.MinX; Top=Rect.MinY; Right=Rect.MaxX; Bottom=Rect.MaxY; First=false; }
     else { Left=FMath::Min(Left,Rect.MinX); Top=FMath::Min(Top,Rect.MinY); Right=FMath::Max(Right,Rect.MaxX); Bottom=FMath::Max(Bottom,Rect.MaxY); }
    }
-   const FVector2D Centre((Left+Right)/2,(Top+Bottom)/2);
    const FVector2D Canvas=Editor->GetGraphPanel()?Editor->GetGraphPanel()->GetTickSpaceGeometry().GetLocalSize():Size;
+   auto SaveFrame = [&](const FVector2D& Centre, float Zoom, const FString& Suffix)->bool
+   {
+    Editor->SetViewLocation(FVector2f(Centre-Canvas/(2*Zoom)),Zoom);
+    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+    TArray<FColor> Pixels; FReadSurfaceDataFlags Flags(RCM_UNorm); Flags.SetLinearToGamma(false);
+    if(!Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels,Flags) || Pixels.Num()!=2048*1536)
+     return false;
+    for(FColor& Pixel:Pixels) Pixel.A=255;
+    TArray64<uint8> Png; FImageUtils::PNGCompressImageArray(2048,1536,Pixels,Png);
+    const FString Path=Folder/(Stem+Suffix+TEXT(".png"));
+    if(Png.IsEmpty() || !FFileHelper::SaveArrayToFile(Png,*Path)) return false;
+    Result+=TEXT("\n")+Suffix.RightChop(1)+TEXT(": ")+FPaths::ConvertRelativePathToFull(Path);
+    return true;
+   };
+   const FString SideName=Side?TEXT("after"):TEXT("before");
    const float Wanted=FMath::Min(1.0, FMath::Min(Canvas.X/(Right-Left+160),Canvas.Y/(Bottom-Top+160)));
    float Request=Wanted,Applied=1; FVector2f Offset;
    for(int32 Try=0;Try<64;++Try)
@@ -3267,16 +3281,81 @@ namespace
     if(Applied<=Wanted+KINDA_SMALL_NUMBER) break;
     Request*=0.9f;
    }
-   if(Applied>Wanted+KINDA_SMALL_NUMBER || Applied<=0) { Result=TEXT("graph exceeds native zoom range; use a smaller graph or selected group"); return false; }
-   Editor->SetViewLocation(FVector2f(Centre-Canvas/(2*Applied)),Applied);
-   Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
-   TArray<FColor> Pixels; FReadSurfaceDataFlags Flags(RCM_UNorm); Flags.SetLinearToGamma(false);
-   if(!Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels,Flags) || Pixels.Num()!=2048*1536) { Result=TEXT("native preview readback failed"); return false; }
-   for(FColor& Pixel:Pixels) Pixel.A=255;
-   TArray64<uint8> Png; FImageUtils::PNGCompressImageArray(2048,1536,Pixels,Png);
-   const FString Path=Folder/(Stem+(Side?TEXT("-after.png"):TEXT("-before.png")));
-   if(Png.IsEmpty() || !FFileHelper::SaveArrayToFile(Png,*Path)) { Result=TEXT("native preview image could not be saved"); return false; }
-   Result+=TEXT("\n")+(Side?FString(TEXT("after: ")):FString(TEXT("before: ")))+FPaths::ConvertRelativePathToFull(Path);
+   if(Applied<=Wanted+KINDA_SMALL_NUMBER && Applied>0)
+   {
+    if(!SaveFrame(FVector2D((Left+Right)/2,(Top+Bottom)/2),Applied,TEXT("-")+SideName))
+     { Result+=TEXT("\nOverview image could not be saved."); return false; }
+    Result+=FString::Printf(TEXT("\n%s overview zoom %.3f; use detail tiles to read dense blocks."),*SideName,Applied);
+   }
+   else if(!Plan.bCompactBlocks)
+    { Result=TEXT("graph exceeds native zoom range; use a smaller graph or selected group"); return false; }
+   else Result+=TEXT("\n")+SideName+TEXT(" overview exceeds native zoom range; detail tiles follow.");
+
+   if(Plan.bCompactBlocks)
+   {
+    // Detail views use native 1:1 rendering, never enlargement of the overview.
+    // Block membership is identical on both sides. Large blocks are tiled with
+    // overlap so a long wire cannot force their node labels to become unreadable.
+    constexpr int32 MaxDetailTiles=24;
+    int32 SavedTiles=0, OmittedTiles=0;
+    const double TileWidth=FMath::Max(256.0,static_cast<double>(Canvas.X)-160.0);
+    const double TileHeight=FMath::Max(256.0,static_cast<double>(Canvas.Y)-160.0);
+    for(int32 Block=0;Block<Plan.BlockCount;++Block)
+    {
+     TArray<FSlateRect> Rectangles;
+     auto AddBounds=[&](UEdGraphNode* Node)
+     {
+      if(!Node) return;
+      FSlateRect Bounds;
+      if(Editor->GetBoundsForNode(Node,Bounds,0.f)) Rectangles.Add(Bounds);
+     };
+     for(const auto& Node:Plan.Nodes)
+      if(Node.Node && !Node.bIsComment && Node.BlockIndex==Block) AddBounds(ByGuid.FindRef(Node.Node->NodeGuid));
+     // Generated readers have no original GUID. Their consumer still identifies
+     // the block; include all new scratch readers attached to that consumer.
+     if(Side)
+      for(const auto& Copy:Plan.GetterCopies)
+       for(const auto& Node:Plan.Nodes)
+        if(Node.Node==Copy.ConsumerPin->GetOwningNode() && Node.BlockIndex==Block)
+        {
+         UEdGraphPin* Input=FindPin(ByGuid.FindRef(Node.Node->NodeGuid),Copy.ConsumerPin);
+         if(Input) for(const UEdGraphPin* Link:Input->LinkedTo) if(Link) AddBounds(Link->GetOwningNode());
+        }
+     if(Rectangles.IsEmpty()) continue;
+     double MinX=Rectangles[0].Left,MinY=Rectangles[0].Top,MaxX=Rectangles[0].Right,MaxY=Rectangles[0].Bottom;
+     for(const FSlateRect& Rect:Rectangles)
+     { MinX=FMath::Min(MinX,static_cast<double>(Rect.Left)); MinY=FMath::Min(MinY,static_cast<double>(Rect.Top));
+       MaxX=FMath::Max(MaxX,static_cast<double>(Rect.Right)); MaxY=FMath::Max(MaxY,static_cast<double>(Rect.Bottom)); }
+     // Bound enumeration as well as image writes. Pathological asset bounds
+     // must not make a read-only preview iterate millions of empty grid cells.
+     if(!FMath::IsFinite(MaxX-MinX) || !FMath::IsFinite(MaxY-MinY)
+        || (MaxX-MinX)/TileWidth>64.0 || (MaxY-MinY)/TileHeight>64.0)
+     {
+      Result+=FString::Printf(TEXT("\n%s block %d detail omitted: bounds exceed the 64 x 64 tile-grid limit. Preview a smaller selected group; this image set is incomplete."),*SideName,Block);
+      continue;
+     }
+     const int32 Columns=FMath::Max(1,FMath::CeilToInt((MaxX-MinX)/TileWidth));
+     const int32 Rows=FMath::Max(1,FMath::CeilToInt((MaxY-MinY)/TileHeight));
+     Result+=FString::Printf(TEXT("\n%s block %d: %d node rectangle(s), grid %d x %d; detail zoom 1:1, 80-unit border."),*SideName,Block,Rectangles.Num(),Columns,Rows);
+     for(int32 Row=0;Row<Rows;++Row) for(int32 Column=0;Column<Columns;++Column)
+     {
+      const double X=MinX+Column*TileWidth,Y=MinY+Row*TileHeight;
+      // Empty wire-only space is visible in the overview; spend the bounded
+      // image budget on node-bearing tiles and report every omitted tile.
+      bool bContainsNode=false;
+      for(const FSlateRect& Rect:Rectangles)
+       if(Rect.Left<X+TileWidth && Rect.Right>=X && Rect.Top<Y+TileHeight && Rect.Bottom>=Y) { bContainsNode=true; break; }
+      if(!bContainsNode) continue;
+      if(SavedTiles>=MaxDetailTiles) { ++OmittedTiles; continue; }
+      const FString Suffix=FString::Printf(TEXT("-%s-block-%d-row-%d-col-%d"),*SideName,Block,Row,Column);
+      if(!SaveFrame(FVector2D(X+TileWidth/2,Y+TileHeight/2),1.0f,Suffix))
+       { Result+=TEXT("\nDetail tile could not be saved; the preview is incomplete."); return false; }
+      ++SavedTiles;
+     }
+    }
+    Result+=FString::Printf(TEXT("\n%s detail tiles: %d saved, %d omitted by the %d-image limit. Empty wire-only tiles are not exported."),*SideName,SavedTiles,OmittedTiles,MaxDetailTiles);
+    if(OmittedTiles) Result+=TEXT(" Use a selected-node preview for the omitted blocks; this image set is incomplete.");
+   }
   }
   return true;
  }
