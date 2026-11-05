@@ -360,9 +360,9 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
         return StartSequence(Resolved,Key);
     }
     if (SequenceActive) return TEXT("error: A tool input sequence is active. Wait for completion or call release first.");
-    if (Action==TEXT("activate"))
+    if (Action==TEXT("activate") || Action==TEXT("activate_gameplay"))
     {
-        if (!Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: activate requires empty Key, Value and Seconds. No activation was requested.");
+        if (!Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: activation actions require empty Key, Value and Seconds. No activation or focus change was requested.");
         if (Held.Key.IsValid()) return TEXT("error: Release the tool-held input before requesting activation.");
         if (FTurboMCPFocusGuard::IsActive()) return TEXT("error: Native activation is disabled by the unattended focus guard. No activation was requested and no input was sent. Use an attended editor session; this tool does not disable the guard.");
         const TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(Resolved.Viewport.ToSharedRef());
@@ -373,14 +373,28 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
         // On Windows BringToFront only uses SetActiveWindow for regular windows.
         // This stock API requests SetForegroundWindow; OS restrictions still apply.
         Window->HACK_ForceToFront();
+        FString GameplayFocus;
+        if (Action == TEXT("activate_gameplay"))
+        {
+            // This explicit action may leave a menu control. Plain activate
+            // continues to preserve Slate focus for menu navigation.
+            const TSharedPtr<SWidget> Previous = FSlateApplication::Get().GetUserFocusedWidget(Resolved.User);
+            const bool DisplacedMenu = Previous.IsValid() && Previous.Get() != Resolved.Viewport.Get();
+            FSlateApplication::Get().SetUserFocus(Resolved.User, Resolved.Viewport, EFocusCause::SetDirectly);
+            GameplayFocus = FString::Printf(TEXT("\nGameplay viewport focus now: %s\nPrevious focus widget: %s; non-viewport focus displaced: %s\nNo key was sent. Activation was requested; OS foreground permission is not guaranteed. Read PlayInputState after normal ticks before sending input."),
+                HasPlayFocus(Resolved) ? TEXT("yes") : TEXT("no"), Previous.IsValid() ? *Previous->GetTypeAsString() : TEXT("none"), DisplacedMenu ? TEXT("yes") : TEXT("no"));
+        }
         const bool Foreground = Window->GetNativeWindow()->IsForegroundWindow();
         const FString WindowDescription = FString::Printf(TEXT("window: %s; regular: %s; virtual: %s; visible: %s; parent: %s"),
             *Window->GetTitle().ToString(), Window->IsRegularWindow() ? TEXT("yes") : TEXT("no"),
             Window->IsVirtualWindow() ? TEXT("yes") : TEXT("no"), Window->GetNativeWindow()->IsVisible() ? TEXT("yes") : TEXT("no"),
             Window->GetParentWindow().IsValid() ? *Window->GetParentWindow()->GetTitle().ToString() : TEXT("none"));
         const bool Active = FSlateApplication::Get().IsActive();
-        return FString::Printf(TEXT("play input: requested activation of the PIE viewport's owning window. This may restore or raise the editor window.\n%s\nwindow foreground now: %s\napplication active now: %s\nNo key was sent and no explicit Slate focus change was requested. Activation can be delayed or refused by the OS. Read PlayInputState after normal editor ticks; if the owning window is still not foreground or the application is inactive, select the editor window manually. Use focus separately only when gameplay viewport focus is intended; it can leave a menu control."),
+        const FString ActivationReport = FString::Printf(TEXT("play input: requested activation of the PIE viewport's owning window. This may restore or raise the editor window.\n%s\nwindow foreground now: %s\napplication active now: %s\nNo key was sent and no explicit Slate focus change was requested. Activation can be delayed or refused by the OS. Read PlayInputState after normal editor ticks; if the owning window is still not foreground or the application is inactive, select the editor window manually. Use focus separately only when gameplay viewport focus is intended; it can leave a menu control."),
             *WindowDescription, Foreground ? TEXT("yes") : TEXT("no"), Active ? TEXT("yes") : TEXT("no"));
+        if (Action == TEXT("activate_gameplay"))
+            return FString::Printf(TEXT("play input: requested activation and gameplay focus.\n%s\nwindow foreground now: %s\napplication active now: %s"), *WindowDescription, Foreground ? TEXT("yes") : TEXT("no"), Active ? TEXT("yes") : TEXT("no")) + GameplayFocus;
+        return ActivationReport;
     }
     if (Action==TEXT("focus"))
     {
@@ -397,7 +411,7 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
             *PreviousType, CurrentFocus.IsValid() ? *CurrentFocus->GetTypeAsString() : TEXT("none"),
             DisplacedChild ? TEXT("yes") : TEXT("no"), FSlateApplication::Get().IsActive() ? TEXT("yes") : TEXT("no"));
     }
-    if (Action!=TEXT("hold")) return TEXT("error: Action must be activate, focus, hold, sequence or release. A short bounded hold is a tap; no indefinite key-down is supported.");
+    if (Action!=TEXT("hold")) return TEXT("error: Action must be activate, activate_gameplay, focus, hold, sequence or release. A short bounded hold is a tap; no indefinite key-down is supported.");
     const FKey InputKey(*Key);
     if (!InputKey.IsValid() || InputKey.IsMouseButton() || (InputKey.IsAnalog() && (!InputKey.IsGamepadKey() || !InputKey.IsAxis1D())))
         return TEXT("error: Key must be a keyboard/gamepad button or a one-dimensional gamepad axis. Use native Slate tools for mouse clicks and text entry.");

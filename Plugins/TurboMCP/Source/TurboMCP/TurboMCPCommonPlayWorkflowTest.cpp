@@ -140,8 +140,19 @@ public:
             {
                 Test->TestTrue(TEXT("Unattended guard refuses activation explicitly"),
                     UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("activate"),TEXT(""),TEXT(""),TEXT("")).Contains(TEXT("unattended focus guard")));
+                Test->TestTrue(TEXT("Guard refuses combined gameplay activation"),
+                    UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("activate_gameplay"),TEXT(""),TEXT(""),TEXT("")).Contains(TEXT("unattended focus guard")));
                 FTurboMCPFocusGuard::Remove();
             }
+            Test->TestTrue(TEXT("Combined activation refuses extra arguments"),
+                UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("activate_gameplay"),TEXT("SpaceBar"),TEXT(""),TEXT("")).StartsWith(TEXT("error:")));
+            const FString Combined = UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("activate_gameplay"),TEXT(""),TEXT(""),TEXT(""));
+            Record(Combined);
+            Test->TestTrue(TEXT("Combined action reports focus and OS limits"), Combined.Contains(TEXT("Gameplay viewport focus now: yes"))
+                && Combined.Contains(TEXT("window foreground now:")) && Combined.Contains(TEXT("OS foreground permission is not guaranteed"))
+                && Combined.Contains(TEXT("No key was sent")));
+            const FString CombinedState = UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));
+            Test->TestTrue(TEXT("Combined focus independently observed"), CombinedState.Contains(TEXT("focus inside PIE viewport: yes")));
             const FString Activation = UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("activate"),TEXT(""),TEXT(""),TEXT(""));
             Record(Activation);
 
@@ -155,6 +166,7 @@ public:
                 && ActivationState.Contains(TEXT("application active:")) && ActivationState.Contains(TEXT("tool-held input: none")));
             const FString InputHelp = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCP.TurboMCPEditToolset"),TEXT("EditTurboMCPPlayInput"));
             Test->TestTrue(TEXT("Help explains activation and separate focus"), InputHelp.Contains(TEXT("activate")) && InputHelp.Contains(TEXT("Slate focus")));
+            Test->TestTrue(TEXT("Help describes combined action and menu effects"), InputHelp.Contains(TEXT("activate_gameplay")) && InputHelp.Contains(TEXT("displaces menu focus")));
             Record(TEXT("Registered PlayInput help:\n") + InputHelp);
             Test->TestTrue(TEXT("Help gives analog menu example and limits"), InputHelp.Contains(TEXT("Gamepad_LeftY=-1")) && InputHelp.Contains(TEXT("Seconds=0.3")) && InputHelp.Contains(TEXT("exactly one row")) && InputHelp.Contains(TEXT("UI routing")));
 
