@@ -3,6 +3,7 @@
 #include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
+#include "Editor.h"
 #include "Misc/ScopeExit.h"
 #include "TurboMCPNodeId.h"
 #include "Engine/Blueprint.h"
@@ -76,6 +77,18 @@ bool FTurboMCPEditNodeKeysTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Unique key removal edit"),Removed.StartsWith(TEXT("changed")));
     TestEqual(TEXT("Only selected source removed"),Graph->Nodes.Num(),1);
     TestTrue(TEXT("Other source preserved"),Graph->Nodes.Contains(B));
+    const FString ObjectPath=B->GetPathName();
+    Package->SetDirtyFlag(false);
+    TestTrue(TEXT("Object path preview resolves"),Remove(ObjectPath).Contains(TEXT("preview (transient graph)")));
+    TestFalse(TEXT("Object path preview stays clean"),Package->IsDirty());
+    TestTrue(TEXT("Wrong graph object path refuses"),Remove(Target->Nodes[0]->GetPathName()).StartsWith(TEXT("unchanged\nrefused:")));
+    TestTrue(TEXT("Stale object path refuses"),Remove(ObjectPath+TEXT("_missing")).StartsWith(TEXT("unchanged\nrefused:")));
+    const FString PathRemoved=UTurboMCPEditToolset::EditTurboMCPGraphRemove(Asset,Graph->GetName(),TEXT("[\"")+ObjectPath+TEXT("\"]"),TEXT("[]"));
+    TestTrue(TEXT("Exact object path removal applies"),PathRemoved.StartsWith(TEXT("changed")));
+    TestEqual(TEXT("Exact path removes only remaining source"),Graph->Nodes.Num(),0);
+    TestEqual(TEXT("Other graph preserved"),Target->Nodes.Num(),1);
+    TestTrue(TEXT("Object path removal undo"),GEditor->UndoTransaction(false));
+    TestEqual(TEXT("Undo restores node"),Graph->Nodes.Num(),1);
     return !HasAnyErrors();
 }
 #endif

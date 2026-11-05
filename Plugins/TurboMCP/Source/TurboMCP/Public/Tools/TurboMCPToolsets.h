@@ -1205,7 +1205,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
-	 * @param Nodes JSON array encoded as a string, e.g. ["exact reader node ID"]. Use [] when removing only links, not an empty string. Duplicate, missing and non-deletable nodes are refused.
+	 * @param Nodes JSON array encoded as a string, e.g. ["exact reader node ID"]. Use [] when removing only links, not an empty string. Duplicate, missing and non-deletable nodes are refused. Nodes also accepts exact current UObject paths returned by the engine finder, only within the named graph. Paths can change after reload or reconstruction; prefer fresh reader IDs. This removes graph nodes, not assets.
 	 * @param Links JSON array encoded as a string. Each object requires sourceNodeId, sourcePin, targetNodeId and targetPin for an existing link. Use [] when removing only nodes. Do not repeat links already removed by a selected node deletion.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      */
@@ -2149,7 +2149,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
-	 * @param Nodes JSON array encoded as a string, e.g. ["exact reader node ID"]. Use [] when removing only links, not an empty string. Duplicate, missing and non-deletable nodes are refused.
+	 * @param Nodes JSON array encoded as a string, e.g. ["exact reader node ID"]. Use [] when removing only links, not an empty string. Duplicate, missing and non-deletable nodes are refused. Nodes also accepts exact current UObject paths returned by the engine finder, only within the named graph. Paths can change after reload or reconstruction; prefer fresh reader IDs. This removes graph nodes, not assets.
 	 * @param Links JSON array encoded as a string. Each object requires sourceNodeId, sourcePin, targetNodeId and targetPin for an existing link. Use [] when removing only nodes. Do not repeat links already removed by a selected node deletion.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      */

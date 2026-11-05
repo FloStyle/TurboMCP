@@ -410,7 +410,27 @@ bool Remove(UEdGraph* Graph,UEdGraph* Identity,const FString& Nodes,const FStrin
     {
         FString Id;
         if(!Value.IsValid() || !Value->TryGetString(Id)) { Error=TEXT("Nodes must contain node ID strings"); return false; }
-        UEdGraphNode* Node=ResolveNode(Graph,Identity,Id);
+        // Object paths identify live nodes, not their transient preview copies.
+        // Never load an object or accept a path outside the explicitly named graph.
+        UEdGraphNode* Node=nullptr;
+        const FString Requested=Id.TrimStartAndEnd();
+        if (Requested.StartsWith(TEXT("/")) && Identity)
+        {
+            UEdGraphNode* Original=nullptr;
+            for (UEdGraphNode* Item:Identity->Nodes)
+                if (Item && Item->GetPathName()==Requested)
+                { if (Original) { Error=TEXT("Node object path is ambiguous."); return false; } Original=Item; }
+            if (Original)
+            {
+                if (!Original->NodeGuid.IsValid()) { Error=TEXT("Node GUID is invalid; repair its identity before removal."); return false; }
+                int32 Matches=0;
+                for (UEdGraphNode* Item:Graph->Nodes)
+                    if (Item && Item->NodeGuid==Original->NodeGuid) { Node=Item; ++Matches; }
+                if (Matches!=1) { Error=TEXT("Node GUID is missing or duplicated; repair its identity before removal."); return false; }
+            }
+        }
+        // Qualified reader IDs also start with '/'; retain their exact matching.
+        if (!Node) Node=ResolveNode(Graph,Identity,Requested);
         if(!Node || !Node->CanUserDeleteNode() || Delete.Contains(Node)) { Error=TEXT("missing, repeated or non-deletable node: ")+Id; return false; }
         Delete.Add(Node); Report+=TEXT("\nremove node: ")+Id;
     }
