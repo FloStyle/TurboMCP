@@ -286,7 +286,8 @@ def record_comment_regression(call, evidence, persist):
         if len(matches) != 1:
             raise RuntimeError('J4 cannot resolve comment geometry: ' + box['id'])
         rect = row['after'][matches[0]]
-        box['readback'] = call('ReadTurboMCPNodeResolve', nodeIds=matches[0])
+        box['readback'] = call('ReadTurboMCPCommentList', asset=asset, graphName=graph,
+                               scope='box:' + matches[0], offset=0, limit=80)
         if box['title'] not in box['readback']:
             raise RuntimeError('J4 lost comment title: ' + box['title'])
         box['contained_original_members'] = [identity for identity in box['original_members']
