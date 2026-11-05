@@ -35,6 +35,14 @@ class UTurboMCPReadToolset : public UToolsetDefinition
 
 public:
 
+    /** Inspect one exact Blueprint-callable function on an existing PIE runtime object without invoking it.
+     * @param WorldPath Exact current PIE world object path, not an editor world or guessed player index.
+     * @param ObjectPath Exact existing runtime object path belonging to that world, including local-player subsystems. No assets are loaded.
+     * @param FunctionName Exact case-sensitive callable function name. Reports parameter types and directions; latent, RPC and editor-only calls are refused.
+     */
+    UFUNCTION(meta=(AICallable))
+    static FString ReadTurboMCPPlayFunction(const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName);
+
     /** Read bounded editor/PIE output captured during this enabled plugin session, not tool-call history or a disk file. Returns UTC timestamps, categories, severity, cursor and explicit retention/message truncation. Does not run commands or change assets.
      * @param Category Empty for all categories, otherwise exact case-insensitive category name, such as LogBlueprintUserMessages.
      * @param Contains Empty for all messages, otherwise a case-insensitive substring of stored text (at most 2048 characters).
