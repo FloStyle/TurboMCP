@@ -98,7 +98,11 @@ bool FTurboMCPInterfaceLocalTest::RunTest(const FString& Parameters)
     const FString StructEdit = UTurboMCPEditToolset::EditTurboMCPLocalVariableAdd(Asset, TEXT("ReadState"), TEXT("CachedPosition"), StructPath, TEXT(""));
     TestTrue(TEXT("Struct edit accepts plain path"), StructEdit.StartsWith(TEXT("edited:")));
     Graph = TurboMCPNodeId::FindGraphByName(BP, TEXT("ReadState"), Matches);
-    if (!TestNotNull(TEXT("Graph after struct declaration"), Graph)) return false;
+    if (Graph == nullptr)
+    {
+        AddError(TEXT("Graph disappeared after struct declaration."));
+        return false;
+    }
     Entries.Reset(); Graph->GetNodesOfClass(Entries);
     if (!TestEqual(TEXT("Entry after struct declaration"), Entries.Num(), 1)) return false;
     const FBPVariableDescription* StructLocal = Entries[0]->LocalVariables.FindByPredicate([](const FBPVariableDescription& Local) { return Local.VarName == TEXT("CachedPosition"); });
