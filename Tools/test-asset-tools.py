@@ -37,6 +37,35 @@ def main():
     s = Session()
     s.connect()
 
+    print("=== NOV04-38: stock asset lookup controls (not a field-cause claim) ===")
+    stock = "editor_toolset.toolsets.asset.AssetTools"
+    dirty_before = s.call(READ_TOOLSET, "ReadTurboMCPDirtyList", {"limit": ""})
+    for label, query, expected in [("substring", ASSET, True), ("case-insensitive", ASSET.lower(), True), ("wildcard is literal", "*" + ASSET + "*", False)]:
+        response = s.call(stock, "find_assets", {"folder_path": "/Game/Tests", "name": query}, mutates=False)
+        print(label + ": " + response)
+        try:
+            paths = json.loads(response)
+        except (ValueError, TypeError):
+            paths = None
+        check("stock finder " + label, isinstance(paths, list) and ((ASSET_PACKAGE in paths) == expected))
+    references = []
+    for path in [ASSET_PACKAGE, ASSET_PACKAGE + "." + ASSET]:
+        response = s.call(stock, "get_referencers", {"asset_path": path}, mutates=False)
+        print(path + ": " + response)
+        try:
+            value = json.loads(response)
+        except (ValueError, TypeError):
+            value = None
+        check("stock referencers accepts " + path, isinstance(value, list))
+        references.append(value)
+    check("package and object paths agree", references[0] is not None and references[0] == references[1])
+    for path in [ASSET, "/Game/Tests/Nonexistent_NOV04_38"]:
+        response = s.call(stock, "get_referencers", {"asset_path": path}, mutates=False)
+        print(path + ": " + response)
+        check("stock invalid path refuses " + path, "Asset does not exist" in response)
+    dirty_after = s.call(READ_TOOLSET, "ReadTurboMCPDirtyList", {"limit": ""})
+    check("read-only stock controls preserve dirty report", dirty_before == dirty_after)
+
     print("=== T-ASSET-1: search ===")
     found = s.call(READ_TOOLSET, "ReadTurboMCPAssetSearch", {"query": ASSET})
     print(found)
@@ -163,7 +192,7 @@ def main():
     check("states how many packages are dirty", "package(s) dirty" in dirty)
     check(
         "a zero names its reason",
-        ("Nothing has unsaved changes" in dirty) or ("listing" in dirty),
+        ("No dirty content packages were found." in dirty and "does not check unsaved maps" in dirty) or ("listing" in dirty),
     )
 
     print()
