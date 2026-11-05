@@ -34,6 +34,7 @@ class FCommonPlayLoop : public IAutomationLatentCommand
     int32 FocusStep=0;
     int32 AnalogMenuStep=0;
     int32 DeactivationStep=0;
+    int32 SequenceStep=0;
     bool SimulatedInactive=false;
     bool RestoreFocusGuard=false;
     int32 Step=0;
@@ -254,6 +255,49 @@ public:
                 }
                 ++DeactivationStep;return false;
             }
+            if (Step==10 && SequenceStep<5)
+            {
+                auto Sequence=[&](const TCHAR* Events)
+                {
+                    const FString Result=UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("sequence"),Events,TEXT(""),TEXT(""));
+                    Record(Result);return Result;
+                };
+                APlayerController* Player=GEditor->PlayWorld->GetFirstPlayerController();
+                if (SequenceStep==0)
+                {
+                    Test->TestTrue(TEXT("Malformed schedule refuses"),Sequence(TEXT("[{\"at\":0,\"key\":\"P\",\"duration\":0.2,\"typo\":1}]")).StartsWith(TEXT("error:")));
+                    Test->TestTrue(TEXT("Overlapping same key refuses"),Sequence(TEXT("[{\"at\":0,\"key\":\"P\",\"duration\":1},{\"at\":0.1,\"key\":\"P\",\"duration\":0.2}]")).Contains(TEXT("must not overlap")));
+                    Test->TestTrue(TEXT("Refused schedules preserve gameplay"),State().Contains(TEXT("screen: Gameplay")));
+                    Test->TestTrue(TEXT("Overlapping axis and taps admitted"),Sequence(TEXT("[{\"at\":0,\"key\":\"Gamepad_RightX\",\"value\":0.5,\"duration\":2.5},{\"at\":0.2,\"key\":\"P\",\"duration\":0.2},{\"at\":1.2,\"key\":\"BackSpace\",\"duration\":0.2}]")).Contains(TEXT("admitted 3 events")));
+                }
+                else if (SequenceStep==1)
+                {
+                    Test->TestTrue(TEXT("First scheduled tap opened pause while axis held"),State().Contains(TEXT("screen: Pause")));
+                    Test->TestTrue(TEXT("Axis ownership overlaps scheduled tap"),UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0")).Contains(TEXT("sequence held: 1; pending: 1")));
+                }
+                else if (SequenceStep==2)
+                {
+                    Test->TestTrue(TEXT("Second scheduled tap resumed game"),State().Contains(TEXT("screen: Gameplay")));
+                    Test->TestTrue(TEXT("Concurrent ordinary hold refuses"),UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("hold"),TEXT("P"),TEXT(""),TEXT("0.1")).Contains(TEXT("sequence is active")));
+                }
+                else if (SequenceStep==3)
+                {
+                    const FString Completed=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(Completed);
+                    Test->TestTrue(TEXT("Sequence completes with no retained ownership"),Completed.Contains(TEXT("completed: all scheduled inputs released")) && Completed.Contains(TEXT("sequence held: 0; pending: 0")));
+                    Test->TestEqual(TEXT("Sequence axis released"),Player->GetInputAnalogKeyState(EKeys::Gamepad_RightX),0.f);
+                    Test->TestFalse(TEXT("Sequence keyboard keys released"),Player->IsInputKeyDown(EKeys::P) || Player->IsInputKeyDown(EKeys::BackSpace));
+                    Test->TestTrue(TEXT("Cancellation sequence accepted"),Sequence(TEXT("[{\"at\":0,\"key\":\"Gamepad_RightX\",\"value\":0.5,\"duration\":4},{\"at\":3,\"key\":\"P\",\"duration\":0.2}]")).Contains(TEXT("admitted 2 events")));
+                }
+                else
+                {
+                    Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("release"),TEXT(""),TEXT(""),TEXT("")));
+                    const FString Cancelled=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(Cancelled);
+                    Test->TestTrue(TEXT("Explicit cancellation clears owned and pending sequence"),Cancelled.Contains(TEXT("stopped: explicit release")) && Cancelled.Contains(TEXT("sequence held: 0; pending: 0")));
+                    Test->TestEqual(TEXT("Cancellation clears original player axis"),Player->GetInputAnalogKeyState(EKeys::Gamepad_RightX),0.f);
+                    Test->TestTrue(TEXT("Pending pause tap did not run"),State().Contains(TEXT("screen: Gameplay")));
+                }
+                ++SequenceStep;return false;
+            }
             const FString Current=State();
             const FString InputState=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(InputState);
             Test->TestTrue(TEXT("Hold automatically released"),InputState.Contains(TEXT("tool-held input: none")));
@@ -286,7 +330,7 @@ public:
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPCommonPlayTest,"TurboMCP.Workflow.CommonPlay",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPCommonPlayTest::RunTest(const FString&)
 {
-    FString Start=UTurboMCPReadToolset::ReadTurboMCPPlayCheck(TEXT("40"),TEXT(""));
+    FString Start=UTurboMCPReadToolset::ReadTurboMCPPlayCheck(TEXT("55"),TEXT(""));
     if (Start.StartsWith(TEXT("error:")) || Start.Contains(TEXT("already playing"))) {AddError(Start);return false;}
     ADD_LATENT_AUTOMATION_COMMAND(FCommonPlayLoop(this));return true;
 }
