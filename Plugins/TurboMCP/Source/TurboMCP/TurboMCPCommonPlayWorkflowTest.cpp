@@ -123,7 +123,7 @@ public:
             auto Payload=MakeShared<FJsonObject>();
             Payload->SetStringField(TEXT("WorldPath"),WorldPath);Payload->SetStringField(TEXT("ObjectPath"),ObjectPath);
             Payload->SetStringField(TEXT("FunctionName"),TEXT("RecordEvent"));Payload->SetStringField(TEXT("Arguments"),Args);Payload->SetStringField(TEXT("Confirmation"),Confirmation);
-            FString Json;FJsonSerializer::Serialize(Payload.ToSharedRef(),TJsonWriterFactory<>::Create(&Json));
+            FString Json;FJsonSerializer::Serialize(Payload,TJsonWriterFactory<>::Create(&Json));
             const FString Invoked=Dispatch(TEXT("EditTurboMCPPlayInvoke"),Json);Record(Invoked);
             Test->TestTrue(TEXT("Runtime dispatch returns actual result"),Invoked.Contains(TEXT("dispatched:")) && Invoked.Contains(TEXT("ReturnValue: 3")));
             Test->TestEqual(TEXT("Local player event called once"),Receiver->Calls,1);
