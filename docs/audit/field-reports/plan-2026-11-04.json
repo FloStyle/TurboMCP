@@ -1230,7 +1230,7 @@
       "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "partially_reproduced",
+      "validation": "reproduced_engine_result_defect",
       "source_ids": [
         "X-119"
       ],
@@ -1238,7 +1238,7 @@
         "2026-10-30_S3/X-119"
       ],
       "dependencies": [],
-      "next_step": "Stock StopPIE returns a Blueprint null-reference error despite completed shutdown; outer RunTests response is also replaced. Investigate result interception and preserve independent session-state evidence. The reported still-running case remains unreproduced; no engine fix claimed.",
+      "next_step": "Engine result replacement traced and reproducible fixture integrated. Keep this issue open: stock engine defect remains; reported persistent PIE is not reproduced. Workflow: after StopPIE error, query EditorToolset.EditorAppToolset.IsPIERunning separately before editing; if true, do not edit or assume shutdown. Future engine proposal must preserve operation state alongside script diagnostics.",
       "evidence": [
         {
           "result": "source_review",
@@ -1248,6 +1248,21 @@
           "result": "failed_reproduction_run_with_confirmed_observation",
           "run": "fc8d5b53ec3746bab9a54082abc7cca7",
           "scope": "Build passed. Clean control returned returnValue:null. EndPlay null actor case returned Accessed None while PlayWorld was absent and IsPlaySessionInProgress false. Outer RunTests returned the same script-error text, failing JSON report parsing. This proves response/state disagreement, not a persistent PIE session or a passing suite."
+        },
+        {
+          "result": "native_reproduction_pass_not_fix",
+          "run": "8a4f59ba87ee40608ad3a351aaa17bd0",
+          "scope": "Clean control and EndPlay null-reference case both fire ShutdownPIE and leave no PlayWorld/session. Error case returns script error. Separate GetTestResults proves test assertions; not a repair of engine output."
+        },
+        {
+          "result": "failed_fixture_retained",
+          "run": "45eaa5ea51a848b1b761087a3b9c8a13",
+          "scope": "Independent report retrieved but deliberate script warning/error not matched literally; corrected expected-message count to the two observed diagnostics, retaining all unrelated failures."
+        },
+        {
+          "result": "offline_pass",
+          "run": "6d4e2328e5f84535b1720d5eab3fa05f",
+          "scope": "26 checks; worker scope passed for 9c03aaefc8b14255989c07228e7bd068a2486aaf."
         }
       ]
     },
