@@ -6407,8 +6407,8 @@
       "kind": "housekeeping",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "83_node_construction_passed_baseline_running",
-      "remaining": "All 83 recipe labels constructed through public preview/append; every block compiled, final zero warnings/errors and zero unreachable execution-input nodes. Record paginated full graph, explicit merge read-back, deterministic scramble and default Tidy captures next. J1-J6 and visual acceptance remain pending.",
+      "validation": "baseline_recorded_visual_defects_confirmed_regressions_pending",
+      "remaining": "Complete J1-J6 small regression scenarios before production placement changes. Baseline recorded from all 83 nodes with paginated read-back and merge inspection; native capture inspected. Compact layout, readable block captures, graph invariants and visual acceptance remain pending.",
       "source_keys": [
         "2026-11-05_S1/FT-156"
       ],
@@ -6449,6 +6449,11 @@
           "run": "25da0af5075b4e529d47101cf35f9e19",
           "result": "passed_construction_only",
           "scope": "83 label identities created; per-block compile; final zero warnings/errors and unreachable execution inputs. No default baseline or visual certification."
+        },
+        {
+          "run": "e6e8213df1f64e888e30ab1a601c580f",
+          "result": "passed_baseline_checkpoint_not_layout_acceptance",
+          "scope": "Default Tidy reduced reported wire length from 320337.4 to 84132.8 across 102 wires. Three Body handoffs have vertical offsets 1081, 860 and 1620 graph units. Native 1600x900 capture inspected: diagonal cascade and unreadable whole-graph labels at zoom -12. Reported zero linear exec drift does not establish the requested Body-row alignment. Evidence: .local/tidy-cascade/8b69cad350e7464bb798ba31785863ad/evidence.json in widget-roundtrip-review. No J1-J6 or visual acceptance claim."
         }
       ]
     },
