@@ -620,8 +620,8 @@
       "title": "Address unnamed pins in append and pin previews",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
+      "state": "in_progress",
+      "readiness": "ready",
       "owner": "unassigned",
       "validation": "reported_not_reproduced",
       "source_ids": [
@@ -631,7 +631,7 @@
         "2026-11-03_S2/NT-13"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Native stock Increment discovery/pin preview probe running under nov04-unnamed-pin-reproduction. NodePins uses internal PinName, not friendly label. Record exact action IDs and blank/whitespace names before choosing a compatible addressing repair; no cause or fix claimed yet."
     },
     {
       "id": "NOV04-17",
