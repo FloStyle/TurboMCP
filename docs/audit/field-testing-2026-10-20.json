@@ -6491,8 +6491,8 @@
       "kind": "bug",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "build_passed_editor_suite_timed_out_before_compact_checks",
-      "remaining": "Run the complete scenario with its reviewed 1200-second suite allowance. Run b04c38d19d264d37b7aa9613ed09eacd hit the original 600-second suite deadline during J6 construction, before compact checks. Build passed; no compact or visual acceptance evidence yet.",
+      "validation": "compact_comment_contents_and_undo_verified_routing_pending",
+      "remaining": "Compact comment identity and full-content checks pass. Implement full Appendix H scoring and routing; retain scoped pure-input regression and inspect all block captures before visual acceptance.",
       "source_keys": [
         "2026-11-05_S1/TD-62",
         "2026-11-05_S1/TD-70",
@@ -6513,6 +6513,45 @@
           "run": "b04c38d19d264d37b7aa9613ed09eacd",
           "result": "failed_suite_timeout",
           "scope": "Suite killed at its 600-second deadline during J6A Append. No compact checks reached. Runner restored fixtures. Preserve this failure; a later pass does not erase it. Integrator sets a scenario-specific 1200-second ceiling; other suites and shorter timeout probes retain their deadlines."
+        },
+        {
+          "result": "source_review_gap",
+          "scope": "Source review of candidate 7d17aa67: CompletedAboveBody currently bounds only forward execution members, excluding pure input trees. This does not prove Completed lies below the full block rectangle required by Appendix H. Expand and independently verify full-body membership before acceptance."
+        },
+        {
+          "run": "48d85c387be34bfcb6bce1d80a996cb1",
+          "result": "failed_capture_after_unacceptable_layout",
+          "scope": "Evidence .local/tidy-cascade/5d4a716def3a442dbbc84fc5e6ab4b82. Full reader equality passed. Wire length 84132.8 -> 100883.4; Body drift 3513 -> 733; Completed-above-body 3 -> 1; linear drift 0 -> 24; backward exec 0 -> 3. Whole graph capture exceeded native zoom range, stopping before undo and remaining compact cases. Preview image inspected: wide cascade, not accepted."
+        },
+        {
+          "run": "4f0f7a01d739436cb69bf3caf979480c",
+          "result": "failed_harness_identity_comparison",
+          "scope": "Plain cascade: Body drift 3513 -> 0, Completed above body 3 -> 0, no new overlaps/linear drift/fan-out conflicts. One backward exec wire remains; wire length 84132.8 -> 85127.1. Checker compared shortened preview IDs to full reader IDs and stopped before capture/undo. Offline unique suffix reconciliation found all 83 coordinates equal. Failure retained; candidate 832141f4 resolves identities and gives compact joins a lane after incoming blocks. Not visually accepted."
+        },
+        {
+          "run": "dd045dabee7f44dab9de90d46565d7ab",
+          "result": "passed_collection_and_preservation_not_layout_acceptance",
+          "scope": "Candidate 324c365c: full graph equality, exact preview/edit coordinates and undo checks passed. Plain cascade Body drift 3513 -> 0; Completed-above-body 3 -> 0; wire length 84132.8 -> 81702.1. J4 still worsens wire length to 100907.8 and linear drift to 24; J5 pure-input row conflicts 0 -> 1. J3 native image inspected: Body on row, Completed below; long diagonal and feedback wires still need routing."
+        },
+        {
+          "run": "fcf1b64b9ef1491c9ddbe58802bcc940",
+          "result": "build_passed",
+          "scope": "5071e169 includes upstream pure expressions and generated readers in the compact body-bottom diagnostic. Runtime verification pending with b4950172."
+        },
+        {
+          "run": "0a3a7dcdf21e46c5a6e2642fb8c4d4b4",
+          "result": "build_passed_editor_running",
+          "scope": "Candidate b4950172 built successfully in 123.13 seconds; supervised editor suite started. Compact comment planning is not yet runtime accepted. Read-only projection of the prior plain-cascade positions into both J4 comment member sets found no unrelated-node intersections; this supports the approach but is not live verification."
+        },
+        {
+          "run": "0a3a7dcdf21e46c5a6e2642fb8c4d4b4",
+          "result": "failed_compact_comment_identity_guard",
+          "scope": "Candidate b4950172: plain cascade graph equality, exact coordinates and undo passed. J4 preview refused original member N20 as unrelated because MembersOf returns engine object names while the guard compared public IDs. Candidate a13b31f7 resolves both identities, removes stale old-corner reader constraint, adds rectangle bounds checks and verifies all J4 original members and titles. Failure retained; corrected runtime result pending."
+        },
+        {
+          "run": "b091c2182a204e82830757b20e9e1bd3",
+          "result": "passed_preservation_and_comment_contents_not_full_acceptance",
+          "scope": "a13b31f7: editor suite passed. J4 kept both titles and every original member, exact node preview/edit coordinates matched, and undo restored graph plus all geometry. Body drift 3513 -> 0, Completed-above-body 3 -> 0, wire length 84132.8 -> 81702.1. Native Flatten path points image 0803F423411226F3B6BEF188BD734C7D inspected: fitted readable comment, but unrelated long data wire still crosses it. Cross-box length 23270.9 -> 24806.8; routing and Appendix H remain unresolved. Earlier identity failure retained."
         }
       ]
     },
@@ -6538,6 +6577,12 @@
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
       "dependencies": [
         "NOV05-01"
+      ],
+      "evidence": [
+        {
+          "result": "source_review_gap",
+          "scope": "Candidate BodyRowDrift and CompletedAboveBody are partial diagnostics, not Appendix H scoring. Still required: unrelated box crossings, exec segment crossings, diagonal exec length, block row breaks, data crossings, total length, area, 5-percent tie handling and every greater-than-10-percent regression warning."
+        }
       ]
     },
     {
@@ -6549,8 +6594,8 @@
       "kind": "feature",
       "state": "open",
       "priority": "P0",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "visual_defect_confirmed",
+      "remaining": "Implement explicit orthogonal handoff routing, including J2 lower Sequence wires crossing pure readers. Preserve feedback and graph semantics; verify screenshots and undo.",
       "source_keys": [
         "2026-11-05_S1/TD-65",
         "2026-11-05_S1/TD-71",
@@ -6559,6 +6604,13 @@
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
       "dependencies": [
         "NOV05-02"
+      ],
+      "evidence": [
+        {
+          "run": "dd045dabee7f44dab9de90d46565d7ab",
+          "result": "visual_routing_defect_confirmed",
+          "scope": "Inspected native J2 image 9A9E26AB4464E86C426A33B073524CE4: three ordered rows and aligned first output, but Then 2 execution spline crosses the middle-row Message getter. Preservation passes do not certify routing. Keep unresolved under NOV05-04."
+        }
       ]
     },
     {
@@ -6609,10 +6661,10 @@
       "report": "2026-11-05 intake",
       "title": "Provide readable block previews for dense graphs",
       "kind": "feature",
-      "state": "open",
+      "state": "in_progress",
       "priority": "P0",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "exact_node_parity_verified_public_block_previews_incomplete",
+      "remaining": "Exact node preview/edit agreement passed in dd045dabee7f44dab9de90d46565d7ab. Scenario captures are per block; public block table and readable per-block previews remain incomplete.",
       "source_keys": [
         "2026-11-05_S1/TD-68",
         "2026-11-05_S1/FT-155"
@@ -6620,6 +6672,12 @@
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
       "dependencies": [
         "NOV05-02"
+      ],
+      "evidence": [
+        {
+          "result": "source_review_gap",
+          "scope": "RenderPreview currently emits aggregate move counts and whole-graph images but no per-node planned coordinates or block table. Current harness verifies preview non-mutation, not exact preview/edit coordinate agreement. Add auditable plan geometry and readable block captures before claiming parity or readable previews."
+        }
       ]
     },
     {
@@ -6629,15 +6687,25 @@
       "report": "2026-11-05 intake",
       "title": "Keep every required parameter visible in compact help",
       "kind": "bug",
-      "state": "open",
+      "state": "in_progress",
       "priority": "P0",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "live_required_parameter_checks_passed_in_candidate",
+      "remaining": "Live required-parameter checks passed for all five named tools in completed run dd045dabee7f44dab9de90d46565d7ab. Integrate the reviewed help fix after gates; compact layout remains unaccepted.",
       "source_keys": [
         "2026-11-05_S1/X-129"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        {
+          "result": "source_cause_confirmed",
+          "scope": "Source cause confirmed in TurboMCPAgentHelp.cpp: properties are alphabetically ordered, then the entire Help string is cut to HelpBudgetChars. This can remove required parameter lines. Preserve a complete required-parameter name/type summary outside descriptive-text truncation; keep effects and refusal guidance, and test against the live schema for every named report tool. Sorting required parameters first alone is insufficient when the prefix consumes the budget."
+        },
+        {
+          "result": "passed_live_required_parameters",
+          "scope": "Candidate 324c365c; evidence .local/tidy-cascade/ca8c953407ed474483bfef28e8d83ab0/evidence.json required_help. All five reported tools have zero missing required names. Build passed. Full compact-layout suite is still running, so this is a bounded help result only."
+        }
+      ]
     },
     {
       "id": "NOV05-09",
