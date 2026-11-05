@@ -734,10 +734,10 @@
       "title": "Remove member variables with reference checks",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "partial_native_pass",
+      "validation": "focused_native_pass",
       "source_ids": [
         "VA-10",
         "FT-134"
@@ -747,7 +747,7 @@
         "2026-10-30_S4/FT-134"
       ],
       "dependencies": [],
-      "next_step": "Complete inherited-variable, unrelated linked-node preservation and live help coverage; review dependency discovery and rollback limits, then run integration gates. Implementation remains on the review branch, not main.",
+      "next_step": "Implemented and integrated. Broader project field validation remains separate: dynamic/native/string references and unavailable content are outside reference proof; structural refresh may compile dependencies and undo is not guaranteed.",
       "evidence": [
         {
           "result": "source_review",
@@ -758,6 +758,21 @@
           "commit": "c22f93ebd984101fe7d772de906a028e0889820e",
           "run": "ac4011d99cfd4cedb150069c415291f0",
           "scope": "Stock engine build and graph-append suite passed. New disposable WidgetBlueprint fixture proves unused removal, clean preview, wrong/stale confirmation refusal, disconnected getter refusal and retained unrelated declaration. Does not yet complete all acceptance coverage."
+        },
+        {
+          "result": "native_pass",
+          "run": "e1bfffa2a57440739f991bec90a0e1c9",
+          "scope": "Stock build; widget removal, wrong/stale confirmation, disconnected getter refusal, inherited/missing refusal, unrelated nodes/data link and declaration preservation, live confirmation help."
+        },
+        {
+          "result": "offline_failure_retained",
+          "run": "5facd1c20de840539f7407d756d93f41",
+          "scope": "Missing routing entries for new tools; corrected without weakening the gate."
+        },
+        {
+          "result": "offline_pass",
+          "run": "1dcebc98c4d84aaf85a3d58aeded8fcd",
+          "scope": "26 offline checks; exact worker scope separately passed for 7ec90713166e3e70c1b894458a9bd200e60fb4eb."
         }
       ]
     },
