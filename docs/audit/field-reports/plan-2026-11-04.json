@@ -853,10 +853,10 @@
       "title": "Explain and test analog input versus menu navigation",
       "kind": "bug",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "focused_reproduction_passed_original_not_reproduced",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "PI-08"
       ],
@@ -864,7 +864,7 @@
         "2026-11-04_S1/PI-08"
       ],
       "dependencies": [],
-      "next_step": "Reproduction integrated: stock Slate analog navigation works in owned CommonUI fixture. Original cause remains unknown. Add precise public help about axis sign, threshold/project routing and verifying actual focus rather than promising navigation; no engine or input-routing repair justified.",
+      "next_step": "Verified analog navigation in owned CommonUI fixture and integrated concise live help: axis sign/threshold, focused-menu example, repeat limits, project routing and actual focus verification. No engine/input-routing fix claimed.",
       "evidence": [
         {
           "run": "77b082f9b75d4b5f892f3daceb8c2d31",
@@ -880,7 +880,30 @@
           "run": "d5211e1685bf4e0593fb09310bca93e8",
           "result": "passed",
           "scope": "26 offline gates; reproduction source c419d4c6 scope passed."
+        },
+        {
+          "run": "e6b404d33af64534bb02f147e692e701",
+          "result": "failed",
+          "scope": "Navigation passed, new help assertion failed."
+        },
+        {
+          "run": "8b29392accd84273be61b7f0c50cd544",
+          "result": "failed",
+          "scope": "Captured live help proves 2000-character budget omitted Value and summary retained only first sentence; condensed parameters rather than weakening assertion."
+        },
+        {
+          "run": "9f049883f1ee409c9ab6e107636381bf",
+          "result": "passed",
+          "scope": "Compiled live help exposes example/limits; full CommonUI navigation workflow passed."
+        },
+        {
+          "run": "99f7f4ba79524d38899ec1c91a2cb02c",
+          "result": "passed",
+          "scope": "26 offline gates; source c1e59eb5 scope passed."
         }
+      ],
+      "followups": [
+        "Historical project-specific failure not reproduced; no assertion that its cause is fixed. Project UI routing and navigation settings may differ from the tested fixture."
       ]
     },
     {

@@ -2239,3 +2239,5 @@ Readiness: ready. Assignment nov04-analog-menu-reproduction. Current input code 
 ### NOV04-24 verified analog guidance
 
 Readiness: ready. Assignment nov04-analog-menu-help. Native efdf3c8fa7b74866bbecb543d8d73bf9 proves stock CommonUI navigation with Gamepad_LeftY=-1 for 0.3 seconds; original failure cause is unknown. Document the verified example, stock axis direction and threshold, current menu focus requirement, project navigation/preprocessor variability and actual focus verification. Do not promise one row per hold or claim all projects accept analog input. Add live help assertions in the same CommonUI workflow. No input routing or engine changes. Run supervised commonui vision scenario and offline gates.
+
+NOV04-24 guidance integrated: native 9f049883f1ee409c9ab6e107636381bf and offline 99f7f4ba79524d38899ec1c91a2cb02c passed. Compact help now exposes analog example and limits. Earlier failed help runs and original unknown project-specific cause retained in plan.
