@@ -781,10 +781,10 @@
       "title": "Support variadic node input growth",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_help_failure_repair_pending",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "GC-79"
       ],
@@ -792,7 +792,7 @@
         "2026-10-30_S3/GC-79"
       ],
       "dependencies": [],
-      "next_step": "Pin-growth candidate implemented in review. First native suite passed graph behavior but failed both generated-help limit assertions. Short description repaired at 301d914e; rerun pending. Do not count implemented review candidate as integrated.",
+      "next_step": "Implemented Preview/EditTurboMCPNodePinGrowth. Append a base Make Array, Sequence or associative operator, read its ID, grow to the desired total, then connect pins. Equal targets are no-ops; shrink and unsupported classes refuse. No automatic append grammar expansion or arbitrary dynamic-pin support.",
       "evidence": [
         {
           "result": "source_review",
@@ -802,7 +802,21 @@
           "result": "native_failed",
           "run": "1caa5c7fe67f4797a4609cac13b700c8",
           "scope": "Stock build passed. New test verified ordered three-widget array, existing pin/link preservation, preview clean, no-op/refusals, undo, Sequence and operator growth. Both live help assertions failed because the generated description omitted no-shrink guidance. Overall suite failed; repair pending."
+        },
+        {
+          "result": "native_pass",
+          "run": "58d976e34fc24264b60666933134873a",
+          "scope": "Stock build and full graph-append suite passed. Ordered three-widget inputs, preview cleanliness, preserved input identity/link, no-op/refusals, undo, Sequence and BooleanAND growth, live help limits."
+        },
+        {
+          "result": "offline_pass",
+          "run": "a439724aef674d40bf769a1ae27ca857",
+          "scope": "26 checks passed; exact source scope passed. Two new tools registered, 169 total inventory."
         }
+      ],
+      "source_commit": "301d914e92732b81cfd9c0decb58a13e42dec58a",
+      "followups": [
+        "Focused test does not certify all associative overloads or arbitrary plugin-defined node subclasses. Compile/save remain separate. Failure rollback is reported as unverified restoration rather than guaranteed success."
       ]
     },
     {
