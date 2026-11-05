@@ -6630,10 +6630,16 @@
           "run": "19a1df7a8489400283d950b9f877024f",
           "result": "build_passed_not_runtime_validated",
           "scope": "Routing candidates now use integer stored positions, generated reader obstacle identities, prior-route knot obstacles, same-route knot clearance and segment checks. Internal planner remains disabled in public tools. Scoring, preview/apply integration, rollback and runtime routing verification remain incomplete."
+        },
+        {
+          "commit": "a46acea5",
+          "run": "db2007dde48740548d31d6c8a23aa2c1",
+          "result": "build_passed_route_chain_preview_integration_only",
+          "scope": "Added shared existing-edge chain expansion and transient-preview mapping, including generated-reader source mapping, typed knot pins, integer positions, duplicate-edge refusal, whole-original-pin link-array read-back and failure restoration of link ordering and snapped-child relationships through stock public APIs. Public planning still produces no routes; live edits and scoring are not integrated, so no runtime routing success is claimed. Build 52efce617a6740329e491ed2e97eff6a failed on private snapping flags and was corrected to public APIs; keep that failure."
         }
       ],
-      "next_step": "Complete internal route validation and connect the exact route plan to scoring, scratch preview and transactional apply/rollback behind explicit opt-in. Verify original connectivity after contracting added knots and exact undo.",
-      "latest_evidence": "Routing candidates now use integer stored positions, generated reader obstacle identities, prior-route knot obstacles, same-route knot clearance and segment checks. Internal planner remains disabled in public tools. Scoring, preview/apply integration, rollback and runtime routing verification remain incomplete."
+      "next_step": "Integrate measured planning, actual routed-segment scoring, live undo/rollback and runtime connectivity tests. Public routing remains disabled.",
+      "latest_evidence": "Added shared existing-edge chain expansion and transient-preview mapping, including generated-reader source mapping, typed knot pins, integer positions, duplicate-edge refusal, whole-original-pin link-array read-back and failure restoration of link ordering and snapped-child relationships through stock public APIs. Public planning still produces no routes; live edits and scoring are not integrated, so no runtime routing success is claimed. Build 52efce617a6740329e491ed2e97eff6a failed on private snapping flags and was corrected to public APIs; keep that failure."
     },
     {
       "id": "NOV05-05",
