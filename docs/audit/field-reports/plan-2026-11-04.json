@@ -964,8 +964,8 @@
       "kind": "feature",
       "priority": "P2",
       "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
+      "readiness": "ready",
+      "owner": "codex",
       "validation": "reported_not_reproduced",
       "source_ids": [
         "PI-05",
@@ -978,7 +978,7 @@
         "2026-11-04_S1/PI-09"
       ],
       "dependencies": [],
-      "next_step": "docs/audit/play-activation-review.json already records activation action and unsuccessful OS foreground acquisition. This recurrence remains an explicit limitation, not a new proven repair."
+      "next_step": "Implement explicit activate_gameplay action combining the existing stock OS activation request and gameplay viewport Slate focus. Preserve activate as menu-focus-preserving behavior; warn that activate_gameplay displaces menu focus. Require empty extra arguments, no active sequence/held input and existing unattended guard. Report requested activation, actual foreground/application/focus states independently; never bypass OS policy or imply success when denied. Native controls must verify refusal and truthful readback; successful OS foreground acquisition remains separately unproven."
     },
     {
       "id": "NOV04-24",
