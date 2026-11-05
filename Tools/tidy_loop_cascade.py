@@ -188,6 +188,67 @@ def record_baseline(call, evidence, persist):
     persist()
 
 
+
+def record_scoped_regression(call, evidence, persist):
+    """J5: record a scoped baseline and require every outside rectangle to stay fixed.
+
+    This checks the scope boundary, not compact-layout acceptance. Restore the
+    original baseline coordinates after recording the scoped result.
+    """
+    asset, graph = evidence['asset'], 'LoopCascade'
+    labels = next(block['labels'] for block in evidence['blocks'] if block['name'] == 'L3B')
+    selected = [evidence['label_ids'][label] for label in labels]
+
+    def positions():
+        result, offset = {}, 0
+        while True:
+            page = call('LookTurboMCPGraphPositions', asset=asset, graphName=graph,
+                        nodeIds='', maxNodes=256, offset=offset)
+            for match in re.finditer(r'^(\S+) x=(-?\d+) y=(-?\d+) width=(\d+) height=(\d+)$', page, re.M):
+                identity, *values = match.groups()
+                result[identity] = dict(zip(('x', 'y', 'width', 'height'), map(int, values)))
+            continuation = re.search(r'next_offset=(-?\d+)', page)
+            if not continuation:
+                raise RuntimeError('J5 positions have no explicit continuation')
+            offset = int(continuation.group(1))
+            if offset == -1:
+                return result
+
+    row = dict(selected_labels=labels, selected_ids=selected, acceptance=False)
+    evidence.setdefault('regressions', {})['J5'] = row
+    row['before'] = positions()
+    if set(row['before']) != set(evidence['label_ids'].values()):
+        raise RuntimeError('J5 baseline node set differs from the recipe')
+    persist()
+    args = dict(asset=asset, graphName=graph, bForce=False, nodeIds=selected,
+                mainPath='', horizontalGap=120.0, verticalGap=100.0,
+                lanePitch=280.0, wrapAfter='')
+    row['preview'] = call('PreviewTurboMCPGraphTidy', **args)
+    row['edit'] = call('EditTurboMCPGraphTidy', **args)
+    row['after'] = positions()
+    persist()
+    if set(row['after']) != set(row['before']):
+        raise RuntimeError('J5 changed the graph node set')
+    changed_outside = [identity for identity in row['before']
+                       if identity not in selected and row['before'][identity] != row['after'][identity]]
+    row['changed_outside'] = changed_outside
+    persist()
+    if changed_outside:
+        raise RuntimeError('J5 moved or resized unselected nodes: ' + ', '.join(changed_outside))
+    row['scope_boundary_passed'] = True
+    row['capture'] = call('LookTurboMCPCapture', asset=asset, graphName=graph,
+                          mode='graph', target='', size='1600x900')
+    call('EditTurboMCPGraphPositions', asset=asset, graphName=graph,
+         positions=json.dumps([dict(node=identity, x=rect['x'], y=rect['y'])
+                               for identity, rect in row['before'].items()]))
+    row['restored'] = positions()
+    if row['restored'] != row['before']:
+        raise RuntimeError('J5 failed to restore baseline geometry')
+    row['baseline_restored'] = True
+    row['remaining'] = 'Compact rectangle placement and connection readability require candidate comparison and visual review.'
+    persist()
+
+
 def run():
     root = Path(__file__).resolve().parents[1]
     context = json.loads(Path(os.environ['TURBOMCP_EXECUTION_CONTEXT']).read_text(encoding='utf-8'))
@@ -281,6 +342,7 @@ def run():
         evidence['initial_graph'] = call('ReadTurboMCPGraphLoad', asset=asset, graphName='LoopCascade', format='read', detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
         build_graph(call, evidence, persist)
         record_baseline(call, evidence, persist)
+        record_scoped_regression(call, evidence, persist)
         persist()
         print('Evidence: ' + str(directory), flush=True)
         print('RESULT: PASS (baseline evidence checkpoint only; layout acceptance remains false)')
