@@ -361,6 +361,11 @@
           "run": "40132f87ccbe48b3b8f8253d0bc302fa",
           "result": "passed",
           "scope": "26 offline gates and exact-file scope gate passed for 839bdd55329d2cedd0c99358ac9ac8852455f684."
+        },
+        {
+          "run": "66ec230fe6d9453da8722ecb46a91918",
+          "result": "failed",
+          "scope": "Wrong-class diagnostic fixture emitted an empty dispatcher creation ID and never reached schema validation. Compatible control also failed. Fixture corrected to reference the existing dispatcher explicitly; no product success claimed."
         }
       ],
       "followups": [
