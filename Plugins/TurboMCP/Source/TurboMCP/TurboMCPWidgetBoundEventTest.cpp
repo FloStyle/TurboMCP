@@ -58,7 +58,7 @@ bool FTurboMCPWidgetBoundEventTest::RunTest(const FString&)
     TestTrue(TEXT("Recreate"),UTurboMCPEditToolset::EditTurboMCPWidgetEvent(Asset,Name,TEXT("Purchase"),TEXT("OnClicked")).StartsWith(TEXT("changed")));
     FKismetEditorUtilities::CompileBlueprint(BP);
     int32 Bindings=0;
-    for (UDynamicBlueprintBinding* Entry:BP->GeneratedClass->DynamicBindingObjects)
+    for (UDynamicBlueprintBinding* Entry:CastChecked<UBlueprintGeneratedClass>(BP->GeneratedClass)->DynamicBindingObjects)
         if (auto* Bound=Cast<UComponentDelegateBinding>(Entry))
             for (const auto& Binding:Bound->ComponentDelegateBindings)
                 if (Binding.ComponentPropertyName==TEXT("Purchase") && Binding.DelegatePropertyName==TEXT("OnClicked"))
