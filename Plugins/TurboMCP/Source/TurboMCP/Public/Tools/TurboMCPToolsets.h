@@ -1224,6 +1224,18 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
     
     static FString PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
+    /** Preview growth of variadic pins on an existing Make Array, Sequence or associative operator node.
+     * Workflow: append a base node, read its ID, preview/grow, then connect new pins explicitly.
+     * Existing pins and links are preserved. No shrink, compile or save. An equal target is a clean no-op.
+     * @param Asset Blueprint asset path or unique name. Loading may execute project callbacks.
+     * @param GraphName Exact graph name in the Blueprint.
+     * @param NodeId Exact full reader ID of the existing supported node.
+     * @param Count Desired total, decimal integer 1..32. Sequence counts output branches; array/operator counts inputs. Unsupported native limits refuse.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPNodePinGrowth(const FString& Asset,const FString& GraphName,const FString& NodeId,const FString& Count);
+
+
     /**
      * Preview creating a typed custom event wired to an existing delegate input, such as the Event pin of a Bind Event node. No live graph edits, compile or save.
      * Requires an idle editor. Preview exercises graph/schema callbacks on a copy; successful preview does not guarantee a later edit. Inspect the result and arrange new nodes before compiling and saving.
@@ -2117,6 +2129,18 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
     UFUNCTION(meta = (AICallable))
     
     static FString EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
+
+    /** Edit growth of variadic pins on an existing Make Array, Sequence or associative operator node.
+     * Workflow: append a base node, read its ID, preview/grow, then connect new pins explicitly.
+     * Existing pins and links are preserved. No shrink, compile or save. An equal target is a clean no-op.
+     * @param Asset Blueprint asset path or unique name. Loading may execute project callbacks.
+     * @param GraphName Exact graph name in the Blueprint.
+     * @param NodeId Exact full reader ID of the existing supported node.
+     * @param Count Desired total, decimal integer 1..32. Sequence counts output branches; array/operator counts inputs. Unsupported native limits refuse.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPNodePinGrowth(const FString& Asset,const FString& GraphName,const FString& NodeId,const FString& Count);
+
 
     /**
      * Create a typed custom event wired to an existing delegate input in one undo transaction. Replaces that input connection; no compile or save. This does not create the Bind Event node or execute registration.
