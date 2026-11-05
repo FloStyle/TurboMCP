@@ -738,6 +738,7 @@ def run():
         record_compact_candidates(call, evidence, persist)
         record_comment_regression(call, evidence, persist)
         record_compact_candidates(call, evidence, persist, comments_only=True)
+        evidence['stage'] = 'workflow_checks_passed_visual_acceptance_pending'
         persist()
         print('Evidence: ' + str(directory), flush=True)
         print('RESULT: PASS (baseline evidence checkpoint only; layout acceptance remains false)')
