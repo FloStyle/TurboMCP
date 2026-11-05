@@ -539,6 +539,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
             const FString Description = Field(Tool, TEXT("description"));
             Help += FString::Printf(TEXT("\nwhat: %s"), *(bBatch ? Description : FirstSentence(Description)));
 
+            FString RequiredSummary = TEXT("\nrequired parameters (live schema):");
+            bool bHasRequiredParameters = false;
 			// Parameters, straight out of the schema the registry published.
 			const TSharedPtr<FJsonObject>* InputSchema = nullptr;
 			if (Tool->TryGetObjectField(TEXT("inputSchema"), InputSchema) && InputSchema != nullptr)
@@ -577,6 +579,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 							PropDescription = Field(*PropObject, TEXT("description"));
 						}
 
+                        if (RequiredParameters.Contains(Property.Key))
+                        {
+                            RequiredSummary += FString::Printf(TEXT("\n  %s: %s"), *Property.Key, *Type);
+                            bHasRequiredParameters = true;
+                        }
 						const TCHAR* Requirement = RequiredParameters.Contains(Property.Key)
 							? TEXT("required") : TEXT("optional");
 						Help += PropDescription.IsEmpty()
@@ -657,16 +664,21 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 					*Traps.GetLoadedFrom());
 			}
 
-            // Keep effects first; explicitly route omitted detail to the full live schema.
-            if (Help.Len() > HelpBudgetChars)
+            // Required names and types must survive compact-help truncation.
+            // Reserve their space before shortening descriptive details. If the
+            // schema itself exceeds the budget, completeness takes precedence.
+            if (!bHasRequiredParameters) RequiredSummary.Empty();
+            const int32 DetailBudget = FMath::Max(0, HelpBudgetChars - RequiredSummary.Len());
+            if (Help.Len() > DetailBudget)
             {
                 const FString Notice = TEXT("\n[Compact help shortened. Use describe_toolset with this toolset_name for full parameter descriptions and constraints.]");
-                FString Prefix = Help.Left(HelpBudgetChars - Notice.Len());
+                FString Prefix = Help.Left(FMath::Max(0, DetailBudget - Notice.Len()));
                 int32 LastLine = INDEX_NONE;
                 if (Prefix.FindLastChar(TEXT('\n'), LastLine)) Prefix.LeftInline(LastLine);
                 Help = Prefix + Notice;
             }
 
+            Help += RequiredSummary;
 			return Help;
 		}
 	}

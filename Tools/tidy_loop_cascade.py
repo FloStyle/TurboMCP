@@ -478,7 +478,23 @@ def record_compact_candidates(call, evidence, persist):
             raise RuntimeError(name+': compact layout changed fixed outside geometry')
         if not row['reader_equal']:
             raise RuntimeError(name+': complete graph read-back changed; inspect evidence before accepting semantics')
-        row['capture']=call('LookTurboMCPCapture',asset=asset,graphName=graph,mode='graph',target='',size='1600x900')
+        # Dense cascades can exceed native whole-graph zoom limits. Capture
+        # each recipe block at its measured bounds so evidence remains readable.
+        if graph == 'LoopCascade':
+            row['captures'] = {}
+            for block in evidence['blocks']:
+                identities = [evidence['label_ids'][label] for label in block['labels']]
+                rects = [row['after_positions'][identity] for identity in identities]
+                left = min(r['x'] for r in rects) - 80
+                top = min(r['y'] for r in rects) - 80
+                right = max(r['x'] + r['width'] for r in rects) + 80
+                bottom = max(r['y'] + r['height'] for r in rects) + 80
+                target = f'{left},{top},{right-left},{bottom-top}'
+                row['captures'][block['name']] = call('LookTurboMCPCapture',
+                    asset=asset,graphName=graph,mode='region',target=target,size='1600x900')
+                persist()
+        else:
+            row['capture']=call('LookTurboMCPCapture',asset=asset,graphName=graph,mode='graph',target='',size='1600x900')
         if row['edit'].startswith('changed:'):
             undo_preview=call('PreviewTurboMCPAssetUndo',asset=asset)
             confirm=re.search(r'Confirm=([0-9A-Fa-f-]+)',undo_preview)
