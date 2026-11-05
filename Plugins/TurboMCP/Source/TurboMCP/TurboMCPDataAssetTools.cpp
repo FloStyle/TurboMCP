@@ -232,7 +232,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         else if (auto* Array = CastField<FArrayProperty>(Target.Property))
         {
             FScriptArrayHelper Elements(Array, Target.Address);
-            Body += FString::Printf(TEXT("\narray_count: %d\noperations: array_remove; Key is a zero-based index. Whole-array set and insertion are not supported."), Elements.Num());
+            Body += FString::Printf(TEXT("\narray_count: %d\noperations: array_remove, array_insert; Key is a zero-based index. Insertion accepts 0..array_count; empty Value creates a default element. Whole-array set is not supported."), Elements.Num());
         }
         else if (auto* Object = CastField<FObjectProperty>(Target.Property))
         {
@@ -262,11 +262,12 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         if (Operation == TEXT("set") && !Key.IsEmpty()) return Refuse(TEXT("Key must be empty for set."));
         if (!Parse(Target.Property, InputValue, false, Planned.Get(), HeldValue)) return Refuse(Error);
     }
-    else if (Operation == TEXT("array_remove"))
+    else if (Operation == TEXT("array_remove") || Operation == TEXT("array_insert"))
     {
         auto* Array = CastField<FArrayProperty>(Target.Property);
-        if (!Array || !Value.IsEmpty() || Key.IsEmpty() || Key.Len() > 10)
-            return Refuse(TEXT("array_remove requires an array property, a zero-based decimal index in Key, and an empty Value."));
+        const bool Insert = Operation == TEXT("array_insert");
+        if (!Array || (!Insert && !Value.IsEmpty()) || Key.IsEmpty() || Key.Len() > 10)
+            return Refuse(TEXT("Array operations require an array property and a zero-based decimal index in Key. Value must be empty for array_remove."));
         int64 Index = 0;
         for (TCHAR Character : Key)
         {
@@ -275,10 +276,18 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         }
         FScriptArrayHelper Elements(Array, Planned.Get());
         const int32 BeforeCount = Elements.Num();
-        if (Index >= BeforeCount) return Refuse(FString::Printf(TEXT("Array index %lld is out of range for %d element(s)."), Index, BeforeCount));
-        // Remove from the owned temporary copy. All other values and references retain their order.
-        Elements.RemoveValues(static_cast<int32>(Index), 1);
-        ArrayDescription = FString::Printf(TEXT("\narray_count: %d -> %d\nremoved_index: %lld"), BeforeCount, Elements.Num(), Index);
+        if (Index > BeforeCount || (!Insert && Index == BeforeCount)) return Refuse(FString::Printf(TEXT("Array index %lld is out of range for %d element(s); insertion allows the end index, removal requires an existing element."), Index, BeforeCount));
+        // Parse before changing even the planned copy. Empty input means an initialized default,
+        // never an unvalidated property-text import containing object references.
+        if (Insert)
+        {
+            FValue Element(Array->Inner);
+            if (!Value.IsEmpty() && !Parse(Array->Inner, Value, false, Element.Get(), HeldValue)) return Refuse(Error);
+            Elements.InsertValues(static_cast<int32>(Index), 1);
+            Array->Inner->CopyCompleteValue(Elements.GetRawPtr(static_cast<int32>(Index)), Element.Get());
+        }
+        else Elements.RemoveValues(static_cast<int32>(Index), 1);
+        ArrayDescription = FString::Printf(TEXT("\narray_count: %d -> %d\n%s_index: %lld"), BeforeCount, Elements.Num(), Insert ? TEXT("inserted") : TEXT("removed"), Index);
     }
     else if (Operation == TEXT("map_upsert") || Operation == TEXT("map_remove"))
     {
@@ -361,7 +370,7 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
             return Respond(TEXT("failed: A project constructor changed live state while preparing the child. No planned write was applied. Inspect the asset; do not retry blindly."));
         }
     }
-    else return Refuse(TEXT("Operation must be set, array_remove, map_upsert, map_remove, create_child or child_set."));
+    else return Refuse(TEXT("Operation must be set, array_remove, array_insert, map_upsert, map_remove, create_child or child_set."));
     const FString Proposed = Export(Target.Property, Planned.Get(), Target.Owner);
     const FString Detail = Header + TEXT("\nproperty: ") + Path + TEXT("\noperation: ") + Operation + ArrayDescription + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed + ChildDescription + SelectedChild;
     if (Mode == 1) { Result.Outcome = ETurboMCPResultOutcome::Planned; return Respond(TEXT("preview: Validated temporary values; live properties unchanged.\n") + Detail); }

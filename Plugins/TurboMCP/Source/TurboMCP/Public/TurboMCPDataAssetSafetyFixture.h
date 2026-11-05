@@ -48,6 +48,8 @@ class UTurboMCPDataAssetSafetyFixture : public UDataAsset
 public:
     UPROPERTY(EditAnywhere, Instanced, Category="Test")
     TMap<UObject*, UTurboMCPDataAssetSafetyChild*> Entries;
+    UPROPERTY(EditAnywhere, Category="Test")
+    TArray<int32> Numbers;
     UPROPERTY(EditAnywhere, Instanced, Category="Test")
     TObjectPtr<UTurboMCPDataAssetSafetyChild> Child;
 };

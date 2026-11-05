@@ -207,6 +207,51 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
     GEditor->UndoTransaction();
     TestEqual(TEXT("Undo restores all mappings"),Context->GetMappings().Num(),65);
     TestEqual(TEXT("Undo restores complete asset revision"),MappingRevision(),MappingStart);
+    Package->SetDirtyFlag(false);
+    const FString InsertPreview=UTurboMCPPreviewToolset::PreviewTurboMCPDataAssetProperty(Context->GetPathName(),MappingPath,TEXT("array_insert"),TEXT("32"),TEXT(""),MappingStart);
+    TestTrue(TEXT("Mapping insertion preview reports count"),InsertPreview.StartsWith(TEXT("preview:")) && InsertPreview.Contains(TEXT("array_count: 65 -> 66")));
+    TestTrue(TEXT("Mapping insertion preview preserves state"),MappingRevision()==MappingStart && !Package->IsDirty());
+    const FString InsertMapping=UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Context->GetPathName(),MappingPath,TEXT("array_insert"),TEXT("32"),TEXT(""),MappingStart);
+    AddInfo(InsertMapping);
+    TestTrue(TEXT("Default mapping inserted"),InsertMapping.StartsWith(TEXT("edited:")) && Context->GetMappings().Num()==66);
+    if (Context->GetMappings().Num()==66)
+    {
+        TestTrue(TEXT("New mapping is default initialized"),Context->GetMappings()[32]==FEnhancedActionKeyMapping());
+        for (int32 Index=0;Index<65;++Index)
+            TestTrue(TEXT("Mapping insertion preserves every old row"),Context->GetMappings()[Index<32?Index:Index+1]==OriginalMappings[Index]);
+    }
+    GEditor->UndoTransaction();
+    TestEqual(TEXT("Mapping insertion undo restores revision"),MappingRevision(),MappingStart);
+    Asset->Numbers={10,20};
+    auto NumberRevision=[&]()
+    {
+        TArray<FString> Lines;
+        UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(Path,TEXT("Numbers")).ParseIntoArrayLines(Lines);
+        for (const FString& Line:Lines) if (Line.StartsWith(TEXT("revision: "))) return Line.Mid(10);
+        return FString();
+    };
+    for (int32 At : {0,1,2})
+    {
+        Package->SetDirtyFlag(false);
+        const FString Before=NumberRevision();
+        const FString Index=FString::FromInt(At);
+        const FString PreviewInsert=UTurboMCPPreviewToolset::PreviewTurboMCPDataAssetProperty(Path,TEXT("Numbers"),TEXT("array_insert"),Index,TEXT("42"),Before);
+        TestTrue(TEXT("Scalar insertion preview preserves state"),PreviewInsert.StartsWith(TEXT("preview:")) && NumberRevision()==Before && !Package->IsDirty());
+        const FString Added=UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path,TEXT("Numbers"),TEXT("array_insert"),Index,TEXT("42"),Before);
+        TestTrue(TEXT("Scalar insertion succeeds"),Added.StartsWith(TEXT("edited:")));
+        TArray<int32> Expected={10,20}; Expected.Insert(42,At);
+        TestTrue(TEXT("Exact inserted order"),Asset->Numbers==Expected);
+        TestTrue(TEXT("Stale insertion refuses"),UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path,TEXT("Numbers"),TEXT("array_insert"),Index,TEXT("42"),Before).StartsWith(TEXT("refused:")));
+        TestTrue(TEXT("Stale insertion preserves values"),Asset->Numbers==Expected);
+        GEditor->UndoTransaction();
+        TestEqual(TEXT("Insertion undo restores revision"),NumberRevision(),Before);
+    }
+    Package->SetDirtyFlag(false);
+    const FString BeforeInvalid=NumberRevision();
+    for (const FString& Index:TArray<FString>{TEXT("3"),TEXT("-1"),TEXT("1.5"),TEXT(" 1"),TEXT("9999999999")})
+        TestTrue(TEXT("Invalid insertion index refuses"),UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path,TEXT("Numbers"),TEXT("array_insert"),Index,TEXT("42"),BeforeInvalid).StartsWith(TEXT("refused:")));
+    TestTrue(TEXT("Invalid inserted value refuses"),UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path,TEXT("Numbers"),TEXT("array_insert"),TEXT("1"),TEXT("not_an_integer"),BeforeInvalid).StartsWith(TEXT("refused:")));
+    TestTrue(TEXT("Insertion refusals preserve revision and clean state"),NumberRevision()==BeforeInvalid && !Package->IsDirty());
     Context->MarkAsGarbage();
     Action->MarkAsGarbage();
     Package->SetDirtyFlag(false);
