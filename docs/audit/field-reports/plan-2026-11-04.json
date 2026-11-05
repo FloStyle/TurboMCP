@@ -371,6 +371,11 @@
           "run": "71d59247d7644cca8641247333fe3c97",
           "result": "failed",
           "scope": "Fixture placeholder BindEvent was rejected by graph checking before link validation. Corrected fixture to discover the exact CommonButtonGroupBase dispatcher creation ID; original diagnostic requirement remains unverified."
+        },
+        {
+          "run": "34c4f3af44234bd791ccc7d06758fabf",
+          "result": "failed",
+          "scope": "Valid dispatcher ID resolved, but an existing-node-only append is intentionally a no-op. Fixture changed to append a new binding action, with invalid and valid target-class controls. Diagnostic acceptance remains pending."
         }
       ],
       "followups": [
