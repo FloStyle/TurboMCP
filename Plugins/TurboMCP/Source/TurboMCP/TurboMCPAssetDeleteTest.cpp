@@ -13,6 +13,9 @@
 #include "HAL/PlatformFileManager.h"
 #include "UObject/LinkerLoad.h"
 #include "InputAction.h"
+#include "TurboMCPAssetDeleteFixture.h"
+#include "Editor.h"
+#include "Subsystems/AssetEditorSubsystem.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
@@ -68,6 +71,32 @@ bool FTurboMCPAssetDeleteTest::RunTest(const FString& Parameters)
         TStrongObjectPtr<UObject> LiveReference(Asset);
         TestTrue(TEXT("live reference refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath).Contains(TEXT("references")));
     }
+    const FString HolderName = Name + TEXT("_References");
+    const FString HolderPackageName = TEXT("/Game/Tests/") + HolderName;
+    UPackage* HolderPackage = CreatePackage(*HolderPackageName);
+    UTurboMCPAssetDeleteFixture* Holder = NewObject<UTurboMCPAssetDeleteFixture>(HolderPackage, *HolderName, RF_Public | RF_Standalone);
+    FAssetRegistryModule::AssetCreated(Holder);
+    const FString HolderFile = FPackageName::LongPackageNameToFilename(HolderPackageName, FPackageName::GetAssetPackageExtension());
+    auto SaveHolder = [&]()
+    {
+        const bool Saved = UPackage::SavePackage(HolderPackage, Holder, *HolderFile, SaveArgs);
+        FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get().ScanModifiedAssetFiles(TArray<FString>{HolderFile});
+        return Saved;
+    };
+    Holder->HardReference = Asset;
+    if (!SaveHolder()) { AddError(TEXT("Cannot save hard-reference control.")); return false; }
+    TestTrue(TEXT("saved hard reference refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath).Contains(TEXT("references")));
+    Holder->HardReference = nullptr;
+    Holder->SoftReference = FSoftObjectPath(AssetPath);
+    if (!SaveHolder()) { AddError(TEXT("Cannot save soft-reference control.")); return false; }
+    TestTrue(TEXT("saved soft reference refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath).Contains(TEXT("references")));
+    Holder->SoftReference.Reset();
+    if (!SaveHolder()) { AddError(TEXT("Cannot clear owned reference controls.")); return false; }
+    UAssetEditorSubsystem* Editors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+    if (!Editors || !Editors->OpenEditorForAsset(Asset)) { AddError(TEXT("Cannot establish open-editor control.")); return false; }
+    const FString OpenResult = UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath);
+    Editors->CloseAllEditorsForAsset(Asset);
+    TestTrue(TEXT("open editor refuses"), OpenResult.Contains(TEXT("Close the asset editor")));
     const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath);
     AddInfo(Preview);
     FString Before, Tail, Token;
