@@ -938,10 +938,10 @@
       "title": "Identify overlapping nodes in tidy refusals",
       "kind": "bug",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_confirmed_runtime_pending",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "TD-58"
       ],
@@ -949,7 +949,22 @@
         "2026-11-03_S3/TD-58"
       ],
       "dependencies": [],
-      "next_step": "Confirmed generic final planned-overlap refusal in TurboMCPGraphTidy.cpp omits both node IDs. Scoped repair will identify the pair and rectangles without changing overlap detection. Original project collision cause remains unknown."
+      "next_step": "Integrated diagnostic repair: final planned-overlap refusal identifies the first conflicting full node IDs and planned rectangles, states nothing changed, and names existing inspection tools. Collision detection and layout behavior are unchanged. Original project collision cause is not established.",
+      "evidence": [
+        {
+          "run": "48215a93cc8b48ee87940914cae21174",
+          "result": "passed",
+          "scope": "Native graph-append suite; exact production overlap validator verifies both IDs/rectangles, unchanged plan, touching-edge acceptance, unmoved overlap exemption and comment exclusion."
+        },
+        {
+          "run": "26effda21b9c4b08b23f235e7608527f",
+          "result": "passed",
+          "scope": "All 26 offline gates; trusted exact-file scope gate passed for source 25f1c092b3d0ecc3a4d830c915de54fd93d3a3f4."
+        }
+      ],
+      "followups": [
+        "This fixes missing diagnostic identities, not an unconfirmed algorithmic cause in the unavailable field graph. A recurrence should include the reported pair and graph capture."
+      ]
     },
     {
       "id": "NOV04-35",

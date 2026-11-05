@@ -2175,3 +2175,5 @@ NOV04-17 integrated: owned interface function locals and matching help repaired.
 ### NOV04-34 actionable tidy overlap refusal
 
 Readiness: ready. Assignment nov04-tidy-overlap-diagnostics. Existing final planned-rectangle overlap refusal names no nodes. Extract its unchanged predicate into a reusable plan validation method and report the first conflicting pair with full node IDs and planned rectangles, with explicit unchanged status and guidance to inspect/select those nodes. Preserve comment exclusion and the existing unmoved-pair exemption. Test synthetic overlapping plans, edge-touching, untouched overlaps and comments through the exact production validator; run supervised test-graph-append and offline gates. This repairs refusal diagnostics only, not the unconfirmed cause of the original project layout failure. No layout algorithm or engine changes.
+
+NOV04-34 integrated: overlap refusal names the first pair and planned rectangles without changing layout/collision rules. Native 48215a93cc8b48ee87940914cae21174 and offline 26effda21b9c4b08b23f235e7608527f passed. Original field collision cause remains unconfirmed; no visual-layout improvement claimed.
