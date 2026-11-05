@@ -5,6 +5,20 @@
   "plugin_tree": "30ea9a223f5e760407b837edb724f277ad6281c9",
   "tools": [
     {
+      "tool": "EditTurboMCPAssetDelete",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPAssetRevert",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -1216,6 +1230,20 @@
     {
       "tool": "LookTurboMCPWidgetPreview",
       "family": "widget",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPAssetDelete",
+      "family": "asset-and-data",
       "epic_5_8_3": {
         "status": "unverified",
         "equivalent_tools": []

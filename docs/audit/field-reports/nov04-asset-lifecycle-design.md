@@ -1,6 +1,6 @@
 # NOV04-40: asset lifecycle design
 
-Status: source review and proposed contract; not implemented or validated.
+Status: implemented and integrated with focused native and offline validation. Historical design findings below are retained; current acceptance and limits follow.
 
 The report requests Blueprint function-library creation and asset deletion after a referencer check. These are separate capabilities. Neither is a fix claim for the unidentified NOV04-01 deletion crash.
 
@@ -35,3 +35,9 @@ Use UBlueprintFunctionLibraryFactory, not the generic factory configured by gues
 FAssetDeleteModel::DoDelete returns true after invoking deletion, regardless of GetDeletedObjectCount. A successful return is not deletion proof. Verify the count, registry absence and backing-file absence independently, and report partial changes if they disagree. Checked deletion still invokes editor hooks, closes asset editors and unloads packages. Cleanup can involve source-control operations. Refuse dirty/open assets and undo references before mutation rather than unexpectedly discarding edits or clearing history. Recreate and rescan the model immediately before deletion; never reuse a preview scan as current evidence. Do not call DeleteSourceContentFiles. Deleting an imported asset must not implicitly delete its original external source file. These are implementation requirements, not tested guarantees.
 
 The model constructor runs garbage collection; redirector preparation can remove rooting. Preview must disclose load/GC effects and reject redirectors before constructing the model. The approved single-asset operation rejects multi-asset packages, maps and directories rather than broadening the deletion target. Exact implementation and fixture scope: nov04-safe-asset-delete in worker-scopes.json.
+
+## Accepted implementation (2026-11-05)
+
+Function-library creation and checked deletion are integrated. Deletion native run `6e89e70ab4f940f794dcc674ae14d1ca` passed dirty/read-only/open asset refusals, saved hard/soft references, strong object/subobject references, multiple loaded assets, stale file confirmation, undo retention, exact registry/file removal and neighbor preservation. Offline run `2fcc2dfb811e4241b7f27358effa7e50` passed all 26 checks. The plan retains earlier failed runs and corrections.
+
+Deletion invokes stock editor hooks and can perform source-control cleanup; it is permanent, has no rollback and does not request imported source-file deletion. Provider-specific operations and arbitrary project callbacks were not exercised. Expiry is checked again after scanning, but no timed-expiry fixture is claimed. Maps and redirectors are refused by source guards; no general asset-class certification follows from the synthetic data-asset case. The original NOV04-01 crash remains unresolved without its exact call and stack.

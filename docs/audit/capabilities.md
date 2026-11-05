@@ -4,6 +4,7 @@ Generated from declarations, definitions and static test references. All runtime
 
 | Tool | Definition | Static call evidence | Runtime | Investment |
 | --- | --- | --- | --- | --- |
+| EditTurboMCPAssetDelete | [TurboMCPAssetDelete.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetDelete.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPAssetRevert | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPAssetUndo | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPBatchEdit | [TurboMCPBatchEditTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
@@ -85,6 +86,7 @@ Generated from declarations, definitions and static test references. All runtime
 | LookTurboMCPLayoutReport | [TurboMCPLayout.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | LookTurboMCPToolset | [TurboMCPToolsets.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | LookTurboMCPWidgetPreview | [TurboMCPWidgetPreview.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp) | parsed_call | not certified | compare-native-before-expanding |
+| PreviewTurboMCPAssetDelete | [TurboMCPAssetDelete.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetDelete.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPAssetRevert | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPAssetUndo | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPBatchEdit | [TurboMCPBatchEditTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |

@@ -1618,10 +1618,10 @@
       "title": "Design function-library creation and safe asset deletion tools",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "state": "done",
+      "readiness": "ready",
       "owner": "codex",
-      "validation": "partial_creation_integrated_deletion_native_passed_review_pending",
+      "validation": "focused_native_and_offline_passed",
       "source_ids": [
         "FT-138"
       ],
@@ -1629,7 +1629,7 @@
         "2026-11-03_S4/FT-138"
       ],
       "dependencies": [],
-      "next_step": "Function-library creation is integrated. Safe-deletion candidate 2e711d45 passes focused native checks for dirty/read-only/open assets, saved hard/soft references, strong references, stale file fingerprints, deletion and neighbor preservation. Final integration review and offline gates remain pending; undo-reference and unsupported-package controls require explicit review. No source-control-provider runtime coverage or original crash cause is claimed.",
+      "next_step": "Function-library creation and checked asset deletion are integrated. Deletion requires separate fresh confirmation, refuses unsafe references and package states, and verifies registry/file absence. Original deletion crash NOV04-01 remains unresolved; this is not a cause or crash-fix claim. Source-control provider operations, arbitrary project callbacks and timed token expiry are not runtime-certified by the disposable fixture.",
       "evidence": [
         {
           "run": "849ad4fc382c4cd1a04eb38eb7fb241a",
@@ -1680,6 +1680,26 @@
           "run": "3cbfa7d9149d4702a6f5d66b8fab56fb",
           "result": "passed",
           "scope": "Build and focused native suite on 2e711d45 after confirmation lifetime correction. Expiry after scan is source-reviewed, not a timed-expiry runtime assertion."
+        },
+        {
+          "run": "ab59b247457849d0ad215631cff90019",
+          "result": "failed_native",
+          "scope": "New fixture instantiated abstract UObject and expected one refusal wording although the registry also detects loaded assets. Corrected concrete fixture and accepted either explicit multi-asset refusal; file-preservation assertion retained."
+        },
+        {
+          "run": "ba25f1cc6b3b48f79a53e1dcf494c534",
+          "result": "passed",
+          "scope": "Strongly held subobject and multi-asset refusal controls plus independent registry/file absence passed."
+        },
+        {
+          "run": "6e89e70ab4f940f794dcc674ae14d1ca",
+          "result": "passed",
+          "scope": "Final build and native suite at dcc484a9, including saved asset retained by undo refusal and byte preservation. Exact-file scope passed."
+        },
+        {
+          "run": "2fcc2dfb811e4241b7f27358effa7e50",
+          "result": "passed",
+          "scope": "All 26 offline integration checks after merging and registering the two deletion tools; 184 inventoried tools, not 184 completed reviews."
         }
       ]
     },

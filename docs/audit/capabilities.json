@@ -1,17 +1,38 @@
 {
   "schema": 1,
-  "plugin_tree": "6fa75cfe13f555983a9e579d2975106b2044bedf",
+  "plugin_tree": "b3063888b92bb7bfc45b1083ccc87e1a8d86d0e2",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 182,
+    "tools": 184,
     "by_toolset": {
-      "UTurboMCPEditToolset": 76,
+      "UTurboMCPEditToolset": 77,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 63,
+      "UTurboMCPPreviewToolset": 64,
       "UTurboMCPReadToolset": 37
     }
   },
   "tools": [
+    {
+      "id": "EditTurboMCPAssetDelete",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "AssetPath",
+        "Confirmation"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetDelete.cpp",
+          "line": 135
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
     {
       "id": "EditTurboMCPAssetRevert",
       "toolset": "UTurboMCPEditToolset",
@@ -2004,6 +2025,26 @@
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
       "investment_decision": "compare-native-before-expanding"
+    },
+    {
+      "id": "PreviewTurboMCPAssetDelete",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "AssetPath"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetDelete.cpp",
+          "line": 134
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
       "id": "PreviewTurboMCPAssetRevert",
