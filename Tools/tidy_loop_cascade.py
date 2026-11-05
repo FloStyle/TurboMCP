@@ -383,7 +383,7 @@ def record_event_regressions(call, evidence, persist):
                 raise RuntimeError(case + ': ambiguous node discovery for ' + words)
             call('PreviewTurboMCPNodePins',asset=asset,graphName=graph,typeId=choices[0])
             return choices[0]
-        getter = discover('Message',lambda line: line.startswith('Variable|') and line.endswith('|Get|Message'))
+        getter = discover('Message',lambda line: line.startswith('Variable|' + asset + '.') and line.endswith('|Get|Message'))
         printer = discover('PrintString',lambda line: line.startswith('Function|/Script/Engine.') and line.endswith(':PrintString'))
         def append(forms, expected):
             args=dict(asset=asset,graphName=graph,text='\n'.join(forms),continuation='auto',placement='local')
