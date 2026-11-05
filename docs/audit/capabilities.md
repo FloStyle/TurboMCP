@@ -68,6 +68,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPVcsCheckout | [TurboMCPSourceControlTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp) | name_reference_only | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetAdd | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetBindAdd | [TurboMCPWidgetBindAdd.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBindAdd.cpp) | name_reference_only | not certified | compare-native-before-expanding |
+| EditTurboMCPWidgetEvent | [TurboMCPWidgetBoundEvent.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBoundEvent.cpp) | missing | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetProperty | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetRemove | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetRename | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |
@@ -134,6 +135,7 @@ Generated from declarations, definitions and static test references. All runtime
 | PreviewTurboMCPVarsAdd | [TurboMCPVarsAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAddTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPVcsCheckout | [TurboMCPSourceControlTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp) | name_reference_only | not certified | compare-native-before-expanding |
 | PreviewTurboMCPWidgetAdd | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |
+| PreviewTurboMCPWidgetEvent | [TurboMCPWidgetBoundEvent.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBoundEvent.cpp) | missing | not certified | compare-native-before-expanding |
 | PreviewTurboMCPWidgetProperty | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |
 | PreviewTurboMCPWidgetRemove | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |
 | PreviewTurboMCPWidgetRetarget | [TurboMCPWidgetRetargetTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetTools.cpp) | name_reference_only | not certified | compare-native-before-expanding |

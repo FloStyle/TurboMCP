@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "6433a152c46f13995153e7c8bddf17530e1cae38",
+  "plugin_tree": "961ca365831187545e6ba58ed960301dbd8d946f",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 171,
+    "tools": 173,
     "by_toolset": {
-      "UTurboMCPEditToolset": 71,
+      "UTurboMCPEditToolset": 72,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 58,
+      "UTurboMCPPreviewToolset": 59,
       "UTurboMCPReadToolset": 36
     }
   },
@@ -1579,6 +1579,29 @@
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "name_reference_only",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "compare-native-before-expanding"
+    },
+    {
+      "id": "EditTurboMCPWidgetEvent",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "WidgetName",
+        "EventName"
+      ],
+      "family": "widget",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBoundEvent.cpp",
+          "line": 95
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -3193,6 +3216,29 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
           "line": 264
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "compare-native-before-expanding"
+    },
+    {
+      "id": "PreviewTurboMCPWidgetEvent",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "WidgetName",
+        "EventName"
+      ],
+      "family": "widget",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBoundEvent.cpp",
+          "line": 93
         }
       ],
       "test_references": [],
