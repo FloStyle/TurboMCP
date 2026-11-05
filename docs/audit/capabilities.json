@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "0de5ddcd3ff7672e87efea00c28b9c6a2fb4d799",
+  "plugin_tree": "1005fdf9438b71070190bf88c7d7736526eb9f94",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 165,
@@ -302,7 +302,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
-          "line": 435
+          "line": 444
         }
       ],
       "test_references": [],
@@ -2031,7 +2031,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
-          "line": 433
+          "line": 442
         }
       ],
       "test_references": [],
@@ -3403,7 +3403,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
-          "line": 431
+          "line": 440
         }
       ],
       "test_references": [],
