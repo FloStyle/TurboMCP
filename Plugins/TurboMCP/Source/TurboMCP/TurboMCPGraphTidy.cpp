@@ -3167,6 +3167,101 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 namespace
 {
+ struct FResolvedTidyRoute
+ {
+  const FTurboMCPGraphTidy::FWireRoute* Plan = nullptr;
+  UEdGraphPin* Source = nullptr;
+  UEdGraphPin* Target = nullptr;
+ };
+
+ // Expand existing edges only. This does not create new logical connections or
+ // ask the schema to insert conversions. The caller owns the graph transaction
+ // (or a disposable preview graph) and retains Created for later rollback.
+ bool CreateTidyRouteChains(UEdGraph* Graph, const TArray<FResolvedTidyRoute>& Routes,
+     EObjectFlags Flags, TArray<UK2Node_Knot*>& Created, FString& Error)
+ {
+  if (!Graph || !Created.IsEmpty())
+  { Error=TEXT("Routing requires a graph and an empty created-node list."); return false; }
+  TMap<UEdGraphPin*,TArray<UEdGraphPin*>> OriginalLinks;
+  TMap<UEdGraphPin*,UEdGraphPin*> OriginalSnappedChildren;
+  for (UEdGraphNode* Node:Graph->Nodes)
+   if (Node) for (UEdGraphPin* Pin:Node->Pins) if (Pin)
+   {
+    OriginalLinks.Add(Pin,Pin->LinkedTo);
+    if (UEdGraphPin* Child=Pin->GetSnappedChildPin()) OriginalSnappedChildren.Add(Pin,Child);
+   }
+  TSet<int32> SeenWires;
+  TMap<UEdGraphPin*,TSet<UEdGraphPin*>> SeenConnections;
+  for (const FResolvedTidyRoute& Route:Routes)
+  {
+   if (!Route.Plan || Route.Plan->bSkipped || Route.Plan->KnotPositions.IsEmpty()
+       || SeenWires.Contains(Route.Plan->WireIndex)
+       || !OriginalLinks.Contains(Route.Source) || !OriginalLinks.Contains(Route.Target)
+       || Route.Source->Direction!=EGPD_Output || Route.Target->Direction!=EGPD_Input
+       || !Route.Source->LinkedTo.Contains(Route.Target) || !Route.Target->LinkedTo.Contains(Route.Source)
+       || Route.Source->PinType.PinCategory==TEXT("wildcard"))
+   { Error=TEXT("A planned route has missing, repeated, untyped or disconnected endpoints; no route was applied."); return false; }
+   if (SeenConnections.FindOrAdd(Route.Source).Contains(Route.Target))
+   { Error=TEXT("The same connection was routed twice; no route was applied."); return false; }
+   SeenConnections.FindOrAdd(Route.Source).Add(Route.Target);
+   SeenWires.Add(Route.Plan->WireIndex);
+   for (const FVector2D& P:Route.Plan->KnotPositions)
+    if (!FMath::IsFinite(P.X) || !FMath::IsFinite(P.Y) || P.X<MIN_int32 || P.X>MAX_int32
+        || P.Y<MIN_int32 || P.Y>MAX_int32 || P.X!=FMath::RoundToDouble(P.X) || P.Y!=FMath::RoundToDouble(P.Y))
+    { Error=TEXT("A route contains invalid stored coordinates; no route was applied."); return false; }
+  }
+  TMap<UEdGraphPin*,TArray<UEdGraphPin*>> ExpectedLinks=OriginalLinks;
+  auto Restore=[&]()
+  {
+   for (UK2Node_Knot* Knot:Created) if (Knot) Knot->DestroyNode();
+   Created.Reset();
+   // Restore the exact link arrays, including ordering and unrelated fan-out.
+   // No original node is reconstructed by this existing-edge expansion.
+   for (const auto& Pair:OriginalLinks) Pair.Key->LinkedTo=Pair.Value;
+   for (const auto& Pair:OriginalLinks) Pair.Key->ClearSnappedChild();
+   for (const auto& Pair:OriginalSnappedChildren) Pair.Key->SetSnappedChild(Pair.Value);
+  };
+  for (const FResolvedTidyRoute& Route:Routes)
+  {
+   TArray<UK2Node_Knot*> Chain;
+   for (const FVector2D& Position:Route.Plan->KnotPositions)
+   {
+    UK2Node_Knot* Knot=NewObject<UK2Node_Knot>(Graph,NAME_None,Flags);
+    if (!Knot) { Restore(); Error=TEXT("Could not allocate a reroute node; original connections restored."); return false; }
+    Knot->CreateNewGuid(); Graph->AddNode(Knot,false,false); Knot->AllocateDefaultPins();
+    Created.Add(Knot); Chain.Add(Knot);
+    if (Knot->Pins.Num()!=2 || !Knot->GetInputPin() || !Knot->GetOutputPin())
+    { Restore(); Error=TEXT("A reroute node did not allocate its pins; original connections restored."); return false; }
+    Knot->NodePosX=static_cast<int32>(Position.X); Knot->NodePosY=static_cast<int32>(Position.Y);
+    Knot->GetInputPin()->PinType=Route.Source->PinType;
+    Knot->GetOutputPin()->PinType=Route.Source->PinType;
+   }
+   Route.Source->BreakLinkTo(Route.Target);
+   UEdGraphPin* Previous=Route.Source;
+   for (UK2Node_Knot* Knot:Chain)
+   {
+    Previous->MakeLinkTo(Knot->GetInputPin()); Previous=Knot->GetOutputPin();
+   }
+   Previous->MakeLinkTo(Route.Target);
+   ExpectedLinks.FindChecked(Route.Source).Remove(Route.Target);
+   ExpectedLinks.FindChecked(Route.Source).Add(Chain[0]->GetInputPin());
+   ExpectedLinks.FindChecked(Route.Target).Remove(Route.Source);
+   ExpectedLinks.FindChecked(Route.Target).Add(Chain.Last()->GetOutputPin());
+   for (int32 Index=0;Index<Chain.Num();++Index)
+   {
+    UEdGraphPin* Upstream=Index==0?Route.Source:Chain[Index-1]->GetOutputPin();
+    UEdGraphPin* Downstream=Index+1==Chain.Num()?Route.Target:Chain[Index+1]->GetInputPin();
+    if (Chain[Index]->GetInputPin()->LinkedTo!=TArray<UEdGraphPin*>{Upstream}
+        || Chain[Index]->GetOutputPin()->LinkedTo!=TArray<UEdGraphPin*>{Downstream})
+    { Restore(); Error=TEXT("Reroute chain read-back failed; original connections restored."); return false; }
+   }
+  }
+  for (const auto& Pair:ExpectedLinks)
+   if (Pair.Key->LinkedTo!=Pair.Value)
+   { Restore(); Error=TEXT("Routing changed an unexpected connection; original connections restored."); return false; }
+  return true;
+ }
+
  bool RenderNativePreview(const FTurboMCPGraphTidy::FPlan& Plan, FString& Result)
  {
   if (!FSlateApplication::IsInitialized() || !IsInGameThread()) { Result=TEXT("Slate/game thread required"); return false; }
@@ -3218,6 +3313,7 @@ namespace
   {
    if(Side)
    {
+    TMap<const UEdGraphPin*,UEdGraphPin*> ReaderOutputs;
     for(const auto& N:Plan.Nodes) if(N.Node)
      if(UEdGraphNode** Copy=ByGuid.Find(N.Node->NodeGuid)) { (*Copy)->NodePosX=FMath::RoundToInt(N.PlannedX); (*Copy)->NodePosY=FMath::RoundToInt(N.PlannedY); }
     for(const auto& B:Plan.Boxes) if(B.Comment)
@@ -3232,7 +3328,22 @@ namespace
      if(!Copy || !ReaderOutput(Copy,SourcePin)) { Result=TEXT("getter-copy preview has no value pin"); return false; }
      Copy->NodePosX=FMath::RoundToInt(C.PlannedX); Copy->NodePosY=FMath::RoundToInt(C.PlannedY);
      SourcePin->BreakLinkTo(Input); ReaderOutput(Copy,SourcePin)->MakeLinkTo(Input);
+     ReaderOutputs.Add(C.ConsumerPin,ReaderOutput(Copy,SourcePin));
     }
+    TArray<FResolvedTidyRoute> Routes;
+    for (const auto& Route:Plan.WireRoutes)
+    {
+     if (Route.bSkipped || Route.KnotPositions.IsEmpty()) continue;
+     if (!Plan.Wires.IsValidIndex(Route.WireIndex)) { Result=TEXT("preview route index is invalid"); return false; }
+     const auto& Wire=Plan.Wires[Route.WireIndex];
+     if (!Wire.OutputPin || !Wire.InputPin) { Result=TEXT("preview route pins are missing"); return false; }
+     UEdGraphPin* Source=ReaderOutputs.FindRef(Wire.InputPin);
+     if (!Source) Source=FindPin(ByGuid.FindRef(Wire.OutputPin->GetOwningNode()->NodeGuid),Wire.OutputPin);
+     UEdGraphPin* TargetPin=FindPin(ByGuid.FindRef(Wire.InputPin->GetOwningNode()->NodeGuid),Wire.InputPin);
+     Routes.Add({&Route,Source,TargetPin});
+    }
+    TArray<UK2Node_Knot*> PreviewKnots;
+    if (!CreateTidyRouteChains(Graph,Routes,RF_Transient,PreviewKnots,Result)) return false;
    }
    const TSharedRef<SGraphEditor> Editor=SNew(SGraphEditor).GraphToEdit(Graph).IsEditable(false).ShowGraphStateOverlay(false);
    const FVector2D Size(2048,1536);
