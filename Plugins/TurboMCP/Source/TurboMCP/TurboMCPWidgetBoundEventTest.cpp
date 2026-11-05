@@ -26,6 +26,8 @@ bool FTurboMCPWidgetBoundEventTest::RunTest(const FString&)
     auto* BP=FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(Package,TEXT("WBP_Events"),BPTYPE_Normal,UUserWidget::StaticClass(),UCanvasPanel::StaticClass(),TEXT("WidgetEventTest"),false);
     if (!TestNotNull(TEXT("Widget fixture"),BP)) return false;
     auto* Button=BP->WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(),TEXT("Purchase"));Button->bIsVariable=true;
+    // Designer widgets need stable variable identities before the first compile.
+    BP->WidgetVariableNameToGuidMap.Add(Button->GetFName(), FGuid::NewGuid());
     CastChecked<UCanvasPanel>(BP->WidgetTree->RootWidget)->AddChildToCanvas(Button);
     if (BP->UbergraphPages.IsEmpty())
     {
