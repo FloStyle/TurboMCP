@@ -536,12 +536,13 @@ public:
      * Positions are stored top-left coordinates; sizes are rendered node bodies in graph units, not screen pixels or wire bounds.
      * Rendering measures the graph; NodeIds filters returned rows. Output reports selected, listed, omitted and excluded counts.
      * @param NodeIds Optional newline-separated exact reader IDs or unique hexadecimal keys of at least six digits, maximum 256 entries. Empty selects all nodes. Missing, ambiguous or blank entries refuse the entire call. Duplicates are listed once.
-     * @param MaxNodes Optional output row limit, 1..256, default 128. Rows are sorted by ID and also bounded by the text budget. If truncated, request a smaller NodeIds selection.
+     * @param MaxNodes Optional output row limit, 1..256, default 128. Rows are sorted by ID and also bounded by the text budget. Continue with the returned next_offset until complete=true.
+     * @param Offset Optional zero-based row offset in the ID-sorted selection, default 0. Must be 0..selected count. Use the same selection across pages and restart at 0 after graph changes; offsets are not snapshot tokens.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
 	 * @param GraphName Required exact graph name, e.g. EventGraph. Empty or unresolved names are refused; list graphs with ReadTurboMCPBlueprintLoad first.
 	 */
 	UFUNCTION(meta = (AICallable))
-	static FString LookTurboMCPGraphPositions(const FString& Asset, const FString& GraphName, const FString& NodeIds = TEXT(""), int32 MaxNodes = 128);
+	static FString LookTurboMCPGraphPositions(const FString& Asset, const FString& GraphName, const FString& NodeIds = TEXT(""), int32 MaxNodes = 128, int32 Offset = 0);
 
 	/**
 	 * Render a Widget Blueprint with sample values and write a PNG.

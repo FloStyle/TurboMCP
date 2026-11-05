@@ -975,7 +975,7 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 			NodeCount, Entries.Num());
 		for (const FEntryPoint& Entry : Entries)
 		{
-			Out += FString::Printf(TEXT("\n;   %s %s"), *Entry.Kind, *Entry.Name);
+			Out += FString::Printf(TEXT("\n;   %s %s ; %s"), *Entry.Kind, *Entry.Name, *TurboMCPNodeId::MakeForNode(Entry.Node, true));
 		}
 		return Out;
 	}
@@ -997,8 +997,8 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 				}
 				Signature += FString::Printf(TEXT(" %s"), *Pin->PinName.ToString());
 			}
-			Out += FString::Printf(TEXT("\n(%s %s%s)"),
-				*Entry.Kind, *Entry.Name, *Signature);
+			Out += FString::Printf(TEXT("\n(%s %s%s) ; %s"),
+				*Entry.Kind, *Entry.Name, *Signature, *TurboMCPNodeId::MakeForNode(Entry.Node, true));
 		}
 		return Out;
 	}
@@ -1114,8 +1114,8 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 	{
 		// Entry points are printed in the order collected, which is sorted by
 		// name so the text is stable between reads.
-		const FString Head = FString::Printf(TEXT("\n(%s %s"),
-			*Entry.Kind, *Entry.Name);
+		const FString Head = FString::Printf(TEXT("\n(%s %s ; %s"),
+			*Entry.Kind, *Entry.Name, *TurboMCPNodeId::MakeForNode(Entry.Node, true));
 		const FString Body = RenderEntryBody(InGraph, Entry, InDetail, InAssetPath,
 			Printed, SharedValues, OutNotes);
 		Out += Head + Body + TEXT("\n)");

@@ -162,8 +162,9 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 }
 
 FString UTurboMCPLookToolset::LookTurboMCPGraphPositions(const FString& Asset, const FString& GraphName,
-    const FString& NodeIds, int32 MaxNodes)
+    const FString& NodeIds, int32 MaxNodes, int32 Offset)
 {
+    if (Offset < 0) return TEXT("error: Offset must be zero or greater");
     if (MaxNodes < 1 || MaxNodes > 256) return TEXT("error: MaxNodes must be between 1 and 256");
     FTurboMCPAssetResolver::FResolved Resolved;
     const FString Error = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
@@ -204,12 +205,14 @@ FString UTurboMCPLookToolset::LookTurboMCPGraphPositions(const FString& Asset, c
     Selected.Sort([](const UEdGraphNode& A, const UEdGraphNode& B) {
         return TurboMCPNodeId::MakeForNode(&A, true) < TurboMCPNodeId::MakeForNode(&B, true);
     });
+    if (Offset > Selected.Num()) return FString::Printf(TEXT("error: Offset %d exceeds the %d selected nodes; restart at Offset=0 if the graph changed"), Offset, Selected.Num());
     FString GeometryError;
     if (!FTurboMCPGraphTidy::PrepareAlignment(Blueprint, Graph, GeometryError)) return TEXT("error: ") + GeometryError;
     FString Result = TEXT("node positions (graph units; read-only):\nStored top-left positions and rendered node-body sizes; not screen pixels or wire bounds. Rendering measures the graph; NodeIds filters returned rows. No explicit edit, compile or save.\n");
     int32 Count = 0;
-    for (const UEdGraphNode* Node : Selected)
+    for (int32 Index = Offset; Index < Selected.Num(); ++Index)
     {
+        const UEdGraphNode* Node = Selected[Index];
         if (Count >= MaxNodes) break;
         const FVector2D NodeSize = FTurboMCPGraphTidy::AlignmentNodeSize(Node);
         const FString Line = FString::Printf(TEXT("%s x=%d y=%d width=%.0f height=%.0f\n"),
@@ -219,8 +222,13 @@ FString UTurboMCPLookToolset::LookTurboMCPGraphPositions(const FString& Asset, c
         ++Count;
     }
     Result += FString::Printf(TEXT("listed %d of %d selected nodes; %d graph nodes; omitted %d selected nodes; excluded %d unselected nodes"),
-        Count, Selected.Num(), Total, Selected.Num() - Count, Total - Selected.Num());
-    if (Count < Selected.Num()) Result += TEXT("\nTRUNCATED: request a smaller NodeIds selection; this is not a complete inventory.");
+        Count, Selected.Num(), Total, Selected.Num() - Offset - Count, Total - Selected.Num());
+    const int32 NextOffset = Offset + Count;
+    Result += FString::Printf(TEXT("\noffset=%d; next_offset=%d; complete=%s"),
+        Offset, NextOffset < Selected.Num() ? NextOffset : -1,
+        NextOffset == Selected.Num() ? TEXT("true") : TEXT("false"));
+    if (NextOffset < Selected.Num()) Result += TEXT("\nTRUNCATED: continue with Offset=next_offset and the same selection. Restart at Offset=0 after graph changes.");
+    else Result += TEXT("\nEnd of selected nodes. Earlier pages are not repeated.");
     return Result;
 }
 
