@@ -94,6 +94,22 @@ bool FTurboMCPNodeDiscoveryTest::RunTest(const FString& Parameters)
         if (CorrectOwner) break;
     }
     TestTrue(TEXT("Discovered bind targets CommonButtonBase dispatcher"), CorrectOwner);
+    // Inspect the reported stock increment action before inventing a writer alias.
+    FTurboMCPNodeType::FPlan IncrementPlan; FString IncrementError;
+    TestTrue(TEXT("Increment discovery query succeeds"), FTurboMCPNodeType::Plan(BP->GetPathName(), Graph->GetName(), TEXT("increment"), TEXT("100"), IncrementPlan, IncrementError));
+    AddInfo(IncrementError + FTurboMCPNodeType::Render(IncrementPlan));
+    bool FoundIncrement = false;
+    for (const auto& Match : IncrementPlan.Matches)
+    {
+        if (!Match.TypeId.Contains(TEXT("Increment"), ESearchCase::IgnoreCase)) continue;
+        FTurboMCPNodePins::FPlan Pins; FString PinError;
+        if (!FTurboMCPNodePins::Plan(BP->GetPathName(), Graph->GetName(), Match.TypeId, Pins, PinError)) { AddError(PinError); continue; }
+        FoundIncrement = true;
+        AddInfo(FTurboMCPNodePins::Render(Pins));
+        for (const auto& Pin : Pins.Pins)
+            TestFalse(*FString::Printf(TEXT("Increment pin is addressable: %s %s position %d"), *Match.TypeId, *Pin.Direction, Pin.Position), Pin.Name.TrimStartAndEnd().IsEmpty());
+    }
+    TestTrue(TEXT("At least one stock increment action inspected"), FoundIncrement);
     return !HasAnyErrors();
 }
 #endif
