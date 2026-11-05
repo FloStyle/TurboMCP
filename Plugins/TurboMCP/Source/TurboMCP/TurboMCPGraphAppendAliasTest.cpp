@@ -37,6 +37,7 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Misc/Guid.h"
+#include "Misc/PackageName.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -479,20 +480,33 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("library preview"), UTurboMCPPreviewToolset::PreviewTurboMCPFunctionLibraryCreate(LibraryPackage).Contains(TEXT("preview:")));
     TestNull(TEXT("preview creates no package"), FindPackage(nullptr, *LibraryPackage));
     TestTrue(TEXT("invalid library path refused"), UTurboMCPEditToolset::EditTurboMCPFunctionLibraryCreate(TEXT("/Engine/NotAllowed")).Contains(TEXT("refused:")));
+    const FString NeighborPath = LibraryPackage + TEXT("_Neighbor");
+    UPackage* NeighborPackage = CreatePackage(*NeighborPath);
+    const bool NeighborDirtyBefore = NeighborPackage->IsDirty();
+    TestTrue(TEXT("object suffix refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPFunctionLibraryCreate(LibraryObject).Contains(TEXT("refused:")));
     TestTrue(TEXT("library creation changed"), UTurboMCPEditToolset::EditTurboMCPFunctionLibraryCreate(LibraryPackage).StartsWith(TEXT("changed")));
-    UBlueprint* Library = FindObject<UBlueprint>(nullptr, *LibraryObject);
-    TestNotNull(TEXT("created library exists"), Library);
-    if (Library)
+    UBlueprint* CreatedFunctionLibrary = FindObject<UBlueprint>(nullptr, *LibraryObject);
+    TestNotNull(TEXT("created library exists"), CreatedFunctionLibrary);
+    if (CreatedFunctionLibrary)
     {
-        TestEqual(TEXT("library Blueprint type"), Library->BlueprintType, BPTYPE_FunctionLibrary);
-        TestTrue(TEXT("library parent"), Library->ParentClass == UBlueprintFunctionLibrary::StaticClass());
-        TestNotNull(TEXT("library generated class"), Library->GeneratedClass.Get());
-        TestTrue(TEXT("library remains unsaved"), Library->GetOutermost()->IsDirty());
-        TestEqual(TEXT("no copied event graph"), Library->UbergraphPages.Num(), 0);
+        TestEqual(TEXT("library Blueprint type"), CreatedFunctionLibrary->BlueprintType, BPTYPE_FunctionLibrary);
+        TestTrue(TEXT("library parent"), CreatedFunctionLibrary->ParentClass == UBlueprintFunctionLibrary::StaticClass());
+        TestNotNull(TEXT("library generated class"), CreatedFunctionLibrary->GeneratedClass.Get());
+        TestTrue(TEXT("library remains unsaved"), CreatedFunctionLibrary->GetOutermost()->IsDirty());
+        TestEqual(TEXT("no copied event graph"), CreatedFunctionLibrary->UbergraphPages.Num(), 0);
         TestTrue(TEXT("duplicate library refuses"), UTurboMCPEditToolset::EditTurboMCPFunctionLibraryCreate(LibraryPackage).Contains(TEXT("refused:")));
-        TestTrue(TEXT("duplicate preserves identity"), FindObject<UBlueprint>(nullptr, *LibraryObject) == Library);
+        TestTrue(TEXT("duplicate preserves identity"), FindObject<UBlueprint>(nullptr, *LibraryObject) == CreatedFunctionLibrary);
     }
 
+
+    TestEqual(TEXT("creation preserves neighbor dirty state"), NeighborPackage->IsDirty(), NeighborDirtyBefore);
+    TestFalse(TEXT("creation does not save package"), FPackageName::DoesPackageExist(LibraryPackage));
+    for (const FString Tool : {TEXT("PreviewTurboMCPFunctionLibraryCreate"), TEXT("EditTurboMCPFunctionLibraryCreate")})
+    {
+        const FString Toolset = Tool.StartsWith(TEXT("Preview")) ? TEXT("TurboMCP.TurboMCPPreviewToolset") : TEXT("TurboMCP.TurboMCPEditToolset");
+        const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(Toolset, Tool);
+        TestTrue(TEXT("library help names exact input and save policy"), Help.Contains(TEXT("PackagePath")) && Help.Contains(TEXT("No disk save")) && Help.Contains(TEXT("/Game/Utilities/BFL_Purchase")));
+    }
 
     // The graph-text escape layer must preserve Unreal's inner struct syntax exactly.
     const TArray<FString> LiteralCases = {
