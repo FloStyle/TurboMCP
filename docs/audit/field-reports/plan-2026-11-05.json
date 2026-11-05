@@ -354,7 +354,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "geometry_visual_fix_verified_title_and_icon_followup_build_only",
+      "validation": "native_detail_title_glyph_geometry_verified_layout_acceptance_pending",
       "source_ids": [
         "TD-68",
         "FT-155"
@@ -366,7 +366,7 @@
       "dependencies": [
         "NOV05-02"
       ],
-      "next_step": "Verify 08748d50 title/icons in next editor batch. Full routing and visual reference acceptance remain open. Focused subset must use an explicit supported runner path; do not claim environment selection worked.",
+      "next_step": "Improve comment-title framing and sparse detail framing; retain image-cap omissions. Continue routing integration and rebuilt reference review. Current inspected text and glyph rendering is verified, not full layout acceptance.",
       "evidence": [
         {
           "commit": "74bf04cc",
@@ -385,6 +385,12 @@
           "commit": "054e19b1",
           "result": "workflow_passed_partial_visual_improvement",
           "scope": "Full 396-call suite passed (executor stripped requested subset environment; focused mode did not run). Inspected 8C5962E34436D080DD671A826C1D74B1-after-block-0-row-0-col-0.png: node outlines, labels and pin geometry now correct after zoom settling; scratch function title still wrong. Follow-up 08748d50 preserves graph name and refreshes vector atlas using existing capture approach; build fc2143578df54ce7a52053e937578f6b passed. Follow-up screenshot verification pending. No visual acceptance or integration yet."
+        },
+        {
+          "commit": "d0cd7473",
+          "run": "2275f626431e4e3395e0a9d2fec08ca0",
+          "result": "workflow_passed_preview_visual_improvement_verified",
+          "scope": "Full 396-call stock-editor run passed. Changed cascade/J3/J4/J5 cases retain score parity and exact undo. Inspected native tiles 582F316648150866F56D94A45E87A2AD, 0B1C91664F6EF727DDC16AB8C5343193 and 73EBA76645A723920AE7CF928D3D3FED: correct LoopCascade title, readable glyphs, label/pin outlines. Long diagonal wires, sparse framing and comment title at tile edge remain visible; no layout or user visual acceptance. Follow-up row-mode guidance correction build 864b3285284d4828afb725cbfcda10f2 passed; offline c6ad125219e54c3e8c2c8c431955b702 passed 26/26. Final harness stage-label correction was syntax checked, not editor rerun. Original stale stage retained in this run evidence."
         }
       ],
       "design_notes": [
