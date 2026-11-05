@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "844c5333bea3ffa623e793e5b6d6bc5284b8a385",
+  "plugin_tree": "c43f72c14d12749d0a3c375b836c759d2c7e1727",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 169,
+    "tools": 171,
     "by_toolset": {
-      "UTurboMCPEditToolset": 70,
+      "UTurboMCPEditToolset": 71,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 57,
+      "UTurboMCPPreviewToolset": 58,
       "UTurboMCPReadToolset": 36
     }
   },
@@ -1435,6 +1435,30 @@
         "Tools/test-trace.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPVariableFlags",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Name",
+        "InstanceEditable",
+        "ExposeOnSpawn",
+        "Private"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableFlagsEdit.cpp",
+          "line": 82
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -3056,6 +3080,30 @@
         "Tools/test-uncovered-tools.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPVariableFlags",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "Name",
+        "InstanceEditable",
+        "ExposeOnSpawn",
+        "Private"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableFlagsEdit.cpp",
+          "line": 80
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",

@@ -892,6 +892,20 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPVariableFlags",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPVariableRemove",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -1866,6 +1880,20 @@
     {
       "tool": "PreviewTurboMCPToolset",
       "family": "schema-and-observability",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPVariableFlags",
+      "family": "graph",
       "epic_5_8_3": {
         "status": "unverified",
         "equivalent_tools": []
