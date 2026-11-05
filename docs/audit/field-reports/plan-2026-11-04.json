@@ -982,7 +982,7 @@
         "2026-11-04_S2/FT-141"
       ],
       "dependencies": [],
-      "next_step": "Removal implemented and integrated from b87cc5ed: array_remove with exact zero-based index, revision check, temporary preview, retained values/order, verified edit and undo. Scope PASS; native b3d7c89cfeae423d867ee58b5b6329d0 PASS; offline f62b888e15094e2cad2b00f71dd60945 26/26 PASS. Generic InputMappingContext 65-to-64 reproduction succeeds with preview/invalid-index/stale-revision preservation and full undo restoration. X-127 has a verified TurboMCP removal route. Original unidentified tool failure cause remains unknown. FT-141 insertion is still open, so the combined topic is not closed. Whole-array set remains unsupported.",
+      "next_step": "Removal implemented and integrated from b87cc5ed: array_remove with exact zero-based index, revision check, temporary preview, retained values/order, verified edit and undo. Scope PASS; native b3d7c89cfeae423d867ee58b5b6329d0 PASS; offline f62b888e15094e2cad2b00f71dd60945 26/26 PASS. Generic InputMappingContext 65-to-64 reproduction succeeds with preview/invalid-index/stale-revision preservation and full undo restoration. X-127 has a verified TurboMCP removal route. Original unidentified tool failure cause remains unknown. FT-141 insertion is still open, so the combined topic is not closed. Whole-array set remains unsupported. Insertion repair scoped: array_insert at 0..Num, empty Value initializes a default row; explicit values use existing strict parsing. Verify retained order/identity, preview, invalid input, revision and undo before closure.",
       "subtopics": [
         {
           "id": "X-127",
