@@ -342,7 +342,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_detail_tiles_build_passed_editor_verification_pending",
+      "validation": "workflow_passed_visual_defect_found_correction_unverified",
       "source_ids": [
         "TD-68",
         "FT-155"
@@ -354,13 +354,19 @@
       "dependencies": [
         "NOV05-02"
       ],
-      "next_step": "Inspect before/after native detail tiles from the next editor run; verify preview immutability and explicit incomplete-set notices. Do not count compilation as visual acceptance.",
+      "next_step": "Build and verify e2f298a4; inspect native detail screenshots for correct outlines, pins and labels. Retain failed visual evidence.",
       "evidence": [
         {
           "commit": "74bf04cc",
           "run": "dfd1d6c8105d450aaf73ded14c0a5468",
           "result": "build_passed_not_visual_acceptance",
           "scope": "Compact preview adds native 1:1 block tiles with an 80-unit border, 24-image-per-side cap and explicit omissions. Whole-graph overview retained when native zoom supports it. Empty wire-only tiles skipped; long routes must still be inspected in overview. Tile grids bounded at 64 x 64. Default rows unchanged. Native workflow and screenshot review pending."
+        },
+        {
+          "run": "0158243a013f464184f1fd3025c88c00",
+          "commit": "74bf04cc",
+          "result": "workflow_passed_visual_review_failed",
+          "scope": "396 calls passed including preview immutability, score/position parity and undo. Cascade generated 18 before and 13 after tiles with no image-cap omissions. Inspected C0DCD6414C73D5A9CAD4E391B238E593-after-block-0-row-0-col-0.png: full-detail labels clipped and pins outside compact outlines after overview zoom. Candidate e2f298a4 adds layout settling after zoom changes and before detail bounds; not yet compiled or editor-verified. Do not merge or accept the tile fix on workflow pass alone."
         }
       ],
       "design_notes": [
