@@ -85,7 +85,7 @@ bool FTurboMCPNodePinGrowthTest::RunTest(const FString&)
     for (const TCHAR* Name:{TEXT("PreviewTurboMCPNodePinGrowth"),TEXT("EditTurboMCPNodePinGrowth")})
     {
         const FString Help=UTurboMCPReadToolset::ReadTurboMCPToolHelp(FString(Name).StartsWith(TEXT("Preview"))?TEXT("TurboMCP.TurboMCPPreviewToolset"):TEXT("TurboMCP.TurboMCPEditToolset"),Name);
-        TestTrue(TEXT("Help explains desired count and no shrink"),Help.Contains(TEXT("Desired total")) && Help.Contains(TEXT("No shrink")));
+        TestTrue(TEXT("Help explains desired count and no shrink"),Help.Contains(TEXT("Desired total")) && Help.Contains(TEXT("does not shrink")));
     }
     return true;
 }

@@ -1224,7 +1224,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
     
     static FString PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
-    /** Preview growth of variadic pins on an existing Make Array, Sequence or associative operator node.
+    /** Preview growth of variadic pins on Make Array, Sequence or associative operators; does not shrink, compile or save.
      * Workflow: append a base node, read its ID, preview/grow, then connect new pins explicitly.
      * Existing pins and links are preserved. No shrink, compile or save. An equal target is a clean no-op.
      * @param Asset Blueprint asset path or unique name. Loading may execute project callbacks.
@@ -2130,7 +2130,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
     
     static FString EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
-    /** Edit growth of variadic pins on an existing Make Array, Sequence or associative operator node.
+    /** Edit growth of variadic pins on Make Array, Sequence or associative operators; does not shrink, compile or save.
      * Workflow: append a base node, read its ID, preview/grow, then connect new pins explicitly.
      * Existing pins and links are preserved. No shrink, compile or save. An equal target is a clean no-op.
      * @param Asset Blueprint asset path or unique name. Loading may execute project callbacks.
