@@ -856,7 +856,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "reproduction_in_progress",
       "source_ids": [
         "PI-08"
       ],
@@ -864,7 +864,14 @@
         "2026-11-04_S1/PI-08"
       ],
       "dependencies": [],
-      "next_step": "Reproduce Gamepad_LeftY=-1 for 0.3 seconds in the owned CommonUI menu with actual focus assertions and D-pad control. Source forwards analog to Slate; do not claim analog navigation unsupported or historical cause known."
+      "next_step": "Strengthened CommonUI input acceptance reproduction running. Do not close from initial green run: invalid existing F13 probe escaped the former JSON-wrapped error check. Analog focus movement itself was observed; historical cause remains unknown.",
+      "evidence": [
+        {
+          "run": "77b082f9b75d4b5f892f3daceb8c2d31",
+          "result": "passed_with_review_limit",
+          "scope": "Observed Gamepad_LeftY=-1 for 0.3 seconds moves Settings to Resume; original symptom not reproduced. Review found existing F13 focus probe was refused inside JSON and weak acceptance assertion missed it. Strengthened route assertion and replaced invalid probe with LeftShift; rerun required."
+        }
+      ]
     },
     {
       "id": "NOV04-25",
