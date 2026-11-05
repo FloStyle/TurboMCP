@@ -714,10 +714,10 @@
       "title": "Edit flags on existing member variables",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_initial_pass_final_coverage_pending",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "VA-09",
         "FT-133"
@@ -727,7 +727,7 @@
         "2026-10-30_S3/FT-133"
       ],
       "dependencies": [],
-      "next_step": "Preview/EditVariableFlags implemented on the review branch. Initial full graph suite passed. Final acceptance adds existing graph link/unrelated declaration preservation and live help checks; integration awaits that run and offline gates.",
+      "next_step": "Implemented Preview/EditTurboMCPVariableFlags for exact owned declarations. Empty flags preserve existing values; preview and no-op remain clean. Compile explicitly after editing to update generated properties, then inspect diagnostics before saving. Private metadata is not a security boundary.",
       "evidence": [
         {
           "result": "build_failed",
@@ -738,7 +738,21 @@
           "result": "native_pass",
           "run": "211c668d36674e6e9331e95ad82ad35d",
           "scope": "Stock build and graph-append suite passed. Preview clean, flag on/off, no-op/refusals, GUID/type/default preservation, undo before explicit compile and generated-property verification. Final graph-link and live help coverage added afterward; not yet accepted."
+        },
+        {
+          "result": "native_pass",
+          "run": "92ce3371cf1849daa42ff72786d47d21",
+          "scope": "Stock build and graph-append suite passed. Added existing getter/setter link and node-count preservation, unrelated declaration preservation, native-member refusal, and both live help contracts to the original preview/undo/compile checks."
+        },
+        {
+          "result": "offline_pass",
+          "run": "e2912fa504854f2db881ef6725679690",
+          "scope": "26 checks passed. Exact source scope gate passed. Inventory now contains 171 tools; inventory size does not imply complete tool review."
         }
+      ],
+      "source_commit": "5e5c7b1db267520da9c7dbf9acb0fd51c49400c1",
+      "followups": [
+        "Focused fixture validates integer owned variables and generated property flags, not every variable type or external Blueprint reference. Tool explicitly leaves compilation and saving to the caller; existing external references are not validated."
       ]
     },
     {
