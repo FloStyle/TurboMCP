@@ -11,7 +11,7 @@
       "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "J4_titles_nonempty_and_J5_boundaries_passed_layouts_unresolved",
+      "validation": "full_fixture_and_J1_J6_baselines_recorded_not_visual_acceptance",
       "source_ids": [
         "FT-156"
       ],
@@ -19,7 +19,7 @@
         "2026-11-05_S1/FT-156"
       ],
       "dependencies": [],
-      "next_step": "All J1-J6 builders implemented; editor run is validating J1/J2/J3/J6. J4 titles and original-node occupancy passed, but its Tidy candidate rolled back for alignment regression. J5 outside-node preservation passed, but compact layout rolled back. No visual acceptance.",
+      "next_step": "Baseline run completed all cases. Proceed to compact placement repair after integration gates; strengthen exact link/row/undo comparison alongside candidate verification. J3 Body is below Completed; J4/J5 roll back; J2 lower branch crosses a getter. J1 and both J6 graphs are visually orderly. All acceptance remains pending.",
       "evidence": [
         {
           "run": "cb08f716863b4e86a7240897464386fa",
@@ -75,6 +75,16 @@
           "run": "aea00cdca7e5414198176e685ca6bd3f",
           "result": "failed_J3_fixture_after_J4_checks",
           "scope": "J4 verified both titles and nonempty original-node occupancy using CommentList. Layout acceptance remains false. J3 stopped because a function with no outputs has no return node; corrected fixture adds a boolean output. Evidence .local/tidy-cascade/dbbc7cb040e740c3b7ea94ade892dd52/evidence.json."
+        },
+        {
+          "run": "16b2ffca4874479cb8d4fb7ef14176bd",
+          "result": "passed_baseline_collection_only",
+          "scope": "83-node fixture plus J1-J6 recorded. J6 uses two separate Actor event graphs, three entries each. J1/J2/J3/J6 captures inspected across baseline runs: straight J1, separate J6 rows, J2 branch wire crosses getter, J3 Body below Completed. J4 titles/nonempty and J5 outside boundaries pass while layout candidates roll back. Evidence .local/tidy-cascade/340db8e19c8946d8a1a459de86491c92/evidence.json. Not exact semantic-equivalence, undo or visual acceptance."
+        },
+        {
+          "run": "a8ad9e81bb2e451c9ad61cc4b2750141",
+          "result": "offline_gate_failed",
+          "scope": "25/26 offline suites passed; runner-verdicts failed with missing child manifests during concurrent editor work. Isolated rerun passed; original cause not proven and failure retained. Repeat full gate serially before integration."
         }
       ]
     },
