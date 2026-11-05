@@ -37,9 +37,17 @@ FString Reparent(bool Edit, const FString& Asset, const FString& NewParent,
     if (!Asset.StartsWith(TEXT("/")) || !NewParent.StartsWith(TEXT("/")))
         return Refuse(TEXT("Asset and NewParent must be exact object paths, not display names."));
     UBlueprint* BP=LoadObject<UBlueprint>(nullptr,*Asset);
+    if (BP == nullptr)
+    {
+        return Refuse(TEXT("Could not load the Blueprint asset at the requested path."));
+    }
     UClass* Parent=LoadObject<UClass>(nullptr,*NewParent);
-    if (!BP || BP->GetPathName()!=Asset || !Parent || Parent->GetPathName()!=NewParent)
-        return Refuse(TEXT("Could not resolve the exact Blueprint asset and parent class paths."));
+    if (Parent == nullptr)
+    {
+        return Refuse(TEXT("Could not load the new parent class at the requested path."));
+    }
+    if (BP->GetPathName()!=Asset || Parent->GetPathName()!=NewParent)
+        return Refuse(TEXT("Resolved paths differ from the requested asset or parent. Use their exact object paths."));
     if (BP->GetClass()!=UBlueprint::StaticClass() && BP->GetClass()!=UWidgetBlueprint::StaticClass())
         return Refuse(TEXT("Specialized Blueprint types, such as animation or level Blueprints, are unsupported."));
     if (BP->BlueprintType!=BPTYPE_Normal || !BP->ParentClass || BP->bBeingCompiled || BP->bQueuedForCompilation)
