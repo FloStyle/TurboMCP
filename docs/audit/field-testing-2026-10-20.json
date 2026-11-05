@@ -6407,8 +6407,8 @@
       "kind": "housekeeping",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "baseline_recorded_J5_boundary_passed_layout_rolled_back",
-      "remaining": "Build and record J1-J4 and J6. J5 preserved all 57 outside nodes but rolled back the 26-node candidate because pure-input row conflicts increased from 0 to 1; scoped compact layout remains unresolved. No visual acceptance.",
+      "validation": "J4_titles_nonempty_and_J5_boundaries_passed_layouts_unresolved",
+      "remaining": "All J1-J6 builders implemented; editor run is validating J1/J2/J3/J6. J4 titles and original-node occupancy passed, but its Tidy candidate rolled back for alignment regression. J5 outside-node preservation passed, but compact layout rolled back. No visual acceptance.",
       "source_keys": [
         "2026-11-05_S1/FT-156"
       ],
@@ -6459,6 +6459,16 @@
           "run": "4b7155be5b954c6a8df051f64351e3aa",
           "result": "boundary_checkpoint_passed_layout_not_accepted",
           "scope": "J5: 26 selected nodes, 57 fixed surrounding nodes. Candidate wire length 84132.8 -> 77241.9, but pure-input row conflicts 0 -> 1 caused rollback. Outside geometry and baseline restoration verified. Evidence .local/tidy-cascade/9a48b05e06a44cac87c98f1b1607b27a/evidence.json. Passing runner result does not certify compact placement."
+        },
+        {
+          "run": "244827db831f4a79ae8b3bd9fe69bbdd",
+          "result": "failed_harness_reader",
+          "scope": "J4 incorrectly checked comment text through NodeResolve, which returns generic Comment title. Corrected to CommentList; do not classify this as lost text. Candidate layout separately rolled back: execution drift 0 -> 24."
+        },
+        {
+          "run": "aea00cdca7e5414198176e685ca6bd3f",
+          "result": "failed_J3_fixture_after_J4_checks",
+          "scope": "J4 verified both titles and nonempty original-node occupancy using CommentList. Layout acceptance remains false. J3 stopped because a function with no outputs has no return node; corrected fixture adds a boolean output. Evidence .local/tidy-cascade/dbbc7cb040e740c3b7ea94ade892dd52/evidence.json."
         }
       ]
     },
