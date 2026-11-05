@@ -282,8 +282,8 @@
       "priority": "P1",
       "state": "in_progress",
       "readiness": "ready",
-      "owner": "unassigned",
-      "validation": "source_reconciled_runtime_pending",
+      "owner": "codex",
+      "validation": "reproduced_fix_validation_running",
       "source_ids": [
         "NT-10"
       ],
@@ -291,7 +291,14 @@
         "2026-10-30_S1/NT-10"
       ],
       "dependencies": [],
-      "next_step": "Approved nov04-type-id-roundtrip scope: reproduce suggested self creation ID and append reported type reuse before repair. Existing code reports reader-derived type rather than the accepted creation input."
+      "next_step": "Native baseline 35c08e23d0e74407b6cddefd0ae16ac8 reproduced reported-ID failure: successful Self append reports Variables|Self-Reference, which append rejects on reuse. Candidate 1b149c23 reports the resolved input creation ID for requested nodes and labels companion reader types separately. Focused native validation running; not integrated or closed.",
+      "evidence": [
+        {
+          "run": "35c08e23d0e74407b6cddefd0ae16ac8",
+          "result": "failed",
+          "scope": "Suggested Self creation ID succeeds, but created-node output Variables|Self-Reference fails reuse. Confirms output-ID discrepancy; current suggestion path itself passed."
+        }
+      ]
     },
     {
       "id": "NOV04-09",
