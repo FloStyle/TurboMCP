@@ -159,7 +159,9 @@ public:
                         Transfer.Contains(TEXT("PIE child/menu focus displaced: yes"))
                         && Transfer.Contains(TEXT("previous focus widget type:"))
                         && Transfer.Contains(TEXT("current focus widget type:"))
-                        && Transfer.Contains(TEXT("skip focus and use hold directly")));
+                        && Transfer.Contains(TEXT("skip focus and use hold directly"))
+                        && Transfer.Contains(TEXT("not a focus-only action"))
+                        && !Transfer.Contains(TEXT("PlayWidgetFocus")));
                     // Restore only this fixture's captured focus, then prove normal
                     // menu navigation handles the next input without a focus call.
                     if (MenuFocus.IsValid()) FSlateApplication::Get().SetUserFocus(0, MenuFocus, EFocusCause::SetDirectly);
