@@ -3261,6 +3261,11 @@ namespace
    auto SaveFrame = [&](const FVector2D& Centre, float Zoom, const FString& Suffix)->bool
    {
     Editor->SetViewLocation(FVector2f(Centre-Canvas/(2*Zoom)),Zoom);
+    // A zoom change can replace low-detail node content. Settle desired sizes
+    // before reading pixels, otherwise full labels use the overview's outlines.
+    Editor->SlatePrepass(1.0f);
+    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+    Editor->SlatePrepass(1.0f);
     Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
     TArray<FColor> Pixels; FReadSurfaceDataFlags Flags(RCM_UNorm); Flags.SetLinearToGamma(false);
     if(!Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels,Flags) || Pixels.Num()!=2048*1536)
@@ -3293,6 +3298,12 @@ namespace
 
    if(Plan.bCompactBlocks)
    {
+    // Bounds must also come from full-detail widgets, not the overview LOD.
+    Editor->SetViewLocation(FVector2f::ZeroVector,1.0f);
+    Editor->SlatePrepass(1.0f);
+    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+    Editor->SlatePrepass(1.0f);
+    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
     // Detail views use native 1:1 rendering, never enlargement of the overview.
     // Block membership is identical on both sides. Large blocks are tiled with
     // overlap so a long wire cannot force their node labels to become unreadable.
