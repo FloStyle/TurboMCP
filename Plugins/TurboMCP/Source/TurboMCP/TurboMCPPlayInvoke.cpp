@@ -66,14 +66,14 @@ FString DescribeInvocation(const FInvocationTarget& Target)
             Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ConstParm)?TEXT("out/ref"):TEXT("input");
         Out+=FString::Printf(TEXT("\n  %s: %s (%s)"),*Property->GetName(),*Property->GetCPPType(),Direction);
     }
-    return Out+TEXT("\nSignature inspection does not invoke the function. Runtime calls can change gameplay state; they have no general undo guarantee.");
+    return Out+TEXT("\nRuntime calls can change gameplay state; they have no general undo guarantee.");
 }
 }
 FString UTurboMCPReadToolset::ReadTurboMCPPlayFunction(const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName)
 {
     FInvocationTarget Target;FString Error;
     if (!ResolveInvocation(WorldPath,ObjectPath,FunctionName,Target,Error)) return TEXT("error: ")+Error;
-    return TEXT("read: runtime function signature\n")+DescribeInvocation(Target);
+    return TEXT("read: runtime function signature; no function was invoked\n")+DescribeInvocation(Target);
 }
 
 namespace

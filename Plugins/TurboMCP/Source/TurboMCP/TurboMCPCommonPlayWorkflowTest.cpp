@@ -120,6 +120,8 @@ public:
             if (!Test->TestTrue(TEXT("Preview issues confirmation"),PreviewText.Split(TEXT("confirmation: "),&Prefix,&Confirmation))) return true;
             Confirmation=Confirmation.Left(Confirmation.Find(TEXT("\n")));
             Test->TestEqual(TEXT("Preview does not invoke"),Receiver->Calls,0);
+            Test->TestTrue(TEXT("Changed arguments invalidate confirmation"),UTurboMCPEditToolset::EditTurboMCPPlayInvoke(WorldPath,ObjectPath,TEXT("RecordEvent"),TEXT("{\"Amount\":4,\"Label\":\"field event\"}"),Confirmation).Contains(TEXT("refused:")));
+            Test->TestEqual(TEXT("Changed argument refusal does not invoke"),Receiver->Calls,0);
             auto Payload=MakeShared<FJsonObject>();
             Payload->SetStringField(TEXT("WorldPath"),WorldPath);Payload->SetStringField(TEXT("ObjectPath"),ObjectPath);
             Payload->SetStringField(TEXT("FunctionName"),TEXT("RecordEvent"));Payload->SetStringField(TEXT("Arguments"),Args);Payload->SetStringField(TEXT("Confirmation"),Confirmation);
@@ -405,6 +407,7 @@ public:
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPCommonPlayTest,"TurboMCP.Workflow.CommonPlay",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPCommonPlayTest::RunTest(const FString&)
 {
+    TestTrue(TEXT("Invocation without PIE refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPPlayInvoke(TEXT("/Missing"),TEXT("/Missing"),TEXT("RecordEvent"),TEXT("{}")).Contains(TEXT("live in-process PIE")));
     FString Start=UTurboMCPReadToolset::ReadTurboMCPPlayCheck(TEXT("55"),TEXT(""));
     if (Start.StartsWith(TEXT("error:")) || Start.Contains(TEXT("already playing"))) {AddError(Start);return false;}
     ADD_LATENT_AUTOMATION_COMMAND(FCommonPlayLoop(this));return true;
