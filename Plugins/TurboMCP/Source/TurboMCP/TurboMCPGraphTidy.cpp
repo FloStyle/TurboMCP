@@ -3302,7 +3302,8 @@ namespace
    {
     if(!SaveFrame(FVector2D((Left+Right)/2,(Top+Bottom)/2),Applied,TEXT("-")+SideName))
      { Result+=TEXT("\nOverview image could not be saved."); return false; }
-    Result+=FString::Printf(TEXT("\n%s overview zoom %.3f; use detail tiles to read dense blocks."),*SideName,Applied);
+    Result+=FString::Printf(TEXT("\n%s overview zoom %.3f; %s"),*SideName,Applied,
+     Plan.bCompactBlocks ? TEXT("use detail tiles to read dense blocks.") : TEXT("overview only; use layoutMode=blocks for readable detail tiles."));
    }
    else if(!Plan.bCompactBlocks)
     { Result=TEXT("graph exceeds native zoom range; use a smaller graph or selected group"); return false; }
