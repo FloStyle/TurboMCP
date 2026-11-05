@@ -203,10 +203,44 @@ namespace
                     return Seen;
                 };
                 const TSet<int32> Continuation = Reach(CompletedStarts, TSet<int32>());
-                const TSet<int32> Body = Reach(BodyStarts, Continuation);
+                TSet<int32> Body = Reach(BodyStarts, Continuation);
+                // A block includes its upstream pure expressions, not just execution
+                // nodes. Stop at impure producers: their values do not make their
+                // execution chain part of this loop. Shared pure expressions count
+                // conservatively in each consuming body; layout must not hide them.
+                TArray<int32> PendingValues = Body.Array();
+                while (!PendingValues.IsEmpty())
+                {
+                    const int32 Consumer = PendingValues.Pop(EAllowShrinking::No);
+                    for (const auto& Wire : Plan.Wires)
+                    {
+                        if (Wire.TargetNodeIndex != Consumer || !Wire.OutputPin
+                            || Wire.OutputPin->PinType.PinCategory == TEXT("exec")
+                            || !Plan.Nodes.IsValidIndex(Wire.SourceNodeIndex)) continue;
+                        const int32 Producer = Wire.SourceNodeIndex;
+                        const auto& ValueNode = Plan.Nodes[Producer];
+                        if ((!ValueNode.bIsPure && !ValueNode.bIsKnot) || ValueNode.bIsComment
+                            || Body.Contains(Producer) || Continuation.Contains(Producer)) continue;
+                        Body.Add(Producer);
+                        PendingValues.Add(Producer);
+                    }
+                }
                 double BodyBottom = Position(Plan.Nodes[Controller]).Y + Plan.Nodes[Controller].Height;
                 for (int32 Member : Body)
                     BodyBottom = FMath::Max(BodyBottom, Position(Plan.Nodes[Member]).Y + Plan.Nodes[Member].Height);
+                // Generated local readers have their own outlines and are not in
+                // Plan.Nodes. Include only copies actually present in this mode.
+                if (Mode != 0)
+                    for (const auto& Copy : Copies)
+                    {
+                        if ((Mode == 2 && !Copy.Copy) || !Copy.ConsumerPin) continue;
+                        for (int32 Member : Body)
+                            if (Plan.Nodes[Member].Node == Copy.ConsumerPin->GetOwningNode())
+                            {
+                                BodyBottom = FMath::Max(BodyBottom, CopyPosition(Copy).Y + Copy.Height);
+                                break;
+                            }
+                    }
                 for (int32 Completed : CompletedStarts)
                     if (Position(Plan.Nodes[Completed]).Y <= BodyBottom) ++Q.CompletedAboveBody;
             }
