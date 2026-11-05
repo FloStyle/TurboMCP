@@ -55,6 +55,9 @@ FString DeleteAsset(bool Apply, const FString& AssetPath, const FString& Confirm
     UObject* Target = Assets[0].GetAsset();
     if (!IsValid(Target) || Target->IsA<UWorld>() || Target->IsA<UObjectRedirector>() || !Target->IsAsset())
         return Refuse(TEXT("Maps, redirectors and invalid/non-asset targets are unsupported."));
+    // StrongObjectPtr keeps an object alive through the UObject ref count,
+    // which is not necessarily represented by a UObject referencer edge.
+    if (Target->IsRooted() || Target->GetRefCount() > 0) return Refuse(TEXT("Live strong references or rooting prevent deletion."));
     if (Target->GetOutermost()->IsDirty()) return Refuse(TEXT("The asset has unsaved changes. Save or discard them separately."));
     UAssetEditorSubsystem* Editors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
     if (!Editors || Editors->FindEditorForAsset(Target, false)) return Refuse(TEXT("Close the asset editor before previewing deletion."));
@@ -79,7 +82,7 @@ FString DeleteAsset(bool Apply, const FString& AssetPath, const FString& Confirm
     if (Model.GetState() != FAssetDeleteModel::Finished) return Refuse(TEXT("Reference scanning did not finish; no deletion was attempted."));
     if (!Model.CanDelete() || Model.IsAnythingReferencedInMemoryByUndo())
         return Refuse(TEXT("Live, disk or undo references prevent deletion. No references were replaced and undo history was not cleared."));
-    if (!IsValid(Target) || Target->GetOutermost()->IsDirty() || IFileManager::Get().IsReadOnly(*Filename)
+    if (!IsValid(Target) || Target->IsRooted() || Target->GetRefCount() > 0 || Target->GetOutermost()->IsDirty() || IFileManager::Get().IsReadOnly(*Filename)
         || Identity != AssetPath + TEXT("|") + LexToString(Target->GetUniqueID()) + TEXT("|") + LexToString(FMD5Hash::HashFile(*Filename)))
         return Refuse(TEXT("The target changed during reference scanning. Preview again."));
     if (!Apply)
