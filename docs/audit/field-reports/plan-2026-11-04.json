@@ -938,10 +938,10 @@
       "title": "Identify overlapping nodes in tidy refusals",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
+      "validation": "source_confirmed_runtime_pending",
       "source_ids": [
         "TD-58"
       ],
@@ -949,7 +949,7 @@
         "2026-11-03_S3/TD-58"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Confirmed generic final planned-overlap refusal in TurboMCPGraphTidy.cpp omits both node IDs. Scoped repair will identify the pair and rectangles without changing overlap detection. Original project collision cause remains unknown."
     },
     {
       "id": "NOV04-35",

@@ -3449,6 +3449,16 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPInterfaceLocalTest.cpp"
           ]
+        },
+        "nov04-tidy-overlap-diagnostics": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphTidy.h",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTidyOverlapDiagnosticTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
