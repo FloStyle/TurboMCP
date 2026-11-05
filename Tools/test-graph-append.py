@@ -693,6 +693,7 @@ def main():
     automation_tests += (("TurboMCP.GraphAppend.InterfaceTidy", "interface tidy discovered", "interface tidy report parsed", "interface tidy succeeds", "interface tidy has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.EditNodeKeys", "node key test discovered", "node key report parsed", "node key workflow succeeds", "node key workflow has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.PinContainers", "container test discovered", "container report parsed", "container workflow succeeds", "container workflow has no errors"),)
+    automation_tests += (("TurboMCP.GraphAppend.InterfaceLocal", "interface local discovered", "interface local report parsed", "interface local succeeds", "interface local has no errors"),)
     for test_path, discovered_name, report_name, success_name, errors_name in automation_tests:
         check(discovered_name, test_path in listed, listed[:240])
         if test_path not in listed:

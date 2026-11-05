@@ -828,7 +828,7 @@ public:
      * Example: Function=CalculatePurchase; Name=ItemCount; Type=int; Default=7.
      *
      * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
-     * @param Function Required exact owned function graph name, for example CalculatePurchase. Event graphs, interface graphs and inherited functions are not accepted.
+     * @param Function Required owned function graph name, for example CalculatePurchase, including implemented interface functions. Matching is case-insensitive and must be unique. Event graphs and inherited functions are not accepted.
      * @param Name Required identifier starting with a letter or underscore and containing only letters, digits or underscores. Must not conflict with parameters or members; None is reserved.
      * @param Type Required shared Blueprint type syntax, for example int, float, vector, or object</Script/Engine.Actor>.
      * @param Default Pass an empty string for the Unreal type default. Otherwise provide a schema-valid scalar/struct literal, for example 7 for int. Explicit object/class/container defaults refuse; assign them in graph logic.
@@ -1572,7 +1572,7 @@ public:
      * Example: Function=CalculatePurchase; Name=ItemCount; Type=int; Default=7.
      *
      * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
-     * @param Function Required exact owned function graph name, for example CalculatePurchase. Event graphs, interface graphs and inherited functions are not accepted.
+     * @param Function Required owned function graph name, for example CalculatePurchase, including implemented interface functions. Matching is case-insensitive and must be unique. Event graphs and inherited functions are not accepted.
      * @param Name Required identifier starting with a letter or underscore and containing only letters, digits or underscores. Must not conflict with parameters or members; None is reserved.
      * @param Type Required shared Blueprint type syntax, for example int, float, vector, or object</Script/Engine.Actor>.
      * @param Default Pass an empty string for the Unreal type default. Otherwise provide a schema-valid scalar/struct literal, for example 7 for int. Explicit object/class/container defaults refuse; assign them in graph logic.

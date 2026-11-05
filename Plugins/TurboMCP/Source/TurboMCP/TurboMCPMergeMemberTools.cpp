@@ -3,6 +3,7 @@
 #include "Tools/TurboMCPToolsets.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPTypeParser.h"
+#include "TurboMCPNodeId.h"
 #include "Editor.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
@@ -85,14 +86,16 @@ static FString LocalAdd(const FString& Asset, const FString& Function, const FSt
     UBlueprint* BP = nullptr;
     FString Error = ResolveTarget(Asset, BP);
     if (!Error.IsEmpty()) return Error;
-    UEdGraph* Graph = nullptr;
-    for (UEdGraph* Candidate : BP->FunctionGraphs)
-        if (Candidate && Candidate->GetName().Equals(Function, ESearchCase::IgnoreCase))
-        {
-            if (Graph) return TEXT("error: Function name is ambiguous. Nothing changed.");
-            Graph = Candidate;
-        }
-    if (!Graph) return TEXT("error: Function must name one function graph owned by the target Blueprint; event graphs and inherited functions are not accepted. Nothing changed.");
+    int32 Matches = 0;
+    UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(BP, Function, Matches);
+    if (Matches > 1) return TEXT("error: Function name is ambiguous. Nothing changed.");
+    // Interface implementations live outside FunctionGraphs. Admit only graphs
+    // registered as functions on this Blueprint, never inherited or event graphs.
+    bool bOwnedFunction = Graph && BP->FunctionGraphs.Contains(Graph);
+    for (const FBPInterfaceDescription& Implementation : BP->ImplementedInterfaces)
+        bOwnedFunction |= Graph && Implementation.Graphs.Contains(Graph);
+    if (!bOwnedFunction || !Graph->GetSchema() || Graph->GetSchema()->GetGraphType(Graph) != GT_Function)
+        return TEXT("error: Function must name an owned function or implemented interface function. Event graphs and inherited functions are not accepted. Nothing changed.");
     TArray<UK2Node_FunctionEntry*> Entries;
     Graph->GetNodesOfClass(Entries);
     if (Entries.Num() != 1) return TEXT("error: Function must have exactly one entry node. Nothing changed.");
