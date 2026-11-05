@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "c43f72c14d12749d0a3c375b836c759d2c7e1727",
+  "plugin_tree": "626ff793ee7e9fcaaa86800c89195a52e0a7f155",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 171,
@@ -3973,7 +3973,9 @@
       "id": "ReadTurboMCPPlayInputState",
       "toolset": "UTurboMCPReadToolset",
       "parameters": [
-        "Target"
+        "Target",
+        "ButtonFilter",
+        "ButtonLimit"
       ],
       "family": "asset-and-data",
       "definitions": [
