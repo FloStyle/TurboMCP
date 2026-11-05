@@ -6608,7 +6608,7 @@
       "kind": "feature",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "routing_batch_implemented_unbuilt_untested",
+      "validation": "focused_safety_passed_visual_routing_unresolved",
       "remaining": "Implement explicit orthogonal handoff routing, including J2 lower Sequence wires crossing pure readers. Preserve feedback and graph semantics; verify screenshots and undo.",
       "source_keys": [
         "2026-11-05_S1/TD-65",
@@ -6659,9 +6659,21 @@
           "run": "1fb0a2aca9684c66b2fe9cc3cccb16a3",
           "result": "batch_implemented_unbuilt_untested",
           "scope": "Prior run failed after 434 calls: NodeContext emits an empty creation type ID for reroutes, so the checker omitted them and raised KeyError. Routing reached edit/coordinate checks; connectivity and undo remain unverified. Batch preserves endpoint fan-out slots, checks contracted fan-out order, resolves concrete knot classes, includes route nodes in detail bounds and adds tracked focused routing selection. No new build or editor run started; remaining fixes are being batched as requested."
+        },
+        {
+          "commit": "f6ac2b19",
+          "run": "278ce9f4c5424e1898f7848e2f70a35f",
+          "result": "focused_preservation_passed_visual_failed",
+          "scope": "Focused J2 routing: build passed, preview/edit coordinates and measures agree, contracted links and fan-out order preserved, exact undo passed. Inspected native image 39A02089418A33D758F6CC8576A5E418: lower Sequence route crosses middle branch. Forced mechanics test reported execution crossings regression. Not layout acceptance."
+        },
+        {
+          "commit": "49ffc584",
+          "run": "8f6fef8dc26c4df4a35afb88c89c869b",
+          "result": "focused_preservation_passed_visual_failed",
+          "scope": "Crossing-aware route selection and shorter execution handoffs built and passed focused preservation checks. Native image 0A30335A42BF71D28D951F9CF53FF9D6 still shows competing fan-out channels; crossing and length regressions retained. Candidate 2ff27e5e now reserves inner channels for lower destinations; focused verification running. No full cascade rerun."
         }
       ],
-      "next_step": "Batch remaining fixes before focused verification. Latest run failed in reroute identity parsing; no visual acceptance.",
+      "next_step": "Verify lower-first routing candidate 2ff27e5e. Keep previous forced mechanics passes separate from visual failures. Locals, nested boxes and full cascade acceptance remain open.",
       "latest_evidence": "Route expansion currently removes an original edge and appends its replacement, which can reorder a shared output fan-out. Must replace the original link-array slot and verify ordered contracted fan-out, not only edge-set equality. Identified during the active editor run; source kept unchanged to preserve run provenance. Not approved for integration."
     },
     {
