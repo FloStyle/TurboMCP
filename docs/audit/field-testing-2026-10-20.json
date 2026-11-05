@@ -6624,10 +6624,10 @@
       "report": "2026-11-05 intake",
       "title": "Provide readable block previews for dense graphs",
       "kind": "feature",
-      "state": "open",
+      "state": "in_progress",
       "priority": "P0",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "partial_implemented_build_passed_editor_pending",
+      "remaining": "Candidate 10cc3579 adds per-block scenario captures; d0a56331 exposes compact planned node coordinates and asserts exact preview/edit x/y agreement. These do not yet provide the complete public per-block preview interface. Latest build passed; editor verification underway in 4f0f7a01d739436cb69bf3caf979480c.",
       "source_keys": [
         "2026-11-05_S1/TD-68",
         "2026-11-05_S1/FT-155"
@@ -6650,10 +6650,10 @@
       "report": "2026-11-05 intake",
       "title": "Keep every required parameter visible in compact help",
       "kind": "bug",
-      "state": "open",
+      "state": "in_progress",
       "priority": "P0",
-      "validation": "source_cause_confirmed_fix_pending",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "implemented_build_passed_live_help_check_pending",
+      "remaining": "Candidate 10cc3579 preserves the complete required parameter name/type summary outside descriptive truncation. Build 8eec02d427ae43c99992f31d4d220557 passed. Verify against live required arrays for all reported tools before closing.",
       "source_keys": [
         "2026-11-05_S1/X-129"
       ],

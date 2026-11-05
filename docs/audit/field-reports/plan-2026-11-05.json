@@ -249,10 +249,10 @@
       "title": "Provide readable block previews for dense graphs",
       "kind": "feature",
       "priority": "P0",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "partial_implemented_build_passed_editor_pending",
       "source_ids": [
         "TD-68",
         "FT-155"
@@ -264,7 +264,7 @@
       "dependencies": [
         "NOV05-02"
       ],
-      "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "next_step": "Candidate 10cc3579 adds per-block scenario captures; d0a56331 exposes compact planned node coordinates and asserts exact preview/edit x/y agreement. These do not yet provide the complete public per-block preview interface. Latest build passed; editor verification underway in 4f0f7a01d739436cb69bf3caf979480c.",
       "evidence": [],
       "design_notes": [
         "RenderPreview currently emits aggregate move counts and whole-graph images but no per-node planned coordinates or block table. Current harness verifies preview non-mutation, not exact preview/edit coordinate agreement. Add auditable plan geometry and readable block captures before claiming parity or readable previews."
@@ -275,10 +275,10 @@
       "title": "Keep every required parameter visible in compact help",
       "kind": "bug",
       "priority": "P0",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "source_cause_confirmed_fix_pending",
+      "validation": "implemented_build_passed_live_help_check_pending",
       "source_ids": [
         "X-129"
       ],
@@ -286,7 +286,7 @@
         "2026-11-05_S1/X-129"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "next_step": "Candidate 10cc3579 preserves the complete required parameter name/type summary outside descriptive truncation. Build 8eec02d427ae43c99992f31d4d220557 passed. Verify against live required arrays for all reported tools before closing.",
       "evidence": [],
       "design_notes": [
         "Source cause confirmed in TurboMCPAgentHelp.cpp: properties are alphabetically ordered, then the entire Help string is cut to HelpBudgetChars. This can remove required parameter lines. Preserve a complete required-parameter name/type summary outside descriptive-text truncation; keep effects and refusal guidance, and test against the live schema for every named report tool. Sorting required parameters first alone is insufficient when the prefix consumes the budget."
