@@ -2218,3 +2218,5 @@ Readiness: ready. Assignment nov04-unnamed-pin-reproduction. Discover stock inte
 ### NOV04-16 exact quoted pin repair
 
 Readiness: ready. Assignment nov04-quoted-pin-repair. Reproduction 15796f9928a54c91a6397b83fdd05853 confirms whitespace execution names on stock Increment Int/Float; Value and Result are named. Preserve engine pin identities. Render whitespace names in exact quoted syntax, decode quoted source pin names without trimming their content, retain input-side quoting and refuse malformed/empty endpoints. Verify public pin preview plus actual Increment append execution/value wiring, preview preservation and a compiled increment result. Clarify help. Retain the failing reproduction; no alias guessing, engine edits or save. Run supervised test-graph-append and offline gates.
+
+Approved repair base for nov04-quoted-pin-repair: 33305d323e37163089c10965d77241ffad121de2, the clean merged worktree containing the retained failing reproduction and current scope. Do not integrate its failing test alone.
