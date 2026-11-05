@@ -6491,8 +6491,8 @@
       "kind": "bug",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "build_passed_editor_suite_timed_out_before_compact_checks",
-      "remaining": "Run the complete scenario with its reviewed 1200-second suite allowance. Run b04c38d19d264d37b7aa9613ed09eacd hit the original 600-second suite deadline during J6 construction, before compact checks. Build passed; no compact or visual acceptance evidence yet.",
+      "validation": "candidate_failed_visual_and_capture_checks",
+      "remaining": "Repair block placement: full cascade preserves graph reader content but remains too wide, Body drift 733, one Completed above body, three backward exec wires and new row/fan-out regressions. Preview image inspected and rejected. Continue with per-block captures; do not accept aggregate structural improvement as completion.",
       "source_keys": [
         "2026-11-05_S1/TD-62",
         "2026-11-05_S1/TD-70",
@@ -6517,6 +6517,11 @@
         {
           "result": "source_review_gap",
           "scope": "Source review of candidate 7d17aa67: CompletedAboveBody currently bounds only forward execution members, excluding pure input trees. This does not prove Completed lies below the full block rectangle required by Appendix H. Expand and independently verify full-body membership before acceptance."
+        },
+        {
+          "run": "48d85c387be34bfcb6bce1d80a996cb1",
+          "result": "failed_capture_after_unacceptable_layout",
+          "scope": "Evidence .local/tidy-cascade/5d4a716def3a442dbbc84fc5e6ab4b82. Full reader equality passed. Wire length 84132.8 -> 100883.4; Body drift 3513 -> 733; Completed-above-body 3 -> 1; linear drift 0 -> 24; backward exec 0 -> 3. Whole graph capture exceeded native zoom range, stopping before undo and remaining compact cases. Preview image inspected: wide cascade, not accepted."
         }
       ]
     },
