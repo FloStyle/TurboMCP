@@ -3508,6 +3508,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeDiscoveryTest.cpp"
           ],
           "new_files": []
+        },
+        "nov04-quoted-pin-repair": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeDiscoveryTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextLex.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

@@ -2214,3 +2214,7 @@ NOV04-15 integrated: explicit-link precedence retained and skipped Continuation 
 ### NOV04-16 unnamed increment pin reproduction
 
 Readiness: ready. Assignment nov04-unnamed-pin-reproduction. Discover stock integer Increment macro actions in a disposable Blueprint and inspect real NodePins names/types/positions. Record exact type IDs and blank/whitespace names; require an actual increment candidate so an empty search cannot pass. Establish whether public pin names are usable before designing aliases or editing parser contracts. Run supervised test-graph-append. This investigation does not close NT-13 or authorize guessed node identity.
+
+### NOV04-16 exact quoted pin repair
+
+Readiness: ready. Assignment nov04-quoted-pin-repair. Reproduction 15796f9928a54c91a6397b83fdd05853 confirms whitespace execution names on stock Increment Int/Float; Value and Result are named. Preserve engine pin identities. Render whitespace names in exact quoted syntax, decode quoted source pin names without trimming their content, retain input-side quoting and refuse malformed/empty endpoints. Verify public pin preview plus actual Increment append execution/value wiring, preview preservation and a compiled increment result. Clarify help. Retain the failing reproduction; no alias guessing, engine edits or save. Run supervised test-graph-append and offline gates.
