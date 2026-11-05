@@ -2202,3 +2202,5 @@ NOV04-09 completed: discovery repairs plus CommonUI wrong-class append diagnosti
 ### NOV04-11 append labels and grammar
 
 Readiness: ready. Assignment nov04-append-labels. Reproduce a local label after the final pin/closing parenthesis of a multiline form using real append preview/edit and stored link/default assertions. Accept this label consistently with a standalone closing line, respecting quoted semicolons and refusing conflicting labels. Preserve preview/refusal state and existing graph identity. Reconcile GC-76/77/82/92 against current help; document quoted type IDs, flat labelled input links, and comment placement with correct examples. Do not introduce nested writer support or fuzzy IDs. Run supervised test-graph-append and offline gates; no engine changes or saves.
+
+NOV04-11 integrated: e5dff780 repairs final pin-line labels and clarifies grammar help. Failed reproduction 228419bfbff44ab195c639af0c1a14b8 retained; native f4f49c183e604f7688e22a8ca5ded6fb and offline a256054257b2460ea1e6446a2befa327 passed. Quoted semicolons, stored defaults, destination links and conflict refusal covered. Nested reader forms remain unsupported and documented.
