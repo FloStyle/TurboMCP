@@ -80,3 +80,14 @@ Run `fc8d5b53ec3746bab9a54082abc7cca7` built successfully on stock Unreal, then 
 Reproduction `8a4f59ba87ee40608ad3a351aaa17bd0` passed its assertions with a separate `AutomationTestToolset.GetTestResults` query: clean control and null-reference case each fired ShutdownPIE and left no PlayWorld or active session. Expected diagnostics are limited to the exact fixture null-reference message, observed twice. Failed runs `fc8d5b53ec3746bab9a54082abc7cca7` and `45eaa5ea51a848b1b761087a3b9c8a13` remain evidence. Offline gate `6d4e2328e5f84535b1720d5eab3fa05f` passed. Run the focused reproduction with `TMCP_PIE_STOP_ONLY=1` and the supervised engine suite `test-vision-workflow`.
 
 Current stock-engine workflow: call `EditorToolset.EditorAppToolset.StopPIE`, retain any script error, then independently call `EditorToolset.EditorAppToolset.IsPIERunning`. Only proceed with editor mutations after it returns false. If true, report the active session and investigate; do not equate the stop request with completion or blindly repeat mutations. The reported persistent session remains unreproduced. The engine output defect remains open for upstream correction; a passing reproduction is not a fix.
+
+
+## NOV04-36: text presence and visible snapshot disagree
+
+Status: source-confirmed predicate mismatch; native reproduction pending. No engine edits.
+
+The pinned stock SlateInspectorToolset WaitFor traversal reads text and recurses through every child of visible top-level windows without checking the visibility of each widget or its ancestors. Snapshot RenderWidget instead stops at Hidden and Collapsed widgets. A collapsed row can therefore satisfy a text-presence query while being absent from the visible snapshot. This matches the reported symptom but does not prove the original project's exact call or widget state.
+
+Proposed upstream contract: make visibility semantics explicit. Default text waiting should use the same effective visibility traversal as visible snapshots, or expose a clearly named presence-versus-visible option. A hidden descendant must not count as visible merely because its own visibility is Visible. Preserve a separate presence query if clients need mounted-but-hidden controls. Do not silently call text presence clickability: enabled state, clipping and hit testing are separate concerns.
+
+Pending controlled evidence: one owned Slate window containing a unique visible label, a collapsed label and a visible label under a collapsed parent. Compare stock WaitFor and Snapshot, then reveal the parent and compare again. No user widgets or engine source mutation. Until then, a successful stock WaitFor is text-presence evidence only; verify visible state with Snapshot/capture before interaction.
