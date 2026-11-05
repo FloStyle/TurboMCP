@@ -250,6 +250,17 @@
           "result": "visual_routing_defect_confirmed",
           "scope": "Inspected native J2 image 9A9E26AB4464E86C426A33B073524CE4: three ordered rows and aligned first output, but Then 2 execution spline crosses the middle-row Message getter. Preservation passes do not certify routing. Keep unresolved under NOV05-04."
         }
+      ],
+      "implementation_contract": [
+        "Add explicit routeWires=off|orthogonal with off as the default; preserve existing rows and no-routing behavior.",
+        "Plan against final node and comment rectangles. Measure knot size and both pin offsets on a transient graph, then restore the live-graph alignment cache before using source pin geometry.",
+        "Use the same planned knot positions and exact source/target pin identities in scratch preview and live apply. Plan Completed drops, bottom fallback-to-merge paths, and blocked data paths with obstacle clearance.",
+        "Treat unrelated comment interiors as routing obstacles. Endpoint-owned and ancestor boxes may be crossed only as deliberate block handoffs; do not classify every cross-box wire as a defect.",
+        "For scoped edits, leave outside nodes and links fixed; route only links whose endpoints are both selected. Explicitly report skipped boundary links.",
+        "Allocate knot pins before accessing them. Preserve pin types and verify every replacement link. Move nodes, fit comments and add knots within one undo transaction; verify rollback restores original links and geometry.",
+        "Score actual routed segments and knot footprints, not the removed direct wire. Check preview/edit seven-measure agreement and independently validate routing geometry.",
+        "Compare connectivity after contracting only added reroute chains, preserving original pin identities, types, defaults and non-reroute nodes. Exact raw reader equality remains required for no-routing cases. Verify exact undo restores the original graph.",
+        "Inspect Completed, fallback merge and unrelated-box screenshots. Retain failures and obtain user reference review before visual acceptance."
       ]
     },
     {
