@@ -177,7 +177,7 @@
       "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "scoring_implemented_verification_pending",
+      "validation": "workflow_passed_independent_scoring_and_visual_acceptance_pending",
       "source_ids": [
         "TD-63",
         "TD-64",
@@ -197,12 +197,18 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Verify fb6c2228 score output and regression refusals. Independently cross-check measures, distinguish intended handoffs from defects, and retain all routing regressions. No full scoring or visual acceptance claim.",
+      "next_step": "Independently cross-check the seven measures, classify intended handoffs, and repair routing. J5 now safely refuses its row regression; repair the scoped placement rather than bypassing the refusal.",
       "evidence": [
         {
           "commit": "fb6c2228",
           "result": "implemented_verification_running",
           "scope": "Compact mode now reports seven straight-segment measures, compares fixed block membership, uses 5-percent ranking ties and refuses every >10-percent regression unless Force is explicit. Default row ranking unchanged. Workflow requires all measures and checks accepted edits for regressions. Native verification pending; independent score validation, intended-handoff classification and complete visual acceptance remain open."
+        },
+        {
+          "run": "ae1f59a59cdc4385bde34676ad43b11a",
+          "commit": "fb6c2228",
+          "result": "passed_workflow_not_layout_acceptance",
+          "scope": "Run ae1f59a59cdc4385bde34676ad43b11a passed build and workflow checks on fb6c2228. Cascade/J3/J4 preserve reader output, exact planned node positions and undo. J5 correctly refuses a new within-block row break (0 to 1); it is not a successful scoped layout. J4 still has one unrelated box crossing and 5268.5 units of diagonal execution wire. Independent score verification, intended-handoff classification, routing and visual acceptance remain open."
         }
       ],
       "design_notes": [

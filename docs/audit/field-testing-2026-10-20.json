@@ -6569,7 +6569,7 @@
       "kind": "bug",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "scoring_implemented_verification_pending",
+      "validation": "workflow_passed_independent_scoring_and_visual_acceptance_pending",
       "remaining": "Verify fb6c2228 score output and regression refusals. Independently cross-check measures, distinguish intended handoffs from defects, and retain all routing regressions. No full scoring or visual acceptance claim.",
       "source_keys": [
         "2026-11-05_S1/TD-63",
@@ -6593,7 +6593,9 @@
           "result": "implemented_verification_running",
           "scope": "Compact mode now reports seven straight-segment measures, compares fixed block membership, uses 5-percent ranking ties and refuses every >10-percent regression unless Force is explicit. Default row ranking unchanged. Workflow requires all measures and checks accepted edits for regressions. Native verification pending; independent score validation, intended-handoff classification and complete visual acceptance remain open."
         }
-      ]
+      ],
+      "next_step": "Independently cross-check the seven measures, classify intended handoffs, and repair routing. J5 now safely refuses its row regression; repair the scoped placement rather than bypassing the refusal.",
+      "latest_evidence": "Run ae1f59a59cdc4385bde34676ad43b11a passed build and workflow checks on fb6c2228. Cascade/J3/J4 preserve reader output, exact planned node positions and undo. J5 correctly refuses a new within-block row break (0 to 1); it is not a successful scoped layout. J4 still has one unrelated box crossing and 5268.5 units of diagonal execution wire. Independent score verification, intended-handoff classification, routing and visual acceptance remain open."
     },
     {
       "id": "NOV05-04",
