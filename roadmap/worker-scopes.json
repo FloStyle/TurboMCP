@@ -3588,6 +3588,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextSharedValueTest.cpp"
           ],
           "new_files": []
+        },
+        "nov04-timed-input": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp",
+            "Tools/test-vision-workflow.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
