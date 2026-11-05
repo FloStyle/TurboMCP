@@ -15,6 +15,7 @@
 #include "InputAction.h"
 #include "TurboMCPAssetDeleteFixture.h"
 #include "Editor.h"
+#include "ScopedTransaction.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UObject/Package.h"
@@ -141,6 +142,20 @@ bool FTurboMCPAssetDeleteTest::RunTest(const FString& Parameters)
         const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(Toolset, Tool);
         TestTrue(TEXT("delete help identifies exact target"), Help.Contains(TEXT("AssetPath")) && Help.Contains(TEXT("/Game/Tests/Unused.Unused")));
     }
+    // Saving clears dirty state but must not authorize deletion of an object
+    // still retained by undo. Leave cleanup to the owned supervisor.
+    Holder->SetFlags(RF_Transactional);
+    {
+        const FScopedTransaction Transaction(FText::FromString(TEXT("Deletion undo refusal fixture")));
+        Holder->Modify();
+        Holder->SoftReference = FSoftObjectPath(TEXT("/Game/Tests/Absent.Absent"));
+    }
+    if (!SaveHolder()) { AddError(TEXT("Cannot save undo-reference control.")); return false; }
+    const FMD5Hash UndoHash = FMD5Hash::HashFile(*HolderFile);
+    const FString UndoResult = UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(Holder->GetPathName());
+    AddInfo(UndoResult);
+    TestTrue(TEXT("saved asset retained by undo refuses"), UndoResult.Contains(TEXT("undo references prevent deletion")));
+    TestTrue(TEXT("undo refusal preserves package bytes"), UndoHash == FMD5Hash::HashFile(*HolderFile));
     return true;
 }
 #endif
