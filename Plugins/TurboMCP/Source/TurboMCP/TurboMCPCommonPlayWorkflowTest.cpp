@@ -118,6 +118,8 @@ public:
                 && ActivationState.Contains(TEXT("application active:")) && ActivationState.Contains(TEXT("tool-held input: none")));
             const FString InputHelp = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCP.TurboMCPEditToolset"),TEXT("EditTurboMCPPlayInput"));
             Test->TestTrue(TEXT("Help explains activation and separate focus"), InputHelp.Contains(TEXT("activate")) && InputHelp.Contains(TEXT("Slate focus")));
+            Record(TEXT("Registered PlayInput help:\n") + InputHelp);
+            Test->TestTrue(TEXT("Help gives analog menu example and limits"), InputHelp.Contains(TEXT("Gamepad_LeftY=-1")) && InputHelp.Contains(TEXT("Seconds=0.3")) && InputHelp.Contains(TEXT("exactly one row")) && InputHelp.Contains(TEXT("UI routing")));
 
             Record(Dispatch(TEXT("EditTurboMCPPlayInput"),TEXT("{\"Target\":\"pie:0\",\"Action\":\"focus\",\"Key\":\"\",\"Value\":\"\",\"Seconds\":\"\"}")));
             const FString Refused=Dispatch(TEXT("EditTurboMCPFunctionAdd"),TEXT("{\"Asset\":\"NotAnAsset\",\"Name\":\"MustNotEditInPIE\",\"Inputs\":\"\",\"Outputs\":\"\"}"));
