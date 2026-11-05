@@ -189,6 +189,21 @@ def record_baseline(call, evidence, persist):
 
 
 
+def read_positions(call, asset, graph):
+    result, offset = {}, 0
+    while True:
+        page = call('LookTurboMCPGraphPositions', asset=asset, graphName=graph,
+                    nodeIds='', maxNodes=256, offset=offset)
+        for match in re.finditer(r'^(\S+) x=(-?\d+) y=(-?\d+) width=(\d+) height=(\d+)$', page, re.M):
+            identity, *values = match.groups()
+            result[identity] = dict(zip(('x', 'y', 'width', 'height'), map(int, values)))
+        continuation = re.search(r'next_offset=(-?\d+)', page)
+        if not continuation:
+            raise RuntimeError('Position response has no explicit continuation')
+        offset = int(continuation.group(1))
+        if offset == -1:
+            return result
+
 def record_scoped_regression(call, evidence, persist):
     """J5: record a scoped baseline and require every outside rectangle to stay fixed.
 
@@ -200,19 +215,7 @@ def record_scoped_regression(call, evidence, persist):
     selected = [evidence['label_ids'][label] for label in labels]
 
     def positions():
-        result, offset = {}, 0
-        while True:
-            page = call('LookTurboMCPGraphPositions', asset=asset, graphName=graph,
-                        nodeIds='', maxNodes=256, offset=offset)
-            for match in re.finditer(r'^(\S+) x=(-?\d+) y=(-?\d+) width=(\d+) height=(\d+)$', page, re.M):
-                identity, *values = match.groups()
-                result[identity] = dict(zip(('x', 'y', 'width', 'height'), map(int, values)))
-            continuation = re.search(r'next_offset=(-?\d+)', page)
-            if not continuation:
-                raise RuntimeError('J5 positions have no explicit continuation')
-            offset = int(continuation.group(1))
-            if offset == -1:
-                return result
+        return read_positions(call, asset, graph)
 
     row = dict(selected_labels=labels, selected_ids=selected, acceptance=False)
     evidence.setdefault('regressions', {})['J5'] = row
@@ -248,6 +251,56 @@ def record_scoped_regression(call, evidence, persist):
         raise RuntimeError('J5 failed to restore baseline geometry')
     row['baseline_restored'] = True
     row['remaining'] = 'Compact rectangle placement and connection readability require candidate comparison and visual review.'
+    persist()
+
+
+
+def record_comment_regression(call, evidence, persist):
+    """J4 records existing titled boxes; containment is checked independently of Tidy's summary."""
+    asset, graph = evidence['asset'], 'LoopCascade'
+    row = dict(acceptance=False, boxes=[])
+    evidence.setdefault('regressions', {})['J4'] = row
+    for block_name, title in [('S', 'Validate input'), ('L1B', 'Flatten path points')]:
+        labels = next(block['labels'] for block in evidence['blocks'] if block['name'] == block_name)
+        members = [evidence['label_ids'][label] for label in labels]
+        args = dict(asset=asset, graphName=graph, action='create', nodes=','.join(members),
+                    box='', text=title, color='', size='')
+        call('PreviewTurboMCPComment', **args)
+        answer = call('EditTurboMCPComment', **args)
+        match = re.search(r'created comment box (\S+) in ', answer)
+        if not match:
+            raise RuntimeError('J4 comment creation returned no identity: ' + answer)
+        row['boxes'].append(dict(id=match.group(1), title=title, original_members=members))
+        persist()
+    row['before'] = read_positions(call, asset, graph)
+    args = dict(asset=asset, graphName=graph, bForce=False, nodeIds=[], mainPath='',
+                horizontalGap=120.0, verticalGap=100.0, lanePitch=280.0, wrapAfter='')
+    row['preview'] = call('PreviewTurboMCPGraphTidy', **args)
+    row['edit'] = call('EditTurboMCPGraphTidy', **args)
+    row['after'] = read_positions(call, asset, graph)
+    persist()
+    if set(row['before']) != set(row['after']):
+        raise RuntimeError('J4 changed the node or comment identity set')
+    for box in row['boxes']:
+        matches = [key for key in row['after'] if key == box['id'] or key.endswith(':' + box['id'])]
+        if len(matches) != 1:
+            raise RuntimeError('J4 cannot resolve comment geometry: ' + box['id'])
+        rect = row['after'][matches[0]]
+        box['readback'] = call('ReadTurboMCPNodeResolve', nodeIds=matches[0])
+        if box['title'] not in box['readback']:
+            raise RuntimeError('J4 lost comment title: ' + box['title'])
+        box['contained_original_members'] = [identity for identity in box['original_members']
+            if row['after'][identity]['x'] >= rect['x']
+            and row['after'][identity]['y'] >= rect['y']
+            and row['after'][identity]['x'] + row['after'][identity]['width'] <= rect['x'] + rect['width']
+            and row['after'][identity]['y'] + row['after'][identity]['height'] <= rect['y'] + rect['height']]
+        persist()
+        if not box['contained_original_members']:
+            raise RuntimeError('J4 left a titled box empty of its original nodes')
+    row['titles_and_nonempty_passed'] = True
+    row['capture'] = call('LookTurboMCPCapture', asset=asset, graphName=graph,
+                          mode='graph', target='', size='1600x900')
+    row['remaining'] = 'Inspect box fit and candidate layout; title and nonempty checks alone are not visual acceptance.'
     persist()
 
 
@@ -345,6 +398,7 @@ def run():
         build_graph(call, evidence, persist)
         record_baseline(call, evidence, persist)
         record_scoped_regression(call, evidence, persist)
+        record_comment_regression(call, evidence, persist)
         persist()
         print('Evidence: ' + str(directory), flush=True)
         print('RESULT: PASS (baseline evidence checkpoint only; layout acceptance remains false)')
