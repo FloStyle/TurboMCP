@@ -6642,10 +6642,16 @@
           "run": "6e003ae286f0431dbd14573407918c03",
           "result": "build_passed_measured_route_scoring_not_runtime_verified",
           "scope": "Added native transient-knot measurement with mandatory source-geometry-cache restoration; route segment expansion for planned length and compact measures; knot footprints in area/overlap metrics; original-edge row classification and once-per-wire/box crossing counts. Routed metrics use native endpoint positions consistently. Actual segment evaluation requires created-knot identities. Live Apply explicitly refuses routed plans until transaction, rollback and actual mapping are integrated. Default no-route path retained by source review; editor regression and independent routing oracle still pending."
+        },
+        {
+          "commit": "506ca07b",
+          "run": "1fb0a2aca9684c66b2fe9cc3cccb16a3",
+          "result": "editor_workflow_running_not_accepted",
+          "scope": "Candidate connects RouteWires=off|orthogonal and ChannelWidth=60 to shared measured planning, preview chains, live insertion and checked rollback. Build 91fab4c7ec6843f99e43ca9310f5f3c6 passed. New J2 test checks original node/default preservation, contracted logical pin connectivity, planned knot positions, score parity and exact undo. It explicitly uses Force for mechanics and retains score regressions; no quality or visual acceptance implied. Candidate is on task branch, not main."
         }
       ],
-      "next_step": "Connect opt-in planning and live transaction/rollback, then verify actual routed measurements, connectivity and screenshots. Public routing remains disabled.",
-      "latest_evidence": "Added native transient-knot measurement with mandatory source-geometry-cache restoration; route segment expansion for planned length and compact measures; knot footprints in area/overlap metrics; original-edge row classification and once-per-wire/box crossing counts. Routed metrics use native endpoint positions consistently. Actual segment evaluation requires created-knot identities. Live Apply explicitly refuses routed plans until transaction, rollback and actual mapping are integrated. Default no-route path retained by source review; editor regression and independent routing oracle still pending."
+      "next_step": "Finish editor run 1fb0a2aca9684c66b2fe9cc3cccb16a3, inspect routing failures and images, then extend checks to cascade/scoped routing and independently verify geometry. Do not integrate the routing candidate before runtime review.",
+      "latest_evidence": "Candidate connects RouteWires=off|orthogonal and ChannelWidth=60 to shared measured planning, preview chains, live insertion and checked rollback. Build 91fab4c7ec6843f99e43ca9310f5f3c6 passed. New J2 test checks original node/default preservation, contracted logical pin connectivity, planned knot positions, score parity and exact undo. It explicitly uses Force for mechanics and retains score regressions; no quality or visual acceptance implied. Candidate is on task branch, not main."
     },
     {
       "id": "NOV05-05",
