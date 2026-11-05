@@ -3722,7 +3722,8 @@
         "nov04-safe-asset-delete": {
           "files": [
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
-            "Tools/test-asset-recovery.py"
+            "Tools/test-asset-recovery.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCP.Build.cs"
           ],
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetDelete.cpp",
