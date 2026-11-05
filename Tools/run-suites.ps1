@@ -125,6 +125,12 @@ $suiteRoot = $PSScriptRoot
 
 function Invoke-SuiteProcess {
     param([string] $SuiteName, [int] $TimeoutSeconds = $script:SuiteTimeoutSeconds)
+    # This scenario builds 83 nodes and J1-J6 before checking compact layout and
+    # undo. The recorded 600-second run expired during J6 construction. Keep a
+    # bounded 20-minute allowance; explicit shorter timeout probes still apply.
+    if ($SuiteName -eq 'test-tidy-loop-cascade' -and -not $envTimeout) {
+        $TimeoutSeconds = 1200
+    }
 
     # The suite's directory, so a fake suite root discovered through TURBOMCP_RUNNER_EXTRA_SUITES runs from
     # its own directory while every real suite keeps running from Tools/.

@@ -93,10 +93,10 @@
       "title": "Place compact loop blocks with nested Completed continuations",
       "kind": "bug",
       "priority": "P0",
-      "state": "open",
-      "readiness": "needs_reconciliation",
+      "state": "in_progress",
+      "readiness": "ready",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "build_passed_editor_suite_timed_out_before_compact_checks",
       "source_ids": [
         "TD-62",
         "TD-70",
@@ -112,8 +112,19 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Keep Body and True on their control row; Completed below its body; inner Completed inside outer body. Preserve feedback and merge semantics. Never implement withdrawn Completed-on-main-row rule.",
-      "evidence": []
+      "next_step": "Run the complete scenario with its reviewed 1200-second suite allowance. Run b04c38d19d264d37b7aa9613ed09eacd hit the original 600-second suite deadline during J6 construction, before compact checks. Build passed; no compact or visual acceptance evidence yet.",
+      "evidence": [
+        {
+          "run": "b04c38d19d264d37b7aa9613ed09eacd",
+          "result": "build_passed_editor_pending",
+          "scope": "Candidate 7d17aa67f68e1f720184e66e464611a125c96926; build exit 0, 19.161 seconds. Explicit compact placement and Body/Completed criteria are implemented but not yet accepted. Editor suite active; no visual or full workflow success claim."
+        },
+        {
+          "run": "b04c38d19d264d37b7aa9613ed09eacd",
+          "result": "failed_suite_timeout",
+          "scope": "Suite killed at its 600-second deadline during J6A Append. No compact checks reached. Runner restored fixtures. Preserve this failure; a later pass does not erase it. Integrator sets a scenario-specific 1200-second ceiling; other suites and shorter timeout probes retain their deadlines."
+        }
+      ]
     },
     {
       "id": "NOV05-03",
