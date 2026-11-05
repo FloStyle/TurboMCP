@@ -13,8 +13,8 @@
 #include "UObject/Package.h"
 #include "UObject/UnrealType.h"
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPVariableFlagsTest,"TurboMCP.GraphAppend.VariableFlags",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-bool FTurboMCPVariableFlagsTest::RunTest(const FString&)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPVariableFlagsEditTest,"TurboMCP.GraphAppend.VariableFlags",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPVariableFlagsEditTest::RunTest(const FString&)
 {
     UPackage* Package=CreatePackage(*(TEXT("/Game/Tests/VariableFlags_")+FGuid::NewGuid().ToString(EGuidFormats::Digits)));
     UBlueprint* BP=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("VariableFlags"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
