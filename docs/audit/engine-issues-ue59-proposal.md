@@ -63,11 +63,11 @@ Plugin work remains OCT27-14: validate on temporary owned state, preserve extern
 
 ## PIE stop result versus teardown errors (NOV04-37 / X-119)
 
-Status: source-reviewed on 2026-11-05; reported failure not reproduced and cause unresolved. No engine changes.
+Status: response/state disagreement reproduced on 2026-11-05 and traced to stock result interception. The reported persistent PIE session remains unreproduced. No engine changes.
 
 The field report says three stock stop calls returned teardown script-error text, with PIE still running after one call. Current stock `EditorAppToolset.cpp` implements `StopPIE` around line 965: it starts `FPIEShutdownWatcher` before `RequestEndPlayMap`. The watcher around line 831 subscribes to `ShutdownPIE`, completes only after that event, and reports a 30-second timeout. `IsPIERunning` checks `GEditor->PlayWorld`. The inspected file has no local modifications. This contradicts an immediate-success diagnosis; it does not explain the reported error interception or prove shutdown always succeeds.
 
-Reproduction required: use a disposable actor whose EndPlay produces a controlled Blueprint script error; start PIE, call the stock stop tool, retain its complete response, and independently poll session state. Compare a clean EndPlay control. Record whether the shutdown event happened and whether script-error collection replaced the operation result. Do not infer stopped state from a request or from error text. Keep plugin edit refusals while PIE is active. Future engine proposal: report operation completion/state separately from collected project script errors, if this reproduction confirms conflation. No custom engine requirement or current fix is claimed.
+Initial reproduction plan (completed below): use a disposable actor whose EndPlay produces a controlled Blueprint script error; start PIE, call the stock stop tool, retain its complete response, and independently poll session state. Compare a clean EndPlay control. Record whether the shutdown event happened and whether script-error collection replaced the operation result. Do not infer stopped state from a request or from error text. Keep plugin edit refusals while PIE is active. Future engine proposal: report operation completion/state separately from collected project script errors, if this reproduction confirms conflation. No custom engine requirement or current fix is claimed.
 
 ### Controlled stop observation, 2026-11-05
 
@@ -84,12 +84,12 @@ Current stock-engine workflow: call `EditorToolset.EditorAppToolset.StopPIE`, re
 
 ## NOV04-36: text presence and visible snapshot disagree
 
-Status: source-confirmed predicate mismatch; native reproduction pending. No engine edits.
+Status: predicate mismatch reproduced with visible, collapsed and collapsed-ancestor controls. Stock behavior remains unchanged; upstream repair is still open.
 
 The pinned stock SlateInspectorToolset WaitFor traversal reads text and recurses through every child of visible top-level windows without checking the visibility of each widget or its ancestors. Snapshot RenderWidget instead stops at Hidden and Collapsed widgets. A collapsed row can therefore satisfy a text-presence query while being absent from the visible snapshot. This matches the reported symptom but does not prove the original project's exact call or widget state.
 
 Proposed upstream contract: make visibility semantics explicit. Default text waiting should use the same effective visibility traversal as visible snapshots, or expose a clearly named presence-versus-visible option. A hidden descendant must not count as visible merely because its own visibility is Visible. Preserve a separate presence query if clients need mounted-but-hidden controls. Do not silently call text presence clickability: enabled state, clipping and hit testing are separate concerns.
 
-Pending controlled evidence: one owned Slate window containing a unique visible label, a collapsed label and a visible label under a collapsed parent. Compare stock WaitFor and Snapshot, then reveal the parent and compare again. No user widgets or engine source mutation. Until then, a successful stock WaitFor is text-presence evidence only; verify visible state with Snapshot/capture before interaction.
+Completed controlled scenario: one owned Slate window containing a unique visible label, a collapsed label and a visible label under a collapsed parent. Compare stock WaitFor and Snapshot, then reveal the parent and compare again. No user widgets or engine source mutation. A successful stock WaitFor is text-presence evidence only; verify visible state with Snapshot/capture before interaction.
 
 NOV04-36 reproduction verified: native run 765678cb6bad4cfe9a0361f0b4df00d5 passed all visible/collapsed/ancestor/revealed controls. Transcript: TestProject/Saved/TurboMCP/Workflow/slate-visibility.txt (local generated evidence). Offline 0e81cf619b874adc992beff5ff1df123 passed. The engine discrepancy remains unfixed.
