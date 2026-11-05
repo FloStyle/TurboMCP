@@ -32,7 +32,7 @@ def build_graph(call, evidence, persist):
         types = []
         for label, query, pins in rows:
             access = None
-            if query.startswith(('Get ', 'Set ')):
+            if query.startswith(('Get ', 'Set ')) and query != 'Get (a copy)':
                 access, query = query.split(' ', 1)
             choices = evidence['types'][query]
             if access:
@@ -219,7 +219,8 @@ def run():
         persist()
         print('Evidence: ' + str(directory), flush=True)
         print('RESULT: PASS (construction checkpoint only; layout acceptance remains false)')
-    except Exception:
+    except Exception as error:
+        evidence['failure'] = str(error)
         evidence['stage'] = 'failed'
         persist()
         print('Evidence: ' + str(directory), flush=True)
