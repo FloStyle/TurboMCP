@@ -1,0 +1,438 @@
+{
+  "schema": 1,
+  "scenario": "LoopCascade",
+  "source": "docs/audit/field-reports/2026-11-05-loop-cascade-scenario.md",
+  "status": "recipe_not_built",
+  "seed": 20261105,
+  "nodes": [
+    {
+      "label": "N01",
+      "description": "Function entry",
+      "connections": "Exists already"
+    },
+    {
+      "label": "N03",
+      "description": "Input getter PathPoints",
+      "connections": ""
+    },
+    {
+      "label": "N02",
+      "description": "Utilities, Array, Length",
+      "connections": "TargetArray from N03"
+    },
+    {
+      "label": "N05",
+      "description": "KismetSystemLibrary MakeLiteralInt",
+      "connections": "Value 2"
+    },
+    {
+      "label": "N04",
+      "description": "Operators GreaterEqual, integer",
+      "connections": "A from N02 ReturnValue, B from N05"
+    },
+    {
+      "label": "N08",
+      "description": "Input getter Scale",
+      "connections": ""
+    },
+    {
+      "label": "N07",
+      "description": "Set ResultScale",
+      "connections": "execute from N01 then; ResultScale from N08"
+    },
+    {
+      "label": "N06",
+      "description": "FlowControl Branch",
+      "connections": "execute from N07 then; Condition from N04"
+    },
+    {
+      "label": "N11",
+      "description": "Get FlatPoints",
+      "connections": ""
+    },
+    {
+      "label": "N10",
+      "description": "Array Clear",
+      "connections": "execute from N06 then (True); TargetArray from N11"
+    },
+    {
+      "label": "N13",
+      "description": "Input getter PathPoints",
+      "connections": ""
+    },
+    {
+      "label": "N12",
+      "description": "Array ForEachLoop",
+      "connections": "Exec from N10 then; Array from N13"
+    },
+    {
+      "label": "N20",
+      "description": "Input getter PathTransform",
+      "connections": ""
+    },
+    {
+      "label": "N19",
+      "description": "KismetMathLibrary TransformLocation",
+      "connections": "T from N20; Location from N12 Array Element"
+    },
+    {
+      "label": "N17",
+      "description": "KismetMathLibrary BreakVector",
+      "connections": "InVec from N19 ReturnValue"
+    },
+    {
+      "label": "N18",
+      "description": "KismetMathLibrary BreakVector",
+      "connections": "InVec from N19 ReturnValue"
+    },
+    {
+      "label": "N16",
+      "description": "KismetMathLibrary MakeVector",
+      "connections": "X from N17 X; Y from N18 Y; Z 0"
+    },
+    {
+      "label": "N15",
+      "description": "Get FlatPoints",
+      "connections": ""
+    },
+    {
+      "label": "N14",
+      "description": "Array Add",
+      "connections": "execute from N12 LoopBody; TargetArray from N15; NewItem from N16"
+    },
+    {
+      "label": "N23",
+      "description": "Set BestDistSq",
+      "connections": "execute from N12 Completed; value 0"
+    },
+    {
+      "label": "N22",
+      "description": "Get WorkWeights",
+      "connections": ""
+    },
+    {
+      "label": "N21",
+      "description": "Array Clear",
+      "connections": "execute from N23 then; TargetArray from N22"
+    },
+    {
+      "label": "N25",
+      "description": "Input getter SamplePoints",
+      "connections": ""
+    },
+    {
+      "label": "N24",
+      "description": "Array ForEachLoop",
+      "connections": "Exec from N21 then; Array from N25"
+    },
+    {
+      "label": "N26",
+      "description": "Set BestDistSq",
+      "connections": "execute from N24 LoopBody; value 1e12"
+    },
+    {
+      "label": "N29",
+      "description": "MakeLiteralInt",
+      "connections": "Value 1"
+    },
+    {
+      "label": "N28",
+      "description": "Operators Subtract, integer",
+      "connections": "A from N02 ReturnValue (second consumer of the shared length); B from N29"
+    },
+    {
+      "label": "N27",
+      "description": "FlowControl ForLoop",
+      "connections": "execute from N26 then; FirstIndex 0; LastIndex from N28"
+    },
+    {
+      "label": "N35",
+      "description": "BreakVector",
+      "connections": "InVec from N24 Array Element"
+    },
+    {
+      "label": "N36",
+      "description": "BreakVector",
+      "connections": "InVec from N24 Array Element"
+    },
+    {
+      "label": "N34",
+      "description": "MakeVector",
+      "connections": "X from N35 X; Y from N36 Y; Z 0"
+    },
+    {
+      "label": "N38",
+      "description": "Get FlatPoints",
+      "connections": ""
+    },
+    {
+      "label": "N37",
+      "description": "Array Get (a copy)",
+      "connections": "Array from N38; Dimension 1 from N27 Index"
+    },
+    {
+      "label": "N44",
+      "description": "MakeLiteralInt",
+      "connections": "Value 1"
+    },
+    {
+      "label": "N43",
+      "description": "Operators Add, integer",
+      "connections": "A from N27 Index; B from N44"
+    },
+    {
+      "label": "N48",
+      "description": "MakeLiteralInt",
+      "connections": "Value 1"
+    },
+    {
+      "label": "N47",
+      "description": "Operators Add, integer",
+      "connections": "A from N27 Index; B from N48"
+    },
+    {
+      "label": "N46",
+      "description": "Operators Equal, integer",
+      "connections": "A from N47; B from N02 ReturnValue (third consumer of the shared length)"
+    },
+    {
+      "label": "N45",
+      "description": "MakeLiteralInt",
+      "connections": "Value 0"
+    },
+    {
+      "label": "N42",
+      "description": "Utilities Select",
+      "connections": "Option 0 from N43; Option 1 from N45; Index from N46"
+    },
+    {
+      "label": "N41",
+      "description": "Get FlatPoints",
+      "connections": ""
+    },
+    {
+      "label": "N39",
+      "description": "Array Get (a copy)",
+      "connections": "Array from N41; Dimension 1 from N42"
+    },
+    {
+      "label": "N49",
+      "description": "KismetMathLibrary FindClosestPointOnSegment",
+      "connections": "Point from N34; SegmentStart from N37; SegmentEnd from N39"
+    },
+    {
+      "label": "N50",
+      "description": "BreakVector",
+      "connections": "InVec from N34"
+    },
+    {
+      "label": "N51",
+      "description": "BreakVector",
+      "connections": "InVec from N49"
+    },
+    {
+      "label": "N52",
+      "description": "Operators Subtract, double",
+      "connections": "A from N50 X; B from N51 X"
+    },
+    {
+      "label": "N53",
+      "description": "Operators Multiply, double",
+      "connections": "A from N52; B from N52"
+    },
+    {
+      "label": "N54",
+      "description": "Operators Subtract, double",
+      "connections": "A from N50 Y; B from N51 Y"
+    },
+    {
+      "label": "N55",
+      "description": "Operators Multiply, double",
+      "connections": "A from N54; B from N54"
+    },
+    {
+      "label": "N40",
+      "description": "Operators Add, double",
+      "connections": "A from N53; B from N55"
+    },
+    {
+      "label": "N32",
+      "description": "Get BestDistSq",
+      "connections": ""
+    },
+    {
+      "label": "N31",
+      "description": "Operators Less, double",
+      "connections": "A from N40; B from N32"
+    },
+    {
+      "label": "N30",
+      "description": "FlowControl Branch",
+      "connections": "execute from N27 LoopBody; Condition from N31"
+    },
+    {
+      "label": "N33",
+      "description": "Set BestDistSq",
+      "connections": "execute from N30 then (True); value from N40"
+    },
+    {
+      "label": "N66",
+      "description": "Get BestDistSq",
+      "connections": ""
+    },
+    {
+      "label": "N65",
+      "description": "KismetMathLibrary Sqrt",
+      "connections": "A from N66"
+    },
+    {
+      "label": "N67",
+      "description": "Input getter InnerDistance",
+      "connections": ""
+    },
+    {
+      "label": "N69",
+      "description": "Input getter InnerDistance",
+      "connections": ""
+    },
+    {
+      "label": "N70",
+      "description": "Input getter FalloffDistance",
+      "connections": ""
+    },
+    {
+      "label": "N68",
+      "description": "Operators Add, double",
+      "connections": "A from N69; B from N70"
+    },
+    {
+      "label": "N64",
+      "description": "KismetMathLibrary MapRangeClamped",
+      "connections": "Value from N65; InRangeA from N67; InRangeB from N68; OutRangeA 0; OutRangeB 1"
+    },
+    {
+      "label": "N59",
+      "description": "Operators Multiply, double",
+      "connections": "A from N64; B from N64"
+    },
+    {
+      "label": "N61",
+      "description": "MakeLiteralDouble",
+      "connections": "Value 3"
+    },
+    {
+      "label": "N63",
+      "description": "MakeLiteralDouble",
+      "connections": "Value 2"
+    },
+    {
+      "label": "N62",
+      "description": "Operators Multiply, double",
+      "connections": "A from N63; B from N64"
+    },
+    {
+      "label": "N60",
+      "description": "Operators Subtract, double",
+      "connections": "A from N61; B from N62"
+    },
+    {
+      "label": "N58",
+      "description": "Operators Multiply, double",
+      "connections": "A from N59; B from N60"
+    },
+    {
+      "label": "N57",
+      "description": "Get WorkWeights",
+      "connections": ""
+    },
+    {
+      "label": "N56",
+      "description": "Array Add",
+      "connections": "execute from N27 Completed; TargetArray from N57; NewItem from N58"
+    },
+    {
+      "label": "N85",
+      "description": "Input getter FallbackWeight",
+      "connections": ""
+    },
+    {
+      "label": "N78",
+      "description": "Operators Multiply, double",
+      "connections": "A from N07 output value (first far consumer of the setter output); B from N85"
+    },
+    {
+      "label": "N74",
+      "description": "MakeLiteralDouble",
+      "connections": "Value 0"
+    },
+    {
+      "label": "N75",
+      "description": "MakeLiteralDouble",
+      "connections": "Value 1"
+    },
+    {
+      "label": "N73",
+      "description": "KismetMathLibrary FClamp",
+      "connections": "Value from N78; Min from N74; Max from N75"
+    },
+    {
+      "label": "N71",
+      "description": "Set ResultScale",
+      "connections": "execute from N24 Completed; value from N73"
+    },
+    {
+      "label": "N81",
+      "description": "Get WorkWeights",
+      "connections": ""
+    },
+    {
+      "label": "N80",
+      "description": "Function result (return)",
+      "connections": "execute from N71 then, and from N88 then (merge); Weights from N81"
+    },
+    {
+      "label": "N87",
+      "description": "Get WorkWeights",
+      "connections": ""
+    },
+    {
+      "label": "N86",
+      "description": "Array Clear",
+      "connections": "execute from N06 else; TargetArray from N87"
+    },
+    {
+      "label": "N91",
+      "description": "Input getter FallbackWeight",
+      "connections": ""
+    },
+    {
+      "label": "N90",
+      "description": "Operators Multiply, double",
+      "connections": "A from N91; B from N07 output value (second far consumer of the setter output)"
+    },
+    {
+      "label": "N89",
+      "description": "Get WorkWeights",
+      "connections": ""
+    },
+    {
+      "label": "N88",
+      "description": "Array Add",
+      "connections": "execute from N86 then; TargetArray from N89; NewItem from N90"
+    }
+  ],
+  "required_cases": [
+    "two sequential loops",
+    "indexed loop nested in second loop",
+    "guard fallback",
+    "two-source return merge",
+    "shared array length",
+    "setter output with two far consumers",
+    "loop index with three consumers"
+  ],
+  "limits": [
+    "Discover creation IDs and pins live; descriptions are not executable IDs.",
+    "No native construction, compilation or baseline has run."
+  ],
+  "recipe_node_count": 83
+}
