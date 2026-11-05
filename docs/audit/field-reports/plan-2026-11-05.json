@@ -334,7 +334,7 @@
       "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "exact_node_parity_verified_public_block_previews_incomplete",
+      "validation": "native_detail_tiles_build_passed_editor_verification_pending",
       "source_ids": [
         "TD-68",
         "FT-155"
@@ -346,8 +346,15 @@
       "dependencies": [
         "NOV05-02"
       ],
-      "next_step": "Exact node preview/edit agreement passed in dd045dabee7f44dab9de90d46565d7ab. Scenario captures are per block; public block table and readable per-block previews remain incomplete.",
-      "evidence": [],
+      "next_step": "Inspect before/after native detail tiles from the next editor run; verify preview immutability and explicit incomplete-set notices. Do not count compilation as visual acceptance.",
+      "evidence": [
+        {
+          "commit": "74bf04cc",
+          "run": "dfd1d6c8105d450aaf73ded14c0a5468",
+          "result": "build_passed_not_visual_acceptance",
+          "scope": "Compact preview adds native 1:1 block tiles with an 80-unit border, 24-image-per-side cap and explicit omissions. Whole-graph overview retained when native zoom supports it. Empty wire-only tiles skipped; long routes must still be inspected in overview. Tile grids bounded at 64 x 64. Default rows unchanged. Native workflow and screenshot review pending."
+        }
+      ],
       "design_notes": [
         "RenderPreview currently emits aggregate move counts and whole-graph images but no per-node planned coordinates or block table. Current harness verifies preview non-mutation, not exact preview/edit coordinate agreement. Add auditable plan geometry and readable block captures before claiming parity or readable previews."
       ]

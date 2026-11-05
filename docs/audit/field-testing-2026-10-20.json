@@ -6692,7 +6692,9 @@
           "result": "source_review_gap",
           "scope": "RenderPreview currently emits aggregate move counts and whole-graph images but no per-node planned coordinates or block table. Current harness verifies preview non-mutation, not exact preview/edit coordinate agreement. Add auditable plan geometry and readable block captures before claiming parity or readable previews."
         }
-      ]
+      ],
+      "next_step": "Inspect before/after native detail tiles from the next editor run; verify preview immutability and explicit incomplete-set notices. Do not count compilation as visual acceptance.",
+      "latest_evidence": "Compact preview adds native 1:1 block tiles with an 80-unit border, 24-image-per-side cap and explicit omissions. Whole-graph overview retained when native zoom supports it. Empty wire-only tiles skipped; long routes must still be inspected in overview. Tile grids bounded at 64 x 64. Default rows unchanged. Native workflow and screenshot review pending."
     },
     {
       "id": "NOV05-08",
