@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "f91f0538e2ecb329ac3534de1be371ae483f73fe",
+  "plugin_tree": "0290a2b44f40c9107a60ded57ee91b1940bbbe5f",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 175,
+    "tools": 177,
     "by_toolset": {
-      "UTurboMCPEditToolset": 73,
+      "UTurboMCPEditToolset": 74,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 60,
+      "UTurboMCPPreviewToolset": 61,
       "UTurboMCPReadToolset": 36
     }
   },
@@ -353,6 +353,29 @@
         "Tools/test-datatable-rows.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPDelegateRetarget",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeId",
+        "FunctionName"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDelegateRetarget.cpp",
+          "line": 101
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -2196,6 +2219,29 @@
         "Tools/test-datatable-rows.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPDelegateRetarget",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeId",
+        "FunctionName"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDelegateRetarget.cpp",
+          "line": 99
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",

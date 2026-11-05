@@ -1553,7 +1553,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reviewed_retarget_gap_confirmed",
+      "validation": "partial_focused_native_workflow_passed",
       "source_ids": [
         "FT-136"
       ],
@@ -1561,7 +1561,7 @@
         "2026-11-03_S2/FT-136"
       ],
       "dependencies": [],
-      "next_step": "NodeFind already searches node titles and GraphRemove accepts exact reader IDs; direct UObject-path deletion is not claimed. BindFunction creates a replacement Create Event node and retains displaced sources. Implement explicit in-place Create Event function retargeting preserving node identity, object input and all delegate consumers; retain unsupported object-path selector request explicitly."
+      "next_step": "In-place Create Event retarget implemented in 83615e45dc90b9084f718a1360375220b0e08174. Native run dd98b202a6754abfbd8fb75e5d904a79 passed the graph-append suite, including two delegate consumers, preserved identity/position/object input/defaults, clean preview/refusals/no-op, undo, explicit compile and live help. Scope gate passed. No disk persistence or runtime registration proof claimed. NodeFind title search and GraphRemove reader-ID deletion already exist. Direct UObject-path deletion remains unresolved; this combined task is not closed."
     },
     {
       "id": "NOV04-40",
