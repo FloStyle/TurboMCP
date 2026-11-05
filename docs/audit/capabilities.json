@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "c191a78904424990dad6419bc52422d7abcea15b",
+  "plugin_tree": "844c5333bea3ffa623e793e5b6d6bc5284b8a385",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 167,
+    "tools": 169,
     "by_toolset": {
-      "UTurboMCPEditToolset": 69,
+      "UTurboMCPEditToolset": 70,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 56,
+      "UTurboMCPPreviewToolset": 57,
       "UTurboMCPReadToolset": 36
     }
   },
@@ -1183,6 +1183,29 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
           "line": 624
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPNodePinGrowth",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeId",
+        "Count"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodePinGrowth.cpp",
+          "line": 115
         }
       ],
       "test_references": [],
@@ -2859,6 +2882,29 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
           "line": 623
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPNodePinGrowth",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeId",
+        "Count"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodePinGrowth.cpp",
+          "line": 113
         }
       ],
       "test_references": [],

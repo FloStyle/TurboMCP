@@ -52,6 +52,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPMaterialTidy | [TurboMCPMaterialTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPMenuActivate | [TurboMCPPlayInput.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPMergeMembers | [TurboMCPMergeTransferTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPNodePinGrowth | [TurboMCPNodePinGrowth.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodePinGrowth.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPOverrideAdd | [TurboMCPOverrideAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPOverrideRemove | [TurboMCPOverrideRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideRemove.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPPinDefault | [TurboMCPPinDefault.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
@@ -120,6 +121,7 @@ Generated from declarations, definitions and static test references. All runtime
 | PreviewTurboMCPMaterialLabelPromote | [TurboMCPMaterialLabelsPromoteTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromoteTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPMaterialTidy | [TurboMCPMaterialTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPMergeMembers | [TurboMCPMergeTransferTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPNodePinGrowth | [TurboMCPNodePinGrowth.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodePinGrowth.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPNodePins | [TurboMCPNodeTypeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeTypeTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPNodeType | [TurboMCPNodeTypeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeTypeTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPOverrideAdd | [TurboMCPOverrideAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
