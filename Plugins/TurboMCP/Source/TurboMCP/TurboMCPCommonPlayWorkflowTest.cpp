@@ -9,6 +9,11 @@
 #include "Blueprint/UserWidget.h"
 #include "UObject/UObjectIterator.h"
 #include "Engine/World.h"
+#include "Engine/GameInstance.h"
+#include "Engine/LocalPlayer.h"
+#include "TurboMCPPlayInvokeFixture.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
 #include "GameFramework/Actor.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
@@ -98,6 +103,36 @@ public:
             if (!Test->TestNotNull(TEXT("Project CommonUI fixture class"),Class)) return true;
             Fixture=GEditor->PlayWorld->SpawnActor<AActor>(Class);
             if (!Test->TestTrue(TEXT("Fixture spawned"),Fixture.IsValid())) return true;
+            ULocalPlayer* Local=GEditor->PlayWorld->GetGameInstance()->GetFirstGamePlayer();
+            if (!Test->TestNotNull(TEXT("Invocation local player"),Local)) return true;
+            auto* Receiver=NewObject<UTurboMCPPlayInvokeFixture>(Local);
+            const FString WorldPath=GEditor->PlayWorld->GetPathName(), ObjectPath=Receiver->GetPathName();
+            const FString Args=TEXT("{\"Amount\":3,\"Label\":\"field event\"}");
+            auto Preview=[&](const FString& Values){return UTurboMCPPreviewToolset::PreviewTurboMCPPlayInvoke(WorldPath,ObjectPath,TEXT("RecordEvent"),Values);};
+            Record(UTurboMCPReadToolset::ReadTurboMCPPlayFunction(WorldPath,ObjectPath,TEXT("RecordEvent")));
+            for (const FString& Invalid:TArray<FString>{TEXT("{}"),TEXT("{\"Amount\":\"bad\",\"Label\":\"x\"}"),TEXT("{\"Amount\":1.5,\"Label\":\"x\"}"),TEXT("{\"Amount\":2147483648,\"Label\":\"x\"}"),TEXT("{\"Amount\":1,\"Label\":\"x\",\"Extra\":2}")})
+                Test->TestTrue(TEXT("Invalid runtime arguments refuse"),Preview(Invalid).StartsWith(TEXT("unchanged\nrefused:")));
+            Test->TestEqual(TEXT("Refusals do not invoke"),Receiver->Calls,0);
+            Test->TestTrue(TEXT("Wrong world refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPPlayInvoke(TEXT("/NotAWorld"),ObjectPath,TEXT("RecordEvent"),Args).Contains(TEXT("refused:")));
+            Test->TestTrue(TEXT("Stale runtime object refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPPlayInvoke(WorldPath,ObjectPath+TEXT("_stale"),TEXT("RecordEvent"),Args).Contains(TEXT("refused:")));
+            const FString PreviewText=Preview(Args);Record(PreviewText);
+            FString Prefix,Confirmation;
+            if (!Test->TestTrue(TEXT("Preview issues confirmation"),PreviewText.Split(TEXT("confirmation: "),&Prefix,&Confirmation))) return true;
+            Confirmation=Confirmation.Left(Confirmation.Find(TEXT("\n")));
+            Test->TestEqual(TEXT("Preview does not invoke"),Receiver->Calls,0);
+            Test->TestTrue(TEXT("Changed arguments invalidate confirmation"),UTurboMCPEditToolset::EditTurboMCPPlayInvoke(WorldPath,ObjectPath,TEXT("RecordEvent"),TEXT("{\"Amount\":4,\"Label\":\"field event\"}"),Confirmation).Contains(TEXT("refused:")));
+            Test->TestEqual(TEXT("Changed argument refusal does not invoke"),Receiver->Calls,0);
+            auto Payload=MakeShared<FJsonObject>();
+            Payload->SetStringField(TEXT("WorldPath"),WorldPath);Payload->SetStringField(TEXT("ObjectPath"),ObjectPath);
+            Payload->SetStringField(TEXT("FunctionName"),TEXT("RecordEvent"));Payload->SetStringField(TEXT("Arguments"),Args);Payload->SetStringField(TEXT("Confirmation"),Confirmation);
+            FString Json;FJsonSerializer::Serialize(Payload,TJsonWriterFactory<>::Create(&Json));
+            const FString Invoked=Dispatch(TEXT("EditTurboMCPPlayInvoke"),Json);Record(Invoked);
+            Test->TestTrue(TEXT("Runtime dispatch returns actual result"),Invoked.Contains(TEXT("dispatched:")) && Invoked.Contains(TEXT("ReturnValue: 3")));
+            Test->TestEqual(TEXT("Local player event called once"),Receiver->Calls,1);
+            Test->TestTrue(TEXT("Consumed confirmation refuses replay"),Dispatch(TEXT("EditTurboMCPPlayInvoke"),Json).Contains(TEXT("refused:")));
+            Test->TestEqual(TEXT("Replay caused no call"),Receiver->Calls,1);
+            const FString InvokeHelp=UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCP.TurboMCPEditToolset"),TEXT("EditTurboMCPPlayInvoke"));Record(InvokeHelp);
+            Test->TestTrue(TEXT("Live help describes confirmation and arguments"),InvokeHelp.Contains(TEXT("Confirmation")) && InvokeHelp.Contains(TEXT("Arguments")) && InvokeHelp.Contains(TEXT("120 seconds")));
             // Request actual window foreground; do not disable the input tool's
             // inactive-application refusal to make the test pass.
             RestoreFocusGuard = FTurboMCPFocusGuard::IsActive();
@@ -372,6 +407,7 @@ public:
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPCommonPlayTest,"TurboMCP.Workflow.CommonPlay",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPCommonPlayTest::RunTest(const FString&)
 {
+    TestTrue(TEXT("Invocation without PIE refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPPlayInvoke(TEXT("/Missing"),TEXT("/Missing"),TEXT("RecordEvent"),TEXT("{}")).Contains(TEXT("live in-process PIE")));
     FString Start=UTurboMCPReadToolset::ReadTurboMCPPlayCheck(TEXT("55"),TEXT(""));
     if (Start.StartsWith(TEXT("error:")) || Start.Contains(TEXT("already playing"))) {AddError(Start);return false;}
     ADD_LATENT_AUTOMATION_COMMAND(FCommonPlayLoop(this));return true;

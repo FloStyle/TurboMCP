@@ -35,6 +35,14 @@ class UTurboMCPReadToolset : public UToolsetDefinition
 
 public:
 
+    /** Inspect one exact Blueprint-callable function on an existing PIE runtime object without invoking it.
+     * @param WorldPath Exact current PIE world object path, not an editor world or guessed player index.
+     * @param ObjectPath Exact existing runtime object path belonging to that world, including local-player subsystems. No assets are loaded.
+     * @param FunctionName Exact case-sensitive callable function name. Reports parameter types and directions; latent, RPC and editor-only calls are refused.
+     */
+    UFUNCTION(meta=(AICallable))
+    static FString ReadTurboMCPPlayFunction(const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName);
+
     /** Read bounded editor/PIE output captured during this enabled plugin session, not tool-call history or a disk file. Returns UTC timestamps, categories, severity, cursor and explicit retention/message truncation. Does not run commands or change assets.
      * @param Category Empty for all categories, otherwise exact case-insensitive category name, such as LogBlueprintUserMessages.
      * @param Contains Empty for all messages, otherwise a case-insensitive substring of stored text (at most 2048 characters).
@@ -623,6 +631,15 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+    /** Validate a scoped PIE runtime call without executing it. Reference-bearing parameters, RPCs and latent functions are refused. No save or undo guarantee.
+     * @param WorldPath Exact current PIE world object path.
+     * @param ObjectPath Exact existing runtime object path in that world; local-player subsystems are supported.
+     * @param FunctionName Exact Blueprint-callable function name. Inspect ReadTurboMCPPlayFunction first.
+     * @param Arguments JSON object with every input parameter by exact name; use {} for no inputs. Use JSON numbers for numbers (integers must be exact and within +/-9007199254740991), booleans for bools, and strings for text/name/enum names. Arrays and sets use JSON arrays; reflected structs and maps use JSON objects. Map keys must be text/name/enum values. Object references, custom-imported structs and null values are unsupported. Supply all inputs, including defaults; omit output-only and return parameters. Example: {"Amount":3,"Label":"debug event"}. Unknown, missing or unsupported arguments refuse before dispatch.
+     */
+    UFUNCTION(meta=(AICallable))
+    static FString PreviewTurboMCPPlayInvoke(const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName,const FString& Arguments);
+
 
     /** Validate creation of a standalone typed custom event in an existing event graph. Local, non-replicated; not an override or delegate binding. No compile or save. Duplicate names refuse. Loading assets can run engine load hooks.
      * @param Asset Blueprint object path or unique asset name.
@@ -1450,6 +1467,16 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+    /** Validate a scoped PIE runtime call and execute it once with preview confirmation. Reference-bearing parameters, RPCs and latent functions are refused. No save or undo guarantee.
+     * @param WorldPath Exact current PIE world object path.
+     * @param ObjectPath Exact existing runtime object path in that world; local-player subsystems are supported.
+     * @param FunctionName Exact Blueprint-callable function name. Inspect ReadTurboMCPPlayFunction first.
+     * @param Arguments JSON object with every input parameter by exact name; use {} for no inputs. Use JSON numbers for numbers (integers must be exact and within +/-9007199254740991), booleans for bools, and strings for text/name/enum names. Arrays and sets use JSON arrays; reflected structs and maps use JSON objects. Map keys must be text/name/enum values. Object references, custom-imported structs and null values are unsupported. Supply all inputs, including defaults; omit output-only and return parameters. Example: {"Amount":3,"Label":"debug event"}. Unknown, missing or unsupported arguments refuse before dispatch.
+     * @param Confirmation Copy the preview confirmation with identical arguments within 120 seconds. It is consumed before invocation; never automatically retry.
+     */
+    UFUNCTION(meta=(AICallable))
+    static FString EditTurboMCPPlayInvoke(const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName,const FString& Arguments,const FString& Confirmation);
+
 
     /** Create a standalone typed custom event in an existing event graph. Local, non-replicated; not an override or delegate binding. No compile or save. Duplicate names refuse. Loading assets can run engine load hooks.
      * @param Asset Blueprint object path or unique asset name.

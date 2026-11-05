@@ -275,6 +275,7 @@ namespace
             const bool bAssetEdit = ToolName.StartsWith(TEXT("EditTurboMCP"))
                 && !ToolName.StartsWith(TEXT("EditTurboMCPCallLog"))
                 && ToolName != TEXT("EditTurboMCPPlayInput") && ToolName != TEXT("EditTurboMCPMenuActivate")
+                && ToolName != TEXT("EditTurboMCPPlayInvoke") // Exact PIE runtime target and one-use preview confirmation.
                 && ToolName != TEXT("EditTurboMCPDiagnosticConsole") // Explicit diagnostic target and confirmation; no asset editing.
                 && ToolName != TEXT("EditTurboMCPTrace") && ToolName != TEXT("EditTurboMCPVcsCheckout");
             if (bAssetEdit
