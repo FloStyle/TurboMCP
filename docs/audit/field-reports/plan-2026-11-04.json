@@ -1571,7 +1571,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_review_design_pending",
       "source_ids": [
         "FT-138"
       ],
@@ -1579,7 +1579,7 @@
         "2026-11-03_S4/FT-138"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Design constraints recorded in docs/audit/field-reports/nov04-asset-lifecycle-design.md. Review checked stock deletion internals and function-library factory before implementation; registry referencers alone are insufficient. No asset deletion performed and no original crash cause claimed."
     },
     {
       "id": "NOV04-41",
