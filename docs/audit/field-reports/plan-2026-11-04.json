@@ -969,10 +969,10 @@
       "title": "Reproduce data-asset array shrink and define element edits",
       "kind": "bug",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_and_offline_passed_for_removal",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "X-127",
         "FT-141"
@@ -982,7 +982,7 @@
         "2026-11-04_S2/FT-141"
       ],
       "dependencies": [],
-      "next_step": "Removal implemented and integrated from b87cc5ed: array_remove with exact zero-based index, revision check, temporary preview, retained values/order, verified edit and undo. Scope PASS; native b3d7c89cfeae423d867ee58b5b6329d0 PASS; offline f62b888e15094e2cad2b00f71dd60945 26/26 PASS. Generic InputMappingContext 65-to-64 reproduction succeeds with preview/invalid-index/stale-revision preservation and full undo restoration. X-127 has a verified TurboMCP removal route. Original unidentified tool failure cause remains unknown. FT-141 insertion is still open, so the combined topic is not closed. Whole-array set remains unsupported. Insertion repair scoped: array_insert at 0..Num, empty Value initializes a default row; explicit values use existing strict parsing. Verify retained order/identity, preview, invalid input, revision and undo before closure.",
+      "next_step": "Targeted array_remove and array_insert implemented. Insertion uses index 0..count, supports initialized defaults or existing strict explicit-value parsing, preserves retained order, and reports count/index. Native mapping and scalar workflows verified preview, refusals, stale revisions and undo. Whole-array set remains unsupported; original unidentified property-writer failure cause is unknown.",
       "subtopics": [
         {
           "id": "X-127",
@@ -997,9 +997,29 @@
         },
         {
           "id": "FT-141-insert",
-          "state": "open",
-          "validation": "not_implemented"
+          "state": "done",
+          "validation": "native_passed"
         }
+      ],
+      "evidence": [
+        {
+          "run": "b3d7c89cfeae423d867ee58b5b6329d0",
+          "result": "passed",
+          "scope": "Removal: 65 mapping rows to 64, preservation and undo."
+        },
+        {
+          "run": "1c61537da8254f12b7b4d5f7c7731ea2",
+          "result": "passed",
+          "scope": "Insertion: scalar first/middle/end, default mapping row, exact retained rows, preview, invalid input/index, stale revision and undo."
+        },
+        {
+          "run": "ab77ae79226e4694a7caa0ceaf316a8d",
+          "result": "passed",
+          "scope": "26 offline checks; source 4a24640b scope passed."
+        }
+      ],
+      "followups": [
+        "Explicit reference-containing struct text is refused; empty Value creates a default element. Whole-array replacement is not implemented. Original unrecorded writer failure cause remains unknown."
       ]
     },
     {
