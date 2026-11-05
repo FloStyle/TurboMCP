@@ -9,7 +9,7 @@
       "kind": "housekeeping",
       "priority": "P0",
       "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "full_fixture_and_J1_J6_baselines_recorded_not_visual_acceptance",
       "source_ids": [
@@ -86,7 +86,8 @@
           "result": "offline_gate_failed",
           "scope": "25/26 offline suites passed; runner-verdicts failed with missing child manifests during concurrent editor work. Isolated rerun passed; original cause not proven and failure retained. Repeat full gate serially before integration."
         }
-      ]
+      ],
+      "readiness_review": "The clean-room 83-node construction and J1-J6 baseline are recorded. Remaining exact acceptance checks are specified by the report and current harness; visual acceptance remains separate."
     },
     {
       "id": "NOV05-02",
@@ -187,7 +188,7 @@
       "kind": "bug",
       "priority": "P0",
       "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "workflow_passed_independent_scoring_and_visual_acceptance_pending",
       "source_ids": [
@@ -231,7 +232,8 @@
       ],
       "design_notes": [
         "Candidate BodyRowDrift and CompletedAboveBody are partial diagnostics, not Appendix H scoring. Still required: unrelated box crossings, exec segment crossings, diagonal exec length, block row breaks, data crossings, total length, area, 5-percent tie handling and every greater-than-10-percent regression warning."
-      ]
+      ],
+      "readiness_review": "Appendix H defines the seven measures and thresholds. Straight-segment scoring is integrated; independent geometry checks and intended handoff classification remain specified work."
     },
     {
       "id": "NOV05-04",
@@ -239,7 +241,7 @@
       "kind": "feature",
       "priority": "P0",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "visual_defect_confirmed",
       "source_ids": [
@@ -273,7 +275,8 @@
         "Score actual routed segments and knot footprints, not the removed direct wire. Check preview/edit seven-measure agreement and independently validate routing geometry.",
         "Compare connectivity after contracting only added reroute chains, preserving original pin identities, types, defaults and non-reroute nodes. Exact raw reader equality remains required for no-routing cases. Verify exact undo restores the original graph.",
         "Inspect Completed, fallback merge and unrelated-box screenshots. Retain failures and obtain user reference review before visual acceptance."
-      ]
+      ],
+      "readiness_review": "Routing rules R3/R6/R8 and the implementation_contract define opt-in behavior, exact pin preservation, scoped exclusions, rollback, preview parity and visual checks. Implement within the reviewed Tidy assignment; do not reuse the single-knot tool as a complete router."
     },
     {
       "id": "NOV05-05",
@@ -337,7 +340,7 @@
       "kind": "feature",
       "priority": "P0",
       "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "native_detail_tiles_build_passed_editor_verification_pending",
       "source_ids": [
@@ -362,7 +365,8 @@
       ],
       "design_notes": [
         "RenderPreview currently emits aggregate move counts and whole-graph images but no per-node planned coordinates or block table. Current harness verifies preview non-mutation, not exact preview/edit coordinate agreement. Add auditable plan geometry and readable block captures before claiming parity or readable previews."
-      ]
+      ],
+      "readiness_review": "Native 1:1 detail tiles are the current candidate for readable compact previews. Build passes; editor evidence and image inspection remain pending. Preserve default row-mode output."
     },
     {
       "id": "NOV05-08",
@@ -370,7 +374,7 @@
       "kind": "bug",
       "priority": "P0",
       "state": "done",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "tested_live_required_parameter_summary",
       "source_ids": [
@@ -394,7 +398,8 @@
       ],
       "design_notes": [
         "Source cause confirmed in TurboMCPAgentHelp.cpp: properties are alphabetically ordered, then the entire Help string is cut to HelpBudgetChars. This can remove required parameter lines. Preserve a complete required-parameter name/type summary outside descriptive-text truncation; keep effects and refusal guidance, and test against the live schema for every named report tool. Sorting required parameters first alone is insufficient when the prefix consumes the budget."
-      ]
+      ],
+      "readiness_review": "Required-parameter help was verified against live schemas and integrated. Readiness metadata reconciled; existing done state and evidence retained."
     },
     {
       "id": "NOV05-09",
