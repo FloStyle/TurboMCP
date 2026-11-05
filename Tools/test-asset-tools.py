@@ -192,7 +192,7 @@ def main():
     check("states how many packages are dirty", "package(s) dirty" in dirty)
     check(
         "a zero names its reason",
-        ("Nothing has unsaved changes" in dirty) or ("listing" in dirty),
+        ("No dirty content packages were found." in dirty and "does not check unsaved maps" in dirty) or ("listing" in dirty),
     )
 
     print()
