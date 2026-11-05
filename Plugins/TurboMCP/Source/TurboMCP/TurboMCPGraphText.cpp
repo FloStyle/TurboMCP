@@ -608,6 +608,10 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 			TEXT("; error: %s has no node type ID, so it cannot be written back. ")
 			TEXT("Its class is %s."),
 			*TurboMCPNodeId::MakeForNode(InNode), *InNode->GetClass()->GetName());
+        Note += TEXT("\n; This limits node reconstruction, not every surrounding edit. Retain this node. ")
+            TEXT("Inspect its exact pins with ReadTurboMCPNodeContext, then use PreviewTurboMCPGraphConnect ")
+            TEXT("and EditTurboMCPGraphConnect for explicit links. Check compatibility and any replaced wires; ")
+            TEXT("this read-only description is not a writable node form.");
         if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(InNode))
             Note += FString::Printf(TEXT("\n; configured delegate function: %s (stored binding; runtime target not verified)"),
                 Delegate->GetFunctionName().IsNone() ? TEXT("none (unbound)") : *Delegate->GetFunctionName().ToString());

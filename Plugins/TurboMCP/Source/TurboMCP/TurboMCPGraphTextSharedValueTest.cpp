@@ -695,6 +695,12 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("unsupported shared value emits no $id"), Text.Contains(TEXT("$")));
 		TestTrue(TEXT("unsupported shared value is diagnosed"),
 			Text.Contains(TEXT("has no node type ID")));
+        TestTrue(TEXT("Unsupported node has bounded edit guidance"),
+            Text.Contains(TEXT("Retain this node")) && Text.Contains(TEXT("PreviewTurboMCPGraphConnect"))
+            && Text.Contains(TEXT("Check compatibility and any replaced wires"))
+            && Text.Contains(TEXT("not a writable node form")));
+        TestTrue(TEXT("Reader preserves unsupported node links"),
+            BadOut->LinkedTo.Contains(PrintAString) && BadOut->LinkedTo.Contains(PrintBString));
 		TestFalse(TEXT("an unsupported first form is not reused as a link"),
 			Text.Contains(FString::Printf(TEXT("(-> %s:"), *BadId)));
 	}
