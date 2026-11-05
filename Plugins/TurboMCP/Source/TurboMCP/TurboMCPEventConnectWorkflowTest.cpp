@@ -238,10 +238,18 @@ bool FTurboMCPEventConnectWorkflowTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Explicit guard continuation accepted during placement planning"), GuardPreview.Contains(TEXT("refused:")) || GuardPreview.StartsWith(TEXT("error:")));
     TestEqual(TEXT("Guard preview preserves graph"), Snapshot(), GuardBefore);
     TestEqual(TEXT("Guard preview preserves dirty state"), Package->IsDirty(), GuardDirtyBefore);
+    // A supplied input link takes precedence over a conflicting continuation option.
+    const FString ExplicitGuardText = GuardText + FString::Printf(TEXT("\n(\"%s\" ; %s\n execute (-> Guard:else))"),
+        *TurboMCPNodeId::GetNodeTypeId(Purchase), *TurboMCPNodeId::MakeForNode(Purchase, true));
+    const FString ExplicitPreview = Record(TEXT("Guard explicit-link preview"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Asset, GraphName, ExplicitGuardText, TEXT("Guard:then")));
+    TestTrue(TEXT("Preview identifies skipped named continuation"), ExplicitPreview.Contains(TEXT("Continuation='Guard:then' is skipped")));
+    TestEqual(TEXT("Explicit-link preview preserves graph"), Snapshot(), GuardBefore);
+    TestEqual(TEXT("Explicit-link preview preserves dirty state"), Package->IsDirty(), GuardDirtyBefore);
     TMap<UEdGraphNode*, FIntPoint> BeforeGuardPositions;
     for (UEdGraphNode* N : Graph->Nodes) BeforeGuardPositions.Add(N, FIntPoint(N->NodePosX, N->NodePosY));
-    const FString GuardEdit = Record(TEXT("Guard edit"), UTurboMCPEditToolset::EditTurboMCPGraphAppend(Asset, GraphName, GuardText, TEXT("Guard:else")));
+    const FString GuardEdit = Record(TEXT("Guard edit"), UTurboMCPEditToolset::EditTurboMCPGraphAppend(Asset, GraphName, ExplicitGuardText, TEXT("Guard:then")));
     TestTrue(TEXT("Guard edit reports changed"), GuardEdit.StartsWith(TEXT("changed")));
+    TestTrue(TEXT("Edit identifies skipped named continuation"), GuardEdit.Contains(TEXT("Continuation='Guard:then' is skipped")));
     UK2Node_IfThenElse* Guard = EntryExec->LinkedTo.Num() == 1 ? Cast<UK2Node_IfThenElse>(EntryExec->LinkedTo[0]->GetOwningNode()) : nullptr;
     if (!TestNotNull(TEXT("Entry now reaches Branch"), Guard)) return false;
     TestTrue(TEXT("Guard stays in its own execution row"), FMath::Abs(Guard->NodePosY - EntryExec->GetOwningNode()->NodePosY) <= 64);

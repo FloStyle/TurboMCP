@@ -1434,8 +1434,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
                     }
                 if(ExplicitTarget)
                 {
-                    MovedLinkReports.Add(FString::Printf(TEXT("displaced wire target %s:%s uses its explicitly requested incoming link(s); no implicit continuation added"),
-                        *TurboMCPNodeId::MakeForNode(OriginalTarget->GetOwningNode(),true),*OriginalTarget->PinName.ToString()));
+                    MovedLinkReports.Add(FString::Printf(TEXT("displaced wire target %s:%s uses its explicitly requested incoming link(s); Continuation='%s' is skipped for this target. No additional execution path is added. To use that continuation, remove the explicit incoming link from the submitted text."),
+                        *TurboMCPNodeId::MakeForNode(OriginalTarget->GetOwningNode(),true),*OriginalTarget->PinName.ToString(), *InPlan.Continuation));
                     continue;
                 }
                 if (InPlan.Continuation != TEXT("auto") && OriginalTarget && OriginalTarget->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)

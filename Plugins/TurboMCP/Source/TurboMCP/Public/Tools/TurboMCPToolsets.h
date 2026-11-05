@@ -1073,7 +1073,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * @param Text Nonempty append graph text. New forms create nodes; reader-derived IDs refer to existing nodes. Use Preview first and preserve exact type IDs and pin names. Partial reader pages are not standalone append input. Engine-created companion nodes are reported with IDs. Explicit delegate wiring removes only newly generated events left completely disconnected; existing events are preserved.
 	 * Connected append placement searches nearby space above and below fixed connections. Existing nodes stay fixed. If no local slot fits, free space or submit a smaller connected block. Tight gaps may require bent wires; this is not whole-graph tidy.
 	 *
-	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence. Example: Done:then for a submitted local label.
+	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence, so Continuation is skipped for those targets and adds no second execution path. Remove the explicit target link if you want Continuation to reconnect it. Example: Done:then for a submitted local label.
 	*/
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphAppend(
@@ -1942,7 +1942,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * @param Text Nonempty append graph text. New forms create nodes; reader-derived IDs refer to existing nodes. Use Preview first and preserve exact type IDs and pin names. Partial reader pages are not standalone append input. Engine-created companion nodes are reported with IDs. Explicit delegate wiring removes only newly generated events left completely disconnected; existing events are preserved.
 	 * Connected append placement searches nearby space above and below fixed connections. Existing nodes stay fixed. If no local slot fits, free space or submit a smaller connected block. Tight gaps may require bent wires; this is not whole-graph tidy.
 	 *
-	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence. Example: Done:then for a submitted local label.
+	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence, so Continuation is skipped for those targets and adds no second execution path. Remove the explicit target link if you want Continuation to reconnect it. Example: Done:then for a submitted local label.
 	*/
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphAppend(
