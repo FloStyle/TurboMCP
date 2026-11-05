@@ -3897,6 +3897,7 @@ bool FTurboMCPGraphTidy::ValidatePlannedNodeOverlaps(const FPlan& InPlan, FStrin
 bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& KnotSize,
     const FVector2D& InputOffset, const FVector2D& OutputOffset, double Clearance, FString& Error)
 {
+    Error.Reset();
     Plan.WireRoutes.Reset();
     if (!FMath::IsFinite(Clearance) || Clearance < 20 || Clearance > 400
         || !FMath::IsFinite(KnotSize.X) || !FMath::IsFinite(KnotSize.Y) || KnotSize.X <= 0 || KnotSize.Y <= 0
@@ -3930,15 +3931,33 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
         { Route.bSkipped=true; Route.Reason=TEXT("Existing reroute or unreachable endpoint retained."); Plan.WireRoutes.Add(MoveTemp(Route)); continue; }
         FVector2D A=AlignmentPinPosition(Wire.OutputPin)+FVector2D(Source.PlannedX-Source.X,Source.PlannedY-Source.Y);
         const FVector2D B=AlignmentPinPosition(Wire.InputPin)+FVector2D(Target.PlannedX-Target.X,Target.PlannedY-Target.Y);
-        for(const FGetterCopy& Copy:Plan.GetterCopies)
+        // Copies have their own obstacle identity: the original reader is no
+        // longer the source of this connection once its copy is planned.
+        int32 SourceObstacleIndex=Wire.SourceNodeIndex;
+        for(int32 CopyIndex=0;CopyIndex<Plan.GetterCopies.Num();++CopyIndex)
+        {
+            const FGetterCopy& Copy=Plan.GetterCopies[CopyIndex];
             if(Copy.OriginalValuePin==Wire.OutputPin && Copy.ConsumerPin==Wire.InputPin)
+            {
                 A=FVector2D(Copy.PlannedX,Copy.PlannedY)+Copy.OutputOffset;
+                SourceObstacleIndex=Plan.Nodes.Num()+CopyIndex;
+            }
+        }
         TArray<FObstacle> Obstacles;
         for(int32 I=0;I<Plan.Nodes.Num();++I)
         {
             const FNode& Node=Plan.Nodes[I]; if(Node.bIsComment) continue;
             Obstacles.Add({Node.PlannedX-8,Node.PlannedY-8,Node.PlannedX+Node.Width+8,Node.PlannedY+Node.Height+8,I});
         }
+        for(int32 CopyIndex=0;CopyIndex<Plan.GetterCopies.Num();++CopyIndex)
+        {
+            const FGetterCopy& Copy=Plan.GetterCopies[CopyIndex];
+            Obstacles.Add({Copy.PlannedX-8,Copy.PlannedY-8,Copy.PlannedX+Copy.Width+8,Copy.PlannedY+Copy.Height+8,Plan.Nodes.Num()+CopyIndex});
+        }
+        // Later routes must leave room for knots already accepted by this plan.
+        for(const FWireRoute& Accepted:Plan.WireRoutes)
+            for(const FVector2D& Position:Accepted.KnotPositions)
+                Obstacles.Add({Position.X-8,Position.Y-8,Position.X+Accepted.KnotSize.X+8,Position.Y+Accepted.KnotSize.Y+8,INDEX_NONE});
         for(const FBox& Box:Plan.Boxes)
         {
             auto Owns=[&](const FNode& Node) { return Box.MemberKeys.Contains(Node.Key) || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName())); };
@@ -3946,7 +3965,7 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
         }
         bool bBlocked=false;
         for(const FObstacle& Obstacle:Obstacles)
-            if(Obstacle.NodeIndex!=Wire.SourceNodeIndex && Obstacle.NodeIndex!=Wire.TargetNodeIndex && Crosses(A,B,Obstacle)) { bBlocked=true; break; }
+            if(Obstacle.NodeIndex!=SourceObstacleIndex && Obstacle.NodeIndex!=Wire.TargetNodeIndex && Crosses(A,B,Obstacle)) { bBlocked=true; break; }
         const double DX=FMath::Abs(B.X-A.X),DY=FMath::Abs(B.Y-A.Y);
         if(!bBlocked && !(FVector2D::Distance(A,B)>800 && DX>1 && DY>1)) continue;
         TArray<TArray<FVector2D>> Candidates;
@@ -3966,21 +3985,48 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
             Candidates.Add({P0,P1,P2,P3});
         }
         double BestLength=TNumericLimits<double>::Max();
-        for(const TArray<FVector2D>& Candidate:Candidates)
+        for(TArray<FVector2D> Candidate:Candidates)
         {
+            // Evaluate the integer coordinates that Unreal will actually store.
+            bool bRepresentable=true;
+            for(FVector2D& Position:Candidate)
+            {
+                if(!FMath::IsFinite(Position.X) || !FMath::IsFinite(Position.Y)
+                    || Position.X<MIN_int32 || Position.X>MAX_int32
+                    || Position.Y<MIN_int32 || Position.Y>MAX_int32)
+                { bRepresentable=false; break; }
+                Position.X=FMath::RoundToDouble(Position.X);
+                Position.Y=FMath::RoundToDouble(Position.Y);
+            }
+            if(!bRepresentable) continue;
             bool bClear=true; double Length=0; FVector2D Previous=A;
             for(int32 I=0;I<=Candidate.Num() && bClear;++I)
             {
                 const FVector2D Next=I<Candidate.Num()?Candidate[I]+InputOffset:B;
+                // Rounding can introduce at most one unit of pin-axis drift.
+                if(FMath::Abs(Next.X-Previous.X)>1 && FMath::Abs(Next.Y-Previous.Y)>1)
+                    bClear=false;
+                for(int32 Other=0;Other<Candidate.Num() && bClear;++Other)
+                {
+                    if(Other==I || Other==I-1) continue;
+                    const FVector2D P=Candidate[Other];
+                    if(Crosses(Previous,Next,{P.X-8,P.Y-8,P.X+KnotSize.X+8,P.Y+KnotSize.Y+8,INDEX_NONE})) bClear=false;
+                }
                 for(const FObstacle& Obstacle:Obstacles)
                 {
-                    if((I==0 && Obstacle.NodeIndex==Wire.SourceNodeIndex) || (I==Candidate.Num() && Obstacle.NodeIndex==Wire.TargetNodeIndex)) continue;
+                    if((I==0 && Obstacle.NodeIndex==SourceObstacleIndex) || (I==Candidate.Num() && Obstacle.NodeIndex==Wire.TargetNodeIndex)) continue;
                     if(Crosses(Previous,Next,Obstacle)) { bClear=false; break; }
                 }
                 Length+=FVector2D::Distance(Previous,Next);
                 if(I<Candidate.Num())
                 {
                     const FVector2D P=Candidate[I];
+                    for(int32 Other=0;Other<I;++Other)
+                    {
+                        const FVector2D Q=Candidate[Other];
+                        if(P.X<Q.X+KnotSize.X+8 && P.X+KnotSize.X+8>Q.X
+                            && P.Y<Q.Y+KnotSize.Y+8 && P.Y+KnotSize.Y+8>Q.Y) bClear=false;
+                    }
                     if(!FMath::IsFinite(P.X) || !FMath::IsFinite(P.Y) || P.X<MIN_int32 || P.X>MAX_int32 || P.Y<MIN_int32 || P.Y>MAX_int32) bClear=false;
                     for(const FObstacle& Obstacle:Obstacles)
                         if(P.X<Obstacle.R && P.X+KnotSize.X>Obstacle.L && P.Y<Obstacle.B && P.Y+KnotSize.Y>Obstacle.T) { bClear=false; break; }
