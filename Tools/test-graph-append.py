@@ -686,6 +686,7 @@ def main():
          "the placement test reported no errors"),
     )
     automation_tests += (("TurboMCP.GraphAppend.DelegateSideEffects", "delegate test discovered", "delegate report parsed", "delegate workflow succeeds", "delegate workflow has no errors"),)
+    automation_tests += (("TurboMCP.GraphAppend.NodePinGrowth", "pin growth discovered", "pin growth report parsed", "pin growth succeeds", "pin growth has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.Inventory", "inventory discovered", "inventory report parsed", "inventory succeeds", "inventory has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.TypeIdRoundtrip", "type roundtrip discovered", "type roundtrip report parsed", "type roundtrip succeeds", "type roundtrip has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.Reachability", "reachability discovered", "reachability report parsed", "reachability workflow succeeds", "reachability workflow has no errors"),)
