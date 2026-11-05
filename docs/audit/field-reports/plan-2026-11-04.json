@@ -1074,10 +1074,10 @@
       "title": "Clarify delegate node write-back support and safe surrounding edits",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_gate_failed",
+      "validation": "focused_native_pass",
       "source_ids": [
         "X-124"
       ],
@@ -1085,12 +1085,27 @@
         "2026-11-03_S4/X-124"
       ],
       "dependencies": [],
-      "next_step": "Reader guidance implemented on review branch. Repair stale graph-text-guards calls (required Revision/EntryFilter) and legacy display-based type-ID expectations before accepting native evidence. Preserve partial reconstruction warnings and exact-pin compatibility checks.",
+      "next_step": "Implemented clear reconstruction limits and retained-node connection workflow. Does not add unsupported delegate construction or promise arbitrary links are safe: inspect exact pins and preview compatibility/replacements. Existing partial-evidence behavior retained.",
       "evidence": [
         {
           "result": "native_failure_retained",
           "run": "c222f2f944db4e03b732518cbb854ef7",
           "scope": "Build passed; graph-text suite failed 14 checks. Public read calls omit required revision/entryFilter; SharedValueRepair still expects Development|PrintString and Variables|Default|GetExactValue instead of current reflected path IDs. Not an accepted runtime pass; guidance remains unintegrated."
+        },
+        {
+          "result": "failed_harness_retained",
+          "run": "0c73f8dac32c4765a605cd3265b46693",
+          "scope": "Required arguments and type identities corrected; remaining failures exposed old pagination and function-entry formatting assumptions, subsequently reconciled against source contracts."
+        },
+        {
+          "result": "native_pass",
+          "run": "f2b9560b567b4aaea3dc0b03a827a24f",
+          "scope": "Graph-text-guards passed unsupported-node guidance/link preservation, exact single-use output, cycle/depth safeguards and 1201-node page bound."
+        },
+        {
+          "result": "offline_pass",
+          "run": "807e0b6ddb4d4f63803305952cf1624a",
+          "scope": "26 checks. Original guidance and harness follow-up scope checks passed separately."
         }
       ]
     },
