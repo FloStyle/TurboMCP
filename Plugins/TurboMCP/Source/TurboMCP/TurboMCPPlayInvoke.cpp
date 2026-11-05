@@ -113,8 +113,9 @@ bool ValidValue(const FProperty* P,const TSharedPtr<FJsonValue>& V,int32 Depth=0
         if (!FMath::IsFinite(Number)) return false;
         if (N->IsFloatingPoint()) return N->GetSize()!=4 || FMath::Abs(Number)<=3.402823466e38;
         if (FMath::FloorToDouble(Number)!=Number || FMath::Abs(Number)>9007199254740991.0) return false;
-        const double Limit=FMath::Pow(2.0,N->GetSize()*8-(N->IsUnsigned()?0:1));
-        return Number >= (N->IsUnsigned()?0.0:-Limit) && Number<Limit;
+        const bool Unsigned=CastField<FByteProperty>(P) || CastField<FUInt16Property>(P) || CastField<FUInt32Property>(P) || CastField<FUInt64Property>(P);
+        const double Limit=FMath::Pow(2.0,N->GetSize()*8-(Unsigned?0:1));
+        return Number >= (Unsigned?0.0:-Limit) && Number<Limit;
     }
     if (CastField<FBoolProperty>(P)) return V->Type==EJson::Boolean;
     if (CastField<FStrProperty>(P) || CastField<FNameProperty>(P) || CastField<FTextProperty>(P)) return V->Type==EJson::String;
