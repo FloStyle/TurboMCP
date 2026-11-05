@@ -280,10 +280,10 @@
       "title": "Make suggested and reported node type IDs usable",
       "kind": "bug",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reproduced_fix_validation_running",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "NT-10"
       ],
@@ -291,12 +291,22 @@
         "2026-10-30_S1/NT-10"
       ],
       "dependencies": [],
-      "next_step": "Native baseline 35c08e23d0e74407b6cddefd0ae16ac8 reproduced reported-ID failure: successful Self append reports Variables|Self-Reference, which append rejects on reuse. Candidate 1b149c23 reports the resolved input creation ID for requested nodes and labels companion reader types separately. Focused native validation running; not integrated or closed.",
+      "next_step": "Integrated 1b149c232a4a791b1e4f5cd8d9a7ff59040d29d3. Requested appended nodes report the accepted creation ID; engine-created companions explicitly report reader type without promising a creation ID. Current self suggestion succeeds; reported-ID reuse failure reproduced before repair and passes after.",
       "evidence": [
         {
           "run": "35c08e23d0e74407b6cddefd0ae16ac8",
           "result": "failed",
           "scope": "Suggested Self creation ID succeeds, but created-node output Variables|Self-Reference fails reuse. Confirms output-ID discrepancy; current suggestion path itself passed."
+        },
+        {
+          "run": "a1a0c8aa6a1a463b84bd40e594793dad",
+          "result": "passed",
+          "scope": "Native append suite; rejected self guess suggests usable ID, preview preserves node count, edit creates Self, reported ID creates second Self."
+        },
+        {
+          "run": "3f25167a8e2243faafb64b6d844938cf",
+          "result": "passed",
+          "scope": "26 offline checks; trusted scope gate passed for full source candidate."
         }
       ]
     },
