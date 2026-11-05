@@ -1550,10 +1550,10 @@
       "title": "Reconcile find-node and create-event retarget workflows",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "partial_focused_native_workflow_passed",
+      "validation": "focused_native_workflows_passed",
       "source_ids": [
         "FT-136"
       ],
@@ -1561,7 +1561,7 @@
         "2026-11-03_S2/FT-136"
       ],
       "dependencies": [],
-      "next_step": "In-place Create Event retarget implemented in 83615e45dc90b9084f718a1360375220b0e08174. Native run dd98b202a6754abfbd8fb75e5d904a79 passed the graph-append suite, including two delegate consumers, preserved identity/position/object input/defaults, clean preview/refusals/no-op, undo, explicit compile and live help. Scope gate passed. No disk persistence or runtime registration proof claimed. NodeFind title search and GraphRemove reader-ID deletion already exist. Direct UObject-path deletion remains unresolved; this combined task is not closed."
+      "next_step": "Implemented in-place delegate retarget and exact current UObject-path node removal. Existing NodeFind title search satisfies the finder requirement. Native retarget run dd98b202a6754abfbd8fb75e5d904a79 and removal run 4924196cb24f47edbe0653c354f4bfd6 passed; scoped candidates 83615e45 and 5e1d7f72 passed scope checks. Removal verifies clean preview, stale/foreign graph refusal, exact deletion, neighboring graph preservation and undo. Retarget verifies two consumers, identity/defaults/object link preservation, undo and explicit compile. Paths are session-sensitive; fresh reader IDs are preferred. No asset-deletion crash fix, runtime registration or disk persistence claim. Offline a195610a71dc46919d7331c3380b98b2 passed 25 checks and failed stale inventory only; inventory regenerated and structure rechecked."
     },
     {
       "id": "NOV04-40",
