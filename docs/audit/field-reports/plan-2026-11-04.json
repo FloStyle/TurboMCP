@@ -853,9 +853,9 @@
       "title": "Explain and test analog input versus menu navigation",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
       "validation": "reported_not_reproduced",
       "source_ids": [
         "PI-08"
@@ -864,7 +864,7 @@
         "2026-11-04_S1/PI-08"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Reproduce Gamepad_LeftY=-1 for 0.3 seconds in the owned CommonUI menu with actual focus assertions and D-pad control. Source forwards analog to Slate; do not claim analog navigation unsupported or historical cause known."
     },
     {
       "id": "NOV04-25",

@@ -3525,6 +3525,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPInterfaceLocalTest.cpp"
           ],
           "new_files": []
+        },
+        "nov04-analog-menu-reproduction": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

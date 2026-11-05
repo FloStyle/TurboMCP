@@ -2229,3 +2229,8 @@ NOV04-16 integrated: exact quoted whitespace pin rendering/parsing, unchanged en
 Readiness: ready. Assignment nov04-local-struct-help. Current source accepts bare loadable struct paths in ResolveBare, but local preview/edit help omits them and the failed-resolution diagnostic incorrectly mentions only class paths. Document native and project struct object-path examples without inventing a struct prefix. Improve actionable refusal text. Extend the existing local-variable native fixture to verify preview preservation, accepted native struct path and actual declared struct identity, and unsupported prefixed-form refusal without declaration mutation. Check both public help outputs. Run supervised test-graph-append and the offline gate. No engine edits, saves or syntax expansion.
 
 NOV04-41 integrated: plain struct paths documented and refusal guidance corrected. Native 6ae0a8db7d224eb0b1933499df069628 passed; final offline 5a063205eda34dca928dba78ab72baea passed. Intermediate guard/inventory failures retained in plan evidence. No engine edits or saves.
+
+
+### NOV04-24 analog menu reproduction
+
+Readiness: ready. Assignment nov04-analog-menu-reproduction. Current input code forwards analog events through Slate; stock navigation uses Gamepad_LeftY below -0.5 for Down. Extend the owned CommonUI PIE menu workflow with a -1 axis hold for 0.3 seconds and assert the actual focused Resume row, then return using D-pad Up. Preserve existing D-pad and focus-loss checks. Record accepted input separately from observed navigation. Run the supervised vision suite with TMCP_COMMON_PLAY_ONLY=1. Test-only until a failure or observed contract establishes a repair; no engine modifications or user assets.
