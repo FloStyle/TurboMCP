@@ -590,10 +590,10 @@
       "title": "Clarify continuation behavior with explicit incoming links",
       "kind": "bug",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "GC-84"
       ],
@@ -601,7 +601,19 @@
         "2026-11-03_S1/GC-84"
       ],
       "dependencies": [],
-      "next_step": "Explicit input links intentionally override continuation to prevent an additional execution path. Candidate now names the skipped Continuation value and target, explains how to request it, and clarifies help. Native event-connect workflow tests conflicting named continuation versus explicit else link, normal preview and invalid-exit refusal; validation pending."
+      "next_step": "Explicit links retain priority. Preview/edit now name the skipped Continuation value and target, explain that no extra execution path is added, and explain how to request continuation instead. Verified conflicting named continuation versus explicit else link, preview preservation, normal preview, invalid exit refusal, stored branch links and compiled runtime values.",
+      "evidence": [
+        {
+          "run": "44ad83baaebb454c8031e1c6f7f7a200",
+          "result": "passed",
+          "scope": "Event-connect native workflow; explicit else link wins over Guard:then, then remains unconnected; preview/edit show skipped option. Compiled event values pass. Native capture inspected: readable nodes, False path connected, True unused."
+        },
+        {
+          "run": "324994f71f3747509bf010e32a905c02",
+          "result": "passed",
+          "scope": "26 offline checks and scope gate for a811e2b47339a6944d215e1a2c882f2ee4d0ee16."
+        }
+      ]
     },
     {
       "id": "NOV04-16",
