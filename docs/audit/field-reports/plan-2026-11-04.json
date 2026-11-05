@@ -1351,10 +1351,10 @@
       "title": "Reconcile graph reader JSON format expectations",
       "kind": "feature",
       "priority": "P3",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reviewed_gap_confirmed",
+      "validation": "focused_native_and_offline_passed",
       "source_ids": [
         "GL-27"
       ],
@@ -1362,7 +1362,7 @@
         "2026-11-03_S1/GL-27"
       ],
       "dependencies": [],
-      "next_step": "Implement scoped GraphLoad JSON envelope using the existing graph text writer, preserving body fidelity, independently valid JSON pages, revision checks and limitation fields. No alternate node dialect or write-back claim."
+      "next_step": "GraphLoad accepts json using the same readable graph body as BlueprintLoad. Each page is valid JSON with body, limitations, revision and continuation metadata; read format is preserved. Native 55dfca808af244ffa0fadacfba0ec335 passed parseability, body fidelity, page reconstruction, clean reads, stale revision and invalid format checks; full graph-append suite passed. Scope passed at d1a9b344fddcd5e7005f3a5a94ee239445aadd57. Offline 733fd251acf940ac99443f3f83bd32d6 passed 26 checks after inventory refresh. Native cleanup logged missing AssetRegistry fixture warnings; retained in raw evidence, not a warning-free claim. JSON body remains inspection text, not structured node editing or write-back input."
     },
     {
       "id": "NOV04-33",
