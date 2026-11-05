@@ -172,6 +172,20 @@ public:
 		UEdGraphPin* DownstreamPin = nullptr;
 	};
 
+    /** A planned replacement for one existing wire. No live knot is created by planning. */
+    struct FWireRoute
+    {
+        int32 WireIndex = INDEX_NONE;
+        /** Top-left positions; measured input/output offsets define each segment. */
+        TArray<FVector2D> KnotPositions;
+        FVector2D KnotSize = FVector2D::ZeroVector;
+        FVector2D InputOffset = FVector2D::ZeroVector;
+        FVector2D OutputOffset = FVector2D::ZeroVector;
+        /** Human-readable rule or an explicit reason the wire was not routed. */
+        FString Reason;
+        bool bSkipped = false;
+    };
+
 	/** Everything the Preview and the Edit both need, computed once in `Plan`. */
 	struct FPlan
 	{
@@ -217,6 +231,8 @@ public:
 		/** Getter copies and knots, created before the measure because they change the node set. */
 		TArray<FGetterCopy> GetterCopies;
 		TArray<FKnotAdded> KnotsAdded;
+        /** Orthogonal route candidates; not exposed until preview/apply support is complete. */
+        TArray<FWireRoute> WireRoutes;
 
 		/** False when the planned layout is not better and `bForce` is not set. */
 		bool bWouldApply = false;
@@ -254,6 +270,13 @@ public:
 
     /** Refuse the first moved non-comment pair with intersecting planned rectangles. Unmoved overlaps are preserved. Does not mutate the plan or graph. */
     static bool ValidatePlannedNodeOverlaps(const FPlan& InPlan, FString& OutError);
+
+    /** Build bounded orthogonal route candidates from measured knot geometry.
+     * This only fills WireRoutes; it does not change live links or authorize an edit.
+     * Preview/apply integration must consume exactly these positions before enabling it.
+     */
+    static bool PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& KnotSize,
+        const FVector2D& InputOffset, const FVector2D& OutputOffset, double Clearance, FString& Error);
 
 	/** Moves the nodes, fits the boxes, and rolls back what it created when the result is not better. */
 	static FString Apply(const FPlan& InPlan);

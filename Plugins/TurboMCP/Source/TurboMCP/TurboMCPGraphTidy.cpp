@@ -3891,3 +3891,107 @@ bool FTurboMCPGraphTidy::ValidatePlannedNodeOverlaps(const FPlan& InPlan, FStrin
     }
     return true;
 }
+
+// Internal routing stage. Public Tidy still leaves routing disabled until these
+// plans are consumed by scratch preview, live apply, scoring and exact rollback.
+bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& KnotSize,
+    const FVector2D& InputOffset, const FVector2D& OutputOffset, double Clearance, FString& Error)
+{
+    Plan.WireRoutes.Reset();
+    if (!FMath::IsFinite(Clearance) || Clearance < 20 || Clearance > 400
+        || !FMath::IsFinite(KnotSize.X) || !FMath::IsFinite(KnotSize.Y) || KnotSize.X <= 0 || KnotSize.Y <= 0
+        || !FMath::IsFinite(InputOffset.X) || !FMath::IsFinite(InputOffset.Y)
+        || !FMath::IsFinite(OutputOffset.X) || !FMath::IsFinite(OutputOffset.Y))
+    { Error=TEXT("Orthogonal routing requires measured knot geometry and clearance from 20 to 400."); return false; }
+    struct FObstacle { double L,T,R,B; int32 NodeIndex; };
+    auto Crosses=[](const FVector2D& A,const FVector2D& B,const FObstacle& Rect)
+    {
+        double Enter=0,Leave=1;
+        auto Clip=[&](double Start,double Delta,double Min,double Max)
+        {
+            if(FMath::Abs(Delta)<0.000001) return Start>Min && Start<Max;
+            double T0=(Min-Start)/Delta,T1=(Max-Start)/Delta;
+            if(T0>T1) Swap(T0,T1);
+            Enter=FMath::Max(Enter,T0); Leave=FMath::Min(Leave,T1); return Enter<Leave;
+        };
+        return Clip(A.X,B.X-A.X,Rect.L,Rect.R) && Clip(A.Y,B.Y-A.Y,Rect.T,Rect.B);
+    };
+    for(int32 WireIndex=0;WireIndex<Plan.Wires.Num();++WireIndex)
+    {
+        const FWire& Wire=Plan.Wires[WireIndex];
+        if(!Wire.OutputPin || !Wire.InputPin || !Plan.Nodes.IsValidIndex(Wire.SourceNodeIndex)
+            || !Plan.Nodes.IsValidIndex(Wire.TargetNodeIndex)) continue;
+        const FNode& Source=Plan.Nodes[Wire.SourceNodeIndex]; const FNode& Target=Plan.Nodes[Wire.TargetNodeIndex];
+        FWireRoute Route; Route.WireIndex=WireIndex; Route.KnotSize=KnotSize;
+        Route.InputOffset=InputOffset; Route.OutputOffset=OutputOffset;
+        if(!Plan.SelectedNodeKeys.IsEmpty() && (!Plan.SelectedNodeKeys.Contains(Source.Key) || !Plan.SelectedNodeKeys.Contains(Target.Key)))
+        { Route.bSkipped=true; Route.Reason=TEXT("Fixed boundary link retained."); Plan.WireRoutes.Add(MoveTemp(Route)); continue; }
+        if(Source.bUnreachable || Target.bUnreachable || Source.bIsKnot || Target.bIsKnot)
+        { Route.bSkipped=true; Route.Reason=TEXT("Existing reroute or unreachable endpoint retained."); Plan.WireRoutes.Add(MoveTemp(Route)); continue; }
+        FVector2D A=AlignmentPinPosition(Wire.OutputPin)+FVector2D(Source.PlannedX-Source.X,Source.PlannedY-Source.Y);
+        const FVector2D B=AlignmentPinPosition(Wire.InputPin)+FVector2D(Target.PlannedX-Target.X,Target.PlannedY-Target.Y);
+        for(const FGetterCopy& Copy:Plan.GetterCopies)
+            if(Copy.OriginalValuePin==Wire.OutputPin && Copy.ConsumerPin==Wire.InputPin)
+                A=FVector2D(Copy.PlannedX,Copy.PlannedY)+Copy.OutputOffset;
+        TArray<FObstacle> Obstacles;
+        for(int32 I=0;I<Plan.Nodes.Num();++I)
+        {
+            const FNode& Node=Plan.Nodes[I]; if(Node.bIsComment) continue;
+            Obstacles.Add({Node.PlannedX-8,Node.PlannedY-8,Node.PlannedX+Node.Width+8,Node.PlannedY+Node.Height+8,I});
+        }
+        for(const FBox& Box:Plan.Boxes)
+        {
+            auto Owns=[&](const FNode& Node) { return Box.MemberKeys.Contains(Node.Key) || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName())); };
+            if(!Owns(Source) && !Owns(Target)) Obstacles.Add({Box.PlannedX,Box.PlannedY,Box.PlannedX+Box.PlannedWidth,Box.PlannedY+Box.PlannedHeight,INDEX_NONE});
+        }
+        bool bBlocked=false;
+        for(const FObstacle& Obstacle:Obstacles)
+            if(Obstacle.NodeIndex!=Wire.SourceNodeIndex && Obstacle.NodeIndex!=Wire.TargetNodeIndex && Crosses(A,B,Obstacle)) { bBlocked=true; break; }
+        const double DX=FMath::Abs(B.X-A.X),DY=FMath::Abs(B.Y-A.Y);
+        if(!bBlocked && !(FVector2D::Distance(A,B)>800 && DX>1 && DY>1)) continue;
+        TArray<TArray<FVector2D>> Candidates;
+        const FVector2D OffsetDelta=OutputOffset-InputOffset;
+        // Two knots form an exact vertical segment despite their distinct pins.
+        for(double X:{A.X+Clearance,B.X-Clearance-OffsetDelta.X})
+            Candidates.Add({FVector2D(X,A.Y)-InputOffset,FVector2D(X+OffsetDelta.X,B.Y-OffsetDelta.Y)-InputOffset});
+        TArray<double> Channels{FMath::Min(A.Y,B.Y)-Clearance,FMath::Max(A.Y,B.Y)+Clearance};
+        for(const FObstacle& Obstacle:Obstacles)
+        { Channels.AddUnique(Obstacle.T-Clearance); Channels.AddUnique(Obstacle.B+Clearance); }
+        for(double Y:Channels)
+        {
+            const FVector2D P0=FVector2D(A.X+Clearance,A.Y)-InputOffset;
+            const FVector2D P1=FVector2D((P0+OutputOffset).X,Y)-InputOffset;
+            const FVector2D P2=FVector2D(B.X-Clearance-OffsetDelta.X,(P1+OutputOffset).Y)-InputOffset;
+            const FVector2D P3=FVector2D((P2+OutputOffset).X,B.Y-OffsetDelta.Y)-InputOffset;
+            Candidates.Add({P0,P1,P2,P3});
+        }
+        double BestLength=TNumericLimits<double>::Max();
+        for(const TArray<FVector2D>& Candidate:Candidates)
+        {
+            bool bClear=true; double Length=0; FVector2D Previous=A;
+            for(int32 I=0;I<=Candidate.Num() && bClear;++I)
+            {
+                const FVector2D Next=I<Candidate.Num()?Candidate[I]+InputOffset:B;
+                for(const FObstacle& Obstacle:Obstacles)
+                {
+                    if((I==0 && Obstacle.NodeIndex==Wire.SourceNodeIndex) || (I==Candidate.Num() && Obstacle.NodeIndex==Wire.TargetNodeIndex)) continue;
+                    if(Crosses(Previous,Next,Obstacle)) { bClear=false; break; }
+                }
+                Length+=FVector2D::Distance(Previous,Next);
+                if(I<Candidate.Num())
+                {
+                    const FVector2D P=Candidate[I];
+                    if(!FMath::IsFinite(P.X) || !FMath::IsFinite(P.Y) || P.X<MIN_int32 || P.X>MAX_int32 || P.Y<MIN_int32 || P.Y>MAX_int32) bClear=false;
+                    for(const FObstacle& Obstacle:Obstacles)
+                        if(P.X<Obstacle.R && P.X+KnotSize.X>Obstacle.L && P.Y<Obstacle.B && P.Y+KnotSize.Y>Obstacle.T) { bClear=false; break; }
+                    Previous=P+OutputOffset;
+                }
+            }
+            if(bClear && Length<BestLength) { BestLength=Length; Route.KnotPositions=Candidate; }
+        }
+        Route.bSkipped=Route.KnotPositions.IsEmpty();
+        Route.Reason=Route.bSkipped?TEXT("No collision-free orthogonal candidate; original wire retained."):TEXT("Orthogonal channel candidate; application and acceptance remain separate.");
+        Plan.WireRoutes.Add(MoveTemp(Route));
+    }
+    return true;
+}
