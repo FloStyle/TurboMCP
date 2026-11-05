@@ -3730,6 +3730,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetDeleteTest.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPAssetDeleteFixture.h"
           ]
+        },
+        "nov04-slate-text-visibility": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSlateVisibilityTest.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSlateText.cpp"
+          ]
         }
       },
       "preserve_rows": []
