@@ -439,8 +439,8 @@
       "title": "Clarify append quoting, labels, comments and flat forms",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
+      "state": "in_progress",
+      "readiness": "ready",
       "owner": "unassigned",
       "validation": "reported_not_reproduced",
       "source_ids": [
@@ -456,7 +456,14 @@
         "2026-11-03_S4/GC-92"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Confirmed trailing-label parser defect repaired in claimed worktree; native rerun pending. Added quote-aware comment scan, conflicting-label refusal, and help for quoted IDs/flat forms/comment endings. Do not close before verification and integration.",
+      "evidence": [
+        {
+          "run": "228419bfbff44ab195c639af0c1a14b8",
+          "result": "failed",
+          "scope": "Confirmed GC-82: public append preview/edit reject AddedValue label after final pin and closing parenthesis; standalone closing-line form worked previously. Quoted string contains semicolon and escapes."
+        }
+      ]
     },
     {
       "id": "NOV04-12",
