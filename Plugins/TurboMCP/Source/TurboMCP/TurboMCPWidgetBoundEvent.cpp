@@ -45,7 +45,7 @@ FString WidgetEvent(bool Edit,const FString& Asset,const FString& GraphName,cons
     UEdGraph* Graph=nullptr;
     for (UEdGraph* Candidate:BP->UbergraphPages) if (Candidate && Candidate->GetName()==GraphName)
     { if (Graph) return Refuse(TEXT("GraphName is ambiguous."));Graph=Candidate; }
-    if (!Graph || !Graph->GetSchema()->IsA<UEdGraphSchema_K2>()) return Refuse(TEXT("GraphName must name an owned K2 event graph, not a function or inherited graph."));
+    if (!Graph || !Graph->GetSchema() || !Graph->GetSchema()->IsA<UEdGraphSchema_K2>()) return Refuse(TEXT("GraphName must name an owned K2 event graph, not a function or inherited graph."));
     UWidget* Widget=nullptr;TArray<UWidget*> Widgets;BP->WidgetTree->GetAllWidgets(Widgets);
     for (UWidget* Candidate:Widgets) if (Candidate && Candidate->GetName()==WidgetName && Candidate->GetOuter()==BP->WidgetTree)
     { if (Widget) return Refuse(TEXT("WidgetName is ambiguous."));Widget=Candidate; }

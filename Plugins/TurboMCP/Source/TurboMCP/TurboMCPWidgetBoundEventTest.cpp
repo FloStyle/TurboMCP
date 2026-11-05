@@ -3,6 +3,7 @@
 #include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
+#include "Modules/ModuleManager.h"
 #include "WidgetBlueprint.h"
 #include "WidgetBlueprintOperationUtils.h"
 #include "Blueprint/UserWidget.h"
@@ -66,6 +67,36 @@ bool FTurboMCPWidgetBoundEventTest::RunTest(const FString&)
                 if (Binding.ComponentPropertyName==TEXT("Purchase") && Binding.DelegatePropertyName==TEXT("OnClicked"))
                 { ++Bindings;TestNotNull(TEXT("Compiled handler exists"),BP->GeneratedClass->FindFunctionByName(Binding.FunctionNameToBind)); }
     TestEqual(TEXT("Compiled designer delegate binding"),Bindings,1);
+    // CommonUI exposes a reflected delegate name different from its display label.
+    FModuleManager::Get().LoadModule(TEXT("CommonUI"));
+    UClass* CommonClass=LoadClass<UUserWidget>(nullptr,TEXT("/Script/CommonUI.CommonButtonBase"));
+    if (!TestNotNull(TEXT("CommonUI button class"),CommonClass)) return false;
+    auto* Child=FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(Package,TEXT("WBP_CommonButton"),BPTYPE_Normal,CommonClass,UCanvasPanel::StaticClass(),TEXT("WidgetEventTest"),false);
+    if (!TestNotNull(TEXT("CommonUI child fixture"),Child)) return false;
+    FKismetEditorUtilities::CompileBlueprint(Child);
+    UWidget* CommonButton=BP->WidgetTree->ConstructWidget<UWidget>(Child->GeneratedClass.Get(),TEXT("CommonPurchase"));
+    CommonButton->bIsVariable=true;
+    BP->WidgetVariableNameToGuidMap.Add(CommonButton->GetFName(),FGuid::NewGuid());
+    CastChecked<UCanvasPanel>(BP->WidgetTree->RootWidget)->AddChildToCanvas(CommonButton);
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    Package->SetDirtyFlag(false);
+    TestTrue(TEXT("CommonUI display label refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetEvent(Asset,Name,TEXT("CommonPurchase"),TEXT("On Clicked")).Contains(TEXT("refused:")));
+    TestFalse(TEXT("Display label refusal stays clean"),Package->IsDirty());
+    const FString CommonPreview=UTurboMCPPreviewToolset::PreviewTurboMCPWidgetEvent(Asset,Name,TEXT("CommonPurchase"),TEXT("OnButtonBaseClicked"));
+    AddInfo(CommonPreview);
+    TestTrue(TEXT("CommonUI exact delegate preview"),CommonPreview.Contains(TEXT("preview: create widget event CommonPurchase.OnButtonBaseClicked")));
+    TestFalse(TEXT("CommonUI preview stays clean"),Package->IsDirty());
+    const FString CommonEdit=UTurboMCPEditToolset::EditTurboMCPWidgetEvent(Asset,Name,TEXT("CommonPurchase"),TEXT("OnButtonBaseClicked"));
+    AddInfo(CommonEdit);
+    TestTrue(TEXT("CommonUI designer binding created"),CommonEdit.StartsWith(TEXT("changed")));
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    int32 CommonBindings=0;
+    for (UDynamicBlueprintBinding* Entry:CastChecked<UBlueprintGeneratedClass>(BP->GeneratedClass)->DynamicBindingObjects)
+        if (auto* Bound=Cast<UComponentDelegateBinding>(Entry))
+            for (const auto& Binding:Bound->ComponentDelegateBindings)
+                if (Binding.ComponentPropertyName==TEXT("CommonPurchase") && Binding.DelegatePropertyName==TEXT("OnButtonBaseClicked"))
+                { ++CommonBindings;TestNotNull(TEXT("CommonUI compiled handler exists"),BP->GeneratedClass->FindFunctionByName(Binding.FunctionNameToBind)); }
+    TestEqual(TEXT("One compiled CommonUI designer binding"),CommonBindings,1);
     for (const TCHAR* Tool:{TEXT("PreviewTurboMCPWidgetEvent"),TEXT("EditTurboMCPWidgetEvent")})
     {
         const FString Help=UTurboMCPReadToolset::ReadTurboMCPToolHelp(FString(Tool).StartsWith(TEXT("Preview"))?TEXT("TurboMCP.TurboMCPPreviewToolset"):TEXT("TurboMCP.TurboMCPEditToolset"),Tool);AddInfo(Help);
