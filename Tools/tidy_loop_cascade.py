@@ -305,6 +305,62 @@ def record_comment_regression(call, evidence, persist):
     persist()
 
 
+
+def record_break_regression(call, evidence, persist):
+    """J3 uses a real loop Break input, retaining that edge as execution feedback."""
+    asset, graph = evidence['asset'], 'J3BreakFeedback'
+    row = dict(acceptance=False)
+    evidence.setdefault('regressions', {})['J3'] = row
+    call('EditTurboMCPFunctionAdd', asset=asset, name=graph, inputs='Items: array<double>', outputs='')
+    call('EditTurboMCPCompile', assets=asset)
+    initial = call('ReadTurboMCPGraphLoad', asset=asset, graphName=graph, format='read',
+                   detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
+    entry = re.search(r'\(fn J3BreakFeedback ; ([^\s;]+)', initial).group(1)
+    result = re.search(r'\(Function\|Result ; ([^\s;]+)', initial).group(1)
+    discovery = call('PreviewTurboMCPNodeType', asset=asset, graphName=graph, words='ForEachLoop', limit='40')
+    choices = [line for line in discovery.splitlines() if line == 'Utilities|Array|ForEachLoopwithBreak']
+    if len(choices) != 1:
+        raise RuntimeError('J3 cannot discover the array loop with Break')
+    loop_type = choices[0]
+    row['loop_pins'] = call('PreviewTurboMCPNodePins', asset=asset, graphName=graph, typeId=loop_type)
+    for pin in ('Exec', 'Array', 'Break', 'LoopBody', 'Completed'):
+        if not re.search(r'\b' + pin + r'\b', row['loop_pins']):
+            raise RuntimeError('J3 missing discovered loop pin ' + pin)
+    input_discovery = call('PreviewTurboMCPNodeType', asset=asset, graphName=graph, words='Items', limit='40')
+    inputs = [line for line in input_discovery.splitlines() if line.startswith('FunctionInput|') and line.endswith('|J3BreakFeedback|Items')]
+    if len(inputs) != 1:
+        raise RuntimeError('J3 input getter discovery is ambiguous')
+    call('EditTurboMCPGraphRemove', asset=asset, graphName=graph, nodes='[]',
+         links=json.dumps([dict(sourceNodeId=entry,sourcePin='then',targetNodeId=result,targetPin='execute')]))
+    text = ('(' + inputs[0] + ' ; label ItemsRead\n)\n('
+            + loop_type + ' ; label Loop\n "Exec" (-> ' + entry
+            + ':"then")\n "Array" (-> ItemsRead:"Items")\n)\n'
+            '(Utilities|FlowControl|Branch ; label Stop\n "execute" (-> Loop:"LoopBody")\n "Condition" true\n)')
+    args = dict(asset=asset,graphName=graph,text=text,continuation='auto',placement='local')
+    row['append_preview'] = call('PreviewTurboMCPGraphAppend', **args)
+    if not row['append_preview'].startswith('preview:'):
+        raise RuntimeError('J3 construction preview refused: ' + row['append_preview'])
+    appended = call('EditTurboMCPGraphAppend', **args)
+    created = re.findall(r'^created (.*?): type (.*)$', appended, re.M)
+    if [kind for _,kind in created] != [inputs[0],loop_type,'Utilities|FlowControl|Branch']:
+        raise RuntimeError('J3 construction identities do not match the recipe')
+    loop, stop = created[1][0], created[2][0]
+    row['loop_id'], row['stop_id'] = loop, stop
+    call('EditTurboMCPGraphConnect',asset=asset,graphName=graph,sourceNodeId=stop,sourcePin='then',targetNodeId=loop,targetPin='Break')
+    call('EditTurboMCPGraphConnect',asset=asset,graphName=graph,sourceNodeId=loop,sourcePin='Completed',targetNodeId=result,targetPin='execute')
+    row['compile'] = call('EditTurboMCPCompile',assets=asset)
+    row['before'] = call('ReadTurboMCPNodeResolve',nodeIds=loop)
+    persist()
+    args = dict(asset=asset,graphName=graph,bForce=False,nodeIds=[],mainPath='',horizontalGap=120.0,verticalGap=100.0,lanePitch=280.0,wrapAfter='')
+    row['preview'] = call('PreviewTurboMCPGraphTidy',**args)
+    row['edit'] = call('EditTurboMCPGraphTidy',**args)
+    row['after'] = call('ReadTurboMCPNodeResolve',nodeIds=loop)
+    row['positions'] = read_positions(call,asset,graph)
+    row['capture'] = call('LookTurboMCPCapture',asset=asset,graphName=graph,mode='graph',target='',size='1600x900')
+    row['remaining'] = 'Compare exact feedback and Completed links, Body pin alignment and Completed placement; no automatic visual acceptance.'
+    persist()
+
+
 def run():
     root = Path(__file__).resolve().parents[1]
     context = json.loads(Path(os.environ['TURBOMCP_EXECUTION_CONTEXT']).read_text(encoding='utf-8'))
@@ -400,6 +456,7 @@ def run():
         record_baseline(call, evidence, persist)
         record_scoped_regression(call, evidence, persist)
         record_comment_regression(call, evidence, persist)
+        record_break_regression(call, evidence, persist)
         persist()
         print('Evidence: ' + str(directory), flush=True)
         print('RESULT: PASS (baseline evidence checkpoint only; layout acceptance remains false)')
