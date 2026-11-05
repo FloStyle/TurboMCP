@@ -3709,6 +3709,15 @@
             "Tools/test-asset-tools.py"
           ],
           "new_files": []
+        },
+        "nov04-function-library-create": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendAliasTest.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionLibraryCreate.cpp"
+          ]
         }
       },
       "preserve_rows": []
