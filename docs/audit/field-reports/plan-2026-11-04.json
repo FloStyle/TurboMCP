@@ -318,7 +318,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reconciled_runtime_pending",
+      "validation": "reproduced_fixes_under_validation",
       "source_ids": [
         "NT-12",
         "NT-14",
@@ -330,7 +330,29 @@
         "2026-11-03_S4/NT-15"
       ],
       "dependencies": [],
-      "next_step": "Current discovery includes stable variable member IDs and action-menu keywords; historical failures may be partially addressed. Fresh fixture will verify member-name/getter/setter search and actual returned identity, then arithmetic aliases and dispatcher ownership separately. No subtopic closed from source alone."
+      "next_step": "Reproduced missing getter/setter and plus/minus terms, then the button dispatcher omission. Candidate adds discovery keywords, preserves keyword text across pipe separators, and includes reflected dispatcher name/declaring class. Member/operator repair passed native; combined dispatcher validation running. Not integrated.",
+      "evidence": [
+        {
+          "run": "744c071259eb4baaa86cf1ca7a1a926c",
+          "result": "failed",
+          "scope": "getter/setter member queries and plus/minus operator queries failed; member name/get/add/subtract controls passed."
+        },
+        {
+          "run": "b1d8d4c1c4c146239831e313b7eb944f",
+          "result": "passed",
+          "scope": "Member and arithmetic discovery candidate passed; dispatcher not covered yet."
+        },
+        {
+          "run": "1aafb63a4c71404ca8b5f684b6400582",
+          "result": "failed",
+          "scope": "Test-only CommonUI header unavailable; corrected to reflected loading without adding dependency."
+        },
+        {
+          "run": "a7d5c8b372084e6d9ee50083e75f1d60",
+          "result": "failed",
+          "scope": "Reflected button dispatcher search returned only CommonButtonGroupBase actions, not CommonButtonBase; owner assertion failed."
+        }
+      ]
     },
     {
       "id": "NOV04-10",
