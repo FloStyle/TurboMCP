@@ -4,6 +4,7 @@ All editor calls use the public registry. A lost response is never replayed.
 Discovery is a checkpoint, not successful acceptance of the layout scenario.
 """
 import json
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -169,37 +170,50 @@ def run():
         # Stock macro actions may be absent until their owning Blueprint is loaded.
         # This is an explicit read-only prerequisite probe, not direct node construction.
         call('ReadTurboMCPBlueprintLoad', assets='/Engine/EditorBlueprintResources/StandardMacros.StandardMacros', detail='manifest', graphFilter='', format='read', tokenBudget='4000')
-        queries = ['PathPoints', 'PathTransform', 'SamplePoints', 'InnerDistance', 'FalloffDistance', 'FallbackWeight', 'Scale', 'FlatPoints', 'WorkWeights', 'BestDistSq', 'ResultScale', 'Length', 'MakeLiteralInt', 'GreaterEqual', 'Branch', 'Clear', 'ForEachLoop', 'TransformLocation', 'BreakVector', 'MakeVector', 'Array_Add', 'Subtract', 'ForLoop', 'Get (a copy)', 'Add', 'Equal', 'Select', 'FindClosestPointOnSegment', 'Multiply', 'Less', 'Sqrt', 'MapRangeClamped', 'MakeLiteralDouble', 'FClamp']
-        evidence['discovery'] = {}
-        for query in queries:
-            answer = call('PreviewTurboMCPNodeType', asset=asset, graphName='LoopCascade', words=query, limit='200' if query == 'Scale' else '40')
-            evidence['discovery'][query] = answer
-        # Resolve exact IDs from returned discovery rows, then inspect actual pins.
-        exact = {
-            'Length': 'Utilities|Array|Length', 'GreaterEqual': 'Utilities|Operators|GreaterEqual(>=)',
-            'Branch': 'Utilities|FlowControl|Branch', 'Clear': 'Utilities|Array|Clear',
-            'ForEachLoop': 'Utilities|Array|ForEachLoop', 'Array_Add': 'Utilities|Array|Add',
-            'Subtract': 'Utilities|Operators|Subtract', 'ForLoop': 'Utilities|FlowControl|ForLoop',
-            'Get (a copy)': 'Utilities|Array|Get(acopy)', 'Add': 'Utilities|Operators|Add',
-            'Equal': 'Utilities|Operators|Equal(==)', 'Select': 'Utilities|Select',
-            'Multiply': 'Utilities|Operators|Multiply', 'Less': 'Utilities|Operators|Less(<)'}
-        evidence['types'] = {}
-        evidence['pins'] = {}
-        for query, answer in evidence['discovery'].items():
-            rows = answer.splitlines()
-            if query in exact:
-                candidates = [x for x in rows if x == exact[query]]
-            elif query in ('PathPoints', 'PathTransform', 'SamplePoints', 'InnerDistance', 'FalloffDistance', 'FallbackWeight', 'Scale'):
-                candidates = [x for x in rows if x.startswith('FunctionInput|') and x.endswith('|LoopCascade|' + query)]
-            elif query in ('FlatPoints', 'WorkWeights', 'BestDistSq', 'ResultScale'):
-                candidates = [x for x in rows if x.startswith('Variable|' + asset) and x.endswith(('|Get|' + query, '|Set|' + query))]
-            else:
-                candidates = [x for x in rows if x.startswith('Function|/Script/Engine.') and x.endswith(':' + query)]
-            if not candidates:
-                raise RuntimeError('Missing unambiguous discovered creation ID: ' + query)
-            evidence['types'][query] = candidates
-            for candidate in candidates:
-                evidence['pins'][candidate] = call('PreviewTurboMCPNodePins', asset=asset, graphName='LoopCascade', typeId=candidate)
+        binary = root / 'TestProject/Binaries/Win64/UnrealEditor-TurboMCP.dll'
+        binary_hash = hashlib.sha256(binary.read_bytes()).hexdigest()
+        cache_path = root / '.local/tidy-cascade' / ('discovery-' + binary_hash + '.json')
+        cached = json.loads(cache_path.read_text()) if cache_path.exists() else None
+        if cached and cached.get('signature_version') == 1:
+            old_name = cached['asset'].rsplit('/', 1)[-1]
+            new_name = asset.rsplit('/', 1)[-1]
+            for field in ('discovery', 'types', 'pins'):
+                evidence[field] = json.loads(json.dumps(cached[field]).replace(old_name, new_name))
+            evidence['discovery_reused_from'] = cached['evidence']
+            evidence['discovery_binary_sha256'] = binary_hash
+        else:
+            queries = ['PathPoints', 'PathTransform', 'SamplePoints', 'InnerDistance', 'FalloffDistance', 'FallbackWeight', 'Scale', 'FlatPoints', 'WorkWeights', 'BestDistSq', 'ResultScale', 'Length', 'MakeLiteralInt', 'GreaterEqual', 'Branch', 'Clear', 'ForEachLoop', 'TransformLocation', 'BreakVector', 'MakeVector', 'Array_Add', 'Subtract', 'ForLoop', 'Get (a copy)', 'Add', 'Equal', 'Select', 'FindClosestPointOnSegment', 'Multiply', 'Less', 'Sqrt', 'MapRangeClamped', 'MakeLiteralDouble', 'FClamp']
+            evidence['discovery'] = {}
+            for query in queries:
+                answer = call('PreviewTurboMCPNodeType', asset=asset, graphName='LoopCascade', words=query, limit='200' if query == 'Scale' else '40')
+                evidence['discovery'][query] = answer
+            # Resolve exact IDs from returned discovery rows, then inspect actual pins.
+            exact = {
+                'Length': 'Utilities|Array|Length', 'GreaterEqual': 'Utilities|Operators|GreaterEqual(>=)',
+                'Branch': 'Utilities|FlowControl|Branch', 'Clear': 'Utilities|Array|Clear',
+                'ForEachLoop': 'Utilities|Array|ForEachLoop', 'Array_Add': 'Utilities|Array|Add',
+                'Subtract': 'Utilities|Operators|Subtract', 'ForLoop': 'Utilities|FlowControl|ForLoop',
+                'Get (a copy)': 'Utilities|Array|Get(acopy)', 'Add': 'Utilities|Operators|Add',
+                'Equal': 'Utilities|Operators|Equal(==)', 'Select': 'Utilities|Select',
+                'Multiply': 'Utilities|Operators|Multiply', 'Less': 'Utilities|Operators|Less(<)'}
+            evidence['types'] = {}
+            evidence['pins'] = {}
+            for query, answer in evidence['discovery'].items():
+                rows = answer.splitlines()
+                if query in exact:
+                    candidates = [x for x in rows if x == exact[query]]
+                elif query in ('PathPoints', 'PathTransform', 'SamplePoints', 'InnerDistance', 'FalloffDistance', 'FallbackWeight', 'Scale'):
+                    candidates = [x for x in rows if x.startswith('FunctionInput|') and x.endswith('|LoopCascade|' + query)]
+                elif query in ('FlatPoints', 'WorkWeights', 'BestDistSq', 'ResultScale'):
+                    candidates = [x for x in rows if x.startswith('Variable|' + asset) and x.endswith(('|Get|' + query, '|Set|' + query))]
+                else:
+                    candidates = [x for x in rows if x.startswith('Function|/Script/Engine.') and x.endswith(':' + query)]
+                if not candidates:
+                    raise RuntimeError('Missing unambiguous discovered creation ID: ' + query)
+                evidence['types'][query] = candidates
+                for candidate in candidates:
+                    evidence['pins'][candidate] = call('PreviewTurboMCPNodePins', asset=asset, graphName='LoopCascade', typeId=candidate)
+            cache_path.write_text(json.dumps(dict(signature_version=1, asset=asset, evidence=str(directory), **{k:evidence[k] for k in ('discovery','types','pins')}), indent=2), encoding='utf-8')
         evidence['initial_graph'] = call('ReadTurboMCPGraphLoad', asset=asset, graphName='LoopCascade', format='read', detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
         build_graph(call, evidence, persist) 
         persist()
