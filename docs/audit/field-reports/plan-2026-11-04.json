@@ -1230,7 +1230,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_reviewed_not_reproduced",
       "source_ids": [
         "X-119"
       ],
@@ -1238,7 +1238,13 @@
         "2026-10-30_S3/X-119"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Controlled disposable EndPlay script-error reproduction versus clean control; retain raw stop response and independently observed PIE state. Stock watcher already waits for ShutdownPIE with 30-second timeout, so immediate success is not an established cause.",
+      "evidence": [
+        {
+          "result": "source_review",
+          "scope": "Stock EditorAppToolset.cpp StopPIE ~965 and FPIEShutdownWatcher ~831 inspected; file locally unmodified. Shutdown event or timeout controls completion. Engine follow-up documented in docs/audit/engine-issues-ue59-proposal.md; no fix or reproduction claimed."
+        }
+      ]
     },
     {
       "id": "NOV04-38",

@@ -60,3 +60,11 @@ The same run creates a child from its class path successfully and confirms the c
 Engine investigation targets: ToolsetLibrary passes live property memory to ImportPropertyWithNotify; the bypass path imports directly, while ReferenceConverter enforces subobject ownership. Proposed engine acceptance: rejected container imports leave every key/value and dirty state unchanged, with errors captured at the public call boundary. Confirm the fix independently on a specific 5.9 revision before submission.
 
 Plugin work remains OCT27-14: validate on temporary owned state, preserve external identities, independently read back, and commit only validated changes with rollback. Simply selecting non-bypass mode is not proof of atomic safety for arbitrary input. This is an engine defect record, not an implemented plugin fix.
+
+## PIE stop result versus teardown errors (NOV04-37 / X-119)
+
+Status: source-reviewed on 2026-11-05; reported failure not reproduced and cause unresolved. No engine changes.
+
+The field report says three stock stop calls returned teardown script-error text, with PIE still running after one call. Current stock `EditorAppToolset.cpp` implements `StopPIE` around line 965: it starts `FPIEShutdownWatcher` before `RequestEndPlayMap`. The watcher around line 831 subscribes to `ShutdownPIE`, completes only after that event, and reports a 30-second timeout. `IsPIERunning` checks `GEditor->PlayWorld`. The inspected file has no local modifications. This contradicts an immediate-success diagnosis; it does not explain the reported error interception or prove shutdown always succeeds.
+
+Reproduction required: use a disposable actor whose EndPlay produces a controlled Blueprint script error; start PIE, call the stock stop tool, retain its complete response, and independently poll session state. Compare a clean EndPlay control. Record whether the shutdown event happened and whether script-error collection replaced the operation result. Do not infer stopped state from a request or from error text. Keep plugin edit refusals while PIE is active. Future engine proposal: report operation completion/state separately from collected project script errors, if this reproduction confirms conflation. No custom engine requirement or current fix is claimed.
