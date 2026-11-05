@@ -298,7 +298,12 @@
         "NOV05-01"
       ],
       "next_step": "Candidate report first; promotion explicitly selected and separate from geometry. Prove evaluation timing, dominance and loop frequency preservation; refuse unsafe caching. Do not automatically cache arbitrary pure expressions.",
-      "evidence": [],
+      "evidence": [
+        {
+          "result": "source_review_only",
+          "scope": "TurboMCPLocalVars.cpp currently restricts promotion to reviewed repeated scalar calculations and assigns at function entry (Apply entry successor checks and setter chain). It rejects impure producers/unreviewed ancestry. Do not reuse entry-time assignment for loop Index: the value changes per iteration. NOV05 requires separate producer/body-scoped assignment, explicit selected output IDs and downstream dominance/frequency checks; no implementation or editor evidence for that extension yet."
+        }
+      ],
       "design_notes": [
         "Appendix F.8 puts PointCount setter after the guard but replaces all N02 consumers, including the guard condition N04. That creates read-before-write if applied literally. The reference must place the cache before every replaced read, or retain the guard direct read. Preserve dominance and evaluation timing; do not silently implement the contradictory recipe."
       ]
