@@ -54,9 +54,11 @@ public:
 
     /** Inspect the single PIE player's focus, held synthetic input and Enhanced Input context priorities; no input or asset mutation. Reports optional CommonInput device type and unordered active CommonUI widgets when loaded; unavailable is not zero. Does not determine the routing owner.
      * @param Target Required exact pie:0. Refuses absent/multiple PIE worlds or multiple local players.
+     * @param ButtonFilter Optional case-insensitive runtime object path substring; empty matches all candidates. Local widget visibility does not prove ancestor/screen visibility or input eligibility.
+     * @param ButtonLimit Optional maximum button paths, 0..64, default 16. Use 0 for diagnostics only. Counts report matching and omitted candidates; narrow ButtonFilter to find a specific menu. Diagnostics precede the list.
      */
     UFUNCTION(meta = (AICallable))
-    static FString ReadTurboMCPPlayInputState(const FString& Target);
+    static FString ReadTurboMCPPlayInputState(const FString& Target,const FString& ButtonFilter = TEXT(""),int32 ButtonLimit = 16);
 
 	/**
 	 * Read the MCP server state and this plugin's registration state.

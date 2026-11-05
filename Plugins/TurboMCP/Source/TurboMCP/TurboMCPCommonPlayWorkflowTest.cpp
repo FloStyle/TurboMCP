@@ -339,6 +339,18 @@ public:
             case 2: Test->TestTrue(TEXT("Disabled control did not activate"),Current.Contains(TEXT("disabled clicks: 0")));Test->TestTrue(TEXT("D-pad up restored Settings focus"),Current.Contains(TEXT("focused button: Settings")));Test->TestTrue(TEXT("CommonUI diagnostics present"),InputState.Contains(TEXT("CommonUI active widgets: 2")) && InputState.Contains(TEXT("Gamepad")));Test->TestTrue(TEXT("Pause screen active"),Current.Contains(TEXT("screen: Pause")));{
                 UClass* ButtonClass=FindObject<UClass>(nullptr,TEXT("/Script/CommonUI.CommonButtonBase"));FString ButtonPath;
                 for(TObjectIterator<UUserWidget> It;It;++It)if(ButtonClass && It->IsA(ButtonClass) && It->GetWorld()==GEditor->PlayWorld && (It->HasUserFocus(GEditor->PlayWorld->GetFirstPlayerController()) || It->HasUserFocusedDescendants(GEditor->PlayWorld->GetFirstPlayerController())))ButtonPath=It->GetPathName();
+                const FString BeforeRead=State();
+                const FString Compact=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"),TEXT(""),0);Record(Compact);
+                Test->TestTrue(TEXT("Summary-only reports no paths"),Compact.Contains(TEXT("0 shown;")));
+                Test->TestTrue(TEXT("Diagnostics precede controls"),Compact.Find(TEXT("CommonUI active widgets:"))<Compact.Find(TEXT("runtime buttons:")));
+                const FString Filtered=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"),ButtonPath.ToLower(),1);Record(Filtered);
+                Test->TestTrue(TEXT("Known button matches case-insensitively"),!ButtonPath.IsEmpty() && Filtered.Contains(ButtonPath) && Filtered.Contains(TEXT("1 shown;")));
+                const FString Missing=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"),TEXT("__no_such_runtime_button_879345__"),16);
+                Test->TestTrue(TEXT("Unmatched filter is explicit"),Missing.Contains(TEXT("0 matching; 0 shown; 0 omitted")));
+                for (int32 Limit:{-1,65}) Test->TestTrue(TEXT("Invalid limits refuse"),UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"),TEXT(""),Limit).StartsWith(TEXT("error:")));
+                Test->TestEqual(TEXT("State reads do not change fixture"),State(),BeforeRead);
+                const FString Help=UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCP.TurboMCPReadToolset"),TEXT("ReadTurboMCPPlayInputState"));
+                Test->TestTrue(TEXT("Help explains compact filter"),Help.Contains(TEXT("ButtonFilter")) && Help.Contains(TEXT("0..64")) && Help.Contains(TEXT("default 16")));
                 const FString Activate=Dispatch(TEXT("EditTurboMCPMenuActivate"),FString::Printf(TEXT("{\"Target\":\"pie:0\",\"Widget\":\"%s\"}"),*ButtonPath));Record(Activate);Test->TestFalse(TEXT("Named button dispatch accepted"),Activate.StartsWith(TEXT("error:")));
             }break;
             case 3: Test->TestTrue(TEXT("Settings is modal"),Current.Contains(TEXT("modal: yes")));Test->TestTrue(TEXT("CommonButton opens Settings"),Current.Contains(TEXT("screen: Settings")));Test->TestTrue(TEXT("Audio initially selected"),Current.Contains(TEXT("tab: Audio")) && Current.Contains(TEXT("content: Audio settings content")));Hold(TEXT("Gamepad_RightShoulder"));break;

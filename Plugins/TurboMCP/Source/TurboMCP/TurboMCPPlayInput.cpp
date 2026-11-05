@@ -471,20 +471,14 @@ FString UTurboMCPEditToolset::EditTurboMCPMenuActivate(const FString& Target,con
         TEXT("\nActivation is pending normal frames. Read PlayInputState for active screens after release; do not infer success from delivery.");
 }
 
-FString UTurboMCPReadToolset::ReadTurboMCPPlayInputState(const FString& Target)
+FString UTurboMCPReadToolset::ReadTurboMCPPlayInputState(const FString& Target,const FString& ButtonFilter,int32 ButtonLimit)
 {
+    if (ButtonLimit<0 || ButtonLimit>64) return TEXT("error: ButtonLimit must be 0..64. Use 0 for diagnostics without button paths. No input was sent.");
     FPlayInputTarget Resolved;
     const FString Error=ResolvePlayInput(Target,Resolved);
     if (!Error.IsEmpty()) return Error;
     const TSharedPtr<SWidget> Focus=FSlateApplication::Get().GetUserFocusedWidget(Resolved.User);
     FString Out=FString::Printf(TEXT("play input state\nworld: %s\nplayer: 0; Slate user: %u\ngame paused: %s\nfocus widget type: %s\nfocus inside PIE viewport: %s\ntool-held input: %s\nlast synthetic key: %s"),*Resolved.World->GetPathName(),Resolved.User,Resolved.World->IsPaused()?TEXT("yes"):TEXT("no"),Focus.IsValid()?*Focus->GetTypeAsString():TEXT("none"),HasPlayFocus(Resolved)?TEXT("yes"):TEXT("no"),Held.Key.IsValid()?*Held.Key.GetFName().ToString():TEXT("none"),*LastInput);
-    UClass* ButtonClass=FindObject<UClass>(nullptr,TEXT("/Script/CommonUI.CommonButtonBase"));
-    TArray<FString> Buttons;
-    for(TObjectIterator<UWidget> It;It;++It)if(It->GetWorld()==Resolved.World && (It->IsA<UButton>() || (ButtonClass && It->IsA(ButtonClass))) && It->IsVisible() && It->GetCachedWidget().IsValid())
-        Buttons.Add(It->GetPathName()+(It->GetIsEnabled()?TEXT("; enabled"):TEXT("; disabled")));
-    Buttons.Sort();Out+=FString::Printf(TEXT("\nruntime buttons: %d (exact object paths, not display labels)"),Buttons.Num());
-    for(int32 I=0;I<FMath::Min(Buttons.Num(),64);++I)Out+=TEXT("\n  ")+Buttons[I];
-    if(Buttons.Num()>64)Out+=FString::Printf(TEXT("\n%d additional buttons omitted; inspect the visible menu with Slate Snapshot."),Buttons.Num()-64);
     Out+=TEXT("\ninput sequence: ")+SequenceStatus;
     Out+=FString::Printf(TEXT("\nsequence held: %d; pending: %d"),SequenceInputs.Num(),PendingInputs.Num());
     Out+=TEXT("\nlast release reason: ")+LastReleaseReason;
@@ -516,6 +510,25 @@ FString UTurboMCPReadToolset::ReadTurboMCPPlayInputState(const FString& Target)
     }
     else Out+=TEXT("\nEnhanced Input: this controller does not use UEnhancedPlayerInput.");
     Out+=CommonInputState(Resolved);
+    // Local visibility is a candidate filter, not proof of effective visibility:
+    // a collapsed ancestor or an inactive screen may still hide the control.
+    UClass* ButtonClass=FindObject<UClass>(nullptr,TEXT("/Script/CommonUI.CommonButtonBase"));
+    TArray<FString> Buttons;
+    int32 Candidates=0;
+    for (TObjectIterator<UWidget> It;It;++It)
+    {
+        if (It->GetWorld()!=Resolved.World || !(It->IsA<UButton>() || (ButtonClass && It->IsA(ButtonClass))) || !It->IsVisible() || !It->GetCachedWidget().IsValid()) continue;
+        ++Candidates;
+        const FString Path=It->GetPathName();
+        if (!ButtonFilter.IsEmpty() && !Path.Contains(ButtonFilter,ESearchCase::IgnoreCase)) continue;
+        Buttons.Add(Path+(It->GetIsEnabled()?TEXT("; enabled"):TEXT("; disabled")));
+    }
+    Buttons.Sort();
+    const int32 Shown=FMath::Min(Buttons.Num(),ButtonLimit);
+    Out+=FString::Printf(TEXT("\nruntime buttons: %d candidates; %d matching; %d shown; %d omitted (exact object paths, not display labels)"),Candidates,Buttons.Num(),Shown,Buttons.Num()-Shown);
+    Out+=TEXT("\nCandidates have local widget visibility and a cached Slate widget; ancestor/screen visibility and input routing eligibility are not verified.");
+    for (int32 Index=0;Index<Shown;++Index) Out+=TEXT("\n  ")+Buttons[Index];
+    if (Buttons.Num()>Shown) Out+=TEXT("\nNarrow ButtonFilter or increase ButtonLimit (maximum 64) to inspect matching controls. ButtonLimit=0 returns diagnostics only.");
     Out+=TEXT("\nCommonUI routing policy: not inspected. Use Slate Snapshot for visible controls. CommonInput reports its current logical device type, not proof of a physical device. Context presence does not prove an action triggered.");
     return Out;
 }
