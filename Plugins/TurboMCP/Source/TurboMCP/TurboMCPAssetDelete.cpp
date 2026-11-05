@@ -89,9 +89,13 @@ FString DeleteAsset(bool Apply, const FString& AssetPath, const FString& Confirm
     {
         if (Confirmations.Num() >= 64) Confirmations.Empty();
         const FString Token = TEXT("delete ") + FGuid::NewGuid().ToString(EGuidFormats::Digits);
-        Confirmations.Add(Token, {Identity, Now + 60.0});
+        Confirmations.Add(Token, {Identity, FPlatformTime::Seconds() + 60.0});
         return TEXT("unchanged\npreview: checked deletion of ") + AssetPath + TEXT("\nLoading and garbage collection ran; no asset or source file was deleted. Deletion is permanent and cannot be undone.\nconfirmation: ") + Token + TEXT("\nExpires in 60 seconds; edit repeats all checks.");
     }
+    // Scanning may take time; confirmation must still be valid at mutation.
+    const FDeleteConfirmation* Pending = Confirmations.Find(Confirmation);
+    if (!Pending || Pending->Expires < FPlatformTime::Seconds())
+        return Refuse(TEXT("Confirmation expired during reference scanning. Preview again."));
     Confirmations.Remove(Confirmation);
     Model.DoDelete();
     // DoDelete's boolean is not a success verdict. It can return true even
