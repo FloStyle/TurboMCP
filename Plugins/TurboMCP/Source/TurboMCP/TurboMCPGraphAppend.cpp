@@ -1609,10 +1609,31 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 		Survived, Created.Num());
 
     Out += FString::Printf(TEXT("\n%d superseded, disconnected engine-created event(s) removed; existing nodes preserved"), RemovedGeneratedEvents);
+    // Requested nodes retain the creation ID that this plan actually resolved.
+    // Reader display types are not necessarily accepted by the creation resolver.
     for (const UEdGraphNode* CreatedNode : Created)
-        if (CreatedNode && Graph->Nodes.Contains(CreatedNode))
+    {
+        if (!CreatedNode || !Graph->Nodes.Contains(CreatedNode)) continue;
+        FString CreationId;
+        for (int32 Index = 0; Index < CreatedByForm.Num(); ++Index)
+        {
+            if (CreatedByForm[Index] == CreatedNode && InPlan.Nodes.IsValidIndex(Index))
+            {
+                CreationId = InPlan.Nodes[Index].TypeId;
+                break;
+            }
+        }
+        if (!CreationId.IsEmpty())
+        {
             Out += FString::Printf(TEXT("\ncreated %s: type %s"),
-                *TurboMCPNodeId::MakeForNode(CreatedNode, true), *(TurboMCPNodeId::GetNodeTypeId(CreatedNode) + (EngineCreated.Contains(CreatedNode) ? TEXT(" (engine-created companion)") : TEXT(""))));
+                *TurboMCPNodeId::MakeForNode(CreatedNode, true), *CreationId);
+        }
+        else
+        {
+            Out += FString::Printf(TEXT("\ncreated %s: reader type %s (engine-created companion; creation ID not provided)"),
+                *TurboMCPNodeId::MakeForNode(CreatedNode, true), *TurboMCPNodeId::GetNodeTypeId(CreatedNode));
+        }
+    }
 
 	if (Unmatched.Num() > 0)
 	{
