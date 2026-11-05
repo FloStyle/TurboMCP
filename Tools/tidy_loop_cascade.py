@@ -61,9 +61,36 @@ def run():
         queries = ['PathPoints', 'PathTransform', 'SamplePoints', 'InnerDistance', 'FalloffDistance', 'FallbackWeight', 'Scale', 'FlatPoints', 'WorkWeights', 'BestDistSq', 'ResultScale', 'Length', 'MakeLiteralInt', 'GreaterEqual', 'Branch', 'Clear', 'ForEachLoop', 'TransformLocation', 'BreakVector', 'MakeVector', 'Array_Add', 'Subtract', 'ForLoop', 'Get (a copy)', 'Add', 'Equal', 'Select', 'FindClosestPointOnSegment', 'Multiply', 'Less', 'Sqrt', 'MapRangeClamped', 'MakeLiteralDouble', 'FClamp']
         evidence['discovery'] = {}
         for query in queries:
-            answer = call('PreviewTurboMCPNodeType', asset=asset, graphName='LoopCascade', words=query, limit='40')
+            answer = call('PreviewTurboMCPNodeType', asset=asset, graphName='LoopCascade', words=query, limit='200' if query == 'Scale' else '40')
             evidence['discovery'][query] = answer
-        evidence['stage'] = 'discovery_complete_fixture_not_built'
+        # Resolve exact IDs from returned discovery rows, then inspect actual pins.
+        exact = {
+            'Length': 'Utilities|Array|Length', 'GreaterEqual': 'Utilities|Operators|GreaterEqual(>=)',
+            'Branch': 'Utilities|FlowControl|Branch', 'Clear': 'Utilities|Array|Clear',
+            'ForEachLoop': 'Utilities|Array|ForEachLoop', 'Array_Add': 'Utilities|Array|Add',
+            'Subtract': 'Utilities|Operators|Subtract', 'ForLoop': 'Utilities|FlowControl|ForLoop',
+            'Get (a copy)': 'Utilities|Array|Get(acopy)', 'Add': 'Utilities|Operators|Add',
+            'Equal': 'Utilities|Operators|Equal(==)', 'Select': 'Utilities|Select',
+            'Multiply': 'Utilities|Operators|Multiply', 'Less': 'Utilities|Operators|Less(<)'}
+        evidence['types'] = {}
+        evidence['pins'] = {}
+        for query, answer in evidence['discovery'].items():
+            rows = answer.splitlines()
+            if query in exact:
+                candidates = [x for x in rows if x == exact[query]]
+            elif query in ('PathPoints', 'PathTransform', 'SamplePoints', 'InnerDistance', 'FalloffDistance', 'FallbackWeight', 'Scale'):
+                candidates = [x for x in rows if x.startswith('FunctionInput|') and x.endswith('|LoopCascade|' + query)]
+            elif query in ('FlatPoints', 'WorkWeights', 'BestDistSq', 'ResultScale'):
+                candidates = [x for x in rows if x.startswith('Variable|' + asset) and x.endswith(('|Get|' + query, '|Set|' + query))]
+            else:
+                candidates = [x for x in rows if x.startswith('Function|/Script/Engine.') and x.endswith(':' + query)]
+            if not candidates:
+                raise RuntimeError('Missing unambiguous discovered creation ID: ' + query)
+            evidence['types'][query] = candidates
+            for candidate in candidates:
+                evidence['pins'][candidate] = call('PreviewTurboMCPNodePins', asset=asset, graphName='LoopCascade', typeId=candidate)
+        evidence['initial_graph'] = call('ReadTurboMCPGraphLoad', asset=asset, graphName='LoopCascade', format='read', detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
+        evidence['stage'] = 'pins_verified_fixture_not_built' 
         persist()
         print('Evidence: ' + str(directory), flush=True)
         print('RESULT: PASS (discovery checkpoint only; layout acceptance remains false)')
