@@ -7,6 +7,14 @@
 #include "Subsystems/LocalPlayerSubsystem.h"
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
+#include "UObject/StructOnScope.h"
+#include "UObject/StrongObjectPtr.h"
+#include "JsonObjectConverter.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
+#include "Misc/SecureHash.h"
+#include "HAL/PlatformTime.h"
+#include "TurboMCPLogCapture.h"
 
 namespace
 {
@@ -67,3 +75,91 @@ FString UTurboMCPReadToolset::ReadTurboMCPPlayFunction(const FString& WorldPath,
     if (!ResolveInvocation(WorldPath,ObjectPath,FunctionName,Target,Error)) return TEXT("error: ")+Error;
     return TEXT("read: runtime function signature\n")+DescribeInvocation(Target);
 }
+
+namespace
+{
+// Reference-bearing values are deliberately rejected before conversion: the
+// generic JSON importer can load objects, which is inappropriate for PIE calls.
+bool SupportedValue(const FProperty* P,int32 Depth=0)
+{
+    if (!P || Depth>16 || P->ArrayDim!=1) return false;
+    if (CastField<FNumericProperty>(P) || CastField<FBoolProperty>(P) || CastField<FStrProperty>(P)
+        || CastField<FNameProperty>(P) || CastField<FTextProperty>(P) || CastField<FEnumProperty>(P)) return true;
+    if (const auto* A=CastField<FArrayProperty>(P)) return SupportedValue(A->Inner,Depth+1);
+    if (const auto* A=CastField<FSetProperty>(P)) return SupportedValue(A->ElementProp,Depth+1);
+    if (const auto* A=CastField<FMapProperty>(P)) return SupportedValue(A->KeyProp,Depth+1) && SupportedValue(A->ValueProp,Depth+1);
+    if (const auto* S=CastField<FStructProperty>(P))
+    {
+        // Native custom importers can execute arbitrary parsing code. Only
+        // reflected fields are admitted through the standard JSON converter.
+        if (S->Struct->StructFlags & STRUCT_ImportTextItemNative) return false;
+        for (TFieldIterator<FProperty> It(S->Struct);It;++It) if (!SupportedValue(*It,Depth+1)) return false;
+        return true;
+    }
+    return false;
+}
+bool IsInput(const FProperty* P)
+{
+    return !P->HasAnyPropertyFlags(CPF_ReturnParm) &&
+        (!P->HasAnyPropertyFlags(CPF_OutParm) || P->HasAnyPropertyFlags(CPF_ConstParm|CPF_ReferenceParm));
+}
+TMap<FString,double> PendingInvocations;
+FString Invoke(bool Edit,const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName,const FString& Arguments,const FString& Confirmation)
+{
+    auto Refuse=[](const FString& E){return TEXT("unchanged\nrefused: ")+E;};
+    FInvocationTarget Target;FString Error;
+    if (!ResolveInvocation(WorldPath,ObjectPath,FunctionName,Target,Error)) return Refuse(Error);
+    if (Arguments.Len()>65536) return Refuse(TEXT("Arguments exceeds 65536 characters."));
+    TSharedPtr<FJsonObject> Values;
+    if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Arguments),Values) || !Values.IsValid())
+        return Refuse(TEXT("Arguments must be a JSON object with exact parameter names; use {} for no inputs."));
+    FStructOnScope Storage(Target.Function);
+    TSet<FString> Inputs;
+    for (TFieldIterator<FProperty> It(Target.Function);It;++It)
+    {
+        FProperty* P=*It;
+        if (!P->HasAnyPropertyFlags(CPF_Parm)) continue;
+        if (!SupportedValue(P)) return Refuse(TEXT("Unsupported parameter type (object references, delegates and custom-imported structs are not accepted): ")+P->GetName()+TEXT(" (")+P->GetCPPType()+TEXT(")"));
+        if (!IsInput(P)) continue;
+        Inputs.Add(P->GetName());
+        const TSharedPtr<FJsonValue>* Value=Values->Values.Find(P->GetName());
+        if (!Value) return Refuse(TEXT("Missing required input: ")+P->GetName());
+        FText Reason;
+        if (!FJsonObjectConverter::JsonValueToUProperty(*Value,P,P->ContainerPtrToValuePtr<void>(Storage.GetStructMemory()),0,0,true,&Reason))
+            return Refuse(TEXT("Invalid input ")+P->GetName()+TEXT(": ")+Reason.ToString());
+    }
+    for (const auto& Pair:Values->Values) if (!Inputs.Contains(Pair.Key)) return Refuse(TEXT("Unknown or output-only parameter: ")+Pair.Key);
+    const FString Signature=DescribeInvocation(Target);
+    const FString Intent=Signature+Arguments+FString::Printf(TEXT("/%u/%u"),Target.World->GetUniqueID(),Target.Object->GetUniqueID());
+    FSHAHash Digest;FSHA1::HashBuffer(*Intent,Intent.Len()*sizeof(TCHAR),Digest.Hash);
+    const FString Token=TEXT("invoke ")+Digest.ToString();
+    const double Now=FPlatformTime::Seconds();
+    for (auto It=PendingInvocations.CreateIterator();It;++It) if (It.Value()<Now) It.RemoveCurrent();
+    if (!Edit)
+    {
+        if (PendingInvocations.Num()>=64) PendingInvocations.Empty();
+        PendingInvocations.Add(Token,Now+120.0);
+        return TEXT("unchanged\npreview: runtime call arguments validated\n")+Signature+TEXT("\nconfirmation: ")+Token+TEXT("\nConfirmation expires after 120 seconds and is consumed once. Invoke with identical arguments. No function was called.");
+    }
+    const double* Expiry=PendingInvocations.Find(Token);
+    if (Confirmation!=Token || !Expiry) return Refuse(TEXT("Run preview again and copy its confirmation; target and arguments must be unchanged."));
+    PendingInvocations.Remove(Token); // Consume before project code runs; never silently retry.
+    TStrongObjectPtr<UObject> KeepAlive(Target.Object);
+    FTurboMCPLogCapture Capture;
+    Target.Object->ProcessEvent(Target.Function,Storage.GetStructMemory());
+    FString Out=TEXT("dispatched: runtime function returned; this does not prove gameplay success. Do not automatically retry.\n")+Signature;
+    for (TFieldIterator<FProperty> It(Target.Function);It;++It)
+    {
+        FProperty* P=*It;
+        if (!P->HasAnyPropertyFlags(CPF_Parm) || !P->HasAnyPropertyFlags(CPF_OutParm|CPF_ReturnParm)) continue;
+        FString Value;P->ExportTextItem_Direct(Value,P->ContainerPtrToValuePtr<void>(Storage.GetStructMemory()),nullptr,nullptr,PPF_None);
+        Out+=TEXT("\nresult ")+P->GetName()+TEXT(": ")+Value.Left(4096)+(Value.Len()>4096?TEXT(" [truncated]"):TEXT(""));
+    }
+    Out+=FString::Printf(TEXT("\nSynchronous game-thread log errors: %d; warnings: %d. No automatic save or rollback."),Capture.ErrorCount(),Capture.WarningCount());
+    return Out;
+}
+}
+FString UTurboMCPPreviewToolset::PreviewTurboMCPPlayInvoke(const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName,const FString& Arguments)
+{return Invoke(false,WorldPath,ObjectPath,FunctionName,Arguments,TEXT(""));}
+FString UTurboMCPEditToolset::EditTurboMCPPlayInvoke(const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName,const FString& Arguments,const FString& Confirmation)
+{return Invoke(true,WorldPath,ObjectPath,FunctionName,Arguments,Confirmation);}

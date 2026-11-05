@@ -631,6 +631,15 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+    /** Validate a scoped PIE runtime call without executing it. Reference-bearing parameters, RPCs and latent functions are refused. No save or undo guarantee.
+     * @param WorldPath Exact current PIE world object path.
+     * @param ObjectPath Exact existing runtime object path in that world; local-player subsystems are supported.
+     * @param FunctionName Exact Blueprint-callable function name. Inspect ReadTurboMCPPlayFunction first.
+     * @param Arguments JSON object with every input parameter by exact name; use {} for no inputs. Supports reflected reference-free values; unknown, missing or unsupported arguments refuse before dispatch.
+     */
+    UFUNCTION(meta=(AICallable))
+    static FString PreviewTurboMCPPlayInvoke(const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName,const FString& Arguments);
+
 
     /** Validate creation of a standalone typed custom event in an existing event graph. Local, non-replicated; not an override or delegate binding. No compile or save. Duplicate names refuse. Loading assets can run engine load hooks.
      * @param Asset Blueprint object path or unique asset name.
@@ -1458,6 +1467,16 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+    /** Validate a scoped PIE runtime call and execute it once with preview confirmation. Reference-bearing parameters, RPCs and latent functions are refused. No save or undo guarantee.
+     * @param WorldPath Exact current PIE world object path.
+     * @param ObjectPath Exact existing runtime object path in that world; local-player subsystems are supported.
+     * @param FunctionName Exact Blueprint-callable function name. Inspect ReadTurboMCPPlayFunction first.
+     * @param Arguments JSON object with every input parameter by exact name; use {} for no inputs. Supports reflected reference-free values; unknown, missing or unsupported arguments refuse before dispatch.
+     * @param Confirmation Copy the preview confirmation with identical arguments within 120 seconds. It is consumed before invocation; never automatically retry.
+     */
+    UFUNCTION(meta=(AICallable))
+    static FString EditTurboMCPPlayInvoke(const FString& WorldPath,const FString& ObjectPath,const FString& FunctionName,const FString& Arguments,const FString& Confirmation);
+
 
     /** Create a standalone typed custom event in an existing event graph. Local, non-replicated; not an override or delegate binding. No compile or save. Duplicate names refuse. Loading assets can run engine load hooks.
      * @param Asset Blueprint object path or unique asset name.
