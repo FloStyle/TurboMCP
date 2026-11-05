@@ -74,11 +74,26 @@ bool FTurboMCPGraphInventoryTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Negative offset refuses"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, Graph->GetName(), TEXT(""), 128, -1).StartsWith(TEXT("error:")));
     TestTrue(TEXT("Exact end is complete"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, Graph->GetName(), TEXT(""), 128, 200).Contains(TEXT("complete=true")));
     const FString FirstId = TurboMCPNodeId::MakeForNode(Graph->Nodes[0], true);
+    const FString SecondId = TurboMCPNodeId::MakeForNode(Graph->Nodes[1], true);
+    TArray<FString> SelectedIds = {FirstId, SecondId};
+    SelectedIds.Sort();
+    const FString Selection = SecondId + TEXT("\n") + FirstId + TEXT("\n") + FirstId;
+    const FString SelectedFirst = UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, Graph->GetName(), Selection, 1, 0);
+    const FString SelectedLast = UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, Graph->GetName(), Selection, 1, 1);
+    TestTrue(TEXT("Selection is deduplicated and paged in ID order"),
+        SelectedFirst.Contains(SelectedIds[0] + TEXT(" x=")) && !SelectedFirst.Contains(SelectedIds[1] + TEXT(" x="))
+        && SelectedFirst.Contains(TEXT("next_offset=1; complete=false")));
+    TestTrue(TEXT("Final selected page has the remaining row"),
+        SelectedLast.Contains(SelectedIds[1] + TEXT(" x=")) && !SelectedLast.Contains(SelectedIds[0] + TEXT(" x="))
+        && SelectedLast.Contains(TEXT("next_offset=-1; complete=true")));
+    TestTrue(TEXT("Invalid selection is refused even beyond its first page"),
+        UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, Graph->GetName(), FirstId + TEXT("\nmissing"), 1, 1).StartsWith(TEXT("error:")));
     for (auto Detail : {FTurboMCPGraphText::EDetail::Manifest, FTurboMCPGraphText::EDetail::Signatures, FTurboMCPGraphText::EDetail::Bodies, FTurboMCPGraphText::EDetail::Full})
     {
         TArray<FString> Notes;
         const FString Read = FTurboMCPGraphText().Render(Graph, Detail, Asset, Notes);
-        TestTrue(TEXT("Empty event has ID at every detail"), Read.Contains(FirstId));
+        for (const FString& Id : Expected)
+            TestTrue(TEXT("Every empty event has an ID at every detail"), Read.Contains(Id));
     }
     TestTrue(TEXT("Existing finder discovers empty event"), UTurboMCPReadToolset::ReadTurboMCPNodeFind(Asset, TEXT("InventoryEvent0"), Graph->GetName()).Contains(TurboMCPNodeId::MakeKey(Graph->Nodes[0]->NodeGuid)));
     TestEqual(TEXT("Inventory preserves node count"), Graph->Nodes.Num(), 200);
