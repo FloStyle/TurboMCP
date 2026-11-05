@@ -16,6 +16,7 @@
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphNode_Comment.h"
+#include "EdGraphSchema_K2.h"
 #include "Editor.h"
 #include "CoreGlobals.h"
 #include "Templates/UnrealTemplate.h"
@@ -101,6 +102,44 @@ namespace
         TEXT("data segment crossings"), TEXT("total segment length"), TEXT("bounding area")
     };
 
+    // Return the physical wire segments of one logical connection. The gap
+    // inside a reroute is node geometry, not wire length. Actual measurement
+    // requires the caller's created-node mapping, never planned coordinates.
+    TArray<TPair<FVector2D,FVector2D>> TidyWireSegments(
+        const FTurboMCPGraphTidy::FPlan& Plan, int32 WireIndex, int32 Mode,
+        const FVector2D& Start, const FVector2D& End)
+    {
+        TArray<TPair<FVector2D,FVector2D>> Segments;
+        FVector2D Previous=Start;
+        if (Mode!=0)
+            for (const auto& Route:Plan.WireRoutes)
+            {
+                if (Route.WireIndex!=WireIndex || Route.bSkipped) continue;
+                for (int32 Index=0;Index<Route.KnotPositions.Num();++Index)
+                {
+                    FVector2D Input,Output;
+                    if (Mode==2)
+                    {
+                        // The live apply path must reject incomplete mappings
+                        // before asking for a post-edit quality measurement.
+                        if (!Route.AppliedKnots.IsValidIndex(Index) || !Route.AppliedKnots[Index])
+                            return {};
+                        Input=FTurboMCPGraphTidy::AlignmentPinPosition(Route.AppliedKnots[Index]->GetInputPin());
+                        Output=FTurboMCPGraphTidy::AlignmentPinPosition(Route.AppliedKnots[Index]->GetOutputPin());
+                    }
+                    else
+                    {
+                        Input=Route.KnotPositions[Index]+Route.InputOffset;
+                        Output=Route.KnotPositions[Index]+Route.OutputOffset;
+                    }
+                    Segments.Emplace(Previous,Input); Previous=Output;
+                }
+                break;
+            }
+        Segments.Emplace(Previous,End);
+        return Segments;
+    }
+
     // Appendix H uses straight pin-to-pin segments, not rendered Slate splines.
     // Keep the same block membership in before/after measurements; geometry
     // changes must not redefine a crossing or row break out of existence.
@@ -108,6 +147,11 @@ namespace
         const TArray<FTurboMCPGraphTidy::FGetterCopy>& Copies, FStructuralQuality& Quality)
     {
         if (!Plan.bCompactBlocks) return;
+        auto PinPosition=[&](const UEdGraphPin* Pin)
+        {
+            return Plan.WireRoutes.IsEmpty() ? FTurboMCPLayoutReport::PinPosition(Pin)
+                : FTurboMCPGraphTidy::AlignmentPinPosition(Pin);
+        };
         Quality.bHasBlockMeasures = true;
         auto Position = [Mode](const FTurboMCPGraphTidy::FNode& Node)
         {
@@ -135,6 +179,15 @@ namespace
                 Include(Mode == 2 ? Copy.Copy->NodePosX : Copy.PlannedX,
                     Mode == 2 ? Copy.Copy->NodePosY : Copy.PlannedY, Copy.Width, Copy.Height);
             }
+        if (Mode!=0)
+            for (const auto& Route:Plan.WireRoutes)
+                if (!Route.bSkipped)
+                    for (int32 Index=0;Index<Route.KnotPositions.Num();++Index)
+                    {
+                        if (Mode==2 && (!Route.AppliedKnots.IsValidIndex(Index) || !Route.AppliedKnots[Index])) continue;
+                        const FVector2D P=Mode==2 ? FVector2D(Route.AppliedKnots[Index]->NodePosX,Route.AppliedKnots[Index]->NodePosY) : Route.KnotPositions[Index];
+                        Include(P.X,P.Y,Route.KnotSize.X,Route.KnotSize.Y);
+                    }
         if (Left != TNumericLimits<double>::Max()) Quality.BlockMeasures[6] = (Right - Left) * (Bottom - Top);
         auto Cross = [](const FVector2D& A, const FVector2D& B) { return A.X * B.Y - A.Y * B.X; };
         auto Intersects = [&](const FSegment& L, const FSegment& R)
@@ -145,16 +198,17 @@ namespace
             return ((A > 0.001 && B < -0.001) || (A < -0.001 && B > 0.001))
                 && ((C > 0.001 && D < -0.001) || (C < -0.001 && D > 0.001));
         };
-        for (const auto& Wire : Plan.Wires)
+        for (int32 WireIndex=0;WireIndex<Plan.Wires.Num();++WireIndex)
         {
+            const auto& Wire=Plan.Wires[WireIndex];
             if (!Wire.OutputPin || !Wire.InputPin || !Plan.Nodes.IsValidIndex(Wire.SourceNodeIndex)
                 || !Plan.Nodes.IsValidIndex(Wire.TargetNodeIndex)) continue;
             const auto& Source = Plan.Nodes[Wire.SourceNodeIndex];
             const auto& Target = Plan.Nodes[Wire.TargetNodeIndex];
             if (!Source.Node || !Target.Node) continue;
-            FVector2D A = FTurboMCPLayoutReport::PinPosition(Wire.OutputPin) + Position(Source)
+            FVector2D A = PinPosition(Wire.OutputPin) + Position(Source)
                 - FVector2D(Source.Node->NodePosX, Source.Node->NodePosY);
-            const FVector2D B = FTurboMCPLayoutReport::PinPosition(Wire.InputPin) + Position(Target)
+            const FVector2D B = PinPosition(Wire.InputPin) + Position(Target)
                 - FVector2D(Target.Node->NodePosX, Target.Node->NodePosY);
             if (Mode != 0)
                 for (const auto& Copy : Copies)
@@ -163,39 +217,46 @@ namespace
                         A = FVector2D(Mode == 2 ? Copy.Copy->NodePosX : Copy.PlannedX,
                             Mode == 2 ? Copy.Copy->NodePosY : Copy.PlannedY) + Copy.OutputOffset;
             const bool bExec = Wire.OutputPin->PinType.PinCategory == TEXT("exec");
-            const double Length = FVector2D::Distance(A, B);
-            Quality.BlockMeasures[5] += Length;
-            const double DX = FMath::Abs(B.X-A.X), DY = FMath::Abs(B.Y-A.Y);
-            const double TanTenDegrees = 0.176326980708465;
-            if (bExec && DY > DX * TanTenDegrees && DX > DY * TanTenDegrees)
-                Quality.BlockMeasures[2] += Length;
+            // Row membership is a property of the logical edge, even when its
+            // visible connection is split into multiple reroute segments.
             if (bExec && !Wire.bControlFeedback && Source.BlockIndex != INDEX_NONE
-                && Source.BlockIndex == Target.BlockIndex && DY > 16.0) ++Quality.BlockMeasures[3];
-            const FSegment Segment{A, B, Wire.SourceNodeIndex, Wire.TargetNodeIndex, bExec};
-            for (const auto& Other : Segments)
-                if (Other.bExec == bExec && Intersects(Segment, Other)) ++Quality.BlockMeasures[bExec ? 1 : 4];
-            Segments.Add(Segment);
-            for (const auto& Box : Plan.Boxes)
+                && Source.BlockIndex == Target.BlockIndex && FMath::Abs(B.Y-A.Y) > 16.0) ++Quality.BlockMeasures[3];
+            TSet<const FTurboMCPGraphTidy::FBox*> CrossedBoxes;
+            for (const auto& Endpoints:TidyWireSegments(Plan,WireIndex,Mode,A,B))
             {
-                auto Contains = [&](const FTurboMCPGraphTidy::FNode& Node)
-                { return Box.MemberKeys.Contains(Node.Key) || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName())); };
-                if (Contains(Source) || Contains(Target)) continue;
-                const double X = Mode == 0 ? Box.X : Box.PlannedX, Y = Mode == 0 ? Box.Y : Box.PlannedY;
-                const double Width = Mode == 0 ? Box.Width : Box.PlannedWidth, Height = Mode == 0 ? Box.Height : Box.PlannedHeight;
-                // Slab clipping counts a passage through the interior, including
-                // a segment wholly inside an unrelated box. Touching an edge is not a crossing.
-                double Enter = 0.0, Leave = 1.0;
-                auto Clip = [&](double Start, double Delta, double Min, double Max)
+                const FVector2D SegmentStart=Endpoints.Key, SegmentEnd=Endpoints.Value;
+                const double Length=FVector2D::Distance(SegmentStart,SegmentEnd);
+                Quality.BlockMeasures[5]+=Length;
+                const double DX=FMath::Abs(SegmentEnd.X-SegmentStart.X), DY=FMath::Abs(SegmentEnd.Y-SegmentStart.Y);
+                const double TanTenDegrees=0.176326980708465;
+                if (bExec && DY>DX*TanTenDegrees && DX>DY*TanTenDegrees) Quality.BlockMeasures[2]+=Length;
+                const FSegment Segment{SegmentStart,SegmentEnd,Wire.SourceNodeIndex,Wire.TargetNodeIndex,bExec};
+                for (const auto& Other:Segments)
+                    if (Other.bExec==bExec && Intersects(Segment,Other)) ++Quality.BlockMeasures[bExec?1:4];
+                Segments.Add(Segment);
+                for (const auto& Box : Plan.Boxes)
                 {
-                    if (FMath::Abs(Delta) < 0.000001) return Start > Min && Start < Max;
-                    double T0 = (Min-Start)/Delta, T1 = (Max-Start)/Delta;
-                    if (T0 > T1) Swap(T0, T1);
-                    Enter = FMath::Max(Enter, T0); Leave = FMath::Min(Leave, T1);
-                    return Enter < Leave;
-                };
-                if (Length > 0.001 && Clip(A.X, B.X-A.X, X+0.001, X+Width-0.001)
-                    && Clip(A.Y, B.Y-A.Y, Y+0.001, Y+Height-0.001)) ++Quality.BlockMeasures[0];
+                    auto Contains = [&](const FTurboMCPGraphTidy::FNode& Node)
+                    { return Box.MemberKeys.Contains(Node.Key) || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName())); };
+                    if (Contains(Source) || Contains(Target)) continue;
+                    const double X = Mode == 0 ? Box.X : Box.PlannedX, Y = Mode == 0 ? Box.Y : Box.PlannedY;
+                    const double Width = Mode == 0 ? Box.Width : Box.PlannedWidth, Height = Mode == 0 ? Box.Height : Box.PlannedHeight;
+                    // Slab clipping counts a passage through the interior, including
+                    // a segment wholly inside an unrelated box. Touching an edge is not a crossing.
+                    double Enter = 0.0, Leave = 1.0;
+                    auto Clip = [&](double Start, double Delta, double Min, double Max)
+                    {
+                        if (FMath::Abs(Delta) < 0.000001) return Start > Min && Start < Max;
+                        double T0 = (Min-Start)/Delta, T1 = (Max-Start)/Delta;
+                        if (T0 > T1) Swap(T0, T1);
+                        Enter = FMath::Max(Enter, T0); Leave = FMath::Min(Leave, T1);
+                        return Enter < Leave;
+                    };
+                    if (Length > 0.001 && Clip(SegmentStart.X, SegmentEnd.X-SegmentStart.X, X+0.001, X+Width-0.001)
+                        && Clip(SegmentStart.Y, SegmentEnd.Y-SegmentStart.Y, Y+0.001, Y+Height-0.001)) CrossedBoxes.Add(&Box);
+                }
             }
+            Quality.BlockMeasures[0]+=CrossedBoxes.Num();
         }
     }
 
@@ -242,6 +303,15 @@ namespace
                 // Each reader carries its measured outline; an entry is not its getter.
                 Rectangles.Add({CopyPosition(Copy), Copy.Width, Copy.Height});
             }
+        if (Mode!=0)
+            for (const auto& Route:Plan.WireRoutes)
+                if (!Route.bSkipped)
+                    for (int32 Index=0;Index<Route.KnotPositions.Num();++Index)
+                    {
+                        if (Mode==2 && (!Route.AppliedKnots.IsValidIndex(Index) || !Route.AppliedKnots[Index])) continue;
+                        const FVector2D P=Mode==2 ? FVector2D(Route.AppliedKnots[Index]->NodePosX,Route.AppliedKnots[Index]->NodePosY) : Route.KnotPositions[Index];
+                        Rectangles.Add({P,Route.KnotSize.X,Route.KnotSize.Y});
+                    }
         for (int32 A = 0; A < Rectangles.Num(); ++A)
             for (int32 B = A + 1; B < Rectangles.Num(); ++B)
             {
@@ -3028,8 +3098,14 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	auto TotalLengthOn = [&OutPlan](const bool bUsePlanned)
 	{
 		double Total = 0.0;
-		for (const FWire& Wire : OutPlan.Wires)
+        auto PinPosition=[&](const UEdGraphPin* Pin)
+        {
+            return OutPlan.WireRoutes.IsEmpty() ? FTurboMCPLayoutReport::PinPosition(Pin)
+                : AlignmentPinPosition(Pin);
+        };
+		for (int32 WireIndex=0;WireIndex<OutPlan.Wires.Num();++WireIndex)
 		{
+            const FWire& Wire=OutPlan.Wires[WireIndex];
 			if (Wire.OutputPin == nullptr || Wire.InputPin == nullptr)
 			{
 				continue;
@@ -3043,7 +3119,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 			double SourceX = bUsePlanned ? Source.PlannedX : Source.X;
 			double SourceY = bUsePlanned ? Source.PlannedY : Source.Y;
-            FVector2D SourceOffset = FTurboMCPLayoutReport::PinPosition(Wire.OutputPin) - FVector2D(Source.X, Source.Y);
+            FVector2D SourceOffset = PinPosition(Wire.OutputPin) - FVector2D(Source.X, Source.Y);
 			if (bUsePlanned)
 			{
 				// This consumer will read from its copy, not the original getter.
@@ -3064,8 +3140,9 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			// Use exactly the report pin model, translated to planned positions.
 
 			const FVector2D Start = FVector2D(SourceX, SourceY) + SourceOffset;
-			const FVector2D End = FTurboMCPLayoutReport::PinPosition(Wire.InputPin) + FVector2D(TargetX - Target.X, TargetY - Target.Y);
-			Total += FVector2D::Distance(Start, End);
+			const FVector2D End = PinPosition(Wire.InputPin) + FVector2D(TargetX - Target.X, TargetY - Target.Y);
+			for (const auto& Segment:TidyWireSegments(OutPlan,WireIndex,bUsePlanned?1:0,Start,End))
+                Total += FVector2D::Distance(Segment.Key,Segment.Value);
 		}
 		return Total;
 	};
@@ -3642,6 +3719,11 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 
 FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 {
+    // Do not accept an internal routed plan until live insertion and rollback
+    // supply the actual-node mapping required by the post-edit measurements.
+    for (const FWireRoute& Route:InPlan.WireRoutes)
+        if (!Route.bSkipped && !Route.KnotPositions.IsEmpty())
+            return TEXT("unchanged: routed Tidy plans are not enabled for live edits yet");
     if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
         return TEXT("unchanged: tidy requires an idle editor with undo available, outside PIE and active transactions");
 	// A GRAPH IS NEEDED TO CREATE ANYTHING, and the plan carries the live nodes rather than the graph,
@@ -4002,6 +4084,44 @@ bool FTurboMCPGraphTidy::ValidatePlannedNodeOverlaps(const FPlan& InPlan, FStrin
         }
     }
     return true;
+}
+
+bool FTurboMCPGraphTidy::PrepareOrthogonalRoutes(FPlan& Plan, double Clearance, FString& Error)
+{
+    Plan.WireRoutes.Reset();
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress()
+        || !FMath::IsFinite(Clearance) || Clearance<20 || Clearance>400)
+    { Error=TEXT("Route planning requires an idle editor and clearance from 20 to 400."); return false; }
+    UEdGraph* Graph=nullptr;
+    for (const FNode& Node:Plan.Nodes) if (Node.Node) { Graph=Node.Node->GetGraph(); break; }
+    UBlueprint* Blueprint=Graph?FBlueprintEditorUtils::FindBlueprintForGraph(Graph):nullptr;
+    if (!Blueprint || !Graph->GetSchema() || !Graph->GetSchema()->IsA<UEdGraphSchema_K2>())
+    { Error=TEXT("Route planning requires a Blueprint K2 graph."); return false; }
+
+    TGuardValue<ITransaction*> SuppressUndo(GUndo,nullptr);
+    TStrongObjectPtr<UBlueprint> Scratch(NewObject<UBlueprint>(GetTransientPackage(),NAME_None,RF_Transient));
+    Scratch->ParentClass=Blueprint->ParentClass;
+    Scratch->GeneratedClass=Blueprint->GeneratedClass;
+    Scratch->SkeletonGeneratedClass=Blueprint->SkeletonGeneratedClass;
+    UEdGraph* ProbeGraph=NewObject<UEdGraph>(Scratch.Get(),NAME_None,RF_Transient);
+    ProbeGraph->Schema=UEdGraphSchema_K2::StaticClass();
+    Scratch->UbergraphPages.Add(ProbeGraph);
+    UK2Node_Knot* Probe=NewObject<UK2Node_Knot>(ProbeGraph,NAME_None,RF_Transient);
+    ProbeGraph->AddNode(Probe,false,false); Probe->CreateNewGuid(); Probe->AllocateDefaultPins();
+    FString ProbeError;
+    const bool bMeasured=PrepareAlignment(Scratch.Get(),ProbeGraph,ProbeError);
+    FVector2D Size=FVector2D::ZeroVector,Input=Size,Output=Size;
+    if (bMeasured)
+    {
+        Size=AlignmentNodeSize(Probe);
+        Input=AlignmentPinPosition(Probe->GetInputPin())-FVector2D(Probe->NodePosX,Probe->NodePosY);
+        Output=AlignmentPinPosition(Probe->GetOutputPin())-FVector2D(Probe->NodePosX,Probe->NodePosY);
+    }
+    // The probe replaces the shared Slate measurement cache. Restore the source
+    // graph even when probing fails, before any caller reads its pin offsets.
+    if (!PrepareAlignment(Blueprint,Graph,Error)) return false;
+    if (!bMeasured) { Error=TEXT("Could not measure native reroute geometry: ")+ProbeError; return false; }
+    return PlanOrthogonalRoutes(Plan,Size,Input,Output,Clearance,Error);
 }
 
 // Internal routing stage. Public Tidy still leaves routing disabled until these

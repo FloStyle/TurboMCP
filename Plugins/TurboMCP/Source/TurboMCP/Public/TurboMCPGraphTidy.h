@@ -178,6 +178,8 @@ public:
         int32 WireIndex = INDEX_NONE;
         /** Top-left positions; measured input/output offsets define each segment. */
         TArray<FVector2D> KnotPositions;
+        /** Filled only in the local post-edit plan used for actual geometry checks. */
+        TArray<UK2Node_Knot*> AppliedKnots;
         FVector2D KnotSize = FVector2D::ZeroVector;
         FVector2D InputOffset = FVector2D::ZeroVector;
         FVector2D OutputOffset = FVector2D::ZeroVector;
@@ -275,6 +277,9 @@ public:
      * This only fills WireRoutes; it does not change live links or authorize an edit.
      * Preview/apply integration must consume exactly these positions before enabling it.
      */
+    /** Measure a transient knot, restore source geometry, then plan routes. No live edits. */
+    static bool PrepareOrthogonalRoutes(FPlan& Plan, double Clearance, FString& Error);
+
     static bool PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& KnotSize,
         const FVector2D& InputOffset, const FVector2D& OutputOffset, double Clearance, FString& Error);
 
