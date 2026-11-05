@@ -10,6 +10,8 @@
 #include "HAL/PlatformProcess.h"
 #include "HAL/PlatformMisc.h"
 #include "HAL/FileManager.h"
+#include "HAL/PlatformFileManager.h"
+#include "UObject/LinkerLoad.h"
 #include "InputAction.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UObject/Package.h"
@@ -55,10 +57,10 @@ bool FTurboMCPAssetDeleteTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("dirty asset refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath).Contains(TEXT("unsaved changes")));
     Package->SetDirtyFlag(false); // Restore the fixture's saved state, not a production recovery policy.
     TestTrue(TEXT("missing confirmation refuses"), UTurboMCPEditToolset::EditTurboMCPAssetDelete(AssetPath, TEXT("")).Contains(TEXT("refused:")));
-    if (IFileManager::Get().SetReadOnly(*Filename, true))
+    if (FPlatformFileManager::Get().GetPlatformFile().SetReadOnly(*Filename, true))
     {
         const FString ReadOnlyResult = UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath);
-        IFileManager::Get().SetReadOnly(*Filename, false);
+        FPlatformFileManager::Get().GetPlatformFile().SetReadOnly(*Filename, false);
         TestTrue(TEXT("read-only asset refuses"), ReadOnlyResult.Contains(TEXT("read-only")));
     }
     else AddError(TEXT("Could not establish read-only fixture control."));
@@ -72,6 +74,16 @@ bool FTurboMCPAssetDeleteTest::RunTest(const FString& Parameters)
     if (!Preview.Split(TEXT("confirmation: "), &Before, &Tail)) { AddError(TEXT("No delete confirmation: ") + Preview); return false; }
     Tail.Split(TEXT("\n"), &Token, &Before);
     TestTrue(TEXT("preview preserves package bytes"), OriginalHash == FMD5Hash::HashFile(*Filename));
+    TArray<uint8> SavedBytes;
+    if (!FFileHelper::LoadFileToArray(SavedBytes, *Filename)) { AddError(TEXT("Cannot read owned fixture bytes.")); return false; }
+    ResetLoaders(Package);
+    TArray<uint8> ChangedBytes = SavedBytes; ChangedBytes.Add(0);
+    if (!FFileHelper::SaveArrayToFile(ChangedBytes, *Filename)) { AddError(TEXT("Cannot prepare stale confirmation.")); return false; }
+    const FString StaleResult = UTurboMCPEditToolset::EditTurboMCPAssetDelete(AssetPath, Token);
+    if (!FFileHelper::SaveArrayToFile(SavedBytes, *Filename)) { AddError(TEXT("Owned fixture restoration failed; supervisor must restore.")); return false; }
+    TestTrue(TEXT("changed bytes refuse old confirmation"), StaleResult.Contains(TEXT("stale")));
+    TestTrue(TEXT("stale refusal retained file"), OriginalHash == FMD5Hash::HashFile(*Filename));
+
     const FString Result = UTurboMCPEditToolset::EditTurboMCPAssetDelete(AssetPath, Token);
     AddInfo(Result);
     TestTrue(TEXT("deletion verified"), Result.Contains(TEXT("Verified: registry entry and package file are absent")));
