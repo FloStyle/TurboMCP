@@ -4320,7 +4320,7 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
         TArray<TArray<FVector2D>> Candidates;
         const FVector2D OffsetDelta=OutputOffset-InputOffset;
         // Two knots form an exact vertical segment despite their distinct pins.
-        for(double X:{A.X+Clearance,A.X+Clearance*0.5,A.X+Clearance*2,B.X-Clearance-OffsetDelta.X})
+        for(double X:{A.X+Clearance,A.X+Clearance*0.5,A.X+Clearance*0.75,A.X+Clearance*1.25,A.X+Clearance*1.5,A.X+Clearance*2,B.X-Clearance-OffsetDelta.X})
             Candidates.Add({FVector2D(X,A.Y)-InputOffset,FVector2D(X+OffsetDelta.X,B.Y-OffsetDelta.Y)-InputOffset});
         TArray<double> Channels{FMath::Min(A.Y,B.Y)-Clearance,FMath::Max(A.Y,B.Y)+Clearance};
         for(const FObstacle& Obstacle:Obstacles)
