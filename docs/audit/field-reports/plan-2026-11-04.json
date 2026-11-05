@@ -538,7 +538,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reviewed_implementation_pending",
+      "validation": "native_help_failure_repaired_rerun_pending",
       "source_ids": [
         "GC-88",
         "GC-94"
@@ -548,7 +548,14 @@
         "2026-11-04_S1/GC-94"
       ],
       "dependencies": [],
-      "next_step": "Implement explicit Placement=outside for append while retaining local default. Source confirms bounded local search refuses when no nearby slot fits. Outside mode must preserve new dependency layout and all existing nodes, use measured bounds, and disclose long wires."
+      "next_step": "Outside placement implemented on review branch. Initial native run exercised blocked local refusal, outside public preview/edit, fixed positions, connected inputs and overflow refusal; live help assertions failed. Short help repaired and close-up capture added; final native and offline acceptance pending.",
+      "evidence": [
+        {
+          "result": "native_failed",
+          "run": "f199639533224f948aab412cfaccebc3",
+          "scope": "Both live append-help assertions failed. Whole-graph capture inspected: new chain outside obstacle, expected long boundary wire; zoom too distant for fine visual acceptance. Failure preserved; short summary repaired and detail capture added."
+        }
+      ]
     },
     {
       "id": "NOV04-14",
