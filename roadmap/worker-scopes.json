@@ -3615,6 +3615,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodePinGrowth.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodePinGrowthTest.cpp"
           ]
+        },
+        "nov04-variable-flags": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableFlagsEdit.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableFlagsEditTest.cpp"
+          ]
         }
       },
       "preserve_rows": []

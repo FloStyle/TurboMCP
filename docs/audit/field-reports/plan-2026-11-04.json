@@ -714,10 +714,10 @@
       "title": "Edit flags on existing member variables",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
+      "validation": "source_reviewed_implementation_pending",
       "source_ids": [
         "VA-09",
         "FT-133"
@@ -727,7 +727,7 @@
         "2026-10-30_S3/FT-133"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Implement targeted existing declaration flag preview/edit under nov04-variable-flags. Current VarsAdd handles only new variables; preserve declaration identity and graph links, with explicit compile separate from edit."
     },
     {
       "id": "NOV04-19",
