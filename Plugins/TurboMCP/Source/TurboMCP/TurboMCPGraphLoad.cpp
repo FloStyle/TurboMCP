@@ -9,6 +9,9 @@
 
 #include "Containers/UnrealString.h"
 #include "Misc/SecureHash.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 #include "EdGraph/EdGraph.h"
 #include "Engine/Blueprint.h"
 #include "UObject/Object.h"
@@ -84,18 +87,16 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 			*Detail, *FTurboMCPGraphText::DetailNames());
 	}
 
-	// Only `read` is implemented. `write` is the engine's own dialect
-	// (`04_FORMATS.md` 2.6) and is refused by name rather than silently returning
-	// the wrong format, which would be far worse than an error.
+	// JSON wraps the same readable body; it is not a second graph dialect.
 	const FString WantedFormat = Format.TrimStartAndEnd().ToLower();
-	if (!WantedFormat.IsEmpty() && WantedFormat != TEXT("read"))
+	if (!WantedFormat.IsEmpty() && WantedFormat != TEXT("read") && WantedFormat != TEXT("json"))
 	{
 		if (WantedFormat == TEXT("write"))
 		{
             return TEXT("error: format 'write' is unsupported. Use Format=read to inspect the graph; read output is not the engine's graph-write dialect.");
 		}
 		return FString::Printf(
-			TEXT("error: '%s' is not a format. Accepted: read."), *Format);
+			TEXT("error: '%s' is not a format. Accepted: read, json."), *Format);
 	}
 
 	FTurboMCPAssetResolver::FResolved Resolved;
@@ -151,6 +152,42 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 			Result += FString::Printf(TEXT("\n%s"), *Note);
 		}
 	}
+
+    if (WantedFormat == TEXT("json"))
+    {
+        // Hash the complete snapshot and read options, never an individual page.
+        const FString Snapshot=Result+TEXT("\njson\n")+EntryFilter;
+        FSHAHash Hash;
+        FSHA1::HashBuffer(*Snapshot,Snapshot.Len()*sizeof(TCHAR),Hash.Hash);
+        const FString Token=Hash.ToString();
+        if (!Revision.IsEmpty() && !Revision.Equals(Token,ESearchCase::IgnoreCase))
+            return TEXT("error: graph read changed since the previous page; restart with Offset=0 and empty Revision");
+        if (Offset>Text.Len()) return TEXT("error: Offset exceeds the complete body length; restart at zero");
+        int32 Count=FMath::Min(MaxChars,Text.Len()-Offset);
+        if (Count>0 && Offset+Count<Text.Len() && uint32(Text[Offset+Count-1])>=0xD800 && uint32(Text[Offset+Count-1])<=0xDBFF) --Count;
+        const int32 Next=Offset+Count<Text.Len()?Offset+Count:-1;
+        TSharedRef<FJsonObject> Root=MakeShared<FJsonObject>();
+        Root->SetNumberField(TEXT("schema"),1);
+        Root->SetStringField(TEXT("asset"),Resolved.ObjectPath);
+        Root->SetStringField(TEXT("graph"),Graph->GetName());
+        Root->SetStringField(TEXT("detail"),DetailLabel);
+        Root->SetStringField(TEXT("entry_filter"),EntryFilter);
+        Root->SetNumberField(TEXT("whole_graph_node_count"),Graph->Nodes.Num());
+        Root->SetStringField(TEXT("body"),Text.Mid(Offset,Count));
+        Root->SetStringField(TEXT("revision"),Token);
+        Root->SetNumberField(TEXT("offset"),Offset);
+        Root->SetNumberField(TEXT("count"),Count);
+        Root->SetNumberField(TEXT("total"),Text.Len());
+        Root->SetNumberField(TEXT("nextOffset"),Next);
+        Root->SetBoolField(TEXT("partial"),Offset>0 || Next!=-1);
+        Root->SetStringField(TEXT("usage"),TEXT("Inspection only. Concatenate body fields in offset order. Request the same read options with revision and nextOffset; -1 means end. Offsets count UTF-16 code units before JSON escaping. Envelope and escaping exceed MaxChars. This is not write-back input."));
+        TArray<TSharedPtr<FJsonValue>> JsonNotes;
+        for (const FString& Note:Notes) JsonNotes.Add(MakeShared<FJsonValueString>(Note));
+        Root->SetArrayField(TEXT("body_notes"),JsonNotes);
+        FString Json;
+        FJsonSerializer::Serialize(Root,TJsonWriterFactory<>::Create(&Json));
+        return Json;
+    }
 
     FSHAHash Digest;
     FSHA1::HashBuffer(*Result, Result.Len()*sizeof(TCHAR), Digest.Hash);
