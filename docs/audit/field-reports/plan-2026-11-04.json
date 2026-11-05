@@ -1199,7 +1199,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reviewed_implementation_pending",
+      "validation": "widget_event_native_passed_reparent_pending",
       "source_ids": [
         "X-122",
         "FT-137"
@@ -1209,7 +1209,26 @@
         "2026-11-03_S3/FT-137"
       ],
       "dependencies": [],
-      "next_step": "Implement explicit designer widget event preview/edit with returned node ID under nov04-widget-bound-event, using stock ComponentBoundEvent initialization. Separate reparent requirement remains open; binding alone will not close this combined task."
+      "next_step": "Widget event preview/edit integrated with standard UMG and CommonUI compiled-binding evidence. Blueprint reparent remains unimplemented and keeps this combined task open.",
+      "widget_event_evidence": {
+        "source_commit": "a39a3eae6ba7c10f2404d5938273c95f52a493ed",
+        "native_run": "e9bdb8a4da34433e8e678c02aae4c256",
+        "result": "passed",
+        "coverage": [
+          "UMG OnClicked and CommonUI OnButtonBaseClicked creation and compiled handlers",
+          "Clean preview, duplicate no-op and invalid-name refusal",
+          "Returned node IDs, preserved widget tree, undo and live help"
+        ],
+        "retained_failures": [
+          "5c6a2afd9c05488dae9a2a092a1b18b2: incorrect generated-class cast in test; corrected",
+          "3333ce3ceae149d1a30a69be9ce9d0df: fixture widget GUID missing; corrected",
+          "828a2f95039449e89d377b287abddf23: 25 offline checks passed, routing registration failed; integrator added entries and validate-repo passed"
+        ],
+        "limitations": [
+          "Reparenting remains open",
+          "Runtime click delivery and saved/reloaded bindings not covered"
+        ]
+      }
     },
     {
       "id": "NOV04-30",
