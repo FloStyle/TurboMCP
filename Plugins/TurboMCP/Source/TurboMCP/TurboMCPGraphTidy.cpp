@@ -32,6 +32,7 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Misc/Guid.h"
 #include "Slate/WidgetRenderer.h"
+#include "Rendering/SlateRenderer.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "ImageUtils.h"
 #include "UObject/StrongObjectPtr.h"
@@ -3190,6 +3191,9 @@ namespace
   Parameters.CreatedObjects=&Created;
   UEdGraph* Graph=Cast<UEdGraph>(StaticDuplicateObjectEx(Parameters));
   if (!Graph) { Result=TEXT("graph copy failed"); return false; }
+  // Function-entry widgets derive their displayed title from the graph name.
+  // Keep that name faithful without renaming or dirtying the source asset.
+  Graph->Rename(*Original->GetName(),Scratch.Get(),REN_DontCreateRedirectors | REN_DoNotDirty | REN_NonTransactional);
   if(Blueprint->FunctionGraphs.Contains(Original)) Scratch->FunctionGraphs.Add(Graph);
   else if(Blueprint->MacroGraphs.Contains(Original)) Scratch->MacroGraphs.Add(Graph);
   else Scratch->UbergraphPages.Add(Graph);
@@ -3257,8 +3261,35 @@ namespace
     if(First) { Left=Rect.MinX; Top=Rect.MinY; Right=Rect.MaxX; Bottom=Rect.MaxY; First=false; }
     else { Left=FMath::Min(Left,Rect.MinX); Top=FMath::Min(Top,Rect.MinY); Right=FMath::Max(Right,Rect.MaxX); Bottom=FMath::Max(Bottom,Rect.MaxY); }
    }
-   const FVector2D Centre((Left+Right)/2,(Top+Bottom)/2);
    const FVector2D Canvas=Editor->GetGraphPanel()?Editor->GetGraphPanel()->GetTickSpaceGeometry().GetLocalSize():Size;
+   auto SaveFrame = [&](const FVector2D& Centre, float Zoom, const FString& Suffix)->bool
+   {
+    Editor->SetViewLocation(FVector2f(Centre-Canvas/(2*Zoom)),Zoom);
+    // A zoom change can replace low-detail node content. Settle desired sizes
+    // before reading pixels, otherwise full labels use the overview's outlines.
+    Editor->SlatePrepass(1.0f);
+    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+    Editor->SlatePrepass(1.0f);
+    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+    // Match the native capture path: drawing at a new scale requests SVGs,
+    // but WidgetRenderer alone does not populate the shared vector atlas.
+    FSlateRenderer* SlateRenderer=FSlateApplication::Get().GetRenderer();
+    FSlateDrawBuffer& ResourceBuffer=SlateRenderer->AcquireDrawBuffer();
+    SlateRenderer->DrawWindows(ResourceBuffer);
+    SlateRenderer->ReleaseDrawBuffer(ResourceBuffer);
+    Editor->Invalidate(EInvalidateWidgetReason::Paint);
+    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+    TArray<FColor> Pixels; FReadSurfaceDataFlags Flags(RCM_UNorm); Flags.SetLinearToGamma(false);
+    if(!Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels,Flags) || Pixels.Num()!=2048*1536)
+     return false;
+    for(FColor& Pixel:Pixels) Pixel.A=255;
+    TArray64<uint8> Png; FImageUtils::PNGCompressImageArray(2048,1536,Pixels,Png);
+    const FString Path=Folder/(Stem+Suffix+TEXT(".png"));
+    if(Png.IsEmpty() || !FFileHelper::SaveArrayToFile(Png,*Path)) return false;
+    Result+=TEXT("\n")+Suffix.RightChop(1)+TEXT(": ")+FPaths::ConvertRelativePathToFull(Path);
+    return true;
+   };
+   const FString SideName=Side?TEXT("after"):TEXT("before");
    const float Wanted=FMath::Min(1.0, FMath::Min(Canvas.X/(Right-Left+160),Canvas.Y/(Bottom-Top+160)));
    float Request=Wanted,Applied=1; FVector2f Offset;
    for(int32 Try=0;Try<64;++Try)
@@ -3267,16 +3298,88 @@ namespace
     if(Applied<=Wanted+KINDA_SMALL_NUMBER) break;
     Request*=0.9f;
    }
-   if(Applied>Wanted+KINDA_SMALL_NUMBER || Applied<=0) { Result=TEXT("graph exceeds native zoom range; use a smaller graph or selected group"); return false; }
-   Editor->SetViewLocation(FVector2f(Centre-Canvas/(2*Applied)),Applied);
-   Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
-   TArray<FColor> Pixels; FReadSurfaceDataFlags Flags(RCM_UNorm); Flags.SetLinearToGamma(false);
-   if(!Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels,Flags) || Pixels.Num()!=2048*1536) { Result=TEXT("native preview readback failed"); return false; }
-   for(FColor& Pixel:Pixels) Pixel.A=255;
-   TArray64<uint8> Png; FImageUtils::PNGCompressImageArray(2048,1536,Pixels,Png);
-   const FString Path=Folder/(Stem+(Side?TEXT("-after.png"):TEXT("-before.png")));
-   if(Png.IsEmpty() || !FFileHelper::SaveArrayToFile(Png,*Path)) { Result=TEXT("native preview image could not be saved"); return false; }
-   Result+=TEXT("\n")+(Side?FString(TEXT("after: ")):FString(TEXT("before: ")))+FPaths::ConvertRelativePathToFull(Path);
+   if(Applied<=Wanted+KINDA_SMALL_NUMBER && Applied>0)
+   {
+    if(!SaveFrame(FVector2D((Left+Right)/2,(Top+Bottom)/2),Applied,TEXT("-")+SideName))
+     { Result+=TEXT("\nOverview image could not be saved."); return false; }
+    Result+=FString::Printf(TEXT("\n%s overview zoom %.3f; %s"),*SideName,Applied,
+     Plan.bCompactBlocks ? TEXT("use detail tiles to read dense blocks.") : TEXT("overview only; use layoutMode=blocks for readable detail tiles."));
+   }
+   else if(!Plan.bCompactBlocks)
+    { Result=TEXT("graph exceeds native zoom range; use a smaller graph or selected group"); return false; }
+   else Result+=TEXT("\n")+SideName+TEXT(" overview exceeds native zoom range; detail tiles follow.");
+
+   if(Plan.bCompactBlocks)
+   {
+    // Bounds must also come from full-detail widgets, not the overview LOD.
+    Editor->SetViewLocation(FVector2f::ZeroVector,1.0f);
+    Editor->SlatePrepass(1.0f);
+    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+    Editor->SlatePrepass(1.0f);
+    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+    // Detail views use native 1:1 rendering, never enlargement of the overview.
+    // Block membership is identical on both sides. Large blocks are tiled with
+    // overlap so a long wire cannot force their node labels to become unreadable.
+    constexpr int32 MaxDetailTiles=24;
+    int32 SavedTiles=0, OmittedTiles=0;
+    const double TileWidth=FMath::Max(256.0,static_cast<double>(Canvas.X)-160.0);
+    const double TileHeight=FMath::Max(256.0,static_cast<double>(Canvas.Y)-160.0);
+    for(int32 Block=0;Block<Plan.BlockCount;++Block)
+    {
+     TArray<FSlateRect> Rectangles;
+     auto AddBounds=[&](UEdGraphNode* Node)
+     {
+      if(!Node) return;
+      FSlateRect Bounds;
+      if(Editor->GetBoundsForNode(Node,Bounds,0.f)) Rectangles.Add(Bounds);
+     };
+     for(const auto& Node:Plan.Nodes)
+      if(Node.Node && !Node.bIsComment && Node.BlockIndex==Block) AddBounds(ByGuid.FindRef(Node.Node->NodeGuid));
+     // Generated readers have no original GUID. Their consumer still identifies
+     // the block; include all new scratch readers attached to that consumer.
+     if(Side)
+      for(const auto& Copy:Plan.GetterCopies)
+       for(const auto& Node:Plan.Nodes)
+        if(Node.Node==Copy.ConsumerPin->GetOwningNode() && Node.BlockIndex==Block)
+        {
+         UEdGraphPin* Input=FindPin(ByGuid.FindRef(Node.Node->NodeGuid),Copy.ConsumerPin);
+         if(Input) for(const UEdGraphPin* Link:Input->LinkedTo) if(Link) AddBounds(Link->GetOwningNode());
+        }
+     if(Rectangles.IsEmpty()) continue;
+     double MinX=Rectangles[0].Left,MinY=Rectangles[0].Top,MaxX=Rectangles[0].Right,MaxY=Rectangles[0].Bottom;
+     for(const FSlateRect& Rect:Rectangles)
+     { MinX=FMath::Min(MinX,static_cast<double>(Rect.Left)); MinY=FMath::Min(MinY,static_cast<double>(Rect.Top));
+       MaxX=FMath::Max(MaxX,static_cast<double>(Rect.Right)); MaxY=FMath::Max(MaxY,static_cast<double>(Rect.Bottom)); }
+     // Bound enumeration as well as image writes. Pathological asset bounds
+     // must not make a read-only preview iterate millions of empty grid cells.
+     if(!FMath::IsFinite(MaxX-MinX) || !FMath::IsFinite(MaxY-MinY)
+        || (MaxX-MinX)/TileWidth>64.0 || (MaxY-MinY)/TileHeight>64.0)
+     {
+      Result+=FString::Printf(TEXT("\n%s block %d detail omitted: bounds exceed the 64 x 64 tile-grid limit. Preview a smaller selected group; this image set is incomplete."),*SideName,Block);
+      continue;
+     }
+     const int32 Columns=FMath::Max(1,FMath::CeilToInt((MaxX-MinX)/TileWidth));
+     const int32 Rows=FMath::Max(1,FMath::CeilToInt((MaxY-MinY)/TileHeight));
+     Result+=FString::Printf(TEXT("\n%s block %d: %d node rectangle(s), grid %d x %d; detail zoom 1:1, 80-unit border."),*SideName,Block,Rectangles.Num(),Columns,Rows);
+     for(int32 Row=0;Row<Rows;++Row) for(int32 Column=0;Column<Columns;++Column)
+     {
+      const double X=MinX+Column*TileWidth,Y=MinY+Row*TileHeight;
+      // Empty wire-only space is visible in the overview; spend the bounded
+      // image budget on node-bearing tiles and report every omitted tile.
+      bool bContainsNode=false;
+      for(const FSlateRect& Rect:Rectangles)
+       if(Rect.Left<X+TileWidth && Rect.Right>=X && Rect.Top<Y+TileHeight && Rect.Bottom>=Y) { bContainsNode=true; break; }
+      if(!bContainsNode) continue;
+      if(SavedTiles>=MaxDetailTiles) { ++OmittedTiles; continue; }
+      const FString Suffix=FString::Printf(TEXT("-%s-block-%d-row-%d-col-%d"),*SideName,Block,Row,Column);
+      if(!SaveFrame(FVector2D(X+TileWidth/2,Y+TileHeight/2),1.0f,Suffix))
+       { Result+=TEXT("\nDetail tile could not be saved; the preview is incomplete."); return false; }
+      ++SavedTiles;
+     }
+    }
+    Result+=FString::Printf(TEXT("\n%s detail tiles: %d saved, %d omitted by the %d-image limit. Empty wire-only tiles are not exported."),*SideName,SavedTiles,OmittedTiles,MaxDetailTiles);
+    if(OmittedTiles) Result+=TEXT(" Use a selected-node preview for the omitted blocks; this image set is incomplete.");
+   }
   }
   return true;
  }
@@ -3786,6 +3889,156 @@ bool FTurboMCPGraphTidy::ValidatePlannedNodeOverlaps(const FPlan& InPlan, FStrin
                 *R.Key, R.PlannedX, R.PlannedY, R.Width, R.Height);
             return false;
         }
+    }
+    return true;
+}
+
+// Internal routing stage. Public Tidy still leaves routing disabled until these
+// plans are consumed by scratch preview, live apply, scoring and exact rollback.
+bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& KnotSize,
+    const FVector2D& InputOffset, const FVector2D& OutputOffset, double Clearance, FString& Error)
+{
+    Error.Reset();
+    Plan.WireRoutes.Reset();
+    if (!FMath::IsFinite(Clearance) || Clearance < 20 || Clearance > 400
+        || !FMath::IsFinite(KnotSize.X) || !FMath::IsFinite(KnotSize.Y) || KnotSize.X <= 0 || KnotSize.Y <= 0
+        || !FMath::IsFinite(InputOffset.X) || !FMath::IsFinite(InputOffset.Y)
+        || !FMath::IsFinite(OutputOffset.X) || !FMath::IsFinite(OutputOffset.Y))
+    { Error=TEXT("Orthogonal routing requires measured knot geometry and clearance from 20 to 400."); return false; }
+    struct FObstacle { double L,T,R,B; int32 NodeIndex; };
+    auto Crosses=[](const FVector2D& A,const FVector2D& B,const FObstacle& Rect)
+    {
+        double Enter=0,Leave=1;
+        auto Clip=[&](double Start,double Delta,double Min,double Max)
+        {
+            if(FMath::Abs(Delta)<0.000001) return Start>Min && Start<Max;
+            double T0=(Min-Start)/Delta,T1=(Max-Start)/Delta;
+            if(T0>T1) Swap(T0,T1);
+            Enter=FMath::Max(Enter,T0); Leave=FMath::Min(Leave,T1); return Enter<Leave;
+        };
+        return Clip(A.X,B.X-A.X,Rect.L,Rect.R) && Clip(A.Y,B.Y-A.Y,Rect.T,Rect.B);
+    };
+    for(int32 WireIndex=0;WireIndex<Plan.Wires.Num();++WireIndex)
+    {
+        const FWire& Wire=Plan.Wires[WireIndex];
+        if(!Wire.OutputPin || !Wire.InputPin || !Plan.Nodes.IsValidIndex(Wire.SourceNodeIndex)
+            || !Plan.Nodes.IsValidIndex(Wire.TargetNodeIndex)) continue;
+        const FNode& Source=Plan.Nodes[Wire.SourceNodeIndex]; const FNode& Target=Plan.Nodes[Wire.TargetNodeIndex];
+        FWireRoute Route; Route.WireIndex=WireIndex; Route.KnotSize=KnotSize;
+        Route.InputOffset=InputOffset; Route.OutputOffset=OutputOffset;
+        if(!Plan.SelectedNodeKeys.IsEmpty() && (!Plan.SelectedNodeKeys.Contains(Source.Key) || !Plan.SelectedNodeKeys.Contains(Target.Key)))
+        { Route.bSkipped=true; Route.Reason=TEXT("Fixed boundary link retained."); Plan.WireRoutes.Add(MoveTemp(Route)); continue; }
+        if(Source.bUnreachable || Target.bUnreachable || Source.bIsKnot || Target.bIsKnot)
+        { Route.bSkipped=true; Route.Reason=TEXT("Existing reroute or unreachable endpoint retained."); Plan.WireRoutes.Add(MoveTemp(Route)); continue; }
+        FVector2D A=AlignmentPinPosition(Wire.OutputPin)+FVector2D(Source.PlannedX-Source.X,Source.PlannedY-Source.Y);
+        const FVector2D B=AlignmentPinPosition(Wire.InputPin)+FVector2D(Target.PlannedX-Target.X,Target.PlannedY-Target.Y);
+        // Copies have their own obstacle identity: the original reader is no
+        // longer the source of this connection once its copy is planned.
+        int32 SourceObstacleIndex=Wire.SourceNodeIndex;
+        for(int32 CopyIndex=0;CopyIndex<Plan.GetterCopies.Num();++CopyIndex)
+        {
+            const FGetterCopy& Copy=Plan.GetterCopies[CopyIndex];
+            if(Copy.OriginalValuePin==Wire.OutputPin && Copy.ConsumerPin==Wire.InputPin)
+            {
+                A=FVector2D(Copy.PlannedX,Copy.PlannedY)+Copy.OutputOffset;
+                SourceObstacleIndex=Plan.Nodes.Num()+CopyIndex;
+            }
+        }
+        TArray<FObstacle> Obstacles;
+        for(int32 I=0;I<Plan.Nodes.Num();++I)
+        {
+            const FNode& Node=Plan.Nodes[I]; if(Node.bIsComment) continue;
+            Obstacles.Add({Node.PlannedX-8,Node.PlannedY-8,Node.PlannedX+Node.Width+8,Node.PlannedY+Node.Height+8,I});
+        }
+        for(int32 CopyIndex=0;CopyIndex<Plan.GetterCopies.Num();++CopyIndex)
+        {
+            const FGetterCopy& Copy=Plan.GetterCopies[CopyIndex];
+            Obstacles.Add({Copy.PlannedX-8,Copy.PlannedY-8,Copy.PlannedX+Copy.Width+8,Copy.PlannedY+Copy.Height+8,Plan.Nodes.Num()+CopyIndex});
+        }
+        // Later routes must leave room for knots already accepted by this plan.
+        for(const FWireRoute& Accepted:Plan.WireRoutes)
+            for(const FVector2D& Position:Accepted.KnotPositions)
+                Obstacles.Add({Position.X-8,Position.Y-8,Position.X+Accepted.KnotSize.X+8,Position.Y+Accepted.KnotSize.Y+8,INDEX_NONE});
+        for(const FBox& Box:Plan.Boxes)
+        {
+            auto Owns=[&](const FNode& Node) { return Box.MemberKeys.Contains(Node.Key) || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName())); };
+            if(!Owns(Source) && !Owns(Target)) Obstacles.Add({Box.PlannedX,Box.PlannedY,Box.PlannedX+Box.PlannedWidth,Box.PlannedY+Box.PlannedHeight,INDEX_NONE});
+        }
+        bool bBlocked=false;
+        for(const FObstacle& Obstacle:Obstacles)
+            if(Obstacle.NodeIndex!=SourceObstacleIndex && Obstacle.NodeIndex!=Wire.TargetNodeIndex && Crosses(A,B,Obstacle)) { bBlocked=true; break; }
+        const double DX=FMath::Abs(B.X-A.X),DY=FMath::Abs(B.Y-A.Y);
+        if(!bBlocked && !(FVector2D::Distance(A,B)>800 && DX>1 && DY>1)) continue;
+        TArray<TArray<FVector2D>> Candidates;
+        const FVector2D OffsetDelta=OutputOffset-InputOffset;
+        // Two knots form an exact vertical segment despite their distinct pins.
+        for(double X:{A.X+Clearance,B.X-Clearance-OffsetDelta.X})
+            Candidates.Add({FVector2D(X,A.Y)-InputOffset,FVector2D(X+OffsetDelta.X,B.Y-OffsetDelta.Y)-InputOffset});
+        TArray<double> Channels{FMath::Min(A.Y,B.Y)-Clearance,FMath::Max(A.Y,B.Y)+Clearance};
+        for(const FObstacle& Obstacle:Obstacles)
+        { Channels.AddUnique(Obstacle.T-Clearance); Channels.AddUnique(Obstacle.B+Clearance); }
+        for(double Y:Channels)
+        {
+            const FVector2D P0=FVector2D(A.X+Clearance,A.Y)-InputOffset;
+            const FVector2D P1=FVector2D((P0+OutputOffset).X,Y)-InputOffset;
+            const FVector2D P2=FVector2D(B.X-Clearance-OffsetDelta.X,(P1+OutputOffset).Y)-InputOffset;
+            const FVector2D P3=FVector2D((P2+OutputOffset).X,B.Y-OffsetDelta.Y)-InputOffset;
+            Candidates.Add({P0,P1,P2,P3});
+        }
+        double BestLength=TNumericLimits<double>::Max();
+        for(TArray<FVector2D> Candidate:Candidates)
+        {
+            // Evaluate the integer coordinates that Unreal will actually store.
+            bool bRepresentable=true;
+            for(FVector2D& Position:Candidate)
+            {
+                if(!FMath::IsFinite(Position.X) || !FMath::IsFinite(Position.Y)
+                    || Position.X<MIN_int32 || Position.X>MAX_int32
+                    || Position.Y<MIN_int32 || Position.Y>MAX_int32)
+                { bRepresentable=false; break; }
+                Position.X=FMath::RoundToDouble(Position.X);
+                Position.Y=FMath::RoundToDouble(Position.Y);
+            }
+            if(!bRepresentable) continue;
+            bool bClear=true; double Length=0; FVector2D Previous=A;
+            for(int32 I=0;I<=Candidate.Num() && bClear;++I)
+            {
+                const FVector2D Next=I<Candidate.Num()?Candidate[I]+InputOffset:B;
+                // Rounding can introduce at most one unit of pin-axis drift.
+                if(FMath::Abs(Next.X-Previous.X)>1 && FMath::Abs(Next.Y-Previous.Y)>1)
+                    bClear=false;
+                for(int32 Other=0;Other<Candidate.Num() && bClear;++Other)
+                {
+                    if(Other==I || Other==I-1) continue;
+                    const FVector2D P=Candidate[Other];
+                    if(Crosses(Previous,Next,{P.X-8,P.Y-8,P.X+KnotSize.X+8,P.Y+KnotSize.Y+8,INDEX_NONE})) bClear=false;
+                }
+                for(const FObstacle& Obstacle:Obstacles)
+                {
+                    if((I==0 && Obstacle.NodeIndex==SourceObstacleIndex) || (I==Candidate.Num() && Obstacle.NodeIndex==Wire.TargetNodeIndex)) continue;
+                    if(Crosses(Previous,Next,Obstacle)) { bClear=false; break; }
+                }
+                Length+=FVector2D::Distance(Previous,Next);
+                if(I<Candidate.Num())
+                {
+                    const FVector2D P=Candidate[I];
+                    for(int32 Other=0;Other<I;++Other)
+                    {
+                        const FVector2D Q=Candidate[Other];
+                        if(P.X<Q.X+KnotSize.X+8 && P.X+KnotSize.X+8>Q.X
+                            && P.Y<Q.Y+KnotSize.Y+8 && P.Y+KnotSize.Y+8>Q.Y) bClear=false;
+                    }
+                    if(!FMath::IsFinite(P.X) || !FMath::IsFinite(P.Y) || P.X<MIN_int32 || P.X>MAX_int32 || P.Y<MIN_int32 || P.Y>MAX_int32) bClear=false;
+                    for(const FObstacle& Obstacle:Obstacles)
+                        if(P.X<Obstacle.R && P.X+KnotSize.X>Obstacle.L && P.Y<Obstacle.B && P.Y+KnotSize.Y>Obstacle.T) { bClear=false; break; }
+                    Previous=P+OutputOffset;
+                }
+            }
+            if(bClear && Length<BestLength) { BestLength=Length; Route.KnotPositions=Candidate; }
+        }
+        Route.bSkipped=Route.KnotPositions.IsEmpty();
+        Route.Reason=Route.bSkipped?TEXT("No collision-free orthogonal candidate; original wire retained."):TEXT("Orthogonal channel candidate; application and acceptance remain separate.");
+        Plan.WireRoutes.Add(MoveTemp(Route));
     }
     return true;
 }

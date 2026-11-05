@@ -361,10 +361,12 @@ def record_break_regression(call, evidence, persist):
     persist()
 
 
-def record_event_regressions(call, evidence, persist):
+def record_event_regressions(call, evidence, persist, only_case=None):
     """Record J1/J2/J6 on fresh Actor event graphs, never substitute functions."""
     engine_tools = 'editor_toolset.toolsets.blueprint.BlueprintTools'
     for case, entries, calls_per_entry in [('J1', 1, 3), ('J2', 1, 2), ('J6A', 3, 2), ('J6B', 3, 2)]:
+        if only_case is not None and case != only_case:
+            continue
         name = 'TidyFixture_' + case + '_' + uuid.uuid4().hex
         asset, graph = '/Game/Tests/' + name, 'EventGraph'
         row = dict(asset=asset, graph=graph, acceptance=False, chains=[])
@@ -595,8 +597,8 @@ def run():
     session = Session()
     session.connect()
     subset = os.environ.get('TURBOMCP_TIDY_BASELINE_SUBSET', 'all')
-    if subset not in ('all', 'events'):
-        raise RuntimeError('Unknown baseline subset; expected all or events')
+    if subset not in ('all', 'events', 'preview'):
+        raise RuntimeError('Unknown baseline subset; expected all, events or preview')
     evidence = {'stage': 'discovery', 'layout_acceptance': False, 'subset': subset, 'calls': []}
 
     def persist():
@@ -641,6 +643,28 @@ def run():
             if missing:
                 raise RuntimeError(tool + ': compact help omitted required parameters: ' + ', '.join(missing))
         call('ReadTurboMCPStatus')
+        if subset == 'preview':
+            # Narrow native rendering check, not a substitute for cascade acceptance.
+            record_event_regressions(call, evidence, persist, only_case='J2')
+            item = evidence['regressions']['J2']
+            asset, graph = item['asset'], item['graph']
+            before_positions = read_positions(call, asset, graph)
+            before_graph = read_complete_graph(call, asset, graph)
+            preview = call('PreviewTurboMCPGraphTidy', asset=asset, graphName=graph,
+                           bForce=False, nodeIds=[], mainPath='', horizontalGap=120.0,
+                           verticalGap=100.0, lanePitch=280.0, wrapAfter='', layoutMode='blocks')
+            evidence['detail_preview'] = preview
+            persist()
+            for side in ('before', 'after'):
+                if not re.search(r'^' + side + r'-block-\d+-row-\d+-col-\d+: ', preview, re.M):
+                    raise RuntimeError('Missing native detail image for ' + side)
+            if read_positions(call, asset, graph) != before_positions or read_complete_graph(call, asset, graph) != before_graph:
+                raise RuntimeError('Detail preview mutated the live graph')
+            evidence['stage'] = 'detail_preview_immutability_passed_image_review_pending'
+            persist()
+            print('Evidence: ' + str(directory), flush=True)
+            print('RESULT: PASS (focused J2 preview only; screenshot inspection and cascade acceptance remain pending)')
+            return
         if subset == 'events':
             record_event_regressions(call, evidence, persist)
             evidence['stage'] = 'event_baselines_recorded_acceptance_pending'
@@ -714,6 +738,7 @@ def run():
         record_compact_candidates(call, evidence, persist)
         record_comment_regression(call, evidence, persist)
         record_compact_candidates(call, evidence, persist, comments_only=True)
+        evidence['stage'] = 'workflow_checks_passed_visual_acceptance_pending'
         persist()
         print('Evidence: ' + str(directory), flush=True)
         print('RESULT: PASS (baseline evidence checkpoint only; layout acceptance remains false)')
