@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "5842e5baf12a458f6fefbefa7312cf28dd52a97e",
+  "plugin_tree": "8aa6ddecc83aa15524e71f7f23d99ae4204517b1",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 177,
@@ -3805,7 +3805,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
-          "line": 59
+          "line": 62
         }
       ],
       "test_references": [
