@@ -158,6 +158,11 @@
           "run": "b091c2182a204e82830757b20e9e1bd3",
           "result": "passed_preservation_and_comment_contents_not_full_acceptance",
           "scope": "a13b31f7: editor suite passed. J4 kept both titles and every original member, exact node preview/edit coordinates matched, and undo restored graph plus all geometry. Body drift 3513 -> 0, Completed-above-body 3 -> 0, wire length 84132.8 -> 81702.1. Native Flatten path points image 0803F423411226F3B6BEF188BD734C7D inspected: fitted readable comment, but unrelated long data wire still crosses it. Cross-box length 23270.9 -> 24806.8; routing and Appendix H remain unresolved. Earlier identity failure retained."
+        },
+        {
+          "commit": "536b9ae7",
+          "result": "integrated_partial_batch",
+          "scope": "Compact placement, comment fitting and required-parameter help are on main. Scope gate passed against current main 554547f9 with the unchanged assignment path set. Editor b091c2182a204e82830757b20e9e1bd3 passed preservation and comment checks. Offline 789103a7853a4059ba06a97c0290d3d8 passed 25/26; stale generated inventory was corrected and validate-repo then passed. Production source unchanged since tested a13b31f7. Routing, full scoring, public block previews, local promotion and visual acceptance remain open."
         }
       ],
       "design_notes": [
@@ -311,10 +316,10 @@
       "title": "Keep every required parameter visible in compact help",
       "kind": "bug",
       "priority": "P0",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "live_required_parameter_checks_passed_in_candidate",
+      "validation": "tested_live_required_parameter_summary",
       "source_ids": [
         "X-129"
       ],
@@ -322,11 +327,16 @@
         "2026-11-05_S1/X-129"
       ],
       "dependencies": [],
-      "next_step": "Live required-parameter checks passed for all five named tools in completed run dd045dabee7f44dab9de90d46565d7ab. Integrate the reviewed help fix after gates; compact layout remains unaccepted.",
+      "next_step": "Implemented and integrated in 536b9ae7. All required parameter names remained visible for the five reported tools when checked against live schemas. Reopen if new field evidence identifies a help omission.",
       "evidence": [
         {
           "result": "passed_live_required_parameters",
           "scope": "Candidate 324c365c; evidence .local/tidy-cascade/ca8c953407ed474483bfef28e8d83ab0/evidence.json required_help. All five reported tools have zero missing required names. Build passed. Full compact-layout suite is still running, so this is a bounded help result only."
+        },
+        {
+          "commit": "536b9ae7",
+          "result": "integrated_partial_batch",
+          "scope": "Compact placement, comment fitting and required-parameter help are on main. Scope gate passed against current main 554547f9 with the unchanged assignment path set. Editor b091c2182a204e82830757b20e9e1bd3 passed preservation and comment checks. Offline 789103a7853a4059ba06a97c0290d3d8 passed 25/26; stale generated inventory was corrected and validate-repo then passed. Production source unchanged since tested a13b31f7. Routing, full scoring, public block previews, local promotion and visual acceptance remain open."
         }
       ],
       "design_notes": [
