@@ -1212,9 +1212,9 @@
       "title": "Document struct type syntax for local variables",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
       "validation": "reported_not_reproduced",
       "source_ids": [
         "FA-17"
@@ -1223,7 +1223,7 @@
         "2026-11-04_S1/FA-17"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Source confirms bare struct paths are supported but local-variable help lacks examples and failure text mentions only classes. Scoped help/diagnostic repair and focused local-variable workflow acceptance approved; native evidence pending."
     }
   ],
   "priority_order": [

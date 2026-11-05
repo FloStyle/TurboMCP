@@ -2222,3 +2222,8 @@ Readiness: ready. Assignment nov04-quoted-pin-repair. Reproduction 15796f9928a54
 Approved repair base for nov04-quoted-pin-repair: 33305d323e37163089c10965d77241ffad121de2, the clean merged worktree containing the retained failing reproduction and current scope. Do not integrate its failing test alone.
 
 NOV04-16 integrated: exact quoted whitespace pin rendering/parsing, unchanged engine names, public help. Native 1c05d3bc06ba4a14bb1d0d0b44eabd73 and offline d0c753b77a6a479e94f74c6392aa92b9 passed. Compiled IncrementInt changes 5 to 6 and reaches consumer. Failed reproduction retained; Value/Result missing-name detail did not reproduce. Both investigation and repair scopes passed.
+
+
+### NOV04-41 local struct syntax
+
+Readiness: ready. Assignment nov04-local-struct-help. Current source accepts bare loadable struct paths in ResolveBare, but local preview/edit help omits them and the failed-resolution diagnostic incorrectly mentions only class paths. Document native and project struct object-path examples without inventing a struct prefix. Improve actionable refusal text. Extend the existing local-variable native fixture to verify preview preservation, accepted native struct path and actual declared struct identity, and unsupported prefixed-form refusal without declaration mutation. Check both public help outputs. Run supervised test-graph-append and the offline gate. No engine edits, saves or syntax expansion.
