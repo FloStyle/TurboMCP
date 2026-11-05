@@ -2182,3 +2182,5 @@ NOV04-34 integrated: overlap refusal names the first pair and planned rectangles
 ### NOV04-14 integer zero reproduction
 
 Readiness: ready. Assignment nov04-integer-zero. Report GC-89 lacks the original append text and node ID. Test a disposable stock integer input using bare and quoted zero, omitted default and malformed numeric text through append Plan/Apply. Require actual created pin default readback and refusal preservation; do not claim the historical callback-mask issue reproduced merely because generic cases pass. Test-only scope until a failure establishes a repair. Run supervised test-graph-append and offline validation. No engine changes or saves.
+
+NOV04-14 reproduction integrated: native 8655f468c64d4e4ca0fa7ecf570c2a2a and offline 5573c870f8a9409e9922c37cdfabb5e6 passed. Bare/omitted zero work; quoted zero correctly refuses as a string. Original callback-mask issue remains OPEN pending exact call details; no production fix claimed. Initial mistaken quoted-zero expectation retained as failed evidence.

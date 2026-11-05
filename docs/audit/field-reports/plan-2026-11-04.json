@@ -478,10 +478,10 @@
       "title": "Reproduce integer zero default refusal",
       "kind": "bug",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "open",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reproduction_pending",
+      "validation": "generic_workflow_passed_original_not_reproduced",
       "source_ids": [
         "GC-89"
       ],
@@ -489,7 +489,24 @@
         "2026-11-03_S2/GC-89"
       ],
       "dependencies": [],
-      "next_step": "Reported numeric refusal originates in stock K2 integer validation. Exact callback node ID and append text are absent. Test bare/quoted zero, omitted defaults and malformed input on a stock integer pin; keep historical cause unresolved unless reproduced."
+      "next_step": "Stock MakeLiteralInt append accepts bare 0 and omitted default with actual zero pin readback. Quoted zero is a string and correctly refuses with type guidance; malformed numeric input refuses preserving nodes and dirty state. Original callback-mask failure remains unconfirmed: exact node ID, pin and append text requested. No production fix claimed.",
+      "evidence": [
+        {
+          "run": "6ce4b87b16bb4e50932dba4710943455",
+          "result": "failed",
+          "scope": "Bare zero passed; test incorrectly expected quoted zero to coerce to integer. Existing typed-string refusal explained the mismatch; test corrected to assert refusal."
+        },
+        {
+          "run": "8655f468c64d4e4ca0fa7ecf570c2a2a",
+          "result": "passed",
+          "scope": "Stock integer bare/omitted zero readback and quoted/malformed refusal preservation."
+        },
+        {
+          "run": "5573c870f8a9409e9922c37cdfabb5e6",
+          "result": "passed",
+          "scope": "26 offline gates and trusted scope check passed; test-only source 52237e635ea00374f1ced3bd8041790eb0cb25bf."
+        }
+      ]
     },
     {
       "id": "NOV04-15",
