@@ -609,7 +609,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_reconciled_runtime_pending",
       "source_ids": [
         "PI-04"
       ],
@@ -617,7 +617,7 @@
         "2026-10-30_S1/PI-04"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Source reconciliation: TurboMCPPlayInput.cpp focus action unconditionally SetUserFocus to the PIE viewport and gives only a generic menu warning afterward. activate separately requests OS foreground without explicit Slate focus. Reproduce a focused menu key handler, report previous/current focus explicitly, and provide/document a focus-preserving route; do not assume OS activation guarantees key handling. No fix or runtime reproduction yet."
     },
     {
       "id": "NOV04-23",
