@@ -1508,7 +1508,7 @@
         "2026-10-30_S1/X-118"
       ],
       "dependencies": [],
-      "next_step": "Owned Slate reproduction confirms text wait finds collapsed labels and visible descendants of collapsed parents, while Snapshot omits them until revealed. Engine remains stock; issue is open for upstream visibility semantics or a separately scoped plugin alternative. Treat stock WaitFor as presence only.",
+      "next_step": "Implement a plugin-owned bounded Slate text inspection query with explicit presence and effective-visibility results, including hidden/collapsed ancestors. Reuse the existing visible/collapsed/revealed fixture. Do not modify or claim to repair stock WaitFor/Snapshot. Runtime button candidates are insufficient: current ReadPlayInputState explicitly does not verify ancestor visibility.",
       "evidence": [
         {
           "result": "source_review",
@@ -1524,7 +1524,14 @@
           "run": "0e81cf619b874adc992beff5ff1df123",
           "scope": "26 checks and exact source scope passed for 182c0aa27752cf9720dcbe046204d944b23f2c4e."
         }
-      ]
+      ],
+      "plugin_repair_contract": {
+        "behavior": "Read-only immediate text query over live Slate windows, with include-hidden inspection and explicit ancestor-effective visibility. No blocking wait, click, focus, PIE start or mutation.",
+        "bounds": "Bound traversal depth, visited widgets and returned matches; report truncation so an incomplete search never proves absence.",
+        "output": "Distinguish text presence, effective visibility and unknown clickability. State that visibility does not establish hit testing, clipping, OS foreground or enabled input.",
+        "tests": "Actual registered tool: visible text; locally collapsed text; visible child under collapsed ancestor; revealed controls; missing text; traversal/output limits; unchanged widget visibility. Retain the stock discrepancy reproduction.",
+        "engine": "Stock engine unchanged; this is a plugin workflow alternative, not an upstream repair."
+      }
     },
     {
       "id": "NOV04-37",
