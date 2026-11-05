@@ -686,6 +686,7 @@ def main():
          "the placement test reported no errors"),
     )
     automation_tests += (("TurboMCP.GraphAppend.DelegateSideEffects", "delegate test discovered", "delegate report parsed", "delegate workflow succeeds", "delegate workflow has no errors"),)
+    automation_tests += (("TurboMCP.GraphAppend.BlueprintReparent", "reparent discovered", "reparent report parsed", "reparent succeeds", "reparent has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.WidgetBoundEvent", "widget event discovered", "widget event report parsed", "widget event succeeds", "widget event has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.VariableFlags", "variable flags discovered", "variable flags report parsed", "variable flags succeeds", "variable flags has no errors"),)
     automation_tests += (("TurboMCP.GraphAppend.NodePinGrowth", "pin growth discovered", "pin growth report parsed", "pin growth succeeds", "pin growth has no errors"),)
