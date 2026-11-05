@@ -224,11 +224,16 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
     {
         if (!Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: focus requires empty Key, Value and Seconds.");
         if (Held.Key.IsValid()) return TEXT("error: Release the tool-held input before changing focus.");
+        const TSharedPtr<SWidget> PreviousFocus = FSlateApplication::Get().GetUserFocusedWidget(Resolved.User);
+        const FString PreviousType = PreviousFocus.IsValid() ? PreviousFocus->GetTypeAsString() : TEXT("none");
+        const bool DisplacedChild = HasPlayFocus(Resolved) && PreviousFocus != Resolved.Viewport;
         FSlateApplication::Get().SetUserFocus(Resolved.User,Resolved.Viewport,EFocusCause::SetDirectly);
         const bool Focused=HasPlayFocus(Resolved);
         if (!Focused) return TEXT("error: The game viewport did not accept Slate focus. No key was sent.");
-        return FString::Printf(TEXT("play input: set Slate user focus to the game viewport. OS foreground activation was not requested.\napplication active: %s\nThis can leave a focused menu control; use Slate refs for menus. No game key was sent. If inactive, explicitly request activate, then read PlayInputState before sending input."),
-            FSlateApplication::Get().IsActive() ? TEXT("yes") : TEXT("no"));
+        const TSharedPtr<SWidget> CurrentFocus = FSlateApplication::Get().GetUserFocusedWidget(Resolved.User);
+        return FString::Printf(TEXT("play input: set Slate user focus to the game viewport. OS foreground activation was not requested.\nprevious focus widget type: %s\ncurrent focus widget type: %s\nPIE child/menu focus displaced: %s\napplication active: %s\nNo game key was sent. To preserve an already focused PIE menu, skip focus and use hold directly; it routes through the current Slate focus. To restore a menu, use EditTurboMCPPlayWidgetFocus or a Slate control ref. If inactive, request activate separately and read PlayInputState."),
+            *PreviousType, CurrentFocus.IsValid() ? *CurrentFocus->GetTypeAsString() : TEXT("none"),
+            DisplacedChild ? TEXT("yes") : TEXT("no"), FSlateApplication::Get().IsActive() ? TEXT("yes") : TEXT("no"));
     }
     if (Action!=TEXT("hold")) return TEXT("error: Action must be activate, focus, hold or release. A short bounded hold is a tap; no indefinite key-down is supported.");
     const FKey InputKey(*Key);
