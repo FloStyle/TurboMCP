@@ -366,6 +366,11 @@
           "run": "66ec230fe6d9453da8722ecb46a91918",
           "result": "failed",
           "scope": "Wrong-class diagnostic fixture emitted an empty dispatcher creation ID and never reached schema validation. Compatible control also failed. Fixture corrected to reference the existing dispatcher explicitly; no product success claimed."
+        },
+        {
+          "run": "71d59247d7644cca8641247333fe3c97",
+          "result": "failed",
+          "scope": "Fixture placeholder BindEvent was rejected by graph checking before link validation. Corrected fixture to discover the exact CommonButtonGroupBase dispatcher creation ID; original diagnostic requirement remains unverified."
         }
       ],
       "followups": [
