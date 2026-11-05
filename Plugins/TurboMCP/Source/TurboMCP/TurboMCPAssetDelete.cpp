@@ -61,7 +61,9 @@ FString DeleteAsset(bool Apply, const FString& AssetPath, const FString& Confirm
     TArray<FName> References;
     Registry.GetReferencers(FName(*PackageName), References);
     if (!References.IsEmpty()) return Refuse(TEXT("Registry references remain; deletion was not attempted."));
-    const FString Identity = AssetPath + TEXT("|") + LexToString(Target->GetUniqueID()) + TEXT("|") + LexToString(FMD5Hash::HashFile(*Filename));
+    const FMD5Hash FileHash = FMD5Hash::HashFile(*Filename);
+    if (!FileHash.IsValid()) return Refuse(TEXT("The package file could not be fingerprinted; no deletion was attempted."));
+    const FString Identity = AssetPath + TEXT("|") + LexToString(Target->GetUniqueID()) + TEXT("|") + LexToString(FileHash);
     const double Now = FPlatformTime::Seconds();
     for (auto It = Confirmations.CreateIterator(); It; ++It) if (It.Value().Expires < Now) It.RemoveCurrent();
     if (Apply)
