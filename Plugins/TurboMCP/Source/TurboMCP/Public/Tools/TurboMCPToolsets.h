@@ -929,6 +929,9 @@ public:
 	/**
 	 * Search available node types; loads Blueprint context and queries editor node actions, without requesting graph edits, compilation or saving.
 	 * Results are ranked and capped; PreviewTurboMCPNodePins inspects a returned type.
+	 * Searches include member getter/setter terms, arithmetic words such as plus/minus, and reflected dispatcher names.
+	 * Check the declaring class before binding an event; similarly named dispatchers can belong to different classes.
+	 * Discovery does not prove that a target-object pin connection is compatible. Use the returned exact creation ID.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
 	 * @param GraphName Exact graph name, e.g. EventGraph. Empty selects the Blueprint event graph; missing or ambiguous graphs are refused.
 	 * @param Words Search text or candidate type ID, e.g. PrintString. Empty is allowed only with an explicit Limit for bounded browsing.

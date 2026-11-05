@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPNodeType.h"
+#include "K2Node_PromotableOperator.h"
 #include "TurboMCPBlueprintRead.h"
 
 #include "BlueprintActionDatabase.h"
@@ -15,6 +16,7 @@
 #include "K2Node_MakeStruct.h"
 #include "K2Node_BreakStruct.h"
 #include "BlueprintVariableNodeSpawner.h"
+#include "BlueprintDelegateNodeSpawner.h"
 #include "K2Node_VariableGet.h"
 #include "WidgetBlueprint.h"
 #include "Blueprint/WidgetTree.h"
@@ -279,6 +281,14 @@ namespace
 				Entry.TypeId = TypeId;
                 Entry.LegacyTypeId = TypeId;
 				Entry.SearchKeywords = UiSpec.Keywords.ToString();
+                if (ActionInfo.GetNodeClass() == UK2Node_PromotableOperator::StaticClass())
+                {
+                    // Discovery synonyms never become creation IDs. The same
+                    // graph-filtered stock spawner remains responsible for creation.
+                    const FString Title = UiSpec.MenuName.ToString();
+                    if (Title.Equals(TEXT("Add"), ESearchCase::IgnoreCase)) Entry.SearchKeywords += TEXT(" add plus addition");
+                    if (Title.Equals(TEXT("Subtract"), ESearchCase::IgnoreCase)) Entry.SearchKeywords += TEXT(" subtract minus subtraction");
+                }
 				if (const UFunction* Fn = ActionInfo.GetAssociatedFunction())
 				{
 					// Include reflected names and parameter types for discovery of compact-title nodes.
@@ -318,6 +328,19 @@ namespace
                                 ? TEXT("Struct|Make|") : TEXT("Struct|Break|")) + Struct->GetPathName();
                             Entry.SearchKeywords += TEXT(" ") + Struct->GetName() + TEXT(" ") + UiSpec.MenuName.ToString();
                         }
+                // Dispatcher menu labels can differ from their reflected names.
+                // Search both, and expose the declaring class so callers can
+                // distinguish a button event from a similarly named group event.
+                if (const auto* DelegateSpawner = Cast<UBlueprintDelegateNodeSpawner>(NodeSpawner))
+                    if (const FMulticastDelegateProperty* Property = DelegateSpawner->GetDelegateProperty())
+                    {
+                        Entry.SearchKeywords += TEXT(" ") + Property->GetName() + TEXT(" ") + UiSpec.MenuName.ToString();
+                        if (const UClass* OwnerClass = Property->GetOwnerClass())
+                        {
+                            Entry.OwningClass = OwnerClass->GetPathName();
+                            Entry.SearchKeywords += TEXT(" ") + OwnerClass->GetName();
+                        }
+                    }
 				// Member-variable IDs must match the reader, not friendly menu labels.
 				if (const UBlueprintVariableNodeSpawner* VariableSpawner = Cast<UBlueprintVariableNodeSpawner>(NodeSpawner))
 				{
@@ -337,6 +360,8 @@ namespace
 							}
 						const TCHAR* Access = VariableNodeClass == UK2Node_VariableSet::StaticClass() ? TEXT("Set") : TEXT("Get");
 						Entry.Aliases.Add(FString::Printf(TEXT("Variables|%s|%s%s"), *Category, Access, *Property->GetName()));
+                        Entry.SearchKeywords += FString::Printf(TEXT(" variable %s %s"),
+                            VariableNodeClass == UK2Node_VariableSet::StaticClass() ? TEXT("set setter") : TEXT("get getter"), *Property->GetName());
                         const UClass* PropertyOwner=Property->GetOwnerClass();
                         const UBlueprint* DeclaringBlueprint=PropertyOwner?Cast<UBlueprint>(PropertyOwner->ClassGeneratedBy):nullptr;
                         Entry.TypeId=FString::Printf(TEXT("Variable|%s|%s|%s"),
@@ -836,7 +861,7 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 		if (Rank < 0 && NormalisedWords.Num() > 0)
 		{
 			const FString SearchText = NormalisedId + TEXT(" ") + LegacyId + TEXT(" ")
-				+ FTurboMCPToolSchema::NormaliseForMatch(Entry.SearchKeywords);
+				+ FTurboMCPToolSchema::NormaliseForMatch(Entry.SearchKeywords.Replace(TEXT("|"), TEXT(" ")));
 			bool bAllPresent = true;
 			for (const FString& Word : NormalisedWords)
 			{
