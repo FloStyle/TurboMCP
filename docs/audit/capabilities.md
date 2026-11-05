@@ -9,6 +9,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPBatchEdit | [TurboMCPBatchEditTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPBindFunction | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPBindNewEvent | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPBlueprintReparent | [TurboMCPBlueprintReparent.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintReparent.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPCallLog | [TurboMCPCallLogTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPCallLogClear | [TurboMCPCallLogTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPComment | [TurboMCPCommentTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
@@ -86,6 +87,7 @@ Generated from declarations, definitions and static test references. All runtime
 | PreviewTurboMCPBatchEdit | [TurboMCPBatchEditTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPBindFunction | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPBindNewEvent | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPBlueprintReparent | [TurboMCPBlueprintReparent.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintReparent.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPComment | [TurboMCPCommentTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPCommonButtonStyle | [TurboMCPCommonStyleTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPCustomEventAdd | [TurboMCPCustomEvent.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCustomEvent.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |

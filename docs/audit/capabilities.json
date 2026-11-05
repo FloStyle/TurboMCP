@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "961ca365831187545e6ba58ed960301dbd8d946f",
+  "plugin_tree": "f91f0538e2ecb329ac3534de1be371ae483f73fe",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 173,
+    "tools": 175,
     "by_toolset": {
-      "UTurboMCPEditToolset": 72,
+      "UTurboMCPEditToolset": 73,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 59,
+      "UTurboMCPPreviewToolset": 60,
       "UTurboMCPReadToolset": 36
     }
   },
@@ -125,6 +125,29 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
           "line": 698
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPBlueprintReparent",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "NewParent",
+        "ExpectedParent",
+        "Confirmation"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintReparent.cpp",
+          "line": 99
         }
       ],
       "test_references": [],
@@ -2026,6 +2049,27 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
           "line": 695
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPBlueprintReparent",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "NewParent"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintReparent.cpp",
+          "line": 97
         }
       ],
       "test_references": [],
