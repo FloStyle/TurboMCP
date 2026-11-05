@@ -1567,8 +1567,8 @@
       "priority": "P3",
       "state": "open",
       "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "owner": "codex",
+      "validation": "generic_native_controls_passed_original_not_reproduced",
       "source_ids": [
         "X-126"
       ],
@@ -1576,7 +1576,24 @@
         "2026-11-04_S1/X-126"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Stock find_assets uses a case-insensitive literal substring, not wildcard syntax. get_referencers accepts exact package/object paths but refuses short names. Native owned-asset controls pass and preserve dirty state; original tool arguments remain unavailable, so the field cause is unresolved. Use the finder-returned package path for referencers. No engine change or fix claim.",
+      "evidence": [
+        {
+          "run": "3c9faf112bd64a179f73a852552ce44c",
+          "result": "failed_suite_with_passing_lookup_controls",
+          "scope": "All new lookup controls passed; old DirtyList assertion expected obsolete wording. Updated assertion requires current content-only limitation explicitly."
+        },
+        {
+          "run": "f952a077ffea484cbc1f611458d8607e",
+          "result": "passed",
+          "scope": "Full asset-tools suite, stock package/object/short/missing path and literal/wildcard controls, dirty preservation. Does not reproduce original private inputs."
+        },
+        {
+          "run": "d8fa62260df74dde8b7f0b221e10554e",
+          "result": "passed",
+          "scope": "All 26 offline integration checks; final scope passed."
+        }
+      ]
     },
     {
       "id": "NOV04-39",
