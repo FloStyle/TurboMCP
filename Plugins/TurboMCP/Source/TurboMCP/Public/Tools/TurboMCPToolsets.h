@@ -1599,13 +1599,13 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPLocalVariableAdd(const FString& Asset, const FString& Function, const FString& Name, const FString& Type, const FString& Default);
 
-    /** Route keyboard/gamepad input through Slate in live PIE; executes game/UI code, not asset edits, saves or undo.
-     * Does not inject Enhanced Input actions. Use native Slate tools for mouse/text. Delivery is not gameplay success.
-     * @param Target Exact pie:0; one in-process PIE world and one local player.
-     * @param Action activate, focus, hold or release. Activate requests OS window activation (may raise/restore; OS may refuse); no key sent. Unattended focus guard refuses it. Check PlayInputState; select the editor manually if inactive. Focus transfers Slate focus to the viewport and may displace menu focus; it does not activate the OS window. For an already focused menu, use hold directly. Hold preserves focus; overlaps and active player keys refuse. Release cancels this tool's hold.
-     * @param Key For hold, an Unreal keyboard/gamepad button or 1D gamepad axis, e.g. P or Gamepad_LeftY. Mouse, multi-axis and editor play-command keys refuse (default Escape stops PIE); use another game key or rebind the editor shortcut. Empty otherwise.
-     * @param Value For axes, finite -1..1; empty otherwise. Stock Slate: Gamepad_LeftY=-1 Down, +1 Up, beyond magnitude 0.5. Project UI routing/settings may consume or change navigation. Example on a focused menu: Action=hold, Key=Gamepad_LeftY, Value=-1, Seconds=0.3. Verify focus/state/capture after frames; compare Gamepad_DPad_Down if needed. Delivery alone does not identify a game bug.
-     * @param Seconds For hold, finite 0.05..5; empty otherwise. Holds may repeat, not exactly one row. Auto-release on wall-clock expiry (also paused), focus loss or deactivation requires editor ticks. Cleanup clears only the owned key on its original player, not all input.
+    /** Route bounded keyboard/gamepad input through Slate in PIE; executes game/UI code. Delivery is not gameplay success.
+     * No Enhanced Input action injection, asset edits, save or undo. Use native Slate tools for mouse/text.
+     * @param Target Exact pie:0; one in-process PIE world and local player.
+     * @param Action activate, focus, hold, sequence or release. Activate requests OS foreground (may refuse; unattended guard refuses). Focus moves Slate focus to the viewport, displacing menus. Hold/sequence preserve current PIE menu focus. Release cancels all owned inputs and pending events. Existing active input refuses.
+     * @param Key Hold: keyboard/gamepad button or 1D axis. Sequence: JSON array, 1..32 events, sorted by at; fields at, key, duration, analog-only value. Example: [{"at":0,"key":"Gamepad_RightX","value":0.5,"duration":2},{"at":0.3,"key":"Gamepad_FaceButton_Bottom","duration":0.1},{"at":0.8,"key":"Gamepad_FaceButton_Bottom","duration":0.1}]. Distinct keys may overlap; same-key overlap and editor shortcuts refuse. Empty for other actions.
+     * @param Value Hold axis: finite -1..1; empty otherwise. Stock Slate Gamepad_LeftY=-1 Down, +1 Up; magnitude >0.5. UI routing may differ. Example: hold Gamepad_LeftY, Value=-1, Seconds=0.3. Inspect actual focus; delivery is not success.
+     * @param Seconds Hold: finite 0.05..5; empty otherwise. Sequence at >=0 and duration 0.05..5, ending by 5 seconds. Normal ticks required; expired undispatched events abort, not replay. Focus loss, PIE end or deactivation release owned inputs. Holds may repeat, not exactly one row.
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPPlayInput(const FString& Target, const FString& Action, const FString& Key, const FString& Value, const FString& Seconds);

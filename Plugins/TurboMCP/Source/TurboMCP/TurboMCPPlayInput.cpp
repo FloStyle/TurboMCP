@@ -4,6 +4,9 @@
 #include "TurboMCPFocusGuard.h"
 #include "Tools/TurboMCPToolsets.h"
 #include "Containers/Ticker.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 #include "Editor.h"
 #include "Engine/World.h"
 #include "Engine/LocalPlayer.h"
@@ -52,6 +55,19 @@ struct FHeldPlayInput
     TWeakPtr<SViewport> Viewport;
 };
 FHeldPlayInput Held;
+struct FTimedPlayEvent
+{
+    FHeldPlayInput Input;
+    double At=0;
+    double Duration=0;
+};
+TArray<FTimedPlayEvent> PendingInputs;
+TArray<FHeldPlayInput> SequenceInputs;
+bool SequenceActive=false;
+double SequenceStart=0;
+uint64 SequenceGeneration=0;
+FString SequenceStatus=TEXT("none");
+FTSTicker::FDelegateHandle SequenceTick;
 FTSTicker::FDelegateHandle TickHandle;
 FDelegateHandle EndHandle;
 FString LastInput=TEXT("none");
@@ -126,60 +142,188 @@ FString CommonInputState(const FPlayInputTarget& Target)
     if (Active.Num()>16) Out+=TEXT("\nAdditional active widgets omitted after 16 entries.");
     return Out;
 }
-bool HeldTargetHasFocus()
+bool InputTargetHasFocus(const FHeldPlayInput& Input)
 {
     if (!FSlateApplication::IsInitialized() || !FSlateApplication::Get().IsActive()) return false;
-    const TSharedPtr<SViewport> Viewport=Held.Viewport.Pin();
+    const TSharedPtr<SViewport> Viewport=Input.Viewport.Pin();
     if (!Viewport.IsValid()) return false;
-    for (TSharedPtr<SWidget> Widget=FSlateApplication::Get().GetUserFocusedWidget(Held.User);Widget.IsValid();Widget=Widget->GetParentWidget())
+    for (TSharedPtr<SWidget> Widget=FSlateApplication::Get().GetUserFocusedWidget(Input.User);Widget.IsValid();Widget=Widget->GetParentWidget())
         if (Widget==Viewport) return true;
     return false;
 }
-void ReleasePlayInput(const TCHAR* Reason)
+void ReleaseOwnedInput(FHeldPlayInput Input)
 {
-    if (!Held.Key.IsValid()) return;
+    if (!Input.Key.IsValid()) return;
     // Analog InputKey adds samples within a frame. Sending zero alone after a
     // press in that same frame leaves the earlier sample latched. Reset only
     // the owned component, including its paired axis, before the release event.
-    if (Held.Key.IsAnalog())
+    if (Input.Key.IsAnalog())
     {
-        if (UPlayerInput* OriginalInput=Held.PlayerInput.Get())
+        if (UPlayerInput* OriginalInput=Input.PlayerInput.Get())
         {
-            if (FKeyState* State=OriginalInput->GetKeyState(Held.Key))
+            if (FKeyState* State=OriginalInput->GetKeyState(Input.Key))
                 State->RawValueAccumulator.X=0.f;
-            const EPairedAxis Component=Held.Key.GetPairedAxis();
+            const EPairedAxis Component=Input.Key.GetPairedAxis();
             const int32 Index=Component==EPairedAxis::X?0:Component==EPairedAxis::Y?1:Component==EPairedAxis::Z?2:INDEX_NONE;
             if (Index!=INDEX_NONE)
-                if (FKeyState* Pair=OriginalInput->GetKeyState(Held.Key.GetPairedAxisKey()))
+                if (FKeyState* Pair=OriginalInput->GetKeyState(Input.Key.GetPairedAxisKey()))
                     Pair->RawValueAccumulator[Index]=0.f;
         }
     }
     // Never route cleanup into an editor control after focus leaves this viewport.
-    if (HeldTargetHasFocus()) SendPlayEvent(Held,true);
+    if (InputTargetHasFocus(Input)) SendPlayEvent(Input,true);
     // A UI handler can consume Slate's release. Clear only our original player's
     // owned key as well; never flush unrelated input or inject an action/press.
-    if (UPlayerInput* OriginalInput=Held.PlayerInput.Get())
-        OriginalInput->InputKey(FInputKeyEventArgs::CreateSimulated(Held.Key,Held.Key.IsAnalog()?IE_Axis:IE_Released,0.f));
-    LastReleaseReason=Reason;
+    if (UPlayerInput* OriginalInput=Input.PlayerInput.Get())
+        OriginalInput->InputKey(FInputKeyEventArgs::CreateSimulated(Input.Key,Input.Key.IsAnalog()?IE_Axis:IE_Released,0.f));
+}
+void ReleasePlayInput(const TCHAR* Reason)
+{
+    const FHeldPlayInput Input=Held;
     Held=FHeldPlayInput();
+    LastReleaseReason=Reason;
+    ReleaseOwnedInput(Input);
+}
+void CancelSequence(const TCHAR* Reason)
+{
+    ++SequenceGeneration;
+    if (SequenceTick.IsValid()) { FTSTicker::GetCoreTicker().RemoveTicker(SequenceTick); SequenceTick.Reset(); }
+    if (!SequenceActive) return;
+    SequenceActive=false;
+    PendingInputs.Reset();
+    // Detach ownership before routing callbacks, which may end PIE or reenter cleanup.
+    TArray<FHeldPlayInput> Released=MoveTemp(SequenceInputs);
+    SequenceInputs.Reset();
+    SequenceStatus=FString(TEXT("stopped: "))+Reason;
+    LastReleaseReason=Reason;
+    for (const FHeldPlayInput& Input:Released) ReleaseOwnedInput(Input);
 }
 void CancelPlayHold(const TCHAR* Reason=TEXT("explicit release"))
 {
     if (TickHandle.IsValid()) {FTSTicker::GetCoreTicker().RemoveTicker(TickHandle);TickHandle.Reset();}
     ReleasePlayInput(Reason);
+    CancelSequence(Reason);
 }
 bool TickPlayHold(float)
 {
     const TCHAR* Reason=nullptr;
     if (!Held.World.IsValid()) Reason=TEXT("PIE world ended");
     else if (!FSlateApplication::IsInitialized() || !FSlateApplication::Get().IsActive()) Reason=TEXT("application deactivated");
-    else if (!HeldTargetHasFocus()) Reason=TEXT("focus left the PIE viewport");
+    else if (!InputTargetHasFocus(Held)) Reason=TEXT("focus left the PIE viewport");
     else if (FPlatformTime::Seconds()>=Held.Deadline) Reason=TEXT("hold duration elapsed");
     if (Reason) {ReleasePlayInput(Reason);TickHandle.Reset();return false;}
     // Wall-clock checks still run while the gameplay world is paused.
     if (Held.Key.IsAnalog()) SendPlayEvent(Held,false);
     return true;
 }
+// All scheduling runs on editor ticks. Never replay expired taps after a stall.
+bool TickSequence(float)
+{
+    if (!SequenceActive) return false;
+    const uint64 Generation=SequenceGeneration;
+    const double Now=FPlatformTime::Seconds();
+    const FHeldPlayInput Target=SequenceInputs.Num()?SequenceInputs[0]:PendingInputs[0].Input;
+    if (!Target.World.IsValid() || !Target.PlayerInput.IsValid() || !InputTargetHasFocus(Target))
+    { CancelSequence(TEXT("world, player or PIE focus unavailable")); return false; }
+    for (int32 Index=SequenceInputs.Num()-1;Index>=0;--Index)
+    {
+        const FHeldPlayInput Input=SequenceInputs[Index];
+        if (Now>=Input.Deadline)
+        {
+            SequenceInputs.RemoveAt(Index);
+            ReleaseOwnedInput(Input);
+            if (Generation!=SequenceGeneration) return false;
+        }
+    }
+    TArray<FKey> StartedThisTick;
+    while (PendingInputs.Num() && Now>=SequenceStart+PendingInputs[0].At)
+    {
+        const FTimedPlayEvent Event=PendingInputs[0];
+        if (Now>=SequenceStart+Event.At+Event.Duration)
+        { CancelSequence(TEXT("scheduled input expired before dispatch; remaining events cancelled")); return false; }
+        UPlayerInput* Player=Event.Input.PlayerInput.Get();
+        const FKeyState* State=Player?Player->GetKeyState(Event.Input.Key):nullptr;
+        if (!Player || (State && ((Event.Input.Key.IsDigital() && State->bDown) || !FMath::IsNearlyZero(State->RawValue.X))))
+        { CancelSequence(TEXT("scheduled key has existing player input; remaining events cancelled")); return false; }
+        PendingInputs.RemoveAt(0);
+        FHeldPlayInput Input=Event.Input;
+        Input.Deadline=SequenceStart+Event.At+Event.Duration;
+        SequenceInputs.Add(Input);
+        StartedThisTick.Add(Input.Key);
+        LastInput=Input.Key.GetFName().ToString();
+        SendPlayEvent(Input,false);
+        if (Generation!=SequenceGeneration) return false;
+        if (!InputTargetHasFocus(Input))
+        { CancelSequence(TEXT("focus left PIE during input dispatch")); return false; }
+    }
+    // Copy inputs before callbacks: project routing may terminate the sequence.
+    const TArray<FHeldPlayInput> Inputs=SequenceInputs;
+    for (const FHeldPlayInput& Input:Inputs)
+    {
+        if (Input.Key.IsAnalog() && !StartedThisTick.Contains(Input.Key)) SendPlayEvent(Input,false);
+        if (Generation!=SequenceGeneration) return false;
+    }
+    if (PendingInputs.IsEmpty() && SequenceInputs.IsEmpty())
+    {
+        SequenceActive=false;
+        SequenceStatus=TEXT("completed: all scheduled inputs released; gameplay outcome not verified");
+        SequenceTick.Reset();
+        return false;
+    }
+    return true;
+}
+FString StartSequence(const FPlayInputTarget& Target,const FString& Json)
+{
+    if (Held.Key.IsValid() || SequenceActive) return TEXT("error: Release the active tool input before starting a sequence. No sequence was started.");
+    TArray<TSharedPtr<FJsonValue>> Values;
+    if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Json),Values) || Values.IsEmpty() || Values.Num()>32)
+        return TEXT("error: Key must contain a JSON array of 1..32 input events. No input was sent.");
+    TArray<FTimedPlayEvent> Events;
+    double PreviousAt=-1;
+    for (const TSharedPtr<FJsonValue>& Value:Values)
+    {
+        if (!Value.IsValid() || Value->Type!=EJson::Object) return TEXT("error: Each sequence event must be an object. No input was sent.");
+        const TSharedPtr<FJsonObject> Object=Value->AsObject();
+        for (const auto& Field:Object->Values)
+            if (Field.Key!=TEXT("at") && Field.Key!=TEXT("key") && Field.Key!=TEXT("value") && Field.Key!=TEXT("duration"))
+                return TEXT("error: Sequence event fields are at, key, duration and analog-only value. No input was sent.");
+        FTimedPlayEvent Event;
+        FString Key;
+        if (!Object->TryGetNumberField(TEXT("at"),Event.At) || !Object->TryGetNumberField(TEXT("duration"),Event.Duration) || !Object->TryGetStringField(TEXT("key"),Key)
+            || !FMath::IsFinite(Event.At) || !FMath::IsFinite(Event.Duration) || Event.At<0 || Event.At<PreviousAt || Event.Duration<0.05 || Event.Duration>5 || Event.At+Event.Duration>5)
+            return TEXT("error: Events require nondecreasing finite at >= 0, duration 0.05..5 and completion by 5 seconds. No input was sent.");
+        PreviousAt=Event.At;
+        Event.Input.Key=FKey(*Key);
+        const FKey InputKey=Event.Input.Key;
+        if (!InputKey.IsValid() || InputKey.IsMouseButton() || (InputKey.IsAnalog() && (!InputKey.IsGamepadKey() || !InputKey.IsAxis1D()))
+            || FInputBindingManager::Get().GetCommandInfoFromInputChord(TEXT("PlayWorld"),FInputChord(InputKey),false).IsValid())
+            return TEXT("error: Invalid or editor-command sequence key. Use keyboard/gamepad buttons or 1D gamepad axes. No input was sent.");
+        double Amount=1;
+        if (InputKey.IsAnalog())
+        {
+            if (!Object->TryGetNumberField(TEXT("value"),Amount) || !FMath::IsFinite(Amount) || Amount < -1 || Amount > 1)
+                return TEXT("error: Axis events require a finite value from -1 to 1. No input was sent.");
+        }
+        else if (Object->HasField(TEXT("value"))) return TEXT("error: Button events must omit value. No input was sent.");
+        for (const FTimedPlayEvent& Existing:Events)
+            if (Existing.Input.Key==InputKey && Event.At<Existing.At+Existing.Duration)
+                return TEXT("error: Events for the same key must not overlap. No input was sent.");
+        if ((InputKey.IsDigital() && Target.Controller->IsInputKeyDown(InputKey)) || !FMath::IsNearlyZero(Target.Controller->GetInputAnalogKeyState(InputKey)))
+            return TEXT("error: A sequence key already has player input. No input was sent.");
+        Event.Input.Value=static_cast<float>(Amount);
+        Event.Input.User=Target.User; Event.Input.World=Target.World;
+        Event.Input.PlayerInput=Target.Controller->PlayerInput; Event.Input.Viewport=Target.Viewport;
+        Events.Add(Event);
+    }
+    if (!FSlateApplication::Get().IsActive() || !HasPlayFocus(Target)) return TEXT("error: Active PIE viewport or menu focus is required. No input was sent.");
+    if (!EndHandle.IsValid()) EndHandle=FEditorDelegates::EndPIE.AddLambda([](bool){CancelPlayHold(TEXT("PIE ended"));});
+    PendingInputs=MoveTemp(Events);
+    SequenceActive=true; ++SequenceGeneration; SequenceStart=FPlatformTime::Seconds();
+    SequenceStatus=TEXT("pending: scheduled inputs require normal editor ticks");
+    SequenceTick=FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateStatic(&TickSequence));
+    return FString::Printf(TEXT("play input sequence: admitted %d events; completion within 5 wall-clock seconds. Pending normal editor ticks. Distinct keys may overlap. Release cancels all owned inputs. Late events, focus loss or PIE end cancel remaining events. Routing does not prove a gameplay action occurred; inspect PlayInputState and the game/UI. No asset edit, save or undo was performed."),PendingInputs.Num());
+}
+
 }
 void TurboMCPPlayInput::Shutdown()
 {
@@ -189,15 +333,21 @@ void TurboMCPPlayInput::Shutdown()
 
 FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const FString& Action,const FString& Key,const FString& Value,const FString& Seconds)
 {
+    if (Action==TEXT("release"))
+    {
+        if (Target!=TEXT("pie:0") || !Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: release requires Target pie:0 and empty Key, Value and Seconds.");
+        const bool HadInput=Held.Key.IsValid() || SequenceActive; CancelPlayHold();
+        return HadInput?TEXT("play input: released the tool's held input and cancelled pending events. Inspect the resulting game/UI state."):TEXT("play input: no tool-held input; nothing changed.");
+    }
     FPlayInputTarget Resolved;
     const FString Error=ResolvePlayInput(Target,Resolved);
     if (!Error.IsEmpty()) return Error;
-    if (Action==TEXT("release"))
+    if (Action==TEXT("sequence"))
     {
-        if (!Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: release requires empty Key, Value and Seconds.");
-        const bool HadInput=Held.Key.IsValid(); CancelPlayHold();
-        return HadInput?TEXT("play input: released the tool's held input. Inspect the resulting game/UI state."):TEXT("play input: no tool-held input; nothing changed.");
+        if (!Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: sequence requires empty Value and Seconds; put events in Key. No input was sent.");
+        return StartSequence(Resolved,Key);
     }
+    if (SequenceActive) return TEXT("error: A tool input sequence is active. Wait for completion or call release first.");
     if (Action==TEXT("activate"))
     {
         if (!Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: activate requires empty Key, Value and Seconds. No activation was requested.");
@@ -235,7 +385,7 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
             *PreviousType, CurrentFocus.IsValid() ? *CurrentFocus->GetTypeAsString() : TEXT("none"),
             DisplacedChild ? TEXT("yes") : TEXT("no"), FSlateApplication::Get().IsActive() ? TEXT("yes") : TEXT("no"));
     }
-    if (Action!=TEXT("hold")) return TEXT("error: Action must be activate, focus, hold or release. A short bounded hold is a tap; no indefinite key-down is supported.");
+    if (Action!=TEXT("hold")) return TEXT("error: Action must be activate, focus, hold, sequence or release. A short bounded hold is a tap; no indefinite key-down is supported.");
     const FKey InputKey(*Key);
     if (!InputKey.IsValid() || InputKey.IsMouseButton() || (InputKey.IsAnalog() && (!InputKey.IsGamepadKey() || !InputKey.IsAxis1D())))
         return TEXT("error: Key must be a keyboard/gamepad button or a one-dimensional gamepad axis. Use native Slate tools for mouse clicks and text entry.");
@@ -284,7 +434,7 @@ FString UTurboMCPEditToolset::EditTurboMCPMenuActivate(const FString& Target,con
 {
     FPlayInputTarget Resolved;const FString Error=ResolvePlayInput(Target,Resolved);if(!Error.IsEmpty())return Error;
     if(Widget.IsEmpty())return TEXT("error: Widget must be an exact runtime object path or unique name from ReadTurboMCPPlayInputState.");
-    if(Held.Key.IsValid())return TEXT("error: Wait for the current input hold to finish before activating a menu button.");
+    if(Held.Key.IsValid() || SequenceActive)return TEXT("error: Wait for the current input hold to finish before activating a menu button.");
     if(!FSlateApplication::Get().IsActive())return TEXT("error: The editor application is inactive. No input was sent.");
     UClass* CommonButton=FindObject<UClass>(nullptr,TEXT("/Script/CommonUI.CommonButtonBase"));
     UWidget* Match=nullptr;
@@ -323,6 +473,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPPlayInputState(const FString& Target)
     Buttons.Sort();Out+=FString::Printf(TEXT("\nruntime buttons: %d (exact object paths, not display labels)"),Buttons.Num());
     for(int32 I=0;I<FMath::Min(Buttons.Num(),64);++I)Out+=TEXT("\n  ")+Buttons[I];
     if(Buttons.Num()>64)Out+=FString::Printf(TEXT("\n%d additional buttons omitted; inspect the visible menu with Slate Snapshot."),Buttons.Num()-64);
+    Out+=TEXT("\ninput sequence: ")+SequenceStatus;
+    Out+=FString::Printf(TEXT("\nsequence held: %d; pending: %d"),SequenceInputs.Num(),PendingInputs.Num());
     Out+=TEXT("\nlast release reason: ")+LastReleaseReason;
     Out+=FSlateApplication::Get().IsActive()?TEXT("\napplication active: yes"):TEXT("\napplication active: no");
     Out += FTurboMCPFocusGuard::IsActive() ? TEXT("\nunattended focus guard: active; activation requests refuse") : TEXT("\nunattended focus guard: inactive");
