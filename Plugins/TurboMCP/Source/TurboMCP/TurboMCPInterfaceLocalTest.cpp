@@ -85,6 +85,35 @@ bool FTurboMCPInterfaceLocalTest::RunTest(const FString& Parameters)
     BP->FunctionGraphs.Remove(Duplicate);
     TestFalse(TEXT("Refusals and no-op preserve clean package"), Package->IsDirty());
     TestEqual(TEXT("Refusals preserve declaration count"), Entries[0]->LocalVariables.Num(), 1);
+    // Verify the documented struct form through the public tools, not just the parser.
+    const FString StructPath = TEXT("/Script/CoreUObject.Vector");
+    const FString StructPreview = UTurboMCPPreviewToolset::PreviewTurboMCPLocalVariableAdd(Asset, TEXT("ReadState"), TEXT("CachedPosition"), StructPath, TEXT(""));
+    TestTrue(TEXT("Struct preview accepts plain path"), StructPreview.StartsWith(TEXT("preview:")));
+    TestEqual(TEXT("Struct preview preserves locals"), Entries[0]->LocalVariables.Num(), 1);
+    TestFalse(TEXT("Struct preview preserves clean package"), Package->IsDirty());
+    const FString Refused = UTurboMCPEditToolset::EditTurboMCPLocalVariableAdd(Asset, TEXT("ReadState"), TEXT("InvalidStruct"), TEXT("struct:") + StructPath, TEXT(""));
+    TestTrue(TEXT("Prefixed struct refuses with usable guidance"), Refused.StartsWith(TEXT("error:")) && Refused.Contains(TEXT("plain object path")));
+    TestEqual(TEXT("Invalid struct preserves locals"), Entries[0]->LocalVariables.Num(), 1);
+    TestFalse(TEXT("Invalid struct preserves clean package"), Package->IsDirty());
+    const FString StructEdit = UTurboMCPEditToolset::EditTurboMCPLocalVariableAdd(Asset, TEXT("ReadState"), TEXT("CachedPosition"), StructPath, TEXT(""));
+    TestTrue(TEXT("Struct edit accepts plain path"), StructEdit.StartsWith(TEXT("edited:")));
+    Graph = TurboMCPNodeId::FindGraphByName(BP, TEXT("ReadState"), Matches);
+    if (!TestNotNull(TEXT("Graph after struct declaration"), Graph)) return false;
+    Entries.Reset(); Graph->GetNodesOfClass(Entries);
+    if (!TestEqual(TEXT("Entry after struct declaration"), Entries.Num(), 1)) return false;
+    const FBPVariableDescription* StructLocal = Entries[0]->LocalVariables.FindByPredicate([](const FBPVariableDescription& Local) { return Local.VarName == TEXT("CachedPosition"); });
+    if (TestNotNull(TEXT("Struct local declared"), StructLocal))
+    {
+        TestEqual(TEXT("Actual struct category"), StructLocal->VarType.PinCategory, UEdGraphSchema_K2::PC_Struct);
+        const UObject* StructObject = StructLocal->VarType.PinSubCategoryObject.Get();
+        if (TestNotNull(TEXT("Actual struct identity"), StructObject)) TestEqual(TEXT("Exact declared struct path"), StructObject->GetPathName(), StructPath);
+    }
+    for (const FString& Toolset : {FString(TEXT("TurboMCP.TurboMCPPreviewToolset")), FString(TEXT("TurboMCP.TurboMCPEditToolset"))})
+    {
+        const FString Tool = Toolset.Contains(TEXT("Preview")) ? TEXT("PreviewTurboMCPLocalVariableAdd") : TEXT("EditTurboMCPLocalVariableAdd");
+        const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(Toolset, Tool);
+        TestTrue(TEXT("Public help explains struct object paths"), Help.Contains(StructPath) && Help.Contains(TEXT("/Game/Types/ST_Item.ST_Item")) && Help.Contains(TEXT("struct:")));
+    }
     return !HasAnyErrors();
 }
 #endif

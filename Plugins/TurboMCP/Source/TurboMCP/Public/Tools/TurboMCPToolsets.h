@@ -830,7 +830,7 @@ public:
      * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
      * @param Function Required owned function graph name, for example CalculatePurchase, including implemented interface functions. Matching is case-insensitive and must be unique. Event graphs and inherited functions are not accepted.
      * @param Name Required identifier starting with a letter or underscore and containing only letters, digits or underscores. Must not conflict with parameters or members; None is reserved.
-     * @param Type Required shared Blueprint type syntax, for example int, float, vector, or object</Script/Engine.Actor>.
+     * @param Type Required shared Blueprint type syntax, for example int, float, vector, or object</Script/Engine.Actor>. For structs, pass the plain object path, for example /Script/CoreUObject.Vector or /Game/Types/ST_Item.ST_Item; do not add a struct: prefix. The struct must support Blueprint variables.
      * @param Default Pass an empty string for the Unreal type default. Otherwise provide a schema-valid scalar/struct literal, for example 7 for int. Explicit object/class/container defaults refuse; assign them in graph logic.
      *
      * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
@@ -1584,7 +1584,7 @@ public:
      * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
      * @param Function Required owned function graph name, for example CalculatePurchase, including implemented interface functions. Matching is case-insensitive and must be unique. Event graphs and inherited functions are not accepted.
      * @param Name Required identifier starting with a letter or underscore and containing only letters, digits or underscores. Must not conflict with parameters or members; None is reserved.
-     * @param Type Required shared Blueprint type syntax, for example int, float, vector, or object</Script/Engine.Actor>.
+     * @param Type Required shared Blueprint type syntax, for example int, float, vector, or object</Script/Engine.Actor>. For structs, pass the plain object path, for example /Script/CoreUObject.Vector or /Game/Types/ST_Item.ST_Item; do not add a struct: prefix. The struct must support Blueprint variables.
      * @param Default Pass an empty string for the Unreal type default. Otherwise provide a schema-valid scalar/struct literal, for example 7 for int. Explicit object/class/container defaults refuse; assign them in graph logic.
      *
      * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.

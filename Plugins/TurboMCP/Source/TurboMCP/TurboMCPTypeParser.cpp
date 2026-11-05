@@ -128,7 +128,7 @@ namespace
 			return true;
 		}
 		OutWhy = Object == nullptr
-			? FString::Printf(TEXT("'%s' is not a type or a loadable class path"), *InText)
+			? FString::Printf(TEXT("'%s' is not a recognized type or a loadable class, struct or enum object path. For structs, pass the plain object path, for example /Script/CoreUObject.Vector or /Game/Types/ST_Item.ST_Item, without a struct: prefix"), *InText)
 			: FString::Printf(TEXT("%s is a %s, and is not a class, struct or enum"), *InText, *Object->GetClass()->GetName());
 		return false;
 	}
