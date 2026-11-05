@@ -856,7 +856,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reproduction_in_progress",
+      "validation": "focused_reproduction_passed_original_not_reproduced",
       "source_ids": [
         "PI-08"
       ],
@@ -864,12 +864,22 @@
         "2026-11-04_S1/PI-08"
       ],
       "dependencies": [],
-      "next_step": "Strengthened CommonUI input acceptance reproduction running. Do not close from initial green run: invalid existing F13 probe escaped the former JSON-wrapped error check. Analog focus movement itself was observed; historical cause remains unknown.",
+      "next_step": "Reproduction integrated: stock Slate analog navigation works in owned CommonUI fixture. Original cause remains unknown. Add precise public help about axis sign, threshold/project routing and verifying actual focus rather than promising navigation; no engine or input-routing repair justified.",
       "evidence": [
         {
           "run": "77b082f9b75d4b5f892f3daceb8c2d31",
           "result": "passed_with_review_limit",
           "scope": "Observed Gamepad_LeftY=-1 for 0.3 seconds moves Settings to Resume; original symptom not reproduced. Review found existing F13 focus probe was refused inside JSON and weak acceptance assertion missed it. Strengthened route assertion and replaced invalid probe with LeftShift; rerun required."
+        },
+        {
+          "run": "efdf3c8fa7b74866bbecb543d8d73bf9",
+          "result": "passed",
+          "scope": "Stricter registry-route acceptance, LeftShift focus preservation, analog -1 for 0.3 seconds moves Settings to Resume, release and D-pad return verified. Menu capture inspected."
+        },
+        {
+          "run": "d5211e1685bf4e0593fb09310bca93e8",
+          "result": "passed",
+          "scope": "26 offline gates; reproduction source c419d4c6 scope passed."
         }
       ]
     },
