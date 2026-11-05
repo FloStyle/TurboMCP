@@ -2505,6 +2505,21 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     && Wire.InputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
                 { Incoming = &Wire; ++IncomingCount; }
             if (IncomingCount != 1 || Incoming == nullptr) continue;
+            if (OutPlan.bCompactBlocks)
+            {
+                // This adjustment moves one node, not its downstream chain.
+                // Preserve the compact planner's internal execution rows when
+                // a selected successor still depends on this node's position.
+                // Component anchoring above already considers the fixed boundary.
+                bool bHasSelectedSuccessor = false;
+                for (const FWire& Wire : OutPlan.Wires)
+                    if (!Wire.bControlFeedback && Wire.SourceNodeIndex == NodeIndex
+                        && Wire.OutputPin && Wire.OutputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec
+                        && OutPlan.Nodes.IsValidIndex(Wire.TargetNodeIndex)
+                        && OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[Wire.TargetNodeIndex].Key))
+                    { bHasSelectedSuccessor = true; break; }
+                if (bHasSelectedSuccessor) continue;
+            }
             const FNode& Source = OutPlan.Nodes[Incoming->SourceNodeIndex];
             if (OutPlan.SelectedNodeKeys.Contains(Source.Key)) continue;
             const double AlignedY = FMath::RoundToDouble(AlignmentPinPosition(Incoming->OutputPin).Y
