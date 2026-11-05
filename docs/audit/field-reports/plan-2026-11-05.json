@@ -273,7 +273,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "source_cause_confirmed_fix_pending",
       "source_ids": [
         "X-129"
       ],
@@ -282,7 +282,10 @@
       ],
       "dependencies": [],
       "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
-      "evidence": []
+      "evidence": [],
+      "design_notes": [
+        "Source cause confirmed in TurboMCPAgentHelp.cpp: properties are alphabetically ordered, then the entire Help string is cut to HelpBudgetChars. This can remove required parameter lines. Preserve a complete required-parameter name/type summary outside descriptive-text truncation; keep effects and refusal guidance, and test against the live schema for every named report tool. Sorting required parameters first alone is insufficient when the prefix consumes the budget."
+      ]
     },
     {
       "id": "NOV05-09",

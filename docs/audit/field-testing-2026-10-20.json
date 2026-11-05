@@ -6647,13 +6647,19 @@
       "kind": "bug",
       "state": "open",
       "priority": "P0",
-      "validation": "reported_not_reproduced",
+      "validation": "source_cause_confirmed_fix_pending",
       "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
       "source_keys": [
         "2026-11-05_S1/X-129"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        {
+          "result": "source_cause_confirmed",
+          "scope": "Source cause confirmed in TurboMCPAgentHelp.cpp: properties are alphabetically ordered, then the entire Help string is cut to HelpBudgetChars. This can remove required parameter lines. Preserve a complete required-parameter name/type summary outside descriptive-text truncation; keep effects and refusal guidance, and test against the live schema for every named report tool. Sorting required parameters first alone is insufficient when the prefix consumes the budget."
+        }
+      ]
     },
     {
       "id": "NOV05-09",
