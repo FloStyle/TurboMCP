@@ -325,7 +325,7 @@
       "kind": "feature",
       "priority": "P0",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "reported_not_reproduced",
       "source_ids": [
@@ -350,7 +350,8 @@
       ],
       "design_notes": [
         "Appendix F.8 puts PointCount setter after the guard but replaces all N02 consumers, including the guard condition N04. That creates read-before-write if applied literally. The reference must place the cache before every replaced read, or retain the guard direct read. Preserve dominance and evaluation timing; do not silently implement the contradictory recipe."
-      ]
+      ],
+      "readiness_review": "Integrator source review: existing LocalVars assigns reviewed scalar calculations at function entry and must not be reused unchanged for loop outputs. Extend explicit output selection with per-output assignment anchors. Stock loop index/element captures assign at LoopBody before its original successor, only when every transitive execution consumer is dominated by that body and cannot read after Completed. Refuse latent/reentrant/ambiguous lifetimes. Preserve defaults and original consumer order. Compile as a separate structural operation before layout; do not silently promote during default Tidy. Reacquire identities after compilation and verify assignment and consumer links. Offer unsafe candidates with explicit reasons; do not claim them promotable."
     },
     {
       "id": "NOV05-06",
@@ -358,7 +359,7 @@
       "kind": "feature",
       "priority": "P0",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "reported_not_reproduced",
       "source_ids": [
@@ -373,7 +374,8 @@
         "NOV05-02"
       ],
       "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
-      "evidence": []
+      "evidence": [],
+      "readiness_review": "Integrator source review: reuse compact block membership and loop forward reachability excluding Completed descendants. Optional generated boxes must include child rectangles and pure readers, preserve existing titles, and refuse partial overlaps. Preview and apply share exact box plans, with all added boxes included in the layout undo. Default remains no new boxes. Verify nesting and original comments in the cascade fixture."
     },
     {
       "id": "NOV05-07",
