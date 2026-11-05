@@ -535,10 +535,10 @@
       "title": "Provide useful placement options for crowded graphs",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_help_failure_repaired_rerun_pending",
+      "validation": "native_visual_and_offline_passed",
       "source_ids": [
         "GC-88",
         "GC-94"
@@ -548,13 +548,32 @@
         "2026-11-04_S1/GC-94"
       ],
       "dependencies": [],
-      "next_step": "Outside placement implemented on review branch. Initial native run exercised blocked local refusal, outside public preview/edit, fixed positions, connected inputs and overflow refusal; live help assertions failed. Short help repaired and close-up capture added; final native and offline acceptance pending.",
+      "next_step": "Implemented explicit Placement=outside in append preview/edit; local remains default. Outside preserves new dependency layout beyond existing bounds and keeps existing nodes fixed. Measured preflight and coordinate checks remain active. Long boundary wires are disclosed; inspect layout before compile/save.",
       "evidence": [
         {
           "result": "native_failed",
           "run": "f199639533224f948aab412cfaccebc3",
           "scope": "Both live append-help assertions failed. Whole-graph capture inspected: new chain outside obstacle, expected long boundary wire; zoom too distant for fine visual acceptance. Failure preserved; short summary repaired and detail capture added."
+        },
+        {
+          "result": "native_failed",
+          "run": "201aa20863df4c76be04172412b2edc9",
+          "scope": "Placement and capture assertions passed, but both live-help assertions still failed. Formatter uses only first sentence; moved option into first sentence. Close-up inspected: separated aligned PrintString nodes outside comment boundary."
+        },
+        {
+          "result": "native_pass",
+          "run": "37e0dc72f9b140dea0a7dbe5c86509f7",
+          "scope": "Stock build/full graph-append suite passed. Crowded local refusal, outside geometry/public preview/edit, preview cleanliness, existing positions, linked execution inputs, overflow/unknown mode refusal and live help. Fresh whole-graph and detail captures inspected; new chain aligned without overlap and long boundary wire expected."
+        },
+        {
+          "result": "offline_pass",
+          "run": "90dfbcdf40174dde9dd015740a0352ef",
+          "scope": "26 offline checks passed; exact assignment source scope passed; generated inventory refreshed."
         }
+      ],
+      "source_commit": "2ce2ae4c02230485ac5b9f88f6586fad8d42a61d",
+      "followups": [
+        "Focused generic fixture does not certify every graph topology. Outside mode can create long wires and does not perform whole-graph tidy; no engine changes or automatic compile/save."
       ]
     },
     {
