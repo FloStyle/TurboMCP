@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "plugin_tree": "8aa6ddecc83aa15524e71f7f23d99ae4204517b1",
+  "plugin_tree": "d4573a47e8603cb1298f161979377dddad8f6db0",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 177,
+    "tools": 180,
     "by_toolset": {
-      "UTurboMCPEditToolset": 74,
+      "UTurboMCPEditToolset": 75,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 61,
-      "UTurboMCPReadToolset": 36
+      "UTurboMCPPreviewToolset": 62,
+      "UTurboMCPReadToolset": 37
     }
   },
   "tools": [
@@ -1348,6 +1348,30 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
           "line": 346
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPPlayInvoke",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "WorldPath",
+        "ObjectPath",
+        "FunctionName",
+        "Arguments",
+        "Confirmation"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInvoke.cpp",
+          "line": 213
         }
       ],
       "test_references": [],
@@ -3133,6 +3157,29 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "PreviewTurboMCPPlayInvoke",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "WorldPath",
+        "ObjectPath",
+        "FunctionName",
+        "Arguments"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInvoke.cpp",
+          "line": 211
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "PreviewTurboMCPStructFields",
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
@@ -4102,6 +4149,28 @@
         "Tools/test-trace.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "ReadTurboMCPPlayFunction",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "WorldPath",
+        "ObjectPath",
+        "FunctionName"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInvoke.cpp",
+          "line": 72
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",

@@ -798,6 +798,20 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPPlayInvoke",
+      "family": "schema-and-observability",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPSave",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -1892,6 +1906,20 @@
       "evidence": []
     },
     {
+      "tool": "PreviewTurboMCPPlayInvoke",
+      "family": "schema-and-observability",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "PreviewTurboMCPStructFields",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -2458,6 +2486,20 @@
     },
     {
       "tool": "ReadTurboMCPPlayCheck",
+      "family": "schema-and-observability",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "ReadTurboMCPPlayFunction",
       "family": "schema-and-observability",
       "epic_5_8_3": {
         "status": "unverified",

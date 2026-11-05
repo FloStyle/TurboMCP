@@ -1,6 +1,6 @@
 # NOV04-27: scoped PIE function invocation
 
-Status: proposed contract; implementation and native evidence pending.
+Status: implemented; focused native workflow passed (72466e875c75487a8e3fc1dfff57567c). Offline integration validation is tracked in the task plan.
 
 Field requirement: invoke a Blueprint-callable function on a local-player subsystem in a selected PIE world to trigger a runtime debugging event. Property writes and synthetic input do not satisfy that requirement. Arbitrary editor-console typing is not the intended implementation.
 
@@ -9,3 +9,7 @@ Resolve one live PIE world and one existing runtime object by exact identity. Ne
 Separate signature discovery/preview from invocation. Describe exact parameter names, types, directions and accepted values; validate all arguments before ProcessEvent. Require explicit invocation intent. Report actual return/out parameters and distinguish dispatch from gameplay success. Calls can change runtime state and have no general undo guarantee. Reject unsupported parameter types, latent calls, network RPC routing and editor-only targets with precise reasons rather than silently approximating them. Document any scope restrictions before accepting the task as complete.
 
 Focused fixture must include a local-player subsystem callable that records an event and returns observable state. Prove selected-world isolation, valid arguments, missing/extra/wrong-type refusal before dispatch, stale object refusal, no-PIE refusal and accurate output. Runtime object references in arguments require same-world validation. Do not infer that a successful synthetic call validates arbitrary project functions or the original private script.
+
+## Implemented limits
+
+ReadTurboMCPPlayFunction describes the signature; PreviewTurboMCPPlayInvoke validates arguments and issues a 120-second single-use confirmation; EditTurboMCPPlayInvoke consumes it before dispatch. The runtime fixture verifies integer/string inputs and an observable return value. Other reflected containers are not exhaustively workflow-certified. Object references, custom-imported structs, latent calls and network RPCs refuse. Map keys use text/name/enum values. No arbitrary console execution is provided. A dispatched result is not proof of gameplay success; do not automatically retry.

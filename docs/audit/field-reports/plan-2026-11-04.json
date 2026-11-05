@@ -1118,10 +1118,10 @@
       "title": "Design scoped PIE console or callable-function invocation",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reviewed_design_scoped",
+      "validation": "focused_native_and_offline_passed",
       "source_ids": [
         "X-125",
         "FT-139"
@@ -1131,7 +1131,34 @@
         "2026-11-04_S1/FT-139"
       ],
       "dependencies": [],
-      "next_step": "Implement exact-world runtime function discovery, preview and confirmed invocation per docs/audit/field-reports/nov04-pie-invocation-design.md. Reuse the supervised CommonPlay fixture, explicitly admit only the runtime tool through the PIE gate, and retain unsupported parameter/call kinds honestly."
+      "next_step": "Implemented signature discovery, preview and one-use confirmed invocation for an exact existing PIE object/world, including local-player subsystems. Native fixture proves scalar input validation, dispatch/return state, replay and changed-argument refusal, stale/wrong-world and no-PIE refusal. References, RPCs, latent calls and custom-imported structs are unsupported; arbitrary private functions and container combinations are not certified. No engine change or automatic save.",
+      "evidence": [
+        {
+          "run": "b49a7985ff8549b1a0f346a23ab50e97",
+          "result": "failed_build",
+          "scope": "JSON field key API mismatch; corrected before native validation."
+        },
+        {
+          "run": "05eefa56ec194e0abb268c5fce3ee007",
+          "result": "failed_build",
+          "scope": "Fixture shared-reference serialization mismatch; corrected."
+        },
+        {
+          "run": "72466e875c75487a8e3fc1dfff57567c",
+          "result": "passed",
+          "scope": "Final native CommonPlay workflow and build on 668e5a6c; scope check passed. Subsequent declaration macro whitespace normalization has no runtime behavior change."
+        },
+        {
+          "run": "87cfa3a17d45411995e6b434e962de5d",
+          "result": "failed_offline",
+          "scope": "25 checks passed; catalog parser skipped compact macro spacing. Normalized declarations and regenerated inventory."
+        },
+        {
+          "run": "0334ecd536e241579c53a69968d7eb7b",
+          "result": "passed",
+          "scope": "All 26 offline integration checks; catalog now includes all 180 tools."
+        }
+      ]
     },
     {
       "id": "NOV04-28",
