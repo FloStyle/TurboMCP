@@ -442,7 +442,10 @@ def run():
     directory.mkdir(parents=True)
     session = Session()
     session.connect()
-    evidence = {'stage': 'discovery', 'layout_acceptance': False, 'calls': []}
+    subset = os.environ.get('TURBOMCP_TIDY_BASELINE_SUBSET', 'all')
+    if subset not in ('all', 'events'):
+        raise RuntimeError('Unknown baseline subset; expected all or events')
+    evidence = {'stage': 'discovery', 'layout_acceptance': False, 'subset': subset, 'calls': []}
 
     def persist():
         (directory / 'evidence.json').write_text(json.dumps(evidence, indent=2), encoding='utf-8')
@@ -466,6 +469,13 @@ def run():
             response = session.rpc('tools/call', {'name': 'describe_toolset', 'arguments': {'toolset_name': toolset}})
             (directory / (toolset.split('.')[-1] + '.json')).write_text(json.dumps(response, indent=2), encoding='utf-8')
         call('ReadTurboMCPStatus')
+        if subset == 'events':
+            record_event_regressions(call, evidence, persist)
+            evidence['stage'] = 'event_baselines_recorded_acceptance_pending'
+            persist()
+            print('Evidence: ' + str(directory), flush=True)
+            print('RESULT: PASS (J1/J2/J6 baseline checkpoint only; full fixture and acceptance not run)')
+            return
         asset = '/Game/Tests/TidyFixture_LoopCascade_' + uuid.uuid4().hex
         evidence['asset'] = asset
         call('PreviewTurboMCPFunctionLibraryCreate', packagePath=asset)
