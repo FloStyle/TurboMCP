@@ -938,10 +938,10 @@
       "title": "Support timed input sequences and simultaneous holds",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "native_failure_repair_pending",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "PI-07",
         "FT-140"
@@ -951,7 +951,7 @@
         "2026-11-04_S1/FT-140"
       ],
       "dependencies": [],
-      "next_step": "Review candidate ea64ae86 in widget-roundtrip-review. Build passed; CommonUI sequence workflow exposed retained axis value after explicit cancellation. Cached owned axis cleanup repaired, pending rerun and remaining focus-loss/late-event coverage. Not integrated.",
+      "next_step": "Implemented bounded sequence action with overlapping distinct keys, complete schedule validation and owned-input cleanup. Monitor field use; synthetic Slate routing does not certify every project action or physical-device behavior.",
       "evidence": [
         {
           "result": "source_review",
@@ -966,7 +966,26 @@
           "result": "native_failed",
           "run": "e634433597414e019dcd4534eeb1fff6",
           "scope": "Actual scheduled pause/resume and completion assertions passed, but explicit cancellation retained original player axis value 0.333333 instead of zero. Repair must pass unchanged assertion; this run is not acceptance."
+        },
+        {
+          "result": "native_assertions_pass_supervisor_failed",
+          "run": "93133034355c41dcbe9c4d6a3d41fb1e",
+          "scope": "Cancellation assertion passed, but candidate test file was edited during validation; supervisor correctly rejected provenance. Not accepted as a passing run."
+        },
+        {
+          "result": "native_pass",
+          "run": "245c11ee42a945598a4dbc21fd8a3e89",
+          "scope": "Stock build and CommonUI workflow: overlapping axis with scheduled Pause/Back taps, actual menu states, complete release, malformed/same-key overlap refusal, explicit cancellation, focus loss and expired-tap refusal. Existing menu, analog and help checks retained."
+        },
+        {
+          "result": "offline_pass",
+          "run": "54212ebcb309426ab06455b72126ebd2",
+          "scope": "26 checks passed; exact source scope gate passed."
         }
+      ],
+      "source_commit": "147818ae41b54f6c976692d822df00da41e442e3",
+      "followups": [
+        "Focused fixture uses different Pause and Back keys; repeated same-key nonoverlapping schedules are implemented but not separately exercised here. No general multiplayer, physical-device or arbitrary project certification."
       ]
     },
     {
