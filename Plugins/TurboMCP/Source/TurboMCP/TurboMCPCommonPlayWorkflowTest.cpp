@@ -14,6 +14,7 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "HAL/PlatformTime.h"
+#include "HAL/PlatformProcess.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SWindow.h"
 #include "Widgets/SViewport.h"
@@ -255,7 +256,7 @@ public:
                 }
                 ++DeactivationStep;return false;
             }
-            if (Step==10 && SequenceStep<5)
+            if (Step==10 && SequenceStep<9)
             {
                 auto Sequence=[&](const TCHAR* Events)
                 {
@@ -288,13 +289,42 @@ public:
                     Test->TestFalse(TEXT("Sequence keyboard keys released"),Player->IsInputKeyDown(EKeys::P) || Player->IsInputKeyDown(EKeys::BackSpace));
                     Test->TestTrue(TEXT("Cancellation sequence accepted"),Sequence(TEXT("[{\"at\":0,\"key\":\"Gamepad_RightX\",\"value\":0.5,\"duration\":4},{\"at\":3,\"key\":\"P\",\"duration\":0.2}]")).Contains(TEXT("admitted 2 events")));
                 }
-                else
+                else if (SequenceStep==4)
                 {
                     Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("release"),TEXT(""),TEXT(""),TEXT("")));
                     const FString Cancelled=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(Cancelled);
                     Test->TestTrue(TEXT("Explicit cancellation clears owned and pending sequence"),Cancelled.Contains(TEXT("stopped: explicit release")) && Cancelled.Contains(TEXT("sequence held: 0; pending: 0")));
                     Test->TestEqual(TEXT("Cancellation clears original player axis"),Player->GetInputAnalogKeyState(EKeys::Gamepad_RightX),0.f);
                     Test->TestTrue(TEXT("Pending pause tap did not run"),State().Contains(TEXT("screen: Gameplay")));
+                }
+                else if (SequenceStep==5)
+                {
+                    Test->TestTrue(TEXT("Focus-loss sequence accepted"),Sequence(TEXT("[{\"at\":0,\"key\":\"Gamepad_RightX\",\"value\":0.5,\"duration\":4},{\"at\":3,\"key\":\"P\",\"duration\":0.2}]")).Contains(TEXT("admitted 2 events")));
+                }
+                else if (SequenceStep==6)
+                {
+                    FocusWindow=SNew(SWindow).Title(FText::FromString(TEXT("Sequence focus-loss fixture"))).ClientSize(FVector2D(320,100));
+                    FocusWindow->SetContent(SAssignNew(OutsideButton,SButton).Text(FText::FromString(TEXT("Outside PIE"))));
+                    FSlateApplication::Get().AddWindow(FocusWindow.ToSharedRef());
+                    FSlateApplication::Get().SetUserFocus(0,OutsideButton,EFocusCause::SetDirectly);
+                }
+                else if (SequenceStep==7)
+                {
+                    const FString Cancelled=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(Cancelled);
+                    Test->TestTrue(TEXT("Focus loss cancels entire sequence"),Cancelled.Contains(TEXT("stopped: world, player or PIE focus unavailable")) && Cancelled.Contains(TEXT("sequence held: 0; pending: 0")));
+                    Test->TestEqual(TEXT("Focus loss clears original axis"),Player->GetInputAnalogKeyState(EKeys::Gamepad_RightX),0.f);
+                    FocusWindow->RequestDestroyWindow();FocusWindow.Reset();OutsideButton.Reset();
+                    Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("focus"),TEXT(""),TEXT(""),TEXT("")));
+                    Test->TestTrue(TEXT("Late-event fixture accepted"),Sequence(TEXT("[{\"at\":0,\"key\":\"P\",\"duration\":0.05}]")).Contains(TEXT("admitted 1 events")));
+                    // Deliberately block this one editor tick past the entire tap.
+                    // The scheduler must refuse replay, not open Pause later.
+                    FPlatformProcess::Sleep(0.1f);
+                }
+                else
+                {
+                    const FString Late=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(Late);
+                    Test->TestTrue(TEXT("Expired tap aborts without replay"),Late.Contains(TEXT("scheduled input expired before dispatch")) && Late.Contains(TEXT("sequence held: 0; pending: 0")));
+                    Test->TestTrue(TEXT("Expired pause tap never opens menu"),State().Contains(TEXT("screen: Gameplay")));
                 }
                 ++SequenceStep;return false;
             }
