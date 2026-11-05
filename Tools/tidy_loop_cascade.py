@@ -465,6 +465,15 @@ def record_compact_candidates(call, evidence, persist, comments_only=False):
         args=dict(asset=asset,graphName=graph,bForce=False,nodeIds=selection,mainPath='',
                   horizontalGap=120.0,verticalGap=100.0,lanePitch=280.0,wrapAfter='',layoutMode='blocks')
         row['preview']=call('PreviewTurboMCPGraphTidy',**args)
+        measures = ('unrelated box crossings', 'execution segment crossings',
+                    'diagonal execution length', 'within-block row breaks',
+                    'data segment crossings', 'total segment length', 'bounding area')
+        row['compact_measures'] = {}
+        for measure in measures:
+            match = re.search(r'^' + re.escape(measure) + r': ([0-9.]+) -> ([0-9.]+)', row['preview'], re.M)
+            if not match:
+                raise RuntimeError(name + ': compact preview omitted measure ' + measure)
+            row['compact_measures'][measure] = dict(before=float(match.group(1)), after=float(match.group(2)))
         row['after_preview_positions']=read_positions(call,asset,graph)
         row['after_preview_graph']=read_complete_graph(call,asset,graph)
         if row['after_preview_positions'] != row['before_positions'] or row['after_preview_graph'] != row['before_graph']:
@@ -507,6 +516,14 @@ def record_compact_candidates(call, evidence, persist, comments_only=False):
         if not planned:
             raise RuntimeError(name+': preview omitted its planned positions')
         if row['edit'].startswith('changed:'):
+            # Force is false in this scenario. Retain every regressed measure,
+            # including a zero-to-positive change; never accept a passing rerun
+            # as evidence that the earlier regression disappeared.
+            row['score_regressions'] = [measure for measure, values in row['compact_measures'].items()
+                if values['after'] > values['before'] * 1.10 + 0.11]
+            if row['score_regressions']:
+                persist()
+                raise RuntimeError(name + ': edit accepted >10% compact score regression: ' + ', '.join(row['score_regressions']))
             row['preview_edit_mismatches'] = [identity for identity, point in planned.items()
                 if identity not in row['after_positions'] or
                 any(row['after_positions'][identity][axis] != point[axis] for axis in ('x','y'))]

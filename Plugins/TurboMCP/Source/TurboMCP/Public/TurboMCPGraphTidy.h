@@ -76,6 +76,8 @@ public:
 		/** Its place in `UEdGraph::Nodes`, the final tie-break so a re-run changes nothing. */
 		int32 GraphOrder = 0;
 
+		/** Compact execution/input band identity; fixed or unassigned nodes use INDEX_NONE. */
+        int32 BlockIndex = INDEX_NONE;
 		bool bIsComment = false;
 		bool bIsKnot = false;
 		bool bIsPure = false;
@@ -180,6 +182,7 @@ public:
 		bool bForce = false;
         /** Explicit compact control-flow placement; omitted mode preserves row behavior. */
         bool bCompactBlocks = false;
+        int32 BlockCount = 0;
 
 		/** Empty means the whole graph; otherwise only these nodes may move. */
 		TSet<FString> SelectedNodeKeys;

@@ -91,7 +91,128 @@ namespace
         int32 BackwardData=0;
         int32 FanOutRowConflicts=0;
         double InputPinDrift=0;
+        bool bHasBlockMeasures = false;
+        double BlockMeasures[7] = {};
     };
+    static const TCHAR* TidyBlockMeasureNames[] = {
+        TEXT("unrelated box crossings"), TEXT("execution segment crossings"),
+        TEXT("diagonal execution length"), TEXT("within-block row breaks"),
+        TEXT("data segment crossings"), TEXT("total segment length"), TEXT("bounding area")
+    };
+
+    // Appendix H uses straight pin-to-pin segments, not rendered Slate splines.
+    // Keep the same block membership in before/after measurements; geometry
+    // changes must not redefine a crossing or row break out of existence.
+    void MeasureCompactGeometry(const FTurboMCPGraphTidy::FPlan& Plan, int32 Mode,
+        const TArray<FTurboMCPGraphTidy::FGetterCopy>& Copies, FStructuralQuality& Quality)
+    {
+        if (!Plan.bCompactBlocks) return;
+        Quality.bHasBlockMeasures = true;
+        auto Position = [Mode](const FTurboMCPGraphTidy::FNode& Node)
+        {
+            return Mode == 0 ? FVector2D(Node.X, Node.Y)
+                : Mode == 2 && Node.Node ? FVector2D(Node.Node->NodePosX, Node.Node->NodePosY)
+                : FVector2D(Node.PlannedX, Node.PlannedY);
+        };
+        struct FSegment { FVector2D A, B; int32 Source, Target; bool bExec; };
+        TArray<FSegment> Segments;
+        double Left = TNumericLimits<double>::Max(), Top = Left, Right = -Left, Bottom = -Left;
+        auto Include = [&](double X, double Y, double Width, double Height)
+        {
+            Left = FMath::Min(Left, X); Top = FMath::Min(Top, Y);
+            Right = FMath::Max(Right, X + Width); Bottom = FMath::Max(Bottom, Y + Height);
+        };
+        for (const auto& Node : Plan.Nodes)
+            if (!Node.bIsComment) { const FVector2D P = Position(Node); Include(P.X, P.Y, Node.Width, Node.Height); }
+        for (const auto& Box : Plan.Boxes)
+            Include(Mode == 0 ? Box.X : Box.PlannedX, Mode == 0 ? Box.Y : Box.PlannedY,
+                Mode == 0 ? Box.Width : Box.PlannedWidth, Mode == 0 ? Box.Height : Box.PlannedHeight);
+        if (Mode != 0)
+            for (const auto& Copy : Copies)
+            {
+                if (Mode == 2 && !Copy.Copy) continue;
+                Include(Mode == 2 ? Copy.Copy->NodePosX : Copy.PlannedX,
+                    Mode == 2 ? Copy.Copy->NodePosY : Copy.PlannedY, Copy.Width, Copy.Height);
+            }
+        if (Left != TNumericLimits<double>::Max()) Quality.BlockMeasures[6] = (Right - Left) * (Bottom - Top);
+        auto Cross = [](const FVector2D& A, const FVector2D& B) { return A.X * B.Y - A.Y * B.X; };
+        auto Intersects = [&](const FSegment& L, const FSegment& R)
+        {
+            // Shared endpoints and collinear runs are not proper crossings.
+            const double A = Cross(L.B-L.A, R.A-L.A), B = Cross(L.B-L.A, R.B-L.A);
+            const double C = Cross(R.B-R.A, L.A-R.A), D = Cross(R.B-R.A, L.B-R.A);
+            return ((A > 0.001 && B < -0.001) || (A < -0.001 && B > 0.001))
+                && ((C > 0.001 && D < -0.001) || (C < -0.001 && D > 0.001));
+        };
+        for (const auto& Wire : Plan.Wires)
+        {
+            if (!Wire.OutputPin || !Wire.InputPin || !Plan.Nodes.IsValidIndex(Wire.SourceNodeIndex)
+                || !Plan.Nodes.IsValidIndex(Wire.TargetNodeIndex)) continue;
+            const auto& Source = Plan.Nodes[Wire.SourceNodeIndex];
+            const auto& Target = Plan.Nodes[Wire.TargetNodeIndex];
+            if (!Source.Node || !Target.Node) continue;
+            FVector2D A = FTurboMCPLayoutReport::PinPosition(Wire.OutputPin) + Position(Source)
+                - FVector2D(Source.Node->NodePosX, Source.Node->NodePosY);
+            const FVector2D B = FTurboMCPLayoutReport::PinPosition(Wire.InputPin) + Position(Target)
+                - FVector2D(Target.Node->NodePosX, Target.Node->NodePosY);
+            if (Mode != 0)
+                for (const auto& Copy : Copies)
+                    if (Copy.OriginalValuePin == Wire.OutputPin && Copy.ConsumerPin == Wire.InputPin
+                        && (Mode != 2 || Copy.Copy))
+                        A = FVector2D(Mode == 2 ? Copy.Copy->NodePosX : Copy.PlannedX,
+                            Mode == 2 ? Copy.Copy->NodePosY : Copy.PlannedY) + Copy.OutputOffset;
+            const bool bExec = Wire.OutputPin->PinType.PinCategory == TEXT("exec");
+            const double Length = FVector2D::Distance(A, B);
+            Quality.BlockMeasures[5] += Length;
+            const double DX = FMath::Abs(B.X-A.X), DY = FMath::Abs(B.Y-A.Y);
+            const double TanTenDegrees = 0.176326980708465;
+            if (bExec && DY > DX * TanTenDegrees && DX > DY * TanTenDegrees)
+                Quality.BlockMeasures[2] += Length;
+            if (bExec && !Wire.bControlFeedback && Source.BlockIndex != INDEX_NONE
+                && Source.BlockIndex == Target.BlockIndex && DY > 16.0) ++Quality.BlockMeasures[3];
+            const FSegment Segment{A, B, Wire.SourceNodeIndex, Wire.TargetNodeIndex, bExec};
+            for (const auto& Other : Segments)
+                if (Other.bExec == bExec && Intersects(Segment, Other)) ++Quality.BlockMeasures[bExec ? 1 : 4];
+            Segments.Add(Segment);
+            for (const auto& Box : Plan.Boxes)
+            {
+                auto Contains = [&](const FTurboMCPGraphTidy::FNode& Node)
+                { return Box.MemberKeys.Contains(Node.Key) || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName())); };
+                if (Contains(Source) || Contains(Target)) continue;
+                const double X = Mode == 0 ? Box.X : Box.PlannedX, Y = Mode == 0 ? Box.Y : Box.PlannedY;
+                const double Width = Mode == 0 ? Box.Width : Box.PlannedWidth, Height = Mode == 0 ? Box.Height : Box.PlannedHeight;
+                // Slab clipping counts a passage through the interior, including
+                // a segment wholly inside an unrelated box. Touching an edge is not a crossing.
+                double Enter = 0.0, Leave = 1.0;
+                auto Clip = [&](double Start, double Delta, double Min, double Max)
+                {
+                    if (FMath::Abs(Delta) < 0.000001) return Start > Min && Start < Max;
+                    double T0 = (Min-Start)/Delta, T1 = (Max-Start)/Delta;
+                    if (T0 > T1) Swap(T0, T1);
+                    Enter = FMath::Max(Enter, T0); Leave = FMath::Min(Leave, T1);
+                    return Enter < Leave;
+                };
+                if (Length > 0.001 && Clip(A.X, B.X-A.X, X+0.001, X+Width-0.001)
+                    && Clip(A.Y, B.Y-A.Y, Y+0.001, Y+Height-0.001)) ++Quality.BlockMeasures[0];
+            }
+        }
+    }
+
+    FString CompactMeasureSummary(const FStructuralQuality& Before, const FStructuralQuality& After)
+    {
+        if (!Before.bHasBlockMeasures || !After.bHasBlockMeasures) return FString();
+        FString Text = TEXT("compact score: straight segments; crossings exclude shared endpoints and collinear runs; data crossings count data/data pairs. Block identities are held fixed.\n");
+        for (int32 Index = 0; Index < 7; ++Index)
+        {
+            const double Old = Before.BlockMeasures[Index], New = After.BlockMeasures[Index];
+            const bool bRegression = New > Old * 1.10 + 0.000001;
+            Text += FString::Printf(TEXT("%s: %.1f -> %.1f%s\n"), TidyBlockMeasureNames[Index], Old, New,
+                bRegression ? TEXT("; regression >10% (zero baseline: any increase)") : TEXT(""));
+        }
+        Text += TEXT("ranking: listed order; differences below 5% or below 1 for counts are ties. Any >10% regression refuses the edit unless Force is explicit. These measures do not establish visual acceptance.");
+        return Text;
+    }
+
     // Mode: original, planned, or actual post-edit coordinates. Pin offsets remain native.
     FStructuralQuality StructuralQuality(const FTurboMCPGraphTidy::FPlan& Plan,int32 Mode,
         const TArray<FTurboMCPGraphTidy::FGetterCopy>* ActualCopies = nullptr)
@@ -265,11 +386,35 @@ namespace
                 if(FMath::Abs(LY-RY)<16.0) ++Q.FanOutRowConflicts;
             }
         }
+        MeasureCompactGeometry(Plan, Mode, Copies, Q);
         return Q;
     }
     bool BetterLayout(const FStructuralQuality& Before, const FStructuralQuality& After,
         double OldLength, double NewLength, FString* OutReason = nullptr)
     {
+        if (Before.bHasBlockMeasures && After.bHasBlockMeasures)
+        {
+            if (After.Overlaps > Before.Overlaps || After.UnwrappedBreaks > Before.UnwrappedBreaks)
+            { if (OutReason) *OutReason = TEXT("compact layout worsens overlaps or requested row breaks"); return false; }
+            for (int32 Index = 0; Index < 7; ++Index)
+                if (After.BlockMeasures[Index] > Before.BlockMeasures[Index] * 1.10 + 0.000001)
+                {
+                    if (OutReason) *OutReason = FString::Printf(TEXT("compact regression exceeds 10%% for %s: %.1f -> %.1f"),
+                        TidyBlockMeasureNames[Index], Before.BlockMeasures[Index], After.BlockMeasures[Index]);
+                    return false;
+                }
+            for (int32 Index = 0; Index < 7; ++Index)
+            {
+                const double Old = Before.BlockMeasures[Index], New = After.BlockMeasures[Index];
+                const double Difference = FMath::Abs(New-Old);
+                const bool bCount = Index == 0 || Index == 1 || Index == 3 || Index == 4;
+                if (Difference <= 0.000001 || Difference < FMath::Abs(Old) * 0.05 || (bCount && Difference < 1.0)) continue;
+                if (OutReason && New > Old) *OutReason = FString::Printf(TEXT("compact ranking worsens %s: %.1f -> %.1f"), TidyBlockMeasureNames[Index], Old, New);
+                return New < Old;
+            }
+            if (OutReason) *OutReason = TEXT("all seven compact measures tie within the stated thresholds");
+            return false;
+        }
         // This ordered table is also the source of the refusal explanation.
         // Never describe a different quality order from the one used to decide.
         struct FCriterion { const TCHAR* Name; double Before; double After; double Tolerance; };
@@ -1616,6 +1761,15 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     OrderedLanes.Append(PendingOrder);
                     LaneOrder = MoveTemp(OrderedLanes);
                 }
+                if (OutPlan.bCompactBlocks)
+                    for (int32 Lane : LaneOrder)
+                    {
+                        const int32 Block = OutPlan.BlockCount++;
+                        for (int32 I : Free)
+                            if (RowOf[I] == Row && ((!OutPlan.Nodes[I].bIsPure && LaneOf.FindRef(I) == Lane)
+                                || (OutPlan.Nodes[I].bIsPure && PureLane.Contains(I) && PureLane[I] == Lane)))
+                                OutPlan.Nodes[I].BlockIndex = Block;
+                    }
                 TMap<int32,double> InputFloorByLane;
                 double BandTop=RowY;
                 Bottom=RowY;
@@ -3138,8 +3292,14 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
     const FStructuralQuality QualityBefore=StructuralQuality(InPlan,0), QualityAfter=StructuralQuality(InPlan,1);
     for(int32 I:InPlan.WrapAfterNodes)
         Lines.Add(FString::Printf(TEXT("row break after %s (execution links preserved)"),*InPlan.Nodes[I].Key));
-    if (InPlan.bCompactBlocks) Lines.Add(FString::Printf(TEXT("compact criteria (after overlaps and requested breaks): Body row drift %.1f -> %.1f; Completed above body bottom %d -> %d. Remaining quality measures follow below."), QualityBefore.BodyRowDrift, QualityAfter.BodyRowDrift, QualityBefore.CompletedAboveBody, QualityAfter.CompletedAboveBody));
+    if (InPlan.bCompactBlocks) Lines.Add(CompactMeasureSummary(QualityBefore, QualityAfter));
+    if (InPlan.bCompactBlocks) Lines.Add(FString::Printf(TEXT("compact diagnostics: Body row drift %.1f -> %.1f; Completed above body bottom %d -> %d. These diagnostics supplement the seven-measure ranking."), QualityBefore.BodyRowDrift, QualityAfter.BodyRowDrift, QualityBefore.CompletedAboveBody, QualityAfter.CompletedAboveBody));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift,QualityBefore.FanOutRowConflicts,QualityAfter.FanOutRowConflicts,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.BackwardData,QualityAfter.BackwardData,QualityBefore.PureInputRowConflicts,QualityAfter.PureInputRowConflicts,QualityBefore.InputPinDrift,QualityAfter.InputPinDrift));
+    if (InPlan.bCompactBlocks)
+    {
+        Lines.Last().ReplaceInline(TEXT("quality priority:"), TEXT("additional diagnostics (not compact ranking):"));
+        Lines.Last().ReplaceInline(TEXT(" Wire length breaks structural ties."), TEXT(""));
+    }
 	Lines.Add(FString::Printf(TEXT("preview: %s in %s : total wire length %.1f -> %.1f across %d wire(s)"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter, InPlan.WireCount));
     int32 FeedbackCount = 0;
     for (const FWire& Wire : InPlan.Wires) if (Wire.bControlFeedback) ++FeedbackCount;
@@ -3562,8 +3722,14 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
     if (FeedbackCount > 0)
         Lines.Add(FString::Printf(TEXT("control feedback: %d stock Break/Reset wire(s) preserved; excluded from forward ordering and alignment penalties, included in total wire length."), FeedbackCount));
 	Lines.Add(FString::Printf(TEXT("wire length: current plan predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("matches the current plan") : TEXT("differs from the current plan")));
-    if (InPlan.bCompactBlocks) Lines.Add(FString::Printf(TEXT("compact criteria (after overlaps and requested breaks): Body row drift %.1f -> %.1f; Completed above body bottom %d -> %d. Remaining quality measures follow below."), OriginalQuality.BodyRowDrift, ActualQuality.BodyRowDrift, OriginalQuality.CompletedAboveBody, ActualQuality.CompletedAboveBody));
+    if (InPlan.bCompactBlocks) Lines.Add(CompactMeasureSummary(OriginalQuality, ActualQuality));
+    if (InPlan.bCompactBlocks) Lines.Add(FString::Printf(TEXT("compact diagnostics: Body row drift %.1f -> %.1f; Completed above body bottom %d -> %d. These diagnostics supplement the seven-measure ranking."), OriginalQuality.BodyRowDrift, ActualQuality.BodyRowDrift, OriginalQuality.CompletedAboveBody, ActualQuality.CompletedAboveBody));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),OriginalQuality.Overlaps,ActualQuality.Overlaps,OriginalQuality.LinearExecDrift,ActualQuality.LinearExecDrift,OriginalQuality.FanOutRowConflicts,ActualQuality.FanOutRowConflicts,OriginalQuality.BackwardExec,ActualQuality.BackwardExec,OriginalQuality.BackwardData,ActualQuality.BackwardData,OriginalQuality.PureInputRowConflicts,ActualQuality.PureInputRowConflicts,OriginalQuality.InputPinDrift,ActualQuality.InputPinDrift));
+    if (InPlan.bCompactBlocks)
+    {
+        Lines.Last().ReplaceInline(TEXT("quality priority:"), TEXT("additional diagnostics (not compact ranking):"));
+        Lines.Last().ReplaceInline(TEXT(" Wire length breaks structural ties."), TEXT(""));
+    }
     const auto CrossBoxAfter = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
     Lines.Add(FString::Printf(TEXT("cross-box: estimated straight-line length %.1f -> %.1f (delta %+.1f); connections %d -> %d. Ownership uses the smallest enclosing comment at each state; copies or box growth can change the count."), CrossBoxBefore.Length, CrossBoxAfter.Length, CrossBoxAfter.Length-CrossBoxBefore.Length, CrossBoxBefore.Count, CrossBoxAfter.Count));
 	Lines.Add(FString::Printf(TEXT("moved %d node(s). Fitted %d of %d box(es), using the planned comment rectangles."), OriginalPositions.Num(), BoxesResized, InPlan.Boxes.Num()));
