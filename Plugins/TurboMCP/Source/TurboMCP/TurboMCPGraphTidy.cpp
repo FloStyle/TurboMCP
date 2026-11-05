@@ -32,6 +32,7 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Misc/Guid.h"
 #include "Slate/WidgetRenderer.h"
+#include "Rendering/SlateRenderer.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "ImageUtils.h"
 #include "UObject/StrongObjectPtr.h"
@@ -3190,6 +3191,9 @@ namespace
   Parameters.CreatedObjects=&Created;
   UEdGraph* Graph=Cast<UEdGraph>(StaticDuplicateObjectEx(Parameters));
   if (!Graph) { Result=TEXT("graph copy failed"); return false; }
+  // Function-entry widgets derive their displayed title from the graph name.
+  // Keep that name faithful without renaming or dirtying the source asset.
+  Graph->Rename(*Original->GetName(),Scratch.Get(),REN_DontCreateRedirectors | REN_DoNotDirty | REN_NonTransactional);
   if(Blueprint->FunctionGraphs.Contains(Original)) Scratch->FunctionGraphs.Add(Graph);
   else if(Blueprint->MacroGraphs.Contains(Original)) Scratch->MacroGraphs.Add(Graph);
   else Scratch->UbergraphPages.Add(Graph);
@@ -3266,6 +3270,14 @@ namespace
     Editor->SlatePrepass(1.0f);
     Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
     Editor->SlatePrepass(1.0f);
+    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+    // Match the native capture path: drawing at a new scale requests SVGs,
+    // but WidgetRenderer alone does not populate the shared vector atlas.
+    FSlateRenderer* SlateRenderer=FSlateApplication::Get().GetRenderer();
+    FSlateDrawBuffer& ResourceBuffer=SlateRenderer->AcquireDrawBuffer();
+    SlateRenderer->DrawWindows(ResourceBuffer);
+    SlateRenderer->ReleaseDrawBuffer(ResourceBuffer);
+    Editor->Invalidate(EInvalidateWidgetReason::Paint);
     Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
     TArray<FColor> Pixels; FReadSurfaceDataFlags Flags(RCM_UNorm); Flags.SetLinearToGamma(false);
     if(!Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels,Flags) || Pixels.Num()!=2048*1536)
