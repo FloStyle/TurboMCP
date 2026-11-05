@@ -456,7 +456,14 @@
         "2026-11-03_S4/GC-92"
       ],
       "dependencies": [],
-      "next_step": "Claimed nov04-append-labels at 71e0aacc. Native reproduction running for a label after the last pin and closing parenthesis of a multiline form, including quoted semicolons. Current parser handles standalone closing-label lines but does not collect the final pin-line label. Review quoting/flat-form/comment help for GC-76/77/82/92; do not claim fixed until workflow passes."
+      "next_step": "Confirmed trailing-label parser defect repaired in claimed worktree; native rerun pending. Added quote-aware comment scan, conflicting-label refusal, and help for quoted IDs/flat forms/comment endings. Do not close before verification and integration.",
+      "evidence": [
+        {
+          "run": "228419bfbff44ab195c639af0c1a14b8",
+          "result": "failed",
+          "scope": "Confirmed GC-82: public append preview/edit reject AddedValue label after final pin and closing parenthesis; standalone closing-line form worked previously. Quoted string contains semicolon and escapes."
+        }
+      ]
     },
     {
       "id": "NOV04-12",
