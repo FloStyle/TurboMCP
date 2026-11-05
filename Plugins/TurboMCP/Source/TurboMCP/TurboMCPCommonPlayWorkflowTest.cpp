@@ -145,6 +145,25 @@ public:
             {
                 const FString CurrentFocus=State();
                 Test->TestTrue(TEXT("Directional focus reached expected button"),CurrentFocus.Contains(FocusStep==0?TEXT("focused button: Settings"):TEXT("focused button: Resume")));
+                if (FocusStep == 0)
+                {
+                    const TSharedPtr<SWidget> MenuFocus = FSlateApplication::Get().GetUserFocusedWidget(0);
+                    Test->TestTrue(TEXT("Menu has a focused widget before input"), MenuFocus.IsValid());
+                    Hold(TEXT("F13"));
+                    Test->TestTrue(TEXT("Hold preserves menu focus identity"),
+                        FSlateApplication::Get().GetUserFocusedWidget(0) == MenuFocus);
+                    Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"), TEXT("release"), TEXT(""), TEXT(""), TEXT("")));
+                    const FString Transfer = UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"), TEXT("focus"), TEXT(""), TEXT(""), TEXT(""));
+                    Record(Transfer);
+                    Test->TestTrue(TEXT("Explicit focus reports displaced menu"),
+                        Transfer.Contains(TEXT("PIE child/menu focus displaced: yes"))
+                        && Transfer.Contains(TEXT("previous focus widget type:"))
+                        && Transfer.Contains(TEXT("current focus widget type:"))
+                        && Transfer.Contains(TEXT("skip focus and use hold directly")));
+                    // Restore only this fixture's captured focus, then prove normal
+                    // menu navigation handles the next input without a focus call.
+                    if (MenuFocus.IsValid()) FSlateApplication::Get().SetUserFocus(0, MenuFocus, EFocusCause::SetDirectly);
+                }
                 Hold(FocusStep==0?TEXT("Gamepad_DPad_Down"):TEXT("Gamepad_DPad_Up"));
                 ++FocusStep;return false;
             }
