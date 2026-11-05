@@ -3597,6 +3597,14 @@
             "Tools/test-vision-workflow.py"
           ],
           "new_files": []
+        },
+        "nov04-slate-visibility": {
+          "files": [
+            "Tools/test-vision-workflow.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSlateVisibilityTest.cpp"
+          ]
         }
       },
       "preserve_rows": []

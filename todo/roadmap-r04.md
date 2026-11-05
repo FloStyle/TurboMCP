@@ -2286,3 +2286,7 @@ Expose active/pending/completed/aborted sequence state and reason through existi
 NOV04-25 integrated: native 245c11ee42a945598a4dbc21fd8a3e89 and offline 54212ebcb309426ab06455b72126ebd2 passed. Retained axis cancellation defect repaired in plugin; original failed run and provenance-invalid rerun retained. Repeated same-key nonoverlapping schedules remain outside this focused fixture coverage. Stock engine unchanged.
 
 NOV04-21 reconciled: existing-result append links already supported through reader-style headers with node ID comments. Current source/help and retained native 72bcaba97a134fe5baac805860214cda inspected; no new runtime run or bare-ID syntax claimed. See plan record for evidence and limits.
+
+### NOV04-36 stock Slate visibility reproduction
+
+Readiness: ready. Assignment nov04-slate-visibility. Add an owned native Slate window with unique visible, directly collapsed and collapsed-parent text. Invoke registered stock WaitFor and Snapshot with exact schema arguments. Assert visible control present in both; collapsed labels found by WaitFor but omitted from Snapshot; after revealing, both tools report labels. Record actual responses to a fresh local transcript; close only the owned window on every exit. Do not modify engine behavior, user widgets or assets. Register a focused TMCP_SLATE_VISIBILITY_ONLY route in the existing vision wrapper and run through supervised test-vision-workflow, then offline checks. A passing reproduction is evidence of an unresolved external discrepancy, not a fix.
