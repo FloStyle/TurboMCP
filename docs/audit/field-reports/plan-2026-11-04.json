@@ -799,10 +799,10 @@
       "title": "Document or support append links into existing node forms",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
+      "state": "done",
       "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "owner": "codex",
+      "validation": "existing_native_evidence_reconciled",
       "source_ids": [
         "GC-80"
       ],
@@ -810,7 +810,21 @@
         "2026-10-30_S3/GC-80"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Already supported and documented: use a reader-style form header with the existing node ID in its semicolon comment, then write destination input links inside that form. A bare node ID or arrow as the form head is not the grammar. No new implementation required.",
+      "evidence": [
+        {
+          "result": "source_review",
+          "scope": "Current GraphAppend.cpp resolves existing ID comments to bLinksToExisting. Public Edit GraphAppend help explicitly instructs copying the reader form header and ID. PurchaseWorkflowTest.cpp uses (Function|Result ; full-node-id) with CanAfford linked to newly appended PurchaseAllowed."
+        },
+        {
+          "result": "retained_native_pass_verified",
+          "run": "72bcaba97a134fe5baac805860214cda",
+          "scope": "Inspected saved passed supervisor report and purchase transcript: exact existing-result form, CanAfford replacement, missing-pin refusals and fresh readback. Historical candidate 276a1b6361dc882b77d98c68fabf1db990cb48e7; no new current-build run claimed."
+        }
+      ],
+      "followups": [
+        "Original field payload and installed revision are unavailable. This reconciles the requested documented workflow; it does not claim the historical refusal cause was reproduced or add bare-ID form-head syntax."
+      ]
     },
     {
       "id": "NOV04-22",
