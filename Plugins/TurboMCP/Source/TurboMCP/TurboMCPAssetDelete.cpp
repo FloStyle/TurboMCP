@@ -8,6 +8,7 @@
 #include "Engine/World.h"
 #include "UObject/ObjectRedirector.h"
 #include "UObject/Package.h"
+#include "UObject/UObjectHash.h"
 #include "Misc/PackageName.h"
 #include "Misc/SecureHash.h"
 #include "HAL/FileManager.h"
@@ -58,6 +59,24 @@ FString DeleteAsset(bool Apply, const FString& AssetPath, const FString& Confirm
     // StrongObjectPtr keeps an object alive through the UObject ref count,
     // which is not necessarily represented by a UObject referencer edge.
     if (Target->IsRooted() || Target->GetRefCount() > 0) return Refuse(TEXT("Live strong references or rooting prevent deletion."));
+    // Registry entries can lag behind loaded objects. Package cleanup must not
+    // remove another unsaved asset or invalidate a strongly held subobject.
+    auto CheckLoadedPackage = [&]() -> FString
+    {
+        TArray<UObject*> Objects;
+        GetObjectsWithOuter(Target->GetOutermost(), Objects, true);
+        for (UObject* Object : Objects)
+        {
+            if (!IsValid(Object)) continue;
+            if (Object != Target && Object->IsAsset())
+                return TEXT("Another loaded asset exists in the package; deletion was not attempted.");
+            if (Object->IsRooted() || Object->GetRefCount() > 0)
+                return TEXT("Live strong references or rooting in the package prevent deletion.");
+        }
+        return FString();
+    };
+    const FString LoadedRefusal = CheckLoadedPackage();
+    if (!LoadedRefusal.IsEmpty()) return Refuse(LoadedRefusal);
     if (Target->GetOutermost()->IsDirty()) return Refuse(TEXT("The asset has unsaved changes. Save or discard them separately."));
     UAssetEditorSubsystem* Editors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
     if (!Editors || Editors->FindEditorForAsset(Target, false)) return Refuse(TEXT("Close the asset editor before previewing deletion."));
@@ -85,6 +104,9 @@ FString DeleteAsset(bool Apply, const FString& AssetPath, const FString& Confirm
     if (!IsValid(Target) || Target->IsRooted() || Target->GetRefCount() > 0 || Target->GetOutermost()->IsDirty() || IFileManager::Get().IsReadOnly(*Filename)
         || Identity != AssetPath + TEXT("|") + LexToString(Target->GetUniqueID()) + TEXT("|") + LexToString(FMD5Hash::HashFile(*Filename)))
         return Refuse(TEXT("The target changed during reference scanning. Preview again."));
+    const FString RescannedRefusal = CheckLoadedPackage();
+    if (!RescannedRefusal.IsEmpty()) return Refuse(RescannedRefusal);
+    if (Editors->FindEditorForAsset(Target, false)) return Refuse(TEXT("Close the asset editor before previewing deletion."));
     if (!Apply)
     {
         if (Confirmations.Num() >= 64) Confirmations.Empty();

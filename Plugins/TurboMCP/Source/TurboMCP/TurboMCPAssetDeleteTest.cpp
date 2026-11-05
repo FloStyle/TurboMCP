@@ -71,6 +71,15 @@ bool FTurboMCPAssetDeleteTest::RunTest(const FString& Parameters)
         TStrongObjectPtr<UObject> LiveReference(Asset);
         TestTrue(TEXT("live reference refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath).Contains(TEXT("references")));
     }
+    {
+        UObject* Child = NewObject<UObject>(Asset);
+        TStrongObjectPtr<UObject> ChildReference(Child);
+        TestTrue(TEXT("strong subobject reference refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath).Contains(TEXT("references")));
+    }
+    UObject* UnregisteredAsset = NewObject<UInputAction>(Package, TEXT("UnregisteredNeighbor"), RF_Public | RF_Standalone);
+    TestTrue(TEXT("unregistered loaded asset refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPAssetDelete(AssetPath).Contains(TEXT("Another loaded asset")));
+    UnregisteredAsset->ClearFlags(RF_Public | RF_Standalone);
+    UnregisteredAsset->MarkAsGarbage();
     const FString HolderName = Name + TEXT("_References");
     const FString HolderPackageName = TEXT("/Game/Tests/") + HolderName;
     UPackage* HolderPackage = CreatePackage(*HolderPackageName);
@@ -117,6 +126,9 @@ bool FTurboMCPAssetDeleteTest::RunTest(const FString& Parameters)
     AddInfo(Result);
     TestTrue(TEXT("deletion verified"), Result.Contains(TEXT("Verified: registry entry and package file are absent")));
     TestFalse(TEXT("file independently absent"), FPaths::FileExists(Filename));
+    TArray<FAssetData> RemainingAssets;
+    FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get().GetAssetsByPackageName(FName(*PackageName), RemainingAssets);
+    TestEqual(TEXT("registry independently empty"), RemainingAssets.Num(), 0);
     TestTrue(TEXT("neighbor bytes preserved"), NeighborHash == FMD5Hash::HashFile(*NeighborFile));
     TestTrue(TEXT("replay refuses"), UTurboMCPEditToolset::EditTurboMCPAssetDelete(AssetPath, Token).Contains(TEXT("refused:")));
     for (const FString Tool : {TEXT("PreviewTurboMCPAssetDelete"), TEXT("EditTurboMCPAssetDelete")})
