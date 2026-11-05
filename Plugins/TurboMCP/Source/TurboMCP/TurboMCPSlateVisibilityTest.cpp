@@ -82,6 +82,11 @@ bool FTurboMCPSlateVisibilityTest::RunTest(const FString&)
     CheckVisibility(Nested, false);
     auto VisibleOnly = Query(Collapsed, false, 10, 128);
     if (VisibleOnly.IsValid()) TestEqual(TEXT("Hidden match filtered"), VisibleOnly->GetArrayField(TEXT("matches")).Num(), 0);
+    if (VisibleOnly.IsValid())
+    {
+        TestFalse(TEXT("Visibility filter echoed"), VisibleOnly->GetBoolField(TEXT("includeHidden")));
+        TestTrue(TEXT("Hidden exclusion is explicit"), VisibleOnly->GetStringField(TEXT("finding")).Contains(TEXT("hidden matches excluded")));
+    }
     auto Limited = Query(Prefix, true, 1, 128);
     if (Limited.IsValid())
     {

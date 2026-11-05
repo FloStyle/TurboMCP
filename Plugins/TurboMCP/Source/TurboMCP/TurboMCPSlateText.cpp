@@ -57,11 +57,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPSlateText(const FString& Text, bool In
     for (const auto& Window : Windows) Walk(Window, true, 0);
     auto Result = MakeShared<FJsonObject>();
     Result->SetArrayField(TEXT("matches"), Matches);
+    Result->SetBoolField(TEXT("includeHidden"), IncludeHidden);
     Result->SetNumberField(TEXT("visitedWidgets"), Visited);
     Result->SetNumberField(TEXT("matchedWidgets"), Found);
     Result->SetBoolField(TEXT("traversalTruncated"), TraversalTruncated);
     Result->SetBoolField(TEXT("resultsTruncated"), Found > Matches.Num());
-    Result->SetStringField(TEXT("finding"), Found > 0 ? TEXT("matching text found") : TraversalTruncated ? TEXT("unknown: search incomplete") : TEXT("no matching supported text in searched windows"));
+    Result->SetStringField(TEXT("finding"), Found > 0 ? TEXT("matching text found") : TraversalTruncated ? TEXT("unknown: search incomplete") : (IncludeHidden ? TEXT("no matching supported text in searched windows") : TEXT("no effectively visible matching supported text; hidden matches excluded")));
     Result->SetStringField(TEXT("limits"), TEXT("Mounted STextBlock/accessibility text in visible top-level windows only. Effective visibility includes ancestors, not clipping, enabled input, hit testing or OS foreground. Presence is not clickability. No wait, focus or input was requested."));
     FString Output;
     FJsonSerializer::Serialize(Result, TJsonWriterFactory<>::Create(&Output));
