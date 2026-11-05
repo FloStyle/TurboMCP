@@ -96,7 +96,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "partial_geometry_improvement_remaining_join_and_comment_defects",
+      "validation": "preservation_passed_comment_layout_repair_under_verification",
       "source_ids": [
         "TD-62",
         "TD-70",
@@ -112,7 +112,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Build and verify candidate 832141f4 join ordering, then inspect per-block captures and undo. Preserve boxed-layout defects and full Appendix H scoring requirements.",
+      "next_step": "Verify candidate b4950172: whole-graph compact planning spans existing comments and refits their original members. Inspect J4 captures and any membership refusal. Routing, full scoring and visual acceptance remain open.",
       "evidence": [
         {
           "run": "b04c38d19d264d37b7aa9613ed09eacd",
@@ -133,6 +133,16 @@
           "run": "4f0f7a01d739436cb69bf3caf979480c",
           "result": "failed_harness_identity_comparison",
           "scope": "Plain cascade: Body drift 3513 -> 0, Completed above body 3 -> 0, no new overlaps/linear drift/fan-out conflicts. One backward exec wire remains; wire length 84132.8 -> 85127.1. Checker compared shortened preview IDs to full reader IDs and stopped before capture/undo. Offline unique suffix reconciliation found all 83 coordinates equal. Failure retained; candidate 832141f4 resolves identities and gives compact joins a lane after incoming blocks. Not visually accepted."
+        },
+        {
+          "run": "dd045dabee7f44dab9de90d46565d7ab",
+          "result": "passed_collection_and_preservation_not_layout_acceptance",
+          "scope": "Candidate 324c365c: full graph equality, exact preview/edit coordinates and undo checks passed. Plain cascade Body drift 3513 -> 0; Completed-above-body 3 -> 0; wire length 84132.8 -> 81702.1. J4 still worsens wire length to 100907.8 and linear drift to 24; J5 pure-input row conflicts 0 -> 1. J3 native image inspected: Body on row, Completed below; long diagonal and feedback wires still need routing."
+        },
+        {
+          "run": "fcf1b64b9ef1491c9ddbe58802bcc940",
+          "result": "build_passed",
+          "scope": "5071e169 includes upstream pure expressions and generated readers in the compact body-bottom diagnostic. Runtime verification pending with b4950172."
         }
       ],
       "design_notes": [
@@ -257,7 +267,7 @@
       "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "partial_implemented_build_passed_editor_pending",
+      "validation": "exact_node_parity_verified_public_block_previews_incomplete",
       "source_ids": [
         "TD-68",
         "FT-155"
@@ -269,7 +279,7 @@
       "dependencies": [
         "NOV05-02"
       ],
-      "next_step": "Candidate 10cc3579 adds per-block scenario captures; d0a56331 exposes compact planned node coordinates and asserts exact preview/edit x/y agreement. These do not yet provide the complete public per-block preview interface. Latest build passed; editor verification underway in 4f0f7a01d739436cb69bf3caf979480c.",
+      "next_step": "Exact node preview/edit agreement passed in dd045dabee7f44dab9de90d46565d7ab. Scenario captures are per block; public block table and readable per-block previews remain incomplete.",
       "evidence": [],
       "design_notes": [
         "RenderPreview currently emits aggregate move counts and whole-graph images but no per-node planned coordinates or block table. Current harness verifies preview non-mutation, not exact preview/edit coordinate agreement. Add auditable plan geometry and readable block captures before claiming parity or readable previews."
@@ -291,7 +301,7 @@
         "2026-11-05_S1/X-129"
       ],
       "dependencies": [],
-      "next_step": "Integrate the reviewed help fix after candidate gates. Live checks in .local/tidy-cascade/ca8c953407ed474483bfef28e8d83ab0 passed for Preview/EditGraphTidy, GraphPositions, NodeType and Capture against their actual required schema arrays. Remaining scenario execution is unrelated to this help result.",
+      "next_step": "Live required-parameter checks passed for all five named tools in completed run dd045dabee7f44dab9de90d46565d7ab. Integrate the reviewed help fix after gates; compact layout remains unaccepted.",
       "evidence": [
         {
           "result": "passed_live_required_parameters",
