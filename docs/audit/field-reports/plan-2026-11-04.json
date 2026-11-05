@@ -1196,10 +1196,10 @@
       "title": "Reconcile Blueprint reparent and widget event-binding capabilities",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "widget_event_native_passed_reparent_pending",
+      "validation": "focused_native_workflows_passed",
       "source_ids": [
         "X-122",
         "FT-137"
@@ -1209,7 +1209,7 @@
         "2026-11-03_S3/FT-137"
       ],
       "dependencies": [],
-      "next_step": "Widget event preview/edit integrated with standard UMG and CommonUI compiled-binding evidence. Blueprint reparent remains unimplemented and keeps this combined task open.",
+      "next_step": "Implemented widget designer event preview/edit and confirmed Blueprint reparent preview/edit. Broader parent migrations and saved/reloaded behavior remain outside these focused acceptance scenarios; new field regressions reopen this issue.",
       "widget_event_evidence": {
         "source_commit": "a39a3eae6ba7c10f2404d5938273c95f52a493ed",
         "native_run": "e9bdb8a4da34433e8e678c02aae4c256",
@@ -1238,6 +1238,30 @@
           "Assigning ParentClass alone is not equivalent to the native reparent operation; no such shortcut is accepted."
         ],
         "remaining": "Define explicit preview and execution consent for reparent compilation/reinstancing, then validate a disposable UserWidget-to-CommonActivatableWidget workflow and incompatible-parent refusal. No reparent implementation or acceptance claimed."
+      },
+      "reparent_evidence": {
+        "source_commit": "cf383e73",
+        "native_runs": [
+          "83ac35fa4c43421686a4d5433e87d86f",
+          "7e4b3952dbaa489e841cc2d2e9928197"
+        ],
+        "final_build": "29ca9b9b75d941eba145648cc93225db",
+        "offline_run": "49c2aa0e255646a3968e067d73a46814",
+        "offline_result": "26 checks passed",
+        "coverage": [
+          "UserWidget to CommonActivatableWidget compile and parent read-back",
+          "Widget tree, owned variable GUID/default and graph node identities/positions/defaults/links retained",
+          "Clean preview, explicit consent, stale parent, incompatible family and self-cycle refusals, same-parent no-op",
+          "Live help and readable compiler status"
+        ],
+        "retained_failures": [
+          "e81536e9d9a145d2b01785a6668346a5: stale capability inventory and compound lookup guard not recognized; inventory refreshed by integrator, explicit lookup guards and final offline checks passed"
+        ],
+        "limits": [
+          "Final lookup-message change compiled and static-checked; native workflow runs precede that message-only guard split",
+          "No disk persistence, all-parent migration or reliable undo guarantee",
+          "Specialized Blueprint classes are refused; compiler errors after mutation do not imply rollback"
+        ]
       }
     },
     {
