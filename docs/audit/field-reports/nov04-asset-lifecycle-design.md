@@ -23,3 +23,7 @@ Required isolated evidence: unreferenced disposable asset; hard/soft/live refere
 Stock ObjectTools.cpp constructs FAssetDeleteModel and ticks its scan before calling DoDelete in the noninteractive route. AssetDeleteModel.cpp CanDelete refuses when non-undo live references or on-disk references exist; DoDelete calls the unchecked primitive only after that check. Undo-only references do not block CanDelete, so undo-history effects must be examined and disclosed before exposing this route. A plugin must use the checked model/system rather than calling its internal unchecked primitive directly. No execution or safety certification follows from this source review.
 
 UBlueprintFactory exposes ParentClass, BlueprintType and bSkipClassPicker. This provides a candidate stock creation route; the implementation still needs inspection for function-library restrictions and compiler behavior.
+
+## Stock scripting deletion route
+
+Source inspection on 2026-11-05: stock EditorToolset asset.py delete calls EditorAssetSubsystem.delete_asset (or delete_directory). EditorAssetSubsystem.cpp DeleteAsset, lines 795-814, loads the target and calls ObjectTools::ForceDeleteObjects with bShowConfirmation=false. DeleteLoadedAsset(s) also use force deletion. These scripting convenience methods are therefore not substitutes for the checked deletion model required above. This source fact does not identify the original field tool, reproduce its crash, or prove a crash cause; NOV04-01 still requires the original call and stack. No deletion was executed during this inspection.

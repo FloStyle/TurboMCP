@@ -19,7 +19,13 @@
         "2026-11-03_S4/X-123"
       ],
       "dependencies": [],
-      "next_step": "Original report identifies an access violation during stock-engine reference replacement but supplies no stack or exact delete tool. Requested those details; keep crash cause unresolved and do not delete user assets."
+      "next_step": "Original report identifies an access violation during stock-engine reference replacement but supplies no stack or exact delete tool. Requested those details; keep crash cause unresolved and do not delete user assets.",
+      "evidence": [
+        {
+          "result": "source_review_not_crash_reproduction",
+          "scope": "Stock Python AssetTools.delete routes to EditorAssetSubsystem::DeleteAsset, which calls ForceDeleteObjects without confirmation (lines 795-814). Original tool and stack remain missing; not a cause claim. Safe-delete design explicitly excludes this convenience route."
+        }
+      ]
     },
     {
       "id": "NOV04-02",
