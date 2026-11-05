@@ -1040,7 +1040,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 		const FString& Text);
 
 	/**
-	 * Add a block to a graph from graph text, and write nothing.
+	 * Preview adding nodes without editing. Placement=local searches nearby; Placement=outside uses space beyond existing bounds and may create long wires.
 	 *
 	 * Use this before the edit. It reports every way the text cannot be applied, each
 	 * naming its line, and it reports what WOULD be created - so a caller can see the
@@ -1954,7 +1954,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	static FString EditTurboMCPTrace(const FString& Action, const FString& NodeId);
 
 	/**
-     * Add nodes and connections to an existing graph without deleting existing nodes.
+     * Add nodes and connections without deleting existing nodes. Placement=local searches nearby; Placement=outside uses space beyond existing bounds and may create long wires.
      * Explicit links to occupied inputs can replace their current connections.
      * Does not change function signatures, compile, save or prove runtime behavior.
      * Preview validates a temporary graph; edit replans against the current graph.

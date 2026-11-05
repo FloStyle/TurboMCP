@@ -1191,6 +1191,8 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
         }
         const FString Capture=UTurboMCPLookToolset::LookTurboMCPCapture(Fixture.AssetPath,Graph->GetName(),TEXT("graph"),TEXT(""),TEXT("1600x900"));AddInfo(Capture);
         TestTrue(TEXT("Outside placement capture generated"),Capture.Contains(TEXT("image:")));
+        const FString Detail=UTurboMCPLookToolset::LookTurboMCPCapture(Fixture.AssetPath,Graph->GetName(),TEXT("region"),TEXT("2900,-3250,1400,800"),TEXT("1600x900"));AddInfo(Detail);
+        TestTrue(TEXT("Outside detail capture generated"),Detail.Contains(TEXT("image:")));
         for (const TCHAR* Tool:{TEXT("PreviewTurboMCPGraphAppend"),TEXT("EditTurboMCPGraphAppend")})
         {
             const FString Help=UTurboMCPReadToolset::ReadTurboMCPToolHelp(FString(Tool).StartsWith(TEXT("Preview"))?TEXT("TurboMCP.TurboMCPPreviewToolset"):TEXT("TurboMCP.TurboMCPEditToolset"),Tool);
