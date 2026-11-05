@@ -626,9 +626,9 @@
       "title": "Preserve or explicitly transfer menu keyboard focus",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
       "validation": "source_reconciled_runtime_pending",
       "source_ids": [
         "PI-04"
@@ -637,7 +637,7 @@
         "2026-10-30_S1/PI-04"
       ],
       "dependencies": [],
-      "next_step": "Source reconciliation: TurboMCPPlayInput.cpp focus action unconditionally SetUserFocus to the PIE viewport and gives only a generic menu warning afterward. activate separately requests OS foreground without explicit Slate focus. Reproduce a focused menu key handler, report previous/current focus explicitly, and provide/document a focus-preserving route; do not assume OS activation guarantees key handling. No fix or runtime reproduction yet."
+      "next_step": "Approved nov04-menu-focus: report before/after focus for explicit transfer and document/test existing hold without focus. Verify actual CommonUI menu handling; preserve activation limits and focus-loss cancellation."
     },
     {
       "id": "NOV04-23",
