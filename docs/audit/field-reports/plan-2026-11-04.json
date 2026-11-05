@@ -963,10 +963,10 @@
       "title": "Reconcile PIE activation and focus recovery",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_native_and_offline_passed",
       "source_ids": [
         "PI-05",
         "PI-09",
@@ -978,7 +978,24 @@
         "2026-11-04_S1/PI-09"
       ],
       "dependencies": [],
-      "next_step": "Implement explicit activate_gameplay action combining the existing stock OS activation request and gameplay viewport Slate focus. Preserve activate as menu-focus-preserving behavior; warn that activate_gameplay displaces menu focus. Require empty extra arguments, no active sequence/held input and existing unattended guard. Report requested activation, actual foreground/application/focus states independently; never bypass OS policy or imply success when denied. Native controls must verify refusal and truthful readback; successful OS foreground acquisition remains separately unproven."
+      "next_step": "activate_gameplay now requests native window activation and explicitly focuses the gameplay viewport in one action. Plain activate preserves menu focus. Guard/argument refusal, focus readback and live help passed; the final run observed OS foreground success after normal ticks. This is not an OS-policy bypass or guarantee across applications; retain manual fallback and earlier failed foreground evidence in play-activation-review.json.",
+      "evidence": [
+        {
+          "run": "b136a1c5a89a4d078ef1b91842f72198",
+          "result": "passed_existing_workflow_only",
+          "scope": "Build and existing CommonUI scenario passed. Test insertion script had failed before writing; combined-action assertions were not yet present."
+        },
+        {
+          "run": "24a07f577784446394fd30df66cc96f7",
+          "result": "passed",
+          "scope": "Combined action guard and extra-argument refusal, viewport focus and independent readback, live help, existing menu workflow. Foreground yes observed, including settled OS state. Scope passed for 76d1c199."
+        },
+        {
+          "run": "cb42d84bda2446da8e2a3f392ea58701",
+          "result": "passed",
+          "scope": "All 26 offline integration checks."
+        }
+      ]
     },
     {
       "id": "NOV04-24",
