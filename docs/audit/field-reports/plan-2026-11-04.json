@@ -784,7 +784,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reviewed_implementation_pending",
+      "validation": "native_help_failure_repair_pending",
       "source_ids": [
         "GC-79"
       ],
@@ -792,11 +792,16 @@
         "2026-10-30_S3/GC-79"
       ],
       "dependencies": [],
-      "next_step": "Implement explicit Preview/Edit node pin growth by desired total count for Make Array, Sequence and associative operators. Preserve existing links/defaults, reject shrink and unsupported classes, and use no-op semantics when already at target. Then append a base node, grow pins and connect sources. Native three-widget-array workflow remains pending.",
+      "next_step": "Pin-growth candidate implemented in review. First native suite passed graph behavior but failed both generated-help limit assertions. Short description repaired at 301d914e; rerun pending. Do not count implemented review candidate as integrated.",
       "evidence": [
         {
           "result": "source_review",
           "scope": "GraphAppend plans ProbePinNames from the initial factory node; no AddInputPin call exists in append. Stock UK2Node_MakeContainer, ExecutionSequence and CommutativeAssociativeBinaryOperator expose AddInputPin. This confirms the missing growth route, not a reproduced field payload."
+        },
+        {
+          "result": "native_failed",
+          "run": "1caa5c7fe67f4797a4609cac13b700c8",
+          "scope": "Stock build passed. New test verified ordered three-widget array, existing pin/link preservation, preview clean, no-op/refusals, undo, Sequence and operator growth. Both live help assertions failed because the generated description omitted no-shrink guidance. Overall suite failed; repair pending."
         }
       ]
     },
