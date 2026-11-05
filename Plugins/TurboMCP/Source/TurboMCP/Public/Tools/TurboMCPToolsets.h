@@ -631,7 +631,7 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
-    /** Validate a new Blueprint function library at an unused destination. Never overwrites or copies another asset. Preview creates nothing; edit uses the stock factory, which initializes the Blueprint class. No disk save or reliable creation-undo guarantee. Refuses PIE and active transactions.
+    /** Validate a new Blueprint function library at an unused destination; no disk save or overwrite. Never copies another asset. Preview creates nothing; edit uses the stock factory, which initializes the Blueprint class. No disk save or reliable creation-undo guarantee. Refuses PIE and active transactions.
      * @param PackagePath Exact new /Game package path, for example /Game/Utilities/BFL_Purchase. Do not pass an object suffix, filename, short name or existing package. Created assets remain unsaved; save separately after inspection.
      */
     UFUNCTION(meta = (AICallable))
@@ -1475,7 +1475,7 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
-    /** Create a new Blueprint function library at an unused destination. Never overwrites or copies another asset. Preview creates nothing; edit uses the stock factory, which initializes the Blueprint class. No disk save or reliable creation-undo guarantee. Refuses PIE and active transactions.
+    /** Create a new Blueprint function library at an unused destination; no disk save or overwrite. Never copies another asset. Preview creates nothing; edit uses the stock factory, which initializes the Blueprint class. No disk save or reliable creation-undo guarantee. Refuses PIE and active transactions.
      * @param PackagePath Exact new /Game package path, for example /Game/Utilities/BFL_Purchase. Do not pass an object suffix, filename, short name or existing package. Created assets remain unsaved; save separately after inspection.
      */
     UFUNCTION(meta = (AICallable))

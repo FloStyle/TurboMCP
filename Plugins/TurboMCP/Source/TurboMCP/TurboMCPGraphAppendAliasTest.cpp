@@ -505,6 +505,7 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
     {
         const FString Toolset = Tool.StartsWith(TEXT("Preview")) ? TEXT("TurboMCP.TurboMCPPreviewToolset") : TEXT("TurboMCP.TurboMCPEditToolset");
         const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(Toolset, Tool);
+        AddInfo(Help);
         TestTrue(TEXT("library help names exact input and save policy"), Help.Contains(TEXT("PackagePath")) && Help.Contains(TEXT("No disk save")) && Help.Contains(TEXT("/Game/Utilities/BFL_Purchase")));
     }
 
