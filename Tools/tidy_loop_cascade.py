@@ -475,6 +475,13 @@ def record_compact_candidates(call, evidence, persist, comments_only=False):
         row['reader_equal']=row['after_graph']==row['before_graph']
         planned = {identity: dict(x=int(x), y=int(y)) for identity,x,y in
             re.findall(r'^planned (\S+) x=(-?\d+) y=(-?\d+)$', row['preview'], re.M)}
+        resolved = {}
+        for identity, point in planned.items():
+            matches = [full for full in row['after_positions'] if full == identity or full.endswith('.' + identity)]
+            if len(matches) != 1:
+                raise RuntimeError(name+': planned identity is missing or ambiguous: '+identity)
+            resolved[matches[0]] = point
+        planned = resolved
         row['preview_plan_positions'] = planned
         if not planned:
             raise RuntimeError(name+': preview omitted its planned positions')

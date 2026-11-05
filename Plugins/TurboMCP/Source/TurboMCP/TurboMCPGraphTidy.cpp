@@ -1402,6 +1402,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					FNode& N = OutPlan.Nodes[I];
 					if (RowOf[I] != Row || N.bIsPure) continue;
 					int32 Lane = MAX_int32; const FWire* Incoming = nullptr;
+                    TSet<int32> IncomingLanes;
 					for (const FWire& W : OutPlan.Wires)
 						if (W.TargetNodeIndex == I && W.OutputPin && !W.bControlFeedback && W.OutputPin->PinType.PinCategory == TEXT("exec") && LaneOf.Contains(W.SourceNodeIndex))
 						{
@@ -1410,6 +1411,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             if(MainPredecessor.Contains(I) && !Preferred && !SequenceEdge) continue;
                             const int32* ReservedLane=OutputLane.Find(W.OutputPin);
                             const int32 Candidate=ReservedLane?*ReservedLane:LaneOf[W.SourceNodeIndex];
+                            IncomingLanes.Add(Candidate);
                             if(Lane==MAX_int32) {Lane=Candidate;Incoming=&W;}
                             else
                             {
@@ -1418,7 +1420,16 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             }
 						}
 					if (Lane == MAX_int32) Lane = 0;
-					LaneOf.Add(I, Lane);
+                    if (OutPlan.bCompactBlocks && IncomingLanes.Num() > 1)
+                    {
+                        // A join follows its incoming blocks. Reusing their common
+                        // ancestor lane puts the return back above the completed flow.
+                        const int32 JoinLane = NextLane++;
+                        LaneParent.Add(JoinLane, Lane);
+                        LaneSource.Add(JoinLane, I);
+                        Lane = JoinLane;
+                    }
+                    LaneOf.Add(I, Lane);
                     NextLane=FMath::Max(NextLane,Lane+1);
                     // Reserve distinct lanes per fan-out pin once, at the source.
                     // Adding branch indices to the parent lane lets an inner false
@@ -1540,6 +1551,34 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         });
                     }
                     for (int32 Child = Children.Num() - 1; Child >= 0; --Child) PendingLanes.Add(Children[Child]);
+                }
+                if (OutPlan.bCompactBlocks)
+                {
+                    // Keep the nesting preference, but never place a join above
+                    // one of its predecessors. Feedback is not forward ordering.
+                    TArray<int32> PendingOrder = LaneOrder, OrderedLanes;
+                    while (!PendingOrder.IsEmpty())
+                    {
+                        int32 ReadyLane = INDEX_NONE;
+                        for (int32 CandidateLane : PendingOrder)
+                        {
+                            bool bWaiting = false;
+                            for (const FWire& Wire : OutPlan.Wires)
+                                if (!Wire.bControlFeedback && Wire.OutputPin
+                                    && Wire.OutputPin->PinType.PinCategory == TEXT("exec")
+                                    && LaneOf.Contains(Wire.SourceNodeIndex) && LaneOf.Contains(Wire.TargetNodeIndex)
+                                    && LaneOf[Wire.TargetNodeIndex] == CandidateLane
+                                    && LaneOf[Wire.SourceNodeIndex] != CandidateLane
+                                    && PendingOrder.Contains(LaneOf[Wire.SourceNodeIndex]))
+                                { bWaiting = true; break; }
+                            if (!bWaiting) { ReadyLane = CandidateLane; break; }
+                        }
+                        if (ReadyLane == INDEX_NONE) break;
+                        OrderedLanes.Add(ReadyLane);
+                        PendingOrder.RemoveSingle(ReadyLane);
+                    }
+                    OrderedLanes.Append(PendingOrder);
+                    LaneOrder = MoveTemp(OrderedLanes);
                 }
                 TMap<int32,double> InputFloorByLane;
                 double BandTop=RowY;
