@@ -25,7 +25,11 @@
           "result": "source_review_not_crash_reproduction",
           "scope": "Stock Python AssetTools.delete routes to EditorAssetSubsystem::DeleteAsset, which calls ForceDeleteObjects without confirmation (lines 795-814). Original tool and stack remain missing; not a cause claim. Safe-delete design explicitly excludes this convenience route."
         }
-      ]
+      ],
+      "evidence_gap": {
+        "reason": "Original deletion call and crash stack missing; safe checked deletion is implemented separately.",
+        "needed": "Exact tool name and arguments, engine/plugin revision, sanitized crash stack and whether the target was referenced or open. No proprietary asset is needed."
+      }
     },
     {
       "id": "NOV04-02",
@@ -615,7 +619,11 @@
           "result": "passed",
           "scope": "26 offline gates and trusted scope check passed; test-only source 52237e635ea00374f1ced3bd8041790eb0cb25bf."
         }
-      ]
+      ],
+      "evidence_gap": {
+        "reason": "Generic integer-zero controls pass; callback-specific refusal is not reproduced.",
+        "needed": "Exact emitted node type ID, pin name, append text and full refusal text. Do not infer the cause from a passing generic integer control."
+      }
     },
     {
       "id": "NOV04-15",
@@ -1597,7 +1605,8 @@
           "run": "6d4e2328e5f84535b1720d5eab3fa05f",
           "scope": "26 checks; worker scope passed for 9c03aaefc8b14255989c07228e7bd068a2486aaf."
         }
-      ]
+      ],
+      "decision_pending": "User choice requested: accept independently verified StopPIE/IsPIERunning workflow with upstream defect retained, or implement a dedicated plugin stop/status workflow. No engine modification authorized or proposed."
     },
     {
       "id": "NOV04-38",
@@ -1632,7 +1641,11 @@
           "result": "passed",
           "scope": "All 26 offline integration checks; final scope passed."
         }
-      ]
+      ],
+      "evidence_gap": {
+        "reason": "Stock lookup controls pass; original invocation is unavailable.",
+        "needed": "Exact finder/referencer tool name, arguments and returned error; paths may be consistently anonymized while retaining package/object syntax."
+      }
     },
     {
       "id": "NOV04-39",
