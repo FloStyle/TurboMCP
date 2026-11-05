@@ -1212,10 +1212,10 @@
       "title": "Document struct type syntax for local variables",
       "kind": "bug",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_workflow_and_offline_passed",
       "source_ids": [
         "FA-17"
       ],
@@ -1223,7 +1223,29 @@
         "2026-11-04_S1/FA-17"
       ],
       "dependencies": [],
-      "next_step": "Source confirms bare struct paths are supported but local-variable help lacks examples and failure text mentions only classes. Scoped help/diagnostic repair and focused local-variable workflow acceptance approved; native evidence pending."
+      "next_step": "Integrated plain struct-path examples in preview/edit help and actionable type refusal text. Native workflow verifies preview and invalid-prefix preservation plus actual declared native struct identity. No new struct-prefix syntax was introduced.",
+      "evidence": [
+        {
+          "run": "6ae0a8db7d224eb0b1933499df069628",
+          "result": "passed",
+          "scope": "Build and native append suite including local struct creation, identity, preview/refusal preservation and both help outputs."
+        },
+        {
+          "run": "300ce7c552ec4348965c7df6b66a39bf",
+          "result": "failed",
+          "scope": "Offline lookup guard checker did not recognize test assertion guard; replaced with explicit null branch."
+        },
+        {
+          "run": "50a883a61b424d24bbb1b7f871526d31",
+          "result": "failed",
+          "scope": "Stale generated inventory after guard correction; regenerated."
+        },
+        {
+          "run": "5a063205eda34dca928dba78ab72baea",
+          "result": "passed",
+          "scope": "Final 26 offline checks. Source scope passed for ea37e384; subsequent test-only explicit guard reviewed. Native run precedes this equivalent guard rewrite."
+        }
+      ]
     }
   ],
   "priority_order": [

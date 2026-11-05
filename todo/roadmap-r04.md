@@ -2227,3 +2227,5 @@ NOV04-16 integrated: exact quoted whitespace pin rendering/parsing, unchanged en
 ### NOV04-41 local struct syntax
 
 Readiness: ready. Assignment nov04-local-struct-help. Current source accepts bare loadable struct paths in ResolveBare, but local preview/edit help omits them and the failed-resolution diagnostic incorrectly mentions only class paths. Document native and project struct object-path examples without inventing a struct prefix. Improve actionable refusal text. Extend the existing local-variable native fixture to verify preview preservation, accepted native struct path and actual declared struct identity, and unsupported prefixed-form refusal without declaration mutation. Check both public help outputs. Run supervised test-graph-append and the offline gate. No engine edits, saves or syntax expansion.
+
+NOV04-41 integrated: plain struct paths documented and refusal guidance corrected. Native 6ae0a8db7d224eb0b1933499df069628 passed; final offline 5a063205eda34dca928dba78ab72baea passed. Intermediate guard/inventory failures retained in plan evidence. No engine edits or saves.
