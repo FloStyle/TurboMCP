@@ -629,7 +629,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_reconciled_runtime_pending",
+      "validation": "implementation_native_validation_running",
       "source_ids": [
         "PI-04"
       ],
@@ -637,7 +637,7 @@
         "2026-10-30_S1/PI-04"
       ],
       "dependencies": [],
-      "next_step": "Approved nov04-menu-focus: report before/after focus for explicit transfer and document/test existing hold without focus. Verify actual CommonUI menu handling; preserve activation limits and focus-loss cancellation."
+      "next_step": "Candidate 7a137272 adds before/after focus reporting and CommonUI hold-preservation/viewport-transfer assertions. Focused native run 53f70cfd45624b6b9e09795f8db1f36e active. Review caught an incorrect recovery tool name in new output; correct after the active run before integration. No completion claimed."
     },
     {
       "id": "NOV04-23",
