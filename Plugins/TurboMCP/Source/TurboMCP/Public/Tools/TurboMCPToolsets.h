@@ -1249,6 +1249,15 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPVariableFlags(const FString& Asset,const FString& Name,const FString& InstanceEditable,const FString& ExposeOnSpawn,const FString& Private);
 
+    /** Preview a designer widget delegate event; returns pins and an existing/new node ID on edit, without compile or save.
+     * @param Asset Widget Blueprint path or unique name. Loading can execute project callbacks. Requires idle editor and available undo for edits.
+     * @param GraphName Exact owned K2 event graph name. Existing binding in another graph refuses; duplicate matching binding is a clean no-op returning its ID.
+     * @param WidgetName Exact owned designer widget name with Is Variable enabled and matching compiled skeleton property. Compile explicitly first if the property is missing/stale. Inherited widgets refuse.
+     * @param EventName Exact BlueprintAssignable multicast delegate name on the widget class, e.g. OnClicked for UButton; not a display label. Return/writable-output signatures refuse. Connect the new event body separately, then compile and save explicitly. This differs from BindNewEvent on an existing runtime delegate input.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPWidgetEvent(const FString& Asset,const FString& GraphName,const FString& WidgetName,const FString& EventName);
+
 
 
     /**
@@ -2167,6 +2176,15 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPVariableFlags(const FString& Asset,const FString& Name,const FString& InstanceEditable,const FString& ExposeOnSpawn,const FString& Private);
+
+    /** Edit a designer widget delegate event; returns pins and an existing/new node ID on edit, without compile or save.
+     * @param Asset Widget Blueprint path or unique name. Loading can execute project callbacks. Requires idle editor and available undo for edits.
+     * @param GraphName Exact owned K2 event graph name. Existing binding in another graph refuses; duplicate matching binding is a clean no-op returning its ID.
+     * @param WidgetName Exact owned designer widget name with Is Variable enabled and matching compiled skeleton property. Compile explicitly first if the property is missing/stale. Inherited widgets refuse.
+     * @param EventName Exact BlueprintAssignable multicast delegate name on the widget class, e.g. OnClicked for UButton; not a display label. Return/writable-output signatures refuse. Connect the new event body separately, then compile and save explicitly. This differs from BindNewEvent on an existing runtime delegate input.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPWidgetEvent(const FString& Asset,const FString& GraphName,const FString& WidgetName,const FString& EventName);
 
 
 
