@@ -315,10 +315,10 @@
       "title": "Improve operator, variable and dispatcher type discovery",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
+      "validation": "source_reconciled_runtime_pending",
       "source_ids": [
         "NT-12",
         "NT-14",
@@ -330,7 +330,7 @@
         "2026-11-03_S4/NT-15"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Current discovery includes stable variable member IDs and action-menu keywords; historical failures may be partially addressed. Fresh fixture will verify member-name/getter/setter search and actual returned identity, then arithmetic aliases and dispatcher ownership separately. No subtopic closed from source alone."
     },
     {
       "id": "NOV04-10",

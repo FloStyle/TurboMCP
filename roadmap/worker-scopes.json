@@ -3467,6 +3467,16 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPIntegerDefaultTest.cpp"
           ]
+        },
+        "nov04-node-discovery": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeDiscoveryTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
