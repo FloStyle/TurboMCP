@@ -1351,9 +1351,9 @@
       "title": "Reconcile graph reader JSON format expectations",
       "kind": "feature",
       "priority": "P3",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
       "validation": "source_reviewed_gap_confirmed",
       "source_ids": [
         "GL-27"
@@ -1362,7 +1362,7 @@
         "2026-11-03_S1/GL-27"
       ],
       "dependencies": [],
-      "next_step": "GraphLoad explicitly accepts only read; report requests JSON parity with BlueprintLoad. Genuine format feature gap, not a crash or proven regression. Remains open after higher-priority widget workflow requirements."
+      "next_step": "Implement scoped GraphLoad JSON envelope using the existing graph text writer, preserving body fidelity, independently valid JSON pages, revision checks and limitation fields. No alternate node dialect or write-back claim."
     },
     {
       "id": "NOV04-33",
