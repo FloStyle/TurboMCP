@@ -631,6 +631,14 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+    /** Validate a new Blueprint function library at an unused destination. Never overwrites or copies another asset. Preview creates nothing; edit uses the stock factory, which initializes the Blueprint class. No disk save or reliable creation-undo guarantee. Refuses PIE and active transactions.
+     * @param PackagePath Exact new /Game package path, for example /Game/Utilities/BFL_Purchase. Do not pass an object suffix, filename, short name or existing package. Created assets remain unsaved; save separately after inspection.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPFunctionLibraryCreate(const FString& PackagePath);
+
+
+public:
     /** Validate a scoped PIE runtime call without executing it. Reference-bearing parameters, RPCs and latent functions are refused. No save or undo guarantee.
      * @param WorldPath Exact current PIE world object path.
      * @param ObjectPath Exact existing runtime object path in that world; local-player subsystems are supported.
@@ -1465,6 +1473,14 @@ UCLASS()
 class UTurboMCPEditToolset : public UToolsetDefinition
 {
 	GENERATED_BODY()
+
+public:
+    /** Create a new Blueprint function library at an unused destination. Never overwrites or copies another asset. Preview creates nothing; edit uses the stock factory, which initializes the Blueprint class. No disk save or reliable creation-undo guarantee. Refuses PIE and active transactions.
+     * @param PackagePath Exact new /Game package path, for example /Game/Utilities/BFL_Purchase. Do not pass an object suffix, filename, short name or existing package. Created assets remain unsaved; save separately after inspection.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPFunctionLibraryCreate(const FString& PackagePath);
+
 
 public:
     /** Validate a scoped PIE runtime call and execute it once with preview confirmation. Reference-bearing parameters, RPCs and latent functions are refused. No save or undo guarantee.

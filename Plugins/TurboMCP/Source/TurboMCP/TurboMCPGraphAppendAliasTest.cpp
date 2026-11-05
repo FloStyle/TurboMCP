@@ -33,6 +33,7 @@
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Misc/Guid.h"
@@ -471,6 +472,27 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 {
+    // NOV04-40: create a real library without copying another Blueprint.
+    const FString LibraryPackage = TEXT("/Game/Tests/LibraryCreate_") + FGuid::NewGuid().ToString(EGuidFormats::Digits);
+    const FString LibraryName = LibraryPackage.Mid(LibraryPackage.Find(TEXT("/"), ESearchCase::CaseSensitive, ESearchDir::FromEnd) + 1);
+    const FString LibraryObject = LibraryPackage + TEXT(".") + LibraryName;
+    TestTrue(TEXT("library preview"), UTurboMCPPreviewToolset::PreviewTurboMCPFunctionLibraryCreate(LibraryPackage).Contains(TEXT("preview:")));
+    TestNull(TEXT("preview creates no package"), FindPackage(nullptr, *LibraryPackage));
+    TestTrue(TEXT("invalid library path refused"), UTurboMCPEditToolset::EditTurboMCPFunctionLibraryCreate(TEXT("/Engine/NotAllowed")).Contains(TEXT("refused:")));
+    TestTrue(TEXT("library creation changed"), UTurboMCPEditToolset::EditTurboMCPFunctionLibraryCreate(LibraryPackage).StartsWith(TEXT("changed")));
+    UBlueprint* Library = FindObject<UBlueprint>(nullptr, *LibraryObject);
+    TestNotNull(TEXT("created library exists"), Library);
+    if (Library)
+    {
+        TestEqual(TEXT("library Blueprint type"), Library->BlueprintType, BPTYPE_FunctionLibrary);
+        TestTrue(TEXT("library parent"), Library->ParentClass == UBlueprintFunctionLibrary::StaticClass());
+        TestNotNull(TEXT("library generated class"), Library->GeneratedClass.Get());
+        TestTrue(TEXT("library remains unsaved"), Library->GetOutermost()->IsDirty());
+        TestEqual(TEXT("no copied event graph"), Library->UbergraphPages.Num(), 0);
+        TestTrue(TEXT("duplicate library refuses"), UTurboMCPEditToolset::EditTurboMCPFunctionLibraryCreate(LibraryPackage).Contains(TEXT("refused:")));
+        TestTrue(TEXT("duplicate preserves identity"), FindObject<UBlueprint>(nullptr, *LibraryObject) == Library);
+    }
+
 
     // The graph-text escape layer must preserve Unreal's inner struct syntax exactly.
     const TArray<FString> LiteralCases = {
