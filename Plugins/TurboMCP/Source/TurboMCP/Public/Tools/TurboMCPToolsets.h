@@ -864,6 +864,13 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
+    /** Remove one unused Blueprint-owned member variable after reference inspection; never deletes graph nodes intentionally. Inspection loads dependent Blueprints and may run callbacks. Refuses referenced/inherited/generated variables and incomplete inspection. Dynamic/native/string references are outside proof. No save; structural refresh can compile dependencies and invalidate undo.
+     * @param Asset Exact Blueprint asset path or unique name; prefer the full path.
+     * @param Name Exact case-sensitive owned member name, not a local or widget-generated variable.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPVariableRemove(const FString& Asset, const FString& Name);
+
 
 	/**
 	 * Preview an event or function override; loads the Blueprint and inspects editor metadata without creating the override, compiling or saving.
@@ -1654,6 +1661,14 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
+    /** Remove one unused Blueprint-owned member variable after reference inspection; never deletes graph nodes intentionally. Inspection loads dependent Blueprints and may run callbacks. Refuses referenced/inherited/generated variables and incomplete inspection. Dynamic/native/string references are outside proof. No save; structural refresh can compile dependencies and invalidate undo.
+     * @param Asset Exact Blueprint asset path or unique name; prefer the full path.
+     * @param Name Exact case-sensitive owned member name, not a local or widget-generated variable.
+     * @param Confirm Copy the confirm token from preview. Missing or stale tokens refuse; references are checked again.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPVariableRemove(const FString& Asset, const FString& Name, const FString& Confirm);
+
 
     /**
      * Validate and set one widget or parent-slot value property; returns before/after values.
