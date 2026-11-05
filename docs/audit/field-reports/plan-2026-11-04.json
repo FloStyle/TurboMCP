@@ -1463,10 +1463,10 @@
       "title": "Review scoped tidy comment and boundary-wire limitations",
       "kind": "feature",
       "priority": "P3",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "source_reviewed_intentional_guards_feature_pending",
+      "state": "done",
+      "readiness": "ready",
+      "owner": "codex",
+      "validation": "reconciled_existing_native_workflow",
       "source_ids": [
         "TD-54"
       ],
@@ -1474,12 +1474,22 @@
         "2026-11-03_S1/TD-54"
       ],
       "dependencies": [],
-      "next_step": "Current tidy explicitly rejects partial comment membership and excessive fixed-boundary wire growth; Force does not bypass either guard. Report confirms both messages were actionable. Preserve safeguards; investigate an explicit placement workflow for moving the selected chain without moving unselected comment contents. Feature remains open; no new native reproduction or repair claimed.",
+      "next_step": "Use PreviewTurboMCPGraphGroupMove then EditTurboMCPGraphGroupMove with exact selected node IDs and explicit offsets to move a chain away from fixed neighbors. This existing rigid-translation workflow preserves links and internal spacing, checks collisions and comment membership, and reports wire-length changes without applying tidy boundary-growth limits. Keep the partially selected comment node fixed, or select the whole comment group. PreviewTurboMCPGraphGroupPlacement suggests shorter feasible positions; it is not the route for deliberately increasing separation. Tidy guards remain intentional. No new algorithm or exact private 19-node reproduction claimed.",
       "source_review": [
         "TurboMCPGraphTidy.cpp:222-262: individual and aggregate boundary growth limits independent of Force",
         "TurboMCPGraphTidy.cpp:1780: partial comment refusal advises whole comment selection or @unboxed",
         "TurboMCPGraphTidy.cpp:2065-2164: existing per-component boundary anchoring and candidate safety checks",
         "TurboMCPGraphTidyTools.cpp:367-368: explicit position edits also preserve unselected comment boundaries"
+      ],
+      "evidence": [
+        {
+          "run": "728581bb16714ddc848bfeddb65a96a4",
+          "result": "existing_native_pass_reconciled",
+          "scope": "Read the retained execution report and current GroupMovement fixture: explicit 600-unit translation preserves internal/boundary links and outside position; collision and partial-comment entry refuse. Existing visual acceptance and limitations are recorded in docs/audit/graph-group-review.json. No new test run or screenshot claimed."
+        }
+      ],
+      "followups": [
+        "Rigid movement does not tidy internal node spacing or guarantee short rendered wires. Preview estimated wire changes and inspect a graph capture before saving."
       ]
     },
     {
