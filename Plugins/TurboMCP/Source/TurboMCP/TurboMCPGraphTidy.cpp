@@ -4298,11 +4298,12 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
         for(const FObstacle& Obstacle:Obstacles)
             if(Obstacle.NodeIndex!=SourceObstacleIndex && Obstacle.NodeIndex!=Wire.TargetNodeIndex && Crosses(A,B,Obstacle)) { bBlocked=true; break; }
         const double DX=FMath::Abs(B.X-A.X),DY=FMath::Abs(B.Y-A.Y);
-        if(!bBlocked && !(FVector2D::Distance(A,B)>800 && DX>1 && DY>1)) continue;
+        const bool bExecutionHandoff=Wire.OutputPin->PinType.PinCategory==TEXT("exec") && DY>16;
+        if(!bBlocked && !bExecutionHandoff && !(FVector2D::Distance(A,B)>800 && DX>1 && DY>1)) continue;
         TArray<TArray<FVector2D>> Candidates;
         const FVector2D OffsetDelta=OutputOffset-InputOffset;
         // Two knots form an exact vertical segment despite their distinct pins.
-        for(double X:{A.X+Clearance,B.X-Clearance-OffsetDelta.X})
+        for(double X:{A.X+Clearance,A.X+Clearance*0.5,A.X+Clearance*2,B.X-Clearance-OffsetDelta.X})
             Candidates.Add({FVector2D(X,A.Y)-InputOffset,FVector2D(X+OffsetDelta.X,B.Y-OffsetDelta.Y)-InputOffset});
         TArray<double> Channels{FMath::Min(A.Y,B.Y)-Clearance,FMath::Max(A.Y,B.Y)+Clearance};
         for(const FObstacle& Obstacle:Obstacles)
@@ -4315,7 +4316,15 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
             const FVector2D P3=FVector2D((P2+OutputOffset).X,B.Y-OffsetDelta.Y)-InputOffset;
             Candidates.Add({P0,P1,P2,P3});
         }
+        int32 BestCrossings=MAX_int32;
         double BestLength=TNumericLimits<double>::Max();
+        auto ProperCrossing=[](const FVector2D& P,const FVector2D& Q,const FVector2D& R,const FVector2D& S)
+        {
+            auto Cross=[](const FVector2D& U,const FVector2D& V){return U.X*V.Y-U.Y*V.X;};
+            const double C0=Cross(Q-P,R-P),C1=Cross(Q-P,S-P),C2=Cross(S-R,P-R),C3=Cross(S-R,Q-R);
+            return ((C0>0.001 && C1<-0.001)||(C0<-0.001 && C1>0.001))
+                && ((C2>0.001 && C3<-0.001)||(C2<-0.001 && C3>0.001));
+        };
         for(TArray<FVector2D> Candidate:Candidates)
         {
             // Evaluate the integer coordinates that Unreal will actually store.
@@ -4330,7 +4339,7 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
                 Position.Y=FMath::RoundToDouble(Position.Y);
             }
             if(!bRepresentable) continue;
-            bool bClear=true; double Length=0; FVector2D Previous=A;
+            bool bClear=true; int32 Crossings=0; double Length=0; FVector2D Previous=A;
             for(int32 I=0;I<=Candidate.Num() && bClear;++I)
             {
                 const FVector2D Next=I<Candidate.Num()?Candidate[I]+InputOffset:B;
@@ -4348,6 +4357,22 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
                     if((I==0 && Obstacle.NodeIndex==SourceObstacleIndex) || (I==Candidate.Num() && Obstacle.NodeIndex==Wire.TargetNodeIndex)) continue;
                     if(Crosses(Previous,Next,Obstacle)) { bClear=false; break; }
                 }
+                // Prefer channels that do not cross other execution paths.
+                // Previously shortest-path selection could introduce a crossing
+                // while avoiding a node, especially on Sequence lower outputs.
+                if(Wire.OutputPin->PinType.PinCategory==TEXT("exec"))
+                    for(int32 OtherIndex=0;OtherIndex<Plan.Wires.Num();++OtherIndex)
+                    {
+                        if(OtherIndex==WireIndex) continue;
+                        const FWire& Other=Plan.Wires[OtherIndex];
+                        if(!Other.OutputPin || !Other.InputPin || Other.OutputPin->PinType.PinCategory!=TEXT("exec")
+                            || !Plan.Nodes.IsValidIndex(Other.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(Other.TargetNodeIndex)) continue;
+                        const FNode& OS=Plan.Nodes[Other.SourceNodeIndex]; const FNode& OT=Plan.Nodes[Other.TargetNodeIndex];
+                        const FVector2D OA=AlignmentPinPosition(Other.OutputPin)+FVector2D(OS.PlannedX-OS.X,OS.PlannedY-OS.Y);
+                        const FVector2D OB=AlignmentPinPosition(Other.InputPin)+FVector2D(OT.PlannedX-OT.X,OT.PlannedY-OT.Y);
+                        for(const auto& Segment:TidyWireSegments(Plan,OtherIndex,1,OA,OB))
+                            if(ProperCrossing(Previous,Next,Segment.Key,Segment.Value)) ++Crossings;
+                    }
                 Length+=FVector2D::Distance(Previous,Next);
                 if(I<Candidate.Num())
                 {
@@ -4364,7 +4389,8 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
                     Previous=P+OutputOffset;
                 }
             }
-            if(bClear && Length<BestLength) { BestLength=Length; Route.KnotPositions=Candidate; }
+            if(bClear && (Crossings<BestCrossings || (Crossings==BestCrossings && Length<BestLength)))
+            { BestCrossings=Crossings; BestLength=Length; Route.KnotPositions=Candidate; }
         }
         Route.bSkipped=Route.KnotPositions.IsEmpty();
         Route.Reason=Route.bSkipped?TEXT("No collision-free orthogonal candidate; original wire retained."):TEXT("Measured orthogonal channel; preserves the original logical connection.");
