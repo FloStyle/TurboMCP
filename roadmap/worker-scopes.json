@@ -3531,6 +3531,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "nov04-analog-menu-help": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

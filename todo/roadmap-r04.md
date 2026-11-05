@@ -2234,3 +2234,8 @@ NOV04-41 integrated: plain struct paths documented and refusal guidance correcte
 ### NOV04-24 analog menu reproduction
 
 Readiness: ready. Assignment nov04-analog-menu-reproduction. Current input code forwards analog events through Slate; stock navigation uses Gamepad_LeftY below -0.5 for Down. Extend the owned CommonUI PIE menu workflow with a -1 axis hold for 0.3 seconds and assert the actual focused Resume row, then return using D-pad Up. Preserve existing D-pad and focus-loss checks. Record accepted input separately from observed navigation. Run the supervised vision suite with TMCP_COMMON_PLAY_ONLY=1. Test-only until a failure or observed contract establishes a repair; no engine modifications or user assets.
+
+
+### NOV04-24 verified analog guidance
+
+Readiness: ready. Assignment nov04-analog-menu-help. Native efdf3c8fa7b74866bbecb543d8d73bf9 proves stock CommonUI navigation with Gamepad_LeftY=-1 for 0.3 seconds; original failure cause is unknown. Document the verified example, stock axis direction and threshold, current menu focus requirement, project navigation/preprocessor variability and actual focus verification. Do not promise one row per hold or claim all projects accept analog input. Add live help assertions in the same CommonUI workflow. No input routing or engine changes. Run supervised commonui vision scenario and offline gates.
