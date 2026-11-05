@@ -2701,15 +2701,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			{ OutError = FString::Printf(TEXT("tidy would move node %s outside comment %s; unchanged. Include @unboxed with nodeIds to tidy only unboxed nodes and leave boxed continuations fixed."), *N.Key, *Box.Key); return false; }
 		}
 
-    for (int32 A=0; A<OutPlan.Nodes.Num(); ++A)
-    for (int32 B=A+1; B<OutPlan.Nodes.Num(); ++B)
-    {
-        const FNode& L=OutPlan.Nodes[A]; const FNode& R=OutPlan.Nodes[B];
-        if (L.bIsComment || R.bIsComment) continue;
-        const bool Moved=L.PlannedX!=L.X || L.PlannedY!=L.Y || R.PlannedX!=R.X || R.PlannedY!=R.Y;
-        if (Moved && L.PlannedX<R.PlannedX+R.Width && L.PlannedX+L.Width>R.PlannedX && L.PlannedY<R.PlannedY+R.Height && L.PlannedY+L.Height>R.PlannedY)
-        { OutError=TEXT("planned tidy overlaps node rectangles; unchanged. Use a smaller group."); return false; }
-    }
+    if (!ValidatePlannedNodeOverlaps(OutPlan, OutError)) return false;
+
 	// How many nodes and boxes the plan would actually change.
 	for (const FNode& Entry : OutPlan.Nodes)
 	{
@@ -3365,4 +3358,25 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	Lines.Add(TEXT("Changes are in memory only. Use EditTurboMCPSave when ready to save the asset."));
 
 	return FString::Join(Lines, TEXT("\n"));
+}
+
+// Reject newly planned intersections without changing the live graph or plan.
+bool FTurboMCPGraphTidy::ValidatePlannedNodeOverlaps(const FPlan& InPlan, FString& OutError)
+{
+    OutError.Reset();
+    for (int32 A=0; A<InPlan.Nodes.Num(); ++A)
+    for (int32 B=A+1; B<InPlan.Nodes.Num(); ++B)
+    {
+        const FNode& L=InPlan.Nodes[A]; const FNode& R=InPlan.Nodes[B];
+        if (L.bIsComment || R.bIsComment) continue;
+        const bool Moved=L.PlannedX!=L.X || L.PlannedY!=L.Y || R.PlannedX!=R.X || R.PlannedY!=R.Y;
+        if (Moved && L.PlannedX<R.PlannedX+R.Width && L.PlannedX+L.Width>R.PlannedX && L.PlannedY<R.PlannedY+R.Height && L.PlannedY+L.Height>R.PlannedY)
+        {
+            OutError = FString::Printf(TEXT("Planned tidy overlaps node rectangles; nothing changed.\nnode_a: %s; planned rectangle: x=%.1f y=%.1f width=%.1f height=%.1f\nnode_b: %s; planned rectangle: x=%.1f y=%.1f width=%.1f height=%.1f\nInspect these node IDs with LookTurboMCPGraphPositions or LookTurboMCPLayoutReport. Try a smaller tidy selection around the conflicting nodes. This is the first detected pair, not a complete overlap list."),
+                *L.Key, L.PlannedX, L.PlannedY, L.Width, L.Height,
+                *R.Key, R.PlannedX, R.PlannedY, R.Width, R.Height);
+            return false;
+        }
+    }
+    return true;
 }

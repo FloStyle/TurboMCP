@@ -258,6 +258,9 @@ public:
 	/** What the pass would do, and both numbers, without touching the graph. */
 	static FString RenderPreview(const FPlan& InPlan);
 
+    /** Refuse the first moved non-comment pair with intersecting planned rectangles. Unmoved overlaps are preserved. Does not mutate the plan or graph. */
+    static bool ValidatePlannedNodeOverlaps(const FPlan& InPlan, FString& OutError);
+
 	/** Moves the nodes, fits the boxes, and rolls back what it created when the result is not better. */
 	static FString Apply(const FPlan& InPlan);
 };
