@@ -3625,6 +3625,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableFlagsEdit.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableFlagsEditTest.cpp"
           ]
+        },
+        "nov04-input-state-compact": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

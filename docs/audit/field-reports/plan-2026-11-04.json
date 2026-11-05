@@ -1058,10 +1058,10 @@
       "title": "Make play input state output compact and filterable",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "codex",
+      "validation": "source_reviewed_implementation_pending",
       "source_ids": [
         "PI-10"
       ],
@@ -1069,7 +1069,7 @@
         "2026-11-04_S1/PI-10"
       ],
       "dependencies": [],
-      "next_step": "Compare current implementation and live help, then reproduce with generic project-owned fixtures; preserve the reported outcome and any failed run."
+      "next_step": "Implement bounded default button output, path filtering, summary-only limit zero and diagnostic-first ordering under nov04-input-state-compact. Current reader caps at 64 but lists buttons before key diagnostic sections."
     },
     {
       "id": "NOV04-27",
@@ -1157,7 +1157,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_reviewed_gap_confirmed",
       "source_ids": [
         "X-122",
         "FT-137"
@@ -1167,7 +1167,7 @@
         "2026-11-03_S3/FT-137"
       ],
       "dependencies": [],
-      "next_step": "Check current BindEvent/BindNewEvent/Override tools before implementing new widget event binding; reported absence is not proof of missing capability."
+      "next_step": "No TurboMCP reparent implementation found. BindNewEvent requires an existing delegate input and is not a designer widget-event binding tool. Both requested capabilities remain open; do not count the existing runtime delegate helper as resolution."
     },
     {
       "id": "NOV04-30",
