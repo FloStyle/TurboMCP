@@ -446,6 +446,20 @@ def read_complete_graph(call, asset, graph):
             return ''.join(bodies)
 
 
+def read_compact_measures(text, context):
+    """Read the documented score table; absent or invalid values are failures."""
+    names = ('unrelated box crossings', 'execution segment crossings',
+             'diagonal execution length', 'within-block row breaks',
+             'data segment crossings', 'total segment length', 'bounding area')
+    result = {}
+    for name in names:
+        matches = re.findall(r'^' + re.escape(name) + r': ([0-9]+(?:\.[0-9]+)?) -> ([0-9]+(?:\.[0-9]+)?)(?:;[^\n]*)?$', text, re.M)
+        if len(matches) != 1:
+            raise RuntimeError(context + ': expected exactly one compact measure: ' + name)
+        result[name] = dict(before=float(matches[0][0]), after=float(matches[0][1]))
+    return result
+
+
 def record_compact_candidates(call, evidence, persist, comments_only=False):
     """Retain failures and verify read-back/undo; visual acceptance is separate."""
     cases = [('cascade', evidence['asset'], 'LoopCascade', []),
@@ -465,15 +479,7 @@ def record_compact_candidates(call, evidence, persist, comments_only=False):
         args=dict(asset=asset,graphName=graph,bForce=False,nodeIds=selection,mainPath='',
                   horizontalGap=120.0,verticalGap=100.0,lanePitch=280.0,wrapAfter='',layoutMode='blocks')
         row['preview']=call('PreviewTurboMCPGraphTidy',**args)
-        measures = ('unrelated box crossings', 'execution segment crossings',
-                    'diagonal execution length', 'within-block row breaks',
-                    'data segment crossings', 'total segment length', 'bounding area')
-        row['compact_measures'] = {}
-        for measure in measures:
-            match = re.search(r'^' + re.escape(measure) + r': ([0-9.]+) -> ([0-9.]+)', row['preview'], re.M)
-            if not match:
-                raise RuntimeError(name + ': compact preview omitted measure ' + measure)
-            row['compact_measures'][measure] = dict(before=float(match.group(1)), after=float(match.group(2)))
+        row['compact_measures'] = read_compact_measures(row['preview'], name + ' preview')
         row['after_preview_positions']=read_positions(call,asset,graph)
         row['after_preview_graph']=read_complete_graph(call,asset,graph)
         if row['after_preview_positions'] != row['before_positions'] or row['after_preview_graph'] != row['before_graph']:
@@ -516,6 +522,12 @@ def record_compact_candidates(call, evidence, persist, comments_only=False):
         if not planned:
             raise RuntimeError(name+': preview omitted its planned positions')
         if row['edit'].startswith('changed:'):
+            row['edit_compact_measures'] = read_compact_measures(row['edit'], name + ' edit')
+            row['preview_edit_score_mismatches'] = [measure for measure, values in row['compact_measures'].items()
+                if row['edit_compact_measures'][measure] != values]
+            persist()
+            if row['preview_edit_score_mismatches']:
+                raise RuntimeError(name + ': preview/edit score mismatch: ' + ', '.join(row['preview_edit_score_mismatches']))
             # Force is false in this scenario. Retain every regressed measure,
             # including a zero-to-positive change; never accept a passing rerun
             # as evidence that the earlier regression disappeared.
