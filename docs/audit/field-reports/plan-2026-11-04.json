@@ -1228,6 +1228,16 @@
           "Reparenting remains open",
           "Runtime click delivery and saved/reloaded bindings not covered"
         ]
+      },
+      "reparent_source_review": {
+        "engine": "stock pinned 5.8.3",
+        "source": "Engine/Source/Editor/Kismet/Private/BlueprintEditor.cpp:3593-3713",
+        "findings": [
+          "Native editor warns about overlapping implemented interfaces and potential data loss when the new parent is outside the current parent hierarchy.",
+          "Native path modifies Blueprint and construction-script nodes, preserves namespace imports, refreshes nodes, conforms sparse class data, compiles, and refreshes editor subobjects.",
+          "Assigning ParentClass alone is not equivalent to the native reparent operation; no such shortcut is accepted."
+        ],
+        "remaining": "Define explicit preview and execution consent for reparent compilation/reinstancing, then validate a disposable UserWidget-to-CommonActivatableWidget workflow and incompatible-parent refusal. No reparent implementation or acceptance claimed."
       }
     },
     {
