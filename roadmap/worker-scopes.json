@@ -3557,6 +3557,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemoveTest.cpp"
           ]
+        },
+        "nov04-pie-stop-repro": {
+          "files": [
+            "Tools/test-vision-workflow.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPIEStopWorkflowTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
