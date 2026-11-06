@@ -20,8 +20,14 @@
 #include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetArrayLibrary.h"
+#include "K2Node_CallArrayFunction.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_Knot.h"
+#include "K2Node_MacroInstance.h"
+#include "K2Node_IfThenElse.h"
+#include "K2Node_ExecutionSequence.h"
+#include "K2Node_FunctionResult.h"
 #include "K2Node_Variable.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
@@ -260,6 +266,156 @@ namespace
         return true;
     }
 
+    bool StockLoopValue(const UEdGraphNode* Node, const UEdGraphPin* Output)
+    {
+        const UK2Node_MacroInstance* Macro = Cast<UK2Node_MacroInstance>(Node);
+        const UEdGraph* Definition = Macro ? Macro->GetMacroGraph() : nullptr;
+        if (!Definition || Definition->GetOutermost()->GetName() != TEXT("/Engine/EditorBlueprintResources/StandardMacros")) return false;
+        const FString Name = Definition->GetName();
+        return Output && ((Output->PinName == TEXT("Index") && (Name == TEXT("ForLoop") || Name == TEXT("ForLoopWithBreak")))
+            || (Output->PinName == TEXT("Array Index")
+                && (Name == TEXT("ForEachLoop") || Name == TEXT("ForEachLoopWithBreak"))));
+    }
+
+    // Conservative execution proof: removing this output must make every read
+    // unreachable from entry, and Completed must never reach a captured read.
+    bool BodyCaptureIsSafe(UEdGraph* Graph, const UK2Node_FunctionEntry* Entry,
+        UEdGraphNode* Loop, UEdGraphPin* Value, FString& Why)
+    {
+        UEdGraphPin* Body = Loop->FindPin(TEXT("LoopBody"), EGPD_Output);
+        UEdGraphPin* Completed = Loop->FindPin(TEXT("Completed"), EGPD_Output);
+        if (!Entry || !Body || Body->LinkedTo.Num() != 1 || !Completed)
+        { Why = TEXT("loop capture requires one connected body successor and a Completed output"); return false; }
+        auto Reach = [&](UEdGraphNode* Start, const UEdGraphPin* Omit, const UEdGraphPin* Only)
+        {
+            TSet<UEdGraphNode*> Seen; TArray<UEdGraphNode*> Pending{Start};
+            while (!Pending.IsEmpty())
+            {
+                UEdGraphNode* Current = Pending.Pop(EAllowShrinking::No);
+                if (!Current || Seen.Contains(Current)) continue;
+                Seen.Add(Current);
+                for (UEdGraphPin* Pin : Current->Pins)
+                    if (Pin && Pin != Omit && (!Only || Current != Start || Pin == Only)
+                        && Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                        for (UEdGraphPin* Link : Pin->LinkedTo)
+                            if (Link)
+                            {
+                                const UK2Node_MacroInstance* Macro=Cast<UK2Node_MacroInstance>(Link->GetOwningNode());
+                                const UEdGraph* Definition=Macro?Macro->GetMacroGraph():nullptr;
+                                const bool Feedback=Definition && Definition->GetOutermost()->GetName()==TEXT("/Engine/EditorBlueprintResources/StandardMacros")
+                                    && ((Link->PinName==TEXT("Break") && (Definition->GetName()==TEXT("ForLoopWithBreak") || Definition->GetName()==TEXT("ForEachLoopWithBreak")))
+                                        || (Link->PinName==TEXT("Reset") && Definition->GetName()==TEXT("DoOnce")));
+                                if (!Feedback) Pending.Add(Link->GetOwningNode());
+                            }
+            }
+            return Seen;
+        };
+        const TSet<UEdGraphNode*> Outside = Reach(const_cast<UK2Node_FunctionEntry*>(Entry), Body, nullptr);
+        const TSet<UEdGraphNode*> Inside = Reach(Loop, nullptr, Body);
+        const TSet<UEdGraphNode*> After = Reach(Loop, nullptr, Completed);
+        TArray<UEdGraphPin*> Pending{Value}; TSet<UEdGraphPin*> Seen;
+        int32 Reads = 0;
+        while (!Pending.IsEmpty())
+        {
+            UEdGraphPin* Output = Pending.Pop(EAllowShrinking::No);
+            if (!Output || Seen.Contains(Output)) continue;
+            Seen.Add(Output);
+            for (UEdGraphPin* Input : Output->LinkedTo)
+            {
+                UEdGraphNode* Consumer = Input ? Input->GetOwningNode() : nullptr;
+                UK2Node* K2 = Cast<UK2Node>(Consumer);
+                if (!K2 || Consumer->GetGraph() != Graph || Input->PinType.bIsReference)
+                { Why = TEXT("a captured value has an invalid or reference consumer"); return false; }
+                if (K2->IsNodePure())
+                {
+                    for (UEdGraphPin* Pin : K2->Pins) if (Pin && Pin->Direction == EGPD_Output && IsDataPin(Pin)) Pending.Add(Pin);
+                }
+                else
+                {
+                    ++Reads;
+                    if (!Inside.Contains(Consumer) || Outside.Contains(Consumer) || After.Contains(Consumer))
+                    { Why = TEXT("a transitive execution consumer is not dominated by LoopBody or can read after Completed"); return false; }
+                }
+            }
+        }
+        if (!Reads) { Why = TEXT("no execution consumer establishes the value lifetime"); return false; }
+        // Unknown macros and latent calls may retain/reenter the body. Nested
+        // stock loops remain synchronous and are covered by the reachability proof.
+        for (UEdGraphNode* Node : Inside)
+        {
+            if (Node == Loop || Outside.Contains(Node) || After.Contains(Node)) continue;
+            if (!Node->IsA<UK2Node_CallFunction>() && !Node->IsA<UK2Node_VariableSet>() && !Node->IsA<UK2Node_IfThenElse>()
+                && !Node->IsA<UK2Node_ExecutionSequence>() && !Node->IsA<UK2Node_Knot>() && !Node->IsA<UK2Node_MacroInstance>() && !Node->IsA<UK2Node_FunctionResult>())
+            { Why=TEXT("the loop body contains an unreviewed execution lifetime"); return false; }
+            if (const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
+                if (!Call->GetTargetFunction() || Call->GetTargetFunction()->HasMetaData(TEXT("Latent")))
+                { Why = TEXT("the loop body contains a latent or unresolved call"); return false; }
+            if (const UK2Node_MacroInstance* Macro = Cast<UK2Node_MacroInstance>(Node))
+            {
+                const UEdGraph* Definition = Macro->GetMacroGraph();
+                const FString Name = Definition ? Definition->GetName() : FString();
+                if (!Definition || Definition->GetOutermost()->GetName() != TEXT("/Engine/EditorBlueprintResources/StandardMacros")
+                    || (Name != TEXT("ForLoop") && Name != TEXT("ForLoopWithBreak") && Name != TEXT("ForEachLoop") && Name != TEXT("ForEachLoopWithBreak")))
+                { Why = TEXT("the loop body contains an unreviewed macro lifetime"); return false; }
+            }
+        }
+        return true;
+    }
+
+    bool IsArrayCount(const UEdGraphNode* Node)
+    {
+        const UK2Node_CallFunction* Call=Cast<UK2Node_CallFunction>(Node);
+        const UFunction* Function=Call?Call->GetTargetFunction():nullptr;
+        return Function && Function->GetOuterUClass()==UKismetArrayLibrary::StaticClass()
+            && Function->GetFName()==TEXT("Array_Length") && Function->HasAllFunctionFlags(FUNC_Native|FUNC_Static|FUNC_BlueprintPure);
+    }
+
+    // Num reads only container length (stock GenericArray_Length). Capture only a
+    // by-value function input whose direct aliases are read exclusively by Num,
+    // reroutes and reviewed stock foreach macros. Unknown/mutable aliases refuse.
+    bool StableInputArrayCount(UEdGraph* Graph,const UK2Node_FunctionEntry* Entry,UEdGraphNode* Node,FString& Why)
+    {
+        UEdGraphPin* Input=Node->FindPin(TEXT("TargetArray"),EGPD_Input);
+        if (!Entry || !Input || Input->LinkedTo.Num()!=1 || !Input->LinkedTo[0])
+        { Why=TEXT("array count requires one direct function-input array source"); return false; }
+        UEdGraphPin* Source=Input->LinkedTo[0]; FName Parameter;
+        auto IsParameterGetter=[&](const UK2Node_VariableGet* Getter,FName Name)
+        { return Getter && Getter->VariableReference.IsLocalScope() && Getter->VariableReference.GetMemberScopeName()==Graph->GetName() && Getter->GetVarName()==Name; };
+        if (Source->GetOwningNode()==Entry) Parameter=Source->PinName;
+        else if (const UK2Node_VariableGet* Getter=Cast<UK2Node_VariableGet>(Source->GetOwningNode()))
+        { if (IsParameterGetter(Getter,Getter->GetVarName())) Parameter=Getter->GetVarName(); }
+        UEdGraphPin* ParameterPin=Parameter.IsNone()?nullptr:Entry->FindPin(Parameter,EGPD_Output);
+        if (!ParameterPin || !ParameterPin->PinType.IsArray() || ParameterPin->PinType.bIsReference)
+        { Why=TEXT("array count requires a by-value function input; members, locals and reference arrays are excluded"); return false; }
+        TArray<UEdGraphPin*> Pending{ParameterPin}; TSet<UEdGraphPin*> Seen;
+        for (UEdGraphNode* Other:Graph->Nodes)
+        {
+            if (const UK2Node_VariableSet* Setter=Cast<UK2Node_VariableSet>(Other))
+                if (Setter->GetVarName()==Parameter) { Why=TEXT("the array input can be assigned during the call"); return false; }
+            if (const UK2Node_VariableGet* Getter=Cast<UK2Node_VariableGet>(Other))
+                if (IsParameterGetter(Getter,Parameter))
+                    for (UEdGraphPin* Pin:Getter->Pins) if (Pin && Pin->Direction==EGPD_Output && IsDataPin(Pin)) Pending.Add(Pin);
+        }
+        while (!Pending.IsEmpty())
+        {
+            UEdGraphPin* Output=Pending.Pop(EAllowShrinking::No); if (!Output || Seen.Contains(Output)) continue; Seen.Add(Output);
+            for (UEdGraphPin* Consumer:Output->LinkedTo)
+            {
+                UEdGraphNode* Owner=Consumer?Consumer->GetOwningNode():nullptr;
+                if (!Owner || Owner->GetGraph()!=Graph) { Why=TEXT("the array has a missing or cross-graph alias"); return false; }
+                if (UK2Node_Knot* Knot=Cast<UK2Node_Knot>(Owner))
+                { for (UEdGraphPin* Pin:Knot->Pins) if (Pin && Pin->Direction==EGPD_Output) Pending.Add(Pin); continue; }
+                if (IsArrayCount(Owner) && Consumer->PinName==TEXT("TargetArray")) continue;
+                const UK2Node_MacroInstance* Macro=Cast<UK2Node_MacroInstance>(Owner);
+                const UEdGraph* Definition=Macro?Macro->GetMacroGraph():nullptr;
+                if (Definition && Definition->GetOutermost()->GetName()==TEXT("/Engine/EditorBlueprintResources/StandardMacros")
+                    && (Definition->GetName()==TEXT("ForEachLoop") || Definition->GetName()==TEXT("ForEachLoopWithBreak")) && Consumer->PinName==TEXT("Array")) continue;
+                Why=TEXT("the array input has an unreviewed or mutable alias consumer; only stock length and foreach reads are supported"); return false;
+            }
+        }
+        return true;
+    }
+
     /** Each output is a separate value; two singly used outputs are not a repeated value. */
     TArray<UEdGraphPin*> RepeatedOutputs(UEdGraphNode* Node)
     {
@@ -377,7 +533,7 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
 		}
 	}
 
-	// The candidates: PURE nodes whose value is read more than once.
+	// Report repeated outputs, including excluded producers; only reviewed lifetimes can be promoted.
 	for (UEdGraphNode* Node : Graph->Nodes)
 	{
 		if (Node == nullptr || Cast<UEdGraphNode_Comment>(Node) != nullptr)
@@ -385,15 +541,13 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
 			continue;
 		}
 		const UK2Node* K2 = Cast<UK2Node>(Node);
-		if (K2 == nullptr || !K2->IsNodePure())
+		if (K2 == nullptr)
 		{
-			// Only a pure node computes a value. An impure node does something, and capturing its
-			// output would not be the same as running it once.
+            // A non-K2 node has no reviewed value-lifetime contract.
 			continue;
 		}
 		// A variable GETTER is not a computed value; it is already a single read.
 		if (Cast<UK2Node_VariableGet>(Node) != nullptr
-			|| Cast<UK2Node_VariableSet>(Node) != nullptr
 			|| Cast<UK2Node_Knot>(Node) != nullptr
 			|| Cast<UK2Node_FunctionEntry>(Node) != nullptr)
 		{
@@ -412,6 +566,9 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
             Candidate.Key = KeyOf(Node);
             Candidate.NodeGuid = Node->NodeGuid;
             Candidate.OutputPinName = Output->PinName;
+            Candidate.bRequiresExplicitSelection = !K2->IsNodePure();
+            Candidate.AnchorGuid = Entry ? Entry->NodeGuid : FGuid();
+            Candidate.AnchorPinName = UEdGraphSchema_K2::PN_Then;
             Candidate.Title = K2->GetNodeTitle(ENodeTitleType::ListView).ToString();
             Candidate.ClassName = Node->GetClass()->GetName();
             Candidate.ConsumerCount = Consumers.Num();
@@ -445,7 +602,7 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
             if (bSafe && !IsReviewedCalculation(Node))
             {
                 bSafe = false;
-                Why = TEXT("this pure calculation has not been reviewed as deterministic");
+                Why = K2->IsNodePure()?TEXT("this pure calculation has not been reviewed as deterministic"):TEXT("this producer output has no reviewed capture timing; keep its original reads");
             }
 
             if (bSafe && !EntryInputsAreStable(Graph, Entry))
@@ -460,6 +617,24 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
                 Why = OutPlan.NoLocalsReason;
             }
 
+            if (IsArrayCount(Node))
+            {
+                Candidate.bEntryArrayCount=true; Candidate.bRequiresExplicitSelection=true;
+                bSafe=OutPlan.bSupportsLocals && StableInputArrayCount(Graph,Entry,Node,Why);
+            }
+            if (StockLoopValue(Node, Output))
+            {
+                Candidate.bBodyScoped = true;
+                Candidate.AnchorGuid = Node->NodeGuid;
+                Candidate.AnchorPinName = TEXT("LoopBody");
+                bSafe = OutPlan.bSupportsLocals && BodyCaptureIsSafe(Graph, Entry, Node, Output, Why);
+            }
+            if (bSafe && (Output->PinType.IsContainer() || Output->PinType.bIsReference
+                || (Output->PinType.PinCategory != UEdGraphSchema_K2::PC_Int && Output->PinType.PinCategory != UEdGraphSchema_K2::PC_Int64
+                    && Output->PinType.PinCategory != UEdGraphSchema_K2::PC_Real)))
+            { bSafe=false; Why=TEXT("only scalar integer and real value captures are supported"); }
+            if (Cast<UK2Node_MacroInstance>(Node) && Output->PinName==TEXT("Array Element"))
+            { bSafe=false; Why=TEXT("array element capture is excluded because the underlying array can change within the body; only stable loop indexes are reviewed"); }
             Candidate.bSafe = bSafe;
             Candidate.UnsafeReason = bSafe ? FString() : Why;
 
@@ -476,6 +651,9 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
         OutError = TEXT("Names must be a JSON object mapping exact output IDs from the preview to local variable names. Use {} for automatic names.");
         return false;
     }
+    OutPlan.bExplicitSelection=!NameMap->Values.IsEmpty();
+    for (FCandidate& Candidate : OutPlan.Candidates)
+        Candidate.bSelected = NameMap->Values.IsEmpty() && !Candidate.bRequiresExplicitSelection;
     for (const auto& Pair : NameMap->Values)
     {
         FCandidate* Match = nullptr;
@@ -483,7 +661,12 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
         {
             const FString Identity = TurboMCPNodeId::Make(OutPlan.Asset, OutPlan.GraphName, Candidate.NodeGuid, true)
                 + TEXT(":") + Candidate.OutputPinName.ToString();
-            if (FString(*Pair.Key) == Identity) Match = &Candidate;
+            const FString FullIdentity=TurboMCPNodeId::Make(OutPlan.Asset,OutPlan.GraphName,Candidate.NodeGuid,true,32)+TEXT(":")+Candidate.OutputPinName.ToString();
+            if (FString(*Pair.Key) == Identity || FString(*Pair.Key) == FullIdentity)
+            {
+                if (Match) { OutError=TEXT("Names contains an ambiguous output ID; no value was selected. Use an unambiguous node identity."); return false; }
+                Match=&Candidate;
+            }
         }
         FString Name;
         if (!Match || !Pair.Value.IsValid() || !Pair.Value->TryGetString(Name))
@@ -499,10 +682,12 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
             return false;
         }
         Match->ProposedName = Name;
+        Match->bSelected = true;
     }
     TSet<FName> UsedNames;
     for (const FCandidate& Candidate : OutPlan.Candidates)
     {
+        if (!Candidate.bSelected) continue;
         const FName Name(*Candidate.ProposedName);
         bool Collision = UsedNames.Contains(Name);
         if (Entry) for (const UEdGraphPin* Pin : Entry->Pins) Collision |= Pin && Pin->PinName == Name;
@@ -555,8 +740,8 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 		if (Candidate.bSafe)
 		{
 			Out += FString::Printf(
-				TEXT("\n    reviewed arithmetic and input-ancestry checks passed. Proposed local name: '%s'; ")
-                TEXT("edit revalidates the graph, assigns at function entry, then compiles; unsupported inputs or execution entry shapes are refused."),
+				TEXT("\n    assignment and value-lifetime checks passed. Proposed local name: '%s'; ")
+                TEXT("edit revalidates the assignment anchor and consumer lifetime, then compiles; unsupported lifetimes are refused."),
 				*Candidate.ProposedName);
 		}
 		else
@@ -567,7 +752,7 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 
 	Out += FString::Printf(
 		TEXT("\n\n%d of %d candidates passed input tracing, not behavioral verification. ")
-		TEXT("EditTurboMCPLocalVars requires a clean compile baseline and one connected function-entry successor; any excluded candidate refuses the whole edit. Preview made no graph changes."),
+		TEXT("EditTurboMCPLocalVars requires a clean compile baseline and one connected function-entry successor; any selected excluded candidate refuses the whole edit. Preview made no graph changes."),
 		Safe, InPlan.Candidates.Num());
 
 	if (Safe == 0)
@@ -576,9 +761,14 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 	}
 
     for (const FCandidate& Candidate : InPlan.Candidates)
-        Out += TEXT("\noutput ID: ") + TurboMCPNodeId::Make(InPlan.Asset, InPlan.GraphName, Candidate.NodeGuid, true)
+    {
+        Out += FString::Printf(TEXT("\nassignment: %s:%s; selected=%s; scope=%s"),
+            *Candidate.AnchorGuid.ToString(EGuidFormats::Digits), *Candidate.AnchorPinName.ToString(),
+            Candidate.bSelected ? TEXT("true") : TEXT("false"), Candidate.bBodyScoped ? TEXT("each LoopBody execution") : TEXT("function entry"));
+        Out += TEXT("\noutput ID: ") + TurboMCPNodeId::Make(InPlan.Asset, InPlan.GraphName, Candidate.NodeGuid, true, 32)
             + TEXT(":") + Candidate.OutputPinName.ToString() + TEXT("; local name: ") + Candidate.ProposedName;
-    Out += TEXT("\nFor meaningful names, pass Names as a JSON object from exact output IDs above to local names. Use the same Names in the edit. No changes have been made.");
+    }
+    Out += TEXT("\nA nonempty Names map selects only its exact outputs; input-array counts and loop values require explicit selection. For meaningful names, pass Names as a JSON object from exact output IDs above to local names. Use the same Names in the edit. No changes have been made.");
 	return Out;
 }
 
@@ -621,6 +811,10 @@ namespace
         TArray<TPair<FGuid, FName>> Consumers;
         FGuid Setter;
         FGuid Getter;
+        FGuid Anchor;
+        FName AnchorPin;
+        FGuid Successor;
+        FName SuccessorPin;
         int32 Depth = 0;
     };
 
@@ -650,6 +844,8 @@ namespace
         FTurboMCPLocalVars::FPlan Plan;
         FString Error;
         if (!FTurboMCPLocalVars::Plan(Requested.Asset, Requested.GraphName, Plan, Error, Requested.Names)) return Refuse(Error);
+        if (!Plan.bExplicitSelection) for (const auto& Candidate:Plan.Candidates) if (Candidate.bEntryArrayCount)
+            return Refuse(TEXT("array counts require explicit output selection in Names; automatic entry-arithmetic behavior is unchanged"));
         if (Plan.Candidates.IsEmpty()) return Refuse(TEXT("no value was promoted; the preview has no repeatedly consumed output values"));
         UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Plan.Asset);
         if (!Blueprint || Blueprint->bBeingCompiled || Blueprint->Status != BS_UpToDate)
@@ -669,12 +865,10 @@ namespace
         UEdGraphPin* EntryExec = ExactPin(Entry, UEdGraphSchema_K2::PN_Then, EGPD_Output);
         if (!EntryExec || EntryExec->LinkedTo.Num() != 1 || !EntryExec->LinkedTo[0])
             return Refuse(TEXT("the function entry must have exactly one connected execution successor"));
-        const FGuid EntryId = Entry->NodeGuid;
-        const FGuid SuccessorId = EntryExec->LinkedTo[0]->GetOwningNode()->NodeGuid;
-        const FName SuccessorPin = EntryExec->LinkedTo[0]->PinName;
         TArray<FLocalCapture> Captures;
         for (const FTurboMCPLocalVars::FCandidate& Candidate : Plan.Candidates)
         {
+            if (!Candidate.bSelected) continue;
             if (!Candidate.bSafe) return Refuse(Candidate.Key + TEXT(": ") + Candidate.UnsafeReason);
             UEdGraphNode* Source = ExactNode(Graph, Candidate.NodeGuid);
             UEdGraphPin* Output = ExactPin(Source, Candidate.OutputPinName, EGPD_Output);
@@ -686,7 +880,12 @@ namespace
             FLocalCapture Capture;
             Capture.Source = Candidate.NodeGuid;
             Capture.Output = Candidate.OutputPinName;
-            Capture.Depth = CalculationDepth(Source);
+            Capture.Depth = Candidate.bBodyScoped ? 0 : CalculationDepth(Source);
+            Capture.Anchor = Candidate.AnchorGuid; Capture.AnchorPin = Candidate.AnchorPinName;
+            UEdGraphPin* Anchor = ExactPin(ExactNode(Graph, Capture.Anchor), Capture.AnchorPin, EGPD_Output);
+            if (!Anchor || Anchor->LinkedTo.Num() != 1 || !Anchor->LinkedTo[0]) return Refuse(TEXT("assignment anchor requires exactly one connected execution successor"));
+            Capture.Successor = Anchor->LinkedTo[0]->GetOwningNode()->NodeGuid;
+            Capture.SuccessorPin = Anchor->LinkedTo[0]->PinName;
             Capture.Variable.VarName = FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, Candidate.ProposedName);
             Capture.Variable.VarGuid = FGuid::NewGuid();
             Capture.Variable.VarType = Output->PinType;
@@ -705,6 +904,7 @@ namespace
             }
             Captures.Add(MoveTemp(Capture));
         }
+        if (Captures.IsEmpty()) return Refuse(TEXT("no outputs selected; select exact output IDs using Names"));
         Captures.Sort([](const FLocalCapture& A, const FLocalCapture& B) { return A.Depth < B.Depth; });
         UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
         if (!Buffer) return Refuse(TEXT("editor undo is unavailable"));
@@ -727,15 +927,23 @@ namespace
         // Scalar variable declarations use the same fields as AddLocalVariable, but one
         // structural update registers them together without nested editor transactions.
         for (const FLocalCapture& Capture : Captures) Entry->LocalVariables.Add(Capture.Variable);
-        FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+        {
+            // Source objects were captured above. Compiler caches and reinstanced
+            // classes are derived state, not unrelated objects to replay on undo.
+            TGuardValue<ITransaction*> SuppressCompilerUndo(GUndo,nullptr);
+            FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+        }
         if (Blueprint->Status == BS_Error) return Fail(TEXT("registering the local variables failed compilation"));
-        Entry = Cast<UK2Node_FunctionEntry>(ExactNode(Graph, EntryId));
-        EntryExec = ExactPin(Entry, UEdGraphSchema_K2::PN_Then, EGPD_Output);
-        UEdGraphPin* Successor = ExactPin(ExactNode(Graph, SuccessorId), SuccessorPin, EGPD_Input);
-        if (!EntryExec || !Successor || !EntryExec->LinkedTo.Contains(Successor))
-            return Fail(TEXT("the entry execution link changed during local registration"));
-        EntryExec->BreakLinkTo(Successor);
-        UEdGraphPin* Previous = EntryExec;
+        TMap<FString, UEdGraphPin*> Tails;
+        for (const FLocalCapture& Capture : Captures)
+        {
+            const FString Key = Capture.Anchor.ToString() + Capture.AnchorPin.ToString();
+            if (Tails.Contains(Key)) continue;
+            UEdGraphPin* Anchor = ExactPin(ExactNode(Graph, Capture.Anchor), Capture.AnchorPin, EGPD_Output);
+            UEdGraphPin* Successor = ExactPin(ExactNode(Graph, Capture.Successor), Capture.SuccessorPin, EGPD_Input);
+            if (!Anchor || !Successor || !Anchor->LinkedTo.Contains(Successor)) return Fail(TEXT("assignment anchor changed during local registration"));
+            Anchor->BreakLinkTo(Successor); Tails.Add(Key, Anchor);
+        }
         for (FLocalCapture& Capture : Captures)
         {
             UEdGraphNode* Source = ExactNode(Graph, Capture.Source);
@@ -769,19 +977,29 @@ namespace
                 if (!Graph->GetSchema()->TryCreateConnection(ValueOut, Consumer)) return Fail(TEXT("the schema refused a local getter connection"));
             }
             if (!Graph->GetSchema()->TryCreateConnection(Output, ValueIn)
-                || !Graph->GetSchema()->TryCreateConnection(Previous, ExecIn)) return Fail(TEXT("the schema refused a local assignment connection"));
-            Previous = ExecOut;
+                || !Graph->GetSchema()->TryCreateConnection(Tails[Capture.Anchor.ToString() + Capture.AnchorPin.ToString()], ExecIn)) return Fail(TEXT("the schema refused a local assignment connection"));
+            Tails[Capture.Anchor.ToString() + Capture.AnchorPin.ToString()] = ExecOut;
         }
-        if (!Graph->GetSchema()->TryCreateConnection(Previous, Successor)) return Fail(TEXT("the schema refused the original execution continuation"));
+        for (const FLocalCapture& Capture : Captures)
+        {
+            UEdGraphPin* Tail = Tails[Capture.Anchor.ToString() + Capture.AnchorPin.ToString()];
+            UEdGraphPin* Successor = ExactPin(ExactNode(Graph, Capture.Successor), Capture.SuccessorPin, EGPD_Input);
+            if (!Tail->LinkedTo.Contains(Successor) && !Graph->GetSchema()->TryCreateConnection(Tail, Successor)) return Fail(TEXT("the schema refused the original execution continuation"));
+        }
         if (bFailAfterRewire) return Fail(TEXT("injected post-rewire regression failure"));
         FCompilerResultsLog CompileLog;
-        FKismetEditorUtilities::CompileBlueprint(Blueprint, EBlueprintCompileOptions::None, &CompileLog);
+        {
+            TGuardValue<ITransaction*> SuppressCompilerUndo(GUndo,nullptr);
+            FKismetEditorUtilities::CompileBlueprint(Blueprint, EBlueprintCompileOptions::None, &CompileLog);
+        }
         if (CompileLog.NumErrors || CompileLog.NumWarnings || Blueprint->Status != BS_UpToDate)
             return Fail(TEXT("the promoted function did not compile without diagnostics"));
         // Compilation may reconstruct nodes. Read back by full identities, never old pins.
-        Previous = ExactPin(ExactNode(Graph, EntryId), UEdGraphSchema_K2::PN_Then, EGPD_Output);
+        Tails.Reset();
         for (const FLocalCapture& Capture : Captures)
         {
+            const FString Key = Capture.Anchor.ToString() + Capture.AnchorPin.ToString();
+            UEdGraphPin* Previous = Tails.Contains(Key) ? Tails[Key] : ExactPin(ExactNode(Graph, Capture.Anchor), Capture.AnchorPin, EGPD_Output);
             UEdGraphPin* Output = ExactPin(ExactNode(Graph, Capture.Source), Capture.Output, EGPD_Output);
             UEdGraphNode* Setter = ExactNode(Graph, Capture.Setter);
             UEdGraphPin* ValueIn = ExactPin(Setter, Capture.Variable.VarName, EGPD_Input);
@@ -797,14 +1015,17 @@ namespace
                 if (!Consumer || !Consumer->LinkedTo.Contains(ValueOut) || !ValueOut->LinkedTo.Contains(Consumer))
                     return Fail(TEXT("post-compile consumer verification failed"));
             }
-            Previous = ExactPin(Setter, UEdGraphSchema_K2::PN_Then, EGPD_Output);
+            Tails.Add(Key, ExactPin(Setter, UEdGraphSchema_K2::PN_Then, EGPD_Output));
         }
-        Successor = ExactPin(ExactNode(Graph, SuccessorId), SuccessorPin, EGPD_Input);
-        if (!Previous || !Successor || !Previous->LinkedTo.Contains(Successor) || !Successor->LinkedTo.Contains(Previous))
-            return Fail(TEXT("post-compile execution continuation verification failed"));
+        for (const FLocalCapture& Capture : Captures)
+        {
+            UEdGraphPin* Tail = Tails[Capture.Anchor.ToString() + Capture.AnchorPin.ToString()];
+            UEdGraphPin* Successor = ExactPin(ExactNode(Graph, Capture.Successor), Capture.SuccessorPin, EGPD_Input);
+            if (!Tail || !Successor || !Tail->LinkedTo.Contains(Successor) || !Successor->LinkedTo.Contains(Tail)) return Fail(TEXT("post-compile execution continuation verification failed"));
+        }
         Blueprint->MarkPackageDirty();
         Transaction.Reset();
-        return FString::Printf(TEXT("changed: assigned %d calculated value(s) at function entry and replaced their consumers with local getters; original calculations and existing node positions were preserved; compile=passed; save=not_requested"), Captures.Num());
+        return FString::Printf(TEXT("changed: assigned %d selected value(s) at validated entry/body anchors and replaced their consumers with local getters; original calculations and existing node positions were preserved; compile=passed; save=not_requested"), Captures.Num());
     }
 }
 
@@ -815,6 +1036,7 @@ FString FTurboMCPLocalVars::Apply(const FPlan& InPlan)
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
+#include "Tools/TurboMCPToolsets.h"
 #include "Misc/ScopeExit.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -1007,6 +1229,18 @@ bool FTurboMCPLocalPromotionTest::RunTest(const FString& Parameters)
     FString Error;
     if (!TestTrue(TEXT("Production plan"), FTurboMCPLocalVars::Plan(Blueprint->GetPathName(), Graph->GetName(), Plan, Error))) return false;
     TestEqual(TEXT("Two dependent repeated values"), Plan.Candidates.Num(), 2);
+    FGuid OriginalDependentId;
+    for (const auto& Candidate:Plan.Candidates) if (Candidate.NodeGuid!=AddId) OriginalDependentId=Candidate.NodeGuid;
+    UEdGraphNode* CollisionNode=ExactNode(Graph,OriginalDependentId);
+    if (!TestNotNull(TEXT("Collision test calculation"),CollisionNode)) return false;
+    CollisionNode->NodeGuid.A=(AddId.A&0xFFFFFF00u)|((AddId.A+1u)&0xFFu);
+    const FString AmbiguousId=TurboMCPNodeId::Make(Blueprint->GetPathName(),Graph->GetName(),AddId,true)+TEXT(":ReturnValue");
+    FTurboMCPLocalVars::FPlan AmbiguousPlan;
+    TestFalse(TEXT("Ambiguous explicit output ID refused"),FTurboMCPLocalVars::Plan(Blueprint->GetPathName(),Graph->GetName(),AmbiguousPlan,Error,
+        TEXT("{\"")+AmbiguousId+TEXT("\":\"Chosen\"}")));
+    TestTrue(TEXT("Ambiguous selection names its refusal"),Error.Contains(TEXT("ambiguous output ID")));
+    CollisionNode->NodeGuid=OriginalDependentId;
+
     TArray<UK2Node_FunctionEntry*> CurrentEntries;
     Graph->GetNodesOfClass(CurrentEntries);
     UEdGraphPin* LiveParameter = ExactPin(CurrentEntries[0], TEXT("Number"), EGPD_Output);
@@ -1058,6 +1292,193 @@ bool FTurboMCPLocalPromotionTest::RunTest(const FString& Parameters)
     const FString Again = FTurboMCPLocalVars::Apply(Plan);
     TestTrue(TEXT("Repeated request is a no-op"), Again.StartsWith(TEXT("unchanged:")));
     TestEqual(TEXT("Repeated request adds no nodes"), Graph->Nodes.Num(), OriginalCount + 4);
+    // Explicit selection must not attempt the other repeated output.
+    FTurboMCPLocalVars::FPlan Selected;
+    // A stale ID is refused rather than silently promoting another output.
+    TestFalse(TEXT("Stale explicit output selection refused"), FTurboMCPLocalVars::Plan(Blueprint->GetPathName(),Graph->GetName(),Selected,Error,
+        TEXT("{\"missing:ReturnValue\":\"Chosen\"}")));
+
+    UEdGraph* LoopGraph=UBlueprintEditorLibrary::AddFunctionGraph(Blueprint,TEXT("ComputeLoop"));
+    TArray<UK2Node_FunctionEntry*> LoopEntries; LoopGraph->GetNodesOfClass(LoopEntries);
+    if (!TestEqual(TEXT("Loop function entry"),LoopEntries.Num(),1)) return false;
+    UK2Node_FunctionEntry* LoopEntry=LoopEntries[0];
+    UK2Node_FunctionResult* LoopResult=FBlueprintEditorUtils::FindOrCreateFunctionResultNode(LoopEntry);
+    LoopResult->CreateUserDefinedPin(TEXT("Total"),IntType,EGPD_Input,false);
+    FBPVariableDescription Sum; Sum.VarName=TEXT("Sum"); Sum.VarGuid=FGuid::NewGuid(); Sum.VarType=IntType; Sum.PropertyFlags=CPF_BlueprintVisible;
+    LoopEntry->LocalVariables.Add(Sum);
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+    UBlueprint* Macros=LoadObject<UBlueprint>(nullptr,TEXT("/Engine/EditorBlueprintResources/StandardMacros.StandardMacros"));
+    if (Macros == nullptr) { AddError(TEXT("Stock macro Blueprint is unavailable")); return false; }
+    UEdGraph* Definition=nullptr;
+    for (UEdGraph* Macro:Macros->MacroGraphs) if (Macro && Macro->GetName()==TEXT("ForLoop")) Definition=Macro;
+    if (!TestNotNull(TEXT("Stock ForLoop definition"),Definition)) return false;
+    UK2Node_MacroInstance* Loop=NewObject<UK2Node_MacroInstance>(LoopGraph,NAME_None,RF_Transactional);
+    Loop->SetMacroGraph(Definition); LoopGraph->AddNode(Loop,false,false); Loop->CreateNewGuid(); Loop->AllocateDefaultPins();
+    const FGuid LoopId=Loop->NodeGuid;
+    if (!TestNotNull(TEXT("Stock first index pin"),Loop->FindPin(TEXT("FirstIndex"))) || !TestNotNull(TEXT("Stock last index pin"),Loop->FindPin(TEXT("LastIndex")))) return false;
+    Loop->FindPinChecked(TEXT("FirstIndex"))->DefaultValue=TEXT("0");
+    Loop->FindPinChecked(TEXT("LastIndex"))->DefaultValue=TEXT("3");
+    auto Variable=[&](bool bSet)->UK2Node_Variable*
+    {
+        UK2Node_Variable* Node=bSet?static_cast<UK2Node_Variable*>(NewObject<UK2Node_VariableSet>(LoopGraph,NAME_None,RF_Transactional))
+            :static_cast<UK2Node_Variable*>(NewObject<UK2Node_VariableGet>(LoopGraph,NAME_None,RF_Transactional));
+        Node->VariableReference.SetLocalMember(Sum.VarName,LoopGraph->GetName(),Sum.VarGuid);
+        Node->CreateNewGuid(); LoopGraph->AddNode(Node,false,false); Node->AllocateDefaultPins(); return Node;
+    };
+    UK2Node_Variable* Initialize=Variable(true); UK2Node_Variable* Accumulate=Variable(true);
+    UK2Node_Variable* SumRead=Variable(false); UK2Node_Variable* FinalRead=Variable(false);
+    auto Arithmetic=[&]()->UK2Node_CallFunction*
+    {
+        UK2Node_CallFunction* Node=NewObject<UK2Node_CallFunction>(LoopGraph,NAME_None,RF_Transactional);
+        Node->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(TEXT("Add_IntInt")));
+        Node->CreateNewGuid(); LoopGraph->AddNode(Node,false,false); Node->AllocateDefaultPins(); return Node;
+    };
+    UK2Node_CallFunction* Twice=Arithmetic(); UK2Node_CallFunction* AddSum=Arithmetic();
+    for (const auto& Pair:TArray<TPair<UEdGraphNode*,FName>>{{Loop,TEXT("FirstIndex")},{Loop,TEXT("LastIndex")},
+        {Initialize,TEXT("Sum")},{Accumulate,TEXT("Sum")},{SumRead,TEXT("Sum")},{FinalRead,TEXT("Sum")}})
+        if (!TestNotNull(TEXT("Loop fixture pin ")+Pair.Value.ToString(),Pair.Key->FindPin(Pair.Value))) return false;
+    LoopEntry->FindPinChecked(UEdGraphSchema_K2::PN_Then)->BreakAllPinLinks();
+    LoopEntry->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Initialize->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+    Initialize->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Loop->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+    Loop->FindPinChecked(TEXT("LoopBody"))->MakeLinkTo(Accumulate->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+    Loop->FindPinChecked(TEXT("Completed"))->MakeLinkTo(LoopResult->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+    Loop->FindPinChecked(TEXT("Index"))->MakeLinkTo(Twice->FindPinChecked(TEXT("A")));
+    Loop->FindPinChecked(TEXT("Index"))->MakeLinkTo(Twice->FindPinChecked(TEXT("B")));
+    Twice->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(AddSum->FindPinChecked(TEXT("A")));
+    SumRead->FindPinChecked(TEXT("Sum"))->MakeLinkTo(AddSum->FindPinChecked(TEXT("B")));
+    AddSum->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Accumulate->FindPinChecked(TEXT("Sum")));
+    FinalRead->FindPinChecked(TEXT("Sum"))->MakeLinkTo(LoopResult->FindPinChecked(TEXT("Total")));
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+    if (!Compile()) return false;
+    auto CheckLoop=[&]()
+    {
+        UFunction* Function=Blueprint->GeneratedClass->FindFunctionByName(TEXT("ComputeLoop"));
+        if (!TestNotNull(TEXT("Compiled loop function"),Function)) return false;
+        FStructOnScope Args(Function); Blueprint->GeneratedClass->GetDefaultObject()->ProcessEvent(Function,Args.GetStructMemory());
+        const FIntProperty* Total=FindFProperty<FIntProperty>(Function,TEXT("Total"));
+        return TestNotNull(TEXT("Loop result property"),Total) && TestEqual(TEXT("Loop capture observes each iteration 2*(0+1+2+3)"),Total->GetPropertyValue_InContainer(Args.GetStructMemory()),12);
+    };
+    if (!CheckLoop()) return false;
+    FTurboMCPLocalVars::FPlan LoopPlan;
+    const FString LoopOutput=TurboMCPNodeId::Make(Blueprint->GetPathName(),LoopGraph->GetName(),LoopId,true,32)+TEXT(":Index");
+    const FString LoopNames=TEXT("{\"")+LoopOutput+TEXT("\":\"CurrentIndex\"}");
+    if (!TestTrue(TEXT("Explicit loop output plan"),FTurboMCPLocalVars::Plan(Blueprint->GetPathName(),LoopGraph->GetName(),LoopPlan,Error,LoopNames))) return false;
+    int32 SelectedCount=0; for (const auto& Candidate:LoopPlan.Candidates) if (Candidate.bSelected) { ++SelectedCount; TestTrue(TEXT("Loop body candidate safe"),Candidate.bSafe); }
+    TestEqual(TEXT("Only requested loop output selected"),SelectedCount,1);
+    // A Completed read must invalidate this same selection before any mutation.
+    UEdGraphPin* Index=ExactPin(ExactNode(LoopGraph,LoopId),TEXT("Index"),EGPD_Output);
+    UEdGraphPin* Final=LoopResult->FindPinChecked(TEXT("Total"));
+    UEdGraphPin* Old=Final->LinkedTo[0]; Old->BreakLinkTo(Final); Index->MakeLinkTo(Final);
+    const int32 LoopCount=LoopGraph->Nodes.Num();
+    const FString OutsideRefusal=FTurboMCPLocalVars::Apply(LoopPlan);
+    TestTrue(TEXT("Completed consumer refused"),OutsideRefusal.StartsWith(TEXT("unchanged:")) && OutsideRefusal.Contains(TEXT("Completed")));
+    TestEqual(TEXT("Lifetime refusal preserves graph"),LoopGraph->Nodes.Num(),LoopCount);
+    Index->BreakLinkTo(Final); Old->MakeLinkTo(Final);
+    auto SnapshotLoop=[&]()
+    {
+        TArray<FString> Rows;
+        for (UEdGraphNode* Node:LoopGraph->Nodes) if (Node)
+        {
+            Rows.Add(Node->NodeGuid.ToString()+FString::Printf(TEXT("@%d,%d"),Node->NodePosX,Node->NodePosY));
+            for (UEdGraphPin* Pin:Node->Pins) if (Pin)
+            {
+                FString Row=Node->NodeGuid.ToString()+TEXT(":")+Pin->PinName.ToString()+FString::FromInt(Pin->Direction)+TEXT("=")+Pin->DefaultValue;
+                for (UEdGraphPin* Link:Pin->LinkedTo) Row+=TEXT("->")+Link->GetOwningNode()->NodeGuid.ToString()+TEXT(":")+Link->PinName.ToString();
+                Rows.Add(Row);
+            }
+        }
+        return Rows;
+    };
+    const TArray<FString> OriginalLoop=SnapshotLoop();
+    const FString LoopApplied=FTurboMCPLocalVars::Apply(LoopPlan); AddInfo(LoopApplied);
+    TestTrue(TEXT("Loop promotion compiles"),LoopApplied.StartsWith(TEXT("changed:")) && LoopApplied.Contains(TEXT("compile=passed")));
+    CheckLoop();
+    const FString PublicUndo=UTurboMCPPreviewToolset::PreviewTurboMCPAssetUndo(Blueprint->GetPathName());
+    TestTrue(TEXT("Public undo admits the local promotion transaction"),PublicUndo.StartsWith(TEXT("preview:")));
+    FString Prefix,Confirm;
+    if (!PublicUndo.Split(TEXT("Confirm="),&Prefix,&Confirm)) return false;
+    TestTrue(TEXT("Public loop promotion undo succeeds"),UTurboMCPEditToolset::EditTurboMCPAssetUndo(Blueprint->GetPathName(),Confirm).StartsWith(TEXT("changed:")));
+    TestTrue(TEXT("Loop promotion undo restores ordered nodes, positions, defaults and links"),SnapshotLoop()==OriginalLoop);
+    TArray<UK2Node_FunctionEntry*> UndoneEntries; LoopGraph->GetNodesOfClass(UndoneEntries);
+    TestEqual(TEXT("Loop promotion undo removes only the new local"),UndoneEntries[0]->LocalVariables.Num(),1);
+    if (!Compile()) return false;
+    CheckLoop();
+
+    UEdGraph* CountGraph=UBlueprintEditorLibrary::AddFunctionGraph(Blueprint,TEXT("CountRepeated"));
+    TArray<UK2Node_FunctionEntry*> CountEntries; CountGraph->GetNodesOfClass(CountEntries);
+    if (!TestEqual(TEXT("Count function entry"),CountEntries.Num(),1)) return false;
+    UK2Node_FunctionEntry* CountEntry=CountEntries[0];
+    UK2Node_FunctionResult* CountResult=FBlueprintEditorUtils::FindOrCreateFunctionResultNode(CountEntry);
+    FEdGraphPinType ArrayType=IntType; ArrayType.ContainerType=EPinContainerType::Array;
+    CountEntry->CreateUserDefinedPin(TEXT("Items"),ArrayType,EGPD_Output,false);
+    CountResult->CreateUserDefinedPin(TEXT("TotalCount"),IntType,EGPD_Input,false);
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+    auto* InputReader=NewObject<UK2Node_VariableGet>(CountGraph,NAME_None,RF_Transactional);
+    InputReader->VariableReference.SetLocalMember(TEXT("Items"),CountGraph->GetName(),FGuid());
+    InputReader->CreateNewGuid(); CountGraph->AddNode(InputReader,false,false); InputReader->AllocateDefaultPins();
+    const FGuid InputReaderId=InputReader->NodeGuid;
+    auto* Length=NewObject<UK2Node_CallArrayFunction>(CountGraph,NAME_None,RF_Transactional);
+    Length->SetFromFunction(UKismetArrayLibrary::StaticClass()->FindFunctionByName(TEXT("Array_Length")));
+    Length->CreateNewGuid(); CountGraph->AddNode(Length,false,false); Length->AllocateDefaultPins();
+    const FGuid LengthId=Length->NodeGuid;
+    auto* DoubleCount=NewObject<UK2Node_CallFunction>(CountGraph,NAME_None,RF_Transactional);
+    DoubleCount->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(TEXT("Add_IntInt")));
+    DoubleCount->CreateNewGuid(); CountGraph->AddNode(DoubleCount,false,false); DoubleCount->AllocateDefaultPins();
+    if (!TestNotNull(TEXT("Count input reader"),InputReader->GetValuePin())
+        || !TestTrue(TEXT("Array input connection"),CountGraph->GetSchema()->TryCreateConnection(InputReader->GetValuePin(),Length->FindPin(TEXT("TargetArray"))))) return false;
+    Length->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(DoubleCount->FindPinChecked(TEXT("A")));
+    Length->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(DoubleCount->FindPinChecked(TEXT("B")));
+    DoubleCount->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(CountResult->FindPinChecked(TEXT("TotalCount")));
+    if (!Compile()) return false;
+    auto CheckCount=[&]()
+    {
+        UFunction* Function=Blueprint->GeneratedClass->FindFunctionByName(TEXT("CountRepeated"));
+        if (!TestNotNull(TEXT("Compiled count function"),Function)) return false;
+        const FArrayProperty* Items=FindFProperty<FArrayProperty>(Function,TEXT("Items"));
+        const FIntProperty* Total=FindFProperty<FIntProperty>(Function,TEXT("TotalCount"));
+        if (!TestNotNull(TEXT("Count array argument"),Items) || !TestNotNull(TEXT("Count result"),Total)) return false;
+        for (int32 Num:{3,7})
+        {
+            FStructOnScope Args(Function); FScriptArrayHelper Values(Items,Items->ContainerPtrToValuePtr<void>(Args.GetStructMemory())); Values.Resize(Num);
+            Blueprint->GeneratedClass->GetDefaultObject()->ProcessEvent(Function,Args.GetStructMemory());
+            TestEqual(TEXT("Count capture observes each call's by-value input"),Total->GetPropertyValue_InContainer(Args.GetStructMemory()),Num*2);
+        }
+        return !HasAnyErrors();
+    };
+    if (!CheckCount()) return false;
+    const FString CountId=TurboMCPNodeId::Make(Blueprint->GetPathName(),CountGraph->GetName(),LengthId,true,32)+TEXT(":ReturnValue");
+    const FString CountNames=TEXT("{\"")+CountId+TEXT("\":\"PointCount\"}");
+    FTurboMCPLocalVars::FPlan CountPlan;
+    if (!TestTrue(TEXT("Explicit stable array count plan"),FTurboMCPLocalVars::Plan(Blueprint->GetPathName(),CountGraph->GetName(),CountPlan,Error,CountNames))) return false;
+    if (!TestTrue(TEXT("By-value array count is eligible"),CountPlan.Candidates.Num()==1 && CountPlan.Candidates[0].bSafe && CountPlan.Candidates[0].bSelected)) return false;
+    FTurboMCPLocalVars::FPlan AutomaticCount;
+    FTurboMCPLocalVars::Plan(Blueprint->GetPathName(),CountGraph->GetName(),AutomaticCount,Error);
+    const int32 CountBefore=CountGraph->Nodes.Num();
+    TestTrue(TEXT("Array count still requires explicit selection"),FTurboMCPLocalVars::Apply(AutomaticCount).StartsWith(TEXT("unchanged:")));
+    TestEqual(TEXT("Default selection creates nothing"),CountGraph->Nodes.Num(),CountBefore);
+    auto* Clear=NewObject<UK2Node_CallArrayFunction>(CountGraph,NAME_None,RF_Transactional);
+    Clear->SetFromFunction(UKismetArrayLibrary::StaticClass()->FindFunctionByName(TEXT("Array_Clear")));
+    Clear->CreateNewGuid(); CountGraph->AddNode(Clear,false,false); Clear->AllocateDefaultPins();
+    InputReader=Cast<UK2Node_VariableGet>(ExactNode(CountGraph,InputReaderId));
+    if (!TestNotNull(TEXT("Live count reader"),InputReader)) return false;
+    CountGraph->GetSchema()->TryCreateConnection(InputReader->GetValuePin(),Clear->FindPin(TEXT("TargetArray")));
+    FTurboMCPLocalVars::FPlan MutableCount;
+    TestTrue(TEXT("Mutable array count is reported"),FTurboMCPLocalVars::Plan(Blueprint->GetPathName(),CountGraph->GetName(),MutableCount,Error,CountNames));
+    TestTrue(TEXT("Mutable array alias refuses capture"),MutableCount.Candidates.Num()==1 && !MutableCount.Candidates[0].bSafe && MutableCount.Candidates[0].UnsafeReason.Contains(TEXT("mutable")));
+    Clear->DestroyNode();
+    if (!Compile()) return false;
+    const FString CountApplied=FTurboMCPLocalVars::Apply(CountPlan); AddInfo(CountApplied);
+    TestTrue(TEXT("Explicit array count capture compiles"),CountApplied.StartsWith(TEXT("changed:")) && CountApplied.Contains(TEXT("compile=passed")));
+    TestEqual(TEXT("Count capture adds one setter and getter"),CountGraph->Nodes.Num(),CountBefore+2);
+    CheckCount();
+    const FString CountUndo=UTurboMCPPreviewToolset::PreviewTurboMCPAssetUndo(Blueprint->GetPathName());
+    if (!TestTrue(TEXT("Count capture admits public undo"),CountUndo.Split(TEXT("Confirm="),&Prefix,&Confirm))) return false;
+    TestTrue(TEXT("Count capture public undo succeeds"),UTurboMCPEditToolset::EditTurboMCPAssetUndo(Blueprint->GetPathName(),Confirm).StartsWith(TEXT("changed:")));
+    TestEqual(TEXT("Count capture undo restores node count"),CountGraph->Nodes.Num(),CountBefore);
+    TestEqual(TEXT("Count capture undo restores both original consumers"),ExactPin(ExactNode(CountGraph,LengthId),TEXT("ReturnValue"),EGPD_Output)->LinkedTo.Num(),2);
+    if (!Compile()) return false;
+    CheckCount();
+
     return !HasAnyErrors();
 }
 

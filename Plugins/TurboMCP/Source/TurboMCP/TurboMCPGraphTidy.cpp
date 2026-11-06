@@ -16,6 +16,7 @@
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphNode_Comment.h"
+#include "EdGraphSchema_K2.h"
 #include "Editor.h"
 #include "CoreGlobals.h"
 #include "Templates/UnrealTemplate.h"
@@ -23,6 +24,9 @@
 #include "Engine/Blueprint.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GraphEditor.h"
+#include "GraphEditorSettings.h"
+#include "Fonts/FontMeasure.h"
+#include "Styling/AppStyle.h"
 #include "K2Node_Knot.h"
 #include "K2Node_MacroInstance.h"
 #include "K2Node_ExecutionSequence.h"
@@ -101,6 +105,44 @@ namespace
         TEXT("data segment crossings"), TEXT("total segment length"), TEXT("bounding area")
     };
 
+    // Return the physical wire segments of one logical connection. The gap
+    // inside a reroute is node geometry, not wire length. Actual measurement
+    // requires the caller's created-node mapping, never planned coordinates.
+    TArray<TPair<FVector2D,FVector2D>> TidyWireSegments(
+        const FTurboMCPGraphTidy::FPlan& Plan, int32 WireIndex, int32 Mode,
+        const FVector2D& Start, const FVector2D& End)
+    {
+        TArray<TPair<FVector2D,FVector2D>> Segments;
+        FVector2D Previous=Start;
+        if (Mode!=0)
+            for (const auto& Route:Plan.WireRoutes)
+            {
+                if (Route.WireIndex!=WireIndex || Route.bSkipped) continue;
+                for (int32 Index=0;Index<Route.KnotPositions.Num();++Index)
+                {
+                    FVector2D Input,Output;
+                    if (Mode==2)
+                    {
+                        // The live apply path must reject incomplete mappings
+                        // before asking for a post-edit quality measurement.
+                        if (!Route.AppliedKnots.IsValidIndex(Index) || !Route.AppliedKnots[Index])
+                            return {};
+                        Input=FTurboMCPGraphTidy::AlignmentPinPosition(Route.AppliedKnots[Index]->GetInputPin());
+                        Output=FTurboMCPGraphTidy::AlignmentPinPosition(Route.AppliedKnots[Index]->GetOutputPin());
+                    }
+                    else
+                    {
+                        Input=Route.KnotPositions[Index]+Route.InputOffset;
+                        Output=Route.KnotPositions[Index]+Route.OutputOffset;
+                    }
+                    Segments.Emplace(Previous,Input); Previous=Output;
+                }
+                break;
+            }
+        Segments.Emplace(Previous,End);
+        return Segments;
+    }
+
     // Appendix H uses straight pin-to-pin segments, not rendered Slate splines.
     // Keep the same block membership in before/after measurements; geometry
     // changes must not redefine a crossing or row break out of existence.
@@ -108,6 +150,10 @@ namespace
         const TArray<FTurboMCPGraphTidy::FGetterCopy>& Copies, FStructuralQuality& Quality)
     {
         if (!Plan.bCompactBlocks) return;
+        auto PinPosition=[&](const UEdGraphPin* Pin)
+        {
+            return FTurboMCPGraphTidy::AlignmentPinPosition(Pin);
+        };
         Quality.bHasBlockMeasures = true;
         auto Position = [Mode](const FTurboMCPGraphTidy::FNode& Node)
         {
@@ -126,7 +172,7 @@ namespace
         for (const auto& Node : Plan.Nodes)
             if (!Node.bIsComment) { const FVector2D P = Position(Node); Include(P.X, P.Y, Node.Width, Node.Height); }
         for (const auto& Box : Plan.Boxes)
-            Include(Mode == 0 ? Box.X : Box.PlannedX, Mode == 0 ? Box.Y : Box.PlannedY,
+            if (Mode != 0 || !Box.bGenerated) Include(Mode == 0 ? Box.X : Box.PlannedX, Mode == 0 ? Box.Y : Box.PlannedY,
                 Mode == 0 ? Box.Width : Box.PlannedWidth, Mode == 0 ? Box.Height : Box.PlannedHeight);
         if (Mode != 0)
             for (const auto& Copy : Copies)
@@ -135,6 +181,15 @@ namespace
                 Include(Mode == 2 ? Copy.Copy->NodePosX : Copy.PlannedX,
                     Mode == 2 ? Copy.Copy->NodePosY : Copy.PlannedY, Copy.Width, Copy.Height);
             }
+        if (Mode!=0)
+            for (const auto& Route:Plan.WireRoutes)
+                if (!Route.bSkipped)
+                    for (int32 Index=0;Index<Route.KnotPositions.Num();++Index)
+                    {
+                        if (Mode==2 && (!Route.AppliedKnots.IsValidIndex(Index) || !Route.AppliedKnots[Index])) continue;
+                        const FVector2D P=Mode==2 ? FVector2D(Route.AppliedKnots[Index]->NodePosX,Route.AppliedKnots[Index]->NodePosY) : Route.KnotPositions[Index];
+                        Include(P.X,P.Y,Route.KnotSize.X,Route.KnotSize.Y);
+                    }
         if (Left != TNumericLimits<double>::Max()) Quality.BlockMeasures[6] = (Right - Left) * (Bottom - Top);
         auto Cross = [](const FVector2D& A, const FVector2D& B) { return A.X * B.Y - A.Y * B.X; };
         auto Intersects = [&](const FSegment& L, const FSegment& R)
@@ -145,64 +200,74 @@ namespace
             return ((A > 0.001 && B < -0.001) || (A < -0.001 && B > 0.001))
                 && ((C > 0.001 && D < -0.001) || (C < -0.001 && D > 0.001));
         };
-        for (const auto& Wire : Plan.Wires)
+        for (int32 WireIndex=0;WireIndex<Plan.Wires.Num();++WireIndex)
         {
+            const auto& Wire=Plan.Wires[WireIndex];
             if (!Wire.OutputPin || !Wire.InputPin || !Plan.Nodes.IsValidIndex(Wire.SourceNodeIndex)
                 || !Plan.Nodes.IsValidIndex(Wire.TargetNodeIndex)) continue;
             const auto& Source = Plan.Nodes[Wire.SourceNodeIndex];
             const auto& Target = Plan.Nodes[Wire.TargetNodeIndex];
             if (!Source.Node || !Target.Node) continue;
-            FVector2D A = FTurboMCPLayoutReport::PinPosition(Wire.OutputPin) + Position(Source)
+            FVector2D A = PinPosition(Wire.OutputPin) + Position(Source)
                 - FVector2D(Source.Node->NodePosX, Source.Node->NodePosY);
-            const FVector2D B = FTurboMCPLayoutReport::PinPosition(Wire.InputPin) + Position(Target)
+            const FVector2D B = PinPosition(Wire.InputPin) + Position(Target)
                 - FVector2D(Target.Node->NodePosX, Target.Node->NodePosY);
+            bool bCopiedSource=false;
             if (Mode != 0)
                 for (const auto& Copy : Copies)
                     if (Copy.OriginalValuePin == Wire.OutputPin && Copy.ConsumerPin == Wire.InputPin
                         && (Mode != 2 || Copy.Copy))
-                        A = FVector2D(Mode == 2 ? Copy.Copy->NodePosX : Copy.PlannedX,
-                            Mode == 2 ? Copy.Copy->NodePosY : Copy.PlannedY) + Copy.OutputOffset;
+                    { bCopiedSource=true; A = FVector2D(Mode == 2 ? Copy.Copy->NodePosX : Copy.PlannedX,
+                            Mode == 2 ? Copy.Copy->NodePosY : Copy.PlannedY) + Copy.OutputOffset; }
             const bool bExec = Wire.OutputPin->PinType.PinCategory == TEXT("exec");
-            const double Length = FVector2D::Distance(A, B);
-            Quality.BlockMeasures[5] += Length;
-            const double DX = FMath::Abs(B.X-A.X), DY = FMath::Abs(B.Y-A.Y);
-            const double TanTenDegrees = 0.176326980708465;
-            if (bExec && DY > DX * TanTenDegrees && DX > DY * TanTenDegrees)
-                Quality.BlockMeasures[2] += Length;
+            // Row membership is a property of the logical edge, even when its
+            // visible connection is split into multiple reroute segments.
             if (bExec && !Wire.bControlFeedback && Source.BlockIndex != INDEX_NONE
-                && Source.BlockIndex == Target.BlockIndex && DY > 16.0) ++Quality.BlockMeasures[3];
-            const FSegment Segment{A, B, Wire.SourceNodeIndex, Wire.TargetNodeIndex, bExec};
-            for (const auto& Other : Segments)
-                if (Other.bExec == bExec && Intersects(Segment, Other)) ++Quality.BlockMeasures[bExec ? 1 : 4];
-            Segments.Add(Segment);
-            for (const auto& Box : Plan.Boxes)
+                && Source.BlockIndex == Target.BlockIndex && FMath::Abs(B.Y-A.Y) > 16.0) ++Quality.BlockMeasures[3];
+            TSet<const FTurboMCPGraphTidy::FBox*> CrossedBoxes;
+            for (const auto& Endpoints:TidyWireSegments(Plan,WireIndex,Mode,A,B))
             {
-                auto Contains = [&](const FTurboMCPGraphTidy::FNode& Node)
-                { return Box.MemberKeys.Contains(Node.Key) || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName())); };
-                if (Contains(Source) || Contains(Target)) continue;
-                const double X = Mode == 0 ? Box.X : Box.PlannedX, Y = Mode == 0 ? Box.Y : Box.PlannedY;
-                const double Width = Mode == 0 ? Box.Width : Box.PlannedWidth, Height = Mode == 0 ? Box.Height : Box.PlannedHeight;
-                // Slab clipping counts a passage through the interior, including
-                // a segment wholly inside an unrelated box. Touching an edge is not a crossing.
-                double Enter = 0.0, Leave = 1.0;
-                auto Clip = [&](double Start, double Delta, double Min, double Max)
+                const FVector2D SegmentStart=Endpoints.Key, SegmentEnd=Endpoints.Value;
+                const double Length=FVector2D::Distance(SegmentStart,SegmentEnd);
+                Quality.BlockMeasures[5]+=Length;
+                const double DX=FMath::Abs(SegmentEnd.X-SegmentStart.X), DY=FMath::Abs(SegmentEnd.Y-SegmentStart.Y);
+                const double TanTenDegrees=0.176326980708465;
+                if (bExec && DY>DX*TanTenDegrees && DX>DY*TanTenDegrees) Quality.BlockMeasures[2]+=Length;
+                const FSegment Segment{SegmentStart,SegmentEnd,Wire.SourceNodeIndex,Wire.TargetNodeIndex,bExec};
+                for (const auto& Other:Segments)
+                    if (Other.bExec==bExec && Intersects(Segment,Other)) ++Quality.BlockMeasures[bExec?1:4];
+                Segments.Add(Segment);
+                for (const auto& Box : Plan.Boxes)
                 {
-                    if (FMath::Abs(Delta) < 0.000001) return Start > Min && Start < Max;
-                    double T0 = (Min-Start)/Delta, T1 = (Max-Start)/Delta;
-                    if (T0 > T1) Swap(T0, T1);
-                    Enter = FMath::Max(Enter, T0); Leave = FMath::Min(Leave, T1);
-                    return Enter < Leave;
-                };
-                if (Length > 0.001 && Clip(A.X, B.X-A.X, X+0.001, X+Width-0.001)
-                    && Clip(A.Y, B.Y-A.Y, Y+0.001, Y+Height-0.001)) ++Quality.BlockMeasures[0];
+                    if (Mode == 0 && Box.bGenerated) continue;
+                    auto Contains = [&](const FTurboMCPGraphTidy::FNode& Node)
+                    { return Box.MemberKeys.Contains(Node.Key) || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName())); };
+                    if (Contains(bCopiedSource?Target:Source) || Contains(Target)) continue;
+                    const double X = Mode == 0 ? Box.X : Box.PlannedX, Y = Mode == 0 ? Box.Y : Box.PlannedY;
+                    const double Width = Mode == 0 ? Box.Width : Box.PlannedWidth, Height = Mode == 0 ? Box.Height : Box.PlannedHeight;
+                    // Slab clipping counts a passage through the interior, including
+                    // a segment wholly inside an unrelated box. Touching an edge is not a crossing.
+                    double Enter = 0.0, Leave = 1.0;
+                    auto Clip = [&](double Start, double Delta, double Min, double Max)
+                    {
+                        if (FMath::Abs(Delta) < 0.000001) return Start > Min && Start < Max;
+                        double T0 = (Min-Start)/Delta, T1 = (Max-Start)/Delta;
+                        if (T0 > T1) Swap(T0, T1);
+                        Enter = FMath::Max(Enter, T0); Leave = FMath::Min(Leave, T1);
+                        return Enter < Leave;
+                    };
+                    if (Length > 0.001 && Clip(SegmentStart.X, SegmentEnd.X-SegmentStart.X, X+0.001, X+Width-0.001)
+                        && Clip(SegmentStart.Y, SegmentEnd.Y-SegmentStart.Y, Y+0.001, Y+Height-0.001)) CrossedBoxes.Add(&Box);
+                }
             }
+            Quality.BlockMeasures[0]+=CrossedBoxes.Num();
         }
     }
 
     FString CompactMeasureSummary(const FStructuralQuality& Before, const FStructuralQuality& After)
     {
         if (!Before.bHasBlockMeasures || !After.bHasBlockMeasures) return FString();
-        FString Text = TEXT("compact score: straight segments; crossings exclude shared endpoints and collinear runs; data crossings count data/data pairs. Block identities are held fixed.\n");
+        FString Text = TEXT("compact score: native pin endpoints and straight segments; crossings exclude shared endpoints and collinear runs; data crossings count data/data pairs. Block identities are held fixed.\n");
         for (int32 Index = 0; Index < 7; ++Index)
         {
             const double Old = Before.BlockMeasures[Index], New = After.BlockMeasures[Index];
@@ -211,6 +276,67 @@ namespace
                 bRegression ? TEXT("; regression >10% (zero baseline: any increase)") : TEXT(""));
         }
         Text += TEXT("ranking: listed order; differences below 5% or below 1 for counts are ties. Any >10% regression refuses the edit unless Force is explicit. These measures do not establish visual acceptance.");
+        return Text;
+    }
+
+    // Export the measured geometry so the harness can independently recompute
+    // Appendix H without copying this translation unit's scoring arithmetic.
+    FString CompactGeometryEvidence(const FTurboMCPGraphTidy::FPlan& Plan,int32 Mode,
+        const TArray<FTurboMCPGraphTidy::FGetterCopy>& Copies)
+    {
+        if (!Plan.bCompactBlocks) return FString();
+        const TCHAR* Side=Mode==0?TEXT("before"):TEXT("after"); FString Text;
+        auto Position=[Mode](const FTurboMCPGraphTidy::FNode& N){return Mode==0?FVector2D(N.X,N.Y)
+            :Mode==2 && N.Node?FVector2D(N.Node->NodePosX,N.Node->NodePosY):FVector2D(N.PlannedX,N.PlannedY);};
+        auto PinPosition=[&](const UEdGraphPin* Pin){return FTurboMCPGraphTidy::AlignmentPinPosition(Pin);};
+        auto Rect=[&](double X,double Y,double W,double H)
+        { Text+=FString::Printf(TEXT("score rect side=%s x=%.6f y=%.6f w=%.6f h=%.6f\n"),Side,X,Y,W,H); };
+        for (const auto& N:Plan.Nodes) if (!N.bIsComment) { const FVector2D P=Position(N); Rect(P.X,P.Y,N.Width,N.Height); }
+        for (int32 I=0;I<Plan.Boxes.Num();++I)
+        {
+            const auto& Box=Plan.Boxes[I]; if (Mode==0 && Box.bGenerated) continue;
+            const double X=Mode==0?Box.X:Box.PlannedX,Y=Mode==0?Box.Y:Box.PlannedY,W=Mode==0?Box.Width:Box.PlannedWidth,H=Mode==0?Box.Height:Box.PlannedHeight;
+            Rect(X,Y,W,H); TArray<FString> Owned;
+            for (int32 WireIndex=0;WireIndex<Plan.Wires.Num();++WireIndex)
+            {
+                const auto& Wire=Plan.Wires[WireIndex];
+                if (!Plan.Nodes.IsValidIndex(Wire.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(Wire.TargetNodeIndex)) continue;
+                auto Contains=[&](const auto& N){return Box.MemberKeys.Contains(N.Key)||(N.Node && Box.MemberKeys.Contains(N.Node->GetName()));};
+                bool Copied=false;
+                if (Mode!=0) for (const auto& Copy:Copies) if (Copy.OriginalValuePin==Wire.OutputPin && Copy.ConsumerPin==Wire.InputPin && (Mode!=2 || Copy.Copy)) { Copied=true; break; }
+                if (Contains(Plan.Nodes[Copied?Wire.TargetNodeIndex:Wire.SourceNodeIndex]) || Contains(Plan.Nodes[Wire.TargetNodeIndex])) Owned.Add(FString::FromInt(WireIndex));
+            }
+            Text+=FString::Printf(TEXT("score box side=%s index=%d x=%.6f y=%.6f w=%.6f h=%.6f owned=%s\n"),Side,I,X,Y,W,H,*FString::Join(Owned,TEXT(",")));
+        }
+        if (Mode!=0)
+        {
+            for (const auto& Copy:Copies) if (Mode!=2 || Copy.Copy)
+                Rect(Mode==2?Copy.Copy->NodePosX:Copy.PlannedX,Mode==2?Copy.Copy->NodePosY:Copy.PlannedY,Copy.Width,Copy.Height);
+            for (const auto& Route:Plan.WireRoutes) if (!Route.bSkipped)
+                for (int32 I=0;I<Route.KnotPositions.Num();++I)
+                {
+                    if (Mode==2 && (!Route.AppliedKnots.IsValidIndex(I)||!Route.AppliedKnots[I])) continue;
+                    const FVector2D P=Mode==2?FVector2D(Route.AppliedKnots[I]->NodePosX,Route.AppliedKnots[I]->NodePosY):Route.KnotPositions[I];
+                    Rect(P.X,P.Y,Route.KnotSize.X,Route.KnotSize.Y);
+                }
+        }
+        for (int32 I=0;I<Plan.Wires.Num();++I)
+        {
+            const auto& Wire=Plan.Wires[I];
+            if (!Wire.OutputPin || !Wire.InputPin || !Plan.Nodes.IsValidIndex(Wire.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(Wire.TargetNodeIndex)) continue;
+            const auto& Source=Plan.Nodes[Wire.SourceNodeIndex]; const auto& Target=Plan.Nodes[Wire.TargetNodeIndex];
+            if (!Source.Node || !Target.Node) continue;
+            FVector2D A=PinPosition(Wire.OutputPin)+Position(Source)-FVector2D(Source.Node->NodePosX,Source.Node->NodePosY);
+            const FVector2D B=PinPosition(Wire.InputPin)+Position(Target)-FVector2D(Target.Node->NodePosX,Target.Node->NodePosY);
+            if (Mode!=0) for (const auto& Copy:Copies)
+                if (Copy.OriginalValuePin==Wire.OutputPin && Copy.ConsumerPin==Wire.InputPin && (Mode!=2 || Copy.Copy))
+                    A=FVector2D(Mode==2?Copy.Copy->NodePosX:Copy.PlannedX,Mode==2?Copy.Copy->NodePosY:Copy.PlannedY)+Copy.OutputOffset;
+            const bool Exec=Wire.OutputPin->PinType.PinCategory==TEXT("exec");
+            const bool Row=Exec && !Wire.bControlFeedback && Source.BlockIndex!=INDEX_NONE && Source.BlockIndex==Target.BlockIndex;
+            Text+=FString::Printf(TEXT("score edge side=%s wire=%d row=%d ax=%.6f ay=%.6f bx=%.6f by=%.6f source=%s target=%s pin=%s\n"),Side,I,Row?1:0,A.X,A.Y,B.X,B.Y,*Source.Key,*Target.Key,*Wire.OutputPin->PinName.ToString().Replace(TEXT(" "),TEXT("_")));
+            for (const auto& Segment:TidyWireSegments(Plan,I,Mode,A,B))
+                Text+=FString::Printf(TEXT("score segment side=%s wire=%d exec=%d ax=%.6f ay=%.6f bx=%.6f by=%.6f\n"),Side,I,Exec?1:0,Segment.Key.X,Segment.Key.Y,Segment.Value.X,Segment.Value.Y);
+        }
         return Text;
     }
 
@@ -242,6 +368,15 @@ namespace
                 // Each reader carries its measured outline; an entry is not its getter.
                 Rectangles.Add({CopyPosition(Copy), Copy.Width, Copy.Height});
             }
+        if (Mode!=0)
+            for (const auto& Route:Plan.WireRoutes)
+                if (!Route.bSkipped)
+                    for (int32 Index=0;Index<Route.KnotPositions.Num();++Index)
+                    {
+                        if (Mode==2 && (!Route.AppliedKnots.IsValidIndex(Index) || !Route.AppliedKnots[Index])) continue;
+                        const FVector2D P=Mode==2 ? FVector2D(Route.AppliedKnots[Index]->NodePosX,Route.AppliedKnots[Index]->NodePosY) : Route.KnotPositions[Index];
+                        Rectangles.Add({P,Route.KnotSize.X,Route.KnotSize.Y});
+                    }
         for (int32 A = 0; A < Rectangles.Num(); ++A)
             for (int32 B = A + 1; B < Rectangles.Num(); ++B)
             {
@@ -488,6 +623,20 @@ namespace
         return true;
     }
 
+    // Match stock Kismet's actual spline endpoints: whole pin-widget right/left
+    // midpoints with its four-unit brush inset (Blueprint arrows have radius zero).
+    // GetNodeOffset alone is the left edge even for an output with a wide label;
+    // image centers also lose the distinct input/output anchors on reroute nodes.
+    FVector2D MeasuredConnectorOffset(const TSharedPtr<SGraphNode>& NodeWidget,const TSharedPtr<SGraphPin>& PinWidget)
+    {
+        const FGeometry& Geometry=PinWidget->GetTickSpaceGeometry();
+        const bool Output=PinWidget->GetDirection()==EGPD_Output;
+        FVector2D Offset(NodeWidget->GetTickSpaceGeometry().AbsoluteToLocal(
+            Geometry.GetAbsolutePositionAtCoordinates(FVector2f(Output?1.0f:0.0f,0.5f))));
+        Offset.X+=Output?-4.0:4.0;
+        return Offset;
+    }
+
     TMap<const UEdGraphNode*, FVector2D> CachedAlignmentNodeSizes;
     TMap<const UEdGraphPin*, FVector2D> MeasuredPinOffsets;
     TWeakObjectPtr<UEdGraph> AlignmentGraph;
@@ -607,7 +756,7 @@ namespace
         const TSharedPtr<SGraphPin> PinWidget = Widget->FindWidgetForPin(ReaderOutput(Reader, Pin));
         if (!PinWidget || PinWidget->GetTickSpaceGeometry().GetLocalSize().Y <= 0) return false;
         Size = FVector2D(Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top);
-        Offset = FVector2D(PinWidget->GetNodeOffset());
+        Offset = MeasuredConnectorOffset(Widget,PinWidget);
         return Size.X > 0 && Size.Y > 0 && FMath::IsFinite(Size.X) && FMath::IsFinite(Size.Y)
             && FMath::IsFinite(Offset.X) && FMath::IsFinite(Offset.Y);
     }
@@ -790,7 +939,7 @@ namespace
                         const TSharedPtr<SGraphPin> PinWidget = Widget->FindWidgetForPin(CopyPin);
                         if (PinWidget.IsValid() && PinWidget->GetTickSpaceGeometry().GetLocalSize().Y > 0)
                         {
-                            const FVector2D Offset(PinWidget->GetNodeOffset());
+                            const FVector2D Offset=MeasuredConnectorOffset(Widget,PinWidget);
                             if (FMath::IsFinite(Offset.X) && FMath::IsFinite(Offset.Y)) PinOffsets.Add(Pin, Offset);
                         }
                         break;
@@ -861,12 +1010,13 @@ FVector2D FTurboMCPGraphTidy::AlignmentPinPosition(const UEdGraphPin* Pin)
 }
 
 bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath, double InHorizontalGap, double InVerticalGap, double InLanePitch, const FString& WrapAfter, const FString& LayoutMode)
+	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath, double InHorizontalGap, double InVerticalGap, double InLanePitch, const FString& WrapAfter, const FString& LayoutMode, const FString& RouteWires, double ChannelWidth, bool bCreateBoxes)
 {
     if(!FMath::IsFinite(InHorizontalGap) || !FMath::IsFinite(InVerticalGap) || !FMath::IsFinite(InLanePitch)
         || InHorizontalGap<40 || InHorizontalGap>2000 || InVerticalGap<40 || InVerticalGap>2000 || InLanePitch<100 || InLanePitch>10000)
     { OutError=TEXT("layout gaps must be finite 40..2000; lane pitch 100..10000 graph units"); return false; }
     const double SpacingX=InHorizontalGap, SpacingY=InVerticalGap;
+    const double BlockBandGap=bCreateBoxes?FMath::Max(InVerticalGap,2*(FitPadding+TitleBarHeight)+FitPadding+1):InVerticalGap;
 	OutError.Empty();
 	OutPlan = FPlan();
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
@@ -876,6 +1026,13 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
     if (Mode != TEXT("rows") && Mode != TEXT("blocks"))
     { OutError = TEXT("LayoutMode must be rows or blocks; unchanged."); return false; }
     OutPlan.bCompactBlocks = Mode == TEXT("blocks");
+    if (bCreateBoxes && (!OutPlan.bCompactBlocks || !InNodeIds.IsEmpty()))
+    { OutError=TEXT("CreateBoxes requires whole-graph LayoutMode=blocks; unchanged."); return false; }
+    const FString Routing=RouteWires.TrimStartAndEnd().ToLower();
+    if (Routing!=TEXT("off") && Routing!=TEXT("orthogonal"))
+    { OutError=TEXT("RouteWires must be off or orthogonal; unchanged."); return false; }
+    if (!FMath::IsFinite(ChannelWidth) || ChannelWidth<20 || ChannelWidth>400)
+    { OutError=TEXT("ChannelWidth must be finite and between 20 and 400 graph units; unchanged."); return false; }
 	OutPlan.bMergeGettersRequested = bInMergeGetters;
 
 	if (OutPlan.Asset.IsEmpty())
@@ -1474,7 +1631,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		return OutPlan.Boxes[InLeft].Key < OutPlan.Boxes[InRight].Key;
 	});
 
-	auto ArrangeRows = [&OutPlan, &MainPredecessor, SpacingX, SpacingY, InLanePitch](const TArray<int32>& Free, double FreeStartX, double FreeStartY)
+	auto ArrangeRows = [&OutPlan, &MainPredecessor, SpacingX, SpacingY, BlockBandGap, InLanePitch](const TArray<int32>& Free, double FreeStartX, double FreeStartY)
 	{
 			// Execution components form separate rows; data sharing must not merge event chains.
 			TMap<int32, int32> RowOf;
@@ -1578,6 +1735,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     return B;
                 };
                 TMap<int32,double> LaneCursor;
+                TMap<int32,TSet<int32>> ReservedCalculations;
                 LaneCursor.Add(0,FreeStartX);
 				for (int32 I : Free)
 				{
@@ -1604,12 +1762,21 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					if (Lane == MAX_int32) Lane = 0;
                     if (OutPlan.bCompactBlocks && IncomingLanes.Num() > 1)
                     {
-                        // A join follows its incoming blocks. Reusing their common
-                        // ancestor lane puts the return back above the completed flow.
-                        const int32 JoinLane = NextLane++;
-                        LaneParent.Add(JoinLane, Lane);
-                        LaneSource.Add(JoinLane, I);
-                        Lane = JoinLane;
+                        // Keep the merge on its longest execution path. A short
+                        // fallback exits along the bottom and returns to this row;
+                        // it must not pull the finish block below the fallback.
+                        const FWire* Primary=nullptr; int32 BestColumn=MIN_int32;
+                        for (const FWire& Wire:OutPlan.Wires)
+                            if (Wire.TargetNodeIndex==I && Wire.OutputPin && !Wire.bControlFeedback
+                                && Wire.OutputPin->PinType.PinCategory==TEXT("exec") && LaneOf.Contains(Wire.SourceNodeIndex)
+                                && OutPlan.Nodes[Wire.SourceNodeIndex].Column>BestColumn)
+                            { Primary=&Wire; BestColumn=OutPlan.Nodes[Wire.SourceNodeIndex].Column; }
+                        if (Primary)
+                        {
+                            const int32* Reserved=OutputLane.Find(Primary->OutputPin);
+                            Lane=Reserved?*Reserved:LaneOf[Primary->SourceNodeIndex]; Incoming=Primary;
+                            OutPlan.MergePredecessors.Add(I,Primary->SourceNodeIndex);
+                        }
                     }
                     LaneOf.Add(I, Lane);
                     NextLane=FMath::Max(NextLane,Lane+1);
@@ -1639,15 +1806,23 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 					double PureSpace=0;
                     TSet<int32> SeenPure;
+                    TSet<int32>& Reserved=ReservedCalculations.FindOrAdd(Lane);
                     TFunction<double(int32)> Required=[&](int32 Target)
                     {
                         if(SeenPure.Contains(Target)) return 0.0;
                         SeenPure.Add(Target); double Width=0;
-                        for(const FWire& W:OutPlan.Wires) if(W.TargetNodeIndex==Target && RowOf.Contains(W.SourceNodeIndex) && OutPlan.Nodes[W.SourceNodeIndex].bIsPure)
+                        for(const FWire& W:OutPlan.Wires) if(W.TargetNodeIndex==Target && RowOf.Contains(W.SourceNodeIndex) && OutPlan.Nodes[W.SourceNodeIndex].bIsPure
+                            && (!OutPlan.bCompactBlocks || !Reserved.Contains(W.SourceNodeIndex)))
                             Width=FMath::Max(Width,OutPlan.Nodes[W.SourceNodeIndex].Width+SpacingX+Required(W.SourceNodeIndex));
                         return Width;
                     };
                     PureSpace=Required(I);
+                    // A shared calculation is drawn once beside its earliest
+                    // consumer. Later consumers on this lane need no second empty
+                    // tree column. Getters still reserve room for local copies;
+                    // other lanes retain independent input space. Rows is unchanged.
+                    if (OutPlan.bCompactBlocks) for (int32 Pure:SeenPure)
+                        if (OutPlan.Nodes[Pure].bIsPure && !OutPlan.Nodes[Pure].bIsGetter) Reserved.Add(Pure);
                     int32 IncomingExecCount = 0;
                     for (const FWire& Edge : OutPlan.Wires)
                         if (Edge.TargetNodeIndex == I && !Edge.bControlFeedback && Edge.OutputPin
@@ -1748,6 +1923,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             for (const FWire& Wire : OutPlan.Wires)
                                 if (!Wire.bControlFeedback && Wire.OutputPin
                                     && Wire.OutputPin->PinType.PinCategory == TEXT("exec")
+                                    && (!OutPlan.MergePredecessors.Contains(Wire.TargetNodeIndex) || OutPlan.MergePredecessors[Wire.TargetNodeIndex]==Wire.SourceNodeIndex)
                                     && LaneOf.Contains(Wire.SourceNodeIndex) && LaneOf.Contains(Wire.TargetNodeIndex)
                                     && LaneOf[Wire.TargetNodeIndex] == CandidateLane
                                     && LaneOf[Wire.SourceNodeIndex] != CandidateLane
@@ -1930,7 +2106,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     if(BandMembers.IsEmpty()) continue;
                     const double BandShift=PackedBandTop-BandMin;
                     for(int32 I:BandMembers) OutPlan.Nodes[I].PlannedY+=BandShift;
-                    PackedBandTop+=FMath::Max(InLanePitch,BandMax-BandMin+SpacingY);
+                    PackedBandTop+=FMath::Max(InLanePitch,BandMax-BandMin+BlockBandGap);
                 }
                 Bottom=RowY;PureBottom=RowY;
                 for(int32 I:Free) if(RowOf[I]==Row)
@@ -2055,11 +2231,11 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     for(int32 I:Members) MinY=FMath::Min(MinY,OutPlan.Nodes[I].PlannedY);
                     // Preserve lane zero on the Sequence pin. Later rows may grow only
                     // when their measured outlines need clearance from the previous row.
-                    const double ShiftY=LaneIndex==0?0.0:FMath::Max(0.0,PreviousLaneBottom+SpacingY-MinY);
+                    const double ShiftY=LaneIndex==0?0.0:FMath::Max(0.0,PreviousLaneBottom+BlockBandGap-MinY);
                     for(int32 I:Members) { OutPlan.Nodes[I].PlannedY+=ShiftY; PreviousRight=FMath::Max(PreviousRight,OutPlan.Nodes[I].PlannedX+OutPlan.Nodes[I].Width); }
                     for(int32 Call:Lane) EarlierCalls.Add(Call);
                     PreviousLaneBottom=Bottom+ShiftY;
-                    LaneY=FMath::Max(LaneY+ShiftY+InLanePitch,PreviousLaneBottom+SpacingY);
+                    LaneY=FMath::Max(LaneY+ShiftY+InLanePitch,PreviousLaneBottom+BlockBandGap);
                 }
             }
 	};
@@ -2603,6 +2779,31 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         }
     }
 
+    // Compact readers need a pin gap, not another execution column. Tighten
+    // singly used, unboxed getters horizontally while retaining their input order.
+    // This also leaves a real routing corridor beside control nodes.
+    if (OutPlan.bCompactBlocks && OutPlan.SelectedNodeKeys.IsEmpty())
+        for (int32 I=0;I<OutPlan.Nodes.Num();++I)
+        {
+            FNode& Reader=OutPlan.Nodes[I]; if (!Reader.bIsGetter || !Reader.bIsPure || Reader.bUnreachable || OwnerOfNode[I]!=INDEX_NONE) continue;
+            const FWire* Only=nullptr; int32 Uses=0;
+            for (const FWire& Wire:OutPlan.Wires) if (Wire.SourceNodeIndex==I) { Only=&Wire; ++Uses; }
+            if (Uses!=1 || !Only || !OutPlan.Nodes.IsValidIndex(Only->TargetNodeIndex) || OwnerOfNode[Only->TargetNodeIndex]!=INDEX_NONE) continue;
+            const FNode& Consumer=OutPlan.Nodes[Only->TargetNodeIndex];
+            const double X=FMath::RoundToDouble(Consumer.PlannedX-Reader.Width-GetterClearance);
+            if (X<=Reader.PlannedX) continue;
+            bool Clear=true;
+            for (int32 J=0;J<OutPlan.Nodes.Num();++J)
+            {
+                const FNode& Other=OutPlan.Nodes[J]; if (J==I || Other.bIsComment) continue;
+                if (X<Other.PlannedX+Other.Width+GetterClearance && X+Reader.Width+GetterClearance>Other.PlannedX
+                    && Reader.PlannedY<Other.PlannedY+Other.Height+GetterClearance && Reader.PlannedY+Reader.Height+GetterClearance>Other.PlannedY) { Clear=false; break; }
+            }
+            for (const FBox& Box:OutPlan.Boxes) if (Clear && Box.MemberKeys.IsEmpty())
+                if (X<Box.X+Box.Width && X+Reader.Width>Box.X && Reader.PlannedY<Box.Y+Box.Height && Reader.PlannedY+Reader.Height>Box.Y) Clear=false;
+            if (Clear) Reader.PlannedX=X;
+        }
+
 	// -----------------------------------------------------------------------------------------
 	// STEP 7: split variable getters that feed several consumers, BEFORE the measure, because a copy
 	// changes the graph's node set and therefore its wire set.
@@ -2711,7 +2912,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			const FNode& ConsumerPlan = OutPlan.Nodes[*ConsumerPlanIndex];
             if (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(ConsumerPlan.Key)) continue;
 			Planned.PlannedX = ConsumerPlan.PlannedX
-				- Planned.Width - SpacingX;
+				- Planned.Width - (OutPlan.bCompactBlocks ? GetterClearance : SpacingX);
             double ReaderFloor=ValueReaderFloor(ConsumerPlan.Node,ConsumerPlan.PlannedY);
             if(ConsumerPlan.bIsPure)
             {
@@ -2768,7 +2969,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             // column must not push a tiny reader below every unrelated branch.
             const FVector2D ConsumerInput = FTurboMCPGraphTidy::AlignmentPinPosition(ConsumerPin)
                 + FVector2D(ConsumerPlan.PlannedX - ConsumerPlan.X, ConsumerPlan.PlannedY - ConsumerPlan.Y);
-            const double CopyFloor = Planned.PlannedY;
+            const double CopyFloor = FMath::CeilToDouble(Planned.PlannedY);
             // Keep a copied reader above sources feeding lower input pins. A
             // downward-only collision search otherwise reverses the input order.
             double CopyCeiling = TNumericLimits<double>::Max();
@@ -2786,15 +2987,22 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     const int32* SourceIndex = Source ? IndexByNode.Find(Source->GetOwningNodeUnchecked()) : nullptr;
                     if (!SourceIndex || !OutPlan.Nodes[*SourceIndex].bIsPure) continue;
                     const FNode& SourcePlan = OutPlan.Nodes[*SourceIndex];
-                    // Keep the reader beside a sibling computation, rather than
-                    // stacking it over that computation's annotation space.
-                    if (!SourcePlan.bIsGetter)
+                    // A real sibling calculation owns its input-tree space. A
+                    // leaf literal has no tree; letting it reserve a whole column
+                    // can push this reader outside its execution block.
+                    const bool bHasLinkedDataInput = SourcePlan.Node && SourcePlan.Node->Pins.ContainsByPredicate(
+                        [](const UEdGraphPin* Pin)
+                        { return Pin && Pin->Direction == EGPD_Input && Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec && !Pin->LinkedTo.IsEmpty(); });
+                    if (!SourcePlan.bIsGetter && bHasLinkedDataInput)
                         CopyRightLimit = FMath::Min(CopyRightLimit, SourcePlan.PlannedX - Planned.Width - SpacingX);
                     CopyCeiling = FMath::Min(CopyCeiling,
                         AlignmentPinPosition(Source).Y + SourcePlan.PlannedY - SourcePlan.Y - Planned.OutputOffset.Y - GetterClearance);
                 }
             }
-            const double PreferredCopyX = CopyRightLimit;
+            // Use the exact integer coordinates that scratch and live edits apply.
+            // Fractional native pin offsets must not leak into reader positions.
+            CopyCeiling = FMath::FloorToDouble(CopyCeiling);
+            const double PreferredCopyX = FMath::FloorToDouble(CopyRightLimit);
             const double MinimumCopyX = (bFlowComments || ConsumerBoxIndex == INDEX_NONE) ? static_cast<double>(MIN_int32)
                 : OutPlan.Boxes[ConsumerBoxIndex].X + FitPadding;
             TArray<double> CopyColumns;
@@ -3016,6 +3224,306 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         }
     }
 
+    TSet<int32> SimpleLoopBodies;
+    if (OutPlan.bCompactBlocks)
+    {
+        // Spatial lanes keep Body on the row, but are not semantic blocks. Split
+        // at control handoffs before assigning pure expressions and box ownership.
+        auto ReachExec=[&](TArray<int32> Pending)
+        {
+            TSet<int32> Seen;
+            while (!Pending.IsEmpty())
+            {
+                const int32 I=Pending.Pop(EAllowShrinking::No); if (Seen.Contains(I)) continue; Seen.Add(I);
+                for (const FWire& Wire:OutPlan.Wires) if (Wire.SourceNodeIndex==I && Wire.OutputPin
+                    && Wire.OutputPin->PinType.PinCategory==TEXT("exec") && !Wire.bControlFeedback) Pending.Add(Wire.TargetNodeIndex);
+            }
+            return Seen;
+        };
+        for (int32 I=0;I<OutPlan.Nodes.Num();++I)
+        {
+            TArray<int32> Body,Completed;
+            for (const FWire& Wire:OutPlan.Wires) if (Wire.SourceNodeIndex==I && Wire.OutputPin)
+            {
+                if (Wire.OutputPin->PinName==TEXT("LoopBody")) Body.Add(Wire.TargetNodeIndex);
+                if (Wire.OutputPin->PinName==TEXT("Completed")) Completed.Add(Wire.TargetNodeIndex);
+            }
+            if (Body.IsEmpty()) continue;
+            const TSet<int32> After=ReachExec(Completed); int32 ExecCount=0;
+            for (int32 Member:ReachExec(Body)) if (!After.Contains(Member) && !OutPlan.Nodes[Member].bIsKnot) ++ExecCount;
+            if (ExecCount==1) SimpleLoopBodies.Add(I);
+        }
+        auto Active=[&](int32 I){return !OutPlan.Nodes[I].bIsComment && !OutPlan.Nodes[I].bUnreachable
+            && (OutPlan.SelectedNodeKeys.IsEmpty() || OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[I].Key));};
+        TSet<int32> Execution;
+        for (int32 I=0;I<OutPlan.Nodes.Num();++I)
+        {
+            OutPlan.Nodes[I].BlockIndex=INDEX_NONE;
+            if (Active(I) && OutPlan.Nodes[I].Node)
+                for (const UEdGraphPin* Pin:OutPlan.Nodes[I].Node->Pins)
+                    if (Pin && Pin->PinType.PinCategory==TEXT("exec")) { Execution.Add(I); break; }
+        }
+        OutPlan.Blocks.Reset(); OutPlan.BlockCount=0;
+        TArray<int32> Pending=Execution.Array(); Pending.Sort(); TMap<int32,int32> ExecOrder;
+        auto AddBlock=[&](const FString& Kind,int32 Parent,int32 LoopScope,const FString& Handoff)
+        {
+            FBlock Block; Block.Kind=Kind; Block.ParentIndex=Parent; Block.LoopContext=LoopScope; Block.Handoff=Handoff;
+            const int32 Index=OutPlan.Blocks.Add(MoveTemp(Block)); OutPlan.BlockCount=OutPlan.Blocks.Num(); return Index;
+        };
+        while (!Pending.IsEmpty())
+        {
+            int32 Ready=INDEX_NONE;
+            for (int32 I:Pending)
+            {
+                bool Wait=false;
+                for (const FWire& Wire:OutPlan.Wires) if (Wire.TargetNodeIndex==I && Wire.OutputPin && !Wire.bControlFeedback
+                    && Wire.OutputPin->PinType.PinCategory==TEXT("exec") && Pending.Contains(Wire.SourceNodeIndex)) { Wait=true; break; }
+                if (!Wait) { Ready=I; break; }
+            }
+            if (Ready==INDEX_NONE) Ready=Pending[0]; // Ordering already validated; fixed external cycles remain anchors.
+            const FWire* Incoming=nullptr; double Best=TNumericLimits<double>::Max();
+            for (const FWire& Wire:OutPlan.Wires)
+                if (Wire.TargetNodeIndex==Ready && Wire.OutputPin && !Wire.bControlFeedback && Wire.OutputPin->PinType.PinCategory==TEXT("exec")
+                    && Execution.Contains(Wire.SourceNodeIndex) && OutPlan.Nodes[Wire.SourceNodeIndex].BlockIndex!=INDEX_NONE)
+                {
+                    const FNode& Source=OutPlan.Nodes[Wire.SourceNodeIndex]; const FNode& Target=OutPlan.Nodes[Ready];
+                    const double Distance=FMath::Abs(AlignmentPinPosition(Wire.OutputPin).Y+Source.PlannedY-Source.Y
+                        -AlignmentPinPosition(Wire.InputPin).Y-Target.PlannedY+Target.Y);
+                    if (Distance<Best) { Best=Distance; Incoming=&Wire; }
+                }
+            int32 Block=INDEX_NONE;
+            if (Incoming)
+            {
+                const int32 SourceIndex=Incoming->SourceNodeIndex; const FNode& Source=OutPlan.Nodes[SourceIndex];
+                Block=Source.BlockIndex; TSet<const UEdGraphPin*> Outputs;
+                for (const FWire& Wire:OutPlan.Wires) if (Wire.SourceNodeIndex==SourceIndex && Wire.OutputPin && !Wire.bControlFeedback
+                    && Wire.OutputPin->PinType.PinCategory==TEXT("exec")) Outputs.Add(Wire.OutputPin);
+                const bool Body=Incoming->OutputPin->PinName==TEXT("LoopBody"),Completed=Incoming->OutputPin->PinName==TEXT("Completed");
+                bool Boundary=Outputs.Num()>1 || Body || Completed;
+                if (Body && SimpleLoopBodies.Contains(SourceIndex)) Boundary=false;
+                if (Source.Node && Source.Node->IsA<UK2Node_ExecutionSequence>())
+                    for (const UEdGraphPin* Pin:Source.Node->Pins) if (Outputs.Contains(Pin)) { if (Pin==Incoming->OutputPin) Boundary=false; break; }
+                if (Boundary)
+                {
+                    int32 Parent=Block; const int32 LoopScope=OutPlan.Blocks[Block].LoopContext;
+                    if (Completed) Parent=LoopScope!=INDEX_NONE?LoopScope:OutPlan.Blocks[Block].ParentIndex;
+                    Block=AddBlock(Body?TEXT("loop body"):Completed?TEXT("loop continuation"):TEXT("control lane"),Parent,LoopScope,
+                        Source.Key+TEXT(":")+Incoming->OutputPin->PinName.ToString());
+                    if (Body) OutPlan.Blocks[Block].LoopContext=Block;
+                }
+            }
+            if (Block==INDEX_NONE) Block=AddBlock(TEXT("entry"),INDEX_NONE,INDEX_NONE,FString());
+            OutPlan.Nodes[Ready].BlockIndex=Block; ExecOrder.Add(Ready,ExecOrder.Num()); Pending.RemoveSingle(Ready);
+        }
+        for (int32 I=0;I<OutPlan.Nodes.Num();++I) if (Active(I) && !Execution.Contains(I))
+        {
+            TArray<int32> Values{I}; TSet<int32> Seen; int32 BestOrder=MAX_int32,Block=INDEX_NONE;
+            while (!Values.IsEmpty())
+            {
+                const int32 Value=Values.Pop(EAllowShrinking::No); if (Seen.Contains(Value)) continue; Seen.Add(Value);
+                for (const FWire& Wire:OutPlan.Wires) if (Wire.SourceNodeIndex==Value && Wire.OutputPin && Wire.OutputPin->PinType.PinCategory!=TEXT("exec"))
+                {
+                    if (const int32* Order=ExecOrder.Find(Wire.TargetNodeIndex))
+                    { if (*Order<BestOrder) { BestOrder=*Order; Block=OutPlan.Nodes[Wire.TargetNodeIndex].BlockIndex; } }
+                    else if (OutPlan.Nodes[Wire.TargetNodeIndex].bIsPure || OutPlan.Nodes[Wire.TargetNodeIndex].bIsKnot) Values.Add(Wire.TargetNodeIndex);
+                }
+            }
+            if (Block==INDEX_NONE && Execution.IsEmpty())
+                Block=OutPlan.Blocks.IsEmpty()?AddBlock(TEXT("data"),INDEX_NONE,INDEX_NONE,FString()):0;
+            OutPlan.Nodes[I].BlockIndex=Block;
+        }
+    }
+
+    if (bCreateBoxes)
+    {
+        if (OutPlan.Nodes.Num()>512) { OutError=TEXT("Generated comments support at most 512 nodes; use CreateBoxes=false for larger graphs."); return false; }
+        struct FGroup { TSet<int32> Members; FString Title; int32 RootBlock=INDEX_NONE; };
+        TArray<FGroup> Groups;
+        auto Reach = [&](TArray<int32> Pending)
+        {
+            TSet<int32> Seen;
+            while (!Pending.IsEmpty())
+            {
+                const int32 Current=Pending.Pop(EAllowShrinking::No);
+                if (Seen.Contains(Current)) continue;
+                Seen.Add(Current);
+                for (const FWire& Wire:OutPlan.Wires)
+                    if (!Wire.bControlFeedback && Wire.SourceNodeIndex==Current && Wire.OutputPin
+                        && Wire.OutputPin->PinType.PinCategory==TEXT("exec")) Pending.Add(Wire.TargetNodeIndex);
+            }
+            return Seen;
+        };
+        // A body's Completed descendants belong to its parent. A nested loop's
+        // Completed descendants remain within the enclosing body.
+        for (int32 I=0;I<OutPlan.Nodes.Num();++I)
+        {
+            TArray<int32> Body,Completed;
+            for (const FWire& Wire:OutPlan.Wires)
+                if (Wire.SourceNodeIndex==I && Wire.OutputPin && !Wire.bControlFeedback)
+                {
+                    if (Wire.OutputPin->PinName==TEXT("LoopBody")) Body.Add(Wire.TargetNodeIndex);
+                    if (Wire.OutputPin->PinName==TEXT("Completed")) Completed.Add(Wire.TargetNodeIndex);
+                }
+            if (Body.IsEmpty() || SimpleLoopBodies.Contains(I)) continue;
+            FGroup Group; Group.RootBlock=OutPlan.Nodes[Body[0]].BlockIndex; Group.Title=OutPlan.Nodes[I].Node->GetNodeTitle(ENodeTitleType::ListView).ToString().Replace(TEXT("\n"),TEXT(" "))+TEXT(" / LoopBody");
+            const TSet<int32> After=Reach(Completed);
+            for (int32 Member:Reach(Body)) if (!After.Contains(Member)) Group.Members.Add(Member);
+            // Include pure dependencies only when every execution consumer is
+            // inside this body. Shared values retain their outer ownership.
+            for (int32 P=0;P<OutPlan.Nodes.Num();++P) if (OutPlan.Nodes[P].bIsPure)
+            {
+                TArray<int32> Pending{P}; TSet<int32> Seen; bool bInside=true; int32 Uses=0;
+                while (!Pending.IsEmpty())
+                {
+                    const int32 Current=Pending.Pop(EAllowShrinking::No);
+                    if (Seen.Contains(Current)) continue; Seen.Add(Current);
+                    for (const FWire& Wire:OutPlan.Wires)
+                        if (Wire.SourceNodeIndex==Current && Wire.OutputPin && Wire.OutputPin->PinType.PinCategory!=TEXT("exec"))
+                        {
+                            if (OutPlan.Nodes[Wire.TargetNodeIndex].bIsPure) Pending.Add(Wire.TargetNodeIndex);
+                            else { ++Uses; bInside &= Group.Members.Contains(Wire.TargetNodeIndex); }
+                        }
+                }
+                if (Uses && bInside) Group.Members.Add(P);
+            }
+            if (!Group.Members.IsEmpty()) Groups.Add(MoveTemp(Group));
+        }
+        const int32 LoopGroups=Groups.Num();
+        for (int32 Block=0;Block<OutPlan.BlockCount;++Block)
+        {
+            FGroup Group; Group.Title=FString::Printf(TEXT("Block %d"),Block+1);
+            for (const FNode& Controller:OutPlan.Nodes)
+                if (Controller.Node && OutPlan.Blocks[Block].Handoff.StartsWith(Controller.Key+TEXT(":")))
+                { Group.Title+=TEXT(": ")+Controller.Node->GetNodeTitle(ENodeTitleType::ListView).ToString().Replace(TEXT("\n"),TEXT(" "))+TEXT(" / ")+OutPlan.Blocks[Block].Handoff.Mid(Controller.Key.Len()+1); break; }
+            for (int32 I=0;I<OutPlan.Nodes.Num();++I)
+            {
+                const FNode& Node=OutPlan.Nodes[I];
+                if (Node.bIsComment || Node.bUnreachable || Node.BlockIndex!=Block) continue;
+                Group.Members.Add(I);
+            }
+            bool Covered=false;
+            for (int32 L=0;L<LoopGroups;++L) Covered |= Groups[L].RootBlock==Block;
+            if (!Covered && !Group.Members.IsEmpty()) Groups.Add(MoveTemp(Group));
+        }
+        // Fit smaller sets first so parent bounds include every child title.
+        Groups.StableSort([](const FGroup& A,const FGroup& B){return A.Members.Num()<B.Members.Num();});
+        for (const FGroup& Group:Groups)
+        {
+            FBox Box; Box.bGenerated=true; Box.Text=Group.Title;
+            Box.Key=FString::Printf(TEXT("generated-box-%d"),OutPlan.Boxes.Num());
+            double L=TNumericLimits<double>::Max(),T=L,R=-L,B=-L;
+            auto Include=[&](double X,double Y,double W,double H){L=FMath::Min(L,X);T=FMath::Min(T,Y);R=FMath::Max(R,X+W);B=FMath::Max(B,Y+H);};
+            for (int32 I:Group.Members)
+            { const FNode& N=OutPlan.Nodes[I]; Box.MemberKeys.Add(N.Key); Include(N.PlannedX,N.PlannedY,N.Width,N.Height); }
+            for (const FGetterCopy& Copy:OutPlan.GetterCopies)
+                for (int32 I:Group.Members) if (Copy.ConsumerPin && Copy.ConsumerPin->GetOwningNode()==OutPlan.Nodes[I].Node)
+                { Include(Copy.PlannedX,Copy.PlannedY,Copy.Width,Copy.Height); break; }
+            bool bAlreadyCovered=false;
+            for (const FBox& Existing:OutPlan.Boxes)
+            {
+                bool bContains=true;
+                for (const FString& Key:Box.MemberKeys)
+                {
+                    const FNode& N=OutPlan.Nodes[NodeIndexByKey[Key]];
+                    bContains &= Existing.MemberKeys.Contains(Key) || (N.Node && Existing.MemberKeys.Contains(N.Node->GetName()));
+                }
+                if (!Existing.bGenerated && bContains) { bAlreadyCovered=true; break; }
+                bool bChild=true;
+                for (const FString& Key:Existing.MemberKeys)
+                {
+                    const int32* I=NodeIndexByKey.Find(Key);
+                    bChild &= I && Group.Members.Contains(*I);
+                }
+                if (bChild && !Existing.MemberKeys.IsEmpty()) Include(Existing.PlannedX,Existing.PlannedY,Existing.PlannedWidth,Existing.PlannedHeight);
+            }
+            if (bAlreadyCovered) continue;
+            Box.PlannedX=FMath::FloorToDouble(L-FitPadding); Box.PlannedY=FMath::FloorToDouble(T-TitleBarHeight-FitPadding);
+            Box.PlannedWidth=FMath::CeilToDouble(R+FitPadding-Box.PlannedX); Box.PlannedHeight=FMath::CeilToDouble(B+FitPadding-Box.PlannedY);
+            if (Box.PlannedX<MIN_int32 || Box.PlannedY<MIN_int32 || Box.PlannedX+Box.PlannedWidth>MAX_int32 || Box.PlannedY+Box.PlannedHeight>MAX_int32)
+            { OutError=TEXT("Generated comment exceeds graph coordinate limits; unchanged."); return false; }
+            auto IsChild=[&](const FBox& Other)
+            {
+                if (Other.MemberKeys.IsEmpty()) return false;
+                for (const FString& Key:Other.MemberKeys)
+                { const int32* Index=NodeIndexByKey.Find(Key); if (!Index || !Group.Members.Contains(*Index)) return false; }
+                return true;
+            };
+            // A nested title may extend above the controller row into an earlier
+            // sibling's box. Pack the entire body to the right, retaining row
+            // alignment and all child offsets, rather than stretching every row.
+            double OffsetX=0; bool Packed=false;
+            for (int32 Attempt=0;Attempt<OutPlan.Nodes.Num()+OutPlan.Boxes.Num()+OutPlan.GetterCopies.Num()+4;++Attempt)
+            {
+                double Required=OffsetX;
+                auto Avoid=[&](double X,double Y,double W,double H)
+                {
+                    if (Box.PlannedX+OffsetX<X+W && Box.PlannedX+OffsetX+Box.PlannedWidth>X
+                        && Box.PlannedY<Y+H && Box.PlannedY+Box.PlannedHeight>Y)
+                        Required=FMath::Max(Required,X+W+BoxGap-Box.PlannedX);
+                };
+                for (const FBox& Other:OutPlan.Boxes) if (!IsChild(Other)) Avoid(Other.PlannedX,Other.PlannedY,Other.PlannedWidth,Other.PlannedHeight);
+                for (int32 I=0;I<OutPlan.Nodes.Num();++I)
+                { const FNode& N=OutPlan.Nodes[I]; if (!N.bIsComment && !Group.Members.Contains(I)) Avoid(N.PlannedX,N.PlannedY,N.Width,N.Height); }
+                for (const FGetterCopy& Copy:OutPlan.GetterCopies)
+                {
+                    bool Inside=false;
+                    for (int32 I:Group.Members) if (Copy.ConsumerPin && Copy.ConsumerPin->GetOwningNode()==OutPlan.Nodes[I].Node) { Inside=true; break; }
+                    if (!Inside) Avoid(Copy.PlannedX,Copy.PlannedY,Copy.Width,Copy.Height);
+                }
+                if (Required<=OffsetX) { Packed=true; break; }
+                OffsetX=FMath::CeilToDouble(Required);
+            }
+            if (!Packed || Box.PlannedX+OffsetX+Box.PlannedWidth>MAX_int32)
+            { OutError=TEXT("Nested block packing exceeds its bounded search or coordinate limits; unchanged."); return false; }
+            if (OffsetX>0)
+            {
+                for (const FBox& Other:OutPlan.Boxes) if (!Other.bGenerated)
+                    for (const FString& Key:Other.MemberKeys)
+                        if (const int32* Index=NodeIndexByKey.Find(Key)) if (Group.Members.Contains(*Index))
+                        { OutError=TEXT("Nested block packing would split an existing titled comment; increase VerticalGap or reuse the existing boxes; unchanged."); return false; }
+                for (int32 I:Group.Members) OutPlan.Nodes[I].PlannedX+=OffsetX;
+                for (FGetterCopy& Copy:OutPlan.GetterCopies)
+                    for (int32 I:Group.Members) if (Copy.ConsumerPin && Copy.ConsumerPin->GetOwningNode()==OutPlan.Nodes[I].Node) { Copy.PlannedX+=OffsetX; break; }
+                for (FBox& Child:OutPlan.Boxes) if (IsChild(Child)) Child.PlannedX+=OffsetX;
+                Box.PlannedX+=OffsetX;
+            }
+            for (int32 I=0;I<OutPlan.Nodes.Num();++I)
+            {
+                const FNode& N=OutPlan.Nodes[I]; if (N.bIsComment || Group.Members.Contains(I)) continue;
+                if (N.PlannedX<Box.PlannedX+Box.PlannedWidth && N.PlannedX+N.Width>Box.PlannedX
+                    && N.PlannedY<Box.PlannedY+Box.PlannedHeight && N.PlannedY+N.Height>Box.PlannedY)
+                { OutError=TEXT("Generated comment would contain or overlap an unrelated node; unchanged. Use fewer boxes or a less dense block layout."); return false; }
+            }
+            for (const FBox& Existing:OutPlan.Boxes)
+            {
+                const bool bOverlap=Box.PlannedX<Existing.PlannedX+Existing.PlannedWidth && Box.PlannedX+Box.PlannedWidth>Existing.PlannedX
+                    && Box.PlannedY<Existing.PlannedY+Existing.PlannedHeight && Box.PlannedY+Box.PlannedHeight>Existing.PlannedY;
+                const bool bContains=Box.PlannedX<=Existing.PlannedX && Box.PlannedY<=Existing.PlannedY
+                    && Box.PlannedX+Box.PlannedWidth>=Existing.PlannedX+Existing.PlannedWidth && Box.PlannedY+Box.PlannedHeight>=Existing.PlannedY+Existing.PlannedHeight;
+                if (bOverlap && (!bContains || Existing.MemberKeys.IsEmpty())) { OutError=TEXT("Generated comment would partially overlap another comment or acquire a fixed empty note; unchanged."); return false; }
+            }
+            Box.bWouldFit=true; OutPlan.Boxes.Add(MoveTemp(Box));
+        }
+        for (FBox& Box:OutPlan.Boxes) { Box.ParentIndex=INDEX_NONE; Box.ChildBoxIndices.Reset(); Box.Depth=0; }
+        for (int32 I=0;I<OutPlan.Boxes.Num();++I)
+        {
+            FBox& Inner=OutPlan.Boxes[I]; double Smallest=TNumericLimits<double>::Max();
+            for (int32 J=0;J<OutPlan.Boxes.Num();++J) if (I!=J)
+            {
+                const FBox& Outer=OutPlan.Boxes[J]; const double Area=Outer.PlannedWidth*Outer.PlannedHeight;
+                if (Area>Inner.PlannedWidth*Inner.PlannedHeight && Area<Smallest && Inner.PlannedX>=Outer.PlannedX
+                    && Inner.PlannedY>=Outer.PlannedY && Inner.PlannedX+Inner.PlannedWidth<=Outer.PlannedX+Outer.PlannedWidth
+                    && Inner.PlannedY+Inner.PlannedHeight<=Outer.PlannedY+Outer.PlannedHeight) { Smallest=Area; Inner.ParentIndex=J; }
+            }
+        }
+        for (int32 I=0;I<OutPlan.Boxes.Num();++I)
+        {
+            const int32 Parent=OutPlan.Boxes[I].ParentIndex;
+            if (Parent!=INDEX_NONE) OutPlan.Boxes[Parent].ChildBoxIndices.Add(I);
+            for (int32 Ancestor=Parent;Ancestor!=INDEX_NONE;Ancestor=OutPlan.Boxes[Ancestor].ParentIndex) ++OutPlan.Boxes[I].Depth;
+        }
+    }
+
 	// -----------------------------------------------------------------------------------------
 	// STEP 8: the measure, on the PLANNED positions.
 	//
@@ -3025,11 +3533,17 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	// cross-tool check is what keeps the two implementations in step across a file boundary.
 	// -----------------------------------------------------------------------------------------
 	for (FNode& N : OutPlan.Nodes) { N.PlannedX = FMath::RoundToDouble(N.PlannedX); N.PlannedY = FMath::RoundToDouble(N.PlannedY); }
+    if (Routing==TEXT("orthogonal") && !PrepareOrthogonalRoutes(OutPlan,ChannelWidth,OutError)) return false;
 	auto TotalLengthOn = [&OutPlan](const bool bUsePlanned)
 	{
 		double Total = 0.0;
-		for (const FWire& Wire : OutPlan.Wires)
+        auto PinPosition=[&](const UEdGraphPin* Pin)
+        {
+            return OutPlan.bCompactBlocks || !OutPlan.WireRoutes.IsEmpty() ? AlignmentPinPosition(Pin) : FTurboMCPLayoutReport::PinPosition(Pin);
+        };
+		for (int32 WireIndex=0;WireIndex<OutPlan.Wires.Num();++WireIndex)
 		{
+            const FWire& Wire=OutPlan.Wires[WireIndex];
 			if (Wire.OutputPin == nullptr || Wire.InputPin == nullptr)
 			{
 				continue;
@@ -3043,7 +3557,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 			double SourceX = bUsePlanned ? Source.PlannedX : Source.X;
 			double SourceY = bUsePlanned ? Source.PlannedY : Source.Y;
-            FVector2D SourceOffset = FTurboMCPLayoutReport::PinPosition(Wire.OutputPin) - FVector2D(Source.X, Source.Y);
+            FVector2D SourceOffset = PinPosition(Wire.OutputPin) - FVector2D(Source.X, Source.Y);
 			if (bUsePlanned)
 			{
 				// This consumer will read from its copy, not the original getter.
@@ -3064,8 +3578,9 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			// Use exactly the report pin model, translated to planned positions.
 
 			const FVector2D Start = FVector2D(SourceX, SourceY) + SourceOffset;
-			const FVector2D End = FTurboMCPLayoutReport::PinPosition(Wire.InputPin) + FVector2D(TargetX - Target.X, TargetY - Target.Y);
-			Total += FVector2D::Distance(Start, End);
+			const FVector2D End = PinPosition(Wire.InputPin) + FVector2D(TargetX - Target.X, TargetY - Target.Y);
+			for (const auto& Segment:TidyWireSegments(OutPlan,WireIndex,bUsePlanned?1:0,Start,End))
+                Total += FVector2D::Distance(Segment.Key,Segment.Value);
 		}
 		return Total;
 	};
@@ -3121,6 +3636,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	// Compare structural quality first; use wire length only when structural metrics tie.
 	OutPlan.bAlreadyTidy = OutPlan.NodesToMove == 0 && OutPlan.BoxesToFit == 0
 		&& OutPlan.GetterCopies.Num() == 0;
+    for (const FWireRoute& Route:OutPlan.WireRoutes)
+        if (!Route.bSkipped && !Route.KnotPositions.IsEmpty()) OutPlan.bAlreadyTidy=false;
 
     for(const FWire& W:OutPlan.Wires)
         if(OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex) && W.OutputPin && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec"))
@@ -3167,6 +3684,126 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 namespace
 {
+ struct FResolvedTidyRoute
+ {
+  const FTurboMCPGraphTidy::FWireRoute* Plan = nullptr;
+  UEdGraphPin* Source = nullptr;
+  UEdGraphPin* Target = nullptr;
+ };
+
+ struct FTidyRouteUndo
+ {
+  TMap<UEdGraphPin*,TArray<UEdGraphPin*>> Links;
+  TMap<UEdGraphPin*,UEdGraphPin*> SnappedChildren;
+ };
+
+ bool RestoreTidyRouteChains(UEdGraph* Graph, TArray<UK2Node_Knot*>& Created, const FTidyRouteUndo& Undo)
+ {
+  bool bRestored=true;
+  for (UK2Node_Knot* Knot:Created)
+  {
+   if (Knot) Knot->DestroyNode();
+   bRestored &= !Graph->Nodes.Contains(Knot);
+  }
+  Created.Reset();
+  // No original node is reconstructed by existing-edge expansion. Preserve
+  // exact fan-out ordering and native snapping relationships on rollback.
+  for (const auto& Pair:Undo.Links) Pair.Key->LinkedTo=Pair.Value;
+  for (const auto& Pair:Undo.Links) Pair.Key->ClearSnappedChild();
+  for (const auto& Pair:Undo.SnappedChildren) Pair.Key->SetSnappedChild(Pair.Value);
+  for (const auto& Pair:Undo.Links)
+   bRestored &= Pair.Key->LinkedTo==Pair.Value && Pair.Key->GetSnappedChildPin()==Undo.SnappedChildren.FindRef(Pair.Key);
+  return bRestored;
+ }
+
+ // Expand existing edges only. This does not create new logical connections or
+ // ask the schema to insert conversions. The caller owns the graph transaction
+ // (or a disposable preview graph) and retains Created for later rollback.
+ bool CreateTidyRouteChains(UEdGraph* Graph, const TArray<FResolvedTidyRoute>& Routes,
+     EObjectFlags Flags, TArray<UK2Node_Knot*>& Created, FTidyRouteUndo& Undo, FString& Error)
+ {
+  if (!Graph || !Created.IsEmpty())
+  { Error=TEXT("Routing requires a graph and an empty created-node list."); return false; }
+  Undo=FTidyRouteUndo();
+  if (Routes.IsEmpty()) return true;
+  auto& OriginalLinks=Undo.Links;
+  auto& OriginalSnappedChildren=Undo.SnappedChildren;
+  for (UEdGraphNode* Node:Graph->Nodes)
+   if (Node) for (UEdGraphPin* Pin:Node->Pins) if (Pin)
+   {
+    OriginalLinks.Add(Pin,Pin->LinkedTo);
+    if (UEdGraphPin* Child=Pin->GetSnappedChildPin()) OriginalSnappedChildren.Add(Pin,Child);
+   }
+  TSet<int32> SeenWires;
+  TMap<UEdGraphPin*,TSet<UEdGraphPin*>> SeenConnections;
+  for (const FResolvedTidyRoute& Route:Routes)
+  {
+   if (!Route.Plan || Route.Plan->bSkipped || Route.Plan->KnotPositions.IsEmpty()
+       || SeenWires.Contains(Route.Plan->WireIndex)
+       || !OriginalLinks.Contains(Route.Source) || !OriginalLinks.Contains(Route.Target)
+       || Route.Source->Direction!=EGPD_Output || Route.Target->Direction!=EGPD_Input
+       || !Route.Source->LinkedTo.Contains(Route.Target) || !Route.Target->LinkedTo.Contains(Route.Source)
+       || Route.Source->PinType.PinCategory==TEXT("wildcard"))
+   { Error=TEXT("A planned route has missing, repeated, untyped or disconnected endpoints; no route was applied."); return false; }
+   if (SeenConnections.FindOrAdd(Route.Source).Contains(Route.Target))
+   { Error=TEXT("The same connection was routed twice; no route was applied."); return false; }
+   SeenConnections.FindOrAdd(Route.Source).Add(Route.Target);
+   SeenWires.Add(Route.Plan->WireIndex);
+   for (const FVector2D& P:Route.Plan->KnotPositions)
+    if (!FMath::IsFinite(P.X) || !FMath::IsFinite(P.Y) || P.X<MIN_int32 || P.X>MAX_int32
+        || P.Y<MIN_int32 || P.Y>MAX_int32 || P.X!=FMath::RoundToDouble(P.X) || P.Y!=FMath::RoundToDouble(P.Y))
+    { Error=TEXT("A route contains invalid stored coordinates; no route was applied."); return false; }
+  }
+  TMap<UEdGraphPin*,TArray<UEdGraphPin*>> ExpectedLinks=OriginalLinks;
+  for (const FResolvedTidyRoute& Route:Routes)
+  {
+   TArray<UK2Node_Knot*> Chain;
+   for (const FVector2D& Position:Route.Plan->KnotPositions)
+   {
+    UK2Node_Knot* Knot=NewObject<UK2Node_Knot>(Graph,NAME_None,Flags);
+    if (!Knot) { Error=TEXT("Could not allocate a reroute node; route expansion stopped."); if (!RestoreTidyRouteChains(Graph,Created,Undo)) Error+=TEXT(" Rollback is incomplete."); return false; }
+    Knot->CreateNewGuid(); Graph->AddNode(Knot,false,false); Knot->AllocateDefaultPins();
+    Created.Add(Knot); Chain.Add(Knot);
+    if (Knot->Pins.Num()!=2 || !Knot->GetInputPin() || !Knot->GetOutputPin())
+    { Error=TEXT("A reroute node did not allocate its pins; route expansion stopped."); if (!RestoreTidyRouteChains(Graph,Created,Undo)) Error+=TEXT(" Rollback is incomplete."); return false; }
+    Knot->NodePosX=static_cast<int32>(Position.X); Knot->NodePosY=static_cast<int32>(Position.Y);
+    Knot->GetInputPin()->PinType=Route.Source->PinType;
+    Knot->GetOutputPin()->PinType=Route.Source->PinType;
+   }
+   Route.Source->BreakLinkTo(Route.Target);
+   UEdGraphPin* Previous=Route.Source;
+   for (UK2Node_Knot* Knot:Chain)
+   {
+    Previous->MakeLinkTo(Knot->GetInputPin()); Previous=Knot->GetOutputPin();
+   }
+   Previous->MakeLinkTo(Route.Target);
+   // Replace the original slots rather than appending: output fan-out order
+   // can determine execution order. Preserve input ordering as well.
+   auto& SourceLinks=ExpectedLinks.FindChecked(Route.Source);
+   auto& TargetLinks=ExpectedLinks.FindChecked(Route.Target);
+   const int32 SourceSlot=SourceLinks.IndexOfByKey(Route.Target);
+   const int32 TargetSlot=TargetLinks.IndexOfByKey(Route.Source);
+   if (SourceSlot==INDEX_NONE || TargetSlot==INDEX_NONE)
+   { Error=TEXT("The original connection order changed during routing; route expansion stopped."); if (!RestoreTidyRouteChains(Graph,Created,Undo)) Error+=TEXT(" Rollback is incomplete."); return false; }
+   SourceLinks[SourceSlot]=Chain[0]->GetInputPin();
+   TargetLinks[TargetSlot]=Chain.Last()->GetOutputPin();
+   Route.Source->LinkedTo=SourceLinks;
+   Route.Target->LinkedTo=TargetLinks;
+   for (int32 Index=0;Index<Chain.Num();++Index)
+   {
+    UEdGraphPin* Upstream=Index==0?Route.Source:Chain[Index-1]->GetOutputPin();
+    UEdGraphPin* Downstream=Index+1==Chain.Num()?Route.Target:Chain[Index+1]->GetInputPin();
+    if (Chain[Index]->GetInputPin()->LinkedTo!=TArray<UEdGraphPin*>{Upstream}
+        || Chain[Index]->GetOutputPin()->LinkedTo!=TArray<UEdGraphPin*>{Downstream})
+    { Error=TEXT("Reroute chain read-back failed; route expansion stopped."); if (!RestoreTidyRouteChains(Graph,Created,Undo)) Error+=TEXT(" Rollback is incomplete."); return false; }
+   }
+  }
+  for (const auto& Pair:ExpectedLinks)
+   if (Pair.Key->LinkedTo!=Pair.Value)
+   { Error=TEXT("Routing changed an unexpected connection; route expansion stopped."); if (!RestoreTidyRouteChains(Graph,Created,Undo)) Error+=TEXT(" Rollback is incomplete."); return false; }
+  return true;
+ }
+
  bool RenderNativePreview(const FTurboMCPGraphTidy::FPlan& Plan, FString& Result)
  {
   if (!FSlateApplication::IsInitialized() || !IsInGameThread()) { Result=TEXT("Slate/game thread required"); return false; }
@@ -3216,11 +3853,20 @@ namespace
   Result=TEXT("Native graph previews (transient copy; no live asset changes):");
   for(int32 Side=0;Side<2;++Side)
   {
+   TMap<int32,TArray<UK2Node_Knot*>> PreviewRouteKnots;
    if(Side)
    {
+    TMap<const UEdGraphPin*,UEdGraphPin*> ReaderOutputs;
     for(const auto& N:Plan.Nodes) if(N.Node)
      if(UEdGraphNode** Copy=ByGuid.Find(N.Node->NodeGuid)) { (*Copy)->NodePosX=FMath::RoundToInt(N.PlannedX); (*Copy)->NodePosY=FMath::RoundToInt(N.PlannedY); }
-    for(const auto& B:Plan.Boxes) if(B.Comment)
+    for(const auto& B:Plan.Boxes) if(B.bGenerated)
+    {
+     UEdGraphNode_Comment* Comment=NewObject<UEdGraphNode_Comment>(Graph,NAME_None,RF_Transient);
+     Graph->AddNode(Comment,false,false); Comment->CreateNewGuid(); Comment->NodeComment=B.Text;
+     Comment->NodePosX=FMath::RoundToInt(B.PlannedX); Comment->NodePosY=FMath::RoundToInt(B.PlannedY);
+     Comment->NodeWidth=FMath::RoundToInt(B.PlannedWidth); Comment->NodeHeight=FMath::RoundToInt(B.PlannedHeight);
+    }
+    else if(B.Comment)
      if(UEdGraphNode** Copy=ByGuid.Find(B.Comment->NodeGuid)) { (*Copy)->NodePosX=FMath::RoundToInt(B.PlannedX); (*Copy)->NodePosY=FMath::RoundToInt(B.PlannedY); (*Copy)->NodeWidth=FMath::RoundToInt(B.PlannedWidth); (*Copy)->NodeHeight=FMath::RoundToInt(B.PlannedHeight); }
     for(const auto& C:Plan.GetterCopies)
     {
@@ -3232,7 +3878,27 @@ namespace
      if(!Copy || !ReaderOutput(Copy,SourcePin)) { Result=TEXT("getter-copy preview has no value pin"); return false; }
      Copy->NodePosX=FMath::RoundToInt(C.PlannedX); Copy->NodePosY=FMath::RoundToInt(C.PlannedY);
      SourcePin->BreakLinkTo(Input); ReaderOutput(Copy,SourcePin)->MakeLinkTo(Input);
+     ReaderOutputs.Add(C.ConsumerPin,ReaderOutput(Copy,SourcePin));
     }
+    TArray<FResolvedTidyRoute> Routes;
+    for (const auto& Route:Plan.WireRoutes)
+    {
+     if (Route.bSkipped || Route.KnotPositions.IsEmpty()) continue;
+     if (!Plan.Wires.IsValidIndex(Route.WireIndex)) { Result=TEXT("preview route index is invalid"); return false; }
+     const auto& Wire=Plan.Wires[Route.WireIndex];
+     if (!Wire.OutputPin || !Wire.InputPin) { Result=TEXT("preview route pins are missing"); return false; }
+     UEdGraphPin* Source=ReaderOutputs.FindRef(Wire.InputPin);
+     if (!Source) Source=FindPin(ByGuid.FindRef(Wire.OutputPin->GetOwningNode()->NodeGuid),Wire.OutputPin);
+     UEdGraphPin* TargetPin=FindPin(ByGuid.FindRef(Wire.InputPin->GetOwningNode()->NodeGuid),Wire.InputPin);
+     Routes.Add({&Route,Source,TargetPin});
+    }
+    TArray<UK2Node_Knot*> PreviewKnots;
+    FTidyRouteUndo PreviewUndo;
+    if (!CreateTidyRouteChains(Graph,Routes,RF_Transient,PreviewKnots,PreviewUndo,Result)) return false;
+    int32 KnotIndex=0;
+    for (const FResolvedTidyRoute& Route:Routes)
+     for (int32 I=0;I<Route.Plan->KnotPositions.Num();++I)
+      PreviewRouteKnots.FindOrAdd(Route.Plan->WireIndex).Add(PreviewKnots[KnotIndex++]);
    }
    const TSharedRef<SGraphEditor> Editor=SNew(SGraphEditor).GraphToEdit(Graph).IsEditable(false).ShowGraphStateOverlay(false);
    const FVector2D Size(2048,1536);
@@ -3345,6 +4011,35 @@ namespace
          UEdGraphPin* Input=FindPin(ByGuid.FindRef(Node.Node->NodeGuid),Copy.ConsumerPin);
          if(Input) for(const UEdGraphPin* Link:Input->LinkedTo) if(Link) AddBounds(Link->GetOwningNode());
         }
+     if (Side && !Rectangles.IsEmpty())
+     {
+      double L=Rectangles[0].Left,T=Rectangles[0].Top,R=Rectangles[0].Right,B=Rectangles[0].Bottom;
+      for (const FSlateRect& Rect:Rectangles) { L=FMath::Min(L,double(Rect.Left)); T=FMath::Min(T,double(Rect.Top)); R=FMath::Max(R,double(Rect.Right)); B=FMath::Max(B,double(Rect.Bottom)); }
+      for (const auto& Pair:PreviewRouteKnots)
+      {
+       const auto& Wire=Plan.Wires[Pair.Key];
+       if (Plan.Nodes[Wire.SourceNodeIndex].BlockIndex!=Block && Plan.Nodes[Wire.TargetNodeIndex].BlockIndex!=Block) continue;
+       for (UK2Node_Knot* Knot:Pair.Value)
+        if (Knot->NodePosX>=L-80 && Knot->NodePosX<=R+80 && Knot->NodePosY>=T-80 && Knot->NodePosY<=B+80) AddBounds(Knot);
+      }
+     }
+     for (const auto& Box:Plan.Boxes)
+     {
+      if (!Side && Box.bGenerated) continue;
+      int32 TitleBlock=MAX_int32;
+      for (const auto& Node:Plan.Nodes)
+       if (Node.BlockIndex!=INDEX_NONE && (Box.MemberKeys.Contains(Node.Key)||(Node.Node && Box.MemberKeys.Contains(Node.Node->GetName())))) TitleBlock=FMath::Min(TitleBlock,Node.BlockIndex);
+      if (TitleBlock==Block)
+      {
+       const double X=Side?Box.PlannedX:Box.X,Y=Side?Box.PlannedY:Box.Y,W=Side?Box.PlannedWidth:Box.Width;
+       FSlateFontInfo Font=FAppStyle::Get().GetWidgetStyle<FInlineEditableTextBlockStyle>(TEXT("Graph.CommentBlock.TitleInlineEditableText")).TextStyle.Font;
+       Font.Size=Box.Comment?Box.Comment->GetFontSize():GetDefault<UEdGraphNode_Comment>()->GetFontSize();
+       const FVector2D Caption(FSlateApplication::Get().GetRenderer()->GetFontMeasureService()->Measure(Box.Text,Font));
+       // A parent's empty title strip must not consume every child's tile budget.
+       // Capture the measured caption once in its first block, including native padding.
+       Rectangles.Add(FSlateRect(X,Y,X+FMath::Min(W,Caption.X+48),Y+FMath::Max(FTurboMCPGraphTidy::TitleBarHeight,Caption.Y+16)));
+      }
+     }
      if(Rectangles.IsEmpty()) continue;
      double MinX=Rectangles[0].Left,MinY=Rectangles[0].Top,MaxX=Rectangles[0].Right,MaxY=Rectangles[0].Bottom;
      for(const FSlateRect& Rect:Rectangles)
@@ -3377,7 +4072,7 @@ namespace
       ++SavedTiles;
      }
     }
-    Result+=FString::Printf(TEXT("\n%s detail tiles: %d saved, %d omitted by the %d-image limit. Empty wire-only tiles are not exported."),*SideName,SavedTiles,OmittedTiles,MaxDetailTiles);
+    Result+=FString::Printf(TEXT("\n%s detail tiles: %d saved, %d omitted by the %d-image limit. Long channel knots outside the 80-unit block border are overview-only; empty wire-only tiles are not exported."),*SideName,SavedTiles,OmittedTiles,MaxDetailTiles);
     if(OmittedTiles) Result+=TEXT(" Use a selected-node preview for the omitted blocks; this image set is incomplete.");
    }
   }
@@ -3410,7 +4105,7 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
     const FStructuralQuality QualityBefore=StructuralQuality(InPlan,0), QualityAfter=StructuralQuality(InPlan,1);
     for(int32 I:InPlan.WrapAfterNodes)
         Lines.Add(FString::Printf(TEXT("row break after %s (execution links preserved)"),*InPlan.Nodes[I].Key));
-    if (InPlan.bCompactBlocks) Lines.Add(CompactMeasureSummary(QualityBefore, QualityAfter));
+    if (InPlan.bCompactBlocks) { Lines.Add(CompactMeasureSummary(QualityBefore, QualityAfter)); Lines.Add(CompactGeometryEvidence(InPlan,0,InPlan.GetterCopies)); Lines.Add(CompactGeometryEvidence(InPlan,1,InPlan.GetterCopies)); }
     if (InPlan.bCompactBlocks) Lines.Add(FString::Printf(TEXT("compact diagnostics: Body row drift %.1f -> %.1f; Completed above body bottom %d -> %d. These diagnostics supplement the seven-measure ranking."), QualityBefore.BodyRowDrift, QualityAfter.BodyRowDrift, QualityBefore.CompletedAboveBody, QualityAfter.CompletedAboveBody));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift,QualityBefore.FanOutRowConflicts,QualityAfter.FanOutRowConflicts,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.BackwardData,QualityAfter.BackwardData,QualityBefore.PureInputRowConflicts,QualityAfter.PureInputRowConflicts,QualityBefore.InputPinDrift,QualityAfter.InputPinDrift));
     if (InPlan.bCompactBlocks)
@@ -3434,6 +4129,28 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 		Lines.Add(TEXT("scope: whole graph; no fixed-node selection was supplied."));
 	}
 
+    for (const FWire& Wire:InPlan.Wires)
+        if (InPlan.MergePredecessors.Contains(Wire.TargetNodeIndex) && InPlan.MergePredecessors[Wire.TargetNodeIndex]!=Wire.SourceNodeIndex
+            && Wire.OutputPin && Wire.OutputPin->PinType.PinCategory==TEXT("exec"))
+            Lines.Add(FString::Printf(TEXT("handoff class=intended rule=R6 source=%s target=%s; fallback returns to the primary merge row; crossings remain defects."),
+                *InPlan.Nodes[Wire.SourceNodeIndex].Key,*InPlan.Nodes[Wire.TargetNodeIndex].Key));
+    for (int32 Block=0;Block<InPlan.Blocks.Num();++Block)
+    {
+        double L=TNumericLimits<double>::Max(),T=L,R=-L,B=-L; int32 Count=0;
+        for (const FNode& Node:InPlan.Nodes) if (Node.BlockIndex==Block && !Node.bIsComment)
+        { ++Count; L=FMath::Min(L,Node.PlannedX); T=FMath::Min(T,Node.PlannedY); R=FMath::Max(R,Node.PlannedX+Node.Width); B=FMath::Max(B,Node.PlannedY+Node.Height); }
+        const FBlock& Entry=InPlan.Blocks[Block];
+        Lines.Add(FString::Printf(TEXT("block %d kind=%s parent=%d nodes=%d x=%.0f y=%.0f width=%.0f height=%.0f handoff=%s"),
+            Block,*Entry.Kind,Entry.ParentIndex,Count,L,T,R-L,B-T,*Entry.Handoff));
+    }
+    for (int32 I=0;I<InPlan.GetterCopies.Num();++I)
+    { const FGetterCopy& Copy=InPlan.GetterCopies[I]; Lines.Add(FString::Printf(TEXT("planned reader copy index=%d x=%.0f y=%.0f width=%.0f height=%.0f"),I,Copy.PlannedX,Copy.PlannedY,Copy.Width,Copy.Height)); }
+    for (const FBox& Box:InPlan.Boxes) if (Box.bGenerated)
+        Lines.Add(FString::Printf(TEXT("generated box %s title=\"%s\" x=%.0f y=%.0f width=%.0f height=%.0f members=%s"),
+            *Box.Key,*Box.Text,Box.PlannedX,Box.PlannedY,Box.PlannedWidth,Box.PlannedHeight,*FString::Join(Box.MemberKeys,TEXT(","))));
+    for (const FBox& Box:InPlan.Boxes) if (Box.bGenerated)
+        Lines.Add(FString::Printf(TEXT("box nesting key=%s parent=%s depth=%d"),*Box.Key,
+            Box.ParentIndex==INDEX_NONE?TEXT("none"):*InPlan.Boxes[Box.ParentIndex].Key,Box.Depth));
     // Empty notes have no geometric membership: never invent an anchor or move them.
     for (const FBox& Note : InPlan.Boxes)
     {
@@ -3523,6 +4240,18 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
                     FMath::RoundToDouble(Node.PlannedX), FMath::RoundToDouble(Node.PlannedY)));
     }
 
+    int32 PlannedKnots=0;
+    for (const FWireRoute& Route:InPlan.WireRoutes)
+    {
+        PlannedKnots+=Route.KnotPositions.Num();
+        Lines.Add(FString::Printf(TEXT("route wire %d: %s; %s"),Route.WireIndex,
+            Route.bSkipped?TEXT("skipped"):TEXT("planned"),*Route.Reason));
+        for (int32 Index=0;Index<Route.KnotPositions.Num();++Index)
+            Lines.Add(FString::Printf(TEXT("route knot wire=%d index=%d x=%.0f y=%.0f"),Route.WireIndex,Index,
+                Route.KnotPositions[Index].X,Route.KnotPositions[Index].Y));
+    }
+    if (PlannedKnots>0) Lines.Add(FString::Printf(TEXT("routing: %d planned reroute node(s); edit uses one transaction with movement and comment fitting. No compile or save."),PlannedKnots));
+
     FString Images;
     if (!RenderNativePreview(InPlan, Images)) Lines.Add(TEXT("preview images unavailable: ") + Images);
     else Lines.Add(Images);
@@ -3531,6 +4260,7 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 
 FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 {
+
     if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
         return TEXT("unchanged: tidy requires an idle editor with undo available, outside PIE and active transactions");
 	// A GRAPH IS NEEDED TO CREATE ANYTHING, and the plan carries the live nodes rather than the graph,
@@ -3664,6 +4394,46 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		Entry.Node->NodePosY = NewY;
 	}
 
+    FPlan ActualPlan=InPlan;
+    TArray<UK2Node_Knot*> RoutingKnots;
+    FTidyRouteUndo RoutingUndo;
+    if (CopyFailure.IsEmpty())
+    {
+        TArray<FResolvedTidyRoute> Routes;
+        for (const FWireRoute& Route:InPlan.WireRoutes)
+        {
+            if (Route.bSkipped || Route.KnotPositions.IsEmpty()) continue;
+            if (!InPlan.Wires.IsValidIndex(Route.WireIndex)) { CopyFailure=TEXT("Route index is stale."); break; }
+            const FWire& Wire=InPlan.Wires[Route.WireIndex];
+            UEdGraphPin* Source=Wire.OutputPin;
+            for (const FGetterCopy& Copy:Created)
+                if (Copy.OriginalValuePin==Source && Copy.ConsumerPin==Wire.InputPin && Copy.Copy)
+                { Source=ReaderOutput(Copy.Copy,Copy.OriginalValuePin); break; }
+            Routes.Add({&Route,Source,Wire.InputPin});
+        }
+        if (CopyFailure.IsEmpty() && CreateTidyRouteChains(Graph,Routes,RF_Transactional,RoutingKnots,RoutingUndo,CopyFailure)
+            && !Routes.IsEmpty())
+        {
+            int32 Offset=0;
+            for (FWireRoute& Route:ActualPlan.WireRoutes)
+            {
+                Route.AppliedKnots.Reset();
+                if (Route.bSkipped) continue;
+                for (int32 Index=0;Index<Route.KnotPositions.Num();++Index) Route.AppliedKnots.Add(RoutingKnots[Offset++]);
+            }
+            if (PrepareAlignment(FBlueprintEditorUtils::FindBlueprintForGraph(Graph),Graph,CopyFailure))
+                for (const FWireRoute& Route:ActualPlan.WireRoutes)
+                    for (UK2Node_Knot* Knot:Route.AppliedKnots)
+                    {
+                        const FVector2D P(Knot->NodePosX,Knot->NodePosY);
+                        if (!AlignmentNodeSize(Knot).Equals(Route.KnotSize,1.0)
+                            || !(AlignmentPinPosition(Knot->GetInputPin())-P).Equals(Route.InputOffset,1.0)
+                            || !(AlignmentPinPosition(Knot->GetOutputPin())-P).Equals(Route.OutputOffset,1.0))
+                            CopyFailure=TEXT("Created reroute geometry differs from the measured plan.");
+                    }
+        }
+    }
+
 	// The measure is taken with the SAME function the reader uses, so the two numbers are comparable.
 	double MeasuredAfter = 0.0;
 	for (const UEdGraphNode* Node : Graph->Nodes)
@@ -3678,17 +4448,17 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			{
 				continue;
 			}
-            FVector2D Start = FTurboMCPLayoutReport::PinPosition(Pin);
+            FVector2D Start = InPlan.bCompactBlocks || !InPlan.WireRoutes.IsEmpty() ? AlignmentPinPosition(Pin) : FTurboMCPLayoutReport::PinPosition(Pin);
             for (const FGetterCopy& Copy : Created)
                 if (Copy.Copy == Node && ReaderOutput(Copy.Copy, Copy.OriginalValuePin) == Pin)
                 { Start = FVector2D(Node->NodePosX, Node->NodePosY) + Copy.OutputOffset; break; }
             for (const UEdGraphPin* Other : Pin->LinkedTo)
-                if (Other) MeasuredAfter += FVector2D::Distance(Start, FTurboMCPLayoutReport::PinPosition(Other));
+                if (Other) MeasuredAfter += FVector2D::Distance(Start, InPlan.bCompactBlocks || !InPlan.WireRoutes.IsEmpty() ? AlignmentPinPosition(Other) : FTurboMCPLayoutReport::PinPosition(Other));
 		}
 	}
 
 	const FStructuralQuality OriginalQuality = StructuralQuality(InPlan,0);
-    const FStructuralQuality ActualQuality = StructuralQuality(InPlan,2,&Created);
+    const FStructuralQuality ActualQuality = StructuralQuality(ActualPlan,2,&Created);
     FString ActualQualityReason;
     const bool bBetter = BetterLayout(OriginalQuality, ActualQuality, InPlan.WireLengthBefore, MeasuredAfter, &ActualQualityReason);
     FString BoundaryReason;
@@ -3707,8 +4477,9 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			Undo.Key->NodePosY = Undo.Value.Value;
 		}
 
+        const bool bRoutesRestored=RestoreTidyRouteChains(Graph,RoutingKnots,RoutingUndo);
 		int32 Undone = 0;
-		int32 RestorationFailed = 0;
+		int32 RestorationFailed = bRoutesRestored ? 0 : 1;
 		for (const FGetterCopy& Entry : Created)
 		{
 			if (Entry.Copy == nullptr)
@@ -3757,7 +4528,9 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 				{
 					continue;
 				}
-				Restored += FTurboMCPLayoutReport::WireLength(Pin);
+				if (InPlan.WireRoutes.IsEmpty()) Restored += FTurboMCPLayoutReport::WireLength(Pin);
+                else for (const UEdGraphPin* Other:Pin->LinkedTo)
+                    if (Other) Restored += FVector2D::Distance(AlignmentPinPosition(Pin),AlignmentPinPosition(Other));
 			}
 		}
 		const bool bRestored = FMath::IsNearlyEqual(Restored, InPlan.WireLengthBefore, 1.0);
@@ -3802,6 +4575,14 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	int32 BoxesResized = 0;
 	for (const FBox& Box : InPlan.Boxes)
 	{
+        if (Box.bGenerated)
+        {
+            UEdGraphNode_Comment* Comment=NewObject<UEdGraphNode_Comment>(Graph,NAME_None,RF_Transactional);
+            Graph->AddNode(Comment,false,false); Comment->CreateNewGuid(); Comment->NodeComment=Box.Text;
+            Comment->NodePosX=FMath::RoundToInt(Box.PlannedX); Comment->NodePosY=FMath::RoundToInt(Box.PlannedY);
+            Comment->NodeWidth=FMath::RoundToInt(Box.PlannedWidth); Comment->NodeHeight=FMath::RoundToInt(Box.PlannedHeight);
+            ++BoxesResized; continue;
+        }
 		if (Box.Comment == nullptr || !Box.bWouldFit)
 		{
 			continue;
@@ -3823,7 +4604,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		}
 	}
 
-    // Reroute insertion is a separate operation; this pass measures placement and getter copies.
+    // Routing, placement and reader copies share this transaction. Compilation remains separate.
 	Graph->MarkPackageDirty();
     // Direct position/size writes do not notify open graph panels. The default
     // action purges their visual representation and schedules a native rebuild;
@@ -3840,7 +4621,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
     if (FeedbackCount > 0)
         Lines.Add(FString::Printf(TEXT("control feedback: %d stock Break/Reset wire(s) preserved; excluded from forward ordering and alignment penalties, included in total wire length."), FeedbackCount));
 	Lines.Add(FString::Printf(TEXT("wire length: current plan predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("matches the current plan") : TEXT("differs from the current plan")));
-    if (InPlan.bCompactBlocks) Lines.Add(CompactMeasureSummary(OriginalQuality, ActualQuality));
+    if (InPlan.bCompactBlocks) { Lines.Add(CompactMeasureSummary(OriginalQuality, ActualQuality)); Lines.Add(CompactGeometryEvidence(InPlan,0,Created)); Lines.Add(CompactGeometryEvidence(ActualPlan,2,Created)); }
     if (InPlan.bCompactBlocks) Lines.Add(FString::Printf(TEXT("compact diagnostics: Body row drift %.1f -> %.1f; Completed above body bottom %d -> %d. These diagnostics supplement the seven-measure ranking."), OriginalQuality.BodyRowDrift, ActualQuality.BodyRowDrift, OriginalQuality.CompletedAboveBody, ActualQuality.CompletedAboveBody));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),OriginalQuality.Overlaps,ActualQuality.Overlaps,OriginalQuality.LinearExecDrift,ActualQuality.LinearExecDrift,OriginalQuality.FanOutRowConflicts,ActualQuality.FanOutRowConflicts,OriginalQuality.BackwardExec,ActualQuality.BackwardExec,OriginalQuality.BackwardData,ActualQuality.BackwardData,OriginalQuality.PureInputRowConflicts,ActualQuality.PureInputRowConflicts,OriginalQuality.InputPinDrift,ActualQuality.InputPinDrift));
     if (InPlan.bCompactBlocks)
@@ -3865,7 +4646,8 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		Lines.Add(FString::Printf(TEXT("left %d unreachable node(s) in place. Use PreviewTurboMCPGraphDead to inspect disconnected groups before deciding whether to remove them."), InPlan.UnreachableCount));
 	}
 	Lines.Add(TEXT("geometry: every node had a Slate-measured size; no estimate was used."));
-	Lines.Add(TEXT("No reroute nodes were added. Use PreviewTurboMCPGraphKnots to inspect reroute options separately."));
+	if (RoutingKnots.IsEmpty()) Lines.Add(TEXT("No reroute nodes were added."));
+    else Lines.Add(FString::Printf(TEXT("routing: added %d reroute node(s); original logical connections preserved through checked chains; included in the same undo transaction."),RoutingKnots.Num()));
 	Lines.Add(TEXT("undo=one; compile=not_run; save=not_requested"));
 	Lines.Add(TEXT("Changes are in memory only. Use EditTurboMCPSave when ready to save the asset."));
 
@@ -3893,6 +4675,44 @@ bool FTurboMCPGraphTidy::ValidatePlannedNodeOverlaps(const FPlan& InPlan, FStrin
     return true;
 }
 
+bool FTurboMCPGraphTidy::PrepareOrthogonalRoutes(FPlan& Plan, double Clearance, FString& Error)
+{
+    Plan.WireRoutes.Reset();
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress()
+        || !FMath::IsFinite(Clearance) || Clearance<20 || Clearance>400)
+    { Error=TEXT("Route planning requires an idle editor and clearance from 20 to 400."); return false; }
+    UEdGraph* Graph=nullptr;
+    for (const FNode& Node:Plan.Nodes) if (Node.Node) { Graph=Node.Node->GetGraph(); break; }
+    UBlueprint* Blueprint=Graph?FBlueprintEditorUtils::FindBlueprintForGraph(Graph):nullptr;
+    if (!Blueprint || !Graph->GetSchema() || !Graph->GetSchema()->IsA<UEdGraphSchema_K2>())
+    { Error=TEXT("Route planning requires a Blueprint K2 graph."); return false; }
+
+    TGuardValue<ITransaction*> SuppressUndo(GUndo,nullptr);
+    TStrongObjectPtr<UBlueprint> Scratch(NewObject<UBlueprint>(GetTransientPackage(),NAME_None,RF_Transient));
+    Scratch->ParentClass=Blueprint->ParentClass;
+    Scratch->GeneratedClass=Blueprint->GeneratedClass;
+    Scratch->SkeletonGeneratedClass=Blueprint->SkeletonGeneratedClass;
+    UEdGraph* ProbeGraph=NewObject<UEdGraph>(Scratch.Get(),NAME_None,RF_Transient);
+    ProbeGraph->Schema=UEdGraphSchema_K2::StaticClass();
+    Scratch->UbergraphPages.Add(ProbeGraph);
+    UK2Node_Knot* Probe=NewObject<UK2Node_Knot>(ProbeGraph,NAME_None,RF_Transient);
+    ProbeGraph->AddNode(Probe,false,false); Probe->CreateNewGuid(); Probe->AllocateDefaultPins();
+    FString ProbeError;
+    const bool bMeasured=PrepareAlignment(Scratch.Get(),ProbeGraph,ProbeError);
+    FVector2D Size=FVector2D::ZeroVector,Input=Size,Output=Size;
+    if (bMeasured)
+    {
+        Size=AlignmentNodeSize(Probe);
+        Input=AlignmentPinPosition(Probe->GetInputPin())-FVector2D(Probe->NodePosX,Probe->NodePosY);
+        Output=AlignmentPinPosition(Probe->GetOutputPin())-FVector2D(Probe->NodePosX,Probe->NodePosY);
+    }
+    // The probe replaces the shared Slate measurement cache. Restore the source
+    // graph even when probing fails, before any caller reads its pin offsets.
+    if (!PrepareAlignment(Blueprint,Graph,Error)) return false;
+    if (!bMeasured) { Error=TEXT("Could not measure native reroute geometry: ")+ProbeError; return false; }
+    return PlanOrthogonalRoutes(Plan,Size,Input,Output,Clearance,Error);
+}
+
 // Internal routing stage. Public Tidy still leaves routing disabled until these
 // plans are consumed by scratch preview, live apply, scoring and exact rollback.
 bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& KnotSize,
@@ -3900,6 +4720,8 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
 {
     Error.Reset();
     Plan.WireRoutes.Reset();
+    if (Plan.Nodes.Num()>512 || Plan.Wires.Num()>4096)
+    { Error=TEXT("Orthogonal routing supports at most 512 nodes and 4096 logical wires per graph; use RouteWires=off for larger graphs."); return false; }
     if (!FMath::IsFinite(Clearance) || Clearance < 20 || Clearance > 400
         || !FMath::IsFinite(KnotSize.X) || !FMath::IsFinite(KnotSize.Y) || KnotSize.X <= 0 || KnotSize.Y <= 0
         || !FMath::IsFinite(InputOffset.X) || !FMath::IsFinite(InputOffset.Y)
@@ -3918,7 +4740,24 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
         };
         return Clip(A.X,B.X-A.X,Rect.L,Rect.R) && Clip(A.Y,B.Y-A.Y,Rect.T,Rect.B);
     };
-    for(int32 WireIndex=0;WireIndex<Plan.Wires.Num();++WireIndex)
+    // Route lower fan-out destinations first. Their long drop belongs nearest
+    // the source; upper destinations can then use an outer channel without
+    // crossing the lower route. This changes planning order, never link order.
+    TArray<int32> RouteOrder;
+    for(int32 I=0;I<Plan.Wires.Num();++I) RouteOrder.Add(I);
+    RouteOrder.StableSort([&](int32 L,int32 R)
+    {
+        const FWire& A=Plan.Wires[L]; const FWire& B=Plan.Wires[R];
+        if(A.SourceNodeIndex!=B.SourceNodeIndex) return A.SourceNodeIndex<B.SourceNodeIndex;
+        if(Plan.Nodes.IsValidIndex(A.TargetNodeIndex) && Plan.Nodes.IsValidIndex(B.TargetNodeIndex))
+        {
+            const double AY=Plan.Nodes[A.TargetNodeIndex].PlannedY;
+            const double BY=Plan.Nodes[B.TargetNodeIndex].PlannedY;
+            if(AY!=BY) return AY>BY;
+        }
+        return L<R;
+    });
+    for(int32 WireIndex:RouteOrder)
     {
         const FWire& Wire=Plan.Wires[WireIndex];
         if(!Wire.OutputPin || !Wire.InputPin || !Plan.Nodes.IsValidIndex(Wire.SourceNodeIndex)
@@ -3962,17 +4801,27 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
         for(const FBox& Box:Plan.Boxes)
         {
             auto Owns=[&](const FNode& Node) { return Box.MemberKeys.Contains(Node.Key) || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName())); };
-            if(!Owns(Source) && !Owns(Target)) Obstacles.Add({Box.PlannedX,Box.PlannedY,Box.PlannedX+Box.PlannedWidth,Box.PlannedY+Box.PlannedHeight,INDEX_NONE});
+            if(!Owns(SourceObstacleIndex>=Plan.Nodes.Num()?Target:Source) && !Owns(Target)) Obstacles.Add({Box.PlannedX,Box.PlannedY,Box.PlannedX+Box.PlannedWidth,Box.PlannedY+Box.PlannedHeight,INDEX_NONE});
         }
         bool bBlocked=false;
         for(const FObstacle& Obstacle:Obstacles)
             if(Obstacle.NodeIndex!=SourceObstacleIndex && Obstacle.NodeIndex!=Wire.TargetNodeIndex && Crosses(A,B,Obstacle)) { bBlocked=true; break; }
         const double DX=FMath::Abs(B.X-A.X),DY=FMath::Abs(B.Y-A.Y);
-        if(!bBlocked && !(FVector2D::Distance(A,B)>800 && DX>1 && DY>1)) continue;
+        const bool bExecutionHandoff=Wire.OutputPin->PinType.PinCategory==TEXT("exec") && DY>16;
+        if(!bBlocked && !bExecutionHandoff && !(FVector2D::Distance(A,B)>800 && DX>1 && DY>1)) continue;
         TArray<TArray<FVector2D>> Candidates;
         const FVector2D OffsetDelta=OutputOffset-InputOffset;
+        // Derive narrow channels from actual obstacle edges as well as the
+        // requested pitch. Fixed multiples alone miss the few clear graph units
+        // between a controller's right edge and the first input reader.
+        TArray<double> VerticalChannels{A.X+Clearance*0.5,A.X+Clearance*0.75,A.X+Clearance,A.X+Clearance*1.25,A.X+Clearance*1.5,A.X+Clearance*2,B.X-Clearance-OffsetDelta.X};
+        for (const FObstacle& Obstacle:Obstacles)
+        {
+            for (double X:{Obstacle.R+InputOffset.X+1,Obstacle.L-KnotSize.X+InputOffset.X-1})
+                if (X>FMath::Min(A.X,B.X) && X<FMath::Max(A.X,B.X)) VerticalChannels.AddUnique(X);
+        }
         // Two knots form an exact vertical segment despite their distinct pins.
-        for(double X:{A.X+Clearance,B.X-Clearance-OffsetDelta.X})
+        for(double X:VerticalChannels)
             Candidates.Add({FVector2D(X,A.Y)-InputOffset,FVector2D(X+OffsetDelta.X,B.Y-OffsetDelta.Y)-InputOffset});
         TArray<double> Channels{FMath::Min(A.Y,B.Y)-Clearance,FMath::Max(A.Y,B.Y)+Clearance};
         for(const FObstacle& Obstacle:Obstacles)
@@ -3985,7 +4834,40 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
             const FVector2D P3=FVector2D((P2+OutputOffset).X,B.Y-OffsetDelta.Y)-InputOffset;
             Candidates.Add({P0,P1,P2,P3});
         }
+        int32 BestCrossings=MAX_int32,BestSplineCrossings=MAX_int32;
         double BestLength=TNumericLimits<double>::Max();
+        auto ProperCrossing=[](const FVector2D& P,const FVector2D& Q,const FVector2D& R,const FVector2D& S)
+        {
+            auto Cross=[](const FVector2D& U,const FVector2D& V){return U.X*V.Y-U.Y*V.X;};
+            const double C0=Cross(Q-P,R-P),C1=Cross(Q-P,S-P),C2=Cross(S-R,P-R),C3=Cross(S-R,Q-R);
+            return ((C0>0.001 && C1<-0.001)||(C0<-0.001 && C1>0.001))
+                && ((C2>0.001 && C3<-0.001)||(C2<-0.001 && C3>0.001));
+        };
+        auto SplineSegments=[](const FVector2D& P,const FVector2D& Q)
+        {
+            TArray<TPair<FVector2D,FVector2D>> Segments;
+            const FVector2D Tangent(GetDefault<UGraphEditorSettings>()->ComputeSplineTangent(P,Q));
+            FVector2D Previous=P;
+            for (int32 Step=1;Step<=16;++Step)
+            {
+                const double T=Step/16.0,T2=T*T,T3=T2*T;
+                const FVector2D Next=P*(2*T3-3*T2+1)+Tangent*(T3-2*T2+T)+Q*(-2*T3+3*T2)+Tangent*(T3-T2);
+                Segments.Emplace(Previous,Next); Previous=Next;
+            }
+            return Segments;
+        };
+        TArray<TPair<FVector2D,FVector2D>> OtherSplines;
+        if (Wire.OutputPin->PinType.PinCategory==TEXT("exec"))
+            for (int32 OtherIndex=0;OtherIndex<Plan.Wires.Num();++OtherIndex)
+            {
+                const FWire& Other=Plan.Wires[OtherIndex];
+                if (OtherIndex==WireIndex || !Other.OutputPin || !Other.InputPin || Other.OutputPin->PinType.PinCategory!=TEXT("exec")
+                    || !Plan.Nodes.IsValidIndex(Other.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(Other.TargetNodeIndex)) continue;
+                const FNode& OS=Plan.Nodes[Other.SourceNodeIndex]; const FNode& OT=Plan.Nodes[Other.TargetNodeIndex];
+                const FVector2D OA=AlignmentPinPosition(Other.OutputPin)+FVector2D(OS.PlannedX-OS.X,OS.PlannedY-OS.Y);
+                const FVector2D OB=AlignmentPinPosition(Other.InputPin)+FVector2D(OT.PlannedX-OT.X,OT.PlannedY-OT.Y);
+                for (const auto& Segment:TidyWireSegments(Plan,OtherIndex,1,OA,OB)) OtherSplines.Append(SplineSegments(Segment.Key,Segment.Value));
+            }
         for(TArray<FVector2D> Candidate:Candidates)
         {
             // Evaluate the integer coordinates that Unreal will actually store.
@@ -4000,11 +4882,12 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
                 Position.Y=FMath::RoundToDouble(Position.Y);
             }
             if(!bRepresentable) continue;
-            bool bClear=true; double Length=0; FVector2D Previous=A;
+            bool bClear=true; int32 Crossings=0,SplineCrossings=0; double Length=0; FVector2D Previous=A;
             for(int32 I=0;I<=Candidate.Num() && bClear;++I)
             {
                 const FVector2D Next=I<Candidate.Num()?Candidate[I]+InputOffset:B;
                 // Rounding can introduce at most one unit of pin-axis drift.
+                if ((I==0 && Next.X<A.X-1) || (I==Candidate.Num() && Previous.X>B.X+1)) bClear=false;
                 if(FMath::Abs(Next.X-Previous.X)>1 && FMath::Abs(Next.Y-Previous.Y)>1)
                     bClear=false;
                 for(int32 Other=0;Other<Candidate.Num() && bClear;++Other)
@@ -4018,6 +4901,27 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
                     if((I==0 && Obstacle.NodeIndex==SourceObstacleIndex) || (I==Candidate.Num() && Obstacle.NodeIndex==Wire.TargetNodeIndex)) continue;
                     if(Crosses(Previous,Next,Obstacle)) { bClear=false; break; }
                 }
+                // Prefer channels that do not cross other execution paths.
+                // Previously shortest-path selection could introduce a crossing
+                // while avoiding a node, especially on Sequence lower outputs.
+                if(Wire.OutputPin->PinType.PinCategory==TEXT("exec"))
+                    for(int32 OtherIndex=0;OtherIndex<Plan.Wires.Num();++OtherIndex)
+                    {
+                        if(OtherIndex==WireIndex) continue;
+                        const FWire& Other=Plan.Wires[OtherIndex];
+                        if(!Other.OutputPin || !Other.InputPin || Other.OutputPin->PinType.PinCategory!=TEXT("exec")
+                            || !Plan.Nodes.IsValidIndex(Other.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(Other.TargetNodeIndex)) continue;
+                        const FNode& OS=Plan.Nodes[Other.SourceNodeIndex]; const FNode& OT=Plan.Nodes[Other.TargetNodeIndex];
+                        const FVector2D OA=AlignmentPinPosition(Other.OutputPin)+FVector2D(OS.PlannedX-OS.X,OS.PlannedY-OS.Y);
+                        const FVector2D OB=AlignmentPinPosition(Other.InputPin)+FVector2D(OT.PlannedX-OT.X,OT.PlannedY-OT.Y);
+                        for(const auto& Segment:TidyWireSegments(Plan,OtherIndex,1,OA,OB))
+                            if(ProperCrossing(Previous,Next,Segment.Key,Segment.Value)) ++Crossings;
+                    }
+                // Native reroute splines retain horizontal tangents on a vertical
+                // drop. Break straight-score ties using their sampled curves so
+                // adjacent clear channels do not still cross in the screenshot.
+                if (!OtherSplines.IsEmpty()) for (const auto& Curve:SplineSegments(Previous,Next))
+                    for (const auto& Other:OtherSplines) if (ProperCrossing(Curve.Key,Curve.Value,Other.Key,Other.Value)) ++SplineCrossings;
                 Length+=FVector2D::Distance(Previous,Next);
                 if(I<Candidate.Num())
                 {
@@ -4034,10 +4938,12 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
                     Previous=P+OutputOffset;
                 }
             }
-            if(bClear && Length<BestLength) { BestLength=Length; Route.KnotPositions=Candidate; }
+            if(bClear && (Crossings<BestCrossings || (Crossings==BestCrossings
+                && (SplineCrossings<BestSplineCrossings || (SplineCrossings==BestSplineCrossings && Length<BestLength)))))
+            { BestCrossings=Crossings; BestSplineCrossings=SplineCrossings; BestLength=Length; Route.KnotPositions=Candidate; }
         }
         Route.bSkipped=Route.KnotPositions.IsEmpty();
-        Route.Reason=Route.bSkipped?TEXT("No collision-free orthogonal candidate; original wire retained."):TEXT("Orthogonal channel candidate; application and acceptance remain separate.");
+        Route.Reason=Route.bSkipped?TEXT("No collision-free orthogonal candidate; original wire retained."):TEXT("Measured orthogonal channel; preserves the original logical connection.");
         Plan.WireRoutes.Add(MoveTemp(Route));
     }
     return true;

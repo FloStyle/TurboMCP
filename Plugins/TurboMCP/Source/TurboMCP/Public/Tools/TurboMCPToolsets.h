@@ -967,11 +967,11 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphDead(const FString& Asset, const FString& GraphName);
 
-	/** Inspect repeated pure-node outputs in a Blueprint function; loads the asset but does not edit, compile or save; candidates are advisory; edit requires reviewed scalar arithmetic, stable inputs, a clean compile baseline and one connected execution successor.
+	/** Inspect repeated computed outputs, stable input-array counts and stock loop indexes in a Blueprint function; candidates and exclusions are advisory. Preview does not edit, compile or save. Edit supports stable scalar arithmetic at entry, explicitly selected immutable input-array counts at entry and scalar indexes at LoopBody after dominance, Completed, reference and lifetime checks; a clean compile baseline is required.
      * Pure-node classification is not proof of deterministic behavior or equivalent execution.
      * @param Asset Required Blueprint asset path or unique asset name, for example /Game/Blueprints/BP_Player; surrounding whitespace is trimmed and empty is refused. Prefer a full path to avoid ambiguity.
      * @param GraphName Function graph name, matched without case sensitivity after trimming whitespace; event graphs are refused. Pass empty to select the first function graph in the Blueprint's stored order; the result names the selected graph. Prefer an explicit name.
-     * @param Names JSON object mapping exact output IDs from the local-variable preview to meaningful local names, for example {"<exact output ID>":"Subtotal"}. Default {} keeps automatic names. Unknown IDs, invalid names and name collisions are refused. Use the same mapping for preview and edit.
+     * @param Names JSON object mapping exact output IDs from the local-variable preview to meaningful local names, for example {"<exact output ID>":"Subtotal"}. A nonempty map selects only its exact output IDs. Default {} preserves automatic selection of reviewed entry-stable arithmetic; input-array counts and loop values always require explicit selection. Unknown IDs, invalid names and name collisions are refused. Use the same mapping for preview and edit.
      */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPLocalVars(const FString& Asset, const FString& GraphName, const FString& Names = TEXT("{}"));
@@ -1043,8 +1043,11 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
-	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. It does not add reroutes, comments or locals.
-	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
+	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. CreateBoxes optionally adds nested block comments; locals remain a separate explicit operation. Reroutes require explicit RouteWires=orthogonal.
+	 * @param RouteWires off (default) preserves existing connections. orthogonal plans measured reroute chains for blocked or long diagonal connections (at most 512 nodes and 4096 logical wires); skipped boundary/unrouteable links are reported. No automatic compile or save.
+	 * @param bCreateBoxes Optional false (default) or true. Requires whole-graph blocks mode and at most 512 nodes; plans nested comments for control-flow blocks, preserving existing titles and refusing partial overlaps. Added comments share the layout undo.
+	 * @param ChannelWidth Finite routing channel clearance in graph units, 20..400; default 60. Used only when RouteWires=orthogonal.
+	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row. Logical connections are preserved; explicit routing may insert reroute nodes.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.
      */
@@ -1054,7 +1057,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 		const FString& GraphName,
 		bool bForce,
 		const TArray<FString>& NodeIds,
-		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""), const FString& LayoutMode = TEXT("rows"));
+		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""), const FString& LayoutMode = TEXT("rows"), const FString& RouteWires = TEXT("off"), double ChannelWidth = 60.0, bool bCreateBoxes = false);
 
 	/**
      * Preview supported position repairs across one Blueprint graph; loads and measures transient graph widgets, but does not move live nodes, compile or save.
@@ -1988,8 +1991,11 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
 	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
 	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
-	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. It does not add reroutes, comments or locals.
-	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
+	 * @param LayoutMode Optional rows (default, existing layout) or blocks (compact control-flow placement). Blocks keeps loop Body on its row and stacks continuations below; whole-graph blocks mode may move and resize existing comments around their original members. CreateBoxes optionally adds nested block comments; locals remain a separate explicit operation. Reroutes require explicit RouteWires=orthogonal.
+	 * @param RouteWires off (default) preserves existing connections. orthogonal plans measured reroute chains for blocked or long diagonal connections (at most 512 nodes and 4096 logical wires); skipped boundary/unrouteable links are reported. No automatic compile or save.
+	 * @param bCreateBoxes Optional false (default) or true. Requires whole-graph blocks mode and at most 512 nodes; plans nested comments for control-flow blocks, preserving existing titles and refusing partial overlaps. Added comments share the layout undo.
+	 * @param ChannelWidth Finite routing channel clearance in graph units, 20..400; default 60. Used only when RouteWires=orthogonal.
+	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row. Logical connections are preserved; explicit routing may insert reroute nodes.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.
      */
@@ -1999,7 +2005,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 		const FString& GraphName,
 		bool bForce,
 		const TArray<FString>& NodeIds,
-		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""), const FString& LayoutMode = TEXT("rows"));
+		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""), const FString& LayoutMode = TEXT("rows"), const FString& RouteWires = TEXT("off"), double ChannelWidth = 60.0, bool bCreateBoxes = false);
 
 	/**
      * Replan and apply supported position repairs across one Blueprint graph in one undo transaction; marks the Blueprint modified, but does not compile or save.
@@ -2014,11 +2020,11 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 		const FString& GraphName,
 		bool bForce);
 
-	/** Promote repeated reviewed scalar arithmetic values in a Blueprint function: retain calculations, assign locals at function entry and replace consumer reads. Replans live state, compiles and verifies links; does not save. Requires a clean compile baseline and one connected entry successor. Any excluded candidate refuses the whole edit. Failure attempts owned undo but does not claim verified restoration.
+	/** Promote reviewed scalar arithmetic or explicitly selected immutable input-array counts at entry, and selected stable stock loop indexes at LoopBody, retaining original calculations. Replans live state, compiles and verifies links; does not save. Requires a clean compile baseline and a single assignment continuation. Any selected excluded candidate refuses the whole edit. Unproven array-element, reference, latent or reentrant lifetimes are refused. Failure attempts owned undo but does not claim verified restoration.
      * Pure-node classification is not proof of deterministic behavior or equivalent execution.
      * @param Asset Required Blueprint asset path or unique asset name, for example /Game/Blueprints/BP_Player; surrounding whitespace is trimmed and empty is refused. Prefer a full path to avoid ambiguity.
      * @param GraphName Function graph name, matched without case sensitivity after trimming whitespace; event graphs are refused. Pass empty to select the first function graph in the Blueprint's stored order; the result names the selected graph. Prefer an explicit name.
-     * @param Names JSON object mapping exact output IDs from the local-variable preview to meaningful local names, for example {"<exact output ID>":"Subtotal"}. Default {} keeps automatic names. Unknown IDs, invalid names and name collisions are refused. Use the same mapping for preview and edit.
+     * @param Names JSON object mapping exact output IDs from the local-variable preview to meaningful local names, for example {"<exact output ID>":"Subtotal"}. A nonempty map selects only its exact output IDs. Default {} preserves automatic selection of reviewed entry-stable arithmetic; input-array counts and loop values always require explicit selection. Unknown IDs, invalid names and name collisions are refused. Use the same mapping for preview and edit.
      */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPLocalVars(const FString& Asset, const FString& GraphName, const FString& Names = TEXT("{}"));
