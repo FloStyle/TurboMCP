@@ -6405,10 +6405,10 @@
       "report": "2026-11-05 intake",
       "title": "Reproduce loop-cascade layout with a deterministic fixture and baseline",
       "kind": "housekeeping",
-      "state": "in_progress",
+      "state": "done",
       "priority": "P0",
-      "validation": "full_fixture_and_J1_J6_baselines_recorded_not_visual_acceptance",
-      "remaining": "Baseline run completed all cases. Proceed to compact placement repair after integration gates; strengthen exact link/row/undo comparison alongside candidate verification. J3 Body is below Completed; J4/J5 roll back; J2 lower branch crosses a getter. J1 and both J6 graphs are visually orderly. All acceptance remains pending.",
+      "validation": "workflow_passed",
+      "remaining": "Deterministic full fixture and J1-J6 baseline recorded. Follow-up visual/reference acceptance is NOV05-09.",
       "source_keys": [
         "2026-11-05_S1/FT-156"
       ],
@@ -6479,8 +6479,16 @@
           "run": "a8ad9e81bb2e451c9ad61cc4b2750141",
           "result": "offline_gate_failed",
           "scope": "25/26 offline suites passed; runner-verdicts failed with missing child manifests during concurrent editor work. Isolated rerun passed; original cause not proven and failure retained. Repeat full gate serially before integration."
+        },
+        {
+          "commit": "1b8444644c514fd23f809ec98c4acb7a36a1bfdb",
+          "run": "31ce343dffc14e9a8e73fcbe661d3a83",
+          "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
+          "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
         }
-      ]
+      ],
+      "next_step": "Deterministic full fixture and J1-J6 baseline recorded. Follow-up visual/reference acceptance is NOV05-09.",
+      "latest_evidence": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
     },
     {
       "id": "NOV05-02",
@@ -6491,8 +6499,8 @@
       "kind": "bug",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "compact_comment_contents_and_undo_verified_routing_pending",
-      "remaining": "Compact comment identity and full-content checks pass. Implement full Appendix H scoring and routing; retain scoped pure-input regression and inspect all block captures before visual acceptance.",
+      "validation": "workflow_passed_scoped_boundary_limitation",
+      "remaining": "Whole-graph compact placement and nested continuations implemented. J5 retains fixed outside nodes: Body drift 3513 to 3696 and Completed-above-body 3 to 3. Assess this scoped boundary limitation separately; no full visual acceptance claim.",
       "source_keys": [
         "2026-11-05_S1/TD-62",
         "2026-11-05_S1/TD-70",
@@ -6557,10 +6565,16 @@
           "commit": "536b9ae7",
           "result": "integrated_partial_batch",
           "scope": "Compact placement, comment fitting and required-parameter help are on main. Scope gate passed against current main 554547f9 with the unchanged assignment path set. Editor b091c2182a204e82830757b20e9e1bd3 passed preservation and comment checks. Offline 789103a7853a4059ba06a97c0290d3d8 passed 25/26; stale generated inventory was corrected and validate-repo then passed. Production source unchanged since tested a13b31f7. Routing, full scoring, public block previews, local promotion and visual acceptance remain open."
+        },
+        {
+          "commit": "1b8444644c514fd23f809ec98c4acb7a36a1bfdb",
+          "run": "31ce343dffc14e9a8e73fcbe661d3a83",
+          "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
+          "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
         }
       ],
-      "next_step": "Integrated partial fix. Remaining: routing, scoped Body alignment, readable previews, independent scoring and visual acceptance.",
-      "latest_evidence": "Integrated a22b6b69. Native run 4234ebfb64f84583b91d0cf4cc61adc7 passed on candidate 1a042d80, 396 calls. J5 applies with row breaks 0 to 0, unchanged 57 outside nodes, identical graph read-back, exact preview/edit positions and seven scores, exact undo. Pure-input conflicts remain 0. Body drift increases 3513 to 3696 and full-block screenshot 9AF838014478D14AB96FE1AD405C85FB remains too spread out for readable labels; retain these limitations. Offline run e8ac186b233345028e7dcb33f444593b: 25/26 passed, stale inventory corrected and validate-repo rerun passed. Scope gate passed against b547f112. Routing, independent score validation and visual acceptance remain open."
+      "next_step": "Whole-graph compact placement and nested continuations implemented. J5 retains fixed outside nodes: Body drift 3513 to 3696 and Completed-above-body 3 to 3. Assess this scoped boundary limitation separately; no full visual acceptance claim.",
+      "latest_evidence": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
     },
     {
       "id": "NOV05-03",
@@ -6571,8 +6585,8 @@
       "kind": "bug",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "workflow_passed_independent_scoring_and_visual_acceptance_pending",
-      "remaining": "Verify fb6c2228 score output and regression refusals. Independently cross-check measures, distinguish intended handoffs from defects, and retain all routing regressions. No full scoring or visual acceptance claim.",
+      "validation": "scoring_passed_classification_in_progress",
+      "remaining": "Seven metrics and arithmetic cross-check implemented. Finish actual LayoutReport/DoneCheck intended-versus-defect classification, then its focused validation.",
       "source_keys": [
         "2026-11-05_S1/TD-63",
         "2026-11-05_S1/TD-64",
@@ -6594,10 +6608,16 @@
           "commit": "fb6c2228",
           "result": "implemented_verification_running",
           "scope": "Compact mode now reports seven straight-segment measures, compares fixed block membership, uses 5-percent ranking ties and refuses every >10-percent regression unless Force is explicit. Default row ranking unchanged. Workflow requires all measures and checks accepted edits for regressions. Native verification pending; independent score validation, intended-handoff classification and complete visual acceptance remain open."
+        },
+        {
+          "commit": "1b8444644c514fd23f809ec98c4acb7a36a1bfdb",
+          "run": "31ce343dffc14e9a8e73fcbe661d3a83",
+          "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
+          "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
         }
       ],
-      "next_step": "Integrated partial fix. Remaining: routing, scoped Body alignment, readable previews, independent scoring and visual acceptance.",
-      "latest_evidence": "Integrated a22b6b69. Native run 4234ebfb64f84583b91d0cf4cc61adc7 passed on candidate 1a042d80, 396 calls. J5 applies with row breaks 0 to 0, unchanged 57 outside nodes, identical graph read-back, exact preview/edit positions and seven scores, exact undo. Pure-input conflicts remain 0. Body drift increases 3513 to 3696 and full-block screenshot 9AF838014478D14AB96FE1AD405C85FB remains too spread out for readable labels; retain these limitations. Offline run e8ac186b233345028e7dcb33f444593b: 25/26 passed, stale inventory corrected and validate-repo rerun passed. Scope gate passed against b547f112. Routing, independent score validation and visual acceptance remain open."
+      "next_step": "Seven metrics and arithmetic cross-check implemented. Finish actual LayoutReport/DoneCheck intended-versus-defect classification, then its focused validation.",
+      "latest_evidence": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
     },
     {
       "id": "NOV05-04",
@@ -6606,10 +6626,10 @@
       "report": "2026-11-05 intake",
       "title": "Route block handoffs and fallback merges without long diagonal wires",
       "kind": "feature",
-      "state": "in_progress",
+      "state": "done",
       "priority": "P0",
-      "validation": "focused_safety_passed_visual_routing_unresolved",
-      "remaining": "Implement explicit orthogonal handoff routing, including J2 lower Sequence wires crossing pure readers. Preserve feedback and graph semantics; verify screenshots and undo.",
+      "validation": "workflow_passed_visual_review_pending",
+      "remaining": "Opt-in measured orthogonal routing implemented; logical connections, fanout order and exact undo verified. Data crossings remain 13 in the combined fixture. Visual/reference review is NOV05-09.",
       "source_keys": [
         "2026-11-05_S1/TD-65",
         "2026-11-05_S1/TD-71",
@@ -6677,10 +6697,16 @@
           "run": "9e20496b55244178b4b0a1673ff9979f",
           "result": "focused_preservation_passed_routing_incomplete",
           "scope": "Focused J2 build, preview/edit coordinates and measures, contracted connections/fan-out order and exact undo passed. Inspected native 57A952B547E81A62A30135B48B762513: lower-first routing moves lower channel near source, but middle handoff remains unrouted and crossing regression persists. Candidate 2aaea7d3 adds bounded intermediate channel positions to fit between adjacent knot footprints and getters; unbuilt/untested. No visual acceptance or complete-report claim."
+        },
+        {
+          "commit": "1b8444644c514fd23f809ec98c4acb7a36a1bfdb",
+          "run": "31ce343dffc14e9a8e73fcbe661d3a83",
+          "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
+          "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
         }
       ],
-      "next_step": "Finish the remaining implementation batch, including routing candidate 2aaea7d3, then focused verification. Preserve the latest J2 crossing failure; locals, nested boxes and full cascade remain incomplete.",
-      "latest_evidence": "Route expansion currently removes an original edge and appends its replacement, which can reorder a shared output fan-out. Must replace the original link-array slot and verify ordered contracted fan-out, not only edge-set equality. Identified during the active editor run; source kept unchanged to preserve run provenance. Not approved for integration."
+      "next_step": "Opt-in measured orthogonal routing implemented; logical connections, fanout order and exact undo verified. Data crossings remain 13 in the combined fixture. Visual/reference review is NOV05-09.",
+      "latest_evidence": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
     },
     {
       "id": "NOV05-05",
@@ -6689,10 +6715,10 @@
       "report": "2026-11-05 intake",
       "title": "Offer safe explicit local promotion for shared values and loop indexes",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P0",
-      "validation": "reported_not_reproduced",
-      "remaining": "Candidate report first; promotion explicitly selected and separate from geometry. Prove evaluation timing, dominance and loop frequency preservation; refuse unsafe caching. Do not automatically cache arbitrary pure expressions.",
+      "validation": "workflow_passed",
+      "remaining": "Explicit immutable input-array counts at entry and scalar stock-loop indexes at LoopBody implemented. Arbitrary array elements, mutable/reference and unproven lifetimes are deliberately refused. No automatic caching.",
       "source_keys": [
         "2026-11-05_S1/TD-66",
         "2026-11-05_S1/TD-72",
@@ -6701,6 +6727,16 @@
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
       "dependencies": [
         "NOV05-01"
+      ],
+      "next_step": "Explicit immutable input-array counts at entry and scalar stock-loop indexes at LoopBody implemented. Arbitrary array elements, mutable/reference and unproven lifetimes are deliberately refused. No automatic caching.",
+      "latest_evidence": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open.",
+      "evidence": [
+        {
+          "commit": "1b8444644c514fd23f809ec98c4acb7a36a1bfdb",
+          "run": "31ce343dffc14e9a8e73fcbe661d3a83",
+          "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
+          "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
+        }
       ]
     },
     {
@@ -6710,10 +6746,10 @@
       "report": "2026-11-05 intake",
       "title": "Create optional nested block comments while preserving existing titles",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P0",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "workflow_passed",
+      "remaining": "Optional nested block comments implemented; existing titles, membership and exact layout undo checked. CreateBoxes remains false by default.",
       "source_keys": [
         "2026-11-05_S1/TD-67",
         "2026-11-05_S1/FT-153"
@@ -6721,6 +6757,16 @@
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
       "dependencies": [
         "NOV05-02"
+      ],
+      "next_step": "Optional nested block comments implemented; existing titles, membership and exact layout undo checked. CreateBoxes remains false by default.",
+      "latest_evidence": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open.",
+      "evidence": [
+        {
+          "commit": "1b8444644c514fd23f809ec98c4acb7a36a1bfdb",
+          "run": "31ce343dffc14e9a8e73fcbe661d3a83",
+          "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
+          "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
+        }
       ]
     },
     {
@@ -6730,10 +6776,10 @@
       "report": "2026-11-05 intake",
       "title": "Provide readable block previews for dense graphs",
       "kind": "feature",
-      "state": "in_progress",
+      "state": "done",
       "priority": "P0",
-      "validation": "native_detail_title_glyph_geometry_verified_layout_acceptance_pending",
-      "remaining": "Exact node preview/edit agreement passed in dd045dabee7f44dab9de90d46565d7ab. Scenario captures are per block; public block table and readable per-block previews remain incomplete.",
+      "validation": "workflow_passed_visual_review_pending",
+      "remaining": "Native overview plus readable 1:1 block tiles implemented. 14 before and 14 after tiles, none omitted by the 24-image cap; distant channel knots are overview-only. Overall layout approval is NOV05-09.",
       "source_keys": [
         "2026-11-05_S1/TD-68",
         "2026-11-05_S1/FT-155"
@@ -6752,10 +6798,16 @@
           "run": "2275f626431e4e3395e0a9d2fec08ca0",
           "result": "workflow_passed_preview_visual_improvement_verified",
           "scope": "Full 396-call stock-editor run passed. Changed cascade/J3/J4/J5 cases retain score parity and exact undo. Inspected native tiles 582F316648150866F56D94A45E87A2AD, 0B1C91664F6EF727DDC16AB8C5343193 and 73EBA76645A723920AE7CF928D3D3FED: correct LoopCascade title, readable glyphs, label/pin outlines. Long diagonal wires, sparse framing and comment title at tile edge remain visible; no layout or user visual acceptance. Follow-up row-mode guidance correction build 864b3285284d4828afb725cbfcda10f2 passed; offline c6ad125219e54c3e8c2c8c431955b702 passed 26/26. Final harness stage-label correction was syntax checked, not editor rerun. Original stale stage retained in this run evidence."
+        },
+        {
+          "commit": "1b8444644c514fd23f809ec98c4acb7a36a1bfdb",
+          "run": "31ce343dffc14e9a8e73fcbe661d3a83",
+          "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
+          "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
         }
       ],
-      "next_step": "Continue routing and improve comment-title/sparse tile framing. Final rebuilt reference still requires user visual review.",
-      "latest_evidence": "Full 396-call stock-editor run passed. Changed cascade/J3/J4/J5 cases retain score parity and exact undo. Inspected native tiles 582F316648150866F56D94A45E87A2AD, 0B1C91664F6EF727DDC16AB8C5343193 and 73EBA76645A723920AE7CF928D3D3FED: correct LoopCascade title, readable glyphs, label/pin outlines. Long diagonal wires, sparse framing and comment title at tile edge remain visible; no layout or user visual acceptance. Follow-up row-mode guidance correction build 864b3285284d4828afb725cbfcda10f2 passed; offline c6ad125219e54c3e8c2c8c431955b702 passed 26/26. Final harness stage-label correction was syntax checked, not editor rerun. Original stale stage retained in this run evidence."
+      "next_step": "Native overview plus readable 1:1 block tiles implemented. 14 before and 14 after tiles, none omitted by the 24-image cap; distant channel knots are overview-only. Overall layout approval is NOV05-09.",
+      "latest_evidence": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
     },
     {
       "id": "NOV05-08",
@@ -6798,8 +6850,8 @@
       "kind": "housekeeping",
       "state": "open",
       "priority": "P0",
-      "validation": "reported_not_reproduced",
-      "remaining": "Capture candidate and reference in editor; obtain user visual review of rebuilt reference. E8/E9 remain pending without approved comparable reference; original A crossing count unknown. Preserve J1-J6 regressions and preview/edit parity, undo and scope checks.",
+      "validation": "awaiting_user_visual_reference_review",
+      "remaining": "Review final overview and native detail tiles. No user-approved comparable reference was supplied; E8/E9 reference ranking remains pending. Forced mechanics success is not visual acceptance.",
       "source_keys": [],
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
       "dependencies": [
@@ -6810,6 +6862,16 @@
         "NOV05-06",
         "NOV05-07",
         "NOV05-08"
+      ],
+      "next_step": "Review final overview and native detail tiles. No user-approved comparable reference was supplied; E8/E9 reference ranking remains pending. Forced mechanics success is not visual acceptance.",
+      "latest_evidence": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open.",
+      "evidence": [
+        {
+          "commit": "1b8444644c514fd23f809ec98c4acb7a36a1bfdb",
+          "run": "31ce343dffc14e9a8e73fcbe661d3a83",
+          "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
+          "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
+        }
       ]
     },
     {

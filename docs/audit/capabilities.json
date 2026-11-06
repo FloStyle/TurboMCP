@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "1e74ad65b882ff0dfaae56a6943f2cf608b18077",
+  "plugin_tree": "ef7ca90020739d894c90bdb328d6748d81b87fd2",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 185,
@@ -1011,7 +1011,10 @@
         "VerticalGap",
         "LanePitch",
         "WrapAfter",
-        "LayoutMode"
+        "LayoutMode",
+        "RouteWires",
+        "ChannelWidth",
+        "bCreateBoxes"
       ],
       "family": "graph",
       "definitions": [
@@ -2915,7 +2918,10 @@
         "VerticalGap",
         "LanePitch",
         "WrapAfter",
-        "LayoutMode"
+        "LayoutMode",
+        "RouteWires",
+        "ChannelWidth",
+        "bCreateBoxes"
       ],
       "family": "graph",
       "definitions": [
