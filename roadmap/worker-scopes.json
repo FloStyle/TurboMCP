@@ -3768,7 +3768,10 @@
             "Tests/tidy-loop-cascade.json",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVars.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLocalVars.h",
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp"
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLayoutReport.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp"
           ],
           "new_files": []
         }
