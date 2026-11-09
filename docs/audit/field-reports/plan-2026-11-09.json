@@ -163,10 +163,10 @@
       "title": "Read event implementations, reroutes and valid multi-source execution links accurately",
       "kind": "bug",
       "priority": "P0",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "sol-high-graph-reader",
+      "validation": "untested_source_only",
       "source_keys": [
         "2026-11-09_S2/GL-28",
         "2026-11-09_S2/GL-29",
@@ -177,7 +177,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 7,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Dispatched source-only repair; no tests, builds or editor execution until user resumes validation.",
       "acceptance": "Resolve or name event-backed bodies; retain readable delegate identities/targets and struct/enum labels. Follow reroutes with cycle/fanout limits. Distinguish valid exec merges from malformed data inputs; do not allow arbitrary multiple data sources."
     },
     {
