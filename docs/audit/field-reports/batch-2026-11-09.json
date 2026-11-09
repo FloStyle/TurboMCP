@@ -1,0 +1,657 @@
+{
+  "schema": 1,
+  "processed": "2026-11-09",
+  "reviewed_source_base": "e4782357",
+  "reports": [
+    {
+      "report": "2026-11-09_S1",
+      "original_filename": "2026-11-09_S1_TurboMCP_tidy-insert-into-boxed-section.md",
+      "sha256": "1240ebca281a6ed922a442fafb2a6a1029fdb0039881e3c9001663a3c749ea21",
+      "plugin_version": "unknown",
+      "source_storage": "Original bytes archived outside Git in the local November 9 intake folder; owner Desktop original retained."
+    },
+    {
+      "report": "2026-11-09_S2",
+      "original_filename": "2026-11-09_S2_TurboMCP_read-tools-doc-refresh.md",
+      "sha256": "3cc4af14071f98236517c9df2688f97b9abed6b53c0ecf8278159378d0fef352",
+      "plugin_version": "e478235",
+      "source_storage": "Original bytes archived outside Git in the local November 9 intake folder; owner Desktop original retained."
+    },
+    {
+      "report": "2026-11-09_S3",
+      "original_filename": "2026-11-09_S3_TurboMCP_widget-navigation-reads.md",
+      "sha256": "b4749d716babb6c36cfa60d184ddfe10dac9345feccca96d5e4a4ab25e07208e",
+      "plugin_version": "e478235",
+      "source_storage": "Original bytes archived outside Git in the local November 9 intake folder; owner Desktop original retained."
+    }
+  ],
+  "observations": [
+    {
+      "key": "2026-11-09_S1/X-130",
+      "report": "2026-11-09_S1",
+      "id": "X-130",
+      "title": "A tidy preview result was too large for the client (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** A scoped tidy preview of 65 selected nodes in a graph with 450 nodes and 29 boxes, in blocks mode.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Call PreviewTurboMCPGraphTidy with about 65 node IDs, blocks mode and small gaps.\n- **Observed:** The result was about 451000 characters on one line. The client refused it as too large and saved it to a file. The agent had to slice the file to find the verdict line. Most of the text was one score rectangle line per node for the before and after states. A whole-toolset describe call had the same problem at about 105000 characters.\n- **Expected:** The verdict, the regressed measures and the moved-node count come first and fit in a normal response. Per-node detail is optional.\n- **Impact:** Two extra tool calls and a scripted file read.\n- **State after:** No change to the asset.\n- **Workaround:** Read the saved file in slices and search for the verdict line. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** FT-160.",
+      "task_ids": [
+        "NOV09-01"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/GC-49",
+      "report": "2026-11-09_S1",
+      "id": "GC-49",
+      "title": "Append into a crowded section puts the chain far away in one long row (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Appendix A. A chain of 15 exec and impure nodes (5 repeats of getter call, branch, console command) inserted between the false-lane node of a branch and the first node of the existing tail. The section sits in a column of stacked boxes.\n- **Reproduction status:** Observed once for local placement and once for outside placement.\n- **Steps to reproduce:**\n  1. Call PreviewTurboMCPGraphAppend with the chain, an explicit link from the lane node to the first new node, and an explicit link from the last new node to the existing tail node. Use the default local placement.\n  2. Call it again with outside placement.\n- **Observed:** Local placement was refused: no collision-free local space near the fixed connections. Outside placement put all 15 nodes in one horizontal row beyond the right edge of the whole graph, about 4500 to 11300 units to the right of the section. The two boundary wires were about 3000 and 4800 units long. The tail stayed in place, so the last wire ran backwards.\n- **Expected:** Rules C1 and C2. The chain is inserted in the lane, and the tail moves right to make room.\n- **Impact:** The append result needed a full manual layout pass.\n- **State after:** Applied. Compile clean.\n- **Workaround:** Exact positions with EditTurboMCPGraphPositions. This worked on the second attempt.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** FT-157.",
+      "task_ids": [
+        "NOV09-02"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/GC-50",
+      "report": "2026-11-09_S1",
+      "id": "GC-50",
+      "title": "Several small chains in one append are placed together, not next to their own anchors (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** One append with 4 independent groups. Each group has 4 nodes (getter call, NOT, setter call, save call) and attaches to a different existing exec node on a different row.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Call EditTurboMCPGraphAppend with outside placement and 4 groups, each linked to a different existing node.\n- **Observed:** All 16 nodes were placed as one row block to the right of the earlier chain, far from all 4 anchors. The 4 anchor wires were about 3900 to 5600 units long.\n- **Expected:** Rule C3. Each group is placed on its anchor's row, right after the anchor.\n- **Impact:** A manual move of 16 nodes.\n- **State after:** Applied. Moved by hand later.\n- **Workaround:** Exact positions. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** FT-158.",
+      "task_ids": [
+        "NOV09-03"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/TD-75",
+      "report": "2026-11-09_S1",
+      "id": "TD-75",
+      "title": "Scoped tidy does not pull a far block back to its anchors (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** The 15-node chain from GC-49, still far to the right. Only those 15 nodes selected.\n- **Reproduction status:** Observed once in preview.\n- **Steps to reproduce:**\n  1. Call PreviewTurboMCPGraphTidy with the 15 node IDs, no main path, no wrap points, default gaps.\n- **Observed:** The preview said the edit would apply. Total wire length got worse, from about 321600 to 325100. Linear exec drift improved a little. The block stayed far from its anchors. 18 overlaps were counted before and after; they were in other sections.\n- **Expected:** A selected block that connects to fixed nodes moves next to them, or the preview says that no space exists there.\n- **Impact:** Not applied. Manual layout used instead.\n- **State after:** Preview only.\n- **Workaround:** None with tidy.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** FT-157.",
+      "task_ids": [
+        "NOV09-02"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/TD-76",
+      "report": "2026-11-09_S1",
+      "id": "TD-76",
+      "title": "Wrap points are refused inside a chain with skip branches (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** The same 15-node chain. In each repeat, the branch false output skips the console command and goes to the next getter call.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Preview the tidy of the 15 nodes with two wrap points on two console command nodes.\n- **Observed:** Refused: the continuation cannot go to a lower row inside the scope, because of the bypass. The chain could not be split into rows.\n- **Expected:** A wrap point after a repeat of \"test, then optional action\" moves the next repeat to a new row. The skip wire and the normal wire both go to the next row together.\n- **Impact:** The chain had to stay one long row.\n- **State after:** No change.\n- **Workaround:** None observed.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Allow a wrap point when every exec wire that leaves the earlier part ends at the same first node of the next part.",
+      "task_ids": [
+        "NOV09-05"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/TD-77",
+      "report": "2026-11-09_S1",
+      "id": "TD-77",
+      "title": "Scoped tidy of a whole box is refused when the box must grow (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** All 65 nodes of the section box (old and new) selected, rows mode. Another box starts 140 units below the section box. Free space exists to the right of the section box.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Preview the tidy with all nodes of the section box.\n- **Observed:** Refused: the planned layout overlaps a fixed node of the box below.\n- **Expected:** The planner uses the free space to the right, or it grows the box and pushes the boxes below down as one group.\n- **Impact:** No tidy result. Manual layout used instead.\n- **State after:** No change.\n- **Workaround:** Manual layout. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** FT-159.",
+      "task_ids": [
+        "NOV09-04"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/TD-78",
+      "report": "2026-11-09_S1",
+      "id": "TD-78",
+      "title": "Blocks mode on the same section regresses and rolls back (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Same selection as TD-77, blocks mode, horizontal gap 60 and vertical gap 50.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Preview the tidy as in TD-77 with blocks mode and the smaller gaps.\n- **Observed:** The edit would roll back. Unrelated box crossings went from 6 to 12. Diagonal exec length went from about 6060 to 8170. Bounding area grew by about 10 percent. Exec crossings went from 7 to 1 and row breaks inside blocks from 9 to 2, so the block structure improved.\n- **Expected:** The block structure of blocks mode, placed inside the section without new crossings of other boxes.\n- **Impact:** No tidy result.\n- **State after:** No change.\n- **Workaround:** Manual layout. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** FT-159. The rollback guard itself worked as intended.",
+      "task_ids": [
+        "NOV09-04"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/CP-17",
+      "report": "2026-11-09_S1",
+      "id": "CP-17",
+      "title": "Full-graph capture fails on a large graph (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** The done check on the whole graph with 421 measured nodes.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Call LookTurboMCPLayoutDoneCheck on the graph.\n- **Observed:** The findings were returned. The capture failed because the frame exceeds the native zoom range.\n- **Expected:** A capture at the smallest zoom, or a tiled set of captures, or a capture of the boxes that the latest edits touched.\n- **Impact:** One extra capture call per check.\n- **State after:** No change.\n- **Workaround:** LookTurboMCPCapture in box mode on the edited box. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Let the done check take a scope, the same as the layout report.",
+      "task_ids": [
+        "NOV09-06"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/CP-18",
+      "report": "2026-11-09_S1",
+      "id": "CP-18",
+      "title": "Box capture by index gave a usable overview (positive)",
+      "kind": "positive",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Scenario:** A box 8900 by 2000 units wide.\n- **Observed:** One call with the box index produced a 3200 by 900 overview. The user's acceptance was based on this view.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-09_S1/LR-23",
+      "report": "2026-11-09_S1",
+      "id": "LR-23",
+      "title": "Layout report with a box scope was the right check (positive)",
+      "kind": "positive",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Scenario:** The section box after each manual pass.\n- **Observed:** Findings were limited to the box and its links. It listed overlaps first, then backward wires and exec-not-straight. It found the one remaining 192-unit lane drop that the agent then removed.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-09_S1/GC-51",
+      "report": "2026-11-09_S1",
+      "id": "GC-51",
+      "title": "Explicit links into existing exec inputs worked as merges (positive)",
+      "kind": "positive",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Scenario:** Five branch false outputs linked into existing or new exec inputs that already had a source.\n- **Observed:** Five calls to EditTurboMCPGraphConnect each added the link and reported \"replaced source-output destinations: none\". The graph compiled.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-09_S1/ED-27",
+      "report": "2026-11-09_S1",
+      "id": "ED-27",
+      "title": "Remove then reconnect restored the original wiring (positive)",
+      "kind": "positive",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Scenario:** Six added nodes removed from a condition, and the original condition wire restored.\n- **Observed:** EditTurboMCPGraphRemove removed the nodes and their links in one undo step. One EditTurboMCPGraphConnect call restored the wire. Compile clean.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-09_S1/ED-28",
+      "report": "2026-11-09_S1",
+      "id": "ED-28",
+      "title": "Append wrote all fields of a struct make node (positive)",
+      "kind": "positive",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Scenario:** A make node of an engine input configuration struct with six fields, linked to a function result.\n- **Observed:** The reader showed all six values exactly as written. The edit reported \"1 pin value written\", which is less than the six values that the reader showed.",
+      "task_ids": [
+        "NOV09-07"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/OV-04",
+      "report": "2026-11-09_S1",
+      "id": "OV-04",
+      "title": "Override add on a widget base class function worked (positive)",
+      "kind": "positive",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Scenario:** Two Widget Blueprints with an engine activatable widget parent.\n- **Observed:** Each call created the override graph with a result node. The reader confirmed the override as implemented.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-09_S1/CB-13",
+      "report": "2026-11-09_S1",
+      "id": "CB-13",
+      "title": "Comment set with an explicit size widened a box (positive)",
+      "kind": "positive",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Scenario:** The section box widened twice.\n- **Observed:** The box kept its corner and title. The size format WxH was required; a comma pair was refused with a clear message.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-09_S1/FT-157",
+      "report": "2026-11-09_S1",
+      "id": "FT-157",
+      "title": "Insert into a lane: place an appended or selected chain inline in the exec lane between its two fixed anchors, and shift the downstream tail to the right on the same row",
+      "kind": "feature_proposal",
+      "validation": "proposed_not_implemented",
+      "observation": "Two manual passes that moved 22 nodes onto one row",
+      "task_ids": [
+        "NOV09-02"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/FT-158",
+      "report": "2026-11-09_S1",
+      "id": "FT-158",
+      "title": "Per-anchor placement: in one append, place each disconnected group next to its own anchor, on the anchor's row",
+      "kind": "feature_proposal",
+      "validation": "proposed_not_implemented",
+      "observation": "A manual move of 16 nodes",
+      "task_ids": [
+        "NOV09-03"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/FT-159",
+      "report": "2026-11-09_S1",
+      "id": "FT-159",
+      "title": "Box growth: when a section needs space, grow its box into free space to the right, or push the boxes below down as one group, instead of refusing",
+      "kind": "feature_proposal",
+      "validation": "proposed_not_implemented",
+      "observation": "Two refused tidy previews and two manual box resizes",
+      "task_ids": [
+        "NOV09-04"
+      ]
+    },
+    {
+      "key": "2026-11-09_S1/FT-160",
+      "report": "2026-11-09_S1",
+      "id": "FT-160",
+      "title": "Summary-first tidy output with optional per-node detail",
+      "kind": "feature_proposal",
+      "validation": "proposed_not_implemented",
+      "observation": "Slicing a 451000-character result from a file",
+      "task_ids": [
+        "NOV09-01"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/X-131",
+      "report": "2026-11-09_S2",
+      "id": "X-131",
+      "title": "A wrong tool name gives an error that misleads an agent (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** A sub-agent called a read tool by a short name without the \"ReadTurboMCP\" prefix.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Call a read tool in the read toolset with a short name that is not registered.\n- **Observed:** The error said that the tool policy was unavailable, or that no such tool exists. The agent concluded that the editor needed a restart and stopped using the tools. A later call with the full name worked at once.\n- **Expected:** The error names the closest registered tool and says that the toolset is healthy.\n- **Impact:** One sub-agent finished its pass from source control only. A second pass was necessary.\n- **State after:** No editor state changed.\n- **Workaround:** Call the full tool name. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** When the name is unknown, suggest the nearest registered name (\"did you mean ...\").",
+      "task_ids": [
+        "NOV09-18"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/NF-09",
+      "report": "2026-11-09_S2",
+      "id": "NF-09",
+      "title": "No OR mode and no count-only mode (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** A widget with several graphs. The agent searched for four different function names in one call.\n- **Reproduction status:** Repeated.\n- **Steps to reproduce:**\n  1. Search one asset with several words that belong to different nodes.\n- **Observed:** The tool returned zero matches, because all words must match the same node. To get only the node and graph totals, an agent searched for a word that matches nothing.\n- **Expected:** An option to match any of the words, and an option to return only the totals.\n- **Impact:** Extra calls: one call per word.\n- **State after:** Not applicable (read only).\n- **Workaround:** One call per word. A nonsense word gave the totals. Both worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Add a match mode (all or any) and a totals-only output.",
+      "task_ids": [
+        "NOV09-08"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/NF-10",
+      "report": "2026-11-09_S2",
+      "id": "NF-10",
+      "title": "Delegate call nodes are not found (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Defect.\n- **Scenario:** A widget broadcasts an event dispatcher from its own graph.\n- **Reproduction status:** Repeated on two dispatchers.\n- **Steps to reproduce:**\n  1. Search for the dispatcher name in a Blueprint that calls it.\n- **Observed:** Only the dispatcher signature entry was returned. The call node was not returned, so a broadcast that exists looked like a missing call.\n- **Expected:** Delegate call, bind and unbind nodes match on the delegate name.\n- **Impact:** Misleading result. An agent almost reported a missing broadcast.\n- **State after:** Not applicable.\n- **Workaround:** Read the context of a neighbor node and identify the call node from its pins. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Index delegate nodes by their delegate name.",
+      "task_ids": [
+        "NOV09-08"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/NF-11",
+      "report": "2026-11-09_S2",
+      "id": "NF-11",
+      "title": "Literal pin values are not searched (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** A page widget sends console commands. Each command string is a literal pin value.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Search for a word that occurs only in a literal string pin.\n- **Observed:** No matches.\n- **Expected:** An option to also search literal pin values.\n- **Impact:** The agent had to walk the exec chain with node context calls.\n- **State after:** Not applicable.\n- **Workaround:** Node context on the chain. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** An optional \"include pin defaults\" search scope.",
+      "task_ids": [
+        "NOV09-08"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/GL-28",
+      "report": "2026-11-09_S2",
+      "id": "GL-28",
+      "title": "A function implemented as an event shows only the ubergraph stub (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** An interface function, and a function implemented as a custom event in the event graph.\n- **Reproduction status:** Repeated on three Blueprints.\n- **Steps to reproduce:**\n  1. Load the graph of the function by its name.\n- **Observed:** The output held only the persistent-frame stub and the ubergraph call. Both were shown as \"no node type ID\" errors, and each error was printed twice (inline and in the footer). Nothing pointed to the event node that holds the logic.\n- **Expected:** The reader follows the stub to the event in the event graph, or names that event.\n- **Impact:** Two to three extra calls for each such function.\n- **State after:** Not applicable.\n- **Workaround:** Find the event node, then read its context in the event graph. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** For a stub graph, print \"implemented by event X in graph Y\" and read that event.",
+      "task_ids": [
+        "NOV09-09"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/GL-29",
+      "report": "2026-11-09_S2",
+      "id": "GL-29",
+      "title": "Nodes without a type ID print long write-back errors in read-only use (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** Graphs with delegate call, bind and unbind nodes.\n- **Reproduction status:** Repeated.\n- **Steps to reproduce:**\n  1. Load a graph that contains such nodes.\n- **Observed:** Each such node printed a block of six to eight lines that said it cannot be written back. The block was repeated in the summary. For a bind node, the bound target was not visible.\n- **Expected:** A short read-only line that names the node kind, the delegate and the bound target. The write-back warning belongs to edit tools.\n- **Impact:** Much noise in the output. One agent stripped the blocks with a script and then missed real nodes.\n- **State after:** Not applicable.\n- **Workaround:** Read the pins with node resolve. This worked partly: the bound target stayed unread once.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Readable output for typeless delegate nodes. Print the write-back note once only.",
+      "task_ids": [
+        "NOV09-09"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/GL-30",
+      "report": "2026-11-09_S2",
+      "id": "GL-30",
+      "title": "An exec link through a reroute knot hides the next node (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Defect.\n- **Scenario:** A widget graph whose exec chain passes through a reroute knot before two calls.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Load the graph and read the exec output that goes to the knot.\n- **Observed:** The output showed only \"to knot\" and the knot ID. The node after the knot was not printed.\n- **Expected:** Knots are transparent, and the reader shows the real target.\n- **Impact:** Two calls were nearly missed.\n- **State after:** Not applicable.\n- **Workaround:** Node context on the knot. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Collapse knots when the reader prints exec and data links.",
+      "task_ids": [
+        "NOV09-09"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/GL-31",
+      "report": "2026-11-09_S2",
+      "id": "GL-31",
+      "title": "A pin with two links is reported as malformed (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Defect.\n- **Scenario:** A target pin with two incoming links on a function call (two Blueprints).\n- **Reproduction status:** Repeated.\n- **Steps to reproduce:**\n  1. Load a graph where an input pin has two links.\n- **Observed:** The reader printed \"malformed link\" for that pin.\n- **Expected:** The reader lists both sources.\n- **Impact:** A valid graph looked broken.\n- **State after:** Not applicable.\n- **Workaround:** Node resolve listed both links. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Support more than one link on target pins.",
+      "task_ids": [
+        "NOV09-09"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/GL-32",
+      "report": "2026-11-09_S2",
+      "id": "GL-32",
+      "title": "Field names and enum names are missing (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** A break-struct output wired into a function pin, and a switch on a user enum.\n- **Reproduction status:** Observed once each.\n- **Steps to reproduce:**\n  1. Load a graph with a break-struct output that feeds a call.\n  2. Load a graph with a switch on a user enum.\n- **Observed:** The struct field was not named. The switch cases showed internal enumerator names, not display names.\n- **Expected:** Field names and enum display names.\n- **Impact:** Extra resolve calls.\n- **State after:** Not applicable.\n- **Workaround:** Node resolve showed the field. The enum stayed unnamed.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Print the field name and the enum display name.",
+      "task_ids": [
+        "NOV09-09"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/GL-33",
+      "report": "2026-11-09_S2",
+      "id": "GL-33",
+      "title": "Empty paging arguments are required on the first page (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** The first call to the graph reader.\n- **Reproduction status:** Repeated.\n- **Steps to reproduce:**\n  1. Call the reader without the revision and entry filter arguments.\n- **Observed:** The call was refused. Empty strings were required.\n- **Expected:** Optional arguments with defaults.\n- **Impact:** One refused call per agent.\n- **State after:** Not applicable.\n- **Workaround:** Pass empty strings. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Make the paging arguments optional.",
+      "task_ids": [
+        "NOV09-10"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/NR-10",
+      "report": "2026-11-09_S2",
+      "id": "NR-10",
+      "title": "Node context lists pure inputs only by ID, and needs a graph name (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** Tracing a call whose inputs come from pure nodes.\n- **Reproduction status:** Repeated.\n- **Steps to reproduce:**\n  1. Read the context of a call node with pure inputs.\n  2. Call the tool without the graph name and with a full node ID.\n- **Observed:** Pure sources were given as IDs only, so two extra resolve calls were needed. The call without a graph name was refused, although the full node ID holds the graph.\n- **Expected:** The title of each pure source, and the graph taken from the full node ID.\n- **Impact:** Extra calls.\n- **State after:** Not applicable.\n- **Workaround:** Node resolve, and pass the graph name. Both worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Print pure source titles one level deep. Accept a full node ID alone.",
+      "task_ids": [
+        "NOV09-19"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/NR-11",
+      "report": "2026-11-09_S2",
+      "id": "NR-11",
+      "title": "Node context traced event chains well (positive)",
+      "kind": "positive",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Positive.\n- **Scenario:** Event chains in large widgets and in a player controller.\n- **Observed:** Node context with several next hops was the most reliable way to read logic. It worked around most graph reader gaps.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-09_S2/BL-15",
+      "report": "2026-11-09_S2",
+      "id": "BL-15",
+      "title": "Silent fallback to the manifest on a low token budget (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Defect.\n- **Scenario:** Signature and body reads on medium-size Blueprints.\n- **Reproduction status:** Repeated by three agents.\n- **Steps to reproduce:**\n  1. Ask for signatures or bodies with a budget below the full size.\n- **Observed:** The tool returned only the manifest. It did not clearly say that the requested detail was dropped, so no function signatures came back.\n- **Expected:** A partial result of the requested detail with paging, or a clear refusal that gives the size needed.\n- **Impact:** Misleading result. The agents had to switch to the graph reader.\n- **State after:** Not applicable.\n- **Workaround:** A higher budget, or the graph reader. These worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Page the requested detail instead of downgrading it.",
+      "task_ids": [
+        "NOV09-11"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/BL-16",
+      "report": "2026-11-09_S2",
+      "id": "BL-16",
+      "title": "The graph filter does not limit the metadata, and every parameter is required (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** Body reads with a graph filter on large widgets and a controller.\n- **Reproduction status:** Repeated.\n- **Steps to reproduce:**\n  1. Call the reader with a filter on two graphs.\n  2. Call it with only the asset argument.\n- **Observed:** The filter limited the bodies only. The call graph, callers and variable map were still printed for all graphs, and the output was saved to a file because it was too big for the client. A call with only the asset argument was refused, because all five parameters are required although the descriptions give empty defaults.\n- **Expected:** The filter applies to all sections. Parameters with defaults are optional.\n- **Impact:** Very large outputs and refused calls.\n- **State after:** Not applicable.\n- **Workaround:** The graph reader for each graph, and all five parameters passed. These worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Apply the graph filter to all sections. Make the parameters optional.",
+      "task_ids": [
+        "NOV09-10",
+        "NOV09-11"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/BL-17",
+      "report": "2026-11-09_S2",
+      "id": "BL-17",
+      "title": "The variable map misses by-reference array writes (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Defect.\n- **Scenario:** A widget that changes an array variable with array add and array remove.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read the variable map of a Blueprint that changes an array only through array functions.\n- **Observed:** The map said that nothing writes the variable.\n- **Expected:** Array functions with a by-reference target count as writes.\n- **Impact:** Misleading result: dead-data analysis could be wrong.\n- **State after:** Not applicable.\n- **Workaround:** Read the function body. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Count by-reference container operations as writes.",
+      "task_ids": [
+        "NOV09-12"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/BL-18",
+      "report": "2026-11-09_S2",
+      "id": "BL-18",
+      "title": "The static reference scan and soft path defaults are local only (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** A renderer actor whose functions are called from a function library, with a soft object path default.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read the signatures of an asset whose functions are called from another asset.\n- **Observed:** Two functions were listed as having no observed static reference, but another asset calls them. The soft path default showed as \"type default\", although it was expected to be set. Whether this is a reader gap or a real change is unknown.\n- **Expected:** The scan says that it covers only this asset. The reader shows soft path defaults.\n- **Impact:** A possible wrong \"unused\" conclusion, and one open question.\n- **State after:** Not applicable.\n- **Workaround:** None observed for the soft path.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Label the scope of the scan. Print soft path values.",
+      "task_ids": [
+        "NOV09-13"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/DT-14",
+      "report": "2026-11-09_S2",
+      "id": "DT-14",
+      "title": "Maximum 60 rows, with no paging (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Two data tables with 73 and 91 rows.\n- **Reproduction status:** Repeated.\n- **Steps to reproduce:**\n  1. Read a table with more than 60 rows.\n- **Observed:** Only 60 row names and values were shown, with no way to get the rest. Checks on 13 and 31 rows stayed open.\n- **Expected:** Paging or a row filter.\n- **Impact:** A blocked check, which stays a lead in the docs.\n- **State after:** Not applicable.\n- **Workaround:** None observed.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Add an offset and a row name filter.",
+      "task_ids": [
+        "NOV09-14"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/DT-15",
+      "report": "2026-11-09_S2",
+      "id": "DT-15",
+      "title": "Column selection is hard to use (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** Value reads on several tables.\n- **Reproduction status:** Repeated.\n- **Steps to reproduce:**\n  1. Ask for columns by their short names.\n  2. Ask for all data with an empty column list.\n  3. Read a table with localized text columns.\n- **Observed:** Short names failed with \"unknown column\", so the full generated names were needed. \"All\" with an empty column list showed no values. Localized text printed the full key and hash for each row, with no option to show the display string only.\n- **Expected:** Short field names accepted, all values when no column is given, and a display-only option for text.\n- **Impact:** Refused calls and very large outputs.\n- **State after:** Not applicable.\n- **Workaround:** Read the schema, then pass the full names. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Match columns by display name. Add a text display mode.",
+      "task_ids": [
+        "NOV09-15"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/DT-16",
+      "report": "2026-11-09_S2",
+      "id": "DT-16",
+      "title": "Reader detection misses a library row lookup (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Defect.\n- **Scenario:** A widget reads a table through a project library lookup node that takes the table as a literal.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read the readers section of a table that is used only through such a lookup node.\n- **Observed:** The tool said that the widget has no node that names the table.\n- **Expected:** Any node with the table as a pin default counts as a reader.\n- **Impact:** Misleading result.\n- **State after:** Not applicable.\n- **Workaround:** Read the widget graph. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Detect readers by the table reference on any pin.",
+      "task_ids": [
+        "NOV09-16"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/DT-17",
+      "report": "2026-11-09_S2",
+      "id": "DT-17",
+      "title": "Value reads with full field names were reliable (positive)",
+      "kind": "positive",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Positive.\n- **Scenario:** Ten tables reread for defaults, ranges and row counts.\n- **Observed:** Once the full field names were known, values matched what the session expected and supported exact documentation updates.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-09_S2/TH-15",
+      "report": "2026-11-09_S2",
+      "id": "TH-15",
+      "title": "Tool help refuses empty arguments (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** The first help call in a new agent.\n- **Reproduction status:** Repeated.\n- **Steps to reproduce:**\n  1. Call tool help without arguments.\n- **Observed:** The call was refused. Both arguments were required, even as empty strings.\n- **Expected:** With no arguments, tool help lists the toolsets and tools.\n- **Impact:** One refused call per agent.\n- **State after:** Not applicable.\n- **Workaround:** Pass both arguments. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Make both arguments optional.",
+      "task_ids": [
+        "NOV09-10"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/AD-04",
+      "report": "2026-11-09_S2",
+      "id": "AD-04",
+      "title": "\"Generated class: unknown\" for assets without a generated class (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** Input mapping, input action and user struct assets.\n- **Reproduction status:** Repeated.\n- **Steps to reproduce:**\n  1. Describe one of these asset kinds.\n- **Observed:** The output said that the generated class is unknown.\n- **Expected:** \"Not applicable\" for asset kinds that never have a generated class.\n- **Impact:** A misleading line.\n- **State after:** Not applicable.\n- **Workaround:** None needed.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Print \"not applicable\" for these kinds.",
+      "task_ids": [
+        "NOV09-20"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/WT-19",
+      "report": "2026-11-09_S2",
+      "id": "WT-19",
+      "title": "No read of render transform or clipping (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** A layout check on a clipping chain in a root widget.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read the widget tree to check the clipping and render transform of a panel.\n- **Observed:** The widget tree showed padding and visibility only.\n- **Expected:** Clipping and render transform are readable.\n- **Impact:** One check stayed open.\n- **State after:** Not applicable.\n- **Workaround:** None observed.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Add these properties to the widget tree output.",
+      "task_ids": [
+        "NOV09-17"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/FT-161",
+      "report": "2026-11-09_S2",
+      "id": "FT-161",
+      "title": "Data table paging and a row name filter",
+      "kind": "feature_proposal",
+      "validation": "proposed_not_implemented",
+      "observation": "Two tables that could not be fully checked",
+      "task_ids": [
+        "NOV09-14"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/FT-162",
+      "report": "2026-11-09_S2",
+      "id": "FT-162",
+      "title": "Node find with an any-word mode, a totals-only mode, and literal pin values",
+      "kind": "feature_proposal",
+      "validation": "proposed_not_implemented",
+      "observation": "One call per word, a nonsense-word query for totals, and manual chain walks",
+      "task_ids": [
+        "NOV09-08"
+      ]
+    },
+    {
+      "key": "2026-11-09_S2/FT-163",
+      "report": "2026-11-09_S2",
+      "id": "FT-163",
+      "title": "Graph reader that resolves an event-implemented function to its event body",
+      "kind": "feature_proposal",
+      "validation": "proposed_not_implemented",
+      "observation": "Two to three extra calls for each such function",
+      "task_ids": [
+        "NOV09-09"
+      ]
+    },
+    {
+      "key": "2026-11-09_S3/WT-20",
+      "report": "2026-11-09_S3",
+      "id": "WT-20",
+      "title": "The widget property reader omits the Navigation struct (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** A lobby widget sends gamepad focus with custom navigation functions that are set in the Designer navigation rules. One nested widget is never reached.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read the properties of a button or panel that has navigation rules set in the Designer.\n- **Observed:** Only value properties were listed. The Navigation rules were not shown: the rule per direction, the explicit targets and the custom delegate function names. The agent could not confirm which direction calls which custom function.\n- **Expected:** The Navigation struct is readable for each direction.\n- **Impact:** The root cause stayed a lead, and a Designer check by hand is still needed. Every CommonUI gamepad navigation bug hits this gap.\n- **State after:** Not applicable (read only).\n- **Workaround:** The agent inferred the routes from the function return values and from the layout. This is partly reliable.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Print the navigation rule for each direction (Escape, Stop, Wrap, Explicit and its target, Custom and its function name).",
+      "task_ids": [
+        "NOV09-17"
+      ]
+    },
+    {
+      "key": "2026-11-09_S3/WT-21",
+      "report": "2026-11-09_S3",
+      "id": "WT-21",
+      "title": "The widget tree does not show focus or navigation data (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** The same lobby, while checking which buttons can receive focus.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read the widget tree of a widget with buttons.\n- **Observed:** The tree did not show IsFocusable or whether a widget has custom navigation. A property read was needed for each button.\n- **Expected:** A short summary per widget, such as \"focusable\" and \"nav: custom\".\n- **Impact:** Extra calls.\n- **State after:** Not applicable.\n- **Workaround:** A property read per widget. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Add the focusable flag and a navigation summary to the tree output.",
+      "task_ids": [
+        "NOV09-17"
+      ]
+    },
+    {
+      "key": "2026-11-09_S3/TH-16",
+      "report": "2026-11-09_S3",
+      "id": "TH-16",
+      "title": "The tool index is too large for the client (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Defect.\n- **Scenario:** The first discovery call in a new sub-agent.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Call the tool index with no arguments.\n- **Observed:** The output was about 116,000 characters and went over the reply limit of the client.\n- **Expected:** Paging, a toolset filter, or a compact names-only mode.\n- **Impact:** The discovery call failed, and the agent had to go back to tool help for each tool.\n- **State after:** Not applicable.\n- **Workaround:** Tool help per tool. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Return a compact list by default and give the detail on request.",
+      "task_ids": [
+        "NOV09-18"
+      ]
+    },
+    {
+      "key": "2026-11-09_S3/TH-17",
+      "report": "2026-11-09_S3",
+      "id": "TH-17",
+      "title": "The tool schema argument names differ from tool help (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** A schema lookup after a tool help call.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Call the tool schema with the argument name that tool help uses.\n- **Observed:** The call was refused. The schema needs other argument names. The error message was clear.\n- **Expected:** The same argument names in both discovery tools.\n- **Impact:** One refused call.\n- **State after:** Not applicable.\n- **Workaround:** Use the names from the error. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Accept both spellings, or align them.",
+      "task_ids": [
+        "NOV09-10"
+      ]
+    },
+    {
+      "key": "2026-11-09_S3/DT-18",
+      "report": "2026-11-09_S3",
+      "id": "DT-18",
+      "title": "A table read through a struct parameter is listed as \"not loaded, not searched\" (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** A tutorial widget gets a table row through a function parameter of the row struct type. A parent widget passes the row in.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read the readers section of a table whose rows reach a widget through a struct parameter.\n- **Observed:** The widget was listed as not loaded and its graph as not searched.\n- **Expected:** The tool states that it found the widget by its row struct type, or loads the widget to check it.\n- **Impact:** A minor uncertainty.\n- **State after:** Not applicable.\n- **Workaround:** Read the widget graph. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Report readers by their struct type, with the reason they were included.",
+      "task_ids": [
+        "NOV09-16"
+      ]
+    },
+    {
+      "key": "2026-11-09_S3/DT-19",
+      "report": "2026-11-09_S3",
+      "id": "DT-19",
+      "title": "Asset search, node find and node context worked as documented (positive)",
+      "kind": "positive",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Positive.\n- **Scenario:** A trace from a tutorial widget to its data table and textures.\n- **Observed:** The tools found the switch on the team tag, the texture field per team and the row assets in a few calls. This was enough to confirm that the glyphs are baked into the images.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-09_S3/FT-164",
+      "report": "2026-11-09_S3",
+      "id": "FT-164",
+      "title": "A read of widget navigation rules per direction, including custom function names",
+      "kind": "feature_proposal",
+      "validation": "proposed_not_implemented",
+      "observation": "A root cause left as a lead, and a manual Designer check",
+      "task_ids": [
+        "NOV09-17"
+      ]
+    },
+    {
+      "key": "2026-11-09_S3/FT-165",
+      "report": "2026-11-09_S3",
+      "id": "FT-165",
+      "title": "A compact tool index with paging or a toolset filter",
+      "kind": "feature_proposal",
+      "validation": "proposed_not_implemented",
+      "observation": "A failed discovery call and per-tool help calls",
+      "task_ids": [
+        "NOV09-18"
+      ]
+    }
+  ],
+  "limits": [
+    "Reports are evidence, not implementation authority.",
+    "S1 version unknown; S2/S3 e478235. Agent summaries are not raw-call verification.",
+    "No crash reported in these three sessions.",
+    "Accepted S1 manual layout was judged from an overview; fixture and crossing counts were not produced.",
+    "Whole-graph November 5 acceptance does not validate November 9 boxed insertion."
+  ],
+  "task_plan": "docs/audit/field-reports/plan-2026-11-09.json"
+}

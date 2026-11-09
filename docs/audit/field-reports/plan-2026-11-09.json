@@ -1,0 +1,396 @@
+{
+  "schema": 1,
+  "date": "2026-11-09",
+  "status": "ingested_not_implemented",
+  "tasks": [
+    {
+      "id": "NOV09-01",
+      "title": "Bound Tidy output and put the verdict first",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S1/X-130",
+        "2026-11-09_S1/FT-160"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 3,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Default response must be bounded and summary-first; optional paginated geometry evidence retains exact scores. Do not remove measurement coverage."
+    },
+    {
+      "id": "NOV09-02",
+      "title": "Insert a chain into its existing lane with an explicit tail-movement scope",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S1/GC-49",
+        "2026-11-09_S1/TD-75",
+        "2026-11-09_S1/FT-157"
+      ],
+      "dependencies": [
+        "NOV09-01"
+      ],
+      "complexity_estimate": 8,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Build the clean-room boxed-section case. Preview every shifted tail node; preserve unrelated lanes, links and undo. Never silently move nodes outside the approved scope."
+    },
+    {
+      "id": "NOV09-03",
+      "title": "Place disconnected append groups beside their own anchors",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S1/GC-50",
+        "2026-11-09_S1/FT-158"
+      ],
+      "dependencies": [
+        "NOV09-02"
+      ],
+      "complexity_estimate": 6,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Plan each independent group from its own anchor, keep pure dependencies left/below their consumer, retain collision refusal and exact preview/edit placement."
+    },
+    {
+      "id": "NOV09-04",
+      "title": "Grow an edited section box safely without disturbing neighbors",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S1/TD-77",
+        "2026-11-09_S1/TD-78",
+        "2026-11-09_S1/FT-159"
+      ],
+      "dependencies": [
+        "NOV09-02"
+      ],
+      "complexity_estimate": 8,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Prefer rightward growth into free space. Moving neighboring boxes is a separately explicit scope, never implied by selecting the section. Preserve working regression guards."
+    },
+    {
+      "id": "NOV09-05",
+      "title": "Allow safe wraps after converging optional-action branches",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S1/TD-76"
+      ],
+      "dependencies": [
+        "NOV09-02"
+      ],
+      "complexity_estimate": 6,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Recognize the branch/action merge only when all exits converge at the same next node; preserve every bypass link and refuse ambiguous branches."
+    },
+    {
+      "id": "NOV09-06",
+      "title": "Make DoneCheck capture useful for large scoped graphs",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S1/CP-17"
+      ],
+      "dependencies": [
+        "NOV09-01"
+      ],
+      "complexity_estimate": 4,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Reconcile current scope support first. Capture the selected section or bounded tiles; report native zoom limits honestly rather than silently omitting the image."
+    },
+    {
+      "id": "NOV09-07",
+      "title": "Clarify struct default write counts in Append results",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S1/ED-28"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 2,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Determine whether the count denotes aggregate pins or fields; retain correct six-field writes and make the result unambiguous."
+    },
+    {
+      "id": "NOV09-08",
+      "title": "Find delegates and optional literal values with clear search modes",
+      "kind": "bug",
+      "priority": "P0",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/NF-09",
+        "2026-11-09_S2/NF-10",
+        "2026-11-09_S2/NF-11",
+        "2026-11-09_S2/FT-162"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 5,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Index delegate call/bind/unbind identity. Add explicit all/any, totals-only and opt-in pin-default search; preserve exact results and bounded output."
+    },
+    {
+      "id": "NOV09-09",
+      "title": "Read event implementations, reroutes and valid multi-source execution links accurately",
+      "kind": "bug",
+      "priority": "P0",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/GL-28",
+        "2026-11-09_S2/GL-29",
+        "2026-11-09_S2/GL-30",
+        "2026-11-09_S2/GL-31",
+        "2026-11-09_S2/GL-32",
+        "2026-11-09_S2/FT-163"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 7,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Resolve or name event-backed bodies; retain readable delegate identities/targets and struct/enum labels. Follow reroutes with cycle/fanout limits. Distinguish valid exec merges from malformed data inputs; do not allow arbitrary multiple data sources."
+    },
+    {
+      "id": "NOV09-10",
+      "title": "Align documented optional arguments with discovery schemas",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/GL-33",
+        "2026-11-09_S2/BL-16",
+        "2026-11-09_S2/TH-15",
+        "2026-11-09_S3/TH-17"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 3,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Reconcile required/default schema behavior for graph/Blueprint/help reads; align help/schema argument names without silently breaking existing clients."
+    },
+    {
+      "id": "NOV09-11",
+      "title": "Preserve requested Blueprint detail and apply filters consistently",
+      "kind": "bug",
+      "priority": "P0",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/BL-15",
+        "2026-11-09_S2/BL-16"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 5,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "No silent downgrade to manifest. Page requested detail or report explicit limits. Apply graph filters consistently to metadata and bodies."
+    },
+    {
+      "id": "NOV09-12",
+      "title": "Report by-reference container mutations in variable usage",
+      "kind": "bug",
+      "priority": "P0",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/BL-17"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 5,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Recognize proven mutating by-reference operations; distinguish possible writes from confirmed writes and avoid false unused-variable claims."
+    },
+    {
+      "id": "NOV09-13",
+      "title": "State reference-scan scope and expose stored soft paths",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/BL-18"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 4,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Label asset-local reference scans. Reproduce a known stored soft path before claiming a read defect; distinguish unset/default/unavailable."
+    },
+    {
+      "id": "NOV09-14",
+      "title": "Read all DataTable rows with bounded paging and filtering",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/DT-14",
+        "2026-11-09_S2/FT-161"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 4,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Cover more than 60 rows, stable continuation and row filters; never imply omitted rows were checked."
+    },
+    {
+      "id": "NOV09-15",
+      "title": "Make DataTable columns and text output usable",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/DT-15"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 4,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Resolve unambiguous short/display column names; define empty-column semantics and display-only text while preserving lossless mode."
+    },
+    {
+      "id": "NOV09-16",
+      "title": "Explain DataTable reader evidence and detect literal references",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/DT-16",
+        "2026-11-09_S3/DT-18"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 5,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Detect literal table references on supported pins. Distinguish reference/candidate from proven read and explain unloaded/unsearched candidates; a shared row struct alone does not prove use of one table."
+    },
+    {
+      "id": "NOV09-17",
+      "title": "Read widget navigation, focus, clipping and render transforms",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S3/WT-20",
+        "2026-11-09_S3/WT-21",
+        "2026-11-09_S3/FT-164",
+        "2026-11-09_S2/WT-19"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 5,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Expose per-direction rules, explicit targets and custom delegate names plus compact tree summaries. Stored Designer rules are not proof of runtime focus behavior."
+    },
+    {
+      "id": "NOV09-18",
+      "title": "Make discovery compact and unknown-tool errors actionable",
+      "kind": "bug",
+      "priority": "P0",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S3/TH-16",
+        "2026-11-09_S3/FT-165",
+        "2026-11-09_S2/X-131"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 3,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Compact default index, bounded paging/filtering and clear unknown-name suggestions; do not assert editor/toolset health without evidence."
+    },
+    {
+      "id": "NOV09-19",
+      "title": "Improve node context names and full-ID graph resolution",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/NR-10"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 3,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Include one-level pure-source titles; infer graph only from a validated unambiguous full node ID and refuse conflicting scope."
+    },
+    {
+      "id": "NOV09-20",
+      "title": "Use not-applicable wording for assets without generated classes",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-09_S2/AD-04"
+      ],
+      "dependencies": [],
+      "complexity_estimate": 1,
+      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "acceptance": "Differentiate not applicable, unavailable and genuinely unknown; verify representative non-Blueprint asset kinds."
+    }
+  ],
+  "delegation": "Proposed Sol High batches; exact disjoint file scopes and approved bases required. Parent owns shared headers/tracking integration; serialize editor/build runs.",
+  "layout_contract": {
+    "fixture": "Three stacked comment sections with unrelated top/bottom nodes; middle has selector/skip-branch chain and five independent event lanes. Stock pure-getter fixture differs from the field impure-getter case; retain this limitation.",
+    "acceptance": [
+      "Exec row alignment within16 units",
+      "Insert precedes shifted tail with preserved order and gaps",
+      "Independent groups near their own anchors",
+      "No backward exec wires or unrelated-box crossings",
+      "Unrelated top/bottom nodes unchanged; section grows right into free space",
+      "Compare wire length against fixture-specific reference, not raw field coordinates",
+      "Exact links/defaults, preview cleanliness, preview/edit geometry and undo"
+    ],
+    "boundary": "Do not silently expand selection or move neighboring boxes. Explicit previewed movement scope required."
+  }
+}

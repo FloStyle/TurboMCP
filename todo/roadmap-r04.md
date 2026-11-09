@@ -2396,3 +2396,18 @@ Add an explicit compact block layout option to the existing Tidy preview/edit pa
 Preview and edit share the same plan. Retain collision/membership checks, one undo transaction, and separate compilation/saving. Update parameter help and comments in clear English, including defaults, scope, limitations and any refusal. Record all quality regressions rather than relying on shorter total wire length. Baseline J2 visibly crosses a getter; J3 places Body below Completed; J4/J5 roll back. These must not disappear from tracking on a passing runner verdict.
 
 Compare default-mode output with the recorded baseline; compare compact-mode rows, nesting, scoped boundaries, exact links/defaults/node identity, preview/edit geometry and undo. Capture readable details and overview. User review of the rebuilt reference remains required before visual acceptance. No engine changes, subagents or DSH dispatch.
+
+### November 6 Tidy integration and final reporting repair
+
+User-authorized Sol completion was reviewed and integrated as candidate `1b8444644c514fd23f809ec98c4acb7a36a1bfdb`. Native run `31ce343dffc14e9a8e73fcbe661d3a83` passed local-variable analysis/promotion, scoped Tidy and loop-cascade suites (789 calls). The combined explicit promotion, routing and nested-box case is a forced mechanics check, not user visual approval. Earlier failures remain in the November 5 plan. Main repository validation passed after regenerating inventory; unresolved public asset provenance remains a release concern, not a native-test result.
+
+The integration owner extends the existing assignment to LayoutReport.cpp/h, Layout.cpp and Tools/test-layout.py for LR-21/LR-22: distinguish demonstrated intentional structure from defects without suppressing unexplained findings. Preserve relevant coverage and run a focused native fixture rather than repeat the complete cascade.
+
+Also finish the scoped external LoopBody regression guard. In J5, fixed nodes outside the selection prevent satisfying the complete Body/Completed geometry. The selected handoff nevertheless worsened from 860 to 1043 units. Refuse that worsening when Force is false, with exact node identities and guidance to expand selection; Force must explicitly disclose the boundary tradeoff. Never move unselected nodes. Verify refusal/no mutation, forced reporting and a non-worsening control in the focused fixture. Whole-graph preservation evidence remains applicable to unchanged placement/routing code; this guard requires its own targeted check.
+
+User accepted the final scenario overview and detail on November 6; NOV05-09 records that approval. Separate E8/E9 reference comparison remains unverified. Do not classify the remaining 13 data-wire crossings as eliminated, or claim an independent semantic classifier from the arithmetic oracle that consumes native block ownership.
+
+
+### November 9 field intake
+
+Three reports are archived locally with SHA-256 identities in docs/audit/field-reports/batch-2026-11-09.json. All 53 observations/proposals map to 20 work packages or retained positive evidence in plan-2026-11-09.json. These are intake records, not implementation-ready worker assignments. Prioritize misleading reads and discovery output, then the distinct boxed-section insertion workflow. Source/version reconciliation and exact disjoint file scopes precede dispatch. Preserve valid exec merges without accepting malformed multi-source data pins; a shared row struct does not prove a read of a particular table. Box growth or tail shifting must use explicit previewed movement scope. No plugin behavior was changed or tested during intake.

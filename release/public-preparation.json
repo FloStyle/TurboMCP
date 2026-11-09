@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "status": "open",
-  "updated": "2026-10-30",
+  "updated": "2026-11-09",
   "publication_authorized": false,
   "workflow": "docs/public-preparation.md",
   "tasks": [
@@ -10,7 +10,7 @@
       "title": "Complete remaining tool reviews",
       "state": "open",
       "verification": "not_verified",
-      "acceptance": "Tool coverage records identify accepted workflows and limitations; currently 98/165, 67 remaining."
+      "acceptance": "Reconcile docs/audit/workflow-tool-coverage.json (165/165 original tools) against current inventory (185). Link existing evidence for the additional20 before running missing checks. November9 reports reopen affected behavior; historical scenario acceptance is not current release certification."
     },
     {
       "id": "PUB-02",

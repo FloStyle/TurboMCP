@@ -261,7 +261,7 @@
       "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "workflow_passed_visual_review_pending",
+      "validation": "workflow_passed_user_visually_accepted",
       "source_ids": [
         "TD-65",
         "TD-71",
@@ -346,6 +346,10 @@
           "run": "31ce343dffc14e9a8e73fcbe661d3a83",
           "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
           "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
+        },
+        {
+          "result": "user_visual_approval",
+          "scope": "2026-11-06: user accepted the integrated overview 2FD6E783406DF42C2FFD12AC48DC6BE2-after.png and block7 row0 col1 detail for this scenario. No comparable reference graph was provided; E8/E9 numerical reference ranking remains unverified."
         }
       ],
       "implementation_contract": [
@@ -440,7 +444,7 @@
       "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "workflow_passed_visual_review_pending",
+      "validation": "workflow_passed_user_visually_accepted",
       "source_ids": [
         "TD-68",
         "FT-155"
@@ -483,6 +487,10 @@
           "run": "31ce343dffc14e9a8e73fcbe661d3a83",
           "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
           "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
+        },
+        {
+          "result": "user_visual_approval",
+          "scope": "2026-11-06: user accepted the integrated overview 2FD6E783406DF42C2FFD12AC48DC6BE2-after.png and block7 row0 col1 detail for this scenario. No comparable reference graph was provided; E8/E9 numerical reference ranking remains unverified."
         }
       ],
       "design_notes": [
@@ -528,10 +536,10 @@
       "title": "Review loop-cascade reference and complete visual regression acceptance",
       "kind": "housekeeping",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "awaiting_user_visual_reference_review",
+      "validation": "user_visually_accepted_reference_ranking_unverified",
       "source_ids": [],
       "source_keys": [],
       "dependencies": [
@@ -543,15 +551,21 @@
         "NOV05-07",
         "NOV05-08"
       ],
-      "next_step": "Review final overview and native detail tiles. No user-approved comparable reference was supplied; E8/E9 reference ranking remains pending. Forced mechanics success is not visual acceptance.",
+      "next_step": "User accepted this scenario layout for now. E8/E9 comparison against a separate approved reference is unverified; do not infer reference equivalence.",
       "evidence": [
         {
           "commit": "1b8444644c514fd23f809ec98c4acb7a36a1bfdb",
           "run": "31ce343dffc14e9a8e73fcbe661d3a83",
           "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
           "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
+        },
+        {
+          "result": "user_visual_approval",
+          "scope": "2026-11-06: user accepted the integrated overview 2FD6E783406DF42C2FFD12AC48DC6BE2-after.png and block7 row0 col1 detail for this scenario. No comparable reference graph was provided; E8/E9 numerical reference ranking remains unverified."
         }
-      ]
+      ],
+      "implementation": "User visually accepted the final integrated overview and readable detail tile for this scenario on 2026-11-06.",
+      "remaining": "Separate reference-ranking evidence remains unavailable; this is a validation limit, not an unresolved implementation bug."
     },
     {
       "id": "NOV05-10",
