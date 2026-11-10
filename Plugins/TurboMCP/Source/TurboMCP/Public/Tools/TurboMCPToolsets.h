@@ -247,18 +247,18 @@ public:
 	 * The graph text is S-expressions, one top level form per event or function,
 	 * with exec chains reading top to bottom. Every node carries its node ID in a
 	 * comment, shared value nodes are defined once and referred to by node ID, and
-	 * plain reroute knots are transparent. Nodes not reachable from any entry
+	 * reroute references retain their identity while the reader follows the wire. Nodes not reachable from any entry
 	 * point are listed separately with a count.
 	 *
-	 * A graph name that does not exist lists the real graph names. A node that
-	 * cannot be printed becomes an inline `; error:` line rather than a silent gap,
-	 * and is also counted at the end so the gap cannot be missed.
+	 * An event-backed function shows its authored event body and identifies its graph and node.
+	 * A missing name lists the existing graphs. Read-only node descriptions and
+	 * display labels supplement the exact node and pin identities in the body.
 	 *
 	 * Supply EntryFilter as an empty string for all entries. A non-empty EntryFilter matches event/function names by case-insensitive substring. Empty reads all entries. Filtered views are inspection-only. Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty is refused.
-	 * @param GraphName Exact existing graph name, e.g. EventGraph. Empty is refused; no graph is guessed.
-	 * @param Format read (default, including empty) or json. JSON returns a standalone object per page with body text, body_notes, revision, offset/count/total and nextOffset (-1 at end). Concatenate body strings; this is inspection data, not write-back input. MaxChars bounds unescaped UTF-16 body units, not JSON envelope or escaping. write is refused.
+	 * @param GraphName Exact graph or authored event function name, e.g. EventGraph or ReceiveBeginPlay. Empty is refused.
+	 * @param Format read (default, including empty) or json. JSON returns a standalone object per page with body text, body_notes, revision, offset/count/total and nextOffset (-1 at end). Event-backed reads also identify body_graph and event_node. Concatenate body strings; this is inspection data, not write-back input. MaxChars bounds unescaped UTF-16 body units, not JSON envelope or escaping. write is refused.
 	 * @param Detail manifest, signatures, bodies or full; default or empty means bodies. Each level adds detail.
 	 * @param Offset Zero-based character offset. Start at 0; for later pages use the returned nextOffset and Revision together. Negative values are refused.
 	 * @param MaxChars Maximum page characters, 256..24000 inclusive; default 24000. Partial pages are inspection-only, not standalone write-back input.

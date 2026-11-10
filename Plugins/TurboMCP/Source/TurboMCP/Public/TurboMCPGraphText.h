@@ -62,9 +62,11 @@ public:
 	 *                   spec requires each of those to be an inline `; error:` line
 	 *                   rather than a silent gap, and this list is how the caller
 	 *                   knows the text is incomplete.
+	 * @param InEntry   Optional exact entry for a named event implementation read.
 	 */
 	FString Render(const UEdGraph* InGraph, EDetail InDetail,
-		const FString& InAssetPath, TArray<FString>& OutNotes, const FString& EntryFilter = FString()) const;
+		const FString& InAssetPath, TArray<FString>& OutNotes, const FString& EntryFilter = FString(),
+		const UEdGraphNode* InEntry = nullptr) const;
 
 private:
 	/**

@@ -14,6 +14,8 @@
 #include "EdGraphNode_Comment.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
+#include "K2Node_BaseMCDelegate.h"
+#include "K2Node_BreakStruct.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_CreateDelegate.h"
 #include "K2Node_CustomEvent.h"
@@ -21,6 +23,8 @@
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_Knot.h"
 #include "K2Node_Self.h"
+#include "K2Node_SwitchEnum.h"
+#include "UObject/Class.h"
 #include "UObject/UObjectGlobals.h"
 
 #include "TurboMCPGraphReachability.h"
@@ -33,6 +37,7 @@ namespace
 
 	/** How deep inline value expressions nest before being cut off. */
 	constexpr int32 MaxInlineDepth = 12;
+	constexpr int32 MaxRerouteHops = 64;
 
 	/** True when the node is a plain reroute that the format hides (`2.1.7`). */
 	bool IsKnot(const UEdGraphNode* InNode)
@@ -47,91 +52,162 @@ namespace
 	}
 
 
+	FString EndpointLabel(const UEdGraphPin* InPin)
+	{
+		return TurboMCPNodeId::MakeForNode(InPin->GetOwningNodeUnchecked(), true)
+			+ TEXT(":") + TurboMCPGraphTextLex::QuoteLiteral(InPin->PinName.ToString());
+	}
+
+	bool IsWire(const UEdGraphPin* InOutput, const UEdGraphPin* InInput)
+	{
+		const UEdGraphNode* Source = InOutput != nullptr ? InOutput->GetOwningNodeUnchecked() : nullptr;
+		const UEdGraphNode* Target = InInput != nullptr ? InInput->GetOwningNodeUnchecked() : nullptr;
+		return Source != nullptr && Target != nullptr && Source->GetGraph() == Target->GetGraph()
+			&& InOutput->Direction == EGPD_Output && InInput->Direction == EGPD_Input
+			&& InOutput->LinkedTo.Contains(InInput) && InInput->LinkedTo.Contains(InOutput)
+			&& (InOutput->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+				== (InInput->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec);
+	}
+
 	/** The real upstream node and the exact output pin its consumer reads. */
 	struct FValueSourceEndpoint
 	{
 		const UEdGraphNode* Node = nullptr;
-		UEdGraphPin* Pin = nullptr;
-		bool bResolved = false;
+		const UEdGraphPin* Pin = nullptr;
+		TArray<const UEdGraphPin*> Reroutes;
 	};
 
-	/**
-	 * Resolve an input pin to the real node/output pin behind any number of knots.
-	 *
-	 * This walks UPSTREAM: a consumer input links to the nearest knot's output,
-	 * the knot's single input links to the next upstream pin, and so on. It is
-	 * distinct from RenderChain, which follows execution edges DOWNSTREAM.
-	 * Nulls, multiple links, non-output pins, cycles and depth >64 are unresolved.
-	 */
+	/** Follow one upstream value source, preserving the nearest-to-farthest reroute path. */
 	FValueSourceEndpoint ResolveUpstreamValueSource(const UEdGraphPin* InConsumerPin)
 	{
-		if (InConsumerPin == nullptr || InConsumerPin->LinkedTo.Num() != 1)
-		{
-			return FValueSourceEndpoint();
-		}
-
-		UEdGraphPin* Current = InConsumerPin->LinkedTo[0];
+		FValueSourceEndpoint Source;
 		const UEdGraphPin* Consumer = InConsumerPin;
-		TSet<const UEdGraphPin*> SeenPins;
-		TSet<const UEdGraphNode*> SeenKnots;
-
-		for (int32 Depth = 0; Depth < 64; ++Depth)
+		while (Consumer->LinkedTo.Num() == 1)
 		{
-			if (Current == nullptr || SeenPins.Contains(Current) || !Current->LinkedTo.Contains(Consumer))
+			const UEdGraphPin* Output = Consumer->LinkedTo[0];
+			if (!IsWire(Output, Consumer))
 			{
-				return FValueSourceEndpoint();
+				break;
 			}
-			SeenPins.Add(Current);
-
-			UEdGraphNode* Owner = Current->GetOwningNode();
-			if (Owner == nullptr || Current->Direction != EGPD_Output)
+			const UEdGraphNode* Owner = Output->GetOwningNodeUnchecked();
+			const UK2Node_Knot* Knot = Cast<UK2Node_Knot>(Owner);
+			if (Knot == nullptr)
 			{
-				return FValueSourceEndpoint();
+				Source.Node = Owner;
+				Source.Pin = Output;
+				break;
 			}
-
-			if (!IsKnot(Owner))
+			if (Knot->Pins.Num() != 2 || Knot->GetOutputPin() != Output
+				|| Source.Reroutes.Num() >= MaxRerouteHops || Source.Reroutes.Contains(Output))
 			{
-				FValueSourceEndpoint Endpoint;
-				Endpoint.Node = Owner;
-				Endpoint.Pin = Current;
-				Endpoint.bResolved = true;
-				return Endpoint;
+				break;
 			}
-
-			if (SeenKnots.Contains(Owner))
+			Source.Reroutes.Add(Output);
+			Consumer = Knot->GetInputPin();
+			if (Consumer == nullptr || Consumer->Direction != EGPD_Input
+				|| (Consumer->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+					!= (Output->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec))
 			{
-				return FValueSourceEndpoint();
+				break;
 			}
-			SeenKnots.Add(Owner);
+		}
+		return Source;
+	}
 
-			UEdGraphPin* KnotInput = nullptr;
-			for (UEdGraphPin* Pin : Owner->Pins)
+	FString RerouteLabels(const FValueSourceEndpoint& InSource)
+	{
+		TArray<FString> Labels;
+		for (const UEdGraphPin* Output : InSource.Reroutes)
+		{
+			Labels.Add(EndpointLabel(Output));
+		}
+		return FString::Join(Labels, TEXT(", "));
+	}
+
+	FString DisplayLabel(const UEdGraphPin& InPin)
+	{
+		FText Display = InPin.PinFriendlyName;
+		if (const UK2Node_SwitchEnum* Switch = Cast<UK2Node_SwitchEnum>(InPin.GetOwningNodeUnchecked()))
+		{
+			if (const UEnum* Enum = Switch->GetEnum(); Enum != nullptr && InPin.Direction == EGPD_Output)
 			{
-				if (Pin != nullptr && Pin->Direction == EGPD_Input)
+				const int32 Index = Enum->GetIndexByName(InPin.PinName);
+				if (Index != INDEX_NONE)
 				{
-					if (KnotInput != nullptr)
-					{
-						// A knot with more than one input is malformed; refuse to guess.
-						return FValueSourceEndpoint();
-					}
-					KnotInput = Pin;
+					Display = Enum->GetDisplayNameTextByIndex(Index);
 				}
 			}
-			if (KnotInput == nullptr || KnotInput->LinkedTo.Num() != 1)
+		}
+		const FString Label = Display.ToString();
+		return Label.IsEmpty() || Label == InPin.PinName.ToString()
+			? FString() : TEXT(" display=") + TurboMCPGraphTextLex::QuoteLiteral(Label);
+	}
+
+	FString DescribeCreateDelegate(const UK2Node_CreateDelegate& InDelegate)
+	{
+		const FName Function = InDelegate.GetFunctionName();
+		const UEdGraphPin* Object = InDelegate.GetObjectInPin();
+		FString Target = TEXT("unresolved object");
+		if (Object != nullptr && Object->LinkedTo.IsEmpty())
+		{
+			Target = Object->DefaultObject != nullptr ? Object->DefaultObject->GetPathName() : TEXT("self");
+		}
+		else if (Object != nullptr)
+		{
+			const FValueSourceEndpoint Source = ResolveUpstreamValueSource(Object);
+			if (Source.Pin != nullptr)
 			{
-				return FValueSourceEndpoint();
+				Target = Source.Node->IsA<UK2Node_Self>() ? TEXT("self") : EndpointLabel(Source.Pin);
 			}
-			Consumer = KnotInput;
-			Current = KnotInput->LinkedTo[0];
+		}
+		return Function.IsNone() ? TEXT("unbound") : Function.ToString() + TEXT(" on ") + Target;
+	}
+
+	FString DescribeDelegate(const UEdGraphNode* InNode)
+	{
+		if (const UK2Node_CreateDelegate* Create = Cast<UK2Node_CreateDelegate>(InNode))
+		{
+			return TEXT("create delegate; configured delegate function: ") + DescribeCreateDelegate(*Create) + TEXT(" (stored binding)");
+		}
+		const UK2Node_BaseMCDelegate* Delegate = Cast<UK2Node_BaseMCDelegate>(InNode);
+		if (Delegate == nullptr)
+		{
+			return FString();
 		}
 
-		return FValueSourceEndpoint();
+		FString Description = TurboMCPNodeId::GetNodeTitle(InNode);
+		Description.ReplaceInline(TEXT("\r"), TEXT(" "));
+		Description.ReplaceInline(TEXT("\n"), TEXT(" "));
+		Description += TEXT(" ; delegate ") + Delegate->GetPropertyName().ToString();
+		if (const UEdGraphPin* Pin = Delegate->GetDelegatePin(); Pin != nullptr && Pin->Direction == EGPD_Input)
+		{
+			const FValueSourceEndpoint Source = ResolveUpstreamValueSource(Pin);
+			if (const UK2Node_CreateDelegate* Create = Cast<UK2Node_CreateDelegate>(Source.Node))
+			{
+				Description += TEXT(" ; stored binding: ") + DescribeCreateDelegate(*Create);
+			}
+			else if (const UK2Node_Event* Event = Cast<UK2Node_Event>(Source.Node);
+				Event != nullptr && Source.Pin == Event->GetDelegatePin())
+			{
+				Description += TEXT(" ; bound event: ") + Event->GetFunctionName().ToString()
+					+ TEXT(" (") + EndpointLabel(Source.Pin) + TEXT(")");
+			}
+			else if (Source.Pin != nullptr)
+			{
+				Description += TEXT(" ; binding source: ") + EndpointLabel(Source.Pin);
+			}
+			else
+			{
+				Description += Pin->LinkedTo.IsEmpty() ? TEXT(" ; no delegate source") : TEXT(" ; unresolved delegate source");
+			}
+		}
+		return Description;
 	}
 
 	/** Identify a data source by both node and output pin, including function inputs. */
 	FString SourcePinLink(const FValueSourceEndpoint& InSource)
 	{
-		if (!InSource.bResolved || InSource.Node == nullptr || InSource.Pin == nullptr)
+		if (InSource.Pin == nullptr)
 		{
 			return FString();
 		}
@@ -377,89 +453,66 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 		return FString();
 	}
 
-	const bool bFull = InDetail == EDetail::Full;
-
 	if (InPin->LinkedTo.Num() > 0)
 	{
-        // GL-15: execution inputs may merge multiple valid predecessors; data inputs may not.
-        if (InPin->Direction == EGPD_Input && InPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec && InPin->LinkedTo.Num() > 1)
-        {
-            TArray<FString> Sources;
-            for (const UEdGraphPin* SourcePin : InPin->LinkedTo)
-            {
-                if (!SourcePin || !SourcePin->GetOwningNode() || SourcePin->Direction != EGPD_Output
-                    || SourcePin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec || !SourcePin->LinkedTo.Contains(InPin))
-                {
-                    OutEvidence = EFormEvidence::Partial;
-                    const FString Note = TEXT("; error: execution merge contains an invalid endpoint\n");
-                    OutNotes.Add(Note);
-                    return Note;
-                }
-                Sources.Add(FString::Printf(TEXT("%s.%s"), *TurboMCPNodeId::MakeForNode(SourcePin->GetOwningNode(), true), *SourcePin->PinName.ToString()));
-            }
-            Sources.Sort();
-            const FString Note = FString::Printf(TEXT("; execution merge '%s': sources=[%s]; multiple execution sources are valid; merge round-trip is not represented by this value form\n"),
-                *InPin->PinName.ToString(), *FString::Join(Sources, TEXT(", ")));
-            OutNotes.Add(Note);
-            OutEvidence = EFormEvidence::Partial;
-            return Note;
-        }
-		// A nonempty link array is not proof of a usable source. A null first
-		// element or a null owner must not fall through to the default-value path
-		// with Complete evidence.
-		if (InPin->LinkedTo.Num() != 1 || InPin->LinkedTo[0] == nullptr
-			|| InPin->LinkedTo[0]->GetOwningNode() == nullptr)
+		if (InPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+		{
+			TArray<FString> Sources;
+			TSet<const UEdGraphPin*> Seen;
+			for (const UEdGraphPin* SourcePin : InPin->LinkedTo)
+			{
+				if (!IsWire(SourcePin, InPin) || Seen.Contains(SourcePin))
+				{
+					OutEvidence = EFormEvidence::Partial;
+					const FString Note = TEXT("; error: malformed execution input endpoint");
+					OutNotes.Add(Note);
+					return Note;
+				}
+				Seen.Add(SourcePin);
+				Sources.Add(EndpointLabel(SourcePin));
+			}
+			if (Sources.Num() > 1)
+			{
+				Sources.Sort();
+				return TEXT("; execution merge from ") + FString::Join(Sources, TEXT(", "));
+			}
+			return FString::Printf(TEXT("(-> %s)"),
+				*TurboMCPNodeId::MakeForNode(InPin->LinkedTo[0]->GetOwningNodeUnchecked()));
+		}
+
+		if (InPin->LinkedTo.Num() != 1 || !IsWire(InPin->LinkedTo[0], InPin))
 		{
 			const FString Note = FString::Printf(
-				TEXT("; error: value source for pin '%s' has a malformed link\n"),
+				TEXT("; error: value source for pin '%s' has a malformed link"),
 				*InPin->PinName.ToString());
 			OutNotes.Add(Note);
 			OutEvidence = EFormEvidence::Partial;
 			return Note;
 		}
 
-		UEdGraphNode* Target = InPin->LinkedTo[0]->GetOwningNode();
-
-		// A knot is transparent at bodies, so the link is followed to the real
-		// node. At full the knot is named, because that is where it must be broken.
-		if (IsKnot(Target) && bFull)
-		{
-			return FString::Printf(TEXT("(-> %s ; via knot)"),
-				*TurboMCPNodeId::MakeForNode(Target));
-		}
-
-		// At bodies, resolve the exact upstream pin behind any knots. At full a
-		// non-knot target is direct; the knot case returned above.
-		FValueSourceEndpoint Source;
-		if (bFull)
-		{
-			Source.Node = Target;
-			Source.Pin = InPin->LinkedTo.Num() == 1 ? InPin->LinkedTo[0] : nullptr;
-			Source.bResolved = Source.Pin != nullptr
-				&& Source.Pin->GetOwningNode() == Target
-				&& Source.Pin->Direction == EGPD_Output;
-		}
-		else
-		{
-			Source = ResolveUpstreamValueSource(InPin);
-		}
-
-		if (!Source.bResolved || Source.Node == nullptr || Source.Pin == nullptr)
+		const FValueSourceEndpoint Source = ResolveUpstreamValueSource(InPin);
+		if (Source.Pin == nullptr)
 		{
 			const FString Note = FString::Printf(
-				TEXT("; error: value source for pin '%s' has an unresolved knot chain\n"),
-				*InPin->PinName.ToString());
+				TEXT("; error: value source for pin '%s' has an unresolved knot chain starting at %s"),
+				*InPin->PinName.ToString(), *EndpointLabel(InPin->LinkedTo[0]));
 			OutNotes.Add(Note);
 			OutEvidence = EFormEvidence::Partial;
 			return Note;
 		}
+
+		// Keep exact machine endpoints and put human labels and routing evidence in comments.
+		const FString Label = DisplayLabel(*Source.Pin);
+		const FString Route = Source.Reroutes.IsEmpty() ? FString()
+			: TEXT(" ; via knot ") + RerouteLabels(Source);
+		const FString Link = SourcePinLink(Source) + (Label.IsEmpty() ? FString() : TEXT(" ;") + Label) + Route;
 
 		const UEdGraphNode* RealTarget = Source.Node;
 
 		// A self node is implied by the entry point, so it is not printed.
 		if (RealTarget->IsA<UK2Node_Self>())
 		{
-			return TEXT("self");
+			return TEXT("self") + Route;
 		}
 
 		if (IsValueNode(RealTarget))
@@ -477,26 +530,24 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 			// output pin later. This format has no shared-definition token, so no
 			// `$id` is emitted.
 			int32 Consumers = 0;
+			int32 ValueOutputs = 0;
 			for (const UEdGraphPin* OutPin : RealTarget->Pins)
 			{
 				if (OutPin != nullptr && OutPin->Direction == EGPD_Output)
 				{
 					Consumers += OutPin->LinkedTo.Num();
+					++ValueOutputs;
 				}
 			}
 
-			if (Consumers > 1 && InOutSharedValues.Contains(RealTarget))
+			const bool bShared = Consumers > 1 || Source.Reroutes.ContainsByPredicate(
+				[](const UEdGraphPin* Pin) { return Pin->LinkedTo.Num() > 1; });
+			if (bShared && InOutSharedValues.Contains(RealTarget))
 			{
-				const FString Link = SourcePinLink(Source);
-				if (Link.IsEmpty())
-				{
-					OutEvidence = EFormEvidence::Partial;
-					return InlineStopReference(RealTarget, TEXT("unresolved source pin"));
-				}
 				return Link;
 			}
 
-			if (Consumers > 1 && HasValueCycle(RealTarget))
+			if (bShared && HasValueCycle(RealTarget))
 			{
 				OutEvidence = EFormEvidence::Partial;
 				return InlineStopReference(RealTarget, TEXT("value cycle"));
@@ -517,35 +568,32 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 				InOutInlineNodes, OutNotes, ChildEvidence);
 			InOutInlineNodes.Remove(RealTarget);
 
+			const bool bNamedOutput = ValueOutputs > 1 || RealTarget->IsA<UK2Node_BreakStruct>();
+			const FString OutputHint = bNamedOutput || !Label.IsEmpty() || !Route.IsEmpty()
+				? TEXT(" ; reads output ") + EndpointLabel(Source.Pin) + Label + Route : FString();
+
 			OutEvidence = ChildEvidence;
 			if (ChildEvidence == EFormEvidence::Complete && !Inline.IsEmpty())
 			{
 				InOutPrinted.Add(RealTarget);
-				if (Consumers > 1)
+				if (bShared)
 				{
 					InOutSharedValues.Add(RealTarget);
 				}
-				return Inline;
+				return Inline + OutputHint;
 			}
 			if (!Inline.IsEmpty())
 			{
 				// A partial child form is returned so the caller sees the damage,
 				// but it is NEVER marked as a reusable shared definition.
-				return Inline;
+				return Inline + OutputHint;
 			}
 
 			OutEvidence = EFormEvidence::Partial;
 			return InlineStopReference(RealTarget, TEXT("form not emitted"));
 		}
 
-		// Function entries and impure calls can expose several data outputs. A
-		// bare node ID loses which value the consumer reads. Keep the established
-		// node-only execution reference, but identify data endpoints precisely.
-		if (Source.Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec)
-		{
-			return SourcePinLink(Source);
-		}
-		return FString::Printf(TEXT("(-> %s)"), *TurboMCPNodeId::MakeForNode(RealTarget));
+		return Link;
 	}
 
 	// No link: the pin's own literal, which `2.3` says is written the usual way.
@@ -598,41 +646,80 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 		return FString();
 	}
 
+	const bool bFull = InDetail == EDetail::Full;
+	const FString DelegateDescription = DescribeDelegate(InNode);
 	const FString TypeId = TurboMCPNodeId::GetNodeTypeId(InNode);
 	if (TypeId.IsEmpty())
 	{
-		// `2.1.12`: a node that cannot be printed becomes a comment line in its
-		// place, never a silent gap. It is PARTIAL evidence: text was emitted, but
-		// no usable form was produced.
-		FString Note = FString::Printf(
-			TEXT("; error: %s has no node type ID, so it cannot be written back. ")
-			TEXT("Its class is %s."),
-			*TurboMCPNodeId::MakeForNode(InNode), *InNode->GetClass()->GetName());
-        Note += TEXT("\n; This limits node reconstruction, not every surrounding edit. Retain this node. ")
-            TEXT("Inspect its exact pins with ReadTurboMCPNodeContext, then use PreviewTurboMCPGraphConnect ")
-            TEXT("and EditTurboMCPGraphConnect for explicit links. Check compatibility and any replaced wires; ")
-            TEXT("this read-only description is not a writable node form.");
-        if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(InNode))
-            Note += FString::Printf(TEXT("\n; configured delegate function: %s (stored binding; runtime target not verified)"),
-                Delegate->GetFunctionName().IsNone() ? TEXT("none (unbound)") : *Delegate->GetFunctionName().ToString());
-        auto Safe=[](const FString& Value) { return Value.Replace(TEXT("\r"),TEXT("\\r")).Replace(TEXT("\n"),TEXT("\\n")); };
-        for(const UEdGraphPin* Pin:InNode->Pins)
-        {
-            if(!Pin) continue;
-            Note+=FString::Printf(TEXT("\n; read-only pin %s (%s, %s): value=%s object=%s text=%s"),
-                *Safe(Pin->PinName.ToString()),Pin->Direction==EGPD_Input?TEXT("input"):TEXT("output"),
-                *Pin->PinType.PinCategory.ToString(),*Safe(Pin->DefaultValue),
-                Pin->DefaultObject?*Safe(Pin->DefaultObject->GetPathName()):TEXT("None"),*Safe(Pin->DefaultTextValue.ToString()));
-            for(const UEdGraphPin* Peer:Pin->LinkedTo)
-                if(Peer && Peer->GetOwningNodeUnchecked())
-                    Note+=FString::Printf(TEXT("\n; linked to %s pin=%s"),*TurboMCPNodeId::MakeForNode(Peer->GetOwningNodeUnchecked(),true),*Safe(Peer->PinName.ToString()));
-        }
-		OutNotes.Add(Note);
+		const FString Guidance = TEXT("; Retain this node. Inspect its pins with ReadTurboMCPNodeContext and use PreviewTurboMCPGraphConnect for explicit links. Check compatibility and any replaced wires.");
 		OutEvidence = EFormEvidence::Partial;
+
+		const FString Id = TurboMCPNodeId::MakeForNode(InNode, true);
+		if (!DelegateDescription.IsEmpty())
+		{
+			OutNotes.AddUnique(TEXT("; delegate observations describe stored bindings; read-only entries have no reconstruction form"));
+			FString Note = FString::Printf(TEXT("; read-only %s %s"), *Id, *DelegateDescription);
+			for (const UEdGraphPin* Pin : InNode->Pins)
+			{
+				if (Pin != nullptr && Pin->Direction == EGPD_Input && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec
+					&& Pin->LinkedTo.Num() > 1)
+				{
+					EFormEvidence PinEvidence;
+					Note += TEXT("\n") + RenderPinValue(Pin, InDetail, InAssetPath, InInlineDepth,
+						InOutPrinted, InOutSharedValues, InOutInlineNodes, OutNotes, PinEvidence);
+				}
+			}
+			return Note;
+		}
+
+		FString Note = FString::Printf(TEXT("; read-only %s has no node type ID (%s); not a writable node form"),
+			*Id, *InNode->GetClass()->GetName());
+		if (!OutNotes.Contains(Guidance))
+		{
+			OutNotes.Add(Guidance);
+			Note += TEXT("\n") + Guidance;
+		}
+		if (bFull)
+		{
+			int32 Shown = 0;
+			for (const UEdGraphPin* Pin : InNode->Pins)
+			{
+				if (Pin == nullptr)
+				{
+					continue;
+				}
+				if (Shown++ == MaxPinsPrinted)
+				{
+					Note += TEXT("\n; further pins omitted; use ReadTurboMCPNodeContext");
+					break;
+				}
+				Note += FString::Printf(TEXT("\n; %s %s (%s)%s"),
+					Pin->Direction == EGPD_Input ? TEXT("in") : TEXT("out"),
+					*TurboMCPGraphTextLex::QuoteLiteral(Pin->PinName.ToString()),
+					*Pin->PinType.PinCategory.ToString(), *DisplayLabel(*Pin));
+				if (Pin->DefaultObject != nullptr)
+				{
+					Note += TEXT(" object=") + TurboMCPGraphTextLex::QuoteLiteral(Pin->DefaultObject->GetPathName());
+				}
+				if (!Pin->DefaultValue.IsEmpty())
+				{
+					Note += TEXT(" value=") + TurboMCPGraphTextLex::QuoteLiteral(Pin->DefaultValue);
+				}
+				if (!Pin->DefaultTextValue.IsEmpty())
+				{
+					Note += TEXT(" text=") + TurboMCPGraphTextLex::QuoteLiteral(Pin->DefaultTextValue.ToString());
+				}
+				for (const UEdGraphPin* Peer : Pin->LinkedTo)
+				{
+					if (Peer != nullptr && Peer->GetOwningNodeUnchecked() != nullptr)
+					{
+						Note += TEXT(" -> ") + EndpointLabel(Peer);
+					}
+				}
+			}
+		}
 		return Note;
 	}
-
-	const bool bFull = InDetail == EDetail::Full;
 
 	FString Out = FString::Printf(TEXT("(%s"), *TypeId);
 
@@ -659,9 +746,10 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 		}
 	}
 
-    if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(InNode))
-        Out += FString::Printf(TEXT(" ; configured delegate function: %s (stored binding; runtime target not verified)"),
-            Delegate->GetFunctionName().IsNone() ? TEXT("none (unbound)") : *Delegate->GetFunctionName().ToString());
+	if (!DelegateDescription.IsEmpty())
+	{
+		Out += TEXT(" ; ") + DelegateDescription;
+	}
 
 	int32 Printed = 0;
 	int32 InputIndex = 0;
@@ -690,8 +778,8 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 				// THE INDEX AND THE LINK COUNT ARE BOTH PRINTED, because `03_TOOLS.md:172` asks for
 				// the INDEX at `full` and the link count was all that was here. A caller reading an
 				// out line needs to know WHICH output, not only how many wires leave it.
-				Out += FString::Printf(TEXT("\n    ; out %d %s -> %d link(s)"),
-					OutputIndex - 1, *Pin->PinName.ToString(), Pin->LinkedTo.Num());
+				Out += FString::Printf(TEXT("\n    ; out %d %s -> %d link(s)%s"),
+					OutputIndex - 1, *Pin->PinName.ToString(), Pin->LinkedTo.Num(), *DisplayLabel(*Pin));
 			}
 			continue;
 		}
@@ -810,28 +898,44 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 			continue;
 		}
 
+		const UK2Node_Knot* Knot = Cast<UK2Node_Knot>(Current);
 		if (InOutPrinted.Contains(Current))
 		{
-			// `2.1.3`: where two exec paths join, the join is printed once and the
-			// other path jumps to it by name.
-			if (IsKnot(Current))
-			{
-				const FString Note = TEXT("; error: execution reroute is revisited (cycle or shared path); continuation is incomplete");
-				OutNotes.Add(Note);
-				Body += TEXT("\n") + Indent + Note;
-			}
-			else
-			{
-				Body += FString::Printf(TEXT("\n%s(goto %s)"),
-					*Indent, *TurboMCPNodeId::MakeForNode(Current));
-			}
+			// Shared reroutes are valid. Refer to the first occurrence of the
+			// knot or node, including on a cycle, without expanding it again.
+			const FString Id = TurboMCPNodeId::MakeForNode(Current, Knot != nullptr);
+			Body += Knot != nullptr
+				? FString::Printf(TEXT("\n%s; continue at execution reroute %s"), *Indent, *Id)
+				: FString::Printf(TEXT("\n%s(goto %s)"), *Indent, *Id);
 			break;
 		}
 
 		EFormEvidence NodeEvidence = EFormEvidence::Complete;
-		const FString Rendered = IsKnot(Current) ? FString() : RenderNode(Current, InDetail, InAssetPath,
-			/*InInlineDepth=*/0, InOutPrinted, InOutSharedValues,
-			InlineNodes, OutNotes, NodeEvidence);
+		FString Rendered;
+		if (Knot != nullptr)
+		{
+			Rendered = FString::Printf(TEXT("; execution reroute %s"), *TurboMCPNodeId::MakeForNode(Knot, true));
+			if (Knot->Pins.Num() != 2 || Knot->GetInputPin() == nullptr || Knot->GetOutputPin() == nullptr
+				|| Knot->GetInputPin()->Direction != EGPD_Input || Knot->GetOutputPin()->Direction != EGPD_Output
+				|| Knot->GetOutputPin()->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec)
+			{
+				const FString Note = Rendered + TEXT(" has malformed execution pins");
+				OutNotes.Add(Note);
+				Body += TEXT("\n") + Indent + Note;
+				break;
+			}
+			Rendered += FString::Printf(TEXT(" %s -> %s"), *Knot->GetInputPin()->PinName.ToString(),
+				*Knot->GetOutputPin()->PinName.ToString());
+			if (Knot->GetOutputPin()->LinkedTo.IsEmpty())
+			{
+				Rendered += TEXT(" (output unconnected)");
+			}
+		}
+		else
+		{
+			Rendered = RenderNode(Current, InDetail, InAssetPath, /*InInlineDepth=*/0,
+				InOutPrinted, InOutSharedValues, InlineNodes, OutNotes, NodeEvidence);
+		}
 		InOutPrinted.Add(Current);
 
 		if (!Rendered.IsEmpty())
@@ -863,14 +967,12 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 			break;
 		}
 
-		if (ExecOuts.Num() == 1 && ExecOuts[0]->LinkedTo.Num() == 1)
+		if (ExecOuts.Num() == 1 && ExecOuts[0]->LinkedTo.Num() == 1 && DisplayLabel(*ExecOuts[0]).IsEmpty())
 		{
 			// The ordinary case: one output, so the chain simply continues in the
 			// same block.
 			const UEdGraphPin* Endpoint = ExecOuts[0]->LinkedTo[0];
-			if (Endpoint == nullptr || Endpoint->GetOwningNode() == nullptr
-				|| Endpoint->Direction != EGPD_Input || Endpoint->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec
-				|| !Endpoint->LinkedTo.Contains(ExecOuts[0]))
+			if (!IsWire(ExecOuts[0], Endpoint))
 			{
 				const FString Note = TEXT("; error: malformed execution endpoint");
 				OutNotes.Add(Note);
@@ -886,25 +988,29 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 		// of it, so they are all written the same way.
 		for (const UEdGraphPin* Pin : ExecOuts)
 		{
+			const FString Display = DisplayLabel(*Pin);
 			Body += FString::Printf(TEXT("\n%s(:%s"), *Indent, *Pin->PinName.ToString());
-			if (Pin->LinkedTo.Num() > 1)
+			if (!Display.IsEmpty())
 			{
-				const FString Note = TEXT("; error: execution output has multiple endpoints; all are shown, but fan-out is not round-trip representable");
-				OutNotes.Add(Note);
-				Body += TEXT("\n") + Indent + Note;
+				Body += TEXT(" ;") + Display;
 			}
+			TSet<const UEdGraphPin*> Seen;
 			for (const UEdGraphPin* Endpoint : Pin->LinkedTo)
 			{
-				if (Endpoint == nullptr || Endpoint->GetOwningNode() == nullptr
-					|| Endpoint->Direction != EGPD_Input || Endpoint->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec
-					|| !Endpoint->LinkedTo.Contains(Pin))
+				if (!IsWire(Pin, Endpoint) || Seen.Contains(Endpoint))
 				{
 					const FString Note = TEXT("; error: malformed execution endpoint");
 					OutNotes.Add(Note);
 					Body += TEXT("\n") + Indent + Note;
 					continue;
 				}
-				Body += RenderChain(Endpoint->GetOwningNode(), InDetail, InDepth + 1,
+				Seen.Add(Endpoint);
+				if (Pin->LinkedTo.Num() > 1)
+				{
+					Body += TEXT("\n") + Indent + TEXT("; execution fan-out ")
+						+ EndpointLabel(Pin) + TEXT(" -> ") + EndpointLabel(Endpoint);
+				}
+				Body += RenderChain(Endpoint->GetOwningNodeUnchecked(), InDetail, InDepth + 1,
 					InAssetPath, InOutPrinted, InOutSharedValues, OutNotes);
 			}
 			Body += TEXT("\n") + Indent + TEXT(")");
@@ -928,24 +1034,22 @@ FString FTurboMCPGraphText::RenderEntryBody(const UEdGraph* InGraph,
 		{
 			if (Pin == nullptr || Pin->Direction != EGPD_Output
 				|| Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec) { continue; }
-			if (Pin->LinkedTo.Num() > 1)
-			{
-				const FString Note = TEXT("; error: entry execution output has multiple endpoints; all are shown, but fan-out is not round-trip representable");
-				OutNotes.Add(Note);
-				Body += TEXT("\n  ") + Note;
-			}
+			TSet<const UEdGraphPin*> Seen;
 			for (const UEdGraphPin* Endpoint : Pin->LinkedTo)
 			{
-				if (Endpoint == nullptr || Endpoint->GetOwningNode() == nullptr
-					|| Endpoint->Direction != EGPD_Input || Endpoint->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec
-					|| !Endpoint->LinkedTo.Contains(Pin))
+				if (!IsWire(Pin, Endpoint) || Seen.Contains(Endpoint))
 				{
 					const FString Note = TEXT("; error: malformed entry execution endpoint");
 					OutNotes.Add(Note);
 					Body += TEXT("\n  ") + Note;
 					continue;
 				}
-				Body += RenderChain(Endpoint->GetOwningNode(), InDetail, 0, InAssetPath,
+				Seen.Add(Endpoint);
+				if (Pin->LinkedTo.Num() > 1)
+				{
+					Body += TEXT("\n  ; execution fan-out ") + EndpointLabel(Pin) + TEXT(" -> ") + EndpointLabel(Endpoint);
+				}
+				Body += RenderChain(Endpoint->GetOwningNodeUnchecked(), InDetail, 0, InAssetPath,
 					InOutPrinted, InOutSharedValues, OutNotes);
 			}
 		}
@@ -961,7 +1065,8 @@ FString FTurboMCPGraphText::RenderEntryBody(const UEdGraph* InGraph,
 }
 
 FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
-	const FString& InAssetPath, TArray<FString>& OutNotes, const FString& EntryFilter) const
+	const FString& InAssetPath, TArray<FString>& OutNotes, const FString& EntryFilter,
+	const UEdGraphNode* InEntry) const
 {
 	if (InGraph == nullptr)
 	{
@@ -971,6 +1076,10 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 	TArray<FEntryPoint> Entries;
 	CollectEntryPoints(InGraph, Entries);
     const TArray<FEntryPoint> AllEntries = Entries;
+	if (InEntry != nullptr)
+	{
+		Entries.RemoveAll([InEntry](const FEntryPoint& Entry) { return Entry.Node != InEntry; });
+	}
     const FString Filter=EntryFilter.TrimStartAndEnd();
     if(!Filter.IsEmpty())
     {
@@ -1053,8 +1162,8 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
                 if (!Pin || Pin->Direction != EGPD_Output || Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec) continue;
                 for (const UEdGraphPin* Target : Pin->LinkedTo)
                 {
-                    if (Target && Target->Direction == EGPD_Input && Target->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-                        Pending.Add(Target->GetOwningNode());
+                    if (IsWire(Pin, Target))
+                        Pending.Add(Target->GetOwningNodeUnchecked());
                 }
             }
         }
@@ -1145,7 +1254,7 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 		Out += Head + Body + TEXT("\n)");
 	}
 
-    if(!Filter.IsEmpty()) return Out;
+    if (!Filter.IsEmpty() || InEntry != nullptr) return Out;
 
 	// Use the same all-wire reachability walk as the dead-node preview. Exec
 	// traversal alone would call a getter feeding a live target pin disconnected.
@@ -1182,12 +1291,9 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 				Out += FString::Printf(TEXT("\n;   (%d more)"), Disconnected.Num() - Shown);
 				break;
 			}
-			Out += FString::Printf(TEXT("\n;   %s  %s"),
-				*TurboMCPNodeId::MakeForNode(Node),
-				*TurboMCPNodeId::GetNodeTitle(Node));
-            if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(Node))
-                Out += FString::Printf(TEXT(" ; configured delegate function: %s (stored binding; runtime target not verified)"),
-                    Delegate->GetFunctionName().IsNone() ? TEXT("none (unbound)") : *Delegate->GetFunctionName().ToString());
+			const FString DelegateDescription = DescribeDelegate(Node);
+			const FString Description = DelegateDescription.IsEmpty() ? TurboMCPNodeId::GetNodeTitle(Node) : DelegateDescription;
+			Out += FString::Printf(TEXT("\n;   %s  %s"), *TurboMCPNodeId::MakeForNode(Node), *Description);
 			++Shown;
 		}
 	}
