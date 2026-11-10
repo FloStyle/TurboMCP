@@ -503,6 +503,22 @@ public:
 	static FString ReadTurboMCPWidgetTree(
 		const FString& Asset);
 
+    /**
+     * Find Widget Blueprints by class, references, overrides and graph nodes. Uses a bounded page of sorted registry candidates and returns JSON evidence.
+     * Searches the owned designer tree, including embedded widget instances and local named-slot content, and owned Blueprint graphs. Embedded internals, inherited trees, native implementations, maps, sets and dynamic references are outside scope. Values compare against existing class defaults. Loading an unloaded candidate may run PostLoad or dependency compilation and dirty packages. No explicit compilation, save, checkout, map opening or PIE.
+     * @param Rules JSON object with at least one exact string rule. class accepts a Widget or RichTextBlockDecorator class path and matches subclasses. asset accepts a full object path. assetFolder matches a content folder recursively. override and call accept function names. nodeClass accepts an EdGraphNode class path and matches subclasses.
+     * @param Folder Mounted content folder without trailing slash, e.g. /Game/UI. Default "project" searches /Game and enabled project plugin content recursively.
+     * @param Recursive Include candidate subfolders when Folder is explicit. Default true.
+     * @param MatchMode all requires every rule somewhere in the same Blueprint. any requires at least one rule. Default all.
+     * @param PageSize Maximum Widget Blueprint candidates to inspect per call, 1 to 16. Default 8.
+     * @param Cursor Use first initially. Copy nextCursor with the same filters to continue. An empty nextCursor ends the scan. Totals remain unknown until all candidates are inspected.
+     * @param LoadUnloaded Allow bounded candidate package loads. Set false for loaded candidates only, with unloaded candidates reported as skipped. Default true.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString ReadTurboMCPWidgetInventory(const FString& Rules, const FString& Folder = TEXT("project"),
+        bool Recursive = true, const FString& MatchMode = TEXT("all"), int32 PageSize = 8,
+        const FString& Cursor = TEXT("first"), bool LoadUnloaded = true);
+
 	/**
 	 * Inspect call-cost string normalization and asset extraction for literal inputs; does not run the named tools or read the call log.
 	 * The result shows computed strings, not a pass/fail verdict or evidence that an asset exists. The tool body does not load assets, edit, compile or save; normal tool-call recording may still record this invocation.
