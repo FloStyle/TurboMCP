@@ -3796,6 +3796,19 @@
             "Tools/test-agent-help.py"
           ],
           "new_files": []
+        },
+        "nov10-batch-references": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefs.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAnalyticsProvider.cpp",
+            "Tools/test-refs.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefsBatchTest.cpp",
+            "Tools/test-refs-batch.py"
+          ]
         }
       },
       "preserve_rows": []

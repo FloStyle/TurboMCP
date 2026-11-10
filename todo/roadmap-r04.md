@@ -2416,3 +2416,7 @@ Three reports are archived locally with SHA-256 identities in docs/audit/field-r
 ### NOV09-09 graph-reader accuracy dispatch
 
 Readiness: ready. Assignment nov09-graph-reader-accuracy. Repair reported GL-28..32/FT-163 in the existing graph reader: identify event-backed implementations; show delegate kind/name/bound-target evidence concisely without repeated write-back warnings; bounded cycle-safe reroute traversal preserving identity and fanout; distinguish valid multiple exec links from malformed value inputs; expose field and enum labels without losing machine identities. Preserve pagination/revision semantics, read-only behavior and existing write-back contracts. Unsupported observations must remain explicit, not silently serialized as supported edits. Only graph-reader-related help/declarations may change in shared headers. No unrelated tools, engine code, fixtures, tests or shared tracker edits. User explicitly forbids all test execution/build/editor activity for this batch. Read source and review diffs; commit the bounded implementation and report every unresolved item and pending focused validation. Parent owns review/integration and test scheduling.
+
+## Approved urgent batch-reference assignment (2026-11-10)
+
+Readiness: ready. User prioritizes FT-166 before remaining discovery work. Implement [the approved contract](../docs/audit/field-reports/nov10-batch-references-contract.md) using assignment nov10-batch-references. Parent owns shared tracking.
