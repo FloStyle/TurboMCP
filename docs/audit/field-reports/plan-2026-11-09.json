@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "date": "2026-11-09",
-  "status": "ingested_not_implemented",
+  "status": "implementation_in_progress",
   "tasks": [
     {
       "id": "NOV09-01",
@@ -155,7 +155,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 5,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Source reconciliation proposal received from worker; integrator must record exact approved scope/base before implementation.",
       "acceptance": "Index delegate call/bind/unbind identity. Add explicit all/any, totals-only and opt-in pin-default search; preserve exact results and bounded output."
     },
     {
@@ -163,10 +163,10 @@
       "title": "Read event implementations, reroutes and valid multi-source execution links accurately",
       "kind": "bug",
       "priority": "P0",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "sol-high-graph-reader",
-      "validation": "untested_source_only",
+      "validation": "focused_tests_passed_partial_coverage",
       "source_keys": [
         "2026-11-09_S2/GL-28",
         "2026-11-09_S2/GL-29",
@@ -177,8 +177,25 @@
       ],
       "dependencies": [],
       "complexity_estimate": 7,
-      "next_step": "Dispatched source-only repair; no tests, builds or editor execution until user resumes validation.",
-      "acceptance": "Resolve or name event-backed bodies; retain readable delegate identities/targets and struct/enum labels. Follow reroutes with cycle/fanout limits. Distinguish valid exec merges from malformed data inputs; do not allow arbitrary multiple data sources."
+      "next_step": "Implementation complete; retain dedicated regression gaps separately. Do not claim exhaustive coverage.",
+      "acceptance": "Resolve or name event-backed bodies; retain readable delegate identities/targets and struct/enum labels. Follow reroutes with cycle/fanout limits. Distinguish valid exec merges from malformed data inputs; do not allow arbitrary multiple data sources.",
+      "commits": [
+        "a7231b54b4af0ebc8d30fd641c49c3d486ef344a",
+        "a8242a983180640c1441d2bdf3350b191901bdc4"
+      ],
+      "evidence": {
+        "runs": [
+          "0e81a2a05f314172ad984dde7eec13cc",
+          "b2a9aeb5a2494c169d2eccfda9acbcbd"
+        ],
+        "result": "Agent reports supervised build and focused suites passed; parent read first run and reviewed source diffs; final test digest matched by agent.",
+        "remaining_validation": [
+          "Compiler-generated event-stub redirection with EntryFilter",
+          "Execution reroute fan-out and merges",
+          "Reachable typeless delegate full pin/default output",
+          "User enum display labels"
+        ]
+      }
     },
     {
       "id": "NOV09-10",
@@ -215,7 +232,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 5,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Source reconciliation proposal received from worker; integrator must record exact approved scope/base before implementation.",
       "acceptance": "No silent downgrade to manifest. Page requested detail or report explicit limits. Apply graph filters consistently to metadata and bodies."
     },
     {
@@ -232,7 +249,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 5,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Source reconciliation proposal received from worker; integrator must record exact approved scope/base before implementation.",
       "acceptance": "Recognize proven mutating by-reference operations; distinguish possible writes from confirmed writes and avoid false unused-variable claims."
     },
     {
@@ -341,7 +358,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 3,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Source reconciliation proposal received from worker; integrator must record exact approved scope/base before implementation.",
       "acceptance": "Compact default index, bounded paging/filtering and clear unknown-name suggestions; do not assert editor/toolset health without evidence."
     },
     {
@@ -392,5 +409,12 @@
       "Exact links/defaults, preview cleanliness, preview/edit geometry and undo"
     ],
     "boundary": "Do not silently expand selection or move neighboring boxes. Explicit previewed movement scope required."
-  }
+  },
+  "updated": "2026-11-10",
+  "next_priority_order": [
+    "NOV09-18",
+    "NOV09-08",
+    "NOV09-11",
+    "NOV09-12"
+  ]
 }
