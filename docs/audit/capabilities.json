@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "plugin_tree": "3e64c7d2cb5e9aedec1be62fcb3fa2ef79695789",
+  "plugin_tree": "48c8a8eee1e4c90895ca6055ec519bf1c7dd8e75",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 185,
+    "tools": 186,
     "by_toolset": {
       "UTurboMCPEditToolset": 77,
       "UTurboMCPLookToolset": 6,
       "UTurboMCPPreviewToolset": 64,
-      "UTurboMCPReadToolset": 38
+      "UTurboMCPReadToolset": 39
     }
   },
   "tools": [
@@ -3867,6 +3867,7 @@
         "Tools/test-asset-tools.py",
         "Tools/test-capture-framing.py",
         "Tools/test-field-open-diagnostic.py",
+        "Tools/test-refs-batch.py",
         "Tools/test-save-thumbnail-option.py",
         "Tools/test-save-undo-workflow.py",
         "Tools/test-tool-text-inventory.py"
@@ -4231,7 +4232,6 @@
         }
       ],
       "test_references": [
-        "Tools/test-agent-help.py",
         "Tools/test-diagnostic-console.py",
         "Tools/test-play-check.py",
         "Tools/test-tool-text-inventory.py",
@@ -4316,13 +4316,16 @@
       "toolset": "UTurboMCPReadToolset",
       "parameters": [
         "Asset",
-        "Direction"
+        "Direction",
+        "Kinds",
+        "PageSize",
+        "Cursor"
       ],
       "family": "asset-and-data",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefs.cpp",
-          "line": 155
+          "line": 884
         }
       ],
       "test_references": [
@@ -4330,6 +4333,38 @@
         "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "ReadTurboMCPRefsBatch",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "Assets",
+        "Folder",
+        "Recursive",
+        "ClassFilter",
+        "Direction",
+        "Kinds",
+        "Depth",
+        "Compact",
+        "StopAtRoot",
+        "PageSize",
+        "Cursor"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefs.cpp",
+          "line": 914
+        }
+      ],
+      "test_references": [
+        "Tools/test-refs-batch.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -4394,7 +4429,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
-          "line": 297
+          "line": 307
         }
       ],
       "test_references": [
@@ -4454,7 +4489,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
-          "line": 239
+          "line": 249
         }
       ],
       "test_references": [

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "date": "2026-11-10",
-  "status": "intake_reconciled_implementation_not_started",
+  "status": "p0_batch_references_integrated_remaining_tasks_open",
   "tasks": [
     {
       "id": "NOV10-01",
@@ -40,50 +40,52 @@
       "title": "Page reference and property collections without silent truncation",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "reference_pagination_passed_properties_pending",
       "source_keys": [
         "2026-11-10_S1/X-134"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "Reference pagination implemented; property collection pagination remains open. Do not close the whole issue.",
       "acceptance": "Identify capped reader paths; return total, returned count, truncation and continuation. Link table paging NOV09-14 without assuming same implementation."
     },
     {
       "id": "NOV10-04",
       "title": "Add bounded batched reference traversal",
       "kind": "feature",
-      "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "priority": "P0",
+      "state": "done",
+      "readiness": "ready",
+      "owner": "integrator",
+      "validation": "focused_native_and_live_mcp_passed",
       "source_keys": [
         "2026-11-10_S1/RF-10",
         "2026-11-10_S1/FT-166"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
-      "acceptance": "Review registry-first multi-asset/folder traversal with direction, kind, depth, deduplication, bounded output and continuation; retain coverage limits."
+      "next_step": "Field validation on the real project; config and dynamic references remain outside registry coverage.",
+      "acceptance": "Review registry-first multi-asset/folder traversal with direction, kind, depth, deduplication, bounded output and continuation; retain coverage limits.",
+      "evidence": "docs/audit/field-reports/nov10-batch-references-review.md"
     },
     {
       "id": "NOV10-05",
       "title": "Report reference kinds and unresolved packages accurately",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "ready",
+      "owner": "integrator",
+      "validation": "focused_native_and_live_mcp_passed",
       "source_keys": [
         "2026-11-10_S1/RF-11",
         "2026-11-10_S1/RF-12"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
-      "acceptance": "Distinguish hard/soft and registry/disk evidence. Missing disk package does not alone establish orphan or stale registry; no deletion recommendation."
+      "next_step": "Field validation on the real project; config and dynamic references remain outside registry coverage.",
+      "acceptance": "Distinguish hard/soft and registry/disk evidence. Missing disk package does not alone establish orphan or stale registry; no deletion recommendation.",
+      "evidence": "docs/audit/field-reports/nov10-batch-references-review.md"
     },
     {
       "id": "NOV10-06",
