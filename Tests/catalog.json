@@ -1003,6 +1003,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-widget-inventory",
+      "path": "Tools/test-widget-inventory.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-widget-persistence",
       "path": "Tools/test-widget-persistence.py",
       "tier": "engine",
