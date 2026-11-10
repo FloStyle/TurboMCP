@@ -551,7 +551,8 @@ void InspectGraphs(const UWidgetBlueprint& Blueprint, FInspection& Out)
             {
                 Out.Add(ERule::Call, GraphName, NodeName, CallNode->GetFunctionName().ToString());
             }
-            if (!Override.IsNone())
+            // Disabled template events are editor placeholders and do not implement overrides.
+            if (!Override.IsNone() && Node->IsNodeEnabled())
             {
                 const UK2Node_Event* Event = Cast<UK2Node_Event>(Node);
                 const bool bOverrideEvent = Event && Event->bOverrideFunction && Event->GetFunctionName() == Override;

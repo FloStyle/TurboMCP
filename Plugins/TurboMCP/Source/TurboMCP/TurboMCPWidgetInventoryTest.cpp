@@ -189,15 +189,30 @@ bool FTurboMCPWidgetInventoryTest::RunTest(const FString& Parameters)
         ++Calls;
         return UTurboMCPReadToolset::ReadTurboMCPWidgetInventory(Rules, Folder, bRecursive, Mode, PageSize, Cursor, false);
     };
+    const FString ResultMarker = TEXT("\n; tmcp-result-v1: ");
     auto Page = [&](const FString& Answer)
     {
-        const int32 End = Answer.Find(TEXT("\n; tmcp-result-v1: "), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+        const int32 End = Answer.Find(ResultMarker, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
         TSharedPtr<FJsonObject> Json;
         if (End == INDEX_NONE || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Answer.Left(End)), Json))
         {
             AddError(TEXT("The inventory did not return a JSON body and result envelope: ") + Answer.Left(500));
         }
         return Json.IsValid() ? Json : MakeShared<FJsonObject>();
+    };
+
+    auto RefusedWith = [&](const FString& Answer, const TCHAR* Code)
+    {
+        const int32 Offset = Answer.Find(ResultMarker, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+        TSharedPtr<FJsonObject> Envelope;
+        FString Outcome;
+        FString ActualCode;
+        FString OperationId;
+        return Offset != INDEX_NONE &&
+            FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Answer.Mid(Offset + ResultMarker.Len())), Envelope) &&
+            Envelope && Envelope->TryGetStringField(TEXT("outcome"), Outcome) && Outcome == TEXT("refused") &&
+            Envelope->TryGetStringField(TEXT("code"), ActualCode) && ActualCode == Code &&
+            Envelope->TryGetStringField(TEXT("operationId"), OperationId) && !OperationId.IsEmpty();
     };
 
     const FString Panels = TEXT("{\"class\":\"/Script/UMG.PanelWidget\"}");
@@ -257,10 +272,10 @@ bool FTurboMCPWidgetInventoryTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Any accepts the matching call"), Page(Read(AnyRules, true, 8, TEXT("first"), TEXT("any")))->GetIntegerField(TEXT("totalMatches")), 1);
     TestEqual(TEXT("All requires Blueprint evidence for Tick as well"), Page(Read(AnyRules))->GetIntegerField(TEXT("totalMatches")), 0);
 
-    TestTrue(TEXT("A different query rejects a continuation"), Read(ImageAndAsset, true, 1, Cursor).Contains(TEXT("\"code\":\"stale_inventory_cursor\"")));
-    TestTrue(TEXT("Unknown rule refuses"), Read(TEXT("{\"unsupported\":\"x\"}")).Contains(TEXT("\"code\":\"invalid_inventory_rule\"")));
-    TestTrue(TEXT("Unavailable optional class refuses"), Read(TEXT("{\"class\":\"/Script/UnavailableUI.MissingWidget\"}")).Contains(TEXT("\"code\":\"invalid_inventory_rule\"")));
-    TestTrue(TEXT("Out-of-range page size refuses"), Read(Panels, true, 17).Contains(TEXT("\"code\":\"invalid_inventory_options\"")));
+    TestTrue(TEXT("A different query rejects a continuation"), RefusedWith(Read(ImageAndAsset, true, 1, Cursor), TEXT("stale_inventory_cursor")));
+    TestTrue(TEXT("Unknown rule refuses"), RefusedWith(Read(TEXT("{\"unsupported\":\"x\"}")), TEXT("invalid_inventory_rule")));
+    TestTrue(TEXT("Unavailable optional class refuses"), RefusedWith(Read(TEXT("{\"class\":\"/Script/UnavailableUI.MissingWidget\"}")), TEXT("invalid_inventory_rule")));
+    TestTrue(TEXT("Out-of-range page size refuses"), RefusedWith(Read(Panels, true, 17), TEXT("invalid_inventory_options")));
     TestEqual(TEXT("Loaded-only inspection attempted no package loads"), First->GetIntegerField(TEXT("loadAttempts")), 0);
     TestTrue(TEXT("All fixture packages remained clean"), !Packages.ContainsByPredicate([](const UPackage* Package) { return Package->IsDirty(); }));
     TestTrue(TEXT("The exact designer and graph objects survived inspection"),
