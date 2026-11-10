@@ -350,10 +350,10 @@
       "title": "Make discovery compact and unknown-tool errors actionable",
       "kind": "bug",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "readiness": "ready",
-      "owner": "sol-high-discovery",
-      "validation": "reported_not_reproduced",
+      "owner": "integrator",
+      "validation": "focused_native_and_live_mcp_passed",
       "source_keys": [
         "2026-11-09_S3/TH-16",
         "2026-11-09_S3/FT-165",
@@ -361,7 +361,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 3,
-      "next_step": "Approved assignment nov09-discovery-errors; claim committed base before implementation. See delegation-2026-11-10.md.",
+      "next_step": "Integrated 3829a44 on private main with focused supervised evidence bbbcf0b1a2a04088b1e25bd1dfcefb3a. Client-specific NOV10-02 remains separate and unresolved.",
       "acceptance": "Compact default index, bounded paging/filtering and clear unknown-name suggestions; do not assert editor/toolset health without evidence."
     },
     {
