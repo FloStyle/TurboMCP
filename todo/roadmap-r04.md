@@ -2420,3 +2420,7 @@ Readiness: ready. Assignment nov09-graph-reader-accuracy. Repair reported GL-28.
 ## Approved urgent batch-reference assignment (2026-11-10)
 
 Readiness: ready. User prioritizes FT-166 before remaining discovery work. Implement [the approved contract](../docs/audit/field-reports/nov10-batch-references-contract.md) using assignment nov10-batch-references. Parent owns shared tracking.
+
+## Approved widget inventory (2026-11-10)
+
+Readiness: ready. Assignment nov10-widget-inventory follows [the approved contract](../docs/audit/field-reports/nov10-widget-inventory-contract.md). Sole implementation worker; parent integrates.

@@ -92,16 +92,16 @@
       "title": "Inventory widget classes and selected override evidence in batches",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "sol-widget-inventory",
       "validation": "reported_not_reproduced",
       "source_keys": [
         "2026-11-10_S1/X-132",
         "2026-11-10_S1/FT-169"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "Approved assignment nov10-widget-inventory; implement FT-169 with WT-22 instance evidence and focused validation.",
       "acceptance": "Bound folder/class/texture/override queries with explicit scanned/skipped counts; avoid save/compile and report asset loading effects honestly."
     },
     {
@@ -159,15 +159,15 @@
       "title": "Expose widget instance overrides",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "sol-widget-inventory",
       "validation": "reported_not_reproduced",
       "source_keys": [
         "2026-11-10_S1/WT-22"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "Approved assignment nov10-widget-inventory; implement FT-169 with WT-22 instance evidence and focused validation.",
       "acceptance": "Distinguish child instance overrides from class defaults with bounded property selection; link NOV09-17 navigation reader work."
     },
     {
