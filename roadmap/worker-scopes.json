@@ -3809,6 +3809,18 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefsBatchTest.cpp",
             "Tools/test-refs-batch.py"
           ]
+        },
+        "nov10-widget-inventory": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAnalyticsProvider.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetInventory.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetInventoryTest.cpp",
+            "Tools/test-widget-inventory.py"
+          ]
         }
       },
       "preserve_rows": []
