@@ -1,0 +1,338 @@
+{
+  "schema": 1,
+  "processed": "2026-11-10",
+  "reviewed_source_base": null,
+  "reports": [
+    {
+      "report": "2026-11-10_S1",
+      "original_filename": "2026-11-10_S1_TurboMCP_reference-and-inventory-reads.md",
+      "sha256": "1c6eeb6464f5e3c09a3b8aba90fdae115bcd40639176796cb10e527d57d21f39",
+      "plugin_version": "unknown",
+      "source_storage": "Original bytes archived outside Git in local November 10 intake; Desktop original retained."
+    }
+  ],
+  "observations": [
+    {
+      "key": "2026-11-10_S1/X-132",
+      "report": "2026-11-10_S1",
+      "id": "X-132",
+      "title": "No read-only script path for exhaustive scans (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** An agent needs one query over hundreds of assets, such as all referencers in a folder or all widget Blueprints that contain a given widget class.\n- **Reproduction status:** Observed by two subagents.\n- **Steps to reproduce:**\n  1. Call the engine script tool with a script that only reads the asset registry.\n  2. Read the result.\n- **Observed:** The TurboMCP safety filter refused the script tool. The safety filter does not offer a read-only mode.\n- **Expected:** A read-only script path, or batch read tools that cover the same need (user expectation).\n- **Impact:** Blocked workflow. The widget inventory stayed partial. The reference walk took about one hour through an external helper.\n- **State after:** No change to assets.\n- **Workaround:** An external helper called the MCP endpoint once per asset. It worked but was slow.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** A read-only script mode with no save and no map load, or the batch tools in section 4.",
+      "task_ids": [
+        "NOV10-06"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/X-133",
+      "report": "2026-11-10_S1",
+      "id": "X-133",
+      "title": "A tool policy error on every read call in one subagent (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Defect.\n- **Scenario:** Six subagents used the read toolset in the same period.\n- **Reproduction status:** Observed once, in one subagent.\n- **Steps to reproduce:**\n  1. Call read tools from one subagent while other subagents call the same toolset.\n  2. Read the error.\n- **Observed:** Every read call from that subagent returned an error that the tool policy was unavailable and that the editor needed a restart. The other subagents worked in the same period. The editor was not restarted.\n- **Expected:** The same result for the same calls, or an error that names the real problem (user expectation).\n- **Impact:** That subagent used the engine Blueprint text reader. It lost node IDs and pin names.\n- **State after:** The editor kept working for the other subagents.\n- **Workaround:** Engine readers. They worked with less detail.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** An error that states which tool name or policy failed, without a restart advice when the editor is healthy.",
+      "task_ids": [
+        "NOV10-02"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/X-134",
+      "report": "2026-11-10_S1",
+      "id": "X-134",
+      "title": "Reads stop at 60 rows with no paging (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** A reference list and a key list longer than 60 entries.\n- **Reproduction status:** Observed in this session; also seen before for tables.\n- **Steps to reproduce:**\n  1. Read an asset with more than 60 referencers or entries.\n  2. Look for a next page.\n- **Observed:** The output stopped at 60 entries. No paging argument was offered. One keyboard icon list was cut.\n- **Expected:** Paging or a full count (user expectation).\n- **Impact:** Missing data in the audit.\n- **State after:** No change.\n- **Workaround:** None observed.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** A page argument and a total count.",
+      "task_ids": [
+        "NOV10-03"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/X-135",
+      "report": "2026-11-10_S1",
+      "id": "X-135",
+      "title": "Shared scratch folder between subagents (low)",
+      "kind": "client_housekeeping",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability (client context, not the plugin).\n- **Scenario:** Several subagents wrote helper scripts into one scratch folder.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Run several subagents that write helper files with the same names.\n- **Observed:** One subagent overwrote the helper file of another.\n- **Expected:** Separate folders per subagent (user expectation).\n- **Impact:** One subagent renamed its files and continued.\n- **State after:** No asset impact.\n- **Workaround:** File name prefixes per subagent. It worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None for the plugin.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-10_S1/RF-10",
+      "report": "2026-11-10_S1",
+      "id": "RF-10",
+      "title": "One asset per call, about 2 seconds per call (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** About 690 seed assets, and an upward walk of referencers to find game roots.\n- **Reproduction status:** Observed, about 1600 calls.\n- **Steps to reproduce:**\n  1. Read referencers for one asset.\n  2. Repeat for every seed and for each referencer.\n- **Observed:** Each call took about 2 seconds. The full walk took about one hour.\n- **Expected:** A batch or folder query with a depth limit (user expectation).\n- **Impact:** About one hour of wait for one audit step.\n- **State after:** No change.\n- **Workaround:** An external helper loop. It worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** See FT-166.",
+      "task_ids": [
+        "NOV10-04"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/RF-11",
+      "report": "2026-11-10_S1",
+      "id": "RF-11",
+      "title": "Hard and soft references are not separated (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Classify assets as used or orphan.\n- **Reproduction status:** Observed.\n- **Steps to reproduce:**\n  1. Read the referencers of an asset.\n- **Observed:** The output did not say if a reference was hard or soft.\n- **Expected:** A reference kind per entry (user expectation).\n- **Impact:** The orphan classification needs manual checks.\n- **State after:** No change.\n- **Workaround:** None observed.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Add the reference kind.",
+      "task_ids": [
+        "NOV10-05"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/RF-12",
+      "report": "2026-11-10_S1",
+      "id": "RF-12",
+      "title": "Referencers that no longer exist on disk (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** Referencer lists of input assets.\n- **Reproduction status:** Observed, 6 packages.\n- **Steps to reproduce:**\n  1. Read referencers, then look for those packages.\n- **Observed:** Six listed referencers were not on disk.\n- **Expected:** A flag for packages that do not exist (user expectation).\n- **Impact:** False users in the audit until checked by hand.\n- **State after:** No change.\n- **Workaround:** Manual file check. It worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Mark missing packages.",
+      "task_ids": [
+        "NOV10-05"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/RF-13",
+      "report": "2026-11-10_S1",
+      "id": "RF-13",
+      "title": "References were reliable over about 1600 calls (positive)",
+      "kind": "positive_evidence",
+      "validation": "field_reported",
+      "observation": "- **Scenario:** Long reference walk.\n- **Observed:** No failed call was reported over about 1600 calls.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-10_S1/AS-07",
+      "report": "2026-11-10_S1",
+      "id": "AS-07",
+      "title": "The path argument was ignored (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Defect.\n- **Scenario:** Search inside one content folder.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Search with a folder path and a query.\n- **Observed:** The tool returned about 1049 hits from the whole project.\n- **Expected:** Hits inside the folder only (user expectation).\n- **Impact:** Large output, manual filter.\n- **State after:** No change.\n- **Workaround:** The engine asset finder. It worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Respect the path, or say that it is not supported.",
+      "task_ids": [
+        "NOV10-01"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/AS-08",
+      "report": "2026-11-10_S1",
+      "id": "AS-08",
+      "title": "A schema error when the query is outside the arguments object (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** A client sent the query as a top-level field.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Call the tool with the query outside the arguments object.\n- **Observed:** The error said that the input parameters were empty.\n- **Expected:** An error that names the misplaced field (user expectation).\n- **Impact:** One retry.\n- **State after:** No change.\n- **Workaround:** Put the query inside the arguments object. It worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** A clearer error.",
+      "task_ids": [
+        "NOV10-12"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/DA-01",
+      "report": "2026-11-10_S1",
+      "id": "DA-01",
+      "title": "One asset per call (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Read the same few properties on about 45 input actions.\n- **Reproduction status:** Observed.\n- **Steps to reproduce:**\n  1. Read the properties of one asset.\n  2. Repeat for each asset.\n- **Observed:** 45 calls for 45 assets.\n- **Expected:** Several assets and named properties in one call (user expectation).\n- **Impact:** Slow reads and large context use.\n- **State after:** No change.\n- **Workaround:** One call per asset. It worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** See FT-170.",
+      "task_ids": [
+        "NOV10-08"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/DA-02",
+      "report": "2026-11-10_S1",
+      "id": "DA-02",
+      "title": "Blueprint class defaults are refused (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Read the defaults of Blueprint data classes and widget array defaults.\n- **Reproduction status:** Observed several times.\n- **Steps to reproduce:**\n  1. Read a property of a Blueprint class default object.\n- **Observed:** The tool refused. The engine fallback returned about 15 to 20 KB for one icon map.\n- **Expected:** Class default reads with a property filter (user expectation).\n- **Impact:** Large outputs; key lists were partly inferred.\n- **State after:** No change.\n- **Workaround:** Engine default-object reader plus property reader. It worked but was verbose.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Support class defaults, with keys-only output for maps.",
+      "task_ids": [
+        "NOV10-09"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/DA-03",
+      "report": "2026-11-10_S1",
+      "id": "DA-03",
+      "title": "Owned subobjects are expanded (positive)",
+      "kind": "positive_evidence",
+      "validation": "field_reported",
+      "observation": "- **Scenario:** Input actions with nested settings objects.\n- **Observed:** Nested settings and metadata were shown in full.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-10_S1/BL-19",
+      "report": "2026-11-10_S1",
+      "id": "BL-19",
+      "title": "Fallback to the manifest at medium token budgets (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Load a widget Blueprint with a token budget from 6000 to 22000.\n- **Reproduction status:** Observed several times.\n- **Steps to reproduce:**\n  1. Load the Blueprint with a medium budget.\n- **Observed:** The output often had the manifest only, without signatures.\n- **Expected:** A partial body or a clear note of what is cut (user expectation).\n- **Impact:** One extra call per graph.\n- **State after:** No change.\n- **Workaround:** Graph load per graph. It worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Return signatures before bodies.",
+      "task_ids": [
+        "NOV09-11"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/GL-34",
+      "report": "2026-11-10_S1",
+      "id": "GL-34",
+      "title": "Read-only noise for some node kinds (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** Graphs with persistent-frame variable sets and bound event calls.\n- **Reproduction status:** Observed.\n- **Steps to reproduce:**\n  1. Load a graph with these node kinds.\n- **Observed:** These nodes printed as \"no node type ID\" errors.\n- **Expected:** No error in a read-only call (user expectation).\n- **Impact:** Noise only.\n- **State after:** No change.\n- **Workaround:** None needed.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Print these nodes as read-only.",
+      "task_ids": [
+        "NOV09-09"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/GL-35",
+      "report": "2026-11-10_S1",
+      "id": "GL-35",
+      "title": "A malformed link on a self pin (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Defect.\n- **Scenario:** A construction graph that sets text on a widget.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Load the graph.\n- **Observed:** The self pin of a set text call was reported as a malformed link.\n- **Expected:** A normal link (user expectation).\n- **Impact:** Doubt about the graph.\n- **State after:** No change.\n- **Workaround:** None observed.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None.",
+      "task_ids": [
+        "NOV10-11"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/GL-36",
+      "report": "2026-11-10_S1",
+      "id": "GL-36",
+      "title": "Graph load per graph worked (positive)",
+      "kind": "positive_evidence",
+      "validation": "field_reported",
+      "observation": "- **Scenario:** Remap menu graphs.\n- **Observed:** Per-graph loads gave full call order where the full Blueprint load fell back.",
+      "task_ids": []
+    },
+    {
+      "key": "2026-11-10_S1/NF-12",
+      "report": "2026-11-10_S1",
+      "id": "NF-12",
+      "title": "Search covers one asset only (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Find every call of one function in a content folder.\n- **Reproduction status:** Observed.\n- **Steps to reproduce:**\n  1. Search for a function name without an asset.\n- **Observed:** The tool searches one asset per call. No folder or project scope exists.\n- **Expected:** A folder or project scope (user expectation).\n- **Impact:** The audit could not prove that no other caller exists.\n- **State after:** No change.\n- **Workaround:** Searches in likely assets only. Not exhaustive.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** See FT-168.",
+      "task_ids": [
+        "NOV10-07"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/NF-13",
+      "report": "2026-11-10_S1",
+      "id": "NF-13",
+      "title": "Separator in a query found nothing (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** One query with several alternative words.\n- **Reproduction status:** Observed.\n- **Steps to reproduce:**\n  1. Search with words separated by a vertical bar.\n- **Observed:** No hit. Words are matched together on one node.\n- **Expected:** An OR mode (user expectation).\n- **Impact:** One call per word.\n- **State after:** No change.\n- **Workaround:** One call per word. It worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** An OR mode.",
+      "task_ids": [
+        "NOV09-08"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/NF-14",
+      "report": "2026-11-10_S1",
+      "id": "NF-14",
+      "title": "Node context does not accept the node path printed by node find (low)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Usability.\n- **Scenario:** Chain node find and node context.\n- **Reproduction status:** Observed.\n- **Steps to reproduce:**\n  1. Copy the node path from node find into node context.\n- **Observed:** Refused. Node context needs a graph name and a short node ID.\n- **Expected:** The same identifier in both tools (user expectation).\n- **Impact:** Manual split of the identifier.\n- **State after:** No change.\n- **Workaround:** Pass graph name and short ID. It worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Accept the full path.",
+      "task_ids": [
+        "NOV09-19"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/WT-22",
+      "report": "2026-11-10_S1",
+      "id": "WT-22",
+      "title": "Instance overrides are not shown (medium)",
+      "kind": "reported_observation",
+      "validation": "reported_not_reproduced",
+      "observation": "- **Type:** Limitation.\n- **Scenario:** A widget with several child instances that set an icon texture each.\n- **Reproduction status:** Observed.\n- **Steps to reproduce:**\n  1. Read the widget tree.\n  2. Look for the instance values.\n- **Observed:** The tree did not show the values set on each instance.\n- **Expected:** Instance overrides in the tree (user expectation).\n- **Impact:** One engine property call per instance.\n- **State after:** No change.\n- **Workaround:** Engine property reader per instance. It worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** List overridden properties per instance.",
+      "task_ids": [
+        "NOV10-10"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/FT-166",
+      "report": "2026-11-10_S1",
+      "id": "FT-166",
+      "title": "Batch reference query: a list of assets or a folder, direction, depth limit, reference kind, one call.",
+      "kind": "feature_request",
+      "validation": "requested",
+      "observation": "About 1600 single calls, about one hour.",
+      "task_ids": [
+        "NOV10-04"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/FT-167",
+      "report": "2026-11-10_S1",
+      "id": "FT-167",
+      "title": "Read-only script mode for asset registry and asset loads, with no save.",
+      "kind": "feature_request",
+      "validation": "requested",
+      "observation": "The refused script calls; the partial widget inventory.",
+      "task_ids": [
+        "NOV10-14"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/FT-168",
+      "report": "2026-11-10_S1",
+      "id": "FT-168",
+      "title": "Node search over a folder or the project, with OR terms.",
+      "kind": "feature_request",
+      "validation": "requested",
+      "observation": "Per-asset searches that could not prove the absence of callers.",
+      "task_ids": [
+        "NOV10-07"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/FT-169",
+      "report": "2026-11-10_S1",
+      "id": "FT-169",
+      "title": "Widget inventory by widget class, by referenced texture, and by overridden input functions.",
+      "kind": "feature_request",
+      "validation": "requested",
+      "observation": "Manual reads of about 15 of about 600 widgets.",
+      "task_ids": [
+        "NOV10-06"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/FT-170",
+      "report": "2026-11-10_S1",
+      "id": "FT-170",
+      "title": "Batch property read: several assets, named properties, keys-only map output.",
+      "kind": "feature_request",
+      "validation": "requested",
+      "observation": "45 calls for 45 assets; 15 to 20 KB dumps for one map.",
+      "task_ids": [
+        "NOV10-08"
+      ]
+    },
+    {
+      "key": "2026-11-10_S1/FT-171",
+      "report": "2026-11-10_S1",
+      "id": "FT-171",
+      "title": "Texture preview at small size, read-only.",
+      "kind": "feature_request",
+      "validation": "requested",
+      "observation": "Images whose content could not be checked.",
+      "task_ids": [
+        "NOV10-13"
+      ]
+    }
+  ],
+  "notes": [
+    "Intake triage only; no source/runtime certification. No crashes, saves or compilation reported.",
+    "X-135 is client housekeeping, not a plugin defect.",
+    "GL-34 recurrence linked to completed NOV09-09 but unknown plugin revision prevents regression or fixed claims.",
+    "X-133 related to NOV09-18 diagnostics; common cause not established."
+  ]
+}

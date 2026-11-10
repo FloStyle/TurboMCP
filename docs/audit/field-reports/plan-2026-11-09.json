@@ -151,7 +151,8 @@
         "2026-11-09_S2/NF-09",
         "2026-11-09_S2/NF-10",
         "2026-11-09_S2/NF-11",
-        "2026-11-09_S2/FT-162"
+        "2026-11-09_S2/FT-162",
+        "2026-11-10_S1/NF-13"
       ],
       "dependencies": [],
       "complexity_estimate": 5,
@@ -173,7 +174,8 @@
         "2026-11-09_S2/GL-30",
         "2026-11-09_S2/GL-31",
         "2026-11-09_S2/GL-32",
-        "2026-11-09_S2/FT-163"
+        "2026-11-09_S2/FT-163",
+        "2026-11-10_S1/GL-34"
       ],
       "dependencies": [],
       "complexity_estimate": 7,
@@ -228,7 +230,8 @@
       "validation": "reported_not_reproduced",
       "source_keys": [
         "2026-11-09_S2/BL-15",
-        "2026-11-09_S2/BL-16"
+        "2026-11-09_S2/BL-16",
+        "2026-11-10_S1/BL-19"
       ],
       "dependencies": [],
       "complexity_estimate": 5,
@@ -371,7 +374,8 @@
       "owner": "unassigned",
       "validation": "reported_not_reproduced",
       "source_keys": [
-        "2026-11-09_S2/NR-10"
+        "2026-11-09_S2/NR-10",
+        "2026-11-10_S1/NF-14"
       ],
       "dependencies": [],
       "complexity_estimate": 3,

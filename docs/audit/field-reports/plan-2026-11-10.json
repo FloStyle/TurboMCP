@@ -1,0 +1,236 @@
+{
+  "schema": 1,
+  "date": "2026-11-10",
+  "status": "intake_reconciled_implementation_not_started",
+  "tasks": [
+    {
+      "id": "NOV10-01",
+      "title": "Respect AssetSearch folder scope",
+      "kind": "bug",
+      "priority": "P0",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/AS-07"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Reproduce folder-plus-query against sibling folders; respect supported scope or explicitly refuse unsupported arguments."
+    },
+    {
+      "id": "NOV10-02",
+      "title": "Investigate client-specific policy-unavailable refusals",
+      "kind": "investigation",
+      "priority": "P0",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/X-133"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Compare exact calls and registered toolsets across clients; do not infer concurrency cause or claim NOV09-18 fixes unknown-version evidence."
+    },
+    {
+      "id": "NOV10-03",
+      "title": "Page reference and property collections without silent truncation",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/X-134"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Identify capped reader paths; return total, returned count, truncation and continuation. Link table paging NOV09-14 without assuming same implementation."
+    },
+    {
+      "id": "NOV10-04",
+      "title": "Add bounded batched reference traversal",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/RF-10",
+        "2026-11-10_S1/FT-166"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Review registry-first multi-asset/folder traversal with direction, kind, depth, deduplication, bounded output and continuation; retain coverage limits."
+    },
+    {
+      "id": "NOV10-05",
+      "title": "Report reference kinds and unresolved packages accurately",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/RF-11",
+        "2026-11-10_S1/RF-12"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Distinguish hard/soft and registry/disk evidence. Missing disk package does not alone establish orphan or stale registry; no deletion recommendation."
+    },
+    {
+      "id": "NOV10-06",
+      "title": "Inventory widget classes and selected override evidence in batches",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/X-132",
+        "2026-11-10_S1/FT-169"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Bound folder/class/texture/override queries with explicit scanned/skipped counts; avoid save/compile and report asset loading effects honestly."
+    },
+    {
+      "id": "NOV10-07",
+      "title": "Support bounded cross-asset node search",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/NF-12",
+        "2026-11-10_S1/FT-168"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Paged folder/project scope with load limits and incomplete-coverage reporting; reuse NOV09-08 term semantics."
+    },
+    {
+      "id": "NOV10-08",
+      "title": "Batch named property reads and expose map keys",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/DA-01",
+        "2026-11-10_S1/FT-170"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Bound multi-asset reads and keys-only maps with paging, errors per asset and explicit completeness."
+    },
+    {
+      "id": "NOV10-09",
+      "title": "Read filtered Blueprint class defaults",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/DA-02"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Resolve CDO safely without construction execution/save/compile; named-property and keys-only output, no silent giant fallback."
+    },
+    {
+      "id": "NOV10-10",
+      "title": "Expose widget instance overrides",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/WT-22"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Distinguish child instance overrides from class defaults with bounded property selection; link NOV09-17 navigation reader work."
+    },
+    {
+      "id": "NOV10-11",
+      "title": "Investigate malformed self-pin read evidence",
+      "kind": "investigation",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/GL-35"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Reproduce construction graph SetText target link; compare physical pin connections before changing malformed reporting. Prior NOV09-09 does not establish resolution."
+    },
+    {
+      "id": "NOV10-12",
+      "title": "Improve misplaced argument diagnostics where plugin owns validation",
+      "kind": "bug",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/AS-08"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Identify stock dispatch versus plugin boundary; actionable nesting guidance where observable, no unsupported engine interception."
+    },
+    {
+      "id": "NOV10-13",
+      "title": "Reconcile existing texture preview capability",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/FT-171"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Inspect existing vision tools before adding a tool; bounded thumbnail with accurate availability and no asset mutation."
+    },
+    {
+      "id": "NOV10-14",
+      "title": "Decide safe exhaustive-read API boundary",
+      "kind": "design",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_reconciliation",
+      "owner": "unassigned",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-10_S1/FT-167"
+      ],
+      "dependencies": [],
+      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "acceptance": "Prefer bounded purpose-built batch readers. Do not loosen arbitrary script safety based on a claim that a script is read-only; review residual need separately."
+    }
+  ]
+}
