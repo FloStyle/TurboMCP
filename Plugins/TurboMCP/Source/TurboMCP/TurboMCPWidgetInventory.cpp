@@ -75,6 +75,7 @@ FString Refuse(const TCHAR* Code, const FString& Message)
     const FJsonRecord Body = MakeShared<FJsonObject>();
     Body->SetStringField(TEXT("error"), Message);
     FTurboMCPResult Result;
+    Result.OperationId = FTurboMCPResult::NewOperationId();
     Result.Outcome = ETurboMCPResultOutcome::Refused;
     Result.Code = Code;
     Result.bComplete = false;
@@ -884,6 +885,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPWidgetInventory(const FString& Rules, 
     }
 
     FTurboMCPResult Result;
+    Result.OperationId = FTurboMCPResult::NewOperationId();
     Result.bComplete = !bUnknown && OmittedEvidence == 0;
     if (Progress.Errors > Start.Errors || Progress.Skipped > Start.Skipped)
     {
