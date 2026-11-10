@@ -289,12 +289,36 @@ public:
 	/**
 	 * Read saved registry references into or out of an asset. Unsaved reference changes are not authoritative registry data; no explicit compile or save. Waits for registry scanning before reporting counts.
 	 * @param Asset Required asset path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved values are refused; use a full path for ambiguous names.
-	 * @param Direction Case-insensitive out (dependencies), in (referencers), or both. Empty defaults to both; other values are refused.
+	 * @param Direction Case-insensitive out (dependencies), in (referencers), or both. Empty defaults to both.
+	 * @param Kinds All or a comma-separated list of hard, soft, searchable-name, management.
+	 * @param PageSize Maximum rows in a page, 1 to 500. The response size limit can reduce this count.
+	 * @param Cursor Omit, pass first, or pass an empty string to start. Continue with nextCursor from the refs-page line.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPRefs(
-		const FString& Asset,
-		const FString& Direction);
+		const FString& Asset, const FString& Direction,
+		const FString& Kinds = TEXT("all"), int32 PageSize = 100, const FString& Cursor = TEXT("first"));
+
+	/**
+	 * Read saved registry edges for multiple packages in one call. Results describe registry evidence only and can miss unsaved, config or dynamic references.
+	 * @param Assets Comma- or pipe-separated asset paths or unique short names. Provide assets or a folder.
+	 * @param Folder Mounted content path such as /Game/Art. Used as the seed set when Assets is empty.
+	 * @param Recursive Include descendant folders when selecting seeds.
+	 * @param ClassFilter Optional exact asset class name or full class path for folder seeds.
+	 * @param Direction Dependencies, referencers, or both. Out and in are aliases.
+	 * @param Kinds All or a comma-separated list of hard, soft, searchable-name, management.
+	 * @param Depth Number of hops, 1 to 6. Each seed and direction expands a package once.
+	 * @param Compact Use short class names and omit representative object paths.
+	 * @param StopAtRoot For referencers, include one shortest chain to each reached saved package with zero incoming edges of the selected kinds.
+	 * @param PageSize Maximum records per page, 1 to 500. The response size limit can reduce this count.
+	 * @param Cursor Omit, pass first, or pass an empty string to start. Continue with nextCursor until it is empty.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPRefsBatch(
+		const FString& Assets = TEXT("<none>"), const FString& Folder = TEXT("<none>"), bool Recursive = false,
+		const FString& ClassFilter = TEXT("<none>"), const FString& Direction = TEXT("both"),
+		const FString& Kinds = TEXT("all"), int32 Depth = 1, bool Compact = true,
+		bool StopAtRoot = false, int32 PageSize = 100, const FString& Cursor = TEXT("first"));
 
 	/**
 	 * Read available and implemented Blueprint overrides from parent classes and interfaces. Loads the Blueprint; no explicit compile or save. Counts precede filtering.

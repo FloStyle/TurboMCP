@@ -648,6 +648,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
                 Help += TEXT("\nparameters: unavailable (schema has no inputSchema object). Use describe_toolset; do not guess arguments.");
             }
 
+			if (Bare == TEXT("ReadTurboMCPRefsBatch") && KindOf(Entry.Name) == TEXT("Read"))
+			{
+				Help += TEXT("\nRead the JSON records and reuse nextCursor until it is empty. Check complete and totalIsExact before treating the observed count as final.");
+			}
+
 			// Traps come from the data file, never from code (D-07).
 			const FTurboMCPTraps::FToolInfo* Info = Traps.Find(Bare);
 			if (Info != nullptr && Info->Parameters.Num() > 0)

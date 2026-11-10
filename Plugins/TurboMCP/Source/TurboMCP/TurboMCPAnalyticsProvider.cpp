@@ -150,7 +150,7 @@ void FTurboMCPAnalyticsProvider::RegisterServedToolsetsAndTools()
 		TEXT("ReadTurboMCPTypeFind"), TEXT("ReadTurboMCPDirtyList"),
 		TEXT("ReadTurboMCPNodeResolve"), TEXT("ReadTurboMCPNodeFind"),
 		TEXT("ReadTurboMCPGraphLoad"), TEXT("ReadTurboMCPBlueprintLoad"),
-		TEXT("ReadTurboMCPRefs"), TEXT("ReadTurboMCPOverrides"),
+		TEXT("ReadTurboMCPRefs"), TEXT("ReadTurboMCPRefsBatch"), TEXT("ReadTurboMCPOverrides"),
 		TEXT("ReadTurboMCPCommentList"), TEXT("ReadTurboMCPDataTable"),
 		TEXT("ReadTurboMCPCallLog"),
 		TEXT("LookTurboMCPLayoutReport"), TEXT("LookTurboMCPWidgetPreview"),

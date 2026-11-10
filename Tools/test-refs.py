@@ -1,6 +1,9 @@
 """T-BP-11: Direct saved-registry references, identities and truthful limits."""
 
+import json
 import os
+from pathlib import Path
+from runpy import run_path
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -66,6 +69,25 @@ def main():
     )
     check("no path ends in .None", ".None" not in out)
     check("prints the class", "[Texture2D]" in out)
+
+    first_page = session.call(READ_TOOLSET, "ReadTurboMCPRefs",
+                              {"asset": HAS_REFS, "direction": "out", "pageSize": 1})
+    first_meta = json.loads(first_page.split("\n; refs-page: ")[-1])
+    check("first page returns one reference", first_meta["returned"] == 1)
+    if first_meta["nextCursor"]:
+        second_page = session.call(READ_TOOLSET, "ReadTurboMCPRefs",
+                                   {"asset": HAS_REFS, "direction": "out", "pageSize": 1,
+                                    "cursor": first_meta["nextCursor"]})
+        second_meta = json.loads(second_page.split("\n; refs-page: ")[-1])
+        check("legacy cursor advances with stable total",
+              second_meta["offset"] == 1 and second_meta["total"] == first_meta["total"])
+    else:
+        check("legacy nextCursor is empty only on the final page", first_meta["total"] == 1)
+
+    hard = session.call(READ_TOOLSET, "ReadTurboMCPRefs",
+                        {"asset": HAS_REFS, "direction": "out", "kinds": "hard"})
+    check("legacy kind filter excludes other kinds",
+          not any(kind in hard for kind in ("(soft)", "(searchable-name)", "(management)")))
     check(
         "counts what it did not list",
         "registry entries omitted" in out or "uses (out): 0" in out,
@@ -160,6 +182,13 @@ def main():
     check("refuses rather than guessing", missing.startswith("error:") or "error:" in missing)
 
     print()
+    # Keep the focused batch case runnable through the existing catalogued suite.
+    run_batch = run_path(str(Path(__file__).with_name("test-refs-batch.py")))["main"]
+    try:
+        check("batch reference regression", run_batch() == 0)
+    except (ValueError, KeyError, TypeError) as exc:
+        check("batch reference regression", False, str(exc))
+
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1
