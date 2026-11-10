@@ -69,6 +69,18 @@ namespace
 				== (InInput->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec);
 	}
 
+	void AppendExecWireObservation(FString& Out, const FString& Indent,
+		const UEdGraphPin* Output, const UEdGraphPin* Input)
+	{
+		const bool bFanOut = Output->LinkedTo.Num() > 1;
+		if (bFanOut || IsKnot(Output->GetOwningNodeUnchecked()) || IsKnot(Input->GetOwningNodeUnchecked()))
+		{
+			Out += TEXT("\n") + Indent;
+			Out += bFanOut ? TEXT("; execution fan-out (inspection only) ") : TEXT("; execution reroute wire ");
+			Out += EndpointLabel(Output) + TEXT(" -> ") + EndpointLabel(Input);
+		}
+	}
+
 	/** The real upstream node and the exact output pin its consumer reads. */
 	struct FValueSourceEndpoint
 	{
@@ -82,7 +94,7 @@ namespace
 	{
 		FValueSourceEndpoint Source;
 		const UEdGraphPin* Consumer = InConsumerPin;
-		while (Consumer->LinkedTo.Num() == 1)
+		while (Consumer != nullptr && Consumer->LinkedTo.Num() == 1)
 		{
 			const UEdGraphPin* Output = Consumer->LinkedTo[0];
 			if (!IsWire(Output, Consumer))
@@ -474,7 +486,7 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 			if (Sources.Num() > 1)
 			{
 				Sources.Sort();
-				return TEXT("; execution merge from ") + FString::Join(Sources, TEXT(", "));
+				return TEXT("; execution merge (inspection only) from ") + FString::Join(Sources, TEXT(", "));
 			}
 			return FString::Printf(TEXT("(-> %s)"),
 				*TurboMCPNodeId::MakeForNode(InPin->LinkedTo[0]->GetOwningNodeUnchecked()));
@@ -651,14 +663,24 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 	const FString TypeId = TurboMCPNodeId::GetNodeTypeId(InNode);
 	if (TypeId.IsEmpty())
 	{
-		const FString Guidance = TEXT("; Retain this node. Inspect its pins with ReadTurboMCPNodeContext and use PreviewTurboMCPGraphConnect for explicit links. Check compatibility and any replaced wires.");
 		OutEvidence = EFormEvidence::Partial;
 
 		const FString Id = TurboMCPNodeId::MakeForNode(InNode, true);
-		if (!DelegateDescription.IsEmpty())
+		const bool bDelegate = !DelegateDescription.IsEmpty();
+		FString Note = bDelegate
+			? FString::Printf(TEXT("; read-only %s %s"), *Id, *DelegateDescription)
+			: FString::Printf(TEXT("; read-only %s has no node type ID (%s); not a writable node form"),
+				*Id, *InNode->GetClass()->GetName());
+		const FString Guidance = bDelegate
+			? TEXT("; delegate observations describe stored bindings; use ReadTurboMCPNodeContext to inspect exact pins and links")
+			: TEXT("; Retain this node. Inspect its pins with ReadTurboMCPNodeContext and use PreviewTurboMCPGraphConnect for explicit links. Check compatibility and any replaced wires.");
+		if (!OutNotes.Contains(Guidance))
 		{
-			OutNotes.AddUnique(TEXT("; delegate observations describe stored bindings; read-only entries have no reconstruction form"));
-			FString Note = FString::Printf(TEXT("; read-only %s %s"), *Id, *DelegateDescription);
+			OutNotes.Add(Guidance);
+			Note += TEXT("\n") + Guidance;
+		}
+		if (bDelegate && !bFull)
+		{
 			for (const UEdGraphPin* Pin : InNode->Pins)
 			{
 				if (Pin != nullptr && Pin->Direction == EGPD_Input && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec
@@ -669,15 +691,6 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 						InOutPrinted, InOutSharedValues, InOutInlineNodes, OutNotes, PinEvidence);
 				}
 			}
-			return Note;
-		}
-
-		FString Note = FString::Printf(TEXT("; read-only %s has no node type ID (%s); not a writable node form"),
-			*Id, *InNode->GetClass()->GetName());
-		if (!OutNotes.Contains(Guidance))
-		{
-			OutNotes.Add(Guidance);
-			Note += TEXT("\n") + Guidance;
 		}
 		if (bFull)
 		{
@@ -690,7 +703,9 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 				}
 				if (Shown++ == MaxPinsPrinted)
 				{
-					Note += TEXT("\n; further pins omitted; use ReadTurboMCPNodeContext");
+					const FString Limit = FString::Printf(TEXT("; further pins omitted for %s; use ReadTurboMCPNodeContext"), *Id);
+					OutNotes.AddUnique(Limit);
+					Note += TEXT("\n") + Limit;
 					break;
 				}
 				Note += FString::Printf(TEXT("\n; %s %s (%s)%s"),
@@ -979,7 +994,8 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 				Body += TEXT("\n") + Indent + Note;
 				break;
 			}
-			Current = Endpoint->GetOwningNode();
+			AppendExecWireObservation(Body, Indent, ExecOuts[0], Endpoint);
+			Current = Endpoint->GetOwningNodeUnchecked();
 			continue;
 		}
 
@@ -1005,11 +1021,7 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 					continue;
 				}
 				Seen.Add(Endpoint);
-				if (Pin->LinkedTo.Num() > 1)
-				{
-					Body += TEXT("\n") + Indent + TEXT("; execution fan-out ")
-						+ EndpointLabel(Pin) + TEXT(" -> ") + EndpointLabel(Endpoint);
-				}
+				AppendExecWireObservation(Body, Indent, Pin, Endpoint);
 				Body += RenderChain(Endpoint->GetOwningNodeUnchecked(), InDetail, InDepth + 1,
 					InAssetPath, InOutPrinted, InOutSharedValues, OutNotes);
 			}
@@ -1045,10 +1057,7 @@ FString FTurboMCPGraphText::RenderEntryBody(const UEdGraph* InGraph,
 					continue;
 				}
 				Seen.Add(Endpoint);
-				if (Pin->LinkedTo.Num() > 1)
-				{
-					Body += TEXT("\n  ; execution fan-out ") + EndpointLabel(Pin) + TEXT(" -> ") + EndpointLabel(Endpoint);
-				}
+				AppendExecWireObservation(Body, TEXT("  "), Pin, Endpoint);
 				Body += RenderChain(Endpoint->GetOwningNodeUnchecked(), InDetail, 0, InAssetPath,
 					InOutPrinted, InOutSharedValues, OutNotes);
 			}
@@ -1100,6 +1109,10 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 
 	FString Out = FString::Printf(TEXT("; graph %s.%s"),
 		*InAssetPath, *GraphName);
+	if (InEntry != nullptr)
+	{
+		Out += TEXT("\n; scope: one authored event entry (inspection only)");
+	}
     if(!Filter.IsEmpty()) Out+=TEXT("\n; partial: filtered inspection view, not a complete graph for write-back\n; entry-name contains: ")+Filter;
 
 	if (InDetail == EDetail::Manifest)
