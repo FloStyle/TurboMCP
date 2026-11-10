@@ -57,10 +57,25 @@ void TurboMCPToolPolicy::ResetRecoveryForTest() { RecoveryAsset.Empty(); }
 #endif
 bool TurboMCPToolPolicy::IsAllowed(const FString& Name,FString& Reason)
 {
-    if (Name.StartsWith(TEXT("EditTurboMCP")) && IsRecoveryRequired(Reason)) return false;
-    if (!Known.Contains(Name)) {Reason=TEXT("Tool policy is unavailable for this tool; restart the editor.");return false;}
-    if (const FString* Why=Denials.Find(Name)) {Reason=*Why;return false;}
-    Reason.Empty();return true;
+    if (!Known.Contains(Name))
+    {
+        Reason = TEXT("No policy entry exists for this tool. Check the exact registered name with ReadTurboMCPToolHelp.");
+        return false;
+    }
+    if (Name.StartsWith(TEXT("EditTurboMCP")) && IsRecoveryRequired(Reason))
+    {
+        return false;
+    }
+    if (const FString* Why = Denials.Find(Name))
+    {
+        Reason = *Why;
+        Reason += Enabled
+            ? TEXT(" Review Tool controls in Editor Preferences > Plugins > TurboMCP and restart after changing them.")
+            : TEXT(" Enable TurboMCP in Editor Preferences > Plugins > TurboMCP and restart the editor.");
+        return false;
+    }
+    Reason.Reset();
+    return true;
 }
 TArray<FString> TurboMCPToolPolicy::DisabledNames()
 {

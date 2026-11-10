@@ -91,18 +91,14 @@ public:
 	static FString ReadTurboMCPStatus();
 
 	/**
-	 * Read every tool the server serves, one line each.
+	 * Read a compact summary of the registered toolsets and their available tool counts.
 	 *
-	 * Lists the MCP server state first, including whether tool search is on,
-	 * because that decides what a client can reach. Then one line per tool in
-	 * every registered toolset, engine and TurboMCP alike: kind, tool name,
-	 * source and the first sentence of its description.
+	 * Includes the server and tool search state. Use ReadTurboMCPToolHelp with
+	 * an exact ToolsetName and empty ToolName to list one toolset. Continue with
+	 * list:<offset>, or search with find:0:<words>. Pass a bare tool name for
+	 * its parameters and known traps. Use describe_toolset for the full schema.
 	 *
-	 * Use this once at the start of a session instead of guessing tool names.
-	 * Use ReadTurboMCPToolHelp for parameters and known traps; use describe_toolset for the complete schema.
-	 *
-	 * Returns the counts even when zero, and says why the list is empty when the
-	 * toolset registry is unavailable.
+	 * The summary reports any toolsets omitted to fit the character limit.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPToolIndex();
@@ -111,15 +107,15 @@ public:
 	 * Read the parameters and known traps of one tool.
 	 *
 	 * Pass a toolset name and a tool name, or one joined name as tools/list
-	 * prints it. Leave the tool name empty to get one line per tool in that
-	 * toolset. Name the tool alone to find it in whatever toolset holds it.
+	 * prints it. Leave the tool name empty for the first page of the named
+	 * toolset. Name the tool alone to find its registered toolset.
 	 *
 	 * Works for the engine's own tools as well as TurboMCP's, because engine tool
 	 * help runs to tens of thousands of characters and the traps are where agents
 	 * actually lose time.
 	 *
-	 * The reply stays under 2000 characters for one tool. A name that fits
-	 * nothing lists the real toolset names and the closest matches.
+	 * Compact help targets 2000 characters for one tool and keeps the
+	 * required arguments visible. An unknown name points to discovery.
 	 *
 	 * Both fields are required by this tool's live schema. Pass an empty string
 	 * for an unused field; requiredness of other tools comes from their own schemas.

@@ -8,6 +8,7 @@
 #include "TurboMCPCallRecorder.h"
 #include "TurboMCPToolPolicy.h"
 
+#include "Algo/LevenshteinDistance.h"
 #include "Async/Future.h"
 #include "Editor.h"
 #include "Containers/Array.h"
@@ -77,29 +78,10 @@ namespace
 
     thread_local FString* ActiveSaveOutcome = nullptr;
 
-    bool NormalizeParameterAliases(UClass* ToolsetClass, const FString& ToolName,
+    bool NormalizeParameterAliases(const UFunction* Function,
         const FString& Input, FString& Output, FString& Error)
     {
         Output = Input;
-        if (!ToolsetClass || !ToolName.Contains(TEXT("TurboMCP"))) return true;
-        const UFunction* Function = ToolsetClass->FindFunctionByName(FName(*ToolName));
-        if (!Function)
-        {
-            TArray<TPair<int32,FString>> Matches;
-            for (UClass* Class : {UTurboMCPReadToolset::StaticClass(), UTurboMCPLookToolset::StaticClass(), UTurboMCPPreviewToolset::StaticClass(), UTurboMCPEditToolset::StaticClass()})
-                for (TFieldIterator<UFunction> It(Class); It; ++It) if (It->HasMetaData(TEXT("AICallable")))
-                {
-                    const FString Candidate=It->GetName();
-                    TArray<int32> Row;for(int32 J=0;J<=Candidate.Len();++J)Row.Add(J);
-                    for(int32 I=1;I<=ToolName.Len();++I){int32 Previous=Row[0];Row[0]=I;for(int32 J=1;J<=Candidate.Len();++J){const int32 Old=Row[J];Row[J]=FMath::Min3(Row[J]+1,Row[J-1]+1,Previous+(FChar::ToLower(ToolName[I-1])==FChar::ToLower(Candidate[J-1])?0:1));Previous=Old;}}
-                    Matches.Emplace(Row.Last(),Candidate);
-                }
-            Matches.Sort([](const auto& A,const auto& B){return A.Key==B.Key?A.Value<B.Value:A.Key<B.Key;});
-            Error=TEXT("error: Unknown TurboMCP tool '")+ToolName+TEXT("'. Closest declared names:");
-            for(int32 I=0;I<FMath::Min(3,Matches.Num());++I)Error+=TEXT("\n  ")+Matches[I].Value;
-            Error+=TEXT("\nUse ReadTurboMCPToolHelp for the exact schema; ReadTurboMCPRefs reads asset references.");
-            return false;
-        }
         TSharedPtr<FJsonObject> Object;
         if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Input), Object) || !Object) return true;
         TSet<FString> Parameters;
@@ -216,6 +198,67 @@ namespace
 		return InName.Mid(LastDot + 1);
 	}
 
+    FString ToolSearchStem(const FString& Name)
+    {
+        const int32 PrefixEnd = Name.Find(TEXT("TurboMCP"), ESearchCase::IgnoreCase);
+        return (PrefixEnd == INDEX_NONE ? Name : Name.Mid(PrefixEnd + 8)).ToLower();
+    }
+
+    FString UnknownToolError(const FToolset& Wrapped, const FToolset& Inner, const FString& ToolName)
+    {
+        constexpr int32 MaxNameChars = 96;
+        const FString ToolsetName = Wrapped.GetToolsetName();
+        const FString DisplayName = ToolName.Left(MaxNameChars).Replace(TEXT("\r"), TEXT("\\r")).Replace(TEXT("\n"), TEXT("\\n"));
+        FString Error = FString::Printf(TEXT("Unknown tool '%s%s' in %s."),
+            *DisplayName, ToolName.Len() > MaxNameChars ? TEXT("...") : TEXT(""), *ToolsetName);
+
+        const FString Query = ToolSearchStem(BareName(ToolName.Left(MaxNameChars)));
+        if (ToolName.Len() <= MaxNameChars && Query.Len() >= 3)
+        {
+            const FString Prefix = ToolsetName + TEXT(".");
+            const int32 MaxDistance = FMath::Clamp(Query.Len() / 4, 1, 4);
+            TArray<TPair<int32, FString>> Matches;
+            for (const FString& FullName : Inner.ListToolNames())
+            {
+                if (!FullName.StartsWith(Prefix, ESearchCase::CaseSensitive)
+                    || !Wrapped.IsToolEnabled(FullName) || !Inner.IsToolEnabled(FullName))
+                {
+                    continue;
+                }
+
+                const FString Bare = FullName.Mid(Prefix.Len());
+                FString Reason;
+                if (!TurboMCPToolPolicy::IsAllowed(Bare, Reason))
+                {
+                    continue;
+                }
+
+                const FString Stem = ToolSearchStem(Bare);
+                const int32 Distance = Algo::LevenshteinDistance(FStringView(Query), FStringView(Stem));
+                if (Distance <= MaxDistance)
+                {
+                    Matches.Emplace(Distance, Bare);
+                }
+            }
+            Matches.Sort([](const TPair<int32, FString>& A, const TPair<int32, FString>& B)
+            {
+                return A.Key == B.Key ? A.Value < B.Value : A.Key < B.Key;
+            });
+            if (!Matches.IsEmpty())
+            {
+                Error += TEXT(" Did you mean");
+                const int32 Count = FMath::Min(3, Matches.Num());
+                for (int32 Index = 0; Index < Count; ++Index)
+                {
+                    Error += (Index == 0 ? TEXT(" ") : TEXT(", ")) + Matches[Index].Value;
+                }
+                Error += TEXT("?");
+            }
+        }
+        Error += FString::Printf(TEXT(" Use ReadTurboMCPToolHelp with ToolsetName=%s and an empty ToolName, then call a listed bare tool name."), *ToolsetName);
+        return Error;
+    }
+
 	/**
 	 * One toolset handler, wrapped so that a call through it writes the two records `T02` asks for.
 	 *
@@ -258,15 +301,26 @@ namespace
 			TSharedPtr<FTurboMCPCallLog::FScopedCall> Call =
 				MakeShared<FTurboMCPCallLog::FScopedCall>(RecordedToolset, ToolName, JsonInput);
 
-            FString PolicyReason;
-            if (!TurboMCPToolPolicy::IsAllowed(ToolName,PolicyReason))
+            const UClass* ToolsetClass = Inner->GetToolsetClass();
+            const UFunction* Function = ToolsetClass != nullptr && ToolName.Len() < NAME_SIZE
+                ? ToolsetClass->FindFunctionByName(FName(*ToolName, FNAME_Find)) : nullptr;
+            if (Function == nullptr || !Function->HasMetaData(TEXT("AICallable"))
+                || !Function->GetName().Equals(ToolName, ESearchCase::IgnoreCase))
             {
-                const FString Error=TEXT("unchanged: ")+PolicyReason+TEXT(" Open Editor Preferences > Plugins > TurboMCP, adjust Tool controls and restart the editor. This call did not execute.");
-                Call->Finish(Error,true);
+                const FString Error = UnknownToolError(*this, *Inner, ToolName);
+                Call->Finish(Error, true);
+                return MakeFulfilledPromise<FToolResult>(MakeError(Error)).GetFuture();
+            }
+
+            FString PolicyReason;
+            if (!TurboMCPToolPolicy::IsAllowed(ToolName, PolicyReason))
+            {
+                const FString Error = TEXT("unchanged: ") + PolicyReason + TEXT(" This call did not execute.");
+                Call->Finish(Error, true);
                 return MakeFulfilledPromise<FToolResult>(MakeError(Error)).GetFuture();
             }
             FString NormalizedInput, AliasError;
-            if (!NormalizeParameterAliases(Inner->GetToolsetClass(), ToolName, JsonInput, NormalizedInput, AliasError))
+            if (!NormalizeParameterAliases(Function, JsonInput, NormalizedInput, AliasError))
             {
                 Call->Finish(AliasError, true);
                 return MakeFulfilledPromise<FToolResult>(MakeError(AliasError)).GetFuture();

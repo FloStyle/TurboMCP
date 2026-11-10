@@ -18,6 +18,7 @@
 #include "ToolsetRegistry/UToolsetRegistry.h"
 
 #include "Logging.h"
+#include "TurboMCPToolPolicy.h"
 #include "TurboMCPToolsetsInternal.h"
 #include "TurboMCPTraps.h"
 
@@ -39,6 +40,7 @@ namespace
 
 	/** Character budget for one tool's help, from `03_TOOLS.md` R-TOOL-SCHEMA. */
 	constexpr int32 HelpBudgetChars = 2000;
+	constexpr int32 IndexBudgetChars = 4000;
 
 	/** Where a too-long single description is cut when it has no sentence stop. */
 	constexpr int32 MaxSentenceFallbackChars = 160;
@@ -156,11 +158,10 @@ namespace
 		}
 	}
 
-	/** One registered toolset: its name, its description and its tools. */
+	/** One registered toolset and its available tools. */
 	struct FToolsetEntry
 	{
 		FString Name;
-		FString Description;
 		TArray<TSharedPtr<FJsonObject>> Tools;
 	};
 
@@ -191,7 +192,7 @@ namespace
 
 			FToolsetEntry Entry;
 			(*Object)->TryGetStringField(TEXT("name"), Entry.Name);
-			(*Object)->TryGetStringField(TEXT("description"), Entry.Description);
+			const bool bTurboMCP = KindOf(Entry.Name) != TEXT("Engine");
 
 			const TArray<TSharedPtr<FJsonValue>>* Tools = nullptr;
 			if ((*Object)->TryGetArrayField(TEXT("tools"), Tools) && Tools != nullptr)
@@ -203,7 +204,16 @@ namespace
 						&& ToolValue->TryGetObject(ToolObject)
 						&& ToolObject != nullptr)
 					{
-						Entry.Tools.Add(*ToolObject);
+						FString Name;
+						if (!(*ToolObject)->TryGetStringField(TEXT("name"), Name) || Name.IsEmpty())
+						{
+							continue;
+						}
+						FString Reason;
+						if (!bTurboMCP || TurboMCPToolPolicy::IsAllowed(BareToolName(Name), Reason))
+						{
+							Entry.Tools.Add(*ToolObject);
+						}
 					}
 				}
 			}
@@ -238,60 +248,60 @@ namespace
 
 FString UTurboMCPReadToolset::ReadTurboMCPToolIndex()
 {
-	// The server state leads, because whether the server runs and whether tool
-	// search is on changes what a caller can even reach.
 	FString Result = TurboMCPToolsets::DescribeServerState();
+	int32 FirstLineEnd = INDEX_NONE;
+	if (Result.FindChar(TEXT('\n'), FirstLineEnd))
+	{
+		Result.LeftInline(FirstLineEnd);
+	}
+	if (Result.Len() > IndexBudgetChars / 2)
+	{
+		Result = TEXT("server: state details exceed the index budget. Use ReadTurboMCPStatus for the full state.");
+	}
 
 	if (!UToolsetRegistry::IsAvailable())
 	{
-		// P1: say why the list is empty instead of printing an empty list.
-		Result += TEXT("\nno toolsets: the toolset registry is not available, ")
-			TEXT("so no engine or TurboMCP tool could be listed.");
-		return Result;
+		return Result + TEXT("\nToolset registry unavailable.");
 	}
 
 	TArray<FToolsetEntry> Toolsets;
 	if (!ReadAllToolsets(Toolsets))
 	{
-		Result += TEXT("\nno tools: the registry answered, but its schema list could not be read.");
-		return Result;
+		return Result + TEXT("\nThe registry schema list could not be read.");
 	}
+	Toolsets.Sort([](const FToolsetEntry& A, const FToolsetEntry& B) { return A.Name < B.Name; });
 
 	int32 ToolCount = 0;
-    int32 RegisteredTurboMCPCount = 0;
-	FString Lines;
-
+	int32 TurboMCPCount = 0;
 	for (const FToolsetEntry& Toolset : Toolsets)
 	{
-        if (Toolset.Name.StartsWith(TEXT("TurboMCP."))) ++RegisteredTurboMCPCount;
-		Lines += FString::Printf(TEXT("\n%s (source: %s)"),
-			*Toolset.Name, *SourceOf(Toolset.Name));
-
-		for (const TSharedPtr<FJsonObject>& Tool : Toolset.Tools)
-		{
-			// The published name is the full Toolset.Function; print the bare name
-			// because that is what call_tool accepts.
-			const FString Bare = BareToolName(Field(Tool, TEXT("name")));
-			const FString Description = Field(Tool, TEXT("description"));
-
-			Lines += FString::Printf(TEXT("\n  %s %s - %s - %s"),
-				*KindForTool(Toolset.Name, Bare), *Bare, *SourceOf(Toolset.Name),
-				*FirstSentence(Description));
-			++ToolCount;
-		}
+		ToolCount += Toolset.Tools.Num();
+		TurboMCPCount += SourceOf(Toolset.Name) == TEXT("TurboMCP");
 	}
+	Result += FString::Printf(TEXT("\n%d toolsets in total, %d of them TurboMCP, %d available tools"),
+		Toolsets.Num(), TurboMCPCount, ToolCount);
 
-    // Count registry entries, not classes that might have failed registration.
-	Result += FString::Printf(TEXT("\n%d toolsets in total, %d of them TurboMCP, %d tools"),
-		Toolsets.Num(),
-		RegisteredTurboMCPCount,
-		ToolCount);
-	Result += Lines;
-	Result += TEXT("\nOrder is Read, Look, Preview, Edit. ")
-		TEXT("Use ReadTurboMCPToolHelp with a toolset name and a bare tool name ")
-		TEXT("for its parameters and known traps. Search using ToolName=find:0:<words> (ToolsetName empty searches all registered tools).");
-
-	return Result;
+	const FString Guide = TEXT("\nUse ReadTurboMCPToolHelp with an exact ToolsetName and empty ToolName to list its tools. ")
+		TEXT("Continue with the returned list:<offset>. To search, use ToolName=find:0:<words> and set ToolsetName ")
+		TEXT("to one toolset or leave it empty to search all. Pass a bare tool name for its parameters and traps.");
+	int32 Shown = 0;
+	for (const FToolsetEntry& Toolset : Toolsets)
+	{
+		const FString Row = FString::Printf(TEXT("\n%s (source: %s, %d tools)"),
+			*Toolset.Name, *SourceOf(Toolset.Name), Toolset.Tools.Num());
+		// Leave room to disclose omissions and give the existing search route.
+		if (Result.Len() + Row.Len() + Guide.Len() + 100 > IndexBudgetChars)
+		{
+			break;
+		}
+		Result += Row;
+		++Shown;
+	}
+	if (Shown < Toolsets.Num())
+	{
+		Result += FString::Printf(TEXT("\nShowing %d of %d toolsets. ToolHelp search covers the full registry."), Shown, Toolsets.Num());
+	}
+	return Result + Guide;
 }
 
 FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
@@ -382,6 +392,32 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 			|| InName.EndsWith(TEXT(".") + WantedToolset, ESearchCase::IgnoreCase);
 	};
 
+	const FToolsetEntry* ScopedToolset = WantedToolset.IsEmpty() ? nullptr
+		: Toolsets.FindByPredicate([&ToolsetMatches](const FToolsetEntry& Entry)
+		{
+			return ToolsetMatches(Entry.Name);
+		});
+	if (!WantedToolset.IsEmpty() && ScopedToolset == nullptr)
+	{
+		FString Error = FString::Printf(TEXT("error: no toolset named '%s'."),
+			*WantedToolset.Left(96).Replace(TEXT("\r"), TEXT("\\r")).Replace(TEXT("\n"), TEXT("\\n")));
+		TArray<FString> Close;
+		for (const FString& Known : KnownToolsetNames)
+		{
+			if (Known.Len() <= 128 && Known.Contains(WantedToolset, ESearchCase::IgnoreCase))
+			{
+				Close.Add(Known);
+			}
+		}
+		Close.Sort();
+		if (Close.Num() > 3) Close.SetNum(3);
+		if (!Close.IsEmpty())
+		{
+			Error += TEXT(" Matching toolsets: ") + FString::Join(Close, TEXT(", ")) + TEXT(".");
+		}
+		return Error + TEXT(" ReadTurboMCPToolIndex lists registered toolsets.");
+	}
+
     // Read-only discovery over the live registry; sorted pages do not imply routing preference.
     // Syntax: find:<offset>:<words>. Keep the query intact after the first separator.
     if (WantedTool.StartsWith(TEXT("find:")))
@@ -432,51 +468,39 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
         return Result;
     }
 
-	// Summary mode: one line per tool in the toolset.
-	if (WantedTool.IsEmpty())
+	// Summary mode: one page of the named toolset.
+	if (WantedTool.IsEmpty() && ScopedToolset != nullptr)
 	{
-		for (const FToolsetEntry& Entry : Toolsets)
+		const FToolsetEntry& Entry = *ScopedToolset;
+		if (ListOffset > 0 && ListOffset >= Entry.Tools.Num())
+			return FString::Printf(TEXT("error: list offset %d is outside this toolset's %d tools; restart with ToolName empty"), ListOffset, Entry.Tools.Num());
+		FString Summary = FString::Printf(TEXT("read: %s, %d tools, offset %d"),
+			*Entry.Name, Entry.Tools.Num(), ListOffset);
+		int32 Next = ListOffset;
+		for (; Next < Entry.Tools.Num() && Next - ListOffset < 12; ++Next)
 		{
-			if (!ToolsetMatches(Entry.Name))
+			const TSharedPtr<FJsonObject>& Tool = Entry.Tools[Next];
+			const FString Bare = BareToolName(Field(Tool, TEXT("name")));
+			FString Description = FirstSentence(Field(Tool, TEXT("description")));
+			Description.ReplaceInline(TEXT("\r"), TEXT(" "));
+			Description.ReplaceInline(TEXT("\n"), TEXT(" "));
+			if (Description.Len() > 120) Description = Description.Left(117) + TEXT("...");
+			const FString Row = FString::Printf(TEXT("\n%s %s - %s"), *KindForTool(Entry.Name, Bare), *Bare, *Description);
+			// Reserve space for the continuation, never cut a tool name in half.
+			if (Summary.Len() + Row.Len() > HelpBudgetChars - 250)
 			{
-				continue;
+				if (Next == ListOffset)
+					return TEXT("error: a tool name exceeds the summary budget; inspect the registry schema directly");
+				break;
 			}
-
-			if (ListOffset > 0 && ListOffset >= Entry.Tools.Num())
-				return FString::Printf(TEXT("error: list offset %d is outside this toolset's %d tools; restart with ToolName empty"), ListOffset, Entry.Tools.Num());
-			FString Summary = FString::Printf(TEXT("read: %s, %d tools, offset %d"),
-				*Entry.Name, Entry.Tools.Num(), ListOffset);
-			int32 Next = ListOffset;
-			for (; Next < Entry.Tools.Num() && Next - ListOffset < 12; ++Next)
-			{
-				const TSharedPtr<FJsonObject>& Tool = Entry.Tools[Next];
-				const FString Bare = BareToolName(Field(Tool, TEXT("name")));
-				FString Description = FirstSentence(Field(Tool, TEXT("description")));
-				Description.ReplaceInline(TEXT("\r"), TEXT(" "));
-				Description.ReplaceInline(TEXT("\n"), TEXT(" "));
-				if (Description.Len() > 120) Description = Description.Left(117) + TEXT("...");
-				const FString Row = FString::Printf(TEXT("\n%s %s - %s"), *KindForTool(Entry.Name, Bare), *Bare, *Description);
-				// Reserve space for the continuation, never cut a tool name in half.
-				if (Summary.Len() + Row.Len() > HelpBudgetChars - 250)
-				{
-					if (Next == ListOffset)
-						return TEXT("error: a tool name exceeds the summary budget; inspect the registry schema directly");
-					break;
-				}
-				Summary += Row;
-			}
-			if (Next < Entry.Tools.Num())
-				Summary += FString::Printf(TEXT("\n%d more. Continue with the same ToolsetName and ToolName=\"list:%d\"."), Entry.Tools.Num() - Next, Next);
-			else Summary += TEXT("\nEnd of toolset.");
-			Summary += TEXT("\nPass a listed bare tool name for full parameters and traps.");
-
-			return Summary;
+			Summary += Row;
 		}
+		if (Next < Entry.Tools.Num())
+			Summary += FString::Printf(TEXT("\n%d more. Continue with the same ToolsetName and ToolName=\"list:%d\"."), Entry.Tools.Num() - Next, Next);
+		else Summary += TEXT("\nEnd of toolset.");
+		Summary += TEXT("\nPass a listed bare tool name for full parameters and traps.");
 
-		FString Error = FString::Printf(
-			TEXT("error: no toolset named '%s'. Real toolsets: %s"),
-			*WantedToolset, *FString::Join(KnownToolsetNames, TEXT(", ")));
-		return Error;
+		return Summary;
 	}
 
 	// One tool: full help.
@@ -683,30 +707,17 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 		}
 	}
 
-	// Nothing matched. P2: refuse and name what would work.
-	FString Error = FString::Printf(TEXT("error: no tool named '%s'"), *WantedTool);
-	if (!WantedToolset.IsEmpty())
+	// A name error describes the discovery result, not editor health.
+	FString Error = FString::Printf(TEXT("error: no tool named '%s'"),
+		*WantedTool.Left(96).Replace(TEXT("\r"), TEXT("\\r")).Replace(TEXT("\n"), TEXT("\\n")));
+	if (ScopedToolset != nullptr)
 	{
-		Error += FString::Printf(TEXT(" in toolset '%s'"), *WantedToolset);
+		Error += FString::Printf(TEXT(" in toolset '%s'. Call ReadTurboMCPToolHelp with the same ToolsetName ")
+			TEXT("and an empty ToolName to list available tools."), *ScopedToolset->Name);
 	}
-	Error += TEXT(". Real toolsets: ") + FString::Join(KnownToolsetNames, TEXT(", "));
-	Error += TEXT(". Use ReadTurboMCPToolIndex for registered tool names.");
-
-	// Name close toolset matches, which is the usual mistake: the module prefix
-	// is easy to drop.
-	TArray<FString> Close;
-	for (const FString& Known : KnownToolsetNames)
+	else
 	{
-		if ((!WantedToolset.IsEmpty() && Known.Contains(WantedToolset, ESearchCase::IgnoreCase))
-			|| (!WantedToolset.IsEmpty() && WantedToolset.Contains(Known, ESearchCase::IgnoreCase)))
-		{
-			Close.Add(Known);
-		}
+		Error += TEXT(" in the available toolsets. Use ToolName=find:0:<words> to search.");
 	}
-	if (Close.Num() > 0)
-	{
-		Error += TEXT(" Closest toolset names: ") + FString::Join(Close, TEXT(", "));
-	}
-
 	return Error;
 }

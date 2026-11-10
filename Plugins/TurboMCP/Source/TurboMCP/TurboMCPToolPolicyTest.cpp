@@ -91,4 +91,71 @@ bool FTurboMCPToolPolicyTest::RunTest(const FString&)
     ADD_LATENT_AUTOMATION_COMMAND(FToolPreferencesCapture(this));
     return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPUnknownToolTest, "TurboMCP.Discovery.UnknownTools",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPUnknownToolTest::RunTest(const FString&)
+{
+    TArray<FString> Names;
+    for (const auto& Class : TurboMCPToolsets::GetToolsetClasses())
+    {
+        for (TFieldIterator<UFunction> Function(Class.Get()); Function; ++Function)
+        {
+            if (Function->HasMetaData(TEXT("AICallable"))) Names.AddUnique(Function->GetName());
+        }
+    }
+    const UTurboMCPSettings* Original = UTurboMCPSettings::Get();
+    if (!TestNotNull(TEXT("Session preferences are available"), Original)) return false;
+    ON_SCOPE_EXIT { TurboMCPToolPolicy::Initialize(*Original, Names); };
+
+    auto Registry = UToolsetRegistrySubsystem::Get();
+    if (Registry.HasError())
+    {
+        AddError(Registry.GetError());
+        return false;
+    }
+    const FString ReadToolsetName = TEXT("TurboMCP.TurboMCPReadToolset");
+    auto ReadToolset = Registry.GetValue()->ToolsetRegistry.Find(ReadToolsetName);
+    if (!TestTrue(TEXT("Read toolset is registered"), ReadToolset.IsValid())) return false;
+
+    auto DispatchError = [&](const TCHAR* Name)
+    {
+        auto Call = ReadToolset->ExecuteTool(Name, TEXT("{}"));
+        if (!TestTrue(TEXT("Refusal completes synchronously"), Call.IsReady())) return FString();
+        auto Result = Call.Get();
+        if (!TestTrue(TEXT("Dispatch returned an error"), Result.HasError())) return FString();
+        return Result.GetError();
+    };
+
+    UTurboMCPSettings* Settings = NewObject<UTurboMCPSettings>();
+    Settings->bEnableTurboMCP = true;
+    Settings->DisabledToolDomains.Reset();
+    Settings->ToolOverrides.Reset();
+    TurboMCPToolPolicy::Initialize(*Settings, Names);
+
+    const FString Typo = DispatchError(TEXT("GraphLod"));
+    TestTrue(TEXT("A scoped typo suggests the permitted exact name"),
+        Typo.StartsWith(TEXT("Unknown tool")) && Typo.Contains(TEXT("Did you mean ReadTurboMCPGraphLoad")));
+    TestFalse(TEXT("A typo carries no restart instruction"), Typo.Contains(TEXT("restart")));
+
+    const FString WrongScope = DispatchError(TEXT("PreviewTurboMCPGraphCheck"));
+    TestTrue(TEXT("A declared tool in another toolset is unknown here"), WrongScope.StartsWith(TEXT("Unknown tool")));
+    TestFalse(TEXT("Suggestions stay in the selected toolset"), WrongScope.Contains(TEXT("Did you mean PreviewTurboMCP")));
+    TestFalse(TEXT("A cross-toolset name does not trigger restart advice"), WrongScope.Contains(TEXT("restart")));
+
+    Settings->ToolOverrides.Add(TEXT("ReadTurboMCPGraphLoad"), false);
+    TurboMCPToolPolicy::Initialize(*Settings, Names);
+    const FString BlockedSuggestion = DispatchError(TEXT("GraphLod"));
+    TestFalse(TEXT("A denied name is excluded from suggestions"), BlockedSuggestion.Contains(TEXT("ReadTurboMCPGraphLoad")));
+    const FString Denied = DispatchError(TEXT("ReadTurboMCPGraphLoad"));
+    TestTrue(TEXT("A real preference refusal explains how to apply changes"),
+        Denied.Contains(TEXT("Disabled by your tool preferences")) && Denied.Contains(TEXT("restart")));
+    const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(ReadToolsetName, TEXT("ReadTurboMCPGraphLoad"));
+    TestTrue(TEXT("Plugin help respects the active permission"), Help.StartsWith(TEXT("error:")));
+
+    FString Reason;
+    TestFalse(TEXT("Unknown policy entry fails closed"), TurboMCPToolPolicy::IsAllowed(TEXT("UnregisteredName"), Reason));
+    TestFalse(TEXT("Unknown policy entry carries no restart instruction"), Reason.Contains(TEXT("restart")));
+    return true;
+}
 #endif
