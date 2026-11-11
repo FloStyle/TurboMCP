@@ -551,6 +551,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
                     Help += TEXT("\nusage: Action=status, NodeId empty. This reads trace state; arm/clear require EditTurboMCPTrace.");
                 else if (Bare == TEXT("EditTurboMCPTrace"))
                     Help += TEXT("\nusage: Action=arm, NodeId=<actual node ID from the reader>; Action=clear, NodeId empty clears the trace registry. Action=status is also accepted. No start/stop action exists. Arming does not itself execute the graph.");
+                else if (Bare == TEXT("ReadTurboMCPAssetSearch"))
+                    Help += TEXT("\nusage: Query=type:Blueprint menu, Path=/Game/UI. Path includes subfolders by default. Set Recursive=false for direct assets. The path: filter inside Query matches folder text within the selected scope. Search uses registry data without loading or editing assets.");
                 else if (Bare == TEXT("ReadTurboMCPWidgetInventory"))
                     Help += TEXT("\nusage: Folder=/Game/UI, Rules={\"class\":\"/Script/UMG.Image\",\"assetFolder\":\"/Game/UI/Icons\"}. all combines rules across one Blueprint; any accepts one. Use an exact loaded CommonUI class path when that plugin is available. Each page scans at most PageSize candidates. Keep the filters and copy nextCursor. Use LoadUnloaded=false to skip package loads; missing candidates leave totals unknown. Evidence covers designer values and owned graph sites; runtime and embedded internals are separate.");
                 else if (Bare == TEXT("PreviewTurboMCPGraphAppend") || Bare == TEXT("EditTurboMCPGraphAppend"))

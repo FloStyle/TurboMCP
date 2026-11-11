@@ -135,24 +135,24 @@ public:
 	 * This text search is not a tag-reference search; the stock toolset must be enabled.
 	 *
 	 * Pass words to match against asset names and folder paths. Every word must
-	 * appear in one or the other. Two filters may appear at any position, alone
-	 * or with words: `type:<class words>` and `path:<folder words>`.
+	 * appear in one or the other. The query filters type: and path: match
+	 * substrings in the class name and package folder respectively.
+	 * Path limits the search to an exact folder and, by default, its subfolders.
+	 * Query filters also apply within that scope.
 	 *
 	 * Ranking is exact name first, then names that start with the words, then
 	 * names that contain them, then folder only matches, and shorter names first
 	 * on a tie.
 	 *
-	 * Finds assets that are in memory but not saved, not only those on disk.
-	 * Every result carries its full object path and class, and a Blueprint also
-	 * carries its parent. Results are capped and the count left out is printed.
+	 * Searches registry data, including registered unsaved assets, without
+	 * loading or editing assets. Shows at most 40 matches and reports omissions.
 	 *
-	 * Pass "" to see the refusal message. A query matching nothing says how many
-	 * assets were searched, so "no match" never looks like "nothing searched".
-	 *
-	 * @param Query Nonempty search words with optional type: and path: filters, e.g. type:Blueprint path:/Game/UI. All words must match. Empty input and unsupported filters are refused.
+	 * @param Query Search words with optional type: and path: substring filters, e.g. type:Blueprint menu. Pass an empty string to list matches within Path.
+	 * @param Path Optional full mounted content folder, e.g. /Game/UI. Omit or pass an empty string for an unscoped search. A single trailing slash is accepted.
+	 * @param Recursive Include subfolders when Path is set. Default true. Set false for assets directly in Path.
 	*/
 	UFUNCTION(meta = (AICallable))
-	static FString ReadTurboMCPAssetSearch(const FString& Query);
+	static FString ReadTurboMCPAssetSearch(const FString& Query, const FString& Path = TEXT(""), bool Recursive = true);
 
 	/**
 	 * Read what one or more assets are, in any path form.

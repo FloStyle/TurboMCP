@@ -96,11 +96,11 @@ namespace
 			else if (Token.StartsWith(PathFilterPrefix, ESearchCase::IgnoreCase))
 			{
 				Parsed.PathFilter = Token.RightChop(FCString::Strlen(PathFilterPrefix));
-				if (Parsed.PathFilter.IsEmpty()) { Parsed.Error = TEXT("error: path: needs a folder, for example path:/Game/UI."); return Parsed; }
+				if (Parsed.PathFilter.IsEmpty()) { Parsed.Error = TEXT("error: path: needs text to match in the folder path, for example path:UI."); return Parsed; }
 			}
 			else if (Token.Contains(TEXT(":")))
 			{
-				Parsed.Error = FString::Printf(TEXT("error: unsupported query filter '%s'. Use type:ClassName or path:/Game/Folder; class: is an alias for type:. Filters may appear before or after search words."), *Token);
+				Parsed.Error = FString::Printf(TEXT("error: unsupported query filter '%s'. Use type:ClassName or path:FolderText. The class: filter is an alias for type:. Filters may appear before or after search words."), *Token);
 				return Parsed;
 			}
 			else
@@ -274,7 +274,7 @@ namespace
 	}
 }
 
-FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query)
+FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query, const FString& Path, bool Recursive)
 {
 	IAssetRegistry* Registry = IAssetRegistry::Get();
 	if (Registry == nullptr)
@@ -285,24 +285,45 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query)
 	const FParsedQuery Parsed = ParseQuery(Query);
 	if (!Parsed.Error.IsEmpty()) return Parsed.Error;
 
-	// P1: a query that is empty says what to pass, rather than listing everything.
-	if (Parsed.Words.Num() == 0 && Parsed.TypeFilter.IsEmpty() && Parsed.PathFilter.IsEmpty())
+	FString Folder = Path;
+	if (!Path.IsEmpty())
 	{
-		return TEXT("error: no query given. Pass words to match against asset names and folders, ")
-			TEXT("or a filter on its own with type:<class words> or path:<folder words>. ")
-			TEXT("Example: type:Material shop");
+		Folder.RemoveFromEnd(TEXT("/"));
+		// Validate the folder as a package parent so mount roots such as /Game also work.
+		const FString ProbePackage = Folder + TEXT("/FolderProbe");
+		if (Folder.IsEmpty() || Folder.Len() >= NAME_SIZE || FCString::Strlen(*Folder) != Folder.Len()
+			|| !FPackageName::IsValidLongPackageName(ProbePackage, /*bIncludeReadOnlyRoots=*/true)
+			|| FPackageName::IsScriptPackage(ProbePackage) || FPackageName::IsMemoryPackage(ProbePackage)
+			|| FPackageName::IsTempPackage(ProbePackage))
+		{
+			return TEXT("error: Path must be a mounted Unreal content folder such as /Game/UI. ")
+				TEXT("Pass a full folder path with forward slashes.");
+		}
 	}
 
-    if (Registry->IsGathering())
-        return TEXT("partial: asset registry scanning is active; search results are not complete. Wait for scanning to finish, then retry the same query. No assets were loaded or edited.");
+	if (Folder.IsEmpty() && Parsed.Words.IsEmpty() && Parsed.TypeFilter.IsEmpty() && Parsed.PathFilter.IsEmpty())
+	{
+		return TEXT("error: no query given. Pass words, a filter such as type:Material or path:UI, ")
+			TEXT("or an explicit Path such as /Game/UI.");
+	}
 
-	// GetAllAssets with include-only-on-disk false is the one query that also
-	// sees assets which are in memory but never saved, which P5 requires.
-	TArray<FAssetData> AllAssets;
-	Registry->GetAllAssets(AllAssets, /*bIncludeOnlyOnDiskAssets=*/false);
+	if (Registry->IsGathering())
+	{
+		return TEXT("partial: asset registry scanning is active. Wait for scanning to finish, then retry the same search. No assets were loaded or edited.");
+	}
+
+	// The registry folder filter matches package path segments and includes registered unsaved assets.
+	TArray<FAssetData> Candidates;
+	const bool bEnumerated = Folder.IsEmpty()
+		? Registry->GetAllAssets(Candidates, /*bIncludeOnlyOnDiskAssets=*/false)
+		: Registry->GetAssetsByPath(FName(*Folder), Candidates, Recursive, /*bIncludeOnlyOnDiskAssets=*/false);
+	if (!bEnumerated)
+	{
+		return TEXT("error: the asset registry could not enumerate assets for this search.");
+	}
 
 	TArray<FSearchHit> Hits;
-	for (const FAssetData& Asset : AllAssets)
+	for (const FAssetData& Asset : Candidates)
 	{
 		if (!Asset.IsValid())
 		{
@@ -337,10 +358,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query)
 		Hits.Add(MoveTemp(Hit));
 	}
 
-	// Ranking is the spec's: exact name, then name starts with, then name
-	// contains, then folder only; shorter names first on a tie. The name is a
-	// followed by full object path breaks same-name ties without depending
-	// on registry order, which would make two identical queries disagree.
+	// Sort by match rank, then name length, then name and full object path.
+	// The final comparison makes same-name results independent of registry order.
 	Hits.Sort([](const FSearchHit& A, const FSearchHit& B)
 	{
 		if (A.Rank != B.Rank)
@@ -359,15 +378,21 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query)
 	FString Result = FString::Printf(TEXT("read: asset search for '%s', %d match(es)"),
 		*Query, Hits.Num());
 
-	if (Parsed.TypeFilter.IsEmpty() && Parsed.PathFilter.IsEmpty())
-	{
-		Result += TEXT(" (no filters)");
-	}
-	else
+	if (!Parsed.TypeFilter.IsEmpty() || !Parsed.PathFilter.IsEmpty())
 	{
 		Result += FString::Printf(TEXT(" (type: %s, path: %s)"),
 			Parsed.TypeFilter.IsEmpty() ? TEXT("any") : *Parsed.TypeFilter,
 			Parsed.PathFilter.IsEmpty() ? TEXT("any") : *Parsed.PathFilter);
+	}
+	else if (Folder.IsEmpty())
+	{
+		Result += TEXT(" (no filters)");
+	}
+
+	if (!Folder.IsEmpty())
+	{
+		Result += FString::Printf(TEXT(" [folder scope: %s (%s)]"), *Folder,
+			Recursive ? TEXT("includes subfolders") : TEXT("direct assets only"));
 	}
 
 	if (Hits.Num() == 0)
@@ -376,7 +401,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query)
 		// reader can tell "no match" from "nothing to search".
 		Result += FString::Printf(
 			TEXT("\nNothing matched. %d assets were searched, including those in memory only."),
-			AllAssets.Num());
+			Candidates.Num());
 		Result += TEXT("\nTry fewer words, or a filter on its own such as type:Material.");
 		return Result;
 	}
@@ -408,9 +433,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query)
 
 	if (Hits.Num() > Shown)
 	{
-		// P6: say how many were left out and the exact call that gets them.
 		Result += FString::Printf(
-			TEXT("\n(%d more, narrow the query or add type: or path: to see them)"),
+			TEXT("\n(%d more. Narrow the query or set Path to a smaller folder.)"),
 			Hits.Num() - Shown);
 	}
 
