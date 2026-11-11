@@ -12,6 +12,30 @@ Preserve the current FString public signatures while migrating implementation to
 
 Tool help must state parameter meaning, requiredness, accepted formats, side effects and a valid example. Reflected schemas are authoritative for the callable shape. Generated documentation must not advertise a capability merely because a name exists.
 
+### Arguments for the Unreal `call_tool` bridge
+
+Put the toolset name, tool name, and inner argument object inside `params.arguments`. Search fields such as `query` belong in the inner `arguments` object. If the server reports empty input parameters, check this nesting and confirm the field names with `describe_toolset`.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "call_tool",
+    "arguments": {
+      "toolset_name": "TurboMCP.TurboMCPReadToolset",
+      "tool_name": "ReadTurboMCPAssetSearch",
+      "arguments": {
+        "query": "type:Blueprint"
+      }
+    }
+  }
+}
+```
+
+Unreal passes only the inner argument object to the selected toolset. TurboMCP cannot recover fields placed outside it.
+
 ## Lifecycle and observability
 
 Call recording must register/unregister without dangling wrappers and identify the wrapped toolset through supported engine APIs. Logs describe observed calls and results, not proof of persistence. Bound record size and rotation; do not log credentials. Trusted loopback clients are the deployment boundary.

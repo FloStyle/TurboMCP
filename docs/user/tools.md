@@ -61,6 +61,8 @@ Generated from plugin declarations. For validation and compatibility limits, see
 | `LookTurboMCPWidgetPreview` | Render a Widget Blueprint with sample values and write a PNG. Pass the widget, sample values as a JSON object of variable name to value, an optional function to call after the values are set, and a size as WxH. Empty sample values means the widget's own defaults; an empty size means 1280x720 |
 | `LookTurboMCPCapture` | Capture a graph, asset editor, active window or live PIE game layer as a PNG. Start with Mode=graph for an overview |
 
+For a small texture preview, discover `CaptureAssetImage` in Unreal's `EditorToolset.EditorAppToolset`. Pass the texture's full package or object path as `assetPath`. The tool uses a 256-pixel thumbnail render target and returns a PNG in a rendering-capable editor. It may load the texture and wait for texture preparation and streaming. The tool makes no asset save request.
+
 ## UTurboMCPPreviewToolset
 
 46 declared tools.
