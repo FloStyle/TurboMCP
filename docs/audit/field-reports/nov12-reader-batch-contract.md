@@ -1,0 +1,7 @@
+# NOV12 source-only reader batch
+Readiness: ready
+Integrator-approved scope under the user instruction to batch fixes while the engine compiles. Use this existing isolated checkout; do not edit C:/ExampleDev/TurboMCP or engine files.
+
+Order: NOV10-12 explain exact outer tools/call and inner call_tool arguments; NOV10-13 document existing stock texture preview and effects without claiming runtime proof; NOV10-03/08/09 implement bounded property pagination, multi-asset named-property reads, map/array keys-only output and safe already-loaded Blueprint CDO access. Preserve legacy calls and edit revision semantics. Never export giant property values before applying keys-only selection. Page complete records with totals, continuation and accurate errors/completeness. No automatic compile/save/checkout/map load/PIE. CDO lookup must not construct or compile; use existing CDO or clearly refuse. Help, schema, comments and outputs must use accurate plain English.
+
+Source review basis: current property reader exports full text before a 32768 character cap; current stock texture preview already exists; missing outer protocol fields cannot be recovered by plugin code. Do not invent engine fixes. Implement only the listed exact files; parent owns trackers/catalog/integration. Add focused fixture coverage if needed but DO NOT run builds, tests or editor during this batch. Commit coherent slices; clearly report untested and partial behavior. Leave unknown investigations and unsafe generic scripting open. Return patch commits for integration after compilation.
