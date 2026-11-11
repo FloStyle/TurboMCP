@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "date": "2026-11-10",
-  "status": "p0_batch_references_integrated_remaining_tasks_open",
+  "status": "batch_references_and_widget_inventory_integrated_remaining_tasks_open",
   "tasks": [
     {
       "id": "NOV10-01",
@@ -92,17 +92,18 @@
       "title": "Inventory widget classes and selected override evidence in batches",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
-      "owner": "sol-widget-inventory",
-      "validation": "reported_not_reproduced",
+      "owner": "integrator",
+      "validation": "focused_native_and_live_mcp_passed",
       "source_keys": [
         "2026-11-10_S1/X-132",
         "2026-11-10_S1/FT-169"
       ],
       "dependencies": [],
-      "next_step": "Approved assignment nov10-widget-inventory; implement FT-169 with WT-22 instance evidence and focused validation.",
-      "acceptance": "Bound folder/class/texture/override queries with explicit scanned/skipped counts; avoid save/compile and report asset loading effects honestly."
+      "next_step": "Field validation on real widgets; loaded synthetic workflow passed. Coverage and loading limits documented in integration review.",
+      "acceptance": "Bound folder/class/texture/override queries with explicit scanned/skipped counts; avoid save/compile and report asset loading effects honestly.",
+      "evidence": "docs/audit/field-reports/nov10-widget-inventory-review.md"
     },
     {
       "id": "NOV10-07",
@@ -159,16 +160,17 @@
       "title": "Expose widget instance overrides",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
-      "owner": "sol-widget-inventory",
-      "validation": "reported_not_reproduced",
+      "owner": "integrator",
+      "validation": "focused_native_and_live_mcp_passed",
       "source_keys": [
         "2026-11-10_S1/WT-22"
       ],
       "dependencies": [],
-      "next_step": "Approved assignment nov10-widget-inventory; implement FT-169 with WT-22 instance evidence and focused validation.",
-      "acceptance": "Distinguish child instance overrides from class defaults with bounded property selection; link NOV09-17 navigation reader work."
+      "next_step": "Field validation on real widgets; loaded synthetic workflow passed. Coverage and loading limits documented in integration review.",
+      "acceptance": "Distinguish child instance overrides from class defaults with bounded property selection; link NOV09-17 navigation reader work.",
+      "evidence": "docs/audit/field-reports/nov10-widget-inventory-review.md"
     },
     {
       "id": "NOV10-11",

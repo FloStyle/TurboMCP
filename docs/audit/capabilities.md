@@ -188,5 +188,6 @@ Generated from declarations, definitions and static test references. All runtime
 | ReadTurboMCPTrace | [TurboMCPTraceReadTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraceReadTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPTypeFind | [TurboMCPTypes.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPVcsState | [TurboMCPSourceControlTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
+| ReadTurboMCPWidgetInventory | [TurboMCPWidgetInventory.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetInventory.cpp) | name_reference_only | not certified | compare-native-before-expanding |
 | ReadTurboMCPWidgetProperty | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |
 | ReadTurboMCPWidgetTree | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | parsed_call | not certified | compare-native-before-expanding |

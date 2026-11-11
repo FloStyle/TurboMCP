@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "plugin_tree": "48c8a8eee1e4c90895ca6055ec519bf1c7dd8e75",
+  "plugin_tree": "f1785429451bc0bdad5599418d4c704dee4e9f82",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 186,
+    "tools": 187,
     "by_toolset": {
       "UTurboMCPEditToolset": 77,
       "UTurboMCPLookToolset": 6,
       "UTurboMCPPreviewToolset": 64,
-      "UTurboMCPReadToolset": 39
+      "UTurboMCPReadToolset": 40
     }
   },
   "tools": [
@@ -4473,6 +4473,7 @@
         "Tools/test-vars-add.py",
         "Tools/test-vcs.py",
         "Tools/test-vision-workflow.py",
+        "Tools/test-widget-inventory.py",
         "Tools/test-widget-retarget.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -4599,6 +4600,34 @@
         "Tools/test-vcs.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "compare-native-before-expanding"
+    },
+    {
+      "id": "ReadTurboMCPWidgetInventory",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "Rules",
+        "Folder",
+        "Recursive",
+        "MatchMode",
+        "PageSize",
+        "Cursor",
+        "LoadUnloaded"
+      ],
+      "family": "widget",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetInventory.cpp",
+          "line": 701
+        }
+      ],
+      "test_references": [
+        "Tools/test-widget-inventory.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
