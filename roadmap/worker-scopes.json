@@ -3821,6 +3821,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetInventoryTest.cpp",
             "Tools/test-widget-inventory.py"
           ]
+        },
+        "nov11-asset-search-scope": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
