@@ -8,7 +8,7 @@ TurboMCP is a development preview. The failed `v1.0.0` release and tag were with
 
 | Target | Status |
 | --- | --- |
-| Windows, Unreal Engine 5.8.3 source | Development baseline; exact revision in [engine.lock.json](../engine.lock.json) |
+| Windows, Unreal Engine 5.8.4 source | Development baseline; exact revision in [engine.lock.json](../engine.lock.json) |
 | Installed / Launcher engine | Packaging and runtime validation pending |
 | Unreal Engine 5.9 | Development API comparison underway; adapter and runtime validation pending |
 | Other platforms | Outside the initial release scope |

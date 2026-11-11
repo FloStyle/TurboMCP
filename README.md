@@ -4,7 +4,7 @@ TurboMCP connects Unreal Editor workflows to MCP clients, including AI coding as
 
 You work through your MCP client while Unreal Editor hosts the plugin and the project. TurboMCP supplies editor tools; your client supplies the conversation and decides which tools to request.
 
-**Development preview:** Windows with the pinned Unreal Engine 5.8.3 source build is the development baseline. There is no approved stable release yet. Installed-engine and Unreal 5.9 support are still being evaluated. See [project status](docs/status.md) for the current limits.
+**Development preview:** Windows with the pinned Unreal Engine 5.8.4 source build is the development baseline. There is no approved stable release yet. Installed-engine and Unreal 5.9 support are still being evaluated. See [project status](docs/status.md) for the current limits.
 
 [Get started](#get-started) · [First use](#first-use) · [Troubleshooting](#troubleshooting) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 

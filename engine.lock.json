@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "repository": "https://github.com/EpicGames/UnrealEngine.git",
-  "version": "5.8.3",
-  "commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
+  "version": "5.8.4",
+  "commit": "f45729c0b6f097038e72b52d366a62baeca3275b",
   "compatibility_target": {
     "version": "5.9.0-development",
     "commit": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
