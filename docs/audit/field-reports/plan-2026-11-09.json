@@ -216,7 +216,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 3,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Confirmed open against 98f177d7: optional initial calls still fail by signature/default design. See nov12-discovery-reconciliation.md; approve exact normalization/schema repair scope next.",
       "acceptance": "Reconcile required/default schema behavior for graph/Blueprint/help reads; align help/schema argument names without silently breaking existing clients."
     },
     {
