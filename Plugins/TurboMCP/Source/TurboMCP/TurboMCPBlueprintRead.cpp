@@ -737,8 +737,8 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 									for (const UEdGraphPin* Linked : Pin->LinkedTo) Pending.Add(Linked);
 							continue;
 						}
-						const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Consumer);
-						const UFunction* Function = Call ? Call->GetTargetFunction() : nullptr;
+						const UK2Node_CallFunction* ReferenceCall = Cast<UK2Node_CallFunction>(Consumer);
+						const UFunction* Function = ReferenceCall ? ReferenceCall->GetTargetFunction() : nullptr;
 						const FProperty* Parameter = Function ? FindFProperty<FProperty>(Function, Input->PinName) : nullptr;
 						if (!Parameter) continue;
 						const FString OwnerPath = Function->GetOuterUClass()->GetPathName();
