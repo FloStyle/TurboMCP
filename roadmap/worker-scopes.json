@@ -3859,6 +3859,13 @@
             "Tools/test-node-reader-output.py"
           ],
           "new_files": []
+        },
+        "nov12-asset-description": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp",
+            "Tools/test-asset-describe-metadata.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
