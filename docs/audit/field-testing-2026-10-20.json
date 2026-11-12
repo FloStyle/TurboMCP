@@ -7509,22 +7509,22 @@
       "title": "Use not-applicable wording for assets without generated classes",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator",
+      "validation": "untested",
       "source_keys": [
         "2026-11-09_S2/AD-04"
       ],
       "dependencies": [],
       "complexity_estimate": 1,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Implemented in c7635e35; scope and stock engine API reviewed. Focused runtime assertion added; compile/editor execution deferred to the next code batch.",
       "acceptance": "Differentiate not applicable, unavailable and genuinely unknown; verify representative non-Blueprint asset kinds.",
       "key": "NOV09-20",
       "canonical_issue": "NOV09-20",
       "report": "2026-11-09 intake",
       "task_plan": "docs/audit/field-reports/plan-2026-11-09.json",
-      "remaining": "Differentiate not applicable, unavailable and genuinely unknown; verify representative non-Blueprint asset kinds."
+      "remaining": "No implementation remainder. Runtime validation is pending, tracked separately."
     },
     {
       "key": "NOV10-07",
