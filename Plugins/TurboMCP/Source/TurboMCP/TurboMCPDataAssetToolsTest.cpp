@@ -417,8 +417,14 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
     const FString BeforeInvalid=NumberRevision();
     for (const FString& Index:TArray<FString>{TEXT("3"),TEXT("-1"),TEXT("1.5"),TEXT(" 1"),TEXT("9999999999")})
         TestTrue(TEXT("Invalid insertion index refuses"),UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path,TEXT("Numbers"),TEXT("array_insert"),Index,TEXT("42"),BeforeInvalid).StartsWith(TEXT("refused:")));
-    TestTrue(TEXT("Invalid inserted value refuses"),UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(Path,TEXT("Numbers"),TEXT("array_insert"),TEXT("1"),TEXT("not_an_integer"),BeforeInvalid).StartsWith(TEXT("refused:")));
+    const FString InvalidValue = UTurboMCPEditToolset::EditTurboMCPDataAssetProperty(
+        Path, TEXT("Numbers"), TEXT("array_insert"), TEXT("1"), TEXT("not_an_integer"), BeforeInvalid);
+    TestTrue(TEXT("Invalid inserted value refuses"), InvalidValue.StartsWith(TEXT("refused:")));
     TestTrue(TEXT("Insertion refusals preserve revision and clean state"),NumberRevision()==BeforeInvalid && !Package->IsDirty());
+    const FString HexPreview = UTurboMCPPreviewToolset::PreviewTurboMCPDataAssetProperty(
+        Path, TEXT("Numbers"), TEXT("array_insert"), TEXT("1"), TEXT("0x2A"), BeforeInvalid);
+    TestTrue(TEXT("Hexadecimal integer remains valid in preview"), HexPreview.StartsWith(TEXT("preview:")));
+    TestTrue(TEXT("Hexadecimal preview preserves revision and clean state"), NumberRevision() == BeforeInvalid && !Package->IsDirty());
     Context->MarkAsGarbage();
     Action->MarkAsGarbage();
     Package->SetDirtyFlag(false);

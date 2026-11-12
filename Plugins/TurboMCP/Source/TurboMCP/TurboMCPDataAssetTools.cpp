@@ -693,6 +693,12 @@ FString Operate(const FString& AssetPath, const FString& Path, const FString& Op
         // never an unvalidated property-text import containing object references.
         if (Insert)
         {
+            const FNumericProperty* Numeric = CastField<FNumericProperty>(Array->Inner);
+            if (!Value.IsEmpty() && Numeric && Numeric->IsInteger() && !Numeric->GetIntPropertyEnum() && FChar::IsAlpha(Value[0]))
+            {
+                // Plain integer properties do not need the engine's global enum-name lookup.
+                return Refuse(TEXT("Use numeric property text for an integer array element."));
+            }
             FValue Element(Array->Inner);
             if (!Value.IsEmpty() && !Parse(Array->Inner, Value, false, Element.Get(), HeldValue)) return Refuse(Error);
             Elements.InsertValues(static_cast<int32>(Index), 1);

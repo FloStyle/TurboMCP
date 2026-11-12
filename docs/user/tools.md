@@ -11,7 +11,7 @@ Generated from plugin declarations. For validation and compatibility limits, see
 
 ## UTurboMCPReadToolset
 
-33 declared tools.
+33 tools listed.
 
 | Function | Description |
 | --- | --- |
