@@ -191,15 +191,59 @@ FString FTurboMCPBlueprintRead::DescribeVariableType(const FEdGraphPinType& InTy
 	return UEdGraphSchema_K2::TypeToText(InType).ToString();
 }
 
-FString FTurboMCPBlueprintRead::RenderManifest(const UBlueprint* InBlueprint)
+void FTurboMCPBlueprintRead::CollectScopedDeclarations(const UBlueprint* Blueprint,
+	const TArray<UEdGraph*>* Graphs, TArray<FBPVariableDescription>& Variables,
+	TArray<USCS_Node*>& Components)
 {
+	Variables.Reset();
+	Components.Reset();
+	if (!Blueprint) return;
+	TSet<FName> Referenced;
+	if (Graphs)
+	{
+		const auto AddMember = [&](const FMemberReference& Reference)
+		{
+			const UClass* Owner = Reference.GetMemberParentClass();
+			if (!Reference.IsLocalScope() && (Reference.IsSelfContext()
+				|| (Owner && Owner->ClassGeneratedBy == Blueprint)))
+				Referenced.Add(Reference.GetMemberName());
+		};
+		for (const UEdGraph* Graph : *Graphs)
+		{
+			if (!Graph) continue;
+			for (const UEdGraphNode* Node : Graph->Nodes)
+			{
+				if (const UK2Node_Variable* Variable = Cast<UK2Node_Variable>(Node))
+					AddMember(Variable->VariableReference);
+				if (const UK2Node_BaseMCDelegate* Delegate = Cast<UK2Node_BaseMCDelegate>(Node))
+					AddMember(Delegate->DelegateReference);
+				if (const UK2Node_ComponentBoundEvent* Event = Cast<UK2Node_ComponentBoundEvent>(Node))
+					Referenced.Add(Event->ComponentPropertyName);
+			}
+		}
+	}
+	for (const FBPVariableDescription& Variable : Blueprint->NewVariables)
+		if (!Graphs || Referenced.Contains(Variable.VarName)) Variables.Add(Variable);
+	if (Blueprint->SimpleConstructionScript)
+		for (USCS_Node* Component : Blueprint->SimpleConstructionScript->GetAllNodes())
+			if (Component && (!Graphs || Referenced.Contains(Component->GetVariableName())))
+				Components.Add(Component);
+}
+
+FString FTurboMCPBlueprintRead::RenderManifest(const UBlueprint* InBlueprint, const TArray<UEdGraph*>* InGraphs)
+{
+	TArray<FBPVariableDescription> Variables;
+	TArray<USCS_Node*> Components;
+	CollectScopedDeclarations(InBlueprint, InGraphs, Variables, Components);
+
 	if (InBlueprint == nullptr)
 	{
 		return FString();
 	}
 
 	TArray<UEdGraph*> Graphs;
-	CollectGraphs(InBlueprint, Graphs);
+	if (InGraphs) Graphs = *InGraphs;
+	else CollectGraphs(InBlueprint, Graphs);
 
 	FString Out = FString::Printf(TEXT("asset: %s"), *BlueprintPath(InBlueprint));
 	Out += FString::Printf(TEXT("\n  class: %s"), *InBlueprint->GetClass()->GetName());
@@ -224,9 +268,9 @@ FString FTurboMCPBlueprintRead::RenderManifest(const UBlueprint* InBlueprint)
 	}
 
 	Out += FString::Printf(TEXT("\n  counts: %d graph(s), %d variable(s), %d component(s)"),
-		Graphs.Num(), InBlueprint->NewVariables.Num(),
+		Graphs.Num(), Variables.Num(),
 		InBlueprint->SimpleConstructionScript != nullptr
-			? InBlueprint->SimpleConstructionScript->GetAllNodes().Num() : 0);
+			? Components.Num() : 0);
 
 	// The names, because `03_TOOLS.md` asks for them at this level. Each list caps
 	// and says how many were left, as `04_FORMATS.md` section 1 requires.
@@ -251,18 +295,18 @@ FString FTurboMCPBlueprintRead::RenderManifest(const UBlueprint* InBlueprint)
 	}
 
 	Out += TEXT("\n  variables:");
-	if (InBlueprint->NewVariables.Num() == 0)
+	if (Variables.Num() == 0)
 	{
 		Out += TEXT(" none");
 	}
-	for (int32 Index = 0; Index < InBlueprint->NewVariables.Num() && Index < MaxManifestNames; ++Index)
+	for (int32 Index = 0; Index < Variables.Num() && Index < MaxManifestNames; ++Index)
 	{
-		Out += FString::Printf(TEXT("\n    %s"), *InBlueprint->NewVariables[Index].VarName.ToString());
+		Out += FString::Printf(TEXT("\n    %s"), *Variables[Index].VarName.ToString());
 	}
-	if (InBlueprint->NewVariables.Num() > MaxManifestNames)
+	if (Variables.Num() > MaxManifestNames)
 	{
 		Out += FString::Printf(TEXT("\n    (%d more)"),
-			InBlueprint->NewVariables.Num() - MaxManifestNames);
+			Variables.Num() - MaxManifestNames);
 	}
 
 	Out += TEXT("\n  components:");
@@ -272,7 +316,7 @@ FString FTurboMCPBlueprintRead::RenderManifest(const UBlueprint* InBlueprint)
 	}
 	else
 	{
-		const TArray<USCS_Node*>& Nodes = InBlueprint->SimpleConstructionScript->GetAllNodes();
+		const TArray<USCS_Node*>& Nodes = Components;
 		if (Nodes.Num() == 0)
 		{
 			Out += TEXT(" none");
@@ -292,27 +336,31 @@ FString FTurboMCPBlueprintRead::RenderManifest(const UBlueprint* InBlueprint)
 	return Out;
 }
 
-FString FTurboMCPBlueprintRead::RenderVariables(const UBlueprint* InBlueprint)
+FString FTurboMCPBlueprintRead::RenderVariables(const UBlueprint* InBlueprint, const TArray<UEdGraph*>* InGraphs)
 {
+	TArray<FBPVariableDescription> Variables;
+	TArray<USCS_Node*> Components;
+	CollectScopedDeclarations(InBlueprint, InGraphs, Variables, Components);
+
 	if (InBlueprint == nullptr)
 	{
 		return FString();
 	}
 
-	FString Out = FString::Printf(TEXT("\nvariables: %d"), InBlueprint->NewVariables.Num());
-	if (InBlueprint->NewVariables.Num() == 0)
+	FString Out = FString::Printf(TEXT("\nvariables: %d"), Variables.Num());
+	if (Variables.Num() == 0)
 	{
 		Out += TEXT("\n  none");
 		return Out;
 	}
 
 	int32 Shown = 0;
-	for (const FBPVariableDescription& Variable : InBlueprint->NewVariables)
+	for (const FBPVariableDescription& Variable : Variables)
 	{
 		if (Shown >= MaxVariables)
 		{
 			Out += FString::Printf(TEXT("\n  (%d more variable(s) not shown)"),
-				InBlueprint->NewVariables.Num() - Shown);
+				Variables.Num() - Shown);
 			break;
 		}
 		++Shown;
@@ -345,7 +393,8 @@ FString FTurboMCPBlueprintRead::RenderVariables(const UBlueprint* InBlueprint)
 }
 
 void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBlueprint,
-	TArray<FString>& OutEvents, TArray<FString>& OutFunctions)
+	TArray<FString>& OutEvents, TArray<FString>& OutFunctions,
+	const TArray<UEdGraph*>* InGraphs)
 {
 	OutEvents.Reset();
 	OutFunctions.Reset();
@@ -356,7 +405,8 @@ void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBluep
 	}
 
 	TArray<UEdGraph*> Graphs;
-	CollectGraphs(InBlueprint, Graphs);
+	if (InGraphs) Graphs = *InGraphs;
+	else CollectGraphs(InBlueprint, Graphs);
 
 	// Signatures are read from the real `UFunction`, not from the node.
 	//
@@ -427,8 +477,13 @@ void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBluep
 	}
 }
 
-FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint)
+FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint,
+	const TArray<UEdGraph*>* InGraphs)
 {
+	TArray<FBPVariableDescription> Variables;
+	TArray<USCS_Node*> Components;
+	CollectScopedDeclarations(InBlueprint, InGraphs, Variables, Components);
+
 	if (InBlueprint == nullptr)
 	{
 		return FString();
@@ -436,7 +491,7 @@ FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint)
 
 	TArray<FString> Events;
 	TArray<FString> Functions;
-	CollectEventsAndFunctions(InBlueprint, Events, Functions);
+	CollectEventsAndFunctions(InBlueprint, Events, Functions, InGraphs);
 
 	FString Out;
 
@@ -473,7 +528,7 @@ FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint)
 	}
 	else
 	{
-		const TArray<USCS_Node*>& Nodes = InBlueprint->SimpleConstructionScript->GetAllNodes();
+		const TArray<USCS_Node*>& Nodes = Components;
 		if (Nodes.Num() == 0)
 		{
 			Out += TEXT("\n  none");
@@ -683,7 +738,8 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 	}
 
 #if WITH_EDITORONLY_DATA
-	if (const UWidgetBlueprint* WidgetBlueprint = Cast<UWidgetBlueprint>(InBlueprint))
+	if (const UWidgetBlueprint* WidgetBlueprint = InGraphs.Num() == InTotalGraphCount
+		? Cast<UWidgetBlueprint>(InBlueprint) : nullptr)
 	{
 		for (const FDelegateEditorBinding& Binding : WidgetBlueprint->Bindings)
 		{
@@ -769,13 +825,13 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
     }
 
     DelegateSites.Sort();
-    Out += FString::Printf(TEXT("\ndelegate binding sites (scanned scope: %d/%d graphs; graph references plus asset-wide designer bindings; not proof of runtime invocation):"), InGraphs.Num(), InTotalGraphCount);
+    Out += FString::Printf(TEXT("\ndelegate binding sites (scanned scope: %d/%d graphs; graph references; designer bindings included only for whole-asset reads; not proof of runtime invocation):"), InGraphs.Num(), InTotalGraphCount);
     if(DelegateSites.IsEmpty()) Out += TEXT("\n  none found");
     for(const FString& Site:DelegateSites) Out += TEXT("\n  ")+Site;
 
 	// Variable map, in the Blueprint's own variable order so it matches the
 	// variables section above.
-	Out += FString::Printf(TEXT("\nvariable map: %d variable(s)"), InBlueprint->NewVariables.Num());
+	Out += TEXT("\nvariable map (selected graph references; whole-asset reads also include unreferenced declarations):");
 	if (InBlueprint->NewVariables.Num() == 0)
 	{
 		Out += TEXT("\n  none");
@@ -786,7 +842,9 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 
 		const TSet<FString>* Writers = WritersByVariable.Find(Name);
 		const TSet<FString>* Readers = ReadersByVariable.Find(Name);
-		if (!Readers || Readers->Num() == 0) OutUsage.VariablesWithoutReadReferences.Add(Name);
+		if (InGraphs.Num() < InTotalGraphCount && !Writers && !Readers) continue;
+		if (InGraphs.Num() == InTotalGraphCount && (!Readers || Readers->Num() == 0))
+			OutUsage.VariablesWithoutReadReferences.Add(Name);
 
 		// A variable nothing touches is a fact worth printing, and it is the kind
 		// of thing that is obvious here and invisible in a body.
@@ -832,7 +890,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 			ExternalEntries.Add(FString::Printf(TEXT("%s (%s; possible external entry, runtime use not established)"), *FunctionName,
 				bInterfaceEntry ? TEXT("interface contract") : TEXT("inherited function/override")));
 		}
-		else if (!CalledFunctions.Contains(FunctionName))
+		else if (InGraphs.Num() == InTotalGraphCount && !CalledFunctions.Contains(FunctionName))
 		{
 			Uncalled.Add(FunctionName);
 		}
@@ -842,10 +900,13 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 	OutUsage.GraphsScanned = InGraphs.Num();
 	OutUsage.VariablesScanned = InBlueprint->NewVariables.Num();
 	OutUsage.FunctionsScanned = OwnFunctionNames.Num();
-	OutUsage.bCollected = true;
+	// Lint must never interpret a filtered scan as complete asset-wide usage evidence.
+	OutUsage.bCollected = InGraphs.Num() == InTotalGraphCount;
 
-	Out += TEXT("\nfunctions with no observed static reference (not proof of runtime nonuse):");
-	if (Uncalled.Num() == 0)
+	Out += InGraphs.Num() < InTotalGraphCount
+		? TEXT("\nfunctions without static references: not evaluated for a filtered read")
+		: TEXT("\nfunctions with no observed static reference (not proof of runtime nonuse):");
+	if (Uncalled.Num() == 0 && InGraphs.Num() == InTotalGraphCount)
 	{
 		Out += TEXT(" none");
 	}
@@ -940,7 +1001,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 	TArray<UEdGraph*> AllGraphs;
 	CollectGraphs(InBlueprint, AllGraphs);
 
-	// Body filtering never narrows global relation/caller discovery.
+	// All graph-dependent sections use the same selected graph set.
 	TArray<UEdGraph*> Graphs;
 	for (UEdGraph* Graph : AllGraphs)
 	{
@@ -968,111 +1029,23 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 		return Result;
 	}
 
-	// Every section is built at the requested level. The budget is applied after,
-	// by dropping whole sections, so a caller knows exactly what was lost rather
-	// than finding a line cut in half.
+	// Build the requested detail once. Budget refusal never substitutes a manifest.
 	Result.Text = FString::Printf(TEXT("read: %s"), *BlueprintPath(InBlueprint));
 
-	Result.Text += TEXT("\n") + RenderManifest(InBlueprint);
+	if (!InRequest.GraphFilter.IsEmpty())
+		Result.Text += TEXT("\nscope: selected graphs and directly referenced declarations; identity, parent and interfaces describe the asset.");
+	Result.Text += TEXT("\n") + RenderManifest(InBlueprint, InRequest.GraphFilter.IsEmpty() ? nullptr : &Graphs);
 
 	if (InRequest.Detail != EDetail::Manifest)
 	{
-		Result.Text += TEXT("\n") + RenderVariables(InBlueprint);
-		Result.Text += TEXT("\n") + RenderSignatures(InBlueprint);
-		Result.Text += TEXT("\n") + RenderRelations(InBlueprint, AllGraphs, AllGraphs.Num(), Result.Notes, Result.Usage);
+		Result.Text += TEXT("\n") + RenderVariables(InBlueprint, InRequest.GraphFilter.IsEmpty() ? nullptr : &Graphs);
+		Result.Text += TEXT("\n") + RenderSignatures(InBlueprint, InRequest.GraphFilter.IsEmpty() ? nullptr : &Graphs);
+		Result.Text += TEXT("\n") + RenderRelations(InBlueprint, Graphs, AllGraphs.Num(), Result.Notes, Result.Usage);
 	}
 
 	if (PrintsBodies(InRequest.Detail))
 	{
 		Result.Text += RenderBodies(InBlueprint, Graphs, InRequest.Detail, Result.Notes);
-	}
-
-	// The budget, if one was given. It drops whole graph bodies, biggest first,
-	// which is what `03_TOOLS.md` asks for, and never silently truncates a line.
-	if (InRequest.TokenBudgetChars > 0 && Result.Text.Len() > InRequest.TokenBudgetChars)
-	{
-		const int32 OriginalLength = Result.Text.Len();
-		Result.bReduced = true;
-
-		if (PrintsBodies(InRequest.Detail))
-		{
-			// Step 1: drop the bodies, which are almost always the largest part.
-			FRequest Lower = InRequest;
-			Lower.Detail = EDetail::Signatures;
-			FResult Without = Read(InBlueprint, Lower);
-
-			Result.Reductions.Add(FString::Printf(
-				TEXT("graph bodies were dropped to reduce output toward the %d character budget. ")
-				TEXT("Use ReadTurboMCPGraphLoad with one graph name to read a body, ")
-				TEXT("or raise the budget."),
-				InRequest.TokenBudgetChars));
-
-			if (Without.Text.Len() <= InRequest.TokenBudgetChars)
-			{
-				Result.Text = Without.Text;
-				Result.DetailUsed = Without.DetailUsed;
-			}
-			else
-			{
-				// Step 2: even without bodies it does not fit, so step down to the
-				// manifest rather than truncating mid-section.
-				Lower.Detail = EDetail::Manifest;
-				FResult Minimal = Read(InBlueprint, Lower);
-				Result.Text = Minimal.Text;
-				Result.DetailUsed = EDetail::Manifest;
-				Result.Reductions.Add(FString::Printf(
-					TEXT("the relation layer and the signatures were dropped too, ")
-					TEXT("because even without bodies the read was %d characters over ")
-					TEXT("the budget."),
-					Without.Text.Len() - InRequest.TokenBudgetChars));
-			}
-		}
-		else if (InRequest.Detail != EDetail::Manifest)
-		{
-			// Already at or below signatures, so the only lever left is the
-			// manifest.
-			FRequest Lower = InRequest;
-			Lower.Detail = EDetail::Manifest;
-			FResult Minimal = Read(InBlueprint, Lower);
-			Result.Text = Minimal.Text;
-			Result.DetailUsed = EDetail::Manifest;
-			Result.Reductions.Add(FString::Printf(
-				TEXT("everything above the manifest was dropped to reduce output toward the ")
-				TEXT("%d character budget (the full read was %d characters)."),
-				InRequest.TokenBudgetChars, OriginalLength));
-		}
-		else
-		{
-			// *** THE FLOOR OF THE LADDER, AND THE END OF THE RECURSION. THIS BRANCH USED TO SET `Lower.Detail =
-			// Manifest` AND CALL `Read` AGAIN - FROM A CALL THAT WAS ALREADY AT `Manifest`. NOTHING CHANGED BETWEEN
-			// ONE CALL AND THE NEXT, SO A MANIFEST THAT EXCEEDED THE BUDGET RECURSED UNTIL THE STACK DIED. That is
-			// the reported crash, and the report's own words fit it: a read AT `manifest` DETAIL, with a graph
-			// filter, on a Blueprint with 38 graphs and about 960 nodes. ***
-			// *** THERE IS NO LEVER LEFT AT THE FLOOR, SO THE ANSWER SAYS SO AND NAMES THE ASSET AND THE TWO NUMBERS.
-			// A BOUNDED ANSWER THAT STATES ITS LIMIT IS A RESULT; THE RECURSION WAS A DEAD SESSION. ***
-			Result.Reductions.Add(FString::Printf(
-				TEXT("the budget cannot be met: this read is already at manifest detail, which is the smallest ")
-				TEXT("thing this reader can print, and %s prints %d characters against a budget of %d. Nothing ")
-				TEXT("further can be dropped without dropping the manifest itself. Raise the budget, or read one ")
-				TEXT("graph at a time."),
-				InBlueprint != nullptr ? *BlueprintPath(InBlueprint) : TEXT("(no asset)"),
-				Result.Text.Len(), InRequest.TokenBudgetChars));
-		}
-	}
-
-	if (Result.Reductions.Num() > 0)
-	{
-		// `03_TOOLS.md`: end with a block that lists what was reduced and the exact
-		// call that gets the rest.
-		Result.Text += FString::Printf(TEXT("\n\n; character-budget notes (detail used: %s):"),
-			Result.DetailUsed == EDetail::Full ? TEXT("full")
-				: Result.DetailUsed == EDetail::Bodies ? TEXT("bodies")
-				: Result.DetailUsed == EDetail::Signatures ? TEXT("signatures")
-				: TEXT("manifest"));
-		for (const FString& Reduction : Result.Reductions)
-		{
-			Result.Text += FString::Printf(TEXT("\n;   %s"), *Reduction);
-		}
 	}
 
 	if (Result.Notes.Num() > 0)
@@ -1083,6 +1056,21 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 		{
 			Result.Text += FString::Printf(TEXT("\n%s"), *Note);
 		}
+	}
+
+	// Refuse an oversized document without substituting a different detail level.
+	// Count diagnostic notes too, so the required size describes the actual document.
+	if (InRequest.TokenBudgetChars > 0 && Result.Text.Len() > InRequest.TokenBudgetChars)
+	{
+		const TCHAR* DetailName = InRequest.Detail == EDetail::Full ? TEXT("full")
+			: InRequest.Detail == EDetail::Bodies ? TEXT("bodies")
+			: InRequest.Detail == EDetail::Signatures ? TEXT("signatures") : TEXT("manifest");
+		Result.Text = FString::Printf(
+			TEXT("error: %s at requested detail '%s' requires %d characters; TokenBudget is %d. ")
+			TEXT("The requested document was not returned or downgraded. Raise TokenBudget to the required size, ")
+			TEXT("narrow GraphFilter, or use ReadTurboMCPGraphLoad for a paged graph read. ")
+			TEXT("TokenBudget applies per asset and does not enforce a hard response limit."),
+			*BlueprintPath(InBlueprint), DetailName, Result.Text.Len(), InRequest.TokenBudgetChars);
 	}
 
 	return Result;

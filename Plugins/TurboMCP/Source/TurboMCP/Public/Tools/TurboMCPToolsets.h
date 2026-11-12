@@ -292,12 +292,12 @@ public:
 
 	/**
 	 * Inspect Blueprint structure and selected graph content; loads assets without requesting edits, compile or save.
-	 * This is not a complete export or proof of runtime behavior. Relation analysis is static; omitted content and budget reductions are reported. Widget details are included only for unfiltered text reads above manifest detail.
+	 * This is not a complete export or proof of runtime behavior. Relation analysis is static; omitted content and budget refusals are reported. Widget details are included only for unfiltered text reads above manifest detail.
 	 * @param Assets Required comma- or pipe-separated list of 1..8 Blueprint paths or unique short names, e.g. /Game/Tests/BP_NodeTest. Empty input is refused. Per-asset failures do not discard other results.
 	 * @param Detail Optional string (default manifest): manifest, signatures, bodies or full (case-insensitive). Empty uses manifest. Higher levels add signatures/relations, graph bodies, then editing details; text output may fall back to lower detail to reduce size.
-	 * @param GraphFilter Optional; * (default) or empty selects all graphs. Comma- or pipe-separated graph-name fragments. Empty selects all local graphs; otherwise any case-insensitive substring match is included. No match produces a per-asset refusal listing graph names. This does not filter all asset metadata.
+	 * @param GraphFilter Optional; * (default) or empty selects all graphs. Comma- or pipe-separated graph-name fragments. Empty selects all local graphs; otherwise any case-insensitive substring match is included. No match produces a per-asset refusal listing graph names. Filters graph names, signatures, relations and directly referenced variable/component declarations. Asset identity, parent and interfaces remain asset-level context; filtered reads do not establish whole-asset nonuse.
 	 * @param Format Optional string (default read): read or json (case-insensitive); empty uses read. JSON is embedded per asset in a text response with headings/status, not returned as one standalone JSON document. Both formats support all detail levels.
-	 * @param TokenBudget Optional string (default 60000) of positive decimal digits, up to 2147483647; empty uses 60000. Despite the name, this is a per-asset character budget, not tokens or a hard response limit. Text drops detail but retains an oversized minimum manifest with a warning; headings and notes add overhead. JSON refuses an oversized document. Use smaller graph scopes or ReadTurboMCPGraphLoad for bounded graph reads.
+	 * @param TokenBudget Optional string (default 60000) of positive decimal digits, up to 2147483647; empty uses 60000. Despite the name, this is a per-asset character budget, not tokens or a hard response limit. Text and JSON refuse oversized documents with the required size; requested detail is never downgraded. Response headings add overhead. Use smaller graph scopes or ReadTurboMCPGraphLoad for bounded graph reads.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPBlueprintLoad(

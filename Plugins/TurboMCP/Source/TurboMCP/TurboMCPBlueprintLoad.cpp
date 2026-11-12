@@ -80,8 +80,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 			TEXT("error: '%s' is not a format. Accepted: read, json."), *Format);
 	}
 
-	// TokenBudget is a legacy name for a per-asset character budget. Text may
-	// retain a minimum manifest above that budget; it is not a hard response cap.
+	// TokenBudget is a legacy name for a per-asset character budget. Text and JSON
+	// refuse an oversized document; response headings remain outside that budget.
 	const FString NumericText = TokenBudget.TrimStartAndEnd();
 	int32 BudgetChars = NumericText.IsEmpty() ? DefaultBudgetChars : 0;
 	for (TCHAR Digit : NumericText)
@@ -179,7 +179,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 
 
 		// A graph-focused read excludes unrelated widget data. Respect the effective
-		// detail after budget reduction rather than the originally requested detail.
+		// detail of the successful read.
 		if (Request.GraphFilter.Num() == 0
 			&& Read.DetailUsed != FTurboMCPBlueprintRead::EDetail::Manifest)
 		{
