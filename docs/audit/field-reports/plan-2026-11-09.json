@@ -225,7 +225,7 @@
       "kind": "bug",
       "priority": "P0",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "unassigned",
       "validation": "reported_not_reproduced",
       "source_keys": [
@@ -235,7 +235,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 5,
-      "next_step": "Source reconciliation proposal received from worker; integrator must record exact approved scope/base before implementation.",
+      "next_step": "Confirmed global metadata leakage and recursive detail downgrade. Implement approved behavior in nov12-blueprint-detail-contract.md after recording exact worker scope; task remains open.",
       "acceptance": "No silent downgrade to manifest. Page requested detail or report explicit limits. Apply graph filters consistently to metadata and bodies."
     },
     {
