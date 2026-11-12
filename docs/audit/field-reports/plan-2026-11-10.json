@@ -127,17 +127,18 @@
       "title": "Batch named property reads and expose map keys",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "integrator",
-      "validation": "focused_bounded_batch_passed",
+      "validation": "focused_45_asset_batch_passed",
       "source_keys": [
         "2026-11-10_S1/DA-01",
         "2026-11-10_S1/FT-170"
       ],
       "dependencies": [],
-      "next_step": "Named properties and keys-only paging implemented and tested, but current eight-asset limit does not satisfy the requested 45-input-action call. Retain this gap for the next repair.",
-      "acceptance": "Bound multi-asset reads and keys-only maps with paging, errors per asset and explicit completeness."
+      "next_step": "Up to 64 assets and eight property names supported. The 45-distinct-asset by three-property scenario retrieved all 135 records across bounded pages with exact identities and values; refusal beyond 64 preserved. Real-project load hooks remain outside fixture coverage.",
+      "acceptance": "Bound multi-asset reads and keys-only maps with paging, errors per asset and explicit completeness.",
+      "evidence": "docs/audit/field-reports/nov12-reader-integration-review.md"
     },
     {
       "id": "NOV10-09",

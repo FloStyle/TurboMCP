@@ -1,0 +1,9 @@
+# November 12 reader integration review
+
+Integrated Sol candidate ebad04cb290ade0c5441d43b5008abb0460a1a69 after source and exact-scope review. Stock Unreal 5.8.4 build and the focused data-asset workflow passed (execution 3b0c6c68fb8947d6838a7e7fcf68df80). The initial run exposed an inherited malformed integer insertion failure; it remains recorded, and the local numeric guard passed the same suite including hexadecimal input. This is not evidence of a passing first run.
+
+The integrator found that the eight-asset cap did not meet the requested 45-asset use case. Follow-up 4cf3ae35 separates the bounds: 64 asset selectors, eight properties, unchanged bounded response size and continuation. A synthetic 45-distinct-asset by three-property case verifies all 135 rows, identities, values and continuation, plus refusal above the bound and clean package state. Build and the single data-asset suite passed in execution 30e68576e7a74724890884d92a909666 (126.84 seconds total; native workflow 0.132 seconds). No before/after real-project timing claim is made. Sixteen fixture files and the initially absent enable preference were restored. No engine changes or full regression rerun.
+
+Existing default calls, edit revisions and undo retain focused evidence. Blueprint defaults must already be loaded; arbitrary load hooks and real-project unloaded dependencies are not certified. Texture preview is documentation of the stock capability with visual validation still pending. AssetSearch path support is built but dedicated path cases remain untested.
+
+Remaining November 10 work: client policy-unavailable investigation; project-wide node search; malformed self-pin investigation; safe exhaustive-read API design. These are not closed by this batch. Public licensing/provenance gates remain separate.
