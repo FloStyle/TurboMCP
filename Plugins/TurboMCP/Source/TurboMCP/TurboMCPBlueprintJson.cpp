@@ -103,8 +103,15 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 		return FString();
 	}
 
+	TArray<FBPVariableDescription> Variables;
+	TArray<USCS_Node*> Components;
+	FTurboMCPBlueprintRead::CollectScopedDeclarations(InBlueprint,
+		InRequest.GraphFilter.IsEmpty() ? nullptr : &Graphs, Variables, Components);
+
 	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetBoolField(TEXT("ok"), true);
+	Root->SetStringField(TEXT("scope"), InRequest.GraphFilter.IsEmpty() ? TEXT("whole asset")
+		: TEXT("selected graphs and directly referenced declarations; identity, parent and interfaces describe the asset"));
 	Root->SetStringField(TEXT("detail"),
 		InDetailLevel == 0 ? TEXT("manifest")
 			: InDetailLevel == 1 ? TEXT("signatures")
@@ -133,10 +140,10 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 	// have to parse prose.
 	TSharedRef<FJsonObject> Counts = MakeShared<FJsonObject>();
 	Counts->SetNumberField(TEXT("graphs"), Graphs.Num());
-	Counts->SetNumberField(TEXT("variables"), InBlueprint->NewVariables.Num());
+	Counts->SetNumberField(TEXT("variables"), Variables.Num());
 	Counts->SetNumberField(TEXT("components"),
 		InBlueprint->SimpleConstructionScript != nullptr
-			? InBlueprint->SimpleConstructionScript->GetAllNodes().Num() : 0);
+			? Components.Num() : 0);
 	Root->SetObjectField(TEXT("counts"), Counts);
 
 	// Every graph, with its name. At `bodies` and above each also carries its body, as the
@@ -196,23 +203,23 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 	// section 1 requires. The text prints "(N more)"; the JSON carries the number so a
 	// caller can page without reading a sentence.
 	TArray<TSharedPtr<FJsonValue>> VariablesJson;
-	for (int32 Index = 0; Index < InBlueprint->NewVariables.Num()
+	for (int32 Index = 0; Index < Variables.Num()
 			&& Index < MaxManifestNames; ++Index)
 	{
 		VariablesJson.Add(MakeShared<FJsonValueString>(
-			InBlueprint->NewVariables[Index].VarName.ToString()));
+			Variables[Index].VarName.ToString()));
 	}
 	Root->SetArrayField(TEXT("variables"), VariablesJson);
-	if (InBlueprint->NewVariables.Num() > MaxManifestNames)
+	if (Variables.Num() > MaxManifestNames)
 	{
 		Root->SetNumberField(TEXT("variables_omitted"),
-			InBlueprint->NewVariables.Num() - MaxManifestNames);
+			Variables.Num() - MaxManifestNames);
 	}
 
 	TArray<TSharedPtr<FJsonValue>> ComponentsJson;
 	if (InBlueprint->SimpleConstructionScript != nullptr)
 	{
-		const TArray<USCS_Node*>& Nodes = InBlueprint->SimpleConstructionScript->GetAllNodes();
+		const TArray<USCS_Node*>& Nodes = Components;
 		for (int32 Index = 0; Index < Nodes.Num() && Index < MaxManifestNames; ++Index)
 		{
 			const USCS_Node* Node = Nodes[Index];
@@ -240,7 +247,7 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 		// carries the facts, and both are present so a caller can read the short list
 		// without walking objects.
 		TArray<TSharedPtr<FJsonValue>> VariableDetails;
-		for (const FBPVariableDescription& Variable : InBlueprint->NewVariables)
+		for (const FBPVariableDescription& Variable : Variables)
 		{
 			TSharedRef<FJsonObject> One = MakeShared<FJsonObject>();
 			One->SetStringField(TEXT("name"), Variable.VarName.ToString());
@@ -296,7 +303,7 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 		TArray<TSharedPtr<FJsonValue>> ComponentDetails;
 		if (InBlueprint->SimpleConstructionScript != nullptr)
 		{
-			for (const USCS_Node* Node : InBlueprint->SimpleConstructionScript->GetAllNodes())
+			for (const USCS_Node* Node : Components)
 			{
 				if (Node == nullptr)
 				{

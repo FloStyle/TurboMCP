@@ -130,12 +130,17 @@ public:
 		TArray<FString>& OutEvents, TArray<FString>& OutFunctions,
 		const TArray<UEdGraph*>* InGraphs = nullptr);
 
+	/** Collect declarations referenced by selected graphs; null scope retains all declarations. */
+	static void CollectScopedDeclarations(const UBlueprint* Blueprint,
+		const TArray<UEdGraph*>* Graphs, TArray<struct FBPVariableDescription>& Variables,
+		TArray<class USCS_Node*>& Components);
+
 private:
 	/** The asset path, class, parent, interfaces and counts. */
-	static FString RenderManifest(const UBlueprint* InBlueprint);
+	static FString RenderManifest(const UBlueprint* InBlueprint, const TArray<UEdGraph*>* InGraphs = nullptr);
 
 	/** Variables in full: type, default, category and flags. */
-	static FString RenderVariables(const UBlueprint* InBlueprint);
+	static FString RenderVariables(const UBlueprint* InBlueprint, const TArray<UEdGraph*>* InGraphs = nullptr);
 
 	/** Every function and event with its signature. */
 	static FString RenderSignatures(const UBlueprint* InBlueprint,
