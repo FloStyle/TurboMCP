@@ -1079,6 +1079,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 	TArray<FString> CreatedByLine;
 	TArray<FString> Unmatched;
 	int32 PinsWritten = 0;
+    int32 LiteralAssignmentsAccepted = 0;
     TArray<TPair<int32,FString>> DeferredDefaults;
 	int32 LinksMade = 0;
 	TArray<FString> MovedLinkReports;
@@ -1215,6 +1216,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
                 OutError = FString::Printf(TEXT("%s: invalid pin default '%s': %s"), RollbackStatus(Undone), *Pin.Name, *PinError);
                 return false;
             }
+            ++LiteralAssignmentsAccepted;
             if (Changed) ++PinsWritten;
 		}
 	}
@@ -1496,6 +1498,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
             OutError=FString::Printf(TEXT("%s: deferred default '%s' failed after type propagation: %s"),RollbackStatus(Undone),*Deferred.Value,*Why);
             return false;
         }
+        ++LiteralAssignmentsAccepted;
         if(Changed) ++PinsWritten;
     }
 
@@ -1624,7 +1627,9 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 	FString Out = FString::Printf(TEXT("changed: appended to %s in %s : %d node(s) added, %d -> %d"),
 		*InPlan.GraphName, *InPlan.Asset, Survived, InPlan.NodeCountBefore, Graph->Nodes.Num());
 
-	Out += FString::Printf(TEXT("\n%d pin value(s) written across those node(s)"), PinsWritten);
+	Out += FString::Printf(TEXT("\n%d literal pin assignment(s) accepted: %d default(s) changed, %d already matched at application time"),
+        LiteralAssignmentsAccepted, PinsWritten, LiteralAssignmentsAccepted - PinsWritten);
+    Out += TEXT("\nCounts refer to literal input pins, not struct fields: an aggregate struct literal counts as one pin. These counts describe literal application, not a separate final graph validation.");
 	for (const FString& MovedLink : MovedLinkReports)
 	{
 		Out += TEXT("\n") + MovedLink;
