@@ -1,22 +1,22 @@
 {
   "schema": 1,
   "date": "2026-11-10",
-  "status": "batch_references_and_widget_inventory_integrated_remaining_tasks_open",
+  "status": "reader_batch_integrated_remaining_gaps_explicit",
   "tasks": [
     {
       "id": "NOV10-01",
       "title": "Respect AssetSearch folder scope",
       "kind": "bug",
       "priority": "P0",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "ready",
+      "owner": "integrator",
+      "validation": "implemented_untested_new_path_cases",
       "source_keys": [
         "2026-11-10_S1/AS-07"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "Explicit path and recursive scope implemented in 3c728271; stock 5.8.4 build passed. Dedicated sibling-folder runtime cases remain untested.",
       "acceptance": "Reproduce folder-plus-query against sibling folders; respect supported scope or explicitly refuse unsupported arguments."
     },
     {
@@ -40,15 +40,15 @@
       "title": "Page reference and property collections without silent truncation",
       "kind": "bug",
       "priority": "P1",
-      "state": "in_progress",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reference_pagination_passed_properties_pending",
+      "state": "done",
+      "readiness": "ready",
+      "owner": "integrator",
+      "validation": "focused_property_and_prior_reference_evidence_passed",
       "source_keys": [
         "2026-11-10_S1/X-134"
       ],
       "dependencies": [],
-      "next_step": "Reference pagination implemented; property collection pagination remains open. Do not close the whole issue.",
+      "next_step": "Reference and property collections now support continuation; legacy property truncation is explicit. Evidence: ebad04cb, focused test-data-asset-tools on stock 5.8.4.",
       "acceptance": "Identify capped reader paths; return total, returned count, truncation and continuation. Link table paging NOV09-14 without assuming same implementation."
     },
     {
@@ -127,16 +127,16 @@
       "title": "Batch named property reads and expose map keys",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "integrator",
+      "validation": "focused_bounded_batch_passed",
       "source_keys": [
         "2026-11-10_S1/DA-01",
         "2026-11-10_S1/FT-170"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "Named properties and keys-only paging implemented and tested, but current eight-asset limit does not satisfy the requested 45-input-action call. Retain this gap for the next repair.",
       "acceptance": "Bound multi-asset reads and keys-only maps with paging, errors per asset and explicit completeness."
     },
     {
@@ -144,15 +144,15 @@
       "title": "Read filtered Blueprint class defaults",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "ready",
+      "owner": "integrator",
+      "validation": "focused_loaded_defaults_passed",
       "source_keys": [
         "2026-11-10_S1/DA-02"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "Existing loaded Blueprint defaults supported without construction or compilation; unloaded defaults explicitly refused. Focused fixture passed at ebad04cb.",
       "acceptance": "Resolve CDO safely without construction execution/save/compile; named-property and keys-only output, no silent giant fallback."
     },
     {
@@ -193,15 +193,15 @@
       "title": "Improve misplaced argument diagnostics where plugin owns validation",
       "kind": "bug",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "ready",
+      "owner": "integrator",
+      "validation": "source_reviewed_untested",
       "source_keys": [
         "2026-11-10_S1/AS-08"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "Documented exact outer and nested argument placement. Stock dispatch discards some fields before plugin invocation; no engine interception claimed.",
       "acceptance": "Identify stock dispatch versus plugin boundary; actionable nesting guidance where observable, no unsupported engine interception."
     },
     {
@@ -209,15 +209,15 @@
       "title": "Reconcile existing texture preview capability",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "ready",
+      "owner": "integrator",
+      "validation": "source_reviewed_visual_untested",
       "source_keys": [
         "2026-11-10_S1/FT-171"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "Existing stock CaptureAssetImage documented as the texture thumbnail route; no new tool added. Actual rendered thumbnail remains untested.",
       "acceptance": "Inspect existing vision tools before adding a tool; bounded thumbnail with accurate availability and no asset mutation."
     },
     {

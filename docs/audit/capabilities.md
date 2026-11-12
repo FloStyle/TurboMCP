@@ -159,7 +159,7 @@ Generated from declarations, definitions and static test references. All runtime
 | ReadTurboMCPCallLog | [TurboMCPCallLogTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPCommentList | [TurboMCPComments.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPComments.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPCommonButtonStyle | [TurboMCPCommonStyleTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonStyleTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
-| ReadTurboMCPDataAssetProperty | [TurboMCPDataAssetTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| ReadTurboMCPDataAssetProperty | [TurboMCPDataAssetTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPDataTable | [TurboMCPDataTable.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTable.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPDirtyList | [TurboMCPTypes.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPEditQueue | [TurboMCPToolsets.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
