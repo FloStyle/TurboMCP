@@ -3910,6 +3910,14 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPReferenceWritesTest.cpp"
           ]
+        },
+        "nov12-datatable-read": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTable.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableQualityTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
