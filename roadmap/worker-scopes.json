@@ -3866,6 +3866,12 @@
             "Tools/test-asset-describe-metadata.py"
           ],
           "new_files": []
+        },
+        "nov12-append-counts": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
