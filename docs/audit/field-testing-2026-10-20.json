@@ -7277,10 +7277,10 @@
       "title": "Align documented optional arguments with discovery schemas",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator",
+      "validation": "focused_runtime_passed",
       "source_keys": [
         "2026-11-09_S2/GL-33",
         "2026-11-09_S2/BL-16",
@@ -7289,13 +7289,13 @@
       ],
       "dependencies": [],
       "complexity_estimate": 3,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Implemented in 7aab8cee and 90b5da1f; focused stock UE 5.8.4 build/editor run 69dabf024df74f3c8b0437e4caac6870 passed. See nov12-discovery-review.md. Public argument names retained and differences documented.",
       "acceptance": "Reconcile required/default schema behavior for graph/Blueprint/help reads; align help/schema argument names without silently breaking existing clients.",
       "key": "NOV09-10",
       "canonical_issue": "NOV09-10",
       "report": "2026-11-09 intake",
       "task_plan": "docs/audit/field-reports/plan-2026-11-09.json",
-      "remaining": "Reconcile required/default schema behavior for graph/Blueprint/help reads; align help/schema argument names without silently breaking existing clients."
+      "remaining": "None for optional discovery defaults; Blueprint detail/filter behavior remains NOV09-11."
     },
     {
       "id": "NOV09-11",
@@ -7512,13 +7512,13 @@
       "state": "done",
       "readiness": "implemented",
       "owner": "integrator",
-      "validation": "untested",
+      "validation": "focused_runtime_passed",
       "source_keys": [
         "2026-11-09_S2/AD-04"
       ],
       "dependencies": [],
       "complexity_estimate": 1,
-      "next_step": "Implemented in c7635e35; scope and stock engine API reviewed. Focused runtime assertion added; compile/editor execution deferred to the next code batch.",
+      "next_step": "Stock material and unloaded Blueprint cases passed in 69dabf024df74f3c8b0437e4caac6870. Other non-Blueprint classes have not received broad runtime coverage.",
       "acceptance": "Differentiate not applicable, unavailable and genuinely unknown; verify representative non-Blueprint asset kinds.",
       "key": "NOV09-20",
       "canonical_issue": "NOV09-20",

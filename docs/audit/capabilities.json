@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "ccb5bc8c3e98cda103957c7922d0d9dba8deb8c0",
+  "plugin_tree": "d5b0931925952ab5522f6f58fe6954e7a13be2ab",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 187,
@@ -3687,6 +3687,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-asset-describe-metadata.py",
         "Tools/test-call-log-file.py",
         "Tools/test-call-log.py",
         "Tools/test-function.py",
@@ -3954,6 +3955,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-asset-describe-metadata.py",
         "Tools/test-batch-tools.py",
         "Tools/test-bp-lint.py",
         "Tools/test-c09-success.py",
