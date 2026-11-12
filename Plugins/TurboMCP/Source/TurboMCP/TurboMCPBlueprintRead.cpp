@@ -686,7 +686,8 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 	}
 
 #if WITH_EDITORONLY_DATA
-	if (const UWidgetBlueprint* WidgetBlueprint = Cast<UWidgetBlueprint>(InBlueprint))
+	if (const UWidgetBlueprint* WidgetBlueprint = InGraphs.Num() == InTotalGraphCount
+		? Cast<UWidgetBlueprint>(InBlueprint) : nullptr)
 	{
 		for (const FDelegateEditorBinding& Binding : WidgetBlueprint->Bindings)
 		{
@@ -772,13 +773,13 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
     }
 
     DelegateSites.Sort();
-    Out += FString::Printf(TEXT("\ndelegate binding sites (scanned scope: %d/%d graphs; graph references plus asset-wide designer bindings; not proof of runtime invocation):"), InGraphs.Num(), InTotalGraphCount);
+    Out += FString::Printf(TEXT("\ndelegate binding sites (scanned scope: %d/%d graphs; graph references; designer bindings included only for whole-asset reads; not proof of runtime invocation):"), InGraphs.Num(), InTotalGraphCount);
     if(DelegateSites.IsEmpty()) Out += TEXT("\n  none found");
     for(const FString& Site:DelegateSites) Out += TEXT("\n  ")+Site;
 
 	// Variable map, in the Blueprint's own variable order so it matches the
 	// variables section above.
-	Out += FString::Printf(TEXT("\nvariable map: %d variable(s)"), InBlueprint->NewVariables.Num());
+	Out += TEXT("\nvariable map (selected graph references; whole-asset reads also include unreferenced declarations):");
 	if (InBlueprint->NewVariables.Num() == 0)
 	{
 		Out += TEXT("\n  none");
@@ -789,7 +790,9 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 
 		const TSet<FString>* Writers = WritersByVariable.Find(Name);
 		const TSet<FString>* Readers = ReadersByVariable.Find(Name);
-		if (!Readers || Readers->Num() == 0) OutUsage.VariablesWithoutReadReferences.Add(Name);
+		if (InGraphs.Num() < InTotalGraphCount && !Writers && !Readers) continue;
+		if (InGraphs.Num() == InTotalGraphCount && (!Readers || Readers->Num() == 0))
+			OutUsage.VariablesWithoutReadReferences.Add(Name);
 
 		// A variable nothing touches is a fact worth printing, and it is the kind
 		// of thing that is obvious here and invisible in a body.
@@ -835,7 +838,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 			ExternalEntries.Add(FString::Printf(TEXT("%s (%s; possible external entry, runtime use not established)"), *FunctionName,
 				bInterfaceEntry ? TEXT("interface contract") : TEXT("inherited function/override")));
 		}
-		else if (!CalledFunctions.Contains(FunctionName))
+		else if (InGraphs.Num() == InTotalGraphCount && !CalledFunctions.Contains(FunctionName))
 		{
 			Uncalled.Add(FunctionName);
 		}
@@ -845,10 +848,13 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 	OutUsage.GraphsScanned = InGraphs.Num();
 	OutUsage.VariablesScanned = InBlueprint->NewVariables.Num();
 	OutUsage.FunctionsScanned = OwnFunctionNames.Num();
-	OutUsage.bCollected = true;
+	// Lint must never interpret a filtered scan as complete asset-wide usage evidence.
+	OutUsage.bCollected = InGraphs.Num() == InTotalGraphCount;
 
-	Out += TEXT("\nfunctions with no observed static reference (not proof of runtime nonuse):");
-	if (Uncalled.Num() == 0)
+	Out += InGraphs.Num() < InTotalGraphCount
+		? TEXT("\nfunctions without static references: not evaluated for a filtered read")
+		: TEXT("\nfunctions with no observed static reference (not proof of runtime nonuse):");
+	if (Uncalled.Num() == 0 && InGraphs.Num() == InTotalGraphCount)
 	{
 		Out += TEXT(" none");
 	}
@@ -943,7 +949,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 	TArray<UEdGraph*> AllGraphs;
 	CollectGraphs(InBlueprint, AllGraphs);
 
-	// Body filtering never narrows global relation/caller discovery.
+	// All graph-dependent sections use the same selected graph set.
 	TArray<UEdGraph*> Graphs;
 	for (UEdGraph* Graph : AllGraphs)
 	{
@@ -980,7 +986,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 	{
 		Result.Text += TEXT("\n") + RenderVariables(InBlueprint);
 		Result.Text += TEXT("\n") + RenderSignatures(InBlueprint, &Graphs);
-		Result.Text += TEXT("\n") + RenderRelations(InBlueprint, AllGraphs, AllGraphs.Num(), Result.Notes, Result.Usage);
+		Result.Text += TEXT("\n") + RenderRelations(InBlueprint, Graphs, AllGraphs.Num(), Result.Notes, Result.Usage);
 	}
 
 	if (PrintsBodies(InRequest.Detail))

@@ -325,7 +325,8 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 		// or in `Collect` writes to it: this is a Read tool and `P3` says a Read tool
 		// cannot change anything. The cast is for the accessor signatures, not for a write.
 		if (UBaseWidgetBlueprint* WidgetBlueprint =
-				const_cast<UBaseWidgetBlueprint*>(Cast<UBaseWidgetBlueprint>(InBlueprint)))
+				InRequest.GraphFilter.IsEmpty()
+				? const_cast<UBaseWidgetBlueprint*>(Cast<UBaseWidgetBlueprint>(InBlueprint)) : nullptr)
 		{
 			TArray<FTurboMCPWidgetTree::FEntry> Entries;
 			FString TreeError;
