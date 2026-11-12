@@ -3907,7 +3907,9 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
             "Tools/test-node-reader-output.py"
           ],
-          "new_files": []
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPReferenceWritesTest.cpp"
+          ]
         }
       },
       "preserve_rows": []

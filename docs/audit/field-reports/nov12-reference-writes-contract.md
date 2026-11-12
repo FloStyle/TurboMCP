@@ -14,3 +14,6 @@ BlueprintRead.cpp RenderRelations records writers only for UK2Node_VariableSet. 
 
 ## Scope and focused verification
 Approve BlueprintRead.cpp and public tool help header, plus existing Blueprint reader output suite. Add a disposable synthetic fixture through the existing supervised test path if that suite supports it; otherwise amend scope before implementation. Verify Add/Remove, const Length, custom mutable-reference possible write, reroutes, and foreign/local same-name exclusion. One batched compile and focused scenario; no full regression.
+
+## Integrator scope amendment
+The existing Python reader suite cannot construct graph fixtures itself. Approve TurboMCPReferenceWritesTest.cpp as an additional exact new target; invoke that native test from the already scoped Python suite. Keep the existing durable claim and original scope files; use this amended base for submission verification. Engine source review also confirms map/set custom thunks mutate const-declared targets; classify exact resolved stock target operations before the generic const exclusion.
