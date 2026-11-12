@@ -1,0 +1,5 @@
+# NOV10-08: requested property batch size
+
+Readiness: ready. Owner: integrator. User requested 45 input actions with three properties in one request. The integrated reader limits assets to eight, so this remains partial.
+
+Implement in the three exact scoped files: separate asset and property selector bounds; support at least 45 assets (maximum 64), retain eight property names and bounded paginated output, and document the limits accurately. Do not increase serialized row/response limits just to fit every row in one response. A request may require continuation, as the original requirement explicitly requires paging. Add a focused synthetic 45-distinct-asset, three-property case proving all 135 records can be retrieved with correct identities, totals and no edits. Retain refusal above the selector bound. Preserve legacy revision/edit behavior, loaded-default safeguards and dependency checks. Inspect changes then run only the existing data-asset workflow once after batching fixes. Parent owns tracker and generated inventory.
