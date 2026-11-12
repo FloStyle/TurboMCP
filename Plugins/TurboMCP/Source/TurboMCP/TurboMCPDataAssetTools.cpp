@@ -160,6 +160,7 @@ bool ResolveField(UObject* Asset, const FString& Path, FTarget& Target, FString&
 }
 
 constexpr int32 DefaultPropertyPageSize = 32;
+constexpr int32 MaxAssetSelectors = 64;
 constexpr int32 MaxPropertySelectors = 8;
 constexpr int32 MaxSelectorChars = 512;
 constexpr int32 MaxPropertyRowChars = 8192;
@@ -474,22 +475,22 @@ FString ReadPropertyPage(const FString& Asset, const FString& Property, const FS
         return Refuse(TEXT("Offset must be nonnegative and PageSize must be between 1 and 100."));
     if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
         return Refuse(TEXT("Use an idle editor outside play and active transactions."));
-    const auto ValidList = [](const FString& Input)
+    const auto ValidList = [](const FString& Input, int32 MaxSelectors)
     {
-        return Input.Len() <= MaxPropertySelectors * (MaxSelectorChars + 1) &&
+        return Input.Len() <= MaxSelectors * (MaxSelectorChars + 1) &&
             FCString::Strlen(*Input) == Input.Len();
     };
-    if (!ValidList(Asset) || !ValidList(Property))
+    if (!ValidList(Asset, MaxAssetSelectors) || !ValidList(Property, MaxPropertySelectors))
         return Refuse(TEXT("Asset or Property contains invalid text or exceeds the selector budget."));
     const TArray<FString> Assets = FTurboMCPAssetResolver::SplitList(Asset);
     const TArray<FString> Properties = FTurboMCPAssetResolver::SplitList(Property);
-    const auto ValidSelectors = [](const TArray<FString>& Selectors)
+    const auto ValidSelectors = [](const TArray<FString>& Selectors, int32 MaxSelectors)
     {
-        return !Selectors.IsEmpty() && Selectors.Num() <= MaxPropertySelectors &&
+        return !Selectors.IsEmpty() && Selectors.Num() <= MaxSelectors &&
             !Selectors.ContainsByPredicate([](const FString& Item) { return Item.Len() > MaxSelectorChars; });
     };
-    if (!ValidSelectors(Assets) || !ValidSelectors(Properties))
-        return Refuse(TEXT("Pass one to eight asset selectors and one to eight property names, each at most 512 characters."));
+    if (!ValidSelectors(Assets, MaxAssetSelectors) || !ValidSelectors(Properties, MaxPropertySelectors))
+        return Refuse(TEXT("Pass one to 64 asset selectors and one to eight property names, each at most 512 characters."));
 
     FPropertyPage Page(Offset, PageSize);
     for (const FString& Selector : Assets)

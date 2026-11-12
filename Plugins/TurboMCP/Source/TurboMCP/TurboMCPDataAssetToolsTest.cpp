@@ -134,6 +134,58 @@ void CheckPagedProperties(FAutomationTestBase& Test, UPackage* Package, UTurboMC
             }
         }
     }
+    // The field workflow selects 45 assets and three properties in one paged request.
+    TArray<TStrongObjectPtr<UTurboMCPDataAssetSafetyFixture>> BatchAssets;
+    TArray<FString> BatchPaths;
+    for (int32 Index = 0; Index < 45; ++Index)
+    {
+        auto* Item = NewObject<UTurboMCPDataAssetSafetyFixture>(Package, *FString::Printf(TEXT("BatchAsset_%d"), Index));
+        Item->Child = NewObject<UTurboMCPDataAssetSafetyChild>(Item);
+        Item->Child->Number = Index;
+        Item->Child->Label = FString::Printf(TEXT("Item %d"), Index);
+        Item->Numbers.Add(Index);
+        BatchPaths.Add(Item->GetPathName());
+        BatchAssets.Emplace(Item);
+    }
+    const FString BatchSelector = FString::Join(BatchPaths, TEXT("|"));
+    int32 ReadCount = 0;
+    for (int32 PageIndex = 0; PageIndex < 10 && ReadCount < 135; ++PageIndex)
+    {
+        const auto Batch = ParsePropertyPage(Test, FRead::ReadTurboMCPDataAssetProperty(
+            BatchSelector, TEXT("Child.Number|Child.Label|Numbers"), TEXT("values"), TEXT("asset"), ReadCount, 100));
+        if (!Batch)
+            break;
+        Test.TestEqual(TEXT("45 assets by three properties has 135 rows"), Batch->GetIntegerField(TEXT("total")), 135);
+        Test.TestEqual(TEXT("Every batch target resolves"), Batch->GetIntegerField(TEXT("knownErrors")), 0);
+        const auto& Rows = Batch->GetArrayField(TEXT("rows"));
+        if (!Test.TestTrue(TEXT("Batch continuation makes progress"), Rows.Num() > 0))
+            break;
+        for (const auto& Value : Rows)
+        {
+            const auto Row = Value->AsObject();
+            const int32 AssetIndex = ReadCount / 3;
+            const int32 PropertyIndex = ReadCount % 3;
+            if (AssetIndex >= BatchPaths.Num())
+            {
+                Test.AddError(TEXT("Batch returned unexpected extra rows"));
+                break;
+            }
+            Test.TestEqual(TEXT("Batch row retains exact asset identity"), Row->GetStringField(TEXT("asset")), BatchPaths[AssetIndex]);
+            Test.TestEqual(TEXT("Batch row retains exact value"), Row->GetStringField(TEXT("value")),
+                PropertyIndex == 1 ? FString::Printf(TEXT("Item %d"), AssetIndex) : FString::FromInt(AssetIndex));
+            ++ReadCount;
+        }
+        Test.TestEqual(TEXT("Batch continuation matches consumed rows"), Batch->GetIntegerField(TEXT("nextOffset")), ReadCount == 135 ? -1 : ReadCount);
+    }
+    Test.TestEqual(TEXT("All 45 assets and three properties are retrieved"), ReadCount, 135);
+    TArray<FString> TooManyAssets;
+    for (int32 Index = 0; Index < 65; ++Index)
+        TooManyAssets.Add(Path);
+    Test.TestTrue(TEXT("Asset selector limit remains bounded"), FRead::ReadTurboMCPDataAssetProperty(
+        FString::Join(TooManyAssets, TEXT("|")), TEXT("Numbers"), TEXT("values")).StartsWith(TEXT("refused:")));
+    Test.TestFalse(TEXT("Batch reads leave the package clean"), Package->IsDirty());
+    for (const auto& Item : BatchAssets)
+        Item->MarkAsGarbage();
     Second->MarkAsGarbage();
 }
 

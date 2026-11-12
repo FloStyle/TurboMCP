@@ -63,7 +63,7 @@ public:
     static FString ReadTurboMCPEditorLog(const FString& Category, const FString& Contains, const FString& Since, const FString& Cursor, int32 Limit = 50);
 
     /** Read reflected properties of data assets or already-loaded Blueprint class defaults. The first line of a paged read is a JSON object with rows, totals, errors and continuation. The complete flag is true when the first page covers the whole request without errors. Data asset loads may run load hooks and load dependencies. Blueprint defaults use an existing generated class and default object. No property write, save or compile is requested.
-     * @param Asset Data asset path or unique name. In paged modes, pass up to eight separated by commas or pipes. Blueprint defaults require full Blueprint package, object or generated class paths.
+     * @param Asset Data asset path or unique name. In paged modes, pass up to 64 separated by commas or pipes. Blueprint defaults require full Blueprint package, object or generated class paths.
      * @param Property Exact reflected path such as Settings.Number. In paged modes, pass up to eight names separated by commas or pipes. Paths can traverse structs and owned instanced children. Empty lists editable fields in legacy mode.
      * @param Mode legacy preserves the single data asset read and edit revision. values pages named values and entries in a selected collection. keys pages map keys or zero-based array indices without reading their values. Default legacy.
      * @param Source asset reads data assets. blueprint_defaults reads defaults from the existing loaded generated class in a paged mode. It never loads or constructs the class or default object. Defaults can reflect the last compile.
