@@ -3872,6 +3872,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
           ],
           "new_files": []
+        },
+        "nov12-discovery-defaults": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
