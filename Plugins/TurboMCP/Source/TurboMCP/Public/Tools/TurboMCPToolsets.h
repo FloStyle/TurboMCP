@@ -212,8 +212,8 @@ public:
 	/**
 	 * Inspect static execution context and input sources; may load assets, without requesting edits, compile or save.
 	 * Lists reachable predecessors and bounded downstream execution hops, not runtime traces. Dynamic and delegate dispatch are not inferred. NextHops does not cap upstream traversal or total output.
-	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty, missing or ambiguous assets are refused.
-	 * @param GraphName Required exact unique graph name, e.g. EventGraph. Empty, missing or ambiguous names are refused; graph paths are not selectors.
+	 * @param Asset Blueprint path or unique short name. For Context, an empty string uses the asset from a complete NodeId; conflicting selectors refuse.
+	 * @param GraphName Exact unique graph name, or an empty string to use the graph from a complete NodeId. Conflicting or ambiguous selectors refuse; graph paths are not selectors.
 	 * @param NodeId Required exact full or short node ID emitted by the reader for this graph. Empty, stale or ambiguous IDs are refused; arbitrary GUID prefixes are not accepted here.
 	 * @param NextHops Optional number of downstream execution edges to follow, 0..32; default 3. Zero includes the selected node and upstream context but no downstream hops. Values outside the range are refused.
 	 */

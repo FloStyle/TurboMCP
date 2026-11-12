@@ -193,7 +193,7 @@ namespace
 	}
 
 	/** True when every word appears in the node's title, class, call, variable or pin names. */
-	bool NodeMatchesWords(const UEdGraphNode* InNode, const TArray<FString>& InWords)
+	bool NodeMatchesWords(const UEdGraphNode* InNode, const TArray<FString>& InWords, bool bAny = false, bool bIncludeLiterals = false)
 	{
 		// Every field the spec lists is searched: the title, the called function,
 		// the variable, the node class, and the pin names.
@@ -211,6 +211,9 @@ namespace
 			Fields.Add(Variable->GetVarName().ToString());
 		}
 
+        if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(InNode))
+            Fields.Add(Delegate->GetFunctionName().ToString());
+
 		FString PinNames;
 		for (const UEdGraphPin* Pin : InNode->Pins)
 		{
@@ -218,13 +221,17 @@ namespace
 			{
 				PinNames += Pin->PinName.ToString();
 				PinNames += TEXT(" ");
+                if (bIncludeLiterals && Pin->Direction == EGPD_Input && Pin->LinkedTo.IsEmpty())
+                {
+                    Fields.Add(Pin->DefaultValue);
+                    Fields.Add(Pin->DefaultTextValue.ToString());
+                    if (Pin->DefaultObject) Fields.Add(Pin->DefaultObject->GetPathName());
+                }
 			}
 		}
 		Fields.Add(PinNames);
 
-		// Every word must appear somewhere, in any field. Requiring all of them
-		// rather than any of them is what makes a two word search narrow instead
-		// of widen.
+		// All is the legacy narrowing behavior. Any explicitly widens the search.
 		for (const FString& Word : InWords)
 		{
 			bool bFound = false;
@@ -236,12 +243,10 @@ namespace
 					break;
 				}
 			}
-			if (!bFound)
-			{
-				return false;
-			}
+            if (bAny && bFound) return true;
+            if (!bAny && !bFound) return false;
 		}
-		return true;
+		return !bAny;
 	}
 
 	/** Every graph of a Blueprint, or just one when a name was given. */
@@ -656,13 +661,25 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const FString& GraphName,const FString& NodeId,int32 NextHops)
 {
     if(NextHops<0 || NextHops>32) return TEXT("error: NextHops must be an integer from 0 to 32. Use 0 for no downstream hops, or 3 for the default depth.");
+    const TurboMCPNodeId::FParsed Identity = TurboMCPNodeId::Parse(NodeId);
+    const FString AssetSelector = Asset.IsEmpty() && Identity.IsComplete() ? Identity.AssetName : Asset;
+    const FString GraphSelector = GraphName.IsEmpty() && Identity.IsComplete() ? Identity.GraphName : GraphName;
+    if (Identity.IsComplete() && !GraphName.IsEmpty() && GraphName != Identity.GraphName)
+        return TEXT("error: GraphName conflicts with the graph in NodeId. Use matching selectors or leave GraphName empty.");
     FTurboMCPAssetResolver::FResolved Resolved;
-    const FString Error=FTurboMCPAssetResolver::Resolve(Asset,Resolved);
+    const FString Error=FTurboMCPAssetResolver::Resolve(AssetSelector,Resolved);
     if(!Error.IsEmpty()) return Error;
+    if (Identity.IsComplete())
+    {
+        FTurboMCPAssetResolver::FResolved IdAsset;
+        const FString IdError = FTurboMCPAssetResolver::Resolve(Identity.AssetName, IdAsset);
+        if (!IdError.IsEmpty() || IdAsset.ObjectPath != Resolved.ObjectPath)
+            return TEXT("error: Asset conflicts with the asset in NodeId, or the ID asset is unavailable. No alternative target was selected.");
+    }
     UBlueprint* Blueprint=LoadObject<UBlueprint>(nullptr,*Resolved.ObjectPath);
-    int32 Matches=0; UEdGraph* Graph=Blueprint?TurboMCPNodeId::FindGraphByName(Blueprint,GraphName,Matches):nullptr;
+    int32 Matches=0; UEdGraph* Graph=Blueprint?TurboMCPNodeId::FindGraphByName(Blueprint,GraphSelector,Matches):nullptr;
     if(!Blueprint) return FString::Printf(TEXT("error: could not load %s as a Blueprint. Select a Blueprint asset and retry."), *Resolved.ObjectPath);
-    if(!Graph || Matches!=1) return FString::Printf(TEXT("error: graph '%s' must resolve uniquely in %s. Available graphs: %s. Use an exact unique graph name."), *GraphName, *Resolved.ObjectPath, *ListGraphNames(Blueprint));
+    if(!Graph || Matches!=1) return FString::Printf(TEXT("error: graph '%s' must resolve uniquely in %s. Available graphs: %s. Use an exact unique graph name."), *GraphSelector, *Resolved.ObjectPath, *ListGraphNames(Blueprint));
     UEdGraphNode* Selected=TurboMCPGraphScratch::Find(Graph,NodeId);
     // Bare reader keys are valid only within the explicitly resolved graph.
     // Never strip a qualified ID: a wrong graph or asset must remain a refusal.
@@ -674,7 +691,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const
             return TEXT("error: node key is ambiguous in this graph. Use more GUID digits or a full node ID from ReadTurboMCPNodeFind.");
         if (Count == 1) Selected = KeyMatches[0];
     }
-    if(!Selected) return FString::Printf(TEXT("error: node ID '%s' does not resolve uniquely in graph '%s'. Use ReadTurboMCPNodeFind to obtain a fresh ID from this graph, then retry."), *NodeId, *GraphName);
+    if(!Selected) return FString::Printf(TEXT("error: node ID '%s' does not resolve uniquely in graph '%s'. Use ReadTurboMCPNodeFind to obtain a fresh ID from this graph, then retry."), *NodeId, *GraphSelector);
     TSet<UEdGraphNode*> Context;
     TArray<UEdGraphNode*> Queue; Queue.Add(Selected);
     TArray<FString> Entries;
@@ -708,6 +725,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const
     for(UEdGraphNode* Node:Ordered)
     {
         Out+=TEXT("\nnode ")+TurboMCPNodeId::MakeForNode(Node,true)+TEXT(" type=")+TurboMCPNodeId::GetNodeTypeId(Node);
+        Out += TEXT("\n  title: ") + TurboMCPNodeId::GetNodeTitle(Node).Replace(TEXT("\r"), TEXT("\\r")).Replace(TEXT("\n"), TEXT("\\n"));
         // Report the stored selection even if the delegate is currently unbound or unresolved.
         if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(Node))
             Out += FString::Printf(TEXT("\n  configured delegate function: %s (stored binding; runtime target not verified)"),
