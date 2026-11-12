@@ -3889,6 +3889,17 @@
             "Tools/test-asset-describe-metadata.py"
           ],
           "new_files": []
+        },
+        "nov12-blueprint-detail": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintRead.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPBlueprintRead.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintJson.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-read-budget-floor.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
