@@ -153,11 +153,11 @@ public:
 	 * loading or editing assets. Shows at most 40 matches and reports omissions.
 	 *
 	 * @param Query Search words with optional type: and path: substring filters, e.g. type:Blueprint menu. Pass an empty string to list matches within Path.
-	 * @param Path Optional full mounted content folder, e.g. /Game/UI. Omit or pass an empty string for an unscoped search. A single trailing slash is accepted.
+	 * @param Path Optional full mounted content folder, e.g. /Game/UI. Omit or pass * or an empty string for an unscoped search. A single trailing slash is accepted.
 	 * @param Recursive Include subfolders when Path is set. Default true. Set false for assets directly in Path.
 	*/
 	UFUNCTION(meta = (AICallable))
-	static FString ReadTurboMCPAssetSearch(const FString& Query, const FString& Path = TEXT(""), bool Recursive = true);
+	static FString ReadTurboMCPAssetSearch(const FString& Query, const FString& Path = TEXT("*"), bool Recursive = true);
 
 	/**
 	 * Read what one or more assets are, in any path form.

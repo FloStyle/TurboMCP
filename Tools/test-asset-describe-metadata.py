@@ -35,6 +35,18 @@ first = s.call(READ_TOOLSET, "ReadTurboMCPAssetDescribe", {"assets": material})
 second = s.call(READ_TOOLSET, "ReadTurboMCPAssetDescribe", {"assets": material})
 assert "generated class: not applicable (non-Blueprint asset)" in first, first
 assert first == second, (first, second)
+# Exercise the public MCP defaults, not explicit empty-string workarounds.
+index = s.call(READ_TOOLSET, "ReadTurboMCPToolHelp", {})
+assert "Available toolsets:" in index and READ_TOOLSET in index, index
+blueprint = s.call(READ_TOOLSET, "ReadTurboMCPBlueprintLoad", {"assets": "/Game/Tests/BP_NodeTest"})
+assert "read: 1 of 1 asset(s)" in blueprint, blueprint
+graph_args = {"asset": "/Game/Tests/BP_NodeTest", "graphName": "EventGraph"}
+graph = s.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", graph_args)
+assert not graph.startswith("error:") and "EventGraph" in graph, graph
+later = s.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", {**graph_args, "offset": 1})
+assert "subsequent pages require" in later, later
+stale = s.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", {**graph_args, "revision": "stale-token"})
+assert "changed since the previous page" in stale, stale
 for query in ("", "type:", "path:"):
     refused = s.call(READ_TOOLSET, "ReadTurboMCPAssetSearch", {"query": query})
     assert refused.startswith("error:"), refused

@@ -290,8 +290,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query, cons
 	const FParsedQuery Parsed = ParseQuery(Query);
 	if (!Parsed.Error.IsEmpty()) return Parsed.Error;
 
-	FString Folder = Path;
-	if (!Path.IsEmpty())
+	FString Folder = Path == TEXT("*") ? FString() : Path;
+	if (!Folder.IsEmpty())
 	{
 		Folder.RemoveFromEnd(TEXT("/"));
 		// Validate the folder as a package parent so mount roots such as /Game also work.
