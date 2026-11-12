@@ -11,10 +11,11 @@ Generated from plugin declarations. For validation and compatibility limits, see
 
 ## UTurboMCPReadToolset
 
-32 declared tools.
+33 declared tools.
 
 | Function | Description |
 | --- | --- |
+| `ReadTurboMCPDataAssetProperty` | Read selected data asset properties or existing Blueprint class defaults. Page values, map keys or array indices, or read one data asset with its edit revision |
 | `ReadTurboMCPPlayInputState` | Inspect the single PIE player's focus, held synthetic input and Enhanced Input context priorities; no input or asset mutation |
 | `ReadTurboMCPStatus` | Read the MCP server state and this plugin's registration state |
 | `ReadTurboMCPToolIndex` | Read every tool the server serves, one line each |
@@ -47,6 +48,8 @@ Generated from plugin declarations. For validation and compatibility limits, see
 | `ReadTurboMCPWidgetTree` | Inspect selected Widget Blueprint hierarchy data; loads the asset without explicitly editing, compiling or saving it |
 | `ReadTurboMCPPureChecks` | Inspect call-cost string normalization and asset extraction for literal inputs; does not run the named tools or read the call log |
 | `ReadTurboMCPVcsState` | Query the selected source-control provider; may refresh cached state and contact its server, but does not request checkout, save or submission |
+
+For a paged property read, pass asset paths and reflected property names as comma- or pipe-separated lists. Use `mode=values` for values or `mode=keys` for map keys and array indices. Set `source=blueprint_defaults` for already-loaded Blueprint class defaults and provide full Blueprint paths. Keep the selectors and live data fixed and pass each `nextOffset` back as `offset` until it is `-1`. Empty collections and unavailable targets each have a row. An oversized record has an error row in place of its value. Use the default `legacy` mode to obtain a single data asset's edit revision.
 
 ## UTurboMCPLookToolset
 

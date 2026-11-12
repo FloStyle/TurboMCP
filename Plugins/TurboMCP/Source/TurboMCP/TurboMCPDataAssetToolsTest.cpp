@@ -54,6 +54,7 @@ void CheckPagedProperties(FAutomationTestBase& Test, UPackage* Package, UTurboMC
         Test.TestEqual(TEXT("Page count matches the requested range"), Body->GetIntegerField(TEXT("returned")), Expected);
         Test.TestEqual(TEXT("Continuation advances by the returned rows"), Body->GetIntegerField(TEXT("nextOffset")), Offset < 48 ? Offset + 24 : -1);
         Test.TestEqual(TEXT("Truncation indicates remaining rows"), Body->GetBoolField(TEXT("truncated")), Offset < 48);
+        Test.TestFalse(TEXT("A slice alone does not cover the request"), Body->GetBoolField(TEXT("complete")));
         const auto& Rows = Body->GetArrayField(TEXT("rows"));
         Test.TestEqual(TEXT("Array values are returned as complete rows"), Rows.Num(), Expected);
         for (int32 Index = 0; Index < Rows.Num(); ++Index)
@@ -108,6 +109,31 @@ void CheckPagedProperties(FAutomationTestBase& Test, UPackage* Package, UTurboMC
         Path, TEXT("Numbers"), TEXT("values"), TEXT("asset"), 65).StartsWith(TEXT("refused:")));
     Test.TestTrue(TEXT("Paged property reads preserve fixture values and package state"),
         Second->Numbers.Num() == 65 && Second->Child->Label.Len() == 9000 && !Package->IsDirty());
+
+    Second->Child->Label = FString::ChrN(7000, TEXT('y'));
+    const FString Properties = TEXT("Child.Label|Child.Label|Child.Label|Child.Label|Child.Number");
+    const TSharedPtr<FJsonObject> Budget = ParsePropertyPage(Test, FRead::ReadTurboMCPDataAssetProperty(
+        Path, Properties, TEXT("values")));
+    if (Budget)
+    {
+        const int32 NextOffset = Budget->GetIntegerField(TEXT("nextOffset"));
+        if (Test.TestEqual(TEXT("The response budget advances past exactly the emitted rows"), NextOffset, 3))
+        {
+            const TSharedPtr<FJsonObject> Rest = ParsePropertyPage(Test, FRead::ReadTurboMCPDataAssetProperty(
+                Path, Properties, TEXT("values"), TEXT("asset"), NextOffset));
+            if (Rest)
+            {
+                const auto& Rows = Rest->GetArrayField(TEXT("rows"));
+                Test.TestEqual(TEXT("The budget continuation preserves the total"), Rest->GetIntegerField(TEXT("total")), 5);
+                Test.TestEqual(TEXT("The budget continuation reaches the end"), Rest->GetIntegerField(TEXT("nextOffset")), -1);
+                if (Test.TestEqual(TEXT("The continuation returns the two remaining rows"), Rows.Num(), 2))
+                {
+                    Test.TestEqual(TEXT("Deferred value arrives intact"), Rows[0]->AsObject()->GetStringField(TEXT("value")), Second->Child->Label);
+                    Test.TestEqual(TEXT("Following scalar arrives intact"), Rows[1]->AsObject()->GetStringField(TEXT("value")), FString(TEXT("7")));
+                }
+            }
+        }
+    }
     Second->MarkAsGarbage();
 }
 

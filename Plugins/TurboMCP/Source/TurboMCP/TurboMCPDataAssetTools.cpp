@@ -18,6 +18,7 @@
 #include "ScopedTransaction.h"
 #include "Serialization/JsonSerializer.h"
 #include "UObject/Package.h"
+#include "UObject/UObjectGlobals.h"
 #include "UObject/UObjectHash.h"
 #include "UObject/UnrealType.h"
 
@@ -287,9 +288,9 @@ FString FindLoadedDefaults(const FString& Selector, FPropertyReadTarget& Target)
     {
         return TEXT("The current loaded Blueprint generated class is unavailable.");
     }
-    UObject* Defaults = Class->GetDefaultObject(/*bCreateIfNeeded=*/false);
+    UObject* Defaults = FindObjectFast<UObject>(Class->GetOuter(), Class->GetDefaultObjectName());
     if (!IsValid(Defaults) || Defaults->GetClass() != Class || !Defaults->HasAnyFlags(RF_ClassDefaultObject) ||
-        Defaults->HasAnyFlags(PendingLoadFlags))
+        Defaults->HasAnyFlags(PendingLoadFlags) || Class->GetDefaultObject(/*bCreateIfNeeded=*/false) != Defaults)
     {
         return TEXT("The loaded class has no available default object.");
     }
