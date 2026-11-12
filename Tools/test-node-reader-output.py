@@ -92,3 +92,16 @@ if seen_cursors:
     stale = call("ReadTurboMCPNodeFind", asset=asset, words="DifferentQuery", graphName="", cursor=next(iter(seen_cursors)))
     check(stale.startswith("error:") and "Cursor" in stale, stale)
 print("RESULT: PASS", flush=True)
+
+# Focused relation check: unsaved native fixture, no persistent asset writes.
+import runpy
+from pathlib import Path
+support = runpy.run_path(str(Path(__file__).with_name("test-widget-roundtrip.py")))
+name = "TurboMCP.Read.ReferenceWrites"
+session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
+raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})
+print(raw)
+entry, report = support["parse_run_tests_report"](raw, name)
+if entry["warnings"]:
+    raise RuntimeError("Unexpected reference-write warnings: " + repr(entry["warnings"]))
+print("REFERENCE WRITES: PASS")

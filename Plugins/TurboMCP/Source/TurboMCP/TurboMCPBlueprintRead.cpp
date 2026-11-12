@@ -575,6 +575,8 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
     TArray<FString> DelegateSites;
 	/** variable -> the graphs that write it */
 	TMap<FString, TSet<FString>> WritersByVariable;
+	TMap<FString, TSet<FString>> ReferenceMutationsByVariable;
+	TMap<FString, TSet<FString>> PossibleWritesByVariable;
 	/** variable -> the graphs that read it */
 	TMap<FString, TSet<FString>> ReadersByVariable;
 	/** a function of this Blueprint, by name, for the dead-code check */
@@ -713,7 +715,54 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 			{
 				const FString VariableName = Get->GetVarName().ToString();
 				if (IsOwnMemberReference(Get->VariableReference))
+				{
 					ReadersByVariable.FindOrAdd(VariableName).Add(GraphName);
+					// Reroutes preserve the source reference. Do not follow arbitrary
+					// value-producing nodes: their outputs may be copies, not aliases.
+					TArray<const UEdGraphPin*> Pending;
+					TSet<const UEdGraphPin*> Visited;
+					for (const UEdGraphPin* Pin : Get->Pins)
+						if (Pin && Pin->Direction == EGPD_Output)
+							for (const UEdGraphPin* Linked : Pin->LinkedTo) Pending.Add(Linked);
+					while (!Pending.IsEmpty())
+					{
+						const UEdGraphPin* Input = Pending.Pop(EAllowShrinking::No);
+						if (!Input || Visited.Contains(Input) || Input->Direction != EGPD_Input) continue;
+						Visited.Add(Input);
+						const UEdGraphNode* Consumer = Input->GetOwningNodeUnchecked();
+						if (const UK2Node_Knot* Knot = Cast<UK2Node_Knot>(Consumer))
+						{
+							for (const UEdGraphPin* Pin : Knot->Pins)
+								if (Pin && Pin->Direction == EGPD_Output)
+									for (const UEdGraphPin* Linked : Pin->LinkedTo) Pending.Add(Linked);
+							continue;
+						}
+						const UK2Node_CallFunction* ReferenceCall = Cast<UK2Node_CallFunction>(Consumer);
+						const UFunction* Function = ReferenceCall ? ReferenceCall->GetTargetFunction() : nullptr;
+						const FProperty* Parameter = Function ? FindFProperty<FProperty>(Function, Input->PinName) : nullptr;
+						if (!Parameter) continue;
+						const FString OwnerPath = Function->GetOuterUClass()->GetPathName();
+						const FName FunctionName = Function->GetFName();
+						const bool bMutableReference = Parameter->HasAnyPropertyFlags(CPF_ReferenceParm)
+							&& !Parameter->HasAnyPropertyFlags(CPF_ConstParm);
+						const bool bArrayMutation = OwnerPath == TEXT("/Script/Engine.KismetArrayLibrary")
+							&& Input->PinName == TEXT("TargetArray") && CastField<FArrayProperty>(Parameter) && bMutableReference;
+						// Map/set custom thunks mutate targets declared const in their
+						// C++ stubs. Resolve these exact stock operations before applying
+						// the normal const-reference exclusion; never infer from display names.
+						const bool bMapMutation = OwnerPath == TEXT("/Script/Engine.BlueprintMapLibrary")
+							&& Input->PinName == TEXT("TargetMap") && CastField<FMapProperty>(Parameter)
+							&& (FunctionName == TEXT("Map_Add") || FunctionName == TEXT("Map_Remove") || FunctionName == TEXT("Map_Clear"));
+						const bool bSetMutation = OwnerPath == TEXT("/Script/Engine.BlueprintSetLibrary")
+							&& Input->PinName == TEXT("TargetSet") && CastField<FSetProperty>(Parameter)
+							&& (FunctionName == TEXT("Set_Add") || FunctionName == TEXT("Set_AddItems")
+								|| FunctionName == TEXT("Set_Remove") || FunctionName == TEXT("Set_RemoveItems") || FunctionName == TEXT("Set_Clear"));
+						const bool bKnownMutation = bArrayMutation || bMapMutation || bSetMutation;
+						if (!bKnownMutation && !bMutableReference) continue;
+						auto& Sites = bKnownMutation ? ReferenceMutationsByVariable : PossibleWritesByVariable;
+						Sites.FindOrAdd(VariableName).Add(GraphName + TEXT(" -> ") + Function->GetName());
+					}
+				}
 			}
 			else if (const UK2Node_CustomEvent* Custom = Cast<UK2Node_CustomEvent>(Node))
 			{
@@ -831,7 +880,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 
 	// Variable map, in the Blueprint's own variable order so it matches the
 	// variables section above.
-	Out += TEXT("\nvariable map (selected graph references; whole-asset reads also include unreferenced declarations):");
+	Out += TEXT("\nvariable map (selected graph references; mutation sites are not proof of execution or a changed value; reference tracing follows reroutes only; whole-asset reads also include unreferenced declarations):");
 	if (InBlueprint->NewVariables.Num() == 0)
 	{
 		Out += TEXT("\n  none");
@@ -842,6 +891,8 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 
 		const TSet<FString>* Writers = WritersByVariable.Find(Name);
 		const TSet<FString>* Readers = ReadersByVariable.Find(Name);
+		const TSet<FString>* Mutations = ReferenceMutationsByVariable.Find(Name);
+		const TSet<FString>* PossibleWrites = PossibleWritesByVariable.Find(Name);
 		if (InGraphs.Num() < InTotalGraphCount && !Writers && !Readers) continue;
 		if (InGraphs.Num() == InTotalGraphCount && (!Readers || Readers->Num() == 0))
 			OutUsage.VariablesWithoutReadReferences.Add(Name);
@@ -853,14 +904,16 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 
 		Out += FString::Printf(TEXT("\n  %s"), *Name);
 		Out += FString::Printf(TEXT("\n      read by:  %s"), *ReadText);
-		Out += FString::Printf(TEXT("\n      written by: %s"), *WriteText);
+		Out += FString::Printf(TEXT("\n      explicit setters: %s"), *WriteText);
+		if (Mutations) Out += TEXT("\n      container mutation sites: ") + SortedGraphNames(Mutations);
+		if (PossibleWrites) Out += TEXT("\n      possible reference writes: ") + SortedGraphNames(PossibleWrites);
 
 		if ((Writers == nullptr || Writers->Num() == 0)
 			&& (Readers == nullptr || Readers->Num() == 0))
 		{
 			Out += TEXT("\n      ; no direct read/reference or write found in scanned graphs; external, native and dynamic uses are not excluded");
 		}
-		else if (Writers == nullptr || Writers->Num() == 0)
+		else if ((!Writers || Writers->IsEmpty()) && !Mutations && !PossibleWrites)
 		{
 			Out += TEXT("\n      ; no direct write found in scanned graphs; external/native writes and instance overrides may change the value");
 		}
