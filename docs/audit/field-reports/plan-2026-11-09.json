@@ -224,10 +224,10 @@
       "title": "Preserve requested Blueprint detail and apply filters consistently",
       "kind": "bug",
       "priority": "P0",
-      "state": "in_progress",
-      "readiness": "ready",
+      "state": "done",
+      "readiness": "implemented",
       "owner": "integrator",
-      "validation": "untested",
+      "validation": "focused_runtime_passed",
       "source_keys": [
         "2026-11-09_S2/BL-15",
         "2026-11-09_S2/BL-16",
@@ -235,7 +235,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 5,
-      "next_step": "Active isolated repair at base 3f4a40d5: budget refusal, selected signatures and relation scans implemented locally. Manifest/member/component filtering, focused checks and integration remain; not closed.",
+      "next_step": "Implemented and reviewed at 6b0e984a; stock UE 5.8.4 build and focused budget/filter suite passed. See nov12-blueprint-detail-review.md for evidence and remaining coverage limits.",
       "acceptance": "No silent downgrade to manifest. Page requested detail or report explicit limits. Apply graph filters consistently to metadata and bodies."
     },
     {
