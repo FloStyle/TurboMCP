@@ -4,16 +4,156 @@
 #include "Tools/TurboMCPToolsets.h"
 #include "TurboMCPDataAssetSafetyFixture.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Dom/JsonObject.h"
+#include "EdGraphSchema_K2.h"
+#include "Editor.h"
+#include "Engine/Blueprint.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "GameFramework/Actor.h"
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "Kismet2/KismetEditorUtilities.h"
 #include "Misc/AutomationTest.h"
+#include "Misc/ScopeExit.h"
 #include "UObject/Package.h"
 #include "UObject/StrongObjectPtr.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
 #include "InputCoreTypes.h"
-#include "Editor.h"
-#include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
 #include "PlayerMappableKeySettings.h"
+
+namespace
+{
+TSharedPtr<FJsonObject> ParsePropertyPage(FAutomationTestBase& Test, const FString& Response)
+{
+    const int32 Marker = Response.Find(TEXT("\n; tmcp-result-v1: "), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+    TSharedPtr<FJsonObject> Body;
+    Test.TestTrue(TEXT("Paged read returns a JSON body and result envelope"), Marker != INDEX_NONE &&
+        FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Response.Left(Marker)), Body) && Body.IsValid());
+    return Body;
+}
+
+void CheckPagedProperties(FAutomationTestBase& Test, UPackage* Package, UTurboMCPDataAssetSafetyFixture* Asset, UObject* MapKey)
+{
+    using FRead = UTurboMCPReadToolset;
+    TStrongObjectPtr<UTurboMCPDataAssetSafetyFixture> Second(NewObject<UTurboMCPDataAssetSafetyFixture>(Package, TEXT("PagedFixture")));
+    Second->Child = NewObject<UTurboMCPDataAssetSafetyChild>(Second.Get());
+    Second->Child->Label = FString::ChrN(9000, TEXT('x'));
+    for (int32 Index = 0; Index < 65; ++Index)
+        Second->Numbers.Add(100 + Index);
+    const FString Path = Second->GetPathName();
+    const FString Missing = Package->GetName() + TEXT(".MissingPagedAsset");
+    for (const int32 Offset : {0, 24, 48})
+    {
+        const TSharedPtr<FJsonObject> Body = ParsePropertyPage(Test,
+            FRead::ReadTurboMCPDataAssetProperty(Path, TEXT("Numbers"), TEXT("values"), TEXT("asset"), Offset, 24));
+        if (!Body)
+            return;
+        const int32 Expected = FMath::Min(24, 65 - Offset);
+        Test.TestEqual(TEXT("Array total is repeated on each page"), Body->GetIntegerField(TEXT("total")), 65);
+        Test.TestEqual(TEXT("Page count matches the requested range"), Body->GetIntegerField(TEXT("returned")), Expected);
+        Test.TestEqual(TEXT("Continuation advances by the returned rows"), Body->GetIntegerField(TEXT("nextOffset")), Offset < 48 ? Offset + 24 : -1);
+        Test.TestEqual(TEXT("Truncation indicates remaining rows"), Body->GetBoolField(TEXT("truncated")), Offset < 48);
+        const auto& Rows = Body->GetArrayField(TEXT("rows"));
+        Test.TestEqual(TEXT("Array values are returned as complete rows"), Rows.Num(), Expected);
+        for (int32 Index = 0; Index < Rows.Num(); ++Index)
+        {
+            const auto& Row = Rows[Index]->AsObject();
+            Test.TestEqual(TEXT("Array index is exact"), Row->GetIntegerField(TEXT("index")), Offset + Index);
+            Test.TestEqual(TEXT("Array value is exact"), Row->GetStringField(TEXT("value")), FString::FromInt(100 + Offset + Index));
+        }
+    }
+
+    const TSharedPtr<FJsonObject> Keys = ParsePropertyPage(Test, FRead::ReadTurboMCPDataAssetProperty(
+        Asset->GetPathName() + TEXT("|") + Path + TEXT("|") + Missing, TEXT("Entries|Numbers"), TEXT("keys"), TEXT("asset"), 0, 3));
+    if (Keys)
+    {
+        Test.TestEqual(TEXT("Combined total includes empty and unavailable targets"), Keys->GetIntegerField(TEXT("total")), 69);
+        Test.TestEqual(TEXT("A missing asset is counted even beyond the first page"), Keys->GetIntegerField(TEXT("knownErrors")), 1);
+        const auto& Rows = Keys->GetArrayField(TEXT("rows"));
+        if (Test.TestEqual(TEXT("First key page has three complete rows"), Rows.Num(), 3))
+        {
+            Test.TestEqual(TEXT("Map key is an exact object path"), Rows[0]->AsObject()->GetStringField(TEXT("key")), MapKey->GetPathName());
+            Test.TestFalse(TEXT("Keys-only map row has no value"), Rows[0]->AsObject()->HasField(TEXT("value")));
+            Test.TestEqual(TEXT("Empty collection is explicit"), Rows[1]->AsObject()->GetIntegerField(TEXT("collectionTotal")), 0);
+            Test.TestEqual(TEXT("The second asset is identified"), Rows[2]->AsObject()->GetStringField(TEXT("asset")), Path);
+        }
+    }
+    const TSharedPtr<FJsonObject> Tail = ParsePropertyPage(Test, FRead::ReadTurboMCPDataAssetProperty(
+        Asset->GetPathName() + TEXT("|") + Path + TEXT("|") + Missing, TEXT("Entries|Numbers"), TEXT("keys"), TEXT("asset"), 67, 2));
+    if (Tail)
+    {
+        const auto& Rows = Tail->GetArrayField(TEXT("rows"));
+        if (Test.TestEqual(TEXT("The final key page includes the missing target"), Rows.Num(), 2))
+        {
+            Test.TestEqual(TEXT("Final array key is its index"), Rows[0]->AsObject()->GetIntegerField(TEXT("index")), 64);
+            Test.TestFalse(TEXT("Keys-only array row has no value"), Rows[0]->AsObject()->HasField(TEXT("value")));
+            Test.TestEqual(TEXT("Missing asset error names the target"), Rows[1]->AsObject()->GetStringField(TEXT("asset")), Missing);
+        }
+    }
+    const TSharedPtr<FJsonObject> Large = ParsePropertyPage(Test, FRead::ReadTurboMCPDataAssetProperty(
+        Path, TEXT("Child.Label|Child.Number|MissingProperty"), TEXT("values")));
+    if (Large)
+    {
+        const auto& Rows = Large->GetArrayField(TEXT("rows"));
+        if (Test.TestEqual(TEXT("Oversized value does not block later rows"), Rows.Num(), 3))
+        {
+            Test.TestEqual(TEXT("Oversized row is diagnosed"), Rows[0]->AsObject()->GetStringField(TEXT("code")), FString(TEXT("record_too_large")));
+            Test.TestFalse(TEXT("Oversized record contains no clipped value"), Rows[0]->AsObject()->HasField(TEXT("value")));
+            Test.TestEqual(TEXT("Following scalar remains exact"), Rows[1]->AsObject()->GetStringField(TEXT("value")), FString(TEXT("7")));
+            Test.TestEqual(TEXT("Missing property has a per-property error"), Rows[2]->AsObject()->GetStringField(TEXT("code")), FString(TEXT("property_unavailable")));
+        }
+    }
+    Test.TestTrue(TEXT("Invalid continuation refuses"), FRead::ReadTurboMCPDataAssetProperty(
+        Path, TEXT("Numbers"), TEXT("values"), TEXT("asset"), 65).StartsWith(TEXT("refused:")));
+    Test.TestTrue(TEXT("Paged property reads preserve fixture values and package state"),
+        Second->Numbers.Num() == 65 && Second->Child->Label.Len() == 9000 && !Package->IsDirty());
+    Second->MarkAsGarbage();
+}
+
+void CheckBlueprintDefaults(FAutomationTestBase& Test, UPackage* Package)
+{
+    TStrongObjectPtr<UBlueprint> Blueprint(FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package,
+        TEXT("BP_ReaderDefaults"), BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass()));
+    if (!Test.TestNotNull(TEXT("Blueprint defaults fixture"), Blueprint.Get()))
+        return;
+    ON_SCOPE_EXIT
+    {
+        Blueprint->MarkAsGarbage();
+        Package->SetDirtyFlag(false);
+    };
+    FEdGraphPinType Type;
+    Type.PinCategory = UEdGraphSchema_K2::PC_Int;
+    if (!Test.TestTrue(TEXT("Blueprint defaults variable created"),
+        FBlueprintEditorUtils::AddMemberVariable(Blueprint.Get(), TEXT("Quantity"), Type, TEXT("17"))))
+        return;
+    FKismetEditorUtilities::CompileBlueprint(Blueprint.Get(), EBlueprintCompileOptions::SkipSave);
+    UClass* Class = Blueprint->GeneratedClass;
+    UObject* Defaults = Class ? Class->GetDefaultObject(false) : nullptr;
+    if (!Test.TestNotNull(TEXT("Fixture has an existing CDO"), Defaults))
+        return;
+    Package->SetDirtyFlag(false);
+    for (const FString& Selector : {Blueprint->GetPathName(), Class->GetPathName()})
+    {
+        const TSharedPtr<FJsonObject> Body = ParsePropertyPage(Test, UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(
+            Selector, TEXT("Quantity"), TEXT("values"), TEXT("blueprint_defaults")));
+        if (!Body)
+            return;
+        const auto& Rows = Body->GetArrayField(TEXT("rows"));
+        if (Test.TestEqual(TEXT("One requested CDO field is returned"), Rows.Num(), 1))
+        {
+            Test.TestEqual(TEXT("Read returns the compiled default"), Rows[0]->AsObject()->GetStringField(TEXT("value")), FString(TEXT("17")));
+            Test.TestEqual(TEXT("Read identifies the generated class"), Rows[0]->AsObject()->GetStringField(TEXT("class")), Class->GetPathName());
+        }
+    }
+    const FString Missing = Package->GetName() + TEXT(".MissingBlueprint");
+    const FString Unavailable = UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(Missing, TEXT("Quantity"),
+        TEXT("values"), TEXT("blueprint_defaults"));
+    Test.TestTrue(TEXT("Unavailable Blueprint reports a loaded-only failure"), Unavailable.Contains(TEXT("not fully loaded")));
+    Test.TestTrue(TEXT("Defaults read preserves generated class, CDO and clean package"),
+        Blueprint->GeneratedClass == Class && Class->GetDefaultObject(false) == Defaults && !Package->IsDirty());
+}
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPDataAssetToolsTest,
     "TurboMCP.DataAsset.PropertyWorkflow", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -44,6 +184,7 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
     const FString ReaderDetails = UTurboMCPReadToolset::ReadTurboMCPDataAssetProperty(Path, TEXT("Entries"));
     TestTrue(TEXT("map reader gives exact reusable key"), ReaderDetails.Contains(TEXT("entry_key_input: ") + KeyA->GetPathName()));
     TestTrue(TEXT("map reader describes owned child fields"), ReaderDetails.Contains(TEXT("child_field: Number")));
+    CheckPagedProperties(*this, Package, Asset.Get(), KeyA.Get());
     const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCP.TurboMCPPreviewToolset"), TEXT("PreviewTurboMCPDataAssetProperty"));
     AddInfo(Help);
     TestTrue(TEXT("live help describes child creation and revision"), Help.Contains(TEXT("create_child")) && Help.Contains(TEXT("Revision")) && Help.Contains(TEXT("property")));
@@ -256,6 +397,7 @@ bool FTurboMCPDataAssetToolsTest::RunTest(const FString& Parameters)
     Action->MarkAsGarbage();
     Package->SetDirtyFlag(false);
     Asset->MarkAsGarbage();
+    CheckBlueprintDefaults(*this, Package);
     return true;
 }
 #endif

@@ -1,10 +1,28 @@
-"""Run the public data-asset property/map and notification rollback workflow."""
+"""Check the live property reader schema and run the native property workflow."""
+import json
 import runpy
 from pathlib import Path
-from tmcp import Session
+from tmcp import READ_TOOLSET, Session
+
 support = runpy.run_path(str(Path(__file__).with_name("test-widget-roundtrip.py")))
 session = Session()
 session.connect()
+tool = "ReadTurboMCPDataAssetProperty"
+missing = "/Game/Tests/NoSuchPropertyReaderAsset"
+legacy = session.call(READ_TOOLSET, tool, {"asset": missing, "property": "Numbers"})
+assert legacy.startswith("refused: error: no asset named"), legacy
+response = session.call(READ_TOOLSET, tool, {
+    "asset": missing,
+    "property": "Numbers",
+    "mode": "keys",
+    "source": "asset",
+    "offset": 0,
+    "pageSize": 1,
+})
+page = json.loads(response.splitlines()[0])
+assert (page["total"], page["returned"], page["knownErrors"], page["nextOffset"]) == (1, 1, 1, -1), page
+assert page["rows"][0]["asset"] == missing and page["rows"][0]["code"] == "asset_unavailable", page
+
 name = "TurboMCP.DataAsset.PropertyWorkflow"
 session.call(support["AUTO_TOOLSET"], "DiscoverTests", {})
 raw = session.call(support["AUTO_TOOLSET"], "RunTests", {"testNames": [name]})

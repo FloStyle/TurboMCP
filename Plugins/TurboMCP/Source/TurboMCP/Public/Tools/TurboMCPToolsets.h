@@ -62,12 +62,17 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString ReadTurboMCPEditorLog(const FString& Category, const FString& Contains, const FString& Since, const FString& Cursor, int32 Limit = 50);
 
-    /** Inspect an existing data asset's reflected property and obtain its state revision. Empty Property lists editable fields. Loading an asset may execute its load hooks; no property write, save or compile is requested.
-     * @param Asset Exact asset path or uniquely resolved asset name; must resolve to UDataAsset.
-     * @param Property Exact reflected path, for example Metadata or Settings.Number. Paths may traverse structs and owned instanced objects, never external referenced assets.
+    /** Read reflected properties of data assets or already-loaded Blueprint class defaults. The first line of a paged read is a JSON object with rows, totals, errors and continuation. Data asset loads may run load hooks and load dependencies. Blueprint defaults use an existing generated class and default object. No property write, save or compile is requested.
+     * @param Asset Data asset path or unique name. In paged modes, pass up to eight separated by commas or pipes. Blueprint defaults require full Blueprint package, object or generated class paths.
+     * @param Property Exact reflected path such as Settings.Number. In paged modes, pass up to eight names separated by commas or pipes. Paths can traverse structs and owned instanced children. Empty lists editable fields in legacy mode.
+     * @param Mode legacy preserves the single data asset read and edit revision. values pages named values and top-level collection entries. keys pages map keys or zero-based array indices without reading their values. Default legacy.
+     * @param Source asset reads data assets. blueprint_defaults reads defaults from the existing loaded generated class in a paged mode. It never loads or constructs the class or default object. Defaults can reflect the last compile.
+     * @param Offset Start at 0. In paged modes copy nextOffset until it is -1. Keep all other inputs and the live data unchanged between pages.
+     * @param PageSize Maximum returned rows in paged modes, 1 to 100. Default 32. A response budget can reduce this count.
      */
     UFUNCTION(meta = (AICallable))
-    static FString ReadTurboMCPDataAssetProperty(const FString& Asset, const FString& Property);
+    static FString ReadTurboMCPDataAssetProperty(const FString& Asset, const FString& Property,
+        const FString& Mode = TEXT("legacy"), const FString& Source = TEXT("asset"), int64 Offset = 0, int32 PageSize = 32);
 
     /** Inspect the single PIE player's focus, held synthetic input and Enhanced Input context priorities; no input or asset mutation. Reports optional CommonInput device type and unordered active CommonUI widgets when loaded; unavailable is not zero. Does not determine the routing owner.
      * @param Target Required exact pie:0. Refuses absent/multiple PIE worlds or multiple local players.
