@@ -110,16 +110,16 @@
       "title": "Support bounded cross-asset node search",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "integrator",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_workflow_passed_additional_cases_untested",
       "source_keys": [
         "2026-11-10_S1/NF-12",
         "2026-11-10_S1/FT-168"
       ],
       "dependencies": [],
-      "next_step": "Shared bounded node-search batch; see nov12-node-search-contract.md. Acceptance remains separate per issue; not yet implemented.",
+      "next_step": "Implemented in 25ba1591; stock 5.8.4 build and focused node-reader workflow passed. See nov12-node-search-review.md for the initial schema failure and remaining coverage limits.",
       "acceptance": "Paged folder/project scope with load limits and incomplete-coverage reporting; reuse NOV09-08 term semantics."
     },
     {

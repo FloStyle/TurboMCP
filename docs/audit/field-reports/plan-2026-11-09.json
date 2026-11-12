@@ -143,10 +143,10 @@
       "title": "Find delegates and optional literal values with clear search modes",
       "kind": "bug",
       "priority": "P0",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "integrator",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_workflow_passed_additional_cases_untested",
       "source_keys": [
         "2026-11-09_S2/NF-09",
         "2026-11-09_S2/NF-10",
@@ -156,7 +156,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 5,
-      "next_step": "Shared bounded node-search batch; see nov12-node-search-contract.md. Acceptance remains separate per issue; not yet implemented.",
+      "next_step": "Implemented in 25ba1591; stock 5.8.4 build and focused node-reader workflow passed. See nov12-node-search-review.md for the initial schema failure and remaining coverage limits.",
       "acceptance": "Index delegate call/bind/unbind identity. Add explicit all/any, totals-only and opt-in pin-default search; preserve exact results and bounded output."
     },
     {
@@ -369,17 +369,17 @@
       "title": "Improve node context names and full-ID graph resolution",
       "kind": "feature",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "integrator",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_workflow_passed_additional_cases_untested",
       "source_keys": [
         "2026-11-09_S2/NR-10",
         "2026-11-10_S1/NF-14"
       ],
       "dependencies": [],
       "complexity_estimate": 3,
-      "next_step": "Shared bounded node-search batch; see nov12-node-search-contract.md. Acceptance remains separate per issue; not yet implemented.",
+      "next_step": "Implemented in 25ba1591; stock 5.8.4 build and focused node-reader workflow passed. See nov12-node-search-review.md for the initial schema failure and remaining coverage limits.",
       "acceptance": "Include one-level pure-source titles; infer graph only from a validated unambiguous full node ID and refuse conflicting scope."
     },
     {
