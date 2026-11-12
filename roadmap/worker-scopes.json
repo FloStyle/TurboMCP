@@ -3881,6 +3881,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp"
           ],
           "new_files": []
+        },
+        "nov12-discovery-check": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp",
+            "Tools/test-asset-describe-metadata.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
