@@ -18,6 +18,17 @@ found = call("ReadTurboMCPNodeFind", asset=asset, words="K2Node", graphName="")
 ids = re.findall(r"^(/[^\s]+:[^:\s]+:[0-9a-fA-F]+)$", found, re.MULTILINE)
 check(bool(ids), "fixture must expose a node ID: " + found)
 node = ids[0]
+
+# A disjoint extra term must narrow ALL to zero but leave ANY unchanged.
+any_found = call("ReadTurboMCPNodeFind", asset=asset, words="K2Node,NoSuchUniqueNodeText92871", graphName="", matchMode="any")
+any_ids = re.findall(r"^(/[^\s]+:[^:\s]+:[0-9a-fA-F]+)$", any_found, re.MULTILINE)
+check(any_ids == ids, "ANY must retain the original matching node identities")
+all_found = call("ReadTurboMCPNodeFind", asset=asset, words="K2Node,NoSuchUniqueNodeText92871", graphName="", matchMode="all")
+check("Nothing matched" in all_found, all_found)
+bad_mode = call("ReadTurboMCPNodeFind", asset=asset, words="K2Node", graphName="", matchMode="approximate")
+check(bad_mode.startswith("error:") and "all or any" in bad_mode, bad_mode)
+class_miss = call("ReadTurboMCPNodeFind", asset=asset, words="K2Node", graphName="", nodeClass="NoSuchNodeClass92871")
+check("Nothing matched" in class_miss, class_miss)
 graph = node.rsplit(":", 2)[1]
 resolved = call("ReadTurboMCPNodeResolve", nodeIds=node)
 check("1 resolved, 0 refused" in resolved and "reference:" in resolved, resolved)
@@ -55,4 +66,29 @@ empty = call("ReadTurboMCPNodeResolve", nodeIds="")
 check(empty.startswith("error:") and "no node ID" in empty, empty)
 miss = call("ReadTurboMCPNodeFind", asset=asset, words="NoSuchUniqueNodeText92871", graphName="")
 check("Nothing matched" in miss and "broader terms" in miss, miss)
+# Small pages must preserve identities without repeats or dropped matches.
+cursor = ""
+paged_ids = []
+seen_cursors = set()
+for _ in range(100):
+    page = call("ReadTurboMCPNodeFind", asset=asset, words="K2Node", graphName="", pageSize=1, cursor=cursor)
+    paged_ids.extend(re.findall(r"^(/[^\s]+:[^:\s]+:[0-9a-fA-F]+)$", page, re.MULTILINE))
+    next_match = re.search(r"^next_cursor: (.+)$", page, re.MULTILINE)
+    check(next_match is not None, page)
+    cursor = next_match.group(1).strip()
+    if cursor == "none":
+        check("complete=true" in page, page)
+        break
+    check(cursor not in seen_cursors, "Pagination repeated a cursor")
+    seen_cursors.add(cursor)
+else:
+    raise AssertionError("Fixture pagination did not terminate")
+check(paged_ids[:len(ids)] == ids and len(set(paged_ids)) == len(paged_ids), "Paged identities differ or repeat")
+counted = call("ReadTurboMCPNodeFind", asset=asset, words="K2Node", graphName="", countOnly=True)
+check("complete=true" in counted and f"matches_so_far={len(paged_ids)};" in counted, counted)
+folder = call("ReadTurboMCPNodeFind", asset="/Game/Tests", scope="folder", words="NoSuchUniqueNodeText92871", graphName="")
+check("eligible_assets=" in folder and "next_cursor:" in folder, folder)
+if seen_cursors:
+    stale = call("ReadTurboMCPNodeFind", asset=asset, words="DifferentQuery", graphName="", cursor=next(iter(seen_cursors)))
+    check(stale.startswith("error:") and "Cursor" in stale, stale)
 print("RESULT: PASS", flush=True)

@@ -222,16 +222,32 @@ public:
 
 	/**
 	 * Search Blueprint nodes by text; may load assets, without requesting edits, compile or save.
-	 * Returns up to 40 matches. Searches local graphs, including nested graphs when unscoped, but not inherited assets or native implementations. This is not a gameplay-tag reference search or proof of runtime execution.
-	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty, missing or ambiguous assets are refused.
-	 * @param Words Required search terms separated by whitespace, commas or pipes, e.g. Print String. Every term must match a title, function, variable, class, comment or pin name; matching uses case-insensitive substrings, not phrases. Empty input is refused.
+	 * Returns up to PageSize matches with continuation; scans at most 16 assets and 10000 nodes per call. Searches local graphs, including nested graphs when unscoped, but not inherited assets or native implementations. This is not a gameplay-tag reference search or proof of runtime execution.
+	 * @param Asset Blueprint path for asset scope, content folder for folder scope, or empty for project scope.
+	 * @param Words Required search terms separated by whitespace, commas or pipes, e.g. Print String. By default every term must match a title, function, variable, class, comment or pin name; matching uses case-insensitive substrings, not phrases. Empty input is refused.
 	 * @param GraphName Required string; pass an empty string to search all local graphs, or one exact unique graph name such as EventGraph. Missing or ambiguous names are refused. Graph paths are not accepted selectors.
+	 * @param MatchMode all (default) requires every term; any accepts at least one term.
+	 * @param IncludeLiterals Include stored defaults on unlinked input pins. Does not evaluate runtime values.
+	 * @param NodeClass Optional exact node class name or full class path; no subclass expansion.
+	 * @param Scope asset (default), folder, or project (/Game and enabled project content plugins).
+	 * @param Recursive Include folder descendants; default true.
+	 * @param PageSize Maximum result rows per call, 1..40.
+	 * @param Cursor Empty for the first page, then the returned next_cursor. Keep the query and assets unchanged.
+	 * @param CountOnly Omit rows and count matches within the same scan budget. Follow all cursors for final totals. Skipped assets prevent exhaustive conclusions.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPNodeFind(
 		const FString& Asset,
 		const FString& Words,
-		const FString& GraphName);
+		const FString& GraphName,
+		const FString& MatchMode = TEXT("all"),
+		bool IncludeLiterals = false,
+		const FString& NodeClass = TEXT(""),
+		const FString& Scope = TEXT("asset"),
+		bool Recursive = true,
+		int32 PageSize = 40,
+		const FString& Cursor = TEXT(""),
+		bool CountOnly = false);
 
 	/**
 	 * Read one graph as text.

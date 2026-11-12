@@ -8,6 +8,12 @@
 #include "Tools/TurboMCPToolsets.h"
 
 #include "AssetRegistry/AssetData.h"
+#include "AssetRegistry/ARFilter.h"
+#include "Editor.h"
+#include "Interfaces/IPluginManager.h"
+#include "Misc/PackageName.h"
+#include "Misc/SecureHash.h"
+#include "UObject/Package.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
 #include "Containers/UnrealString.h"
@@ -192,7 +198,7 @@ namespace
 		return Lines;
 	}
 
-	/** True when every word appears in the node's title, class, call, variable or pin names. */
+	/** Match stored node metadata, with explicit any/all semantics and optional input literals. */
 	bool NodeMatchesWords(const UEdGraphNode* InNode, const TArray<FString>& InWords, bool bAny = false, bool bIncludeLiterals = false)
 	{
 		// Every field the spec lists is searched: the title, the called function,
@@ -509,153 +515,193 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeResolve(const FString& NodeIds)
 	return Result;
 }
 
-FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
-	const FString& Asset,
-	const FString& Words,
-	const FString& GraphName)
+namespace
 {
-	if (Asset.IsEmpty())
-	{
-		return TEXT("error: no asset given. Pass the Blueprint to search, in any path form.");
-	}
+// Loading a Blueprint can load its hard dependencies. Refuse known map/redirector
+// packages and incomplete dependency metadata; arbitrary native PostLoad hooks are
+// not sandboxed by this preflight.
+FString NodeSearchLoadBlocker(IAssetRegistry& Registry, FName Seed)
+{
+    using namespace UE::AssetRegistry;
+    TArray<FName> Pending{Seed};
+    TSet<FName> Seen;
+    Seen.Add(Seed);
+    for (int32 Index = 0; Index < Pending.Num(); ++Index)
+    {
+        TArray<FAssetData> Assets;
+        Registry.GetAssetsByPackageName(Pending[Index], Assets, true, false);
+        if (Assets.ContainsByPredicate([](const FAssetData& Entry)
+            { return Entry.HasAnyPackageFlags(PKG_ContainsMap) || Entry.IsRedirector(); }))
+            return TEXT("map or redirector dependency");
+        TArray<FName> Dependencies;
+        if (!Registry.GetDependencies(Pending[Index], Dependencies, EDependencyCategory::Package, EDependencyQuery::Hard))
+            return TEXT("dependency metadata unavailable");
+        for (FName Dependency : Dependencies)
+        {
+            if (Dependency.ToString().StartsWith(TEXT("/Script/")) || Seen.Contains(Dependency)) continue;
+            if (Pending.Num() >= 2048) return TEXT("dependency inspection budget exceeded");
+            Seen.Add(Dependency);
+            Pending.Add(Dependency);
+        }
+    }
+    return FString();
+}
+}
 
-	// Search words are AND terms, not implicit multi-word phrases. Keep list
-	// delimiters local to this tool so asset/path list parsing is unchanged.
-	FString SearchWords = Words;
-	for (int32 Index = 0; Index < SearchWords.Len(); ++Index)
-	{
-		if (FChar::IsWhitespace(SearchWords[Index]) || SearchWords[Index] == TEXT('|'))
-		{
-			SearchWords[Index] = TEXT(',');
-		}
-	}
-	const TArray<FString> WordList = FTurboMCPAssetResolver::SplitList(SearchWords);
-	if (WordList.Num() == 0)
-	{
-		return TEXT("error: no words given. Pass one or more words separated by whitespace, commas ")
-			TEXT("or pipes, for example PrintString, or MyVar.");
-	}
+FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
+    const FString& Asset, const FString& Words, const FString& GraphName,
+    const FString& MatchMode, bool IncludeLiterals, const FString& NodeClass,
+    const FString& Scope, bool Recursive, int32 PageSize, const FString& Cursor, bool CountOnly)
+{
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+        return TEXT("error: node search requires an idle editor outside play and transactions.");
+    if (MatchMode != TEXT("all") && MatchMode != TEXT("any"))
+        return TEXT("error: MatchMode must be all or any.");
+    if (Scope != TEXT("asset") && Scope != TEXT("folder") && Scope != TEXT("project"))
+        return TEXT("error: Scope must be asset, folder or project.");
+    if (PageSize < 1 || PageSize > 40)
+        return TEXT("error: PageSize must be between 1 and 40.");
+    FString SearchWords = Words;
+    for (int32 Index = 0; Index < SearchWords.Len(); ++Index)
+        if (FChar::IsWhitespace(SearchWords[Index]) || SearchWords[Index] == TEXT('|')) SearchWords[Index] = TEXT(',');
+    const TArray<FString> WordList = FTurboMCPAssetResolver::SplitList(SearchWords);
+    if (WordList.IsEmpty()) return TEXT("error: no words given. Pass words separated by whitespace, commas or pipes.");
+    if (Words.Len() > 2048 || NodeClass.Len() > 512 || GraphName.Len() > 512)
+        return TEXT("error: search text exceeds the supported input length.");
+    IAssetRegistry& Registry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+    if (Registry.IsLoadingAssets()) return TEXT("error: Asset Registry discovery is still running. Retry when discovery finishes.");
+    FARFilter Filter;
+    Filter.ClassPaths.Add(UBlueprint::StaticClass()->GetClassPathName());
+    Filter.bRecursiveClasses = true;
+    TArray<FAssetData> Candidates;
+    if (Scope == TEXT("asset"))
+    {
+        if (Asset.IsEmpty()) return TEXT("error: no asset given. Pass a Blueprint path.");
+        FTurboMCPAssetResolver::FResolved Resolved;
+        const FString Error = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+        if (!Error.IsEmpty()) return Error;
+        Filter.SoftObjectPaths.Add(FSoftObjectPath(Resolved.ObjectPath));
+    }
+    else if (Scope == TEXT("folder"))
+    {
+        if (!Asset.StartsWith(TEXT("/")) || Asset.EndsWith(TEXT("/")) ||
+            !FPackageName::IsValidLongPackageName(Asset + TEXT("/_Search"), true))
+            return TEXT("error: folder scope requires a content folder such as /Game/UI, without a trailing slash.");
+        Filter.PackagePaths.Add(FName(*Asset));
+        Filter.bRecursivePaths = Recursive;
+    }
+    else
+    {
+        if (!Asset.IsEmpty()) return TEXT("error: leave Asset empty for project scope, or use folder scope.");
+        Filter.PackagePaths.Add(TEXT("/Game"));
+        for (const TSharedRef<IPlugin>& Plugin : IPluginManager::Get().GetEnabledPlugins())
+            if (Plugin->GetLoadedFrom() == EPluginLoadedFrom::Project && Plugin->CanContainContent())
+            {
+                FString Mount = Plugin->GetMountedAssetPath();
+                Mount.RemoveFromEnd(TEXT("/"));
+                Filter.PackagePaths.AddUnique(FName(*Mount));
+            }
+        Filter.bRecursivePaths = true;
+    }
+    Registry.GetAssets(Filter, Candidates);
+    Candidates.Sort([](const FAssetData& A, const FAssetData& B)
+        { return A.GetObjectPathString() < B.GetObjectPathString(); });
+    if (Scope == TEXT("asset") && Candidates.IsEmpty()) return TEXT("error: the selected asset is not a registered Blueprint.");
 
-	FTurboMCPAssetResolver::FResolved Resolved;
-	const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
-	if (!ResolveError.IsEmpty())
-	{
-		return ResolveError;
-	}
-
-	UBlueprint* Blueprint = Cast<UBlueprint>(LoadObject<UObject>(nullptr, *Resolved.ObjectPath));
-	if (Blueprint == nullptr)
-	{
-		return FString::Printf(
-			TEXT("error: %s is not a Blueprint, so it has no nodes to search."),
-			*Resolved.ObjectPath);
-	}
-
-	if (!GraphName.IsEmpty())
-	{
-		int32 GraphMatches = 0;
-		TurboMCPNodeId::FindGraphByName(Blueprint, GraphName, GraphMatches);
-		if (GraphMatches > 1)
-		{
-			return FString::Printf(TEXT("error: graph name '%s' is ambiguous (%d matches). Graph paths below are diagnostic, not accepted selectors. Omit GraphName to search all graphs. Graphs: %s"), *GraphName, GraphMatches, *ListGraphNames(Blueprint));
-		}
-	}
-	const FString Scope = GraphName.IsEmpty() ? TEXT("all graphs enumerated on this Blueprint") : GraphName;
-
-	TArray<UEdGraph*> Graphs;
-	CollectGraphs(Blueprint, GraphName, Graphs);
-
-	if (Graphs.Num() == 0)
-	{
-		// A graph name that does not exist lists the real ones, as R-GRAPH-LOAD
-		// does, so the caller can correct itself in one step (`P7`).
-		return FString::Printf(
-			TEXT("error: %s has no graph named '%s'. Its graphs are: %s"),
-			*Resolved.ObjectPath, *GraphName, *ListGraphNames(Blueprint));
-	}
-
-	FString Result = FString::Printf(TEXT("read: nodes in %s matching all words [%s], in %s"),
-		*Resolved.ObjectPath, *FString::Join(WordList, TEXT(", ")), *Scope);
-
-	TArray<FString> Lines;
-	int32 TotalMatched = 0;
-	int32 Searched = 0;
-	TArray<FString> GraphsWithHits;
-
-	for (UEdGraph* Graph : Graphs)
-	{
-		int32 HitsInGraph = 0;
-
-		for (UEdGraphNode* Node : Graph->Nodes)
-		{
-			if (Node == nullptr)
-			{
-				continue;
-			}
-			++Searched;
-
-			if (!NodeMatchesWords(Node, WordList))
-			{
-				continue;
-			}
-
-			++HitsInGraph;
-			if (Lines.Num() < MaxFindResults)
-			{
-				// 2.1.4 and this tool's own spec: node ID, graph, title, type ID.
-				// The class name is appended because the engine writer's type ID
-				// carries a localised title half; see the note in R-NODE-RESOLVE.
-				Lines.Add(FString::Printf(
-					TEXT("%s\n    title: %s\n    type ID: %s\n    class: %s\n    comment text: %s"),
-					*TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true),
-					*TurboMCPNodeId::GetNodeTitle(Node),
-					*TurboMCPNodeId::GetNodeTypeId(Node),
-					*Node->GetClass()->GetName(), *Node->NodeComment.Replace(TEXT("\r"),TEXT("\\r")).Replace(TEXT("\n"),TEXT("\\n"))));
-			}
-		}
-
-		if (HitsInGraph > 0)
-		{
-			GraphsWithHits.Add(FString::Printf(TEXT("%s (%d)"), *Graph->GetName(), HitsInGraph));
-			TotalMatched += HitsInGraph;
-		}
-	}
-
-	Result += FString::Printf(TEXT(": %d match(es), %d node(s) searched"),
-		TotalMatched, Searched);
-
-	Result += FString::Printf(TEXT("\ncoverage: %d graph(s); nested graphs included when unscoped; inherited Blueprint assets and native implementations not searched; null node entries skipped; results shown=%d/%d"), Graphs.Num(), Lines.Num(), TotalMatched);
-
-	if (TotalMatched == 0)
-	{
-		// P1 and P7: say what was searched and what would work instead.
-		Result += FString::Printf(
-			TEXT("\nNothing matched. All %d node(s) across %d graph(s) were searched. ")
-			TEXT("The words are matched against each node's title, its called function, ")
-			TEXT("its variable, its class, its comment text and its pin names, and every word must appear. ")
-			TEXT("Try fewer or broader terms, or pass an empty GraphName to search all local graphs."),
-			Searched, Graphs.Num());
-		return Result;
-	}
-
-	Result += FString::Printf(TEXT(", in %s"), *FString::Join(GraphsWithHits, TEXT(", ")));
-
-	for (const FString& Line : Lines)
-	{
-		Result += FString::Printf(TEXT("\n%s"), *Line);
-	}
-
-	if (TotalMatched > Lines.Num())
-	{
-		// 04_FORMATS.md section 1: a capped list says how many are left and the
-		// exact call that shows them.
-		Result += FString::Printf(
-			TEXT("\n(%d more, use ReadTurboMCPNodeFind with a narrower word or a single ")
-			TEXT("graph to see them)"),
-			TotalMatched - Lines.Num());
-	}
-
-	return Result;
+    // Bind continuation to the query and registry candidate set. Graph edits between
+    // calls still require restarting: this is an index cursor, not a frozen snapshot.
+    FString Fingerprint = Scope + TEXT("|") + Asset + TEXT("|") + Words + TEXT("|") + GraphName
+        + TEXT("|") + MatchMode + TEXT("|") + NodeClass + FString::Printf(TEXT("|%d|%d|%d"), IncludeLiterals, Recursive, CountOnly);
+    for (const FAssetData& Candidate : Candidates) Fingerprint += TEXT("|") + Candidate.GetObjectPathString();
+    const FString Revision = FMD5::HashAnsiString(*Fingerprint);
+    int32 AssetIndex = 0, NodeIndex = 0;
+    int64 MatchedBefore = 0, SkippedBefore = 0;
+    if (!Cursor.IsEmpty())
+    {
+        TArray<FString> Parts;
+        Cursor.ParseIntoArray(Parts, TEXT(":"), false);
+        if (Cursor.Len() > 160 || Parts.Num() != 5 || Parts[4] != Revision || !LexTryParseString(AssetIndex, *Parts[0])
+            || !LexTryParseString(NodeIndex, *Parts[1]) || !LexTryParseString(MatchedBefore, *Parts[2])
+            || !LexTryParseString(SkippedBefore, *Parts[3]) || AssetIndex < 0 || AssetIndex >= Candidates.Num()
+            || NodeIndex < 0 || MatchedBefore < 0 || MatchedBefore > MAX_int32 || SkippedBefore < 0 || SkippedBefore > AssetIndex)
+            return TEXT("error: invalid or stale Cursor. Restart with an empty Cursor and unchanged search arguments.");
+    }
+    int32 Visited = 0, Searched = 0, Matched = 0, Skipped = 0, Characters = 0;
+    TArray<FString> Lines, Refusals;
+    bool bStop = false;
+    while (AssetIndex < Candidates.Num() && Visited < 16 && !bStop)
+    {
+        const FAssetData& Candidate = Candidates[AssetIndex];
+        ++Visited;
+        FString Blocker = NodeSearchLoadBlocker(Registry, Candidate.PackageName);
+        UBlueprint* Blueprint = nullptr;
+        if (Blocker.IsEmpty())
+        {
+            Blueprint = Cast<UBlueprint>(StaticLoadObject(UBlueprint::StaticClass(), nullptr,
+                *Candidate.GetObjectPathString(), nullptr, LOAD_DisableCompileOnLoad | LOAD_NoRedirects | LOAD_NoWarn));
+            if (!Blueprint) Blocker = TEXT("Blueprint load failed");
+        }
+        if (!Blocker.IsEmpty())
+        {
+            Refusals.Add(Candidate.GetObjectPathString() + TEXT(": ") + Blocker);
+            ++Skipped; ++AssetIndex; NodeIndex = 0; continue;
+        }
+        TArray<UEdGraph*> Graphs;
+        CollectGraphs(Blueprint, GraphName, Graphs);
+        if (!GraphName.IsEmpty())
+        {
+            int32 GraphMatches = 0;
+            TurboMCPNodeId::FindGraphByName(Blueprint, GraphName, GraphMatches);
+            if (GraphMatches > 1 || (Graphs.IsEmpty() && Scope == TEXT("asset")))
+            {
+                if (Scope == TEXT("asset"))
+                    return FString::Printf(TEXT("error: graph '%s' is missing or ambiguous in %s. Graphs: %s"),
+                        *GraphName, *Candidate.GetObjectPathString(), *ListGraphNames(Blueprint));
+                Refusals.Add(Candidate.GetObjectPathString() + TEXT(": graph name is ambiguous"));
+                ++Skipped; ++AssetIndex; NodeIndex = 0; continue;
+            }
+        }
+        Graphs.Sort([](const UEdGraph& A, const UEdGraph& B) { return A.GetPathName() < B.GetPathName(); });
+        TArray<UEdGraphNode*> Nodes;
+        for (UEdGraph* Graph : Graphs) for (UEdGraphNode* Node : Graph->Nodes) if (Node) Nodes.Add(Node);
+        if (NodeIndex > Nodes.Num()) return TEXT("error: graph contents changed during pagination. Restart with an empty Cursor.");
+        while (NodeIndex < Nodes.Num())
+        {
+            if (Searched >= 10000) { bStop = true; break; }
+            UEdGraphNode* Node = Nodes[NodeIndex];
+            const bool bMatches = (NodeClass.IsEmpty() || Node->GetClass()->GetName() == NodeClass || Node->GetClass()->GetPathName() == NodeClass)
+                && NodeMatchesWords(Node, WordList, MatchMode == TEXT("any"), IncludeLiterals);
+            FString Line;
+            if (bMatches && !CountOnly)
+            {
+                Line = FString::Printf(TEXT("%s\n    title: %s\n    type ID: %s\n    class: %s"),
+                    *TurboMCPNodeId::MakeForNode(Node, true), *TurboMCPNodeId::GetNodeTitle(Node).Replace(TEXT("\r"), TEXT("\\r")).Replace(TEXT("\n"), TEXT("\\n")),
+                    *TurboMCPNodeId::GetNodeTypeId(Node).Replace(TEXT("\r"), TEXT("\\r")).Replace(TEXT("\n"), TEXT("\\n")), *Node->GetClass()->GetName());
+                if (Lines.Num() >= PageSize || (Characters + Line.Len() > 24000 && !Lines.IsEmpty())) { bStop = true; break; }
+                // Keep a pathological display label from exceeding the response budget;
+                // the exact node identity remains available on its own line.
+                if (Line.Len() > 24000) Line = TurboMCPNodeId::MakeForNode(Node, true) + TEXT("\n    display fields omitted: oversized labels");
+                Characters += Line.Len(); Lines.Add(Line);
+            }
+            ++Searched; ++NodeIndex;
+            if (bMatches) ++Matched;
+        }
+        if (NodeIndex == Nodes.Num()) { ++AssetIndex; NodeIndex = 0; }
+    }
+    const bool bScanFinished = AssetIndex == Candidates.Num();
+    const int64 TotalMatched = static_cast<int64>(MatchedBefore) + Matched;
+    const int64 TotalSkipped = static_cast<int64>(SkippedBefore) + Skipped;
+    FString Result = FString::Printf(TEXT("read: nodes matching %s words [%s]\ncoverage: scan_finished=%s; complete=%s; eligible_assets=%d; next_asset_index=%d; nodes_searched_this_page=%d; matches_this_page=%d; matches_so_far=%lld; skipped_assets_so_far=%lld; results shown=%d\n"),
+        *MatchMode, *FString::Join(WordList, TEXT(", ")), bScanFinished ? TEXT("true") : TEXT("false"),
+        bScanFinished && TotalSkipped == 0 ? TEXT("true") : TEXT("false"), Candidates.Num(), AssetIndex, Searched, Matched, TotalMatched, TotalSkipped, Lines.Num());
+    Result += TEXT("Scope includes nested local graphs; inherited Blueprint assets must match the asset scope separately; native implementations and runtime dispatch are not searched. Null node entries are skipped.\n");
+    Result += FString::Printf(TEXT("filters: literals=%s; exact node class=%s; count_only=%s\n"), IncludeLiterals ? TEXT("included") : TEXT("excluded"), NodeClass.IsEmpty() ? TEXT("any") : *NodeClass, CountOnly ? TEXT("true") : TEXT("false"));
+    if (Matched == 0) Result += bScanFinished && TotalMatched == 0 && TotalSkipped == 0 ? TEXT("Nothing matched in the completed scan. Try fewer or broader terms.\n") : TEXT("No matches on this page; this is not proof of absence.\n");
+    for (const FString& Line : Lines) Result += Line + TEXT("\n");
+    for (const FString& Refusal : Refusals) Result += TEXT("skipped: ") + Refusal + TEXT("\n");
+    Result += bScanFinished ? TEXT("next_cursor: none\n") : FString::Printf(TEXT("next_cursor: %d:%d:%lld:%lld:%s\n"), AssetIndex, NodeIndex, TotalMatched, TotalSkipped, *Revision);
+    Result += TEXT("Follow every cursor without editing assets. matches_so_far is a final total only when scan_finished=true; skipped assets prevent exhaustive conclusions. No edit, compile, save, checkout, map load or PIE was requested. Asset loading may execute native load hooks; this is not a sandbox.");
+    return Result;
 }
 
 FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const FString& GraphName,const FString& NodeId,int32 NextHops)
