@@ -740,18 +740,26 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 						const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Consumer);
 						const UFunction* Function = Call ? Call->GetTargetFunction() : nullptr;
 						const FProperty* Parameter = Function ? FindFProperty<FProperty>(Function, Input->PinName) : nullptr;
-						if (!Parameter || !Parameter->HasAnyPropertyFlags(CPF_ReferenceParm)
-							|| Parameter->HasAnyPropertyFlags(CPF_ConstParm)) continue;
+						if (!Parameter) continue;
 						const FString OwnerPath = Function->GetOuterUClass()->GetPathName();
-						const bool bContainerLibrary = OwnerPath == TEXT("/Script/Engine.KismetArrayLibrary")
-							|| OwnerPath == TEXT("/Script/Engine.BlueprintMapLibrary")
-							|| OwnerPath == TEXT("/Script/Engine.BlueprintSetLibrary");
-						// Stock container libraries expose mutation through non-const
-						// reference container parameters. Custom functions may not write.
-						const bool bContainer = CastField<FArrayProperty>(Parameter)
-							|| CastField<FMapProperty>(Parameter) || CastField<FSetProperty>(Parameter);
-						auto& Sites = bContainerLibrary && bContainer
-							? ReferenceMutationsByVariable : PossibleWritesByVariable;
+						const FName FunctionName = Function->GetFName();
+						const bool bMutableReference = Parameter->HasAnyPropertyFlags(CPF_ReferenceParm)
+							&& !Parameter->HasAnyPropertyFlags(CPF_ConstParm);
+						const bool bArrayMutation = OwnerPath == TEXT("/Script/Engine.KismetArrayLibrary")
+							&& Input->PinName == TEXT("TargetArray") && CastField<FArrayProperty>(Parameter) && bMutableReference;
+						// Map/set custom thunks mutate targets declared const in their
+						// C++ stubs. Resolve these exact stock operations before applying
+						// the normal const-reference exclusion; never infer from display names.
+						const bool bMapMutation = OwnerPath == TEXT("/Script/Engine.BlueprintMapLibrary")
+							&& Input->PinName == TEXT("TargetMap") && CastField<FMapProperty>(Parameter)
+							&& (FunctionName == TEXT("Map_Add") || FunctionName == TEXT("Map_Remove") || FunctionName == TEXT("Map_Clear"));
+						const bool bSetMutation = OwnerPath == TEXT("/Script/Engine.BlueprintSetLibrary")
+							&& Input->PinName == TEXT("TargetSet") && CastField<FSetProperty>(Parameter)
+							&& (FunctionName == TEXT("Set_Add") || FunctionName == TEXT("Set_AddItems")
+								|| FunctionName == TEXT("Set_Remove") || FunctionName == TEXT("Set_RemoveItems") || FunctionName == TEXT("Set_Clear"));
+						const bool bKnownMutation = bArrayMutation || bMapMutation || bSetMutation;
+						if (!bKnownMutation && !bMutableReference) continue;
+						auto& Sites = bKnownMutation ? ReferenceMutationsByVariable : PossibleWritesByVariable;
 						Sites.FindOrAdd(VariableName).Add(GraphName + TEXT(" -> ") + Function->GetName());
 					}
 				}
