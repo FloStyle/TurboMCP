@@ -72,6 +72,34 @@ def main():
             check("JSON refusal provides budget recovery: " + detail, "Raise TokenBudget" in message and "does not enforce a hard response limit" in message, message)
         check("JSON budget refusal does not count as a read: " + detail, "read: 0 of 1" in refusal, refusal[:100])
 
+    # Filter a real fixture graph and compare both renderings against the unfiltered inventory.
+    args = {"assets": ASSET, "detail": "signatures", "format": "json", "tokenBudget": "1000000"}
+    whole = session.call(READ_TOOLSET, "ReadTurboMCPBlueprintLoad", args)
+    inventory, _ = json.JSONDecoder().raw_decode(whole[whole.index("{"):])
+    names = [graph["name"] for graph in inventory["graphs"]]
+    check("filter fixture has multiple graphs", len(names) > 1, str(names))
+    if len(names) > 1:
+        chosen = next((name for name in names if name != "EventGraph"), names[0])
+        args["graphFilter"] = chosen
+        scoped = session.call(READ_TOOLSET, "ReadTurboMCPBlueprintLoad", args)
+        doc, _ = json.JSONDecoder().raw_decode(scoped[scoped.index("{"):])
+        expected = [name for name in names if chosen.lower() in name.lower()]
+        check("JSON graph inventory is scoped", [g["name"] for g in doc["graphs"]] == expected, str(doc))
+        check("JSON declaration counts agree", doc["counts"]["variables"] == len(doc["variables"]), str(doc))
+        check("JSON labels selected scope", "selected graphs" in doc.get("scope", ""))
+        args["format"] = "read"
+        text = session.call(READ_TOOLSET, "ReadTurboMCPBlueprintLoad", args)
+        check("text filtered read succeeds", "read: 1 of 1" in text, text[:180])
+        check("filtered read avoids whole-asset unused claims", "not evaluated for a filtered read" in text, text)
+        for name in names:
+            if name not in expected:
+                check("text omits unrelated graph: " + name, name not in text, text)
+        args["graphFilter"] = "__no_such_graph__"
+        for fmt in ("read", "json"):
+            args["format"] = fmt
+            bad = session.call(READ_TOOLSET, "ReadTurboMCPBlueprintLoad", args)
+            check("unmatched filter refuses: " + fmt, "read: 0 of 1" in bad, bad[:200])
+
     print("")
     if failures:
         print("RESULT: FAIL (%d check(s) failed: %s)" % (len(failures), ", ".join(failures)))
