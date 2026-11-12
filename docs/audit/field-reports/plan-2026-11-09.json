@@ -243,16 +243,16 @@
       "title": "Report by-reference container mutations in variable usage",
       "kind": "bug",
       "priority": "P0",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator-reference-writes",
+      "validation": "focused_pass",
       "source_keys": [
         "2026-11-09_S2/BL-17"
       ],
       "dependencies": [],
       "complexity_estimate": 5,
-      "next_step": "Source reconciliation proposal received from worker; integrator must record exact approved scope/base before implementation.",
+      "next_step": "Implemented; focused container and reroute evidence passed. See nov12-reference-writes-review.md for static-analysis and coverage limits.",
       "acceptance": "Recognize proven mutating by-reference operations; distinguish possible writes from confirmed writes and avoid false unused-variable claims."
     },
     {
