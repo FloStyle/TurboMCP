@@ -968,9 +968,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 		return Result;
 	}
 
-	// Every section is built at the requested level. The budget is applied after,
-	// by dropping whole sections, so a caller knows exactly what was lost rather
-	// than finding a line cut in half.
+	// Build the requested detail once. Budget refusal never substitutes a manifest.
 	Result.Text = FString::Printf(TEXT("read: %s"), *BlueprintPath(InBlueprint));
 
 	Result.Text += TEXT("\n") + RenderManifest(InBlueprint);
@@ -987,94 +985,6 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 		Result.Text += RenderBodies(InBlueprint, Graphs, InRequest.Detail, Result.Notes);
 	}
 
-	// The budget, if one was given. It drops whole graph bodies, biggest first,
-	// which is what `03_TOOLS.md` asks for, and never silently truncates a line.
-	if (InRequest.TokenBudgetChars > 0 && Result.Text.Len() > InRequest.TokenBudgetChars)
-	{
-		const int32 OriginalLength = Result.Text.Len();
-		Result.bReduced = true;
-
-		if (PrintsBodies(InRequest.Detail))
-		{
-			// Step 1: drop the bodies, which are almost always the largest part.
-			FRequest Lower = InRequest;
-			Lower.Detail = EDetail::Signatures;
-			FResult Without = Read(InBlueprint, Lower);
-
-			Result.Reductions.Add(FString::Printf(
-				TEXT("graph bodies were dropped to reduce output toward the %d character budget. ")
-				TEXT("Use ReadTurboMCPGraphLoad with one graph name to read a body, ")
-				TEXT("or raise the budget."),
-				InRequest.TokenBudgetChars));
-
-			if (Without.Text.Len() <= InRequest.TokenBudgetChars)
-			{
-				Result.Text = Without.Text;
-				Result.DetailUsed = Without.DetailUsed;
-			}
-			else
-			{
-				// Step 2: even without bodies it does not fit, so step down to the
-				// manifest rather than truncating mid-section.
-				Lower.Detail = EDetail::Manifest;
-				FResult Minimal = Read(InBlueprint, Lower);
-				Result.Text = Minimal.Text;
-				Result.DetailUsed = EDetail::Manifest;
-				Result.Reductions.Add(FString::Printf(
-					TEXT("the relation layer and the signatures were dropped too, ")
-					TEXT("because even without bodies the read was %d characters over ")
-					TEXT("the budget."),
-					Without.Text.Len() - InRequest.TokenBudgetChars));
-			}
-		}
-		else if (InRequest.Detail != EDetail::Manifest)
-		{
-			// Already at or below signatures, so the only lever left is the
-			// manifest.
-			FRequest Lower = InRequest;
-			Lower.Detail = EDetail::Manifest;
-			FResult Minimal = Read(InBlueprint, Lower);
-			Result.Text = Minimal.Text;
-			Result.DetailUsed = EDetail::Manifest;
-			Result.Reductions.Add(FString::Printf(
-				TEXT("everything above the manifest was dropped to reduce output toward the ")
-				TEXT("%d character budget (the full read was %d characters)."),
-				InRequest.TokenBudgetChars, OriginalLength));
-		}
-		else
-		{
-			// *** THE FLOOR OF THE LADDER, AND THE END OF THE RECURSION. THIS BRANCH USED TO SET `Lower.Detail =
-			// Manifest` AND CALL `Read` AGAIN - FROM A CALL THAT WAS ALREADY AT `Manifest`. NOTHING CHANGED BETWEEN
-			// ONE CALL AND THE NEXT, SO A MANIFEST THAT EXCEEDED THE BUDGET RECURSED UNTIL THE STACK DIED. That is
-			// the reported crash, and the report's own words fit it: a read AT `manifest` DETAIL, with a graph
-			// filter, on a Blueprint with 38 graphs and about 960 nodes. ***
-			// *** THERE IS NO LEVER LEFT AT THE FLOOR, SO THE ANSWER SAYS SO AND NAMES THE ASSET AND THE TWO NUMBERS.
-			// A BOUNDED ANSWER THAT STATES ITS LIMIT IS A RESULT; THE RECURSION WAS A DEAD SESSION. ***
-			Result.Reductions.Add(FString::Printf(
-				TEXT("the budget cannot be met: this read is already at manifest detail, which is the smallest ")
-				TEXT("thing this reader can print, and %s prints %d characters against a budget of %d. Nothing ")
-				TEXT("further can be dropped without dropping the manifest itself. Raise the budget, or read one ")
-				TEXT("graph at a time."),
-				InBlueprint != nullptr ? *BlueprintPath(InBlueprint) : TEXT("(no asset)"),
-				Result.Text.Len(), InRequest.TokenBudgetChars));
-		}
-	}
-
-	if (Result.Reductions.Num() > 0)
-	{
-		// `03_TOOLS.md`: end with a block that lists what was reduced and the exact
-		// call that gets the rest.
-		Result.Text += FString::Printf(TEXT("\n\n; character-budget notes (detail used: %s):"),
-			Result.DetailUsed == EDetail::Full ? TEXT("full")
-				: Result.DetailUsed == EDetail::Bodies ? TEXT("bodies")
-				: Result.DetailUsed == EDetail::Signatures ? TEXT("signatures")
-				: TEXT("manifest"));
-		for (const FString& Reduction : Result.Reductions)
-		{
-			Result.Text += FString::Printf(TEXT("\n;   %s"), *Reduction);
-		}
-	}
-
 	if (Result.Notes.Num() > 0)
 	{
 		Result.Text += FString::Printf(
@@ -1083,6 +993,21 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 		{
 			Result.Text += FString::Printf(TEXT("\n%s"), *Note);
 		}
+	}
+
+	// Refuse an oversized document without substituting a different detail level.
+	// Count diagnostic notes too, so the required size describes the actual document.
+	if (InRequest.TokenBudgetChars > 0 && Result.Text.Len() > InRequest.TokenBudgetChars)
+	{
+		const TCHAR* DetailName = InRequest.Detail == EDetail::Full ? TEXT("full")
+			: InRequest.Detail == EDetail::Bodies ? TEXT("bodies")
+			: InRequest.Detail == EDetail::Signatures ? TEXT("signatures") : TEXT("manifest");
+		Result.Text = FString::Printf(
+			TEXT("error: %s at requested detail '%s' requires %d characters; TokenBudget is %d. ")
+			TEXT("The requested document was not returned or downgraded. Raise TokenBudget to the required size, ")
+			TEXT("narrow GraphFilter, or use ReadTurboMCPGraphLoad for a paged graph read. ")
+			TEXT("TokenBudget applies per asset and does not enforce a hard response limit."),
+			*BlueprintPath(InBlueprint), DetailName, Result.Text.Len(), InRequest.TokenBudgetChars);
 	}
 
 	return Result;
