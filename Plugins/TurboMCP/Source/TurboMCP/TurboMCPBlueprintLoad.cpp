@@ -97,7 +97,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 	FTurboMCPBlueprintRead::FRequest Request;
 	Request.Detail = DetailLevel;
 	Request.TokenBudgetChars = BudgetChars;
-	Request.GraphFilter = FTurboMCPAssetResolver::SplitList(GraphFilter);
+	Request.GraphFilter = FTurboMCPAssetResolver::SplitList(GraphFilter == TEXT("*") ? FString() : GraphFilter);
 
 	// Accumulate per-asset results before formatting the summary counts.
 	FString Result;

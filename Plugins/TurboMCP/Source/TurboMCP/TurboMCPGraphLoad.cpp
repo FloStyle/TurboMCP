@@ -135,8 +135,10 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 	const FString& Asset,
 	const FString& GraphName,
 	const FString& Format,
-	const FString& Detail, int32 Offset, int32 MaxChars, const FString& Revision, const FString& EntryFilter)
+	const FString& Detail, int32 Offset, int32 MaxChars, const FString& InRevision, const FString& InEntryFilter)
 {
+    const FString Revision = InRevision == TEXT("first") ? FString() : InRevision;
+    const FString EntryFilter = InEntryFilter == TEXT("*") ? FString() : InEntryFilter;
     if (Offset < 0 || MaxChars < 256 || MaxChars > MaxGraphTextChars) return TEXT("error: Offset must be nonnegative and MaxChars must be 256..24000");
     if (Offset > 0 && Revision.IsEmpty()) return TEXT("error: subsequent pages require the revision token from page zero");
 	if (Asset.IsEmpty())

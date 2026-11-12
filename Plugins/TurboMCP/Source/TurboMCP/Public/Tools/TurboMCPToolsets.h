@@ -122,14 +122,14 @@ public:
 	 * Compact help targets 2000 characters for one tool and keeps the
 	 * required arguments visible. An unknown name points to discovery.
 	 *
-	 * Both fields are required by this tool's live schema. Pass an empty string
-	 * for an unused field; requiredness of other tools comes from their own schemas.
+	 * Both fields are optional. Omit both to list available toolsets; omit ToolName
+	 * to list the named toolset. Other tools retain their own required arguments.
 	 *
-	 * @param ToolsetName Registered toolset name, e.g. TurboMCP.TurboMCPReadToolset. Empty searches all toolsets for ToolName. Supply an empty string when unused.
-	 * @param ToolName Bare tool name, e.g. ReadTurboMCPStatus. Empty lists the named toolset; use the returned list:<offset> for another page. find:0:<words> searches names and descriptions.
+	 * @param ToolsetName Optional; * or empty searches all toolsets. With both arguments omitted, lists toolsets. Registered toolset name, e.g. TurboMCP.TurboMCPReadToolset. Empty searches all toolsets for ToolName. Supply an empty string when unused.
+	 * @param ToolName Optional; * or empty lists tools in the named toolset. ToolSchema uses argument names Toolset and Tool instead. Bare tool name, e.g. ReadTurboMCPStatus. Empty lists the named toolset; use the returned list:<offset> for another page. find:0:<words> searches names and descriptions.
 	*/
 	UFUNCTION(meta = (AICallable))
-	static FString ReadTurboMCPToolHelp(const FString& ToolsetName, const FString& ToolName);
+	static FString ReadTurboMCPToolHelp(const FString& ToolsetName = TEXT("*"), const FString& ToolName = TEXT("*"));
 
 	/**
 	 * Read assets matching a query, like the editor's quick open search.
@@ -271,7 +271,7 @@ public:
 	 * A missing name lists the existing graphs. Read-only node descriptions and
 	 * display labels supplement the exact node and pin identities in the body.
 	 *
-	 * Supply EntryFilter as an empty string for all entries. A non-empty EntryFilter matches event/function names by case-insensitive substring. Empty reads all entries. Filtered views are inspection-only. Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input.
+	 * Omit EntryFilter or supply * or an empty string for all entries. A non-empty EntryFilter matches event/function names by case-insensitive substring. Empty reads all entries. Filtered views are inspection-only. Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty is refused.
 	 * @param GraphName Exact graph or authored event function name, e.g. EventGraph or ReceiveBeginPlay. Empty is refused.
@@ -279,7 +279,7 @@ public:
 	 * @param Detail manifest, signatures, bodies or full; default or empty means bodies. Each level adds detail.
 	 * @param Offset Zero-based character offset. Start at 0; for later pages use the returned nextOffset and Revision together. Negative values are refused.
 	 * @param MaxChars Maximum page characters, 256..24000 inclusive; default 24000. Partial pages are inspection-only, not standalone write-back input.
-	 * @param Revision Supply an empty string for page zero; the MCP schema requires this argument. Later pages require the revision token from page zero with unchanged arguments; stale tokens are refused.
+	 * @param Revision Omit or supply first or an empty string for page zero. Later pages require the revision token from page zero with unchanged arguments; stale tokens are refused.
 	 * @param EntryFilter Case-insensitive entry-name substring, e.g. BeginPlay. Empty includes all entries. Filtered views are inspection-only.
 	*/
 	UFUNCTION(meta = (AICallable))
@@ -288,24 +288,24 @@ public:
 		const FString& GraphName,
 		const FString& Format = TEXT("read"),
 		const FString& Detail = TEXT("bodies"),
-        int32 Offset = 0, int32 MaxChars = 24000, const FString& Revision = TEXT(""), const FString& EntryFilter = TEXT(""));
+        int32 Offset = 0, int32 MaxChars = 24000, const FString& Revision = TEXT("first"), const FString& EntryFilter = TEXT("*"));
 
 	/**
 	 * Inspect Blueprint structure and selected graph content; loads assets without requesting edits, compile or save.
 	 * This is not a complete export or proof of runtime behavior. Relation analysis is static; omitted content and budget reductions are reported. Widget details are included only for unfiltered text reads above manifest detail.
 	 * @param Assets Required comma- or pipe-separated list of 1..8 Blueprint paths or unique short names, e.g. /Game/Tests/BP_NodeTest. Empty input is refused. Per-asset failures do not discard other results.
-	 * @param Detail Required string: manifest, signatures, bodies or full (case-insensitive). Empty uses manifest. Higher levels add signatures/relations, graph bodies, then editing details; text output may fall back to lower detail to reduce size.
-	 * @param GraphFilter Required comma- or pipe-separated graph-name fragments. Empty selects all local graphs; otherwise any case-insensitive substring match is included. No match produces a per-asset refusal listing graph names. This does not filter all asset metadata.
-	 * @param Format Required string: read or json (case-insensitive); empty uses read. JSON is embedded per asset in a text response with headings/status, not returned as one standalone JSON document. Both formats support all detail levels.
-	 * @param TokenBudget Required string of positive decimal digits, up to 2147483647; empty uses 60000. Despite the name, this is a per-asset character budget, not tokens or a hard response limit. Text drops detail but retains an oversized minimum manifest with a warning; headings and notes add overhead. JSON refuses an oversized document. Use smaller graph scopes or ReadTurboMCPGraphLoad for bounded graph reads.
+	 * @param Detail Optional string (default manifest): manifest, signatures, bodies or full (case-insensitive). Empty uses manifest. Higher levels add signatures/relations, graph bodies, then editing details; text output may fall back to lower detail to reduce size.
+	 * @param GraphFilter Optional; * (default) or empty selects all graphs. Comma- or pipe-separated graph-name fragments. Empty selects all local graphs; otherwise any case-insensitive substring match is included. No match produces a per-asset refusal listing graph names. This does not filter all asset metadata.
+	 * @param Format Optional string (default read): read or json (case-insensitive); empty uses read. JSON is embedded per asset in a text response with headings/status, not returned as one standalone JSON document. Both formats support all detail levels.
+	 * @param TokenBudget Optional string (default 60000) of positive decimal digits, up to 2147483647; empty uses 60000. Despite the name, this is a per-asset character budget, not tokens or a hard response limit. Text drops detail but retains an oversized minimum manifest with a warning; headings and notes add overhead. JSON refuses an oversized document. Use smaller graph scopes or ReadTurboMCPGraphLoad for bounded graph reads.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPBlueprintLoad(
 		const FString& Assets,
-		const FString& Detail,
-		const FString& GraphFilter,
-		const FString& Format,
-		const FString& TokenBudget);
+		const FString& Detail = TEXT("manifest"),
+		const FString& GraphFilter = TEXT("*"),
+		const FString& Format = TEXT("read"),
+		const FString& TokenBudget = TEXT("60000"));
 
 	/**
 	 * Read saved registry references into or out of an asset. Unsaved reference changes are not authoritative registry data; no explicit compile or save. Waits for registry scanning before reporting counts.

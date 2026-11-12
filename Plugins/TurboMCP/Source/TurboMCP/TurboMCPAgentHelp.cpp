@@ -312,6 +312,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 	FString WantedTool = ToolName;
 	WantedToolset.TrimStartAndEndInline();
 	WantedTool.TrimStartAndEndInline();
+    if (WantedToolset == TEXT("*")) WantedToolset.Empty();
+    if (WantedTool == TEXT("*")) WantedTool.Empty();
 	// A continuation uses the existing string field, preserving the public call schema.
 	int32 ListOffset = 0;
 	if (WantedTool.StartsWith(TEXT("list:")))
@@ -327,11 +329,6 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 	}
 
 
-	if (WantedToolset.IsEmpty() && WantedTool.IsEmpty())
-	{
-		return TEXT("error: no tool named. Pass a toolset name and a tool name, or one joined ")
-			TEXT("name such as TurboMCP.TurboMCPReadToolset.ReadTurboMCPStatus.");
-	}
 
 	if (!UToolsetRegistry::IsAvailable())
 	{
@@ -349,6 +346,13 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 	{
 		KnownToolsetNames.Add(Entry.Name);
 	}
+
+    if (WantedToolset.IsEmpty() && WantedTool.IsEmpty())
+    {
+        KnownToolsetNames.Sort();
+        return TEXT("Available toolsets:\n") + FString::Join(KnownToolsetNames, TEXT("\n"))
+            + TEXT("\nPass ToolsetName to list its tools. For ReadTurboMCPToolSchema, use Toolset and Tool instead.");
+    }
 
 	// Does this name already name a toolset exactly? Checked before any split,
 	// because a toolset name may itself contain dots, for example
