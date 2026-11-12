@@ -277,7 +277,7 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 		TArray<FString> Events;
 		TArray<FString> Functions;
 		FTurboMCPBlueprintRead::CollectEventsAndFunctions(
-			InBlueprint, Events, Functions);
+			InBlueprint, Events, Functions, &Graphs);
 
 		auto ToArray = [](const TArray<FString>& In)
 		{

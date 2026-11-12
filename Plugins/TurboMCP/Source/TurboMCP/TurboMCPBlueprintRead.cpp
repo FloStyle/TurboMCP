@@ -345,7 +345,8 @@ FString FTurboMCPBlueprintRead::RenderVariables(const UBlueprint* InBlueprint)
 }
 
 void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBlueprint,
-	TArray<FString>& OutEvents, TArray<FString>& OutFunctions)
+	TArray<FString>& OutEvents, TArray<FString>& OutFunctions,
+	const TArray<UEdGraph*>* InGraphs)
 {
 	OutEvents.Reset();
 	OutFunctions.Reset();
@@ -356,7 +357,8 @@ void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBluep
 	}
 
 	TArray<UEdGraph*> Graphs;
-	CollectGraphs(InBlueprint, Graphs);
+	if (InGraphs) Graphs = *InGraphs;
+	else CollectGraphs(InBlueprint, Graphs);
 
 	// Signatures are read from the real `UFunction`, not from the node.
 	//
@@ -427,7 +429,8 @@ void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBluep
 	}
 }
 
-FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint)
+FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint,
+	const TArray<UEdGraph*>* InGraphs)
 {
 	if (InBlueprint == nullptr)
 	{
@@ -436,7 +439,7 @@ FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint)
 
 	TArray<FString> Events;
 	TArray<FString> Functions;
-	CollectEventsAndFunctions(InBlueprint, Events, Functions);
+	CollectEventsAndFunctions(InBlueprint, Events, Functions, InGraphs);
 
 	FString Out;
 
@@ -976,7 +979,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 	if (InRequest.Detail != EDetail::Manifest)
 	{
 		Result.Text += TEXT("\n") + RenderVariables(InBlueprint);
-		Result.Text += TEXT("\n") + RenderSignatures(InBlueprint);
+		Result.Text += TEXT("\n") + RenderSignatures(InBlueprint, &Graphs);
 		Result.Text += TEXT("\n") + RenderRelations(InBlueprint, AllGraphs, AllGraphs.Num(), Result.Notes, Result.Usage);
 	}
 

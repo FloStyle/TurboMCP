@@ -56,13 +56,7 @@ public:
 	/** True when this level prints the relation layer. */
 	static bool PrintsRelations(EDetail InDetail);
 
-	/**
-	 * Everything one call needs.
-	 *
-	 * Collected into a struct rather than passed as eight arguments, because the
-	 * graph filter and the budget interact: when the budget is passed, whole
-	 * graphs are dropped, and the caller has to be told which and why.
-	 */
+	/** Requested detail, graph scope and per-asset document budget. */
 	struct FRequest
 	{
 		EDetail Detail = EDetail::Manifest;
@@ -70,13 +64,7 @@ public:
 		/** A list of name fragments. A graph matches when its name contains one. */
 		TArray<FString> GraphFilter;
 
-		/**
-		 * The soft ceiling on the result, in characters.
-		 *
-		 * Zero means no ceiling. `03_TOOLS.md` requires that passing it steps the
-		 * detail level down per graph, biggest first, and that the result ends by
-		 * naming what was reduced and the exact call that gets the rest.
-		 */
+		/** Maximum document characters; zero disables the check. Oversized reads refuse without downgrading. */
 		int32 TokenBudgetChars = 0;
 	};
 
@@ -97,10 +85,10 @@ public:
 		FString Text;
 		FUsageSummary Usage;
 
-		/** The level actually used, which may be lower than the one asked for. */
+		/** The requested level; budget refusals never substitute a lower level. */
 		EDetail DetailUsed = EDetail::Manifest;
 
-		/** True when the budget forced a reduction. */
+		/** Legacy reduction flag; requested-detail reads no longer reduce output. */
 		bool bReduced = false;
 
 		/** One line per reduction, naming what was left out and the call that gets it. */
@@ -139,7 +127,8 @@ public:
 	 * writer calls this too, so there is one collection and two renderings.
 	 */
 	static void CollectEventsAndFunctions(const UBlueprint* InBlueprint,
-		TArray<FString>& OutEvents, TArray<FString>& OutFunctions);
+		TArray<FString>& OutEvents, TArray<FString>& OutFunctions,
+		const TArray<UEdGraph*>* InGraphs = nullptr);
 
 private:
 	/** The asset path, class, parent, interfaces and counts. */
@@ -149,7 +138,8 @@ private:
 	static FString RenderVariables(const UBlueprint* InBlueprint);
 
 	/** Every function and event with its signature. */
-	static FString RenderSignatures(const UBlueprint* InBlueprint);
+	static FString RenderSignatures(const UBlueprint* InBlueprint,
+		const TArray<UEdGraph*>* InGraphs = nullptr);
 
 	/**
 	 * The relation layer: call graph, variable map, assets touched, dead code.
