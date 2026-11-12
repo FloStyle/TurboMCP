@@ -228,11 +228,11 @@ public:
 	 * @param GraphName Required string; pass an empty string to search all local graphs, or one exact unique graph name such as EventGraph. Missing or ambiguous names are refused. Graph paths are not accepted selectors.
 	 * @param MatchMode all (default) requires every term; any accepts at least one term.
 	 * @param IncludeLiterals Include stored defaults on unlinked input pins. Does not evaluate runtime values.
-	 * @param NodeClass Optional exact node class name or full class path; no subclass expansion.
+	 * @param NodeClass Exact node class name or full class path; any (default) disables this filter. No subclass expansion.
 	 * @param Scope asset (default), folder, or project (/Game and enabled project content plugins).
 	 * @param Recursive Include folder descendants; default true.
 	 * @param PageSize Maximum result rows per call, 1..40.
-	 * @param Cursor Empty for the first page, then the returned next_cursor. Keep the query and assets unchanged.
+	 * @param Cursor first (default) or empty for the first page, then the returned next_cursor. Keep the query and assets unchanged.
 	 * @param CountOnly Omit rows and count matches within the same scan budget. Follow all cursors for final totals. Skipped assets prevent exhaustive conclusions.
 	 */
 	UFUNCTION(meta = (AICallable))
@@ -242,11 +242,11 @@ public:
 		const FString& GraphName,
 		const FString& MatchMode = TEXT("all"),
 		bool IncludeLiterals = false,
-		const FString& NodeClass = TEXT(""),
+		const FString& NodeClass = TEXT("any"),
 		const FString& Scope = TEXT("asset"),
 		bool Recursive = true,
 		int32 PageSize = 40,
-		const FString& Cursor = TEXT(""),
+		const FString& Cursor = TEXT("first"),
 		bool CountOnly = false);
 
 	/**

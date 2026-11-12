@@ -23,6 +23,7 @@
 #include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_CreateDelegate.h"
+#include "K2Node_BaseMCDelegate.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
 #include "K2Node_Variable.h"
@@ -219,6 +220,8 @@ namespace
 
         if (const UK2Node_CreateDelegate* Delegate = Cast<UK2Node_CreateDelegate>(InNode))
             Fields.Add(Delegate->GetFunctionName().ToString());
+        if (const UK2Node_BaseMCDelegate* DelegateMember = Cast<UK2Node_BaseMCDelegate>(InNode))
+            Fields.Add(DelegateMember->GetPropertyName().ToString());
 
 		FString PinNames;
 		for (const UEdGraphPin* Pin : InNode->Pins)
@@ -616,7 +619,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
     const FString Revision = FMD5::HashAnsiString(*Fingerprint);
     int32 AssetIndex = 0, NodeIndex = 0;
     int64 MatchedBefore = 0, SkippedBefore = 0;
-    if (!Cursor.IsEmpty())
+    if (!Cursor.IsEmpty() && Cursor != TEXT("first"))
     {
         TArray<FString> Parts;
         Cursor.ParseIntoArray(Parts, TEXT(":"), false);
@@ -669,7 +672,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
         {
             if (Searched >= 10000) { bStop = true; break; }
             UEdGraphNode* Node = Nodes[NodeIndex];
-            const bool bMatches = (NodeClass.IsEmpty() || Node->GetClass()->GetName() == NodeClass || Node->GetClass()->GetPathName() == NodeClass)
+            const bool bMatches = (NodeClass.IsEmpty() || NodeClass == TEXT("any") || Node->GetClass()->GetName() == NodeClass || Node->GetClass()->GetPathName() == NodeClass)
                 && NodeMatchesWords(Node, WordList, MatchMode == TEXT("any"), IncludeLiterals);
             FString Line;
             if (bMatches && !CountOnly)
@@ -786,8 +789,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const
                 Out+=TEXT("\n  input ")+P->PinName.ToString()+TEXT(" default=")+Value;
             }
             for(UEdGraphPin* Q:P->LinkedTo) if(Q && Q->GetOwningNodeUnchecked())
+            {
                 Out+=FString::Printf(TEXT("\n  %s %s %s %s:%s"),P->Direction==EGPD_Input?TEXT("input"):TEXT("output"),*P->PinName.ToString(),P->Direction==EGPD_Input?TEXT("<-"):TEXT("->"),*TurboMCPNodeId::MakeForNode(Q->GetOwningNode(),true),*Q->PinName.ToString());
+                if (P->Direction == EGPD_Input && P->PinType.PinCategory != TEXT("exec"))
+                    Out += TEXT(" source title: ") + TurboMCPNodeId::GetNodeTitle(Q->GetOwningNode()).Replace(TEXT("\r"), TEXT("\\r")).Replace(TEXT("\n"), TEXT("\\n"));
+            }
         }
     }
-    return Out+TEXT("\nContext follows upstream execution links (and consumers of pure nodes) plus the requested downstream execution hops. External input sources are named by ID. This is static connectivity, not proof of runtime execution. No edit, compile or save was requested.");
+    return Out+TEXT("\nContext follows upstream execution links (and consumers of pure nodes) plus the requested downstream execution hops. External input sources are named by ID and one-level source title. This is static connectivity, not proof of runtime execution. No edit, compile or save was requested.");
 }
