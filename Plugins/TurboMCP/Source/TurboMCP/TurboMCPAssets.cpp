@@ -243,7 +243,12 @@ namespace
 		}
 		else
 		{
-			Line += TEXT("\n  generated class: unknown (no generated-class metadata available)");
+			// Resolve only an already loaded class. Missing class metadata is not
+			// proof that an unloaded custom asset cannot be a Blueprint subclass.
+			const UClass* AssetClass = Asset.GetClass();
+			Line += AssetClass && !AssetClass->IsChildOf(UBlueprint::StaticClass())
+				? TEXT("\n  generated class: not applicable (non-Blueprint asset)")
+				: TEXT("\n  generated class: unknown (no generated-class metadata available)");
 		}
 
 		const FString Parent = BlueprintParentOf(Asset);

@@ -29,6 +29,12 @@ for asset in ("/Game/Tests/BP_NodeTest", "/Game/Tests/WBP_NodeTest"):
     assert "this asset kind has no generated class" not in first, first
     assert "generated class: unknown" in first or "_C" in first, first
     assert "parent:" in first, first
+# A stock material is a known non-Blueprint kind; describing it must not load it.
+material = "/Engine/EngineMaterials/DefaultMaterial"
+first = s.call(READ_TOOLSET, "ReadTurboMCPAssetDescribe", {"assets": material})
+second = s.call(READ_TOOLSET, "ReadTurboMCPAssetDescribe", {"assets": material})
+assert "generated class: not applicable (non-Blueprint asset)" in first, first
+assert first == second, (first, second)
 for query in ("", "type:", "path:"):
     refused = s.call(READ_TOOLSET, "ReadTurboMCPAssetSearch", {"query": query})
     assert refused.startswith("error:"), refused
