@@ -21,3 +21,9 @@ The original field call is unavailable. This resolves the supported quoted-name 
 ## Follow-up: loaded node search
 
 The inventory failure was resolved in 307de74c and passed in execution 4cb0955a1271404a8e75d7d1f86e1135. The full append suite still fails its legacy pin-count wording assertion. See nov13-loaded-node-search-review.md; neither earlier failed run is reclassified as passing.
+
+## Follow-up: append count assertion repaired
+
+Implemented in f0eb3b8855d5191a19f610c77007d4c64741a955. The assertion now parses accepted/changed/already-matched literal counts and requires positive accepted and changed counts with an exact sum. Independent graph growth and literal readback assertions remain unchanged. The exact updated code passed against recorded execution 4cb0955a1271404a8e75d7d1f86e1135 (1 accepted, 1 changed, 0 matched) and rejected four controls: zero counts, inconsistent sum, already-matched-only and obsolete wording. Python syntax and scope passed. No editor rerun was performed.
+
+Both retained defects now have repairs: loaded inventory search has live passing evidence, and this assertion has recorded-output plus negative-control evidence. The earlier complete suite still has its FAILED historical verdict; no fresh whole-suite pass is claimed.

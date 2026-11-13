@@ -127,7 +127,10 @@
         "2026-11-13_S1/FT-173"
       ],
       "dependencies": [],
-      "next_step": "Preview class/path and refuse existing paths. Specify class eligibility, optional initial fields and rollback. Separate creation, save and source-control add explicitly; schema-only need, no failed edit observed."
+      "next_step": "Implement after exact scope review using nov13-data-asset-create-design.md. Resolve creation undo and explicit save/add behavior; no implementation yet.",
+      "evidence": [
+        "docs/audit/field-reports/nov13-data-asset-create-design.md"
+      ]
     },
     {
       "id": "NOV13-08",
