@@ -523,10 +523,16 @@ def main():
     check("reader confirms the appended literal", marker in full_after, full_after[-500:])
     check("a node of the resolved class is now in the graph",
           "PrintString" in full_after, full_after[:200])
-    check("the tool reports a non-zero pin count, parsed rather than assumed",
-          re.search(r"(\d+)\s+pin value\(s\) written", edited) is not None
-          and int(re.search(r"(\d+)\s+pin value\(s\) written", edited).group(1)) > 0,
-          edited[-300:])
+    # A fresh unique marker must change a default, not merely match an existing value.
+    # Accepted assignments also include defaults that already matched.
+    pin_counts = re.search(
+        r"(\d+) literal pin assignment\(s\) accepted: (\d+) default\(s\) changed, (\d+) already matched at application time",
+        edited)
+    counts = tuple(map(int, pin_counts.groups())) if pin_counts else None
+    check("the tool reports consistent accepted and changed literal counts",
+          counts is not None and counts[0] > 0 and counts[1] > 0
+          and counts[0] == counts[1] + counts[2],
+          edited[-500:])
 
     print()
     print("=== 3. IT CANNOT REMOVE - this is what makes it APPEND and not REPLACE ===")
