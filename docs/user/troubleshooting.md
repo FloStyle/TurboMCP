@@ -30,6 +30,14 @@ For missing dependency errors, compare the available engine plugins with [TurboM
 
 For duplicate or stale plugin behavior, check project-local and engine-wide plugin copies. The repository test project uses `AdditionalPluginDirectories` to find this checkout. Verify paths before removing old copies or links. Follow [workspace setup](../workspace.md), and never stop another worker's editor to resolve your own build problem.
 
+## Large Blueprint reads and argument errors
+
+`ReadTurboMCPBlueprintLoad` accepts 1..8 Blueprint paths in `assets`, separated by commas or pipes. Its `tokenBudget` is a character budget for each asset's document, with a default of 60000. Several asset documents and the response headings can together exceed that value. If the combined response exceeds your client's capacity, split the list into smaller calls or read one asset per call.
+
+For a per-asset budget refusal, use the reported required character count to set `tokenBudget` as a decimal string, such as `"120000"`. You can also narrow `graphFilter` or use `ReadTurboMCPGraphLoad` to page one graph. BlueprintLoad preserves the requested detail when it checks the budget. Check each asset's result because one call can contain both successful reads and refusals.
+
+For a raw JSON-RPC call through Unreal's `call_tool` bridge, put `toolset_name`, `tool_name` and the inner `arguments` object inside `params.arguments`. BlueprintLoad fields such as plural `assets`, `graphFilter` and `tokenBudget` belong in that inner object. Confirm their spelling with the discovered schema. An envelope validation error can occur before the plugin receives the call. The protocol guide includes the complete [Unreal call envelope](../design/protocol.md#arguments-for-the-unreal-call_tool-bridge).
+
 ## Results and edits
 
 Read the operation's result metadata as well as the transport response. A request can reach the server successfully while the operation is refused, fails or has an uncertain outcome. If metadata is missing or malformed, record it as a protocol problem rather than assuming success.
