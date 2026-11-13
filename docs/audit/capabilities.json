@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "45022516bd8d2e104351ad13dcd38e58a62b8472",
+  "plugin_tree": "74849de56522eb3d38cf481936c74e81f6256956",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 187,
@@ -3839,13 +3839,18 @@
       "parameters": [
         "Asset",
         "Include",
-        "Columns"
+        "Columns",
+        "TextMode",
+        "Offset",
+        "Limit",
+        "RowFilter",
+        "Revision"
       ],
       "family": "asset-and-data",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTable.cpp",
-          "line": 92
+          "line": 93
         }
       ],
       "test_references": [
