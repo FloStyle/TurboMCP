@@ -3968,6 +3968,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetCreateTest.cpp",
             "Tools/test-data-asset-create.py"
           ]
+        },
+        "nov13-node-json": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphInventoryTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
