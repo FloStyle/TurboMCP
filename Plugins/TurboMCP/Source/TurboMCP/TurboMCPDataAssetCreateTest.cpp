@@ -118,6 +118,7 @@ bool FTurboMCPDataAssetCreateTest::RunTest(const FString& Parameters)
         {
             TestFalse(TEXT("initial value survives fresh disk reload"), Reloaded->bConsumeInput);
             ResetLoaders(Reloaded->GetPackage());
+            TestTrue(TEXT("owned saved fixture removed before registry notification"), IFileManager::Get().Delete(*SavedFilename, false, true));
             FAssetRegistryModule::AssetDeleted(Reloaded);
             Reloaded->ClearFlags(RF_Public | RF_Standalone);
             Reloaded->MarkAsGarbage();

@@ -11,6 +11,8 @@
 #include "ISourceControlProvider.h"
 #include "ISourceControlState.h"
 #include "Misc/PackageName.h"
+#include "Misc/TransactionObjectEvent.h"
+#include "UObject/ObjectKey.h"
 #include "ScopedTransaction.h"
 #include "Serialization/JsonSerializer.h"
 #include "SourceControlOperations.h"
@@ -21,6 +23,46 @@
 
 namespace
 {
+// Only assets created by this tool participate. Registry bookkeeping is not
+// transactional in stock Unreal, although the UObject creation itself is.
+class FCreationRegistryUndo
+{
+public:
+    FCreationRegistryUndo()
+    {
+        Handle = FCoreUObjectDelegates::OnObjectTransacted.AddRaw(this, &FCreationRegistryUndo::OnTransacted);
+    }
+    ~FCreationRegistryUndo() { FCoreUObjectDelegates::OnObjectTransacted.Remove(Handle); }
+    void Track(UObject* Object) { Created.Add(FObjectKey(Object), true); }
+private:
+    void OnTransacted(UObject* Object, const FTransactionObjectEvent& Event)
+    {
+        if (Event.GetEventType() != ETransactionObjectEventType::UndoRedo) return;
+        bool* Registered = Created.Find(FObjectKey(Object));
+        if (!Registered) return;
+        const bool Live = IsValid(Object);
+        if (Live == *Registered) return;
+        if (Live)
+            FAssetRegistryModule::AssetCreated(Object);
+        else
+        {
+            // AssetDeleted requires IsAsset(), which rejects garbage objects. Undo has
+            // just restored that flag; expose it only for synchronous registry removal.
+            Object->ClearGarbage();
+            FAssetRegistryModule::AssetDeleted(Object);
+            Object->MarkAsGarbage();
+        }
+        *Registered = Live;
+    }
+    TMap<FObjectKey, bool> Created;
+    FDelegateHandle Handle;
+};
+FCreationRegistryUndo& CreationRegistryUndo()
+{
+    static FCreationRegistryUndo Instance;
+    return Instance;
+}
+
 struct FInitialField
 {
     FProperty* Property;
@@ -117,6 +159,7 @@ FString CreateDataAsset(bool Apply, const FString& ClassPath, const FString& Pac
             return TEXT("changed\nerror: asset allocation failed after package creation. Nothing was saved. Inspect ") + PackagePath + TEXT("; do not retry blindly.");
         for (const FInitialField& Field : Fields)
             Field.Property->CopyCompleteValue(Field.Property->ContainerPtrToValuePtr<void>(Asset), Field.Value->Get());
+        CreationRegistryUndo().Track(Asset);
         FAssetRegistryModule::AssetCreated(Asset);
         Package->MarkPackageDirty();
     }
