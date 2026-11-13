@@ -14,14 +14,14 @@
       "kind": "bug",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_review",
+      "readiness": "ready",
       "owner": "integrator",
       "validation": "reported_not_reproduced",
       "source_keys": [
         "2026-11-12_S1/X-136"
       ],
       "dependencies": [],
-      "next_step": "Rename the local Path without changing filtering; current source confirms shadowing site."
+      "next_step": "Implement reviewed nov13-build-warning-contract.md; compile once after both equivalent repairs."
     },
     {
       "id": "NOV13-02",
@@ -29,14 +29,14 @@
       "kind": "bug",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_review",
+      "readiness": "ready",
       "owner": "integrator",
       "validation": "reported_not_reproduced",
       "source_keys": [
         "2026-11-12_S1/X-137"
       ],
       "dependencies": [],
-      "next_step": "Use the pinned engine enum overload while preserving nested-object deletion guards."
+      "next_step": "Implement reviewed nov13-build-warning-contract.md; compile once after both equivalent repairs."
     },
     {
       "id": "NOV13-03",
