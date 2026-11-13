@@ -529,7 +529,9 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
             // Keep execution and destructive effects before optional detail and truncation.
             if (Entry.Name.StartsWith(TEXT("TurboMCP.")))
             {
-                if (Bare == TEXT("ReadTurboMCPPlayCheck"))
+                if (Bare == TEXT("ReadTurboMCPNodeFind"))
+                    Help += TEXT("\nusage: Format=json returns one JSON document with hits, skipped assets, coverage and next_cursor. Follow every cursor until null; scan_finished does not imply complete when assets were skipped. CountOnly omits hit rows, not counts. Keep search arguments and assets unchanged between pages. Data Asset properties are outside graph search: use ReadTurboMCPRefsBatch and ReadTurboMCPDataAssetProperty before concluding an asset is unused.");
+                else if (Bare == TEXT("ReadTurboMCPPlayCheck"))
                     Help += TEXT("\neffects: starts PIE and executes project code; NOT a passive read.");
                 else if (Bare == TEXT("LookTurboMCPWidgetPreview"))
                     Help += TEXT("\neffects: Execution=allow runs widget/project code, including construction. The requested callback runs after construction; it does not simulate pointer/focus input. Empty/deny refuses. Effects are not sandboxed or reversible; this is NOT a passive image read.");
