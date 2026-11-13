@@ -11,6 +11,11 @@
 #include "HAL/FileManager.h"
 #include "TurboMCPKitRow.h"
 #include "Engine/DataTable.h"
+#include "Engine/Blueprint.h"
+#include "EdGraph/EdGraph.h"
+#include "EdGraphSchema_K2.h"
+#include "K2Node_CallFunction.h"
+#include "K2Node_GetDataTableRow.h"
 #include "UObject/Package.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPDataTableQualityTest,
@@ -128,6 +133,29 @@ bool FTurboMCPDataTableQualityTest::RunTest(const FString& Parameters)
     Table->AddRow(TEXT("Page_000"), ChangedRow);
     TestTrue(TEXT("Earlier row edit invalidates continuation"), UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("Count"), TEXT("lossless"), 60, 60, TEXT("Page_"), PageRevision).StartsWith(TEXT("error:")));
     TestTrue(TEXT("Negative offset refused"), UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("none"), TEXT("lossless"), -1).StartsWith(TEXT("error:")));
+    UBlueprint* ReaderFixture = NewObject<UBlueprint>(Package, TEXT("ReaderFixture"), RF_Transient);
+    UEdGraph* ReaderGraph = NewObject<UEdGraph>(ReaderFixture, TEXT("LiteralReferences"), RF_Transient);
+    ReaderGraph->Schema = UEdGraphSchema_K2::StaticClass();
+    ReaderFixture->UbergraphPages.Add(ReaderGraph);
+    UK2Node_CallFunction* LiteralNode = NewObject<UK2Node_CallFunction>(ReaderGraph, TEXT("CustomLiteral"));
+    ReaderGraph->Nodes.Add(LiteralNode);
+    UEdGraphPin* LiteralPin = LiteralNode->CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Object, UDataTable::StaticClass(), TEXT("Table"));
+    LiteralPin->DefaultObject = Table;
+    UK2Node_GetDataTableRow* RowReadNode = NewObject<UK2Node_GetDataTableRow>(ReaderGraph, TEXT("KnownRowRead"));
+    ReaderGraph->Nodes.Add(RowReadNode);
+    RowReadNode->AllocateDefaultPins();
+    RowReadNode->GetDataTablePin()->DefaultObject = Table;
+    const bool DirtyBeforeReader = Package->IsDirty();
+    const FString ReaderEvidence = UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("readers"));
+    TestTrue(TEXT("Unsaved custom literal found"), ReaderEvidence.Contains(TEXT("CustomLiteral")));
+    TestTrue(TEXT("Custom reference is not called a proven read"), ReaderEvidence.Contains(TEXT("literal reference; read behavior not inferred")));
+    TestTrue(TEXT("Known row read identified"), ReaderEvidence.Contains(TEXT("row-read site (GetDataTableRow)")));
+    TestEqual(TEXT("Reader does not dirty package"), Package->IsDirty(), DirtyBeforeReader);
+    LiteralPin->DefaultObject = nullptr;
+    LiteralPin->DefaultValue = TEXT("DataTable'/Game/Other.Other'");
+    RowReadNode->GetDataTablePin()->DefaultObject = nullptr;
+    TestFalse(TEXT("Different table does not match"), UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("readers")).Contains(TEXT("CustomLiteral")));
+    ReaderFixture->MarkAsGarbage();
     const FString Folder=FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("TurboMCP/Workflow"));
     IFileManager::Get().MakeDirectory(*Folder,true);
     TestTrue(TEXT("Public tool transcript saved"),FFileHelper::SaveStringToFile(Transcript,*FPaths::Combine(Folder,TEXT("datatable-public-review.txt")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM));

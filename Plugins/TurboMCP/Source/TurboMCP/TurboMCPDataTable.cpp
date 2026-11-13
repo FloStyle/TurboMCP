@@ -14,6 +14,8 @@
 #include "AssetRegistry/IAssetRegistry.h"
 #include "Containers/UnrealString.h"
 #include "Misc/SecureHash.h"
+#include "Misc/PackageName.h"
+#include "UObject/UObjectIterator.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "Engine/Blueprint.h"
@@ -71,7 +73,41 @@ namespace
 
 		/** True when the asset is loaded, so its graphs could be searched. */
 		bool bWasSearched = false;
+		bool bRegistryDependency = true;
 	};
+
+	// A literal reference proves identity, not the behavior of a custom function.
+	// Linked input defaults are inactive and must not be counted as reads.
+	FString FindLiteralEvidence(UBlueprint* Blueprint, const UDataTable* Table)
+	{
+		TArray<UEdGraph*> Graphs;
+		FTurboMCPBlueprintRead::CollectGraphs(Blueprint, Graphs);
+		TArray<FString> Evidence;
+		int32 Matches = 0;
+		for (const UEdGraph* Graph : Graphs)
+		{
+			if (!Graph) continue;
+			for (const UEdGraphNode* Node : Graph->Nodes)
+			{
+				if (!Node) continue;
+				for (const UEdGraphPin* Pin : Node->Pins)
+				{
+					if (!Pin || Pin->Direction != EGPD_Input || !Pin->LinkedTo.IsEmpty() || Pin->bOrphanedPin) continue;
+					const FString Literal = FPackageName::ExportTextPathToObjectPath(Pin->DefaultValue);
+					if (Pin->DefaultObject ? Pin->DefaultObject != Table : (Literal != Table->GetPathName() && Literal != Table->GetOutermost()->GetName())) continue;
+					++Matches;
+					if (Evidence.Num() >= 40) continue;
+					const UK2Node_GetDataTableRow* RowNode = Cast<UK2Node_GetDataTableRow>(Node);
+					const bool bRowRead = RowNode && RowNode->GetDataTablePin() == Pin;
+					Evidence.Add(FString::Printf(TEXT("%s | node=%s | pin=%s | %s"), *Graph->GetName(), *Node->GetPathName(),
+						*Pin->PinName.ToString(), bRowRead ? TEXT("row-read site (GetDataTableRow)") : TEXT("literal reference; read behavior not inferred")));
+				}
+			}
+		}
+		Evidence.Sort();
+		if (Matches > Evidence.Num()) Evidence.Add(FString::Printf(TEXT("%d additional literal reference(s) omitted"), Matches - Evidence.Num()));
+		return FString::Join(Evidence, TEXT("\n      "));
+	}
 
 	/** One field of the row struct. */
 	struct FRowField
@@ -397,48 +433,27 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 			{
 				Reader.bWasSearched = true;
 
-				// The graphs themselves, in one list, rather than names looked up
-				// again per node: searching by name inside the node loop does the
-				// same work once per node.
-				TArray<UEdGraph*> Graphs;
-                FTurboMCPBlueprintRead::CollectGraphs(Blueprint, Graphs);
-
-				// The graphs that actually hold a read of THIS table.
-				TArray<FString> ReadingGraphs;
-				for (const UEdGraph* Graph : Graphs)
-				{
-					for (const UEdGraphNode* Node : Graph->Nodes)
-					{
-						const UK2Node_GetDataTableRow* RowNode =
-							Cast<UK2Node_GetDataTableRow>(Node);
-						if (RowNode == nullptr)
-						{
-							continue;
-						}
-
-						// The pin names the table. Matching the asset path is what
-						// distinguishes a read of THIS table from a read of another.
-						const UEdGraphPin* TablePin = RowNode->GetDataTablePin();
-						if (TablePin == nullptr)
-						{
-							continue;
-						}
-
-						const FString Referenced = TablePin->DefaultObject != nullptr
-							? TablePin->DefaultObject->GetPathName()
-							: TablePin->DefaultValue;
-						if (TablePin->DefaultObject == Table
-							|| Referenced == Resolved.ObjectPath
-							|| Referenced == Resolved.PackagePath)
-						{
-							ReadingGraphs.AddUnique(Graph->GetName());
-						}
-					}
-				}
-
-				Reader.GraphName = FString::Join(ReadingGraphs, TEXT(", "));
+				Reader.GraphName = FindLiteralEvidence(Blueprint, Table);
 			}
 
+			Readers.Add(MoveTemp(Reader));
+		}
+
+		// Registry edges may lag unsaved edits. Inspect already-loaded Blueprints
+		// without loading candidates or claiming to resolve dynamic parameter flow.
+		for (TObjectIterator<UBlueprint> It; It; ++It)
+		{
+			UBlueprint* Blueprint = *It;
+			if (!IsValid(Blueprint) || Blueprint->HasAnyFlags(RF_ClassDefaultObject)) continue;
+			if (Readers.ContainsByPredicate([&](const FReader& Existing) { return Existing.AssetPath == Blueprint->GetPathName(); })) continue;
+			FString Evidence = FindLiteralEvidence(Blueprint, Table);
+			if (Evidence.IsEmpty()) continue;
+			FReader Reader;
+			Reader.AssetPath = Blueprint->GetPathName();
+			Reader.ClassName = Blueprint->GetClass()->GetName();
+			Reader.GraphName = MoveTemp(Evidence);
+			Reader.bWasSearched = true;
+			Reader.bRegistryDependency = false;
 			Readers.Add(MoveTemp(Reader));
 		}
 
@@ -448,7 +463,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 			return A.AssetPath < B.AssetPath;
 		});
 
-		Out += FString::Printf(TEXT("\nreaders: %d asset(s) depend on this table"),
+		Out += FString::Printf(TEXT("\nreaders: %d candidate asset(s): registry dependencies or loaded literal references"),
 			Readers.Num());
 
 		if (Readers.Num() == 0)
@@ -456,11 +471,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 			// `P1`: a zero says what it means and names the caveat, because the
 			// registry only records edges for saved packages.
 			Out += TEXT("\n  none. The registry records dependencies when packages are ");
-			Out += TEXT("saved, so a reader that has never been saved will not appear.");
+			Out += TEXT("saved; loaded literal references are also inspected. Dynamic references and row-struct parameter flow are not resolved.");
 		}
 
 		int32 ShownReaders = 0;
-		int32 NamedGraphs = 0;
+		int32 SearchedCandidates = 0;
+		for (const FReader& Candidate : Readers) if (Candidate.bWasSearched) ++SearchedCandidates;
 		for (const FReader& Reader : Readers)
 		{
 			if (ShownReaders >= MaxReaders)
@@ -473,22 +489,22 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 
 			Out += FString::Printf(TEXT("\n  %s  [%s]"),
 				*Reader.AssetPath, *Reader.ClassName);
+			Out += Reader.bRegistryDependency ? TEXT("\n      evidence: saved registry dependency (not proof of a read)") : TEXT("\n      evidence: loaded graph literal reference");
 
 			if (!Reader.bWasSearched)
 			{
 				// Naming why a graph is missing, so a caller can load the asset and
 				// ask again rather than reading the silence as "no graph reads it".
-				Out += TEXT("\n      graph: not searched, this asset is not loaded");
+				Out += TEXT("\n      graph: not searched; no loaded Blueprint was available");
 			}
 			else if (Reader.GraphName.IsEmpty())
 			{
-				Out += TEXT("\n      graph: none. This Blueprint depends on the table ");
-				Out += TEXT("but no GetDataTableRow node in it names this table.");
+				Out += TEXT("\n      graph: no active literal input pin names this table. ");
+				Out += TEXT("The registry dependency may be indirect or outside graph pins. A shared row struct does not prove use of this table.");
 			}
 			else
 			{
 				Out += FString::Printf(TEXT("\n      graph: %s"), *Reader.GraphName);
-				++NamedGraphs;
 			}
 		}
 
@@ -505,7 +521,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 				TEXT("\n; %d of %d reader(s) had their graphs searched. A reader that is ")
 				TEXT("not loaded cannot be searched, so it is reported without a graph ")
 				TEXT("rather than being omitted."),
-				NamedGraphs, Readers.Num());
+				SearchedCandidates, Readers.Num());
 		}
 	}
 

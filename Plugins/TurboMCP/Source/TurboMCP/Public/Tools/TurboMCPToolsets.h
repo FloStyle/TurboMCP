@@ -365,7 +365,7 @@ public:
 		const FString& GraphName, const FString& Scope = TEXT(""), int32 Offset = 0, int32 Limit = 80);
 
 	/**
-	 * Read DataTable schema, row names, selected values and registry-based readers. Displays up to 80 fields and pages of up to 60 sorted rows with revision-checked continuation. Oversized values are explicitly omitted; request fewer columns to inspect them. Reader graph details are searched only in loaded Blueprints. Registry results do not prove all unsaved or dynamic uses. Loads the table; no explicit edit or save.
+	 * Read DataTable schema, row names, selected values and registry-based readers. Displays up to 80 fields and pages of up to 60 sorted rows with revision-checked continuation. Oversized values are explicitly omitted; request fewer columns to inspect them. Loaded Blueprint input literals are inspected, including unsaved graphs. GetDataTableRow sites are distinguished from generic literal references; registry dependencies alone do not prove a read. Dynamic references and shared row-struct parameter flow are not resolved. Loads the table; no explicit edit or save.
 	 * @param Asset Required DataTable path or unique short name, e.g. /Game/Tests/DT_Items. Empty or non-DataTable targets are refused.
 	 * @param Include Case-insensitive all, readers, or schema. Empty defaults to all. schema includes row names and selected values; readers omits rows. Unknown filters are refused.
 	 * @param Columns Empty or * selects all values; none selects row names only. Otherwise comma-separated reflected, authored or unique display names. Exact reflected names take precedence; ambiguous/unknown names are refused. Values require Include=all or schema.
