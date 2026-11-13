@@ -742,10 +742,10 @@
       "title": "Reconcile variable removal, rename and short struct-name needs",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "build_pass_native_assertion_untested",
       "source_ids": [
         "VA-11",
         "FT-144"
@@ -755,8 +755,11 @@
         "2026-11-04_S3/FT-144"
       ],
       "dependencies": [],
-      "next_step": "Check tools added since unknown field build before creating duplicates. Separate member/local remove, rename and type alias coverage; link existing evidence where applicable.",
-      "evidence": []
+      "next_step": "Run focused alias assertion, then implement remaining variable operations in separate scopes.",
+      "evidence": [
+        "docs/audit/field-reports/nov14-timer-alias-review.md"
+      ],
+      "remaining": "TimerHandle alias implemented and built. Native assertion not run. Variable removal, rename and other short struct names remain open."
     }
   ],
   "priority_order": [

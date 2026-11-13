@@ -7044,16 +7044,19 @@
       "report": "2026-11-05 intake",
       "title": "Reconcile variable removal, rename and short struct-name needs",
       "kind": "feature",
-      "state": "open",
+      "state": "in_progress",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Check tools added since unknown field build before creating duplicates. Separate member/local remove, rename and type alias coverage; link existing evidence where applicable.",
+      "validation": "build_pass_native_assertion_untested",
+      "remaining": "TimerHandle alias implemented and built. Native assertion not run. Variable removal, rename and other short struct names remain open.",
       "source_keys": [
         "2026-11-04_S3/VA-11",
         "2026-11-04_S3/FT-144"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        "docs/audit/field-reports/nov14-timer-alias-review.md"
+      ]
     },
     {
       "id": "NOV09-01",
