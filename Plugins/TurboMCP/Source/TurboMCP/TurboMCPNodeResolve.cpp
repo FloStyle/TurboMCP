@@ -29,6 +29,7 @@
 #include "K2Node_Variable.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
+#include "UObject/UObjectIterator.h"
 
 #include "Logging.h"
 #include "TurboMCPAssetResolver.h"
@@ -607,9 +608,53 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
         Filter.bRecursivePaths = true;
     }
     Registry.GetAssets(Filter, Candidates);
+    // Registry discovery does not include every unsaved Blueprint. Reuse ready
+    // in-memory assets without loading dependencies or registering synthetic data.
+    auto IsReadableLoadedBlueprint = [](UBlueprint* Blueprint)
+    {
+        return IsValid(Blueprint) && Blueprint->IsAsset()
+            && !Blueprint->HasAnyFlags(RF_NeedLoad | RF_NeedPostLoad | RF_NeedPostLoadSubobjects)
+            && !Blueprint->GetOutermost()->HasAnyPackageFlags(PKG_ContainsMap);
+    };
+    TMap<FString, UBlueprint*> LoadedBlueprints;
+    TSet<FString> CandidatePaths;
+    for (const FAssetData& Candidate : Candidates) CandidatePaths.Add(Candidate.GetObjectPathString());
+    for (TObjectIterator<UBlueprint> It; It; ++It)
+    {
+        UBlueprint* Blueprint = *It;
+        if (!IsReadableLoadedBlueprint(Blueprint)) continue;
+        const FAssetData LoadedAsset(Blueprint);
+        const FString ObjectPath = LoadedAsset.GetObjectPathString();
+        bool bInScope = false;
+        if (Scope == TEXT("asset"))
+        {
+            bInScope = Filter.SoftObjectPaths.Contains(FSoftObjectPath(ObjectPath));
+        }
+        else
+        {
+            const FString PackagePath = LoadedAsset.PackagePath.ToString();
+            for (FName Root : Filter.PackagePaths)
+            {
+                const FString RootPath = Root.ToString();
+                if (PackagePath.Equals(RootPath, ESearchCase::IgnoreCase)
+                    || (Filter.bRecursivePaths && PackagePath.StartsWith(RootPath + TEXT("/"), ESearchCase::IgnoreCase)))
+                {
+                    bInScope = true;
+                    break;
+                }
+            }
+        }
+        if (!bInScope) continue;
+        LoadedBlueprints.Add(ObjectPath, Blueprint);
+        if (!CandidatePaths.Contains(ObjectPath))
+        {
+            CandidatePaths.Add(ObjectPath);
+            Candidates.Add(LoadedAsset);
+        }
+    }
     Candidates.Sort([](const FAssetData& A, const FAssetData& B)
         { return A.GetObjectPathString() < B.GetObjectPathString(); });
-    if (Scope == TEXT("asset") && Candidates.IsEmpty()) return TEXT("error: the selected asset is not a registered Blueprint.");
+    if (Scope == TEXT("asset") && Candidates.IsEmpty()) return TEXT("error: the selected asset is not a registered or fully loaded Blueprint.");
 
     // Bind continuation to the query and registry candidate set. Graph edits between
     // calls still require restarting: this is an index cursor, not a frozen snapshot.
@@ -636,13 +681,17 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
     {
         const FAssetData& Candidate = Candidates[AssetIndex];
         ++Visited;
-        FString Blocker = NodeSearchLoadBlocker(Registry, Candidate.PackageName);
-        UBlueprint* Blueprint = nullptr;
-        if (Blocker.IsEmpty())
+        FString Blocker;
+        UBlueprint* Blueprint = LoadedBlueprints.FindRef(Candidate.GetObjectPathString());
+        if (!Blueprint)
         {
-            Blueprint = Cast<UBlueprint>(StaticLoadObject(UBlueprint::StaticClass(), nullptr,
-                *Candidate.GetObjectPathString(), nullptr, LOAD_DisableCompileOnLoad | LOAD_NoRedirects | LOAD_NoWarn));
-            if (!Blueprint) Blocker = TEXT("Blueprint load failed");
+            Blocker = NodeSearchLoadBlocker(Registry, Candidate.PackageName);
+            if (Blocker.IsEmpty())
+            {
+                Blueprint = Cast<UBlueprint>(StaticLoadObject(UBlueprint::StaticClass(), nullptr,
+                    *Candidate.GetObjectPathString(), nullptr, LOAD_DisableCompileOnLoad | LOAD_NoRedirects | LOAD_NoWarn));
+                if (!Blueprint) Blocker = TEXT("Blueprint load failed");
+            }
         }
         if (!Blocker.IsEmpty())
         {

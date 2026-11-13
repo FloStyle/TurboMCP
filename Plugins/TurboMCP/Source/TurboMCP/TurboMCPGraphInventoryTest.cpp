@@ -96,6 +96,16 @@ bool FTurboMCPGraphInventoryTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Every empty event has an ID at every detail"), Read.Contains(Id));
     }
     TestTrue(TEXT("Existing finder discovers empty event"), UTurboMCPReadToolset::ReadTurboMCPNodeFind(Asset, TEXT("InventoryEvent0"), Graph->GetName()).Contains(TurboMCPNodeId::MakeKey(Graph->Nodes[0]->NodeGuid)));
+    const FString FolderSearch = UTurboMCPReadToolset::ReadTurboMCPNodeFind(
+        TEXT("/Game/Tests"), TEXT("InventoryEvent0"), Graph->GetName(), TEXT("all"), false,
+        TEXT(""), TEXT("folder"), false, 40, TEXT(""), false);
+    TestTrue(TEXT("Folder search includes unsaved loaded Blueprint"),
+        FolderSearch.Contains(TurboMCPNodeId::MakeKey(Graph->Nodes[0]->NodeGuid)));
+    const FString OutsideFolder = UTurboMCPReadToolset::ReadTurboMCPNodeFind(
+        TEXT("/Game/TestsElsewhere"), TEXT("InventoryEvent0"), Graph->GetName(), TEXT("all"), false,
+        TEXT(""), TEXT("folder"), true, 40, TEXT(""), false);
+    TestFalse(TEXT("Loaded Blueprint does not leak into another folder"),
+        OutsideFolder.Contains(TurboMCPNodeId::MakeKey(Graph->Nodes[0]->NodeGuid)));
     TestEqual(TEXT("Inventory preserves node count"), Graph->Nodes.Num(), 200);
     TestEqual(TEXT("Inventory preserves dirty state"), Package->IsDirty(), DirtyBefore);
     return !HasAnyErrors();
