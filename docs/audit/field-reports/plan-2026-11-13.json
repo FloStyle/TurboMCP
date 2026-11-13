@@ -71,17 +71,20 @@
       "title": "Export a compact complete bulk result as one JSON document",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "needs_review",
       "owner": "integrator",
-      "validation": "implementation_pending_checks",
+      "validation": "focused_pass",
       "source_keys": [
         "2026-11-12_S2/X-139",
         "2026-11-12_S2/FT-172"
       ],
       "dependencies": [],
-      "next_step": "Review compile and focused export evidence before integration.",
-      "remaining": "Bounded three-reader export implemented on work branch c0923fb0; compilation and focused file/pagination checks pending. WidgetInventory JSON-plus-result framing confirmed and preserved. Not integrated or closed."
+      "next_step": "Closed implementation; retain separate validation follow-up.",
+      "remaining": "Implemented. Large field datasets, repeated-cursor and write/time/size fault injection remain unverified; see review evidence.",
+      "evidence": [
+        "docs/audit/field-reports/nov13-bulk-export-review.md"
+      ]
     },
     {
       "id": "NOV13-05",

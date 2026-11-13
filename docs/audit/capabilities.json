@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "plugin_tree": "a2de0401868972182a8ecc85f98e8c390fe1e0a1",
+  "plugin_tree": "e948ae6889795cce5ae2e8d352178d0494e333c8",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 189,
+    "tools": 190,
     "by_toolset": {
       "UTurboMCPEditToolset": 78,
       "UTurboMCPLookToolset": 6,
       "UTurboMCPPreviewToolset": 65,
-      "UTurboMCPReadToolset": 40
+      "UTurboMCPReadToolset": 41
     }
   },
   "tools": [
@@ -3756,6 +3756,32 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "ReadTurboMCPBulkExport",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "Reader",
+        "QueryJSON",
+        "MaxPages",
+        "MaxSeconds",
+        "MaxMegabytes"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBulkExport.cpp",
+          "line": 129
+        }
+      ],
+      "test_references": [
+        "Tools/test-bulk-export.py"
+      ],
+      "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "ReadTurboMCPCallCost",
       "toolset": "UTurboMCPReadToolset",
       "parameters": [
@@ -4226,6 +4252,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-bulk-export.py",
         "Tools/test-capture-framing.py",
         "Tools/test-capture-selectors.py",
         "Tools/test-capture.py",
@@ -4435,6 +4462,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-bulk-export.py",
         "Tools/test-refs-batch.py"
       ],
       "static_call_evidence": "name_reference_only",
@@ -4698,6 +4726,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-bulk-export.py",
         "Tools/test-widget-inventory.py"
       ],
       "static_call_evidence": "name_reference_only",

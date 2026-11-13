@@ -157,6 +157,7 @@ Generated from declarations, definitions and static test references. All runtime
 | ReadTurboMCPAssetSearch | [TurboMCPAssets.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPBPLint | [TurboMCPBPLintTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLintTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPBlueprintLoad | [TurboMCPBlueprintLoad.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| ReadTurboMCPBulkExport | [TurboMCPBulkExport.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBulkExport.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPCallCost | [TurboMCPCallCostTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallCostTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPCallLog | [TurboMCPCallLogTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPCommentList | [TurboMCPComments.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPComments.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |

@@ -7616,16 +7616,19 @@
       "report": "2026-11-12/13 intake",
       "title": "Export a compact complete bulk result as one JSON document",
       "kind": "feature",
-      "state": "in_progress",
+      "state": "done",
       "priority": "P1",
-      "validation": "implementation_pending_checks",
-      "remaining": "Bounded three-reader export implemented on work branch c0923fb0; compilation and focused file/pagination checks pending. WidgetInventory JSON-plus-result framing confirmed and preserved. Not integrated or closed.",
+      "validation": "focused_pass",
+      "remaining": "Implemented. Large field datasets, repeated-cursor and write/time/size fault injection remain unverified; see review evidence.",
       "source_keys": [
         "2026-11-12_S2/X-139",
         "2026-11-12_S2/FT-172"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        "docs/audit/field-reports/nov13-bulk-export-review.md"
+      ]
     },
     {
       "id": "NOV13-05",
