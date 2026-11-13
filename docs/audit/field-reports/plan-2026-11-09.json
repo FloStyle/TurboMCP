@@ -312,17 +312,17 @@
       "title": "Explain DataTable reader evidence and detect literal references",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator-datatable-references",
+      "validation": "focused_pass",
       "source_keys": [
         "2026-11-09_S2/DT-16",
         "2026-11-09_S3/DT-18"
       ],
       "dependencies": [],
       "complexity_estimate": 5,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Implemented; focused literal-reference evidence passed. See nov13-datatable-reference-review.md for coverage limits.",
       "acceptance": "Detect literal table references on supported pins. Distinguish reference/candidate from proven read and explain unloaded/unsearched candidates; a shared row struct alone does not prove use of one table."
     },
     {
