@@ -110,16 +110,20 @@
       "title": "Clarify Blueprint read budgets and client call wrapper",
       "kind": "housekeeping",
       "priority": "P2",
-      "state": "open",
+      "state": "done",
       "readiness": "needs_review",
       "owner": "integrator",
-      "validation": "reported_not_reproduced",
+      "validation": "source_reviewed",
       "source_keys": [
         "2026-11-12_S2/BL-20",
         "2026-11-12_S2/X-140"
       ],
       "dependencies": [],
-      "next_step": "Distinguish client envelope errors from plugin defects. Clarify split/budget guidance; BL-21 confirms explicit refusal on a later read, not reproduction of BL-20 overflow."
+      "next_step": "Blueprint read-budget and envelope guidance implemented; original client failure cause remains unidentified.",
+      "remaining": "Blueprint read-budget and envelope guidance implemented; original client failure cause remains unidentified.",
+      "evidence": [
+        "docs/audit/field-reports/nov14-graph-copy-integration.md"
+      ]
     },
     {
       "id": "NOV13-07",

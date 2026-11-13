@@ -6917,15 +6917,18 @@
       "report": "2026-11-05 intake",
       "title": "Rebind copied local variables or refuse incompatible target scopes",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "focused_pass",
+      "remaining": "Unsafe cross-graph local references are refused before mutation. Automatic local rebinding remains unsupported.",
       "source_keys": [
         "2026-11-04_S3/GC-97"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        "docs/audit/field-reports/nov14-graph-copy-integration.md"
+      ]
     },
     {
       "id": "NOV05-12",
@@ -6934,15 +6937,18 @@
       "report": "2026-11-05 intake",
       "title": "Support or clearly refuse format-text graph copy",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "focused_pass",
+      "remaining": "Format Text selection is clearly refused in full with recreate/reconnect guidance. Copy support remains unsupported.",
       "source_keys": [
         "2026-11-04_S3/GC-96"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        "docs/audit/field-reports/nov14-graph-copy-integration.md"
+      ]
     },
     {
       "id": "NOV05-13",
@@ -7657,16 +7663,19 @@
       "report": "2026-11-12/13 intake",
       "title": "Clarify Blueprint read budgets and client call wrapper",
       "kind": "housekeeping",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
-      "validation": "reported_not_reproduced",
-      "remaining": "Distinguish client envelope errors from plugin defects. Clarify split/budget guidance; BL-21 confirms explicit refusal on a later read, not reproduction of BL-20 overflow.",
+      "validation": "source_reviewed",
+      "remaining": "Blueprint read-budget and envelope guidance implemented; original client failure cause remains unidentified.",
       "source_keys": [
         "2026-11-12_S2/BL-20",
         "2026-11-12_S2/X-140"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        "docs/audit/field-reports/nov14-graph-copy-integration.md"
+      ]
     },
     {
       "id": "NOV13-07",

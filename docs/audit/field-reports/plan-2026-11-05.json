@@ -593,10 +593,10 @@
       "title": "Rebind copied local variables or refuse incompatible target scopes",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
+      "state": "done",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_pass",
       "source_ids": [
         "GC-97"
       ],
@@ -604,18 +604,21 @@
         "2026-11-04_S3/GC-97"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
-      "evidence": []
+      "next_step": "Unsafe cross-graph local references are refused before mutation. Automatic local rebinding remains unsupported.",
+      "evidence": [
+        "docs/audit/field-reports/nov14-graph-copy-integration.md"
+      ],
+      "remaining": "Unsafe cross-graph local references are refused before mutation. Automatic local rebinding remains unsupported."
     },
     {
       "id": "NOV05-12",
       "title": "Support or clearly refuse format-text graph copy",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
+      "state": "done",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_pass",
       "source_ids": [
         "GC-96"
       ],
@@ -623,8 +626,11 @@
         "2026-11-04_S3/GC-96"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
-      "evidence": []
+      "next_step": "Format Text selection is clearly refused in full with recreate/reconnect guidance. Copy support remains unsupported.",
+      "evidence": [
+        "docs/audit/field-reports/nov14-graph-copy-integration.md"
+      ],
+      "remaining": "Format Text selection is clearly refused in full with recreate/reconnect guidance. Copy support remains unsupported."
     },
     {
       "id": "NOV05-13",
