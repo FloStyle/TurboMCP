@@ -667,6 +667,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-node-search-json",
+      "path": "Tools/test-node-search-json.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-override-add",
       "path": "Tools/test-override-add.py",
       "tier": "engine",
