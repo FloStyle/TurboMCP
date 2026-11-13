@@ -3948,6 +3948,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphInventoryTest.cpp"
           ],
           "new_files": []
+        },
+        "nov13-append-count-assertion": {
+          "files": [
+            "Tools/test-graph-append.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
