@@ -20,3 +20,13 @@ Proposed scope: new TurboMCPDataAssetCreate.cpp and focused fixture/test wrapper
 
 ## Minimal acceptance
 One build and one synthetic workflow: concrete native data asset creation, optional scalar initialization/readback/revision, occupied-path refusal, invalid class/property/value refusal without package creation, class defaults preserved, no implicit disk save; one explicit save/add path with source-control unavailable clearly reported. Blueprint-derived class behavior must be checked if claimed supported. Record persistence and undo limits separately. Do not call implementation complete while source-control add or revision return is omitted.
+
+## Stock 5.8.4 lifecycle findings (November 13)
+- `UObjectGlobals.cpp`, StaticConstructObject_Internal, lines 4856-4868: with an active transaction and RF_Transactional, new non-UField objects are recorded in their garbage state before being restored live. Undo therefore has a native object-creation record. RF_Transactional alone, outside an active transaction, is insufficient.
+- `AssetTools.cpp`, CreateAsset, lines 1779-1803: stock creation uses Public, Standalone and Transactional flags, then notifies Asset Registry and marks the package dirty. This is lifecycle evidence, not proof that registry and dirty-state restoration meet our undo contract.
+- Implementation must begin the scoped transaction before allocation, and the focused workflow must check undo/redo object validity, registry visibility and package dirty state. Do not claim complete undo from object validity alone. Saving remains outside the memory transaction and cannot be undone on disk.
+- The existing FunctionLibraryCreate helper has no scoped transaction; do not copy its lifecycle as evidence of creation undo support.
+- Reader revision currently comes from DataAssetTools.cpp FSnapshot: sorted owned objects, class/path and exported non-transient properties hashed as UTF-8 MD5. Extract/reuse this calculation so creation returns the same revision the reader subsequently reports.
+- The existing explicit save implementation checks both engine return and dirty state. New creation additionally needs file evidence; a successful allocation or AssetCreated notification is not evidence of persistence.
+
+Remaining preparation: establish registry undo behavior and exact source-control add prerequisites, then approve an exact implementation/test scope. These findings do not close NOV13-07 or authorize a claim without that scope.
