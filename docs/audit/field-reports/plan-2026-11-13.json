@@ -71,16 +71,17 @@
       "title": "Export a compact complete bulk result as one JSON document",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_review",
       "owner": "integrator",
-      "validation": "reported_not_reproduced",
+      "validation": "implementation_pending_checks",
       "source_keys": [
         "2026-11-12_S2/X-139",
         "2026-11-12_S2/FT-172"
       ],
       "dependencies": [],
-      "next_step": "Determine whether concatenation occurs in tool output or client aggregation. Design bounded file export with explicit incomplete/cancelled state; do not promise unlimited inline results."
+      "next_step": "Review compile and focused export evidence before integration.",
+      "remaining": "Bounded three-reader export implemented on work branch c0923fb0; compilation and focused file/pagination checks pending. WidgetInventory JSON-plus-result framing confirmed and preserved. Not integrated or closed."
     },
     {
       "id": "NOV13-05",

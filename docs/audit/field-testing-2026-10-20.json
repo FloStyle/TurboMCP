@@ -7616,10 +7616,10 @@
       "report": "2026-11-12/13 intake",
       "title": "Export a compact complete bulk result as one JSON document",
       "kind": "feature",
-      "state": "open",
+      "state": "in_progress",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Determine whether concatenation occurs in tool output or client aggregation. Design bounded file export with explicit incomplete/cancelled state; do not promise unlimited inline results.",
+      "validation": "implementation_pending_checks",
+      "remaining": "Bounded three-reader export implemented on work branch c0923fb0; compilation and focused file/pagination checks pending. WidgetInventory JSON-plus-result framing confirmed and preserved. Not integrated or closed.",
       "source_keys": [
         "2026-11-12_S2/X-139",
         "2026-11-12_S2/FT-172"
