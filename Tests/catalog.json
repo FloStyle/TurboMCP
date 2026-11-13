@@ -93,6 +93,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-blueprint-reference-default",
+      "path": "Tools/test-blueprint-reference-default.py",
+      "tier": "engine",
+      "timeout_seconds": 180,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-bp-lint",
       "path": "Tools/test-bp-lint.py",
       "tier": "engine",
