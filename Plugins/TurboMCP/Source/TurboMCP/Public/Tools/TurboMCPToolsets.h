@@ -233,6 +233,7 @@ public:
 	 * @param Recursive Include folder descendants; default true.
 	 * @param PageSize Maximum result rows per call, 1..40.
 	 * @param Cursor first (default) or empty for the first page, then the returned next_cursor. Keep the query and assets unchanged.
+	 * @param Format text (default) or json. JSON returns one document including errors, hits, skips, coverage and next_cursor (null at end). Graph searches exclude Data Asset properties; use RefsBatch and DataAssetProperty before concluding an asset is unused.
 	 * @param CountOnly Omit rows and count matches within the same scan budget. Follow all cursors for final totals. Skipped assets prevent exhaustive conclusions.
 	 */
 	UFUNCTION(meta = (AICallable))
@@ -247,7 +248,8 @@ public:
 		bool Recursive = true,
 		int32 PageSize = 40,
 		const FString& Cursor = TEXT("first"),
-		bool CountOnly = false);
+		bool CountOnly = false,
+		const FString& Format = TEXT("text"));
 
 	/**
 	 * Read one graph as text.
