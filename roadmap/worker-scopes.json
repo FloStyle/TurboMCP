@@ -3926,6 +3926,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableQualityTest.cpp"
           ],
           "new_files": []
+        },
+        "nov13-append-pins": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextLex.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendAliasTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
