@@ -51,16 +51,20 @@
       "title": "Broaden bulk scan coverage without loading maps accidentally",
       "kind": "bug",
       "priority": "P0",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_review",
       "owner": "integrator",
-      "validation": "reported_not_reproduced",
+      "validation": "partial_focused_pass",
       "source_keys": [
         "2026-11-12_S2/X-138",
         "2026-11-13_S1/X-142"
       ],
       "dependencies": [],
-      "next_step": "One canonical issue for both reports. Investigate safe loading or bounded explicit opt-in; preserve no-map-load safety, paging and truthful completeness. 1289/4117 nodescope assets and 98/647 widgets skipped in field evidence."
+      "next_step": "Loaded and unsaved NodeFind coverage repaired and tested. Unloaded map/redirector-dependent coverage remains unresolved; all dependency-load guards retained.",
+      "evidence": [
+        "docs/audit/field-reports/nov13-loaded-node-search-review.md"
+      ],
+      "remaining": "Loaded and unsaved NodeFind coverage repaired and tested. Unloaded map/redirector-dependent coverage remains unresolved; all dependency-load guards retained."
     },
     {
       "id": "NOV13-04",

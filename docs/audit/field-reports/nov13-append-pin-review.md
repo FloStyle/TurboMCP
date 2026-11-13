@@ -17,3 +17,7 @@ The full append wrapper is not certified by this focused success. Its first run 
 ## Limits
 
 The original field call is unavailable. This resolves the supported quoted-name workflow and a demonstrated lexer defect; it does not claim reproduction of that exact historical call. Additional Return creation remains NOV05-13. No full regression or general append certification.
+
+## Follow-up: loaded node search
+
+The inventory failure was resolved in 307de74c and passed in execution 4cb0955a1271404a8e75d7d1f86e1135. The full append suite still fails its legacy pin-count wording assertion. See nov13-loaded-node-search-review.md; neither earlier failed run is reclassified as passing.

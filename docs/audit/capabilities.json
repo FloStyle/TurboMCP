@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "ed78cf4277cfb7154c0d68df2810c4cd77daab43",
+  "plugin_tree": "c384186783ee6ebc1a64281ea389250477b28397",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 187,
@@ -4140,7 +4140,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
-          "line": 710
+          "line": 759
         }
       ],
       "test_references": [
@@ -4173,7 +4173,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
-          "line": 554
+          "line": 555
         }
       ],
       "test_references": [
@@ -4201,7 +4201,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
-          "line": 293
+          "line": 294
         }
       ],
       "test_references": [
