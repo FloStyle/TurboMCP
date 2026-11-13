@@ -87,15 +87,19 @@
       "title": "Offer seed omission in batch reference output",
       "kind": "feature",
       "priority": "P2",
-      "state": "open",
+      "state": "done",
       "readiness": "needs_review",
       "owner": "integrator",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_pass",
       "source_keys": [
         "2026-11-12_S2/RF-14"
       ],
       "dependencies": [],
-      "next_step": "Retain current record-kind distinction; add optional seed omission without breaking cursor or totals."
+      "next_step": "Closed with build and focused reference evidence.",
+      "remaining": "Implemented; broader field validation remains separate.",
+      "evidence": [
+        "docs/audit/field-reports/nov13-reference-seeds-review.md"
+      ]
     },
     {
       "id": "NOV13-06",
