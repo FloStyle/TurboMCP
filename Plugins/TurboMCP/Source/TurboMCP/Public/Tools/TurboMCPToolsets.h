@@ -1518,6 +1518,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	/**
      * Plan a node copy and report external links; loads both Blueprints without applying the copy, compiling or saving.
      * Required target members must already exist. External links that cannot resolve in the target are reported and left unconnected. Inspect the preview, then check layout, links and compilation after editing; preview does not guarantee edit success.
+     * GraphCopy refuses the whole selection if it includes a local-variable node or a Format Text node. To copy the other nodes, leave these nodes out of the selection. Recreate them in the destination graph and use GraphConnect to restore their links.
      * @param SourceAsset Required source Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
      * @param SourceGraph Required existing source graph name, e.g. EventGraph; use the reader's name. Missing targets are refused.
      * @param NodeIds Required array of source reader node IDs. Empty means nothing to copy. Use exact IDs from the source graph; unresolved or unsupported selections are refused. Structural nodes and comments are refused. Copies retain relative positions with a +40 offset; use GraphConnect for boundary wires and GraphTidy for layout afterward.
@@ -2530,6 +2531,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	/**
      * Copy selected nodes into a different graph in one undo transaction; preserves the source and does not compile or save.
      * Required target members must already exist. External links that cannot resolve in the target are reported and left unconnected. Inspect the preview, then check layout, links and compilation after editing; preview does not guarantee edit success.
+     * GraphCopy refuses the whole selection if it includes a local-variable node or a Format Text node. To copy the other nodes, leave these nodes out of the selection. Recreate them in the destination graph and use GraphConnect to restore their links.
      * @param SourceAsset Required source Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
      * @param SourceGraph Required existing source graph name, e.g. EventGraph; use the reader's name. Missing targets are refused.
      * @param NodeIds Required array of source reader node IDs. Empty means nothing to copy. Use exact IDs from the source graph; unresolved or unsupported selections are refused. Structural nodes and comments are refused. Copies retain relative positions with a +40 offset; use GraphConnect for boundary wires and GraphTidy for layout afterward.

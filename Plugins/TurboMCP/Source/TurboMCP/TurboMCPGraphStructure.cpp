@@ -20,6 +20,7 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
+#include "K2Node_FormatText.h"
 #include "K2Node_Variable.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
@@ -129,6 +130,34 @@ namespace
 		return InNode == nullptr ? FString() : TurboMCPNodeId::MakeForNode(InNode, /*bLongForm=*/true);
 	}
 
+	FString CopyNodeRefusal(const UEdGraphNode& Node, const UBlueprint* Source,
+		const UBlueprint* Target, const UEdGraph& Destination)
+	{
+		const UK2Node_Variable* Variable = Cast<UK2Node_Variable>(&Node);
+		// GraphCopy duplicates the existing reference without the engine paste fixup.
+		if (Variable && Variable->VariableReference.IsLocalScope() && Node.GetGraph() != &Destination)
+		{
+			return FString::Printf(TEXT("Node '%s' uses local variable '%s' from scope '%s'. "
+				"GraphCopy cannot carry that reference into graph '%s'. Leave the node out of the selection, recreate it in the destination, and reconnect its pins."),
+				*KeyOf(&Node), *Variable->GetVarName().ToString(), *Variable->VariableReference.GetMemberScopeName(),
+				*Destination.GetName());
+		}
+
+		const UK2Node* K2 = Cast<UK2Node>(&Node);
+		if (!K2 || (K2->NodeCausesStructuralBlueprintChange()
+			&& !CanDuplicateGetterWithoutCompile(&Node, Source, Target, &Destination)))
+		{
+			if (Node.IsA<UK2Node_FormatText>())
+			{
+				return FString::Printf(TEXT("Format Text node '%s' requires structural Blueprint changes. "
+					"Leave it out of the selection, recreate it in the destination, and reconnect its pins with GraphConnect."), *KeyOf(&Node));
+			}
+			return FString::Printf(TEXT("node '%s' requires unsupported or structural creation; copy refuses implicit compilation inside undo"),
+				*KeyOf(&Node));
+		}
+		return FString();
+	}
+
 	/**
 	 * Whether a node answers to a key a caller wrote, in EITHER of the two forms the project prints.
 	 *
@@ -206,6 +235,7 @@ namespace
 			// target has to declare, rather than the pin's display text.
 			if (const UK2Node_Variable* VariableNode = Cast<UK2Node_Variable>(InNode))
 			{
+				if (VariableNode->VariableReference.IsLocalScope()) return false;
 				OutKind = TEXT("variable");
 				OutName = VariableNode->GetVarName().ToString();
 				return !OutName.IsEmpty();
@@ -487,9 +517,11 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 	for (int32 Index = 0; Index < Selected.Num(); ++Index)
 	{
 		UEdGraphNode* Node = Selected[Index];
-		const UK2Node* K2 = Cast<UK2Node>(Node);
-		if (!K2 || (K2->NodeCausesStructuralBlueprintChange() && !CanDuplicateGetterWithoutCompile(Node,SourceBlueprint,TargetBlueprint,TargetGraphObject)))
-			OutPlan.Refusals.Add(FString::Printf(TEXT("node '%s' requires unsupported or structural creation; copy refuses implicit compilation inside undo"), *KeyOf(Node)));
+		const FString Refusal = CopyNodeRefusal(*Node, SourceBlueprint, TargetBlueprint, *TargetGraphObject);
+		if (!Refusal.IsEmpty())
+		{
+			OutPlan.Refusals.Add(Refusal);
+		}
 
 		if (Node->NodePosX > MAX_int32 - 40 || Node->NodePosY > MAX_int32 - 40)
 			OutPlan.Refusals.Add(FString::Printf(TEXT("node '%s' exceeds the safe copy coordinate range"), *KeyOf(Node)));
@@ -1145,10 +1177,10 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 	// have changed since preview, and creation helpers do not enforce paste rules.
 	for (UEdGraphNode* Node : Selected)
 	{
-		const UK2Node* K2 = Cast<UK2Node>(Node);
-		if (!K2 || (K2->NodeCausesStructuralBlueprintChange() && !CanDuplicateGetterWithoutCompile(Node,SourceBlueprint,TargetBlueprint,TargetGraph)))
+		const FString Refusal = CopyNodeRefusal(*Node, SourceBlueprint, TargetBlueprint, *TargetGraph);
+		if (!Refusal.IsEmpty())
 		{
-			OutError = TEXT("unchanged: selected node requires unsupported or structural creation; implicit compile inside undo is refused");
+			OutError = TEXT("unchanged: ") + Refusal;
 			return false;
 		}
 
