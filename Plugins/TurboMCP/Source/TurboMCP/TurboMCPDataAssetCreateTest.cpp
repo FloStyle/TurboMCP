@@ -6,6 +6,14 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Editor.h"
 #include "InputAction.h"
+#include "Engine/Blueprint.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "Engine/DataAsset.h"
+#include "Kismet2/KismetEditorUtilities.h"
+#include "ISourceControlModule.h"
+#include "ISourceControlProvider.h"
+#include "HAL/FileManager.h"
+#include "PackageTools.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/PackageName.h"
 #include "UObject/Package.h"
@@ -38,10 +46,15 @@ bool FTurboMCPDataAssetCreateTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("memory creation does not save"), FPackageName::DoesPackageExist(PackagePath));
     TestTrue(TEXT("occupied destination refused"), UTurboMCPEditToolset::EditTurboMCPDataAssetCreate(
         ClassPath, PackagePath, TEXT("{}"), false, false).Contains(TEXT("refused:")));
+    UPackage* CreatedPackage = Asset->GetPackage();
+    FAssetRegistryModule& Registry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
     GEditor->UndoTransaction();
     TestFalse(TEXT("undo removes live created object"), IsValid(Asset));
+    TestFalse(TEXT("undo restores clean package state"), CreatedPackage->IsDirty());
+    TestFalse(TEXT("undo removes registry-visible asset"), Registry.Get().GetAssetByObjectPath(FSoftObjectPath(ObjectPath)).IsValid());
     GEditor->RedoTransaction();
     TestTrue(TEXT("redo restores created object"), IsValid(Asset));
+    TestTrue(TEXT("redo restores registry-visible asset"), Registry.Get().GetAssetByObjectPath(FSoftObjectPath(ObjectPath)).IsValid());
     if (IsValid(Asset))
     {
         TestFalse(TEXT("redo restores initialized value"), Asset->bConsumeInput);
@@ -51,6 +64,66 @@ bool FTurboMCPDataAssetCreateTest::RunTest(const FString& Parameters)
         Asset->ClearFlags(RF_Public | RF_Standalone);
         Asset->MarkAsGarbage();
     }
+    // A Blueprint-derived type must also be usable without loading or compiling during the tool call.
+    UPackage* BlueprintPackage = CreatePackage(*(PackagePath + TEXT("_Type")));
+    UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(UPrimaryDataAsset::StaticClass(),
+        BlueprintPackage, TEXT("BP_CreateType"), BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    if (TestNotNull(TEXT("Blueprint Data Asset type fixture"), Blueprint) &&
+        TestNotNull(TEXT("generated class fixture"), Blueprint->GeneratedClass))
+    {
+        Blueprint->GeneratedClass->GetDefaultObject();
+        const FString DerivedPackage = PackagePath + TEXT("_Derived");
+        const FString DerivedResult = UTurboMCPEditToolset::EditTurboMCPDataAssetCreate(
+            Blueprint->GeneratedClass->GetPathName(), DerivedPackage, TEXT("{}"), false, false);
+        TestTrue(TEXT("loaded Blueprint-derived creation"), DerivedResult.Contains(TEXT("save: not requested")));
+        const FString DerivedPath = DerivedPackage + TEXT(".") + FPackageName::GetLongPackageAssetName(DerivedPackage);
+        if (UDataAsset* Derived = FindObject<UDataAsset>(nullptr, *DerivedPath))
+        {
+            TestEqual(TEXT("exact generated class retained"), Derived->GetClass(), Blueprint->GeneratedClass);
+            FAssetRegistryModule::AssetDeleted(Derived);
+            Derived->GetPackage()->SetDirtyFlag(false);
+            Derived->ClearFlags(RF_Public | RF_Standalone);
+            Derived->MarkAsGarbage();
+        }
+        BlueprintPackage->SetDirtyFlag(false);
+        Blueprint->ClearFlags(RF_Public | RF_Standalone);
+        Blueprint->MarkAsGarbage();
+    }
+    const FString SavedPackage = PackagePath + TEXT("_Saved");
+    const FString SavedObject = SavedPackage + TEXT(".") + FPackageName::GetLongPackageAssetName(SavedPackage);
+    // Do not add fixture files to a real provider. The unavailable-provider case is checked
+    // only when this supervised editor already has no usable provider.
+    const bool AddUnavailable = !ISourceControlModule::Get().IsEnabled() || !ISourceControlModule::Get().GetProvider().IsAvailable();
+    const FString SavedResult = UTurboMCPEditToolset::EditTurboMCPDataAssetCreate(
+        ClassPath, SavedPackage, TEXT("{\"bConsumeInput\":\"False\"}"), true, AddUnavailable);
+    AddInfo(SavedResult);
+    TestTrue(TEXT("explicit save reports successful write"), SavedResult.Contains(TEXT("save: written")));
+    if (AddUnavailable)
+        TestTrue(TEXT("unavailable add reports partial completion"), SavedResult.Contains(TEXT("partial:")));
+    FString SavedFilename;
+    FPackageName::TryConvertLongPackageNameToFilename(SavedPackage, SavedFilename, FPackageName::GetAssetPackageExtension());
+    UInputAction* SavedAsset = FindObject<UInputAction>(nullptr, *SavedObject);
+    if (SavedAsset)
+    {
+        TWeakObjectPtr<UInputAction> OldAsset(SavedAsset);
+        TArray<UPackage*> Packages{SavedAsset->GetPackage()};
+        SavedAsset = nullptr;
+        UPackageTools::FUnloadPackageParams Unload(Packages);
+        Unload.bUnloadDirtyPackages = false;
+        Unload.bResetTransBuffer = true; // This test runs only in the supervisor-owned disposable editor.
+        TestTrue(TEXT("saved fixture unloads"), UPackageTools::UnloadPackages(Unload));
+        TestFalse(TEXT("old fixture identity is gone"), OldAsset.IsValid());
+        UInputAction* Reloaded = LoadObject<UInputAction>(nullptr, *SavedObject);
+        if (TestNotNull(TEXT("saved fixture reloads"), Reloaded))
+        {
+            TestFalse(TEXT("initial value survives fresh disk reload"), Reloaded->bConsumeInput);
+            ResetLoaders(Reloaded->GetPackage());
+            FAssetRegistryModule::AssetDeleted(Reloaded);
+            Reloaded->ClearFlags(RF_Public | RF_Standalone);
+            Reloaded->MarkAsGarbage();
+        }
+    }
+    TestTrue(TEXT("owned saved fixture removed"), IFileManager::Get().Delete(*SavedFilename, false, true));
     return true;
 }
 #endif
