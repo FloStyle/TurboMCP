@@ -3941,6 +3941,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetDelete.cpp"
           ],
           "new_files": []
+        },
+        "nov13-loaded-node-search": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphInventoryTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
