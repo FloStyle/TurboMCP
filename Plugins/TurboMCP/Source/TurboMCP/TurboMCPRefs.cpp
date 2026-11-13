@@ -1169,9 +1169,9 @@ namespace TurboMCPRefsTests
             if (!Page) return false;
             Test.TestEqual(TEXT("Edges-only total excludes seed"), Page->GetNumberField(TEXT("total")), 700.0);
             Test.TestEqual(TEXT("Edges-only retains seed count"), Page->GetNumberField(TEXT("seedCount")), 1.0);
-            for (const auto& Value : Page->GetArrayField(TEXT("records")))
+            for (const auto& RecordValue : Page->GetArrayField(TEXT("records")))
             {
-                const auto Row = Value->AsObject();
+                const auto Row = RecordValue->AsObject();
                 FString RecordType;
                 Test.TestFalse(TEXT("No seed rows"), Row->TryGetStringField(TEXT("type"), RecordType) && RecordType == TEXT("seed"));
                 const FString Id = Row->GetStringField(TEXT("identifier"));
