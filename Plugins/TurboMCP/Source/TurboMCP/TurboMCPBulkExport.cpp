@@ -105,11 +105,11 @@ static bool ValidateQuery(const TSharedPtr<FJsonObject>& Query, const FString& R
     }
     for (const auto& Field : Query->Values)
     {
-        const FString Key = TEXT("|") + Field.Key + TEXT("|");
-        const EJson Expected = Strings.Contains(Key) ? EJson::String : Bools.Contains(Key) ? EJson::Boolean : Numbers.Contains(Key) ? EJson::Number : EJson::None;
+        const FString Key = TEXT("|") + FString(*Field.Key) + TEXT("|");
+        const EJson Expected = Strings.Contains(Key, ESearchCase::CaseSensitive) ? EJson::String : Bools.Contains(Key, ESearchCase::CaseSensitive) ? EJson::Boolean : Numbers.Contains(Key, ESearchCase::CaseSensitive) ? EJson::Number : EJson::None;
         if (Expected == EJson::None || !Field.Value.IsValid() || Field.Value->Type != Expected)
         {
-            Error = TEXT("Unknown query field or incorrect JSON type: ") + Field.Key;
+            Error = TEXT("Unknown query field or incorrect JSON type: ") + FString(*Field.Key);
             return false;
         }
         if (Expected == EJson::Number)
