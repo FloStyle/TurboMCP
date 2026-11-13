@@ -3977,6 +3977,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphInventoryTest.cpp"
           ],
           "new_files": []
+        },
+        "nov13-node-json-runner": {
+          "files": [],
+          "new_files": [
+            "Tools/test-node-search-json.py"
+          ]
         }
       },
       "preserve_rows": []

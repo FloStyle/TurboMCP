@@ -14,3 +14,6 @@ Both modes must explain that a graph search does not inspect Data Asset properti
 Exact files: TurboMCPNodeResolve.cpp, Public/Tools/TurboMCPToolsets.h, TurboMCPAgentHelp.cpp and TurboMCPGraphInventoryTest.cpp under Plugins/TurboMCP/Source/TurboMCP. No registry-load guard removal, no file export, no changed node matching, no engine changes. NOV13-04 full-result export remains a separate open requirement.
 
 Extend the existing synthetic inventory fixture: parse JSON, compare matching identity/counts with text, follow a small page size to exhaustion, exercise CountOnly, no-hit and invalid-input JSON, and verify scope warning. Compile once after the related changes, then run the focused fixture. Do not infer project-wide completeness from fixture success. Catalog/tracker/inventory updates are integrator-owned.
+
+## Focused runner approval
+Integrator approves a separate nov13-node-json-runner assignment for Tools/test-node-search-json.py only, using the existing strict RunTests report parser to run TurboMCP.GraphAppend.Inventory and reject unexpected warnings. This avoids invoking the full append suite. Register its catalog entry separately during integration.
