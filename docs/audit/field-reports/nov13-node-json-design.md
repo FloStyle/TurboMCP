@@ -17,3 +17,6 @@ Extend the existing synthetic inventory fixture: parse JSON, compare matching id
 
 ## Focused runner approval
 Integrator approves a separate nov13-node-json-runner assignment for Tools/test-node-search-json.py only, using the existing strict RunTests report parser to run TurboMCP.GraphAppend.Inventory and reject unexpected warnings. This avoids invoking the full append suite. Register its catalog entry separately during integration.
+
+## Nonvisual acceptance isolation
+Approve nov13-node-json-acceptance on the existing inventory fixture source and focused wrapper only. Add a distinct native NodeSearchJson test using the same synthetic event setup without invoking position measurement. Retain the original inventory test and its failure evidence. Verify every returned identity exactly once, final null cursor, text parity, counts, refusals and dirty state. This isolates an unrelated rendering prerequisite; it does not repair or certify rendering.

@@ -3983,6 +3983,13 @@
           "new_files": [
             "Tools/test-node-search-json.py"
           ]
+        },
+        "nov13-node-json-acceptance": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphInventoryTest.cpp",
+            "Tools/test-node-search-json.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
