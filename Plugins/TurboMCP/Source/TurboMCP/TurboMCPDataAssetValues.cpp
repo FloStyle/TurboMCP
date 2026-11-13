@@ -3,11 +3,39 @@
 
 #include "TurboMCPDataAssetValues.h"
 #include "Misc/OutputDevice.h"
+#include "Misc/SecureHash.h"
+#include "UObject/UObjectHash.h"
 #include "UObject/UnrealType.h"
 #include "UObject/UObjectGlobals.h"
 
 namespace TurboMCPDataAssetValues
 {
+FString Revision(UObject* Asset)
+{
+    TArray<UObject*> Objects;
+    GetObjectsWithOuter(Asset, Objects, EGetObjectsFlags::IncludeNestedObjects);
+    Objects.Add(Asset);
+    Objects.Sort([](const UObject& A, const UObject& B) { return A.GetPathName() < B.GetPathName(); });
+    FString Text;
+    for (UObject* Object : Objects)
+    {
+        if (!IsValid(Object)) continue;
+        Text += Object->GetPathName() + TEXT(":") + Object->GetClass()->GetPathName() + TEXT("\n");
+        for (TFieldIterator<FProperty> It(Object->GetClass()); It; ++It)
+        {
+            if (It->HasAnyPropertyFlags(CPF_Transient)) continue;
+            for (int32 Index = 0; Index < It->ArrayDim; ++Index)
+            {
+                FString Encoded;
+                It->ExportTextItem_Direct(Encoded, It->ContainerPtrToValuePtr<void>(Object, Index), nullptr, Object, PPF_None);
+                Text += FString::Printf(TEXT("%s[%d]:%d:"), *It->GetName(), Index, Encoded.Len()) + Encoded + TEXT("\n");
+            }
+        }
+    }
+    const FTCHARToUTF8 Utf8(*Text);
+    return FMD5::HashBytes(reinterpret_cast<const uint8*>(Utf8.Get()), Utf8.Length());
+}
+
 FValue::FValue(const FProperty* InProperty, const void* Source) : Property(InProperty)
 {
     check(Property);

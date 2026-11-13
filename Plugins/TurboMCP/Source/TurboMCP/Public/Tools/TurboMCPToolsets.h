@@ -716,6 +716,17 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPFunctionLibraryCreate(const FString& PackagePath);
 
+    /** Create a fresh typed Data Asset, preserving class defaults. Preview validates without allocation. Edit creates in memory; saving and source-control add are explicit. Constructors may execute project code. Never overwrites an existing package or compiles Blueprints.
+     * @param ClassPath Exact already loaded concrete UDataAsset class path; Blueprint-generated paths end in _C. Unloaded, abstract, transient and superseded classes are refused.
+     * @param PackagePath New /Game package path without object suffix or extension, for example /Game/Data/DA_Menu.
+     * @param InitialFieldsJSON JSON object of editable field names to Unreal property-text strings. Empty means class defaults. Scalar/value-struct values and loaded external references are supported; containers and owned children use subsequent property edits.
+     * @param Save Explicit disk save after creation. Default false. A saved file is not removed by Undo.
+     * @param AddToSourceControl Add the saved file through the current provider; requires Save=true. Default false. Failure preserves the asset and reports partial completion. Never checks out or submits.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPDataAssetCreate(const FString& ClassPath, const FString& PackagePath, const FString& InitialFieldsJSON = TEXT(""), bool Save = false, bool AddToSourceControl = false);
+
+
 
 public:
     /** Validate a scoped PIE runtime call without executing it. Reference-bearing parameters, RPCs and latent functions are refused. No save or undo guarantee.
@@ -1571,6 +1582,17 @@ public:
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPFunctionLibraryCreate(const FString& PackagePath);
+
+    /** Create a fresh typed Data Asset, preserving class defaults. Preview validates without allocation. Edit creates in memory; saving and source-control add are explicit. Constructors may execute project code. Never overwrites an existing package or compiles Blueprints.
+     * @param ClassPath Exact already loaded concrete UDataAsset class path; Blueprint-generated paths end in _C. Unloaded, abstract, transient and superseded classes are refused.
+     * @param PackagePath New /Game package path without object suffix or extension, for example /Game/Data/DA_Menu.
+     * @param InitialFieldsJSON JSON object of editable field names to Unreal property-text strings. Empty means class defaults. Scalar/value-struct values and loaded external references are supported; containers and owned children use subsequent property edits.
+     * @param Save Explicit disk save after creation. Default false. A saved file is not removed by Undo.
+     * @param AddToSourceControl Add the saved file through the current provider; requires Save=true. Default false. Failure preserves the asset and reports partial completion. Never checks out or submits.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPDataAssetCreate(const FString& ClassPath, const FString& PackagePath, const FString& InitialFieldsJSON = TEXT(""), bool Save = false, bool AddToSourceControl = false);
+
 
 
 public:

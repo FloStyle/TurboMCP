@@ -67,7 +67,6 @@ struct FSnapshot
         GetObjectsWithOuter(Asset, Objects, EGetObjectsFlags::IncludeNestedObjects);
         Objects.Add(Asset);
         Objects.Sort([](const UObject& A, const UObject& B) { return A.GetPathName() < B.GetPathName(); });
-        FString Text;
         for (UObject* Object : Objects)
         {
             if (!IsValid(Object)) continue;
@@ -78,21 +77,14 @@ struct FSnapshot
             FReferenceFinder Finder(References, nullptr, false, true, false, false);
             Finder.FindReferences(Object);
             for (UObject* Reference : References) if (IsValid(Reference)) Retained.Emplace(Reference);
-            Text += Object->GetPathName() + TEXT(":") + Object->GetClass()->GetPathName() + TEXT("\n");
             for (TFieldIterator<FProperty> It(Object->GetClass()); It; ++It)
             {
                 if (It->HasAnyPropertyFlags(CPF_Transient)) continue;
                 void* Address = It->ContainerPtrToValuePtr<void>(Object);
-                for (int32 ArrayIndex = 0; ArrayIndex < It->ArrayDim; ++ArrayIndex)
-                {
-                    const FString Encoded = Export(*It, static_cast<const uint8*>(Address) + ArrayIndex * It->GetElementSize(), Object);
-                    Text += FString::Printf(TEXT("%s[%d]:%d:"), *It->GetName(), ArrayIndex, Encoded.Len()) + Encoded + TEXT("\n");
-                }
                 Fields.Add({Object, *It, MakeUnique<FValue>(*It, Address)});
             }
         }
-        const FTCHARToUTF8 Utf8(*Text);
-        Revision = FMD5::HashBytes(reinterpret_cast<const uint8*>(Utf8.Get()), Utf8.Length());
+        Revision = TurboMCPDataAssetValues::Revision(Asset);
     }
     bool Matches() const
     {
