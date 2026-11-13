@@ -138,16 +138,16 @@
       "title": "Add structured JSON output to NodeFind",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "needs_review",
       "owner": "integrator",
-      "validation": "build_pass_runtime_failed",
+      "validation": "focused_workflow_pass",
       "source_keys": [
         "2026-11-13_S1/NF-16"
       ],
       "dependencies": [],
-      "next_step": "Provide one valid JSON result with cursor, totals, hits, skips and completeness; preserve text mode and existing scopes.",
-      "remaining": "Implemented; isolate nonvisual acceptance after inventory render-target failure.",
+      "next_step": "Closed with focused reader acceptance e87ecec50e014a729bb35e3b740984ce; original visual fixture failure retained.",
+      "remaining": "No implementation remaining for this scoped change; large-project coverage and full-result export are separate tasks.",
       "evidence": [
         "docs/audit/field-reports/nov13-node-json-review.md"
       ]
@@ -157,16 +157,16 @@
       "title": "Explain graph-search scope and reference-search handoff",
       "kind": "housekeeping",
       "priority": "P2",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "needs_review",
       "owner": "integrator",
-      "validation": "build_pass_runtime_failed",
+      "validation": "focused_workflow_pass",
       "source_keys": [
         "2026-11-13_S1/NF-17"
       ],
       "dependencies": [],
-      "next_step": "Explain that mapping-context and other Data Asset references are outside graph search; direct callers to RefsBatch/property reads. No false unused-asset conclusion.",
-      "remaining": "Implemented; isolate nonvisual acceptance after inventory render-target failure.",
+      "next_step": "Closed with focused reader acceptance e87ecec50e014a729bb35e3b740984ce; original visual fixture failure retained.",
+      "remaining": "No implementation remaining for this scoped change; large-project coverage and full-result export are separate tasks.",
       "evidence": [
         "docs/audit/field-reports/nov13-node-json-review.md"
       ]

@@ -7687,10 +7687,10 @@
       "report": "2026-11-12/13 intake",
       "title": "Add structured JSON output to NodeFind",
       "kind": "feature",
-      "state": "in_progress",
+      "state": "done",
       "priority": "P1",
-      "validation": "build_pass_runtime_failed",
-      "remaining": "Implemented; isolate nonvisual acceptance after inventory render-target failure.",
+      "validation": "focused_workflow_pass",
+      "remaining": "No implementation remaining for this scoped change; large-project coverage and full-result export are separate tasks.",
       "source_keys": [
         "2026-11-13_S1/NF-16"
       ],
@@ -7707,10 +7707,10 @@
       "report": "2026-11-12/13 intake",
       "title": "Explain graph-search scope and reference-search handoff",
       "kind": "housekeeping",
-      "state": "in_progress",
+      "state": "done",
       "priority": "P2",
-      "validation": "build_pass_runtime_failed",
-      "remaining": "Implemented; isolate nonvisual acceptance after inventory render-target failure.",
+      "validation": "focused_workflow_pass",
+      "remaining": "No implementation remaining for this scoped change; large-project coverage and full-result export are separate tasks.",
       "source_keys": [
         "2026-11-13_S1/NF-17"
       ],
