@@ -159,6 +159,21 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPAssetSearch(const FString& Query, const FString& Path = TEXT("*"), bool Recursive = true);
 
+    /**
+     * Export bounded pages from one bulk reader into a single JSON report under Saved/TurboMCP/Exports.
+     * Writes a report file, never saves project assets. Package loads may run PostLoad and dirty assets;
+     * original reader safety checks and per-page effects are preserved. Complete is false for skipped
+     * assets, capped evidence, errors or limits. Time is checked between pages, not during a load.
+     * @param Reader Exact ReadTurboMCPRefsBatch, ReadTurboMCPNodeFind or ReadTurboMCPWidgetInventory.
+     * @param QueryJSON Reader arguments as one JSON object using lower-camel names. Omit cursor and format; export starts at the first page and forces NodeFind JSON. Unknown fields are refused.
+     * @param MaxPages Maximum pages, 1..1000. Default 100. A partial report retains its nextCursor.
+     * @param MaxSeconds Time budget checked between pages, 1..120. Default 30. A single page can exceed it.
+     * @param MaxMegabytes Maximum UTF-8 report size, 1..64. Default 16. No arbitrary output path or overwrite.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString ReadTurboMCPBulkExport(const FString& Reader, const FString& QueryJSON,
+        int32 MaxPages = 100, int32 MaxSeconds = 30, int32 MaxMegabytes = 16);
+
 	/**
 	 * Read what one or more assets are, in any path form.
 	 *

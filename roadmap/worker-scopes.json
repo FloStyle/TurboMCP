@@ -4006,6 +4006,14 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBulkExport.cpp"
           ]
+        },
+        "nov13-bulk-export-acceptance": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBulkExport.cpp"
+          ],
+          "new_files": [
+            "Tools/test-bulk-export.py"
+          ]
         }
       },
       "preserve_rows": []
