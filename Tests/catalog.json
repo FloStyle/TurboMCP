@@ -1100,6 +1100,13 @@
       "tier": "offline",
       "timeout_seconds": 120,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-bulk-export",
+      "path": "Tools/test-bulk-export.py",
+      "tier": "engine",
+      "timeout_seconds": 180,
+      "acceptance": "not_mapped"
     }
   ]
 }
