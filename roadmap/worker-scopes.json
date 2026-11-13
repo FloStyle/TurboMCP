@@ -4014,6 +4014,13 @@
           "new_files": [
             "Tools/test-bulk-export.py"
           ]
+        },
+        "nov13-blueprint-client-guidance": {
+          "files": [
+            "docs/user/troubleshooting.md",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
