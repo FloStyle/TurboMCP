@@ -107,7 +107,7 @@ static bool ValidateQuery(const TSharedPtr<FJsonObject>& Query, const FString& R
     {
         const FString Key = TEXT("|") + FString(*Field.Key) + TEXT("|");
         const EJson Expected = Strings.Contains(Key, ESearchCase::CaseSensitive) ? EJson::String : Bools.Contains(Key, ESearchCase::CaseSensitive) ? EJson::Boolean : Numbers.Contains(Key, ESearchCase::CaseSensitive) ? EJson::Number : EJson::None;
-        if (Expected == EJson::None || !Field.Value.IsValid() || Field.Value->Type != Expected)
+        if (FString(*Field.Key).Contains(TEXT("|")) || Expected == EJson::None || !Field.Value.IsValid() || Field.Value->Type != Expected)
         {
             Error = TEXT("Unknown query field or incorrect JSON type: ") + FString(*Field.Key);
             return false;
@@ -179,6 +179,9 @@ FString UTurboMCPReadToolset::ReadTurboMCPBulkExport(const FString& Reader, cons
         FString Next;
         const TCHAR* CursorKey = IsNode ? TEXT("next_cursor") : TEXT("nextCursor");
         if (!Body->HasField(CursorKey)) { Reason = TEXT("missing_cursor"); break; }
+        const auto CursorValue = Body->TryGetField(CursorKey);
+        if (!CursorValue.IsValid() || (CursorValue->Type != EJson::String && !(IsNode && CursorValue->Type == EJson::Null)))
+        { Reason = TEXT("invalid_cursor_type"); break; }
         Body->TryGetStringField(CursorKey,Next);
         bool PageComplete = false;
         if (IsWidget)
@@ -194,7 +197,15 @@ FString UTurboMCPReadToolset::ReadTurboMCPBulkExport(const FString& Reader, cons
         {
             double Skipped = 0; Body->TryGetNumberField(TEXT("skipped_assets_so_far"),Skipped);
             PageComplete = Skipped == 0;
-            if (Next.IsEmpty()) Body->TryGetBoolField(TEXT("complete"),PageComplete);
+            if (Next.IsEmpty()) { bool FinalComplete = false; Body->TryGetBoolField(TEXT("complete"),FinalComplete); PageComplete &= FinalComplete; }
+            const TArray<TSharedPtr<FJsonValue>>* Hits = nullptr;
+            if (Body->TryGetArrayField(TEXT("hits"),Hits))
+                for (const auto& Hit : *Hits)
+                {
+                    bool Omitted = false;
+                    if (Hit.IsValid() && Hit->Type == EJson::Object && Hit->AsObject()->TryGetBoolField(TEXT("display_fields_omitted"),Omitted) && Omitted)
+                        PageComplete = false;
+                }
         }
         else Body->TryGetBoolField(TEXT("complete"),PageComplete);
         const FString PageText = Json(Page.ToSharedRef());
