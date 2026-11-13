@@ -118,18 +118,19 @@
       "title": "Create an empty typed Data Asset safely",
       "kind": "feature",
       "priority": "P0",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "integrator",
-      "validation": "candidate_build_pass",
+      "validation": "focused_workflow_pass",
       "source_keys": [
         "2026-11-13_S1/X-141",
         "2026-11-13_S1/FT-173"
       ],
       "dependencies": [],
-      "next_step": "Candidate 0336065d compiles on stock 5.8.4 (execution 1739c8677ad64472841db6f1e20a8284). Finish focused lifecycle, registry undo, save/add and Blueprint-derived acceptance before reviewed integration. Implementation is not yet shipped.",
+      "next_step": "Implemented and focused workflow passed: 59ac56ff92a94988a997ccf05641f840. Real source-control add success and arbitrary project constructors remain field-validation limits, not proven by this fixture.",
       "evidence": [
-        "docs/audit/field-reports/nov13-data-asset-create-design.md"
+        "docs/audit/field-reports/nov13-data-asset-create-design.md",
+        "docs/audit/field-reports/nov13-data-asset-create-review.md"
       ]
     },
     {

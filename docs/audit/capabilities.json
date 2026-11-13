@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "c384186783ee6ebc1a64281ea389250477b28397",
+  "plugin_tree": "9e2c77b33751d44edb0fe677a47ee66bae23461b",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 187,
+    "tools": 189,
     "by_toolset": {
-      "UTurboMCPEditToolset": 77,
+      "UTurboMCPEditToolset": 78,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 64,
+      "UTurboMCPPreviewToolset": 65,
       "UTurboMCPReadToolset": 40
     }
   },
@@ -332,6 +332,30 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "EditTurboMCPDataAssetCreate",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "ClassPath",
+        "PackagePath",
+        "InitialFieldsJSON",
+        "Save",
+        "AddToSourceControl"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetCreate.cpp",
+          "line": 165
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "EditTurboMCPDataAssetProperty",
       "toolset": "UTurboMCPEditToolset",
       "parameters": [
@@ -346,7 +370,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
-          "line": 868
+          "line": 860
         }
       ],
       "test_references": [],
@@ -2266,6 +2290,30 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "PreviewTurboMCPDataAssetCreate",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "ClassPath",
+        "PackagePath",
+        "InitialFieldsJSON",
+        "Save",
+        "AddToSourceControl"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetCreate.cpp",
+          "line": 160
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "PreviewTurboMCPDataAssetProperty",
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
@@ -2280,7 +2328,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
-          "line": 866
+          "line": 858
         }
       ],
       "test_references": [],
@@ -3821,7 +3869,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
-          "line": 859
+          "line": 851
         }
       ],
       "test_references": [
