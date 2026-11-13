@@ -92,8 +92,12 @@ namespace
 FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 	const FString& Asset,
 	const FString& Include,
-	const FString& Columns)
+	const FString& Columns,
+	const FString& TextMode)
 {
+	const FString TextStyle = TextMode.TrimStartAndEnd().ToLower();
+	if (TextStyle != TEXT("lossless") && TextStyle != TEXT("display"))
+		return TEXT("error: TextMode must be lossless or display.");
 	if (Asset.IsEmpty())
 	{
 		return TEXT("error: no asset given. Pass a DataTable in any path form, for ")
@@ -143,8 +147,13 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 
 	TArray<FProperty*> SelectedColumns;
 	TArray<FString> ColumnNames;
-	Columns.ParseIntoArray(ColumnNames, TEXT(","), true);
-	if (!Columns.TrimStartAndEnd().IsEmpty() && (Mode == 1 || !Table->GetRowStruct()))
+	const FString ColumnSelection = Columns.TrimStartAndEnd();
+	const bool bNamesOnly = ColumnSelection.Equals(TEXT("none"), ESearchCase::IgnoreCase);
+	const bool bAllColumns = ColumnSelection.IsEmpty() || ColumnSelection == TEXT("*");
+	if (!bNamesOnly && !bAllColumns) Columns.ParseIntoArray(ColumnNames, TEXT(","), true);
+	if (bAllColumns && Mode != 1 && Table->GetRowStruct())
+		for (TFieldIterator<FProperty> It(Table->GetRowStruct()); It; ++It) SelectedColumns.Add(*It);
+	if (!bNamesOnly && !ColumnSelection.IsEmpty() && (Mode == 1 || !Table->GetRowStruct()))
 		return TEXT("error: columns require a row struct and include=all or schema");
 	for (FString Column : ColumnNames)
 	{
@@ -154,10 +163,25 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 		{
 			if (It->GetName().Equals(Column, ESearchCase::IgnoreCase)) { Found = *It; break; }
 		}
-		if (!Found) return FString::Printf(TEXT("error: unknown column '%s'; use the schema field names"), *Column);
+		if (!Found)
+		{
+			TArray<FProperty*> Matches;
+			for (TFieldIterator<FProperty> It(Table->GetRowStruct()); It; ++It)
+				if (It->GetAuthoredName().Equals(Column, ESearchCase::IgnoreCase)
+					|| It->GetDisplayNameText().ToString().Equals(Column, ESearchCase::IgnoreCase)) Matches.Add(*It);
+			if (Matches.Num() > 1)
+			{
+				TArray<FString> Candidates;
+				for (const FProperty* Match : Matches) Candidates.Add(Match->GetName());
+				return FString::Printf(TEXT("error: ambiguous column '%s'; use an exact field name: %s"), *Column, *FString::Join(Candidates, TEXT(", ")));
+			}
+			if (Matches.Num() == 1) Found = Matches[0];
+		}
+		if (!Found) return FString::Printf(TEXT("error: unknown column '%s'; use a schema field name or an unambiguous authored/display name"), *Column);
 		SelectedColumns.AddUnique(Found);
 	}
 	FString Out = FString::Printf(TEXT("read: data table %s"), *Resolved.ObjectPath);
+	if (TextStyle == TEXT("display")) Out += TEXT("\ntext mode: display; localized text is inspection-only, not a lossless write-back literal.");
 
 	if (Mode != 1)
 	{
@@ -251,9 +275,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 						// ExportText_InContainer can suppress zero/default values and
                             // return false without an error. Readers need the actual
                             // value, including zero and None, so export it directly.
-                            Column->ExportTextItem_Direct(Value,
-                                Column->ContainerPtrToValuePtr<void>(*Row, Element),
-                                nullptr, Table, PPF_None);
+                            const void* ValueAddress = Column->ContainerPtrToValuePtr<void>(*Row, Element);
+                            const FTextProperty* TextProperty = CastField<FTextProperty>(Column);
+                            if (TextStyle == TEXT("display") && TextProperty)
+                                Value += TextProperty->GetPropertyValue(ValueAddress).ToString();
+                            else Column->ExportTextItem_Direct(Value, ValueAddress, nullptr, Table, PPF_None);
 					}
 				}
 				else Value = TEXT("<missing row storage>");
@@ -265,7 +291,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 		}
 
 		if (SelectedColumns.IsEmpty())
-			Out += TEXT("\n; pass Columns as comma-separated schema field names to read selected row values.");
+			Out += TEXT("\n; row names only; pass Columns=* or a comma-separated field list to read values.");
 	}
 
 	if (Mode != 2)

@@ -97,6 +97,13 @@ bool FTurboMCPDataTableQualityTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Public refusal preserves rows"),Read(),ReadBack);
     TestEqual(TEXT("Public refusal preserves dirty state"),Package->IsDirty(),DirtyBeforeRefusal);
     TestTrue(TEXT("Unknown reader column refused"),UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset,TEXT("schema"),TEXT("Missing")).StartsWith(TEXT("error:")));
+    const FString AllValues = UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT(""));
+    TestTrue(TEXT("Empty columns includes values"), AllValues.Contains(TEXT("Count = 11")));
+    const FString NamesOnly = UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("none"));
+    TestFalse(TEXT("Names-only omits values"), NamesOnly.Contains(TEXT("Count = 11")));
+    TestTrue(TEXT("Names-only explains how to request values"), NamesOnly.Contains(TEXT("row names only")));
+    TestTrue(TEXT("Invalid text mode refused"), UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("Count"), TEXT("unknown")).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Display mode is explicitly inspection-only"), UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("Count"), TEXT("display")).Contains(TEXT("inspection-only")));
     const FString Folder=FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("TurboMCP/Workflow"));
     IFileManager::Get().MakeDirectory(*Folder,true);
     TestTrue(TEXT("Public tool transcript saved"),FFileHelper::SaveStringToFile(Transcript,*FPaths::Combine(Folder,TEXT("datatable-public-review.txt")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM));
