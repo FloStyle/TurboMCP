@@ -1172,7 +1172,8 @@ namespace TurboMCPRefsTests
             for (const auto& Value : Page->GetArrayField(TEXT("records")))
             {
                 const auto Row = Value->AsObject();
-                Test.TestFalse(TEXT("No seed rows"), Row->GetStringField(TEXT("type")) == TEXT("seed"));
+                FString RecordType;
+                Test.TestFalse(TEXT("No seed rows"), Row->TryGetStringField(TEXT("type"), RecordType) && RecordType == TEXT("seed"));
                 const FString Id = Row->GetStringField(TEXT("identifier"));
                 Test.TestFalse(TEXT("Edges-only does not repeat edges"), EdgeIds.Contains(Id));
                 EdgeIds.Add(Id);
