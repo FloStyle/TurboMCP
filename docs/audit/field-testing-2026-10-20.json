@@ -7555,15 +7555,18 @@
       "report": "2026-11-12/13 intake",
       "title": "Remove AssetSearch parameter shadowing",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Rename the local Path without changing filtering; current source confirms shadowing site.",
+      "validation": "build_pass",
+      "remaining": "No implementation remaining; runtime regression not run for behavior-preserving warning repair.",
       "source_keys": [
         "2026-11-12_S1/X-136"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        "docs/audit/field-reports/nov13-build-warning-review.md"
+      ]
     },
     {
       "id": "NOV13-02",
@@ -7572,15 +7575,18 @@
       "report": "2026-11-12/13 intake",
       "title": "Replace deprecated nested-object enumeration",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Use the pinned engine enum overload while preserving nested-object deletion guards.",
+      "validation": "build_pass",
+      "remaining": "No implementation remaining; runtime regression not run for behavior-preserving warning repair.",
       "source_keys": [
         "2026-11-12_S1/X-137"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        "docs/audit/field-reports/nov13-build-warning-review.md"
+      ]
     },
     {
       "id": "NOV13-03",
