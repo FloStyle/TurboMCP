@@ -118,16 +118,16 @@
       "title": "Create an empty typed Data Asset safely",
       "kind": "feature",
       "priority": "P0",
-      "state": "open",
-      "readiness": "needs_review",
+      "state": "in_progress",
+      "readiness": "ready",
       "owner": "integrator",
-      "validation": "reported_not_reproduced",
+      "validation": "candidate_build_pass",
       "source_keys": [
         "2026-11-13_S1/X-141",
         "2026-11-13_S1/FT-173"
       ],
       "dependencies": [],
-      "next_step": "Implement after exact scope review using nov13-data-asset-create-design.md. Resolve creation undo and explicit save/add behavior; no implementation yet.",
+      "next_step": "Candidate 0336065d compiles on stock 5.8.4 (execution 1739c8677ad64472841db6f1e20a8284). Finish focused lifecycle, registry undo, save/add and Blueprint-derived acceptance before reviewed integration. Implementation is not yet shipped.",
       "evidence": [
         "docs/audit/field-reports/nov13-data-asset-create-design.md"
       ]
