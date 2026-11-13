@@ -10,6 +10,9 @@
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/ARFilter.h"
 #include "Editor.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/PackageName.h"
 #include "Misc/SecureHash.h"
@@ -555,8 +558,23 @@ FString NodeSearchLoadBlocker(IAssetRegistry& Registry, FName Seed)
 FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
     const FString& Asset, const FString& Words, const FString& GraphName,
     const FString& MatchMode, bool IncludeLiterals, const FString& NodeClass,
-    const FString& Scope, bool Recursive, int32 PageSize, const FString& Cursor, bool CountOnly)
+    const FString& Scope, bool Recursive, int32 PageSize, const FString& Cursor, bool CountOnly, const FString& Format)
 {
+    const bool bJson = Format == TEXT("json");
+    auto SerializeJson = [](const TSharedRef<FJsonObject>& Object)
+    {
+        FString Output;
+        const TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> Writer =
+            TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Output);
+        FJsonSerializer::Serialize(Object, Writer);
+        return Output;
+    };
+    // Preserve the existing text error paths while giving JSON callers one envelope.
+    bool bJsonSuccess = false;
+    auto Search = [&]() -> FString
+    {
+    if (Format != TEXT("text") && !bJson)
+        return TEXT("error: Format must be text or json.");
     if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
         return TEXT("error: node search requires an idle editor outside play and transactions.");
     if (MatchMode != TEXT("all") && MatchMode != TEXT("any"))
@@ -676,6 +694,18 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
     }
     int32 Visited = 0, Searched = 0, Matched = 0, Skipped = 0, Characters = 0;
     TArray<FString> Lines, Refusals;
+    TArray<TSharedPtr<FJsonValue>> JsonHits, JsonSkips;
+    auto AddSkip = [&](const FString& Path, const FString& Reason)
+    {
+        Refusals.Add(Path + TEXT(": ") + Reason);
+        if (bJson)
+        {
+            TSharedRef<FJsonObject> Row = MakeShared<FJsonObject>();
+            Row->SetStringField(TEXT("asset"), Path);
+            Row->SetStringField(TEXT("reason"), Reason);
+            JsonSkips.Add(MakeShared<FJsonValueObject>(Row));
+        }
+    };
     bool bStop = false;
     while (AssetIndex < Candidates.Num() && Visited < 16 && !bStop)
     {
@@ -695,7 +725,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
         }
         if (!Blocker.IsEmpty())
         {
-            Refusals.Add(Candidate.GetObjectPathString() + TEXT(": ") + Blocker);
+            AddSkip(Candidate.GetObjectPathString(), Blocker);
             ++Skipped; ++AssetIndex; NodeIndex = 0; continue;
         }
         TArray<UEdGraph*> Graphs;
@@ -709,7 +739,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
                 if (Scope == TEXT("asset"))
                     return FString::Printf(TEXT("error: graph '%s' is missing or ambiguous in %s. Graphs: %s"),
                         *GraphName, *Candidate.GetObjectPathString(), *ListGraphNames(Blueprint));
-                Refusals.Add(Candidate.GetObjectPathString() + TEXT(": graph name is ambiguous"));
+                AddSkip(Candidate.GetObjectPathString(), TEXT("graph name is ambiguous"));
                 ++Skipped; ++AssetIndex; NodeIndex = 0; continue;
             }
         }
@@ -734,6 +764,22 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
                 // the exact node identity remains available on its own line.
                 if (Line.Len() > 24000) Line = TurboMCPNodeId::MakeForNode(Node, true) + TEXT("\n    display fields omitted: oversized labels");
                 Characters += Line.Len(); Lines.Add(Line);
+                if (bJson)
+                {
+                    TSharedRef<FJsonObject> Hit = MakeShared<FJsonObject>();
+                    Hit->SetStringField(TEXT("asset"), Candidate.GetObjectPathString());
+                    Hit->SetStringField(TEXT("graph"), Node->GetGraph()->GetName());
+                    Hit->SetStringField(TEXT("node_id"), TurboMCPNodeId::MakeForNode(Node, true));
+                    const bool bOmitted = Line.Contains(TEXT("display fields omitted: oversized labels"));
+                    Hit->SetBoolField(TEXT("display_fields_omitted"), bOmitted);
+                    if (!bOmitted)
+                    {
+                        Hit->SetStringField(TEXT("title"), TurboMCPNodeId::GetNodeTitle(Node));
+                        Hit->SetStringField(TEXT("type_id"), TurboMCPNodeId::GetNodeTypeId(Node));
+                        Hit->SetStringField(TEXT("class"), Node->GetClass()->GetPathName());
+                    }
+                    JsonHits.Add(MakeShared<FJsonValueObject>(Hit));
+                }
             }
             ++Searched; ++NodeIndex;
             if (bMatches) ++Matched;
@@ -743,9 +789,44 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
     const bool bScanFinished = AssetIndex == Candidates.Num();
     const int64 TotalMatched = static_cast<int64>(MatchedBefore) + Matched;
     const int64 TotalSkipped = static_cast<int64>(SkippedBefore) + Skipped;
+    const FString ScopeNote = TEXT("Search covers local Blueprint graphs, not Data Asset properties, inherited assets outside the selected scope, native implementations or runtime dispatch. A zero match count does not prove an asset unused. Use ReadTurboMCPRefsBatch, then ReadTurboMCPDataAssetProperty for Data Asset references.");
+    if (bJson)
+    {
+        TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
+        Object->SetNumberField(TEXT("schema_version"), 1);
+        Object->SetStringField(TEXT("status"), TEXT("ok"));
+        Object->SetStringField(TEXT("scope"), Scope);
+        TSharedRef<FJsonObject> Query = MakeShared<FJsonObject>();
+        Query->SetStringField(TEXT("asset"), Asset);
+        Query->SetStringField(TEXT("words"), Words);
+        Query->SetStringField(TEXT("graph_name"), GraphName);
+        Query->SetStringField(TEXT("match_mode"), MatchMode);
+        Query->SetStringField(TEXT("node_class"), NodeClass);
+        Query->SetBoolField(TEXT("include_literals"), IncludeLiterals);
+        Query->SetBoolField(TEXT("recursive"), Recursive);
+        Query->SetBoolField(TEXT("count_only"), CountOnly);
+        Object->SetObjectField(TEXT("query"), Query);
+        Object->SetArrayField(TEXT("hits"), JsonHits);
+        Object->SetArrayField(TEXT("skipped"), JsonSkips);
+        Object->SetNumberField(TEXT("eligible_assets"), Candidates.Num());
+        Object->SetNumberField(TEXT("nodes_searched_this_page"), Searched);
+        Object->SetNumberField(TEXT("matches_this_page"), Matched);
+        Object->SetNumberField(TEXT("matches_so_far"), TotalMatched);
+        Object->SetNumberField(TEXT("skipped_assets_so_far"), TotalSkipped);
+        Object->SetBoolField(TEXT("scan_finished"), bScanFinished);
+        Object->SetBoolField(TEXT("complete"), bScanFinished && TotalSkipped == 0);
+        if (bScanFinished) Object->SetField(TEXT("next_cursor"), MakeShared<FJsonValueNull>());
+        else Object->SetStringField(TEXT("next_cursor"), FString::Printf(TEXT("%d:%d:%lld:%lld:%s"), AssetIndex, NodeIndex, TotalMatched, TotalSkipped, *Revision));
+        Object->SetStringField(TEXT("scope_note"), ScopeNote);
+        Object->SetStringField(TEXT("pagination_note"), TEXT("Follow every cursor without editing assets. matches_so_far is final only when scan_finished is true. Skips prevent exhaustive conclusions. This is not a frozen snapshot."));
+        Object->SetStringField(TEXT("effects"), TEXT("No edit, compile, save, checkout, map load or PIE was requested. Loading may execute native load hooks; this is not a sandbox."));
+        bJsonSuccess = true;
+        return SerializeJson(Object);
+    }
     FString Result = FString::Printf(TEXT("read: nodes matching %s words [%s]\ncoverage: scan_finished=%s; complete=%s; eligible_assets=%d; next_asset_index=%d; nodes_searched_this_page=%d; matches_this_page=%d; matches_so_far=%lld; skipped_assets_so_far=%lld; results shown=%d\n"),
         *MatchMode, *FString::Join(WordList, TEXT(", ")), bScanFinished ? TEXT("true") : TEXT("false"),
         bScanFinished && TotalSkipped == 0 ? TEXT("true") : TEXT("false"), Candidates.Num(), AssetIndex, Searched, Matched, TotalMatched, TotalSkipped, Lines.Num());
+    Result += ScopeNote + TEXT("\n");
     Result += TEXT("Scope includes nested local graphs; inherited Blueprint assets must match the asset scope separately; native implementations and runtime dispatch are not searched. Null node entries are skipped.\n");
     Result += FString::Printf(TEXT("filters: literals=%s; exact node class=%s; count_only=%s\n"), IncludeLiterals ? TEXT("included") : TEXT("excluded"), NodeClass.IsEmpty() ? TEXT("any") : *NodeClass, CountOnly ? TEXT("true") : TEXT("false"));
     if (Matched == 0) Result += bScanFinished && TotalMatched == 0 && TotalSkipped == 0 ? TEXT("Nothing matched in the completed scan. Try fewer or broader terms.\n") : TEXT("No matches on this page; this is not proof of absence.\n");
@@ -754,6 +835,15 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
     Result += bScanFinished ? TEXT("next_cursor: none\n") : FString::Printf(TEXT("next_cursor: %d:%d:%lld:%lld:%s\n"), AssetIndex, NodeIndex, TotalMatched, TotalSkipped, *Revision);
     Result += TEXT("Follow every cursor without editing assets. matches_so_far is a final total only when scan_finished=true; skipped assets prevent exhaustive conclusions. No edit, compile, save, checkout, map load or PIE was requested. Asset loading may execute native load hooks; this is not a sandbox.");
     return Result;
+    };
+    const FString Output = Search();
+    if (!bJson || bJsonSuccess) return Output;
+    TSharedRef<FJsonObject> Error = MakeShared<FJsonObject>();
+    Error->SetNumberField(TEXT("schema_version"), 1);
+    Error->SetStringField(TEXT("status"), TEXT("error"));
+    Error->SetStringField(TEXT("message"), Output);
+    Error->SetBoolField(TEXT("complete"), false);
+    return SerializeJson(Error);
 }
 
 FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const FString& GraphName,const FString& NodeId,int32 NextHops)

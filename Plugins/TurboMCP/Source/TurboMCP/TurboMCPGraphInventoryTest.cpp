@@ -3,6 +3,9 @@
 #include "TurboMCPGraphText.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Tools/TurboMCPToolsets.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonReader.h"
 #include "TurboMCPNodeId.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
@@ -106,6 +109,50 @@ bool FTurboMCPGraphInventoryTest::RunTest(const FString& Parameters)
         TEXT(""), TEXT("folder"), true, 40, TEXT(""), false);
     TestFalse(TEXT("Loaded Blueprint does not leak into another folder"),
         OutsideFolder.Contains(TurboMCPNodeId::MakeKey(Graph->Nodes[0]->NodeGuid)));
+    auto ParseSearch = [&](const FString& QueryWords, const FString& PageCursor, bool bCountOnly, const FString& Mode)
+    {
+        const FString Output = UTurboMCPReadToolset::ReadTurboMCPNodeFind(
+            Asset, QueryWords, Graph->GetName(), Mode, false, TEXT("any"),
+            TEXT("asset"), true, 1, PageCursor, bCountOnly, TEXT("json"));
+        TSharedPtr<FJsonObject> Parsed;
+        TestTrue(TEXT("Node search emits one JSON document"),
+            FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Output), Parsed));
+        return Parsed;
+    };
+    const TSharedPtr<FJsonObject> FirstPage = ParseSearch(TEXT("InventoryEvent"), TEXT("first"), false, TEXT("all"));
+    if (FirstPage)
+    {
+        TestEqual(TEXT("Small page returns one hit"), FirstPage->GetArrayField(TEXT("hits")).Num(), 1);
+        TestFalse(TEXT("First page is not complete"), FirstPage->GetBoolField(TEXT("complete")));
+        TestTrue(TEXT("JSON explains Data Asset scope"), FirstPage->GetStringField(TEXT("scope_note")).Contains(TEXT("ReadTurboMCPRefsBatch")));
+        FString PageCursor = FirstPage->GetStringField(TEXT("next_cursor"));
+        int32 Pages = 1;
+        bool bFinished = false;
+        while (!bFinished && Pages < 205)
+        {
+            const TSharedPtr<FJsonObject> Page = ParseSearch(TEXT("InventoryEvent"), PageCursor, false, TEXT("all"));
+            if (!Page) break;
+            ++Pages;
+            bFinished = Page->GetBoolField(TEXT("scan_finished"));
+            if (bFinished)
+            {
+                TestTrue(TEXT("Final JSON page is complete"), Page->GetBoolField(TEXT("complete")));
+                TestEqual(TEXT("Final cumulative count covers all events"), Page->GetNumberField(TEXT("matches_so_far")), 200.0);
+            }
+            else PageCursor = Page->GetStringField(TEXT("next_cursor"));
+        }
+        TestTrue(TEXT("Pagination terminates"), bFinished);
+    }
+    const TSharedPtr<FJsonObject> Count = ParseSearch(TEXT("InventoryEvent"), TEXT("first"), true, TEXT("all"));
+    if (Count)
+    {
+        TestEqual(TEXT("Count-only has no hit rows"), Count->GetArrayField(TEXT("hits")).Num(), 0);
+        TestEqual(TEXT("Count-only preserves total"), Count->GetNumberField(TEXT("matches_so_far")), 200.0);
+    }
+    const TSharedPtr<FJsonObject> Missing = ParseSearch(TEXT("NoSuchInventoryToken"), TEXT("first"), false, TEXT("all"));
+    if (Missing) TestEqual(TEXT("No-hit JSON count"), Missing->GetNumberField(TEXT("matches_so_far")), 0.0);
+    const TSharedPtr<FJsonObject> Invalid = ParseSearch(TEXT("InventoryEvent"), TEXT("first"), false, TEXT("invalid"));
+    if (Invalid) TestEqual(TEXT("Invalid input is a JSON error"), Invalid->GetStringField(TEXT("status")), FString(TEXT("error")));
     TestEqual(TEXT("Inventory preserves node count"), Graph->Nodes.Num(), 200);
     TestEqual(TEXT("Inventory preserves dirty state"), Package->IsDirty(), DirtyBefore);
     return !HasAnyErrors();
