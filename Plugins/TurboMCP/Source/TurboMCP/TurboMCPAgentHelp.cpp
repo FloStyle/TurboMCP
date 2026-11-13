@@ -529,6 +529,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
             // Keep execution and destructive effects before optional detail and truncation.
             if (Entry.Name.StartsWith(TEXT("TurboMCP.")))
             {
+                if (Bare == TEXT("ReadTurboMCPBulkExport"))
+                    Help += TEXT("\nusage: Export one bulk query without filling the client context. Reader=ReadTurboMCPRefsBatch with QueryJSON={\"folder\":\"/Game/UI\",\"recursive\":true,\"includeSeeds\":false} writes one JSON file containing every collected page. NodeFind uses asset, words, scope and graphName; WidgetInventory uses rules as a JSON string plus folder. Query names are lower-camel and case-sensitive. Do not supply cursor or format. Read complete and traversalFinished separately: a finished scan with skipped assets is incomplete. Limits produce a partial file, with nextCursor for continuing through the original reader. The file is on the editor machine. No project assets are explicitly saved; loading may execute project code. Export is not a cancellation or snapshot-isolation guarantee.");
                 if (Bare == TEXT("ReadTurboMCPNodeFind"))
                     Help += TEXT("\nusage: Format=json returns one JSON document with hits, skipped assets, coverage and next_cursor. Follow every cursor until null; scan_finished does not imply complete when assets were skipped. CountOnly omits hit rows, not counts. Keep search arguments and assets unchanged between pages. Data Asset properties are outside graph search: use ReadTurboMCPRefsBatch and ReadTurboMCPDataAssetProperty before concluding an asset is unused.");
                 else if (Bare == TEXT("ReadTurboMCPPlayCheck"))
