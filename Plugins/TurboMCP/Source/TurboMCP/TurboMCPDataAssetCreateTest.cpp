@@ -69,7 +69,7 @@ bool FTurboMCPDataAssetCreateTest::RunTest(const FString& Parameters)
     UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(UPrimaryDataAsset::StaticClass(),
         BlueprintPackage, TEXT("BP_CreateType"), BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
     if (TestNotNull(TEXT("Blueprint Data Asset type fixture"), Blueprint) &&
-        TestNotNull(TEXT("generated class fixture"), Blueprint->GeneratedClass))
+        TestNotNull(TEXT("generated class fixture"), Blueprint->GeneratedClass.Get()))
     {
         Blueprint->GeneratedClass->GetDefaultObject();
         const FString DerivedPackage = PackagePath + TEXT("_Derived");
@@ -79,7 +79,7 @@ bool FTurboMCPDataAssetCreateTest::RunTest(const FString& Parameters)
         const FString DerivedPath = DerivedPackage + TEXT(".") + FPackageName::GetLongPackageAssetName(DerivedPackage);
         if (UDataAsset* Derived = FindObject<UDataAsset>(nullptr, *DerivedPath))
         {
-            TestEqual(TEXT("exact generated class retained"), Derived->GetClass(), Blueprint->GeneratedClass);
+            TestEqual(TEXT("exact generated class retained"), Derived->GetClass(), Blueprint->GeneratedClass.Get());
             FAssetRegistryModule::AssetDeleted(Derived);
             Derived->GetPackage()->SetDirtyFlag(false);
             Derived->ClearFlags(RF_Public | RF_Standalone);
@@ -127,3 +127,4 @@ bool FTurboMCPDataAssetCreateTest::RunTest(const FString& Parameters)
     return true;
 }
 #endif
+
