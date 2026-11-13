@@ -1,6 +1,6 @@
 # NOV13-04: bounded bulk result export
 
-Readiness: design reviewed; implementation assignment pending.
+Readiness: ready. Integrator-approved assignment nov13-bulk-export.
 
 ## Source findings
 
@@ -23,3 +23,9 @@ Use synthetic reader responses to check multi-page assembly, valid single-docume
 ## Scope to approve before coding
 
 New bulk export implementation and focused test; public tool declaration; agent help. Integrator owns tool inventory, test registration, status and evidence. Existing readers should not need behavioral changes. Review FTurboMCPResult envelopes and native parameter parsing before finalizing exact file scope.
+
+## Result framing clarification
+
+WidgetInventory returns a JSON body followed by a newline and `; tmcp-result-v1:` JSON metadata (FTurboMCPResult::AppendTo). Consequently its raw complete text is not a standalone JSON document. This is a confirmed framing difference, although the original client concatenation remains unidentified. The exporter must parse this exact trailer separately and retain both body and result in its page envelope. Never discard the trailer or treat it as a second data page. Refuse unexpected trailing material. Reader-specific completion checks must distinguish an intermediate-page complete=false from persistent omissions/errors.
+
+Internal calls must check the selected reader's tool policy, not bypass a disabled reader through export. Tests may live in the new implementation under WITH_DEV_AUTOMATION_TESTS. Exact scope is in worker-scopes.json.
