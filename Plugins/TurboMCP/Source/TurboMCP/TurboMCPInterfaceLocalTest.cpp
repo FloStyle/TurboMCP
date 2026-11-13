@@ -6,6 +6,7 @@
 #include "Misc/ScopeExit.h"
 #include "BlueprintEditorLibrary.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPTypeParser.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
@@ -21,6 +22,18 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPInterfaceLocalTest,
     "TurboMCP.GraphAppend.InterfaceLocal", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPInterfaceLocalTest::RunTest(const FString& Parameters)
 {
+    FEdGraphPinType TimerAlias;
+    FEdGraphPinType TimerPath;
+    FString TimerWhy;
+    const bool bAlias = FTurboMCPTypeParser::Resolve(TEXT("TimerHandle"), TimerAlias, TimerWhy);
+    const bool bPath = FTurboMCPTypeParser::Resolve(TEXT("/Script/Engine.TimerHandle"), TimerPath, TimerWhy);
+    TestTrue(TEXT("TimerHandle alias resolves"), bAlias);
+    TestTrue(TEXT("TimerHandle object path resolves"), bPath);
+    if (bAlias && bPath)
+    {
+        TestTrue(TEXT("Alias uses the same Blueprint struct type as the object path"),
+            TimerAlias == TimerPath && TimerAlias.PinCategory == UEdGraphSchema_K2::PC_Struct);
+    }
     UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/InterfaceLocal_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
     ON_SCOPE_EXIT { Package->SetDirtyFlag(false); };
     UBlueprint* Interface = FKismetEditorUtilities::CreateBlueprint(UInterface::StaticClass(), Package, TEXT("BPI_Local"), BPTYPE_Interface, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());

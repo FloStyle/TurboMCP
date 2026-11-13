@@ -56,7 +56,8 @@ namespace
 		static const TMap<FString, FString> Types = {
 			{ TEXT("vector"), TEXT("/Script/CoreUObject.Vector") }, { TEXT("rotator"), TEXT("/Script/CoreUObject.Rotator") },
 			{ TEXT("transform"), TEXT("/Script/CoreUObject.Transform") }, { TEXT("vector2d"), TEXT("/Script/CoreUObject.Vector2D") },
-			{ TEXT("linearcolor"), TEXT("/Script/CoreUObject.LinearColor") }, { TEXT("color"), TEXT("/Script/CoreUObject.Color") }};
+			{ TEXT("linearcolor"), TEXT("/Script/CoreUObject.LinearColor") }, { TEXT("color"), TEXT("/Script/CoreUObject.Color") },
+			{ TEXT("timerhandle"), TEXT("/Script/Engine.TimerHandle") }};
 		return Types;
 	}
 
