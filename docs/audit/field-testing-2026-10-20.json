@@ -7687,15 +7687,18 @@
       "report": "2026-11-12/13 intake",
       "title": "Add structured JSON output to NodeFind",
       "kind": "feature",
-      "state": "open",
+      "state": "in_progress",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Provide one valid JSON result with cursor, totals, hits, skips and completeness; preserve text mode and existing scopes.",
+      "validation": "build_pass_runtime_failed",
+      "remaining": "Implemented; isolate nonvisual acceptance after inventory render-target failure.",
       "source_keys": [
         "2026-11-13_S1/NF-16"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        "docs/audit/field-reports/nov13-node-json-review.md"
+      ]
     },
     {
       "id": "NOV13-09",
@@ -7704,15 +7707,18 @@
       "report": "2026-11-12/13 intake",
       "title": "Explain graph-search scope and reference-search handoff",
       "kind": "housekeeping",
-      "state": "open",
+      "state": "in_progress",
       "priority": "P2",
-      "validation": "reported_not_reproduced",
-      "remaining": "Explain that mapping-context and other Data Asset references are outside graph search; direct callers to RefsBatch/property reads. No false unused-asset conclusion.",
+      "validation": "build_pass_runtime_failed",
+      "remaining": "Implemented; isolate nonvisual acceptance after inventory render-target failure.",
       "source_keys": [
         "2026-11-13_S1/NF-17"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
-      "dependencies": []
+      "dependencies": [],
+      "evidence": [
+        "docs/audit/field-reports/nov13-node-json-review.md"
+      ]
     }
   ],
   "prototype": {

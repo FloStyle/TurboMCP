@@ -138,30 +138,38 @@
       "title": "Add structured JSON output to NodeFind",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_review",
       "owner": "integrator",
-      "validation": "reported_not_reproduced",
+      "validation": "build_pass_runtime_failed",
       "source_keys": [
         "2026-11-13_S1/NF-16"
       ],
       "dependencies": [],
-      "next_step": "Provide one valid JSON result with cursor, totals, hits, skips and completeness; preserve text mode and existing scopes."
+      "next_step": "Provide one valid JSON result with cursor, totals, hits, skips and completeness; preserve text mode and existing scopes.",
+      "remaining": "Implemented; isolate nonvisual acceptance after inventory render-target failure.",
+      "evidence": [
+        "docs/audit/field-reports/nov13-node-json-review.md"
+      ]
     },
     {
       "id": "NOV13-09",
       "title": "Explain graph-search scope and reference-search handoff",
       "kind": "housekeeping",
       "priority": "P2",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_review",
       "owner": "integrator",
-      "validation": "reported_not_reproduced",
+      "validation": "build_pass_runtime_failed",
       "source_keys": [
         "2026-11-13_S1/NF-17"
       ],
       "dependencies": [],
-      "next_step": "Explain that mapping-context and other Data Asset references are outside graph search; direct callers to RefsBatch/property reads. No false unused-asset conclusion."
+      "next_step": "Explain that mapping-context and other Data Asset references are outside graph search; direct callers to RefsBatch/property reads. No false unused-asset conclusion.",
+      "remaining": "Implemented; isolate nonvisual acceptance after inventory render-target failure.",
+      "evidence": [
+        "docs/audit/field-reports/nov13-node-json-review.md"
+      ]
     }
   ],
   "field_evidence": {
