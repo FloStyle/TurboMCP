@@ -1184,6 +1184,14 @@ namespace TurboMCPRefsTests
                     ReadReferences(Registry, HubSeed, Hard, EdgeCursor, 100).StartsWith(TEXT("error:")));
         } while (!EdgeCursor.IsEmpty() && EdgeIds.Num() < 701);
         Test.TestTrue(TEXT("Edges-only returns all edges and terminates"), EdgeIds.Num() == 700 && EdgeCursor.IsEmpty());
+        FOptions NoSoftEdges = EdgesOnly;
+        NoSoftEdges.Kinds = static_cast<uint8>(EKind::Soft);
+        const TSharedPtr<FJsonObject> EmptyEdges = Parse(ReadReferences(Registry, HubSeed, NoSoftEdges, TEXT(""), 100));
+        if (!EmptyEdges) return false;
+        Test.TestEqual(TEXT("No matching edges returns zero records"), EmptyEdges->GetArrayField(TEXT("records")).Num(), 0);
+        Test.TestEqual(TEXT("Empty edge result retains seed count"), EmptyEdges->GetNumberField(TEXT("seedCount")), 1.0);
+        Test.TestEqual(TEXT("Empty edge result total is zero"), EmptyEdges->GetNumberField(TEXT("total")), 0.0);
+        Test.TestTrue(TEXT("Empty edge result has no continuation"), EmptyEdges->GetStringField(TEXT("nextCursor")).IsEmpty());
 		Hard.bLegacy = true;
 		const auto LegacyPage = [&](const FString& LegacyCursor)
 		{
