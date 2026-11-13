@@ -172,6 +172,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPBulkExport(const FString& Reader, cons
         TSharedPtr<FJsonObject> Page;
         if (!ParsePage(Raw, IsWidget, Page, Reason)) { Reason += TEXT(" Reader response: ") + Raw.Left(4096); break; }
         const auto Body = Page->GetObjectField(TEXT("data"));
+        FString ReaderError;
+        if (Body->TryGetStringField(TEXT("error"), ReaderError)) { Reason = TEXT("reader_error: ") + ReaderError.Left(4096); break; }
         FString Status;
         if (Body->TryGetStringField(TEXT("status"),Status) && Status == TEXT("error")) { Reason = TEXT("reader_error: ") + Raw.Left(4096); break; }
         FString Next;
@@ -247,6 +249,40 @@ bool FTurboMCPBulkExportFramingTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Missing required result refused"), TurboMCPBulkExport::ParsePage(TEXT("{}"), true, Page, Error));
     TestFalse(TEXT("Malformed result refused"), TurboMCPBulkExport::ParsePage(TEXT("{}\n; tmcp-result-v1: broken"), true, Page, Error));
     TestFalse(TEXT("Reader text refusal is not a page"), TurboMCPBulkExport::ParsePage(TEXT("error: query refused"), false, Page, Error));
+
+    TSharedPtr<FJsonObject> Query;
+    TurboMCPBulkExport::ParseObject(TEXT("{\"Folder\":\"/Game\"}"), Query);
+    TestFalse(TEXT("Case typo refused"), TurboMCPBulkExport::ValidateQuery(Query,TEXT("ReadTurboMCPRefsBatch"),Error));
+    TurboMCPBulkExport::ParseObject(TEXT("{\"recursive\":\"true\"}"), Query);
+    TestFalse(TEXT("String boolean refused"), TurboMCPBulkExport::ValidateQuery(Query,TEXT("ReadTurboMCPRefsBatch"),Error));
+    const FString ReferenceQuery = TEXT("{\"assets\":\"/Game/Tests/BP_NodeTest|/Game/Tests/TA11_TestEnum\",\"pageSize\":1,\"kinds\":\"hard\"}");
+    const auto ReadExport = [this](const FString& Reply, bool ExpectedFinished)
+    {
+        TSharedPtr<FJsonObject> Summary;
+        if (!TurboMCPBulkExport::ParseObject(Reply,Summary)) { AddError(TEXT("Export did not return JSON: ") + Reply); return; }
+        FString Path;
+        if (!Summary->TryGetStringField(TEXT("path"),Path)) { AddError(TEXT("Export has no artifact path")); return; }
+        // Only delete the unique artifact returned by this test invocation, inside its fixed report directory.
+        const FString Root = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()/TEXT("TurboMCP/Exports")) + TEXT("/");
+        if (!Path.StartsWith(Root)) { AddError(TEXT("Export escaped its report directory")); return; }
+        FString Content;
+        const bool Loaded = FFileHelper::LoadFileToString(Content,*Path);
+        IFileManager::Get().Delete(*Path,false,true);
+        TestTrue(TEXT("Artifact is readable"),Loaded);
+        TSharedPtr<FJsonObject> Document;
+        if (!TurboMCPBulkExport::ParseObject(Content,Document)) { AddError(TEXT("Artifact is not one JSON object")); return; }
+        TestEqual(TEXT("Traversal state matches expected limit"),Document->GetBoolField(TEXT("traversalFinished")),ExpectedFinished);
+        TestEqual(TEXT("Reported bytes match UTF-8 file"),Summary->GetNumberField(TEXT("bytes")),static_cast<double>(FTCHARToUTF8(*Content).Length()));
+        if (!ExpectedFinished)
+        {
+            TestFalse(TEXT("Limited export is not complete"),Document->GetBoolField(TEXT("complete")));
+            TestFalse(TEXT("Limited export retains continuation"),Document->GetStringField(TEXT("nextCursor")).IsEmpty());
+        }
+        TestTrue(TEXT("At least one page collected"),Document->GetArrayField(TEXT("pages")).Num()>0);
+    };
+    ReadExport(UTurboMCPReadToolset::ReadTurboMCPBulkExport(TEXT("ReadTurboMCPRefsBatch"),ReferenceQuery,1,30,16),false);
+    ReadExport(UTurboMCPReadToolset::ReadTurboMCPBulkExport(TEXT("ReadTurboMCPRefsBatch"),ReferenceQuery,100,30,16),true);
+    TestTrue(TEXT("Unknown reader is refused"),UTurboMCPReadToolset::ReadTurboMCPBulkExport(TEXT("EditTurboMCPAnything"),TEXT("{}"),1,30,16).StartsWith(TEXT("error:")));
     return true;
 }
 #endif
