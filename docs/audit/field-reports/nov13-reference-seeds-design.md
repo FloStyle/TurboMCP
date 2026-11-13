@@ -1,0 +1,4 @@
+# Optional batch-reference seed records
+Readiness: ready. Integrator-approved NOV13-05 repair.
+Add trailing IncludeSeeds=true to RefsBatch. False omits seed rows only from presentation. Preserve traversal records and parent indices for root chains. Page over a filtered index so total, returned, offset and nextCursor refer to visible records. seedCount and edgeCount retain their existing meanings. Bind the cursor revision to IncludeSeeds so changing the flag cannot silently skip rows. Keep default and legacy behavior unchanged. Include seedRecordsIncluded metadata.
+Extend the existing synthetic registry check: 700 edges returned once without seed rows across pages, correct totals, rejection when flag changes mid-pagination, and an empty edge result with nonzero seedCount. Reuse the existing focused reference suite. No load, map, save or engine changes.
