@@ -1,6 +1,6 @@
 # NOV13-07 typed Data Asset creation
 
-Design reviewed; implementation scope and claim still required.
+Readiness: ready. Integrator-approved assignment: nov13-data-asset-create. Claim the full commit containing this scope before implementation.
 
 ## Behavior
 Add PreviewTurboMCPDataAssetCreate and EditTurboMCPDataAssetCreate. Inputs: exact class path, new package path, optional initial-fields JSON, explicit Save=false and AddToSourceControl=false. Creation means a fresh class-default instance, never duplication or silent clearing of class defaults. The primary field need is seven empty typed instances followed by existing map edits.
@@ -30,3 +30,6 @@ One build and one synthetic workflow: concrete native data asset creation, optio
 - The existing explicit save implementation checks both engine return and dirty state. New creation additionally needs file evidence; a successful allocation or AssetCreated notification is not evidence of persistence.
 
 Remaining preparation: establish registry undo behavior and exact source-control add prerequisites, then approve an exact implementation/test scope. These findings do not close NOV13-07 or authorize a claim without that scope.
+
+## Implementation decision
+Use stock scoped transactional creation with RF_Transactional. The first focused workflow must prove undo/redo and registry visibility before accepting the feature. If registry restoration fails, repair it within the assigned creation implementation rather than dropping the undo check. This is a verification requirement, not a reason to defer implementation. Source-control add requires an enabled, available provider after successful save, followed by state readback; unavailable or failed add is an explicit partial result. Add never implies checkout or submission. The wrapper and native test are explicitly included in this assignment; catalog registration remains integrator-owned.

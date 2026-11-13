@@ -3954,6 +3954,20 @@
             "Tools/test-graph-append.py"
           ],
           "new_files": []
+        },
+        "nov13-data-asset-create": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetValues.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPDataAssetValues.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetCreate.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetCreateTest.cpp",
+            "Tools/test-data-asset-create.py"
+          ]
         }
       },
       "preserve_rows": []
