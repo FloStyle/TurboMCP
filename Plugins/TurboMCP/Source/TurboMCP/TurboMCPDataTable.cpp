@@ -13,6 +13,7 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
 #include "Containers/UnrealString.h"
+#include "Misc/SecureHash.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "Engine/Blueprint.h"
@@ -30,8 +31,8 @@
  * R-DATATABLE: describe a data table.
  *
  * `03_TOOLS.md` asks for the row struct with its fields and types, the row count,
- * the row names capped, and the graphs in loaded Blueprints that read the table.
- * Selected row values are printed when Columns names schema fields.
+ * paged row names and values, and the graphs in loaded Blueprints that read the table.
+ * Columns selects all values, named fields, or names only.
  *
  * The readers are found in two steps rather than one:
  *
@@ -93,8 +94,13 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 	const FString& Asset,
 	const FString& Include,
 	const FString& Columns,
-	const FString& TextMode)
+	const FString& TextMode, const int32 Offset, const int32 Limit,
+	const FString& RowFilter, const FString& Revision)
 {
+	if (Offset < 0 || Limit < 1 || Limit > MaxRowNames)
+		return TEXT("error: Offset must be nonnegative and Limit must be between 1 and 60.");
+	if (Offset > 0 && Revision.IsEmpty())
+		return TEXT("error: continuation requires the Revision returned by the first page.");
 	const FString TextStyle = TextMode.TrimStartAndEnd().ToLower();
 	if (TextStyle != TEXT("lossless") && TextStyle != TEXT("display"))
 		return TEXT("error: TextMode must be lossless or display.");
@@ -126,6 +132,9 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 			TEXT("error: '%s' is not an include filter. Accepted: all, readers, ")
 			TEXT("schema. Leave it empty for all."), *Include);
 	}
+
+	if (Mode == 1 && (Offset != 0 || !RowFilter.IsEmpty() || !Revision.IsEmpty()))
+		return TEXT("error: row paging and filtering require Include=all or schema.");
 
 	FTurboMCPAssetResolver::FResolved Resolved;
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
@@ -252,17 +261,46 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 			return A.ToString() < B.ToString();
 		});
 
-		int32 ShownRows = 0;
-		for (const FName& Name : RowNames)
+		// Hash sorted row contents as well as the query. This detects unsaved edits,
+		// including changes to rows outside the requested page, without writing assets.
+		FMD5 RevisionHash;
+		auto HashPart = [&RevisionHash](const FString& Part)
 		{
-			if (ShownRows >= MaxRowNames)
-			{
-				Out += FString::Printf(TEXT("\n  (%d more row name(s) not shown)"),
-					RowNames.Num() - ShownRows);
-				break;
-			}
-			++ShownRows;
-			Out += FString::Printf(TEXT("\n  %s"), *Name.ToString());
+			const FTCHARToUTF8 Encoded(*Part);
+			const FString Length = FString::Printf(TEXT("%d:"), Encoded.Length());
+			const FTCHARToUTF8 Prefix(*Length);
+			RevisionHash.Update(reinterpret_cast<const uint8*>(Prefix.Get()), Prefix.Length());
+			RevisionHash.Update(reinterpret_cast<const uint8*>(Encoded.Get()), Encoded.Length());
+		};
+		HashPart(Resolved.ObjectPath);
+		HashPart(Wanted);
+		HashPart(ColumnSelection);
+		HashPart(TextStyle);
+		HashPart(RowFilter);
+		if (RowStruct) HashPart(RowStruct->GetPathName());
+		for (const FName& RowName : RowNames)
+		{
+			FString RowLiteral;
+			const uint8* const* Storage = RowMap.Find(RowName);
+			if (RowStruct && Storage && *Storage)
+				RowStruct->ExportText(RowLiteral, *Storage, nullptr, Table, PPF_None, nullptr);
+			HashPart(RowName.ToString());
+			HashPart(RowLiteral);
+		}
+		uint8 Digest[16];
+		RevisionHash.Final(Digest);
+		const FString CurrentRevision = BytesToHex(Digest, 16);
+		if (!Revision.IsEmpty() && Revision != CurrentRevision)
+			return TEXT("error: stale Revision or changed query. Restart at Offset=0 without Revision.");
+		RowNames.RemoveAll([&](const FName& RowName) { return !RowName.ToString().Contains(RowFilter); });
+		if (Offset > RowNames.Num()) return TEXT("error: Offset exceeds the matched row count.");
+		const int32 PageEnd = Offset + FMath::Min(Limit, RowNames.Num() - Offset);
+		int32 ShownRows = 0;
+		int32 OmittedValues = 0;
+		for (int32 RowIndex = Offset; RowIndex < PageEnd; ++RowIndex)
+		{
+			const FName Name = RowNames[RowIndex];
+			FString RowOutput = FString::Printf(TEXT("\n  %s"), *Name.ToString());
 			const uint8* const* Row = RowMap.Find(Name);
 			for (const FProperty* Column : SelectedColumns)
 			{
@@ -285,10 +323,27 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 				else Value = TEXT("<missing row storage>");
 				Value.ReplaceInline(TEXT("\r"), TEXT("\\r"));
 				Value.ReplaceInline(TEXT("\n"), TEXT("\\n"));
-				Out += FString::Printf(TEXT("\n    %s = %s"), *Column->GetName(), *Value);
+				RowOutput += FString::Printf(TEXT("\n    %s = %s"), *Column->GetName(), *Value);
 			}
 
+			// Leave room for continuation metadata and reader coverage. Never cut a value
+			// mid-literal or report an oversized row as fully inspected.
+			if (RowOutput.Len() > 16000)
+			{
+				RowOutput = FString::Printf(TEXT("\n  %s [values omitted: row exceeds 16000 characters; select fewer Columns]"), *Name.ToString());
+				++OmittedValues;
+			}
+			if (Out.Len() + RowOutput.Len() > 19000)
+			{
+				if (ShownRows == 0) return TEXT("error: schema and row exceed the page budget. Select fewer Columns; no rows returned.");
+				break;
+			}
+			Out += RowOutput;
+			++ShownRows;
 		}
+		Out += FString::Printf(TEXT("\npage: total=%d matched=%d shown=%d offset=%d next_offset=%d omitted_value_rows=%d\nrevision: %s"),
+			RowMap.Num(), RowNames.Num(), ShownRows, Offset,
+			Offset + ShownRows < RowNames.Num() ? Offset + ShownRows : -1, OmittedValues, *CurrentRevision);
 
 		if (SelectedColumns.IsEmpty())
 			Out += TEXT("\n; row names only; pass Columns=* or a comma-separated field list to read values.");

@@ -104,6 +104,30 @@ bool FTurboMCPDataTableQualityTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Names-only explains how to request values"), NamesOnly.Contains(TEXT("row names only")));
     TestTrue(TEXT("Invalid text mode refused"), UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("Count"), TEXT("unknown")).StartsWith(TEXT("error:")));
     TestTrue(TEXT("Display mode is explicitly inspection-only"), UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("Count"), TEXT("display")).Contains(TEXT("inspection-only")));
+    for (int32 Index = 0; Index < 75; ++Index)
+    {
+        FTurboMCPKitRow FixtureRow;
+        FixtureRow.Count = Index;
+        Table->AddRow(FName(*FString::Printf(TEXT("Page_%03d"), Index)), FixtureRow);
+    }
+    const FString FirstPage = UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("Count"), TEXT("lossless"), 0, 60, TEXT("Page_"));
+    FString PageRevision = FirstPage.Mid(FirstPage.Find(TEXT("revision: ")) + 10);
+    PageRevision = PageRevision.Left(PageRevision.Find(TEXT("\n")) == INDEX_NONE ? PageRevision.Len() : PageRevision.Find(TEXT("\n")));
+    TestTrue(TEXT("First page reports bounded coverage"), FirstPage.Contains(TEXT("matched=75 shown=60 offset=0 next_offset=60")));
+    const FString LastPage = UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("Count"), TEXT("lossless"), 60, 60, TEXT("Page_"), PageRevision);
+    TestTrue(TEXT("Last page finishes filtered traversal"), LastPage.Contains(TEXT("matched=75 shown=15 offset=60 next_offset=-1")));
+    for (int32 Index = 0; Index < 75; ++Index)
+    {
+        const FString RowMarker = FString::Printf(TEXT("\n  Page_%03d\n"), Index);
+        TestEqual(TEXT("Each row appears on exactly one expected page"), FirstPage.Contains(RowMarker), Index < 60);
+        TestEqual(TEXT("Continuation contains remaining rows only"), LastPage.Contains(RowMarker), Index >= 60);
+    }
+    TestTrue(TEXT("Query change invalidates revision"), UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("Count"), TEXT("lossless"), 60, 60, TEXT("Page_0"), PageRevision).StartsWith(TEXT("error:")));
+    FTurboMCPKitRow ChangedRow;
+    ChangedRow.Count = 999;
+    Table->AddRow(TEXT("Page_000"), ChangedRow);
+    TestTrue(TEXT("Earlier row edit invalidates continuation"), UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("Count"), TEXT("lossless"), 60, 60, TEXT("Page_"), PageRevision).StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Negative offset refused"), UTurboMCPReadToolset::ReadTurboMCPDataTable(Asset, TEXT("schema"), TEXT("none"), TEXT("lossless"), -1).StartsWith(TEXT("error:")));
     const FString Folder=FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("TurboMCP/Workflow"));
     IFileManager::Get().MakeDirectory(*Folder,true);
     TestTrue(TEXT("Public tool transcript saved"),FFileHelper::SaveStringToFile(Transcript,*FPaths::Combine(Folder,TEXT("datatable-public-review.txt")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM));

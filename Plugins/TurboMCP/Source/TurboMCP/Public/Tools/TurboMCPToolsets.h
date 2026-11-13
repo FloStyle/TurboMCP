@@ -365,17 +365,22 @@ public:
 		const FString& GraphName, const FString& Scope = TEXT(""), int32 Offset = 0, int32 Limit = 80);
 
 	/**
-	 * Read DataTable schema, row names, selected values and registry-based readers. Displays up to 80 fields and 60 sorted row names, with omitted counts; no paging parameter. Reader graph details are searched only in loaded Blueprints. Registry results do not prove all unsaved or dynamic uses. Loads the table; no explicit edit or save.
+	 * Read DataTable schema, row names, selected values and registry-based readers. Displays up to 80 fields and pages of up to 60 sorted rows with revision-checked continuation. Oversized values are explicitly omitted; request fewer columns to inspect them. Reader graph details are searched only in loaded Blueprints. Registry results do not prove all unsaved or dynamic uses. Loads the table; no explicit edit or save.
 	 * @param Asset Required DataTable path or unique short name, e.g. /Game/Tests/DT_Items. Empty or non-DataTable targets are refused.
 	 * @param Include Case-insensitive all, readers, or schema. Empty defaults to all. schema includes row names and selected values; readers omits rows. Unknown filters are refused.
 	 * @param Columns Empty or * selects all values; none selects row names only. Otherwise comma-separated reflected, authored or unique display names. Exact reflected names take precedence; ambiguous/unknown names are refused. Values require Include=all or schema.
+	 * @param Offset Zero-based offset in sorted, filtered rows. Continuations require Revision.
+	 * @param Limit Maximum rows per page, 1..60. Character limits can shorten a page; use next_offset (-1 means finished).
+	 * @param RowFilter Case-insensitive row-name substring; empty matches all rows.
+	 * @param Revision Token from the first page. A changed table or query is refused; restart at Offset=0.
 	 * @param TextMode lossless (default) retains localized text identity; display emits the current localized string for inspection only, not write-back.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPDataTable(
 		const FString& Asset,
 		const FString& Include,
-		const FString& Columns = TEXT(""), const FString& TextMode = TEXT("lossless"));
+		const FString& Columns = TEXT(""), const FString& TextMode = TEXT("lossless"),
+		int32 Offset = 0, int32 Limit = 60, const FString& RowFilter = TEXT(""), const FString& Revision = TEXT(""));
 
 	/**
 	 * Read retained call-log records, newest first. Does not clear the log or change recording settings; this request may itself be recorded.
