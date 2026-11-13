@@ -650,10 +650,10 @@
       "title": "Support quoted pin names containing spaces",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
+      "state": "done",
+      "readiness": "implemented",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_pass",
       "source_ids": [
         "GC-99"
       ],
@@ -661,8 +661,14 @@
         "2026-11-04_S3/GC-99"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
-      "evidence": []
+      "next_step": "Quoted-name workflow verified; escaped-name parser repaired. Original call unavailable. Review: docs/audit/field-reports/nov13-append-pin-review.md. Broader append wrapper failures retained separately.",
+      "evidence": [
+        {
+          "run": "4e2afc104f5f4af987243921dadf384f",
+          "result": "AliasCollision passed; full wrapper not certified",
+          "review": "docs/audit/field-reports/nov13-append-pin-review.md"
+        }
+      ]
     },
     {
       "id": "NOV05-15",

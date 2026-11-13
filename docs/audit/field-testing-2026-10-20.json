@@ -6968,10 +6968,10 @@
       "report": "2026-11-05 intake",
       "title": "Support quoted pin names containing spaces",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "focused_pass",
+      "remaining": "Quoted-name workflow verified; escaped-name parser repaired. Original call unavailable. Review: docs/audit/field-reports/nov13-append-pin-review.md. Broader append wrapper failures retained separately.",
       "source_keys": [
         "2026-11-04_S3/GC-99"
       ],
