@@ -51,7 +51,11 @@ bool FTurboMCPDataAssetCreateTest::RunTest(const FString& Parameters)
     GEditor->UndoTransaction();
     TestFalse(TEXT("undo removes live created object"), IsValid(Asset));
     TestFalse(TEXT("undo restores clean package state"), CreatedPackage->IsDirty());
-    TestFalse(TEXT("undo removes registry-visible asset"), Registry.Get().GetAssetByObjectPath(FSoftObjectPath(ObjectPath)).IsValid());
+    // Exact-path lookup in stock 5.8.4 uses FindObject without an IsValid gate,
+    // so it can return metadata for an undo tombstone. Enumerate live assets instead.
+    TArray<FAssetData> AfterUndo;
+    Registry.Get().GetAssetsByPackageName(FName(*PackagePath), AfterUndo);
+    TestTrue(TEXT("undo removes enumerated asset"), AfterUndo.IsEmpty());
     GEditor->RedoTransaction();
     TestTrue(TEXT("redo restores created object"), IsValid(Asset));
     TestTrue(TEXT("redo restores registry-visible asset"), Registry.Get().GetAssetByObjectPath(FSoftObjectPath(ObjectPath)).IsValid());
@@ -113,6 +117,9 @@ bool FTurboMCPDataAssetCreateTest::RunTest(const FString& Parameters)
         Unload.bResetTransBuffer = true; // This test runs only in the supervisor-owned disposable editor.
         TestTrue(TEXT("saved fixture unloads"), UPackageTools::UnloadPackages(Unload));
         TestFalse(TEXT("old fixture identity is gone"), OldAsset.IsValid());
+        // Stock unload marks the package deleted in the registry; the deliberate
+        // disk reload reports that it has become visible again.
+        AddExpectedError(TEXT("package was marked as deleted in editor, but has been modified on disk"), EAutomationExpectedErrorFlags::Contains, 1);
         UInputAction* Reloaded = LoadObject<UInputAction>(nullptr, *SavedObject);
         if (TestNotNull(TEXT("saved fixture reloads"), Reloaded))
         {
