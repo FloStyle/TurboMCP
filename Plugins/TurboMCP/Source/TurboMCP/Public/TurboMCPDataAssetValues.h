@@ -10,6 +10,9 @@ class FMapProperty;
 
 namespace TurboMCPDataAssetValues
 {
+/** Reader-compatible revision of the asset and its owned objects. Does not load or mutate. */
+FString Revision(UObject* Asset);
+
 /** Initialized property storage. This is a synchronous planning value, not a live asset.
  * Referenced objects are retained by the caller across GC-capable operations.
  */
