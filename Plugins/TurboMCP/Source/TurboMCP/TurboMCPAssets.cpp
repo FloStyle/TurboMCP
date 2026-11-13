@@ -336,7 +336,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query, cons
 		}
 
 		const FString ClassName = ClassNameOf(Asset);
-		const FString Path = Asset.PackagePath.ToString();
+		const FString CandidatePackagePath = Asset.PackagePath.ToString();
 		const FString Name = Asset.AssetName.ToString();
 
 		if (!Parsed.TypeFilter.IsEmpty()
@@ -346,7 +346,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query, cons
 		}
 
 		if (!Parsed.PathFilter.IsEmpty()
-			&& !Path.Contains(Parsed.PathFilter, ESearchCase::IgnoreCase))
+			&& !CandidatePackagePath.Contains(Parsed.PathFilter, ESearchCase::IgnoreCase))
 		{
 			continue;
 		}

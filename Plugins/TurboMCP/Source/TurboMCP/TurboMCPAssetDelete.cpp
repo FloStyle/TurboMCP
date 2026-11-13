@@ -64,7 +64,7 @@ FString DeleteAsset(bool Apply, const FString& AssetPath, const FString& Confirm
     auto CheckLoadedPackage = [&]() -> FString
     {
         TArray<UObject*> Objects;
-        GetObjectsWithOuter(Target->GetOutermost(), Objects, true);
+        GetObjectsWithOuter(Target->GetOutermost(), Objects, EGetObjectsFlags::IncludeNestedObjects);
         for (UObject* Object : Objects)
         {
             if (!IsValid(Object)) continue;
