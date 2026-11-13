@@ -254,12 +254,12 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 			One->SetStringField(TEXT("type"),
 				FTurboMCPBlueprintRead::DescribeVariableType(Variable.VarType));
 
-			// An empty default is a FACT and not a missing value: it distinguishes "at
-			// the type's zero" from "has a value", which is what a caller deciding
-			// whether to set it needs. The text prints "(type default)" and this prints
-			// an empty string, which is the honest shape for a field that is genuinely
-			// empty; a null would be read as "not collected".
-			One->SetStringField(TEXT("default"), Variable.DefaultValue);
+			// Keep the effective value and its source separate. An empty declaration
+			// does not prove that a generated soft-object property is unset.
+			const auto Default = FTurboMCPBlueprintRead::DescribeVariableDefault(InBlueprint, Variable);
+			One->SetStringField(TEXT("default"), Default.Value);
+			One->SetStringField(TEXT("default_status"), Default.Status);
+			One->SetStringField(TEXT("declaration_default"), Variable.DefaultValue);
 
 			// The category, with `Default` named when the designer left it unset, so the
 			// two renderings agree on that case too.

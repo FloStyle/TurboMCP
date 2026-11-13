@@ -336,6 +336,38 @@ FString FTurboMCPBlueprintRead::RenderManifest(const UBlueprint* InBlueprint, co
 	return Out;
 }
 
+FTurboMCPBlueprintRead::FVariableDefault FTurboMCPBlueprintRead::DescribeVariableDefault(
+	const UBlueprint* InBlueprint, const FBPVariableDescription& InVariable)
+{
+	const FName& Category = InVariable.VarType.PinCategory;
+	const bool bSoft = Category == UEdGraphSchema_K2::PC_SoftObject
+		|| Category == UEdGraphSchema_K2::PC_SoftClass;
+	if (!bSoft)
+	{
+		return {InVariable.DefaultValue,
+			InVariable.DefaultValue.IsEmpty() ? TEXT("type default (declaration)") : TEXT("declaration")};
+	}
+
+	// Read the existing generated default only. Creating a CDO or compiling a Blueprint
+	// during inspection would change editor state and could hide the reported value.
+	UClass* Class = InBlueprint ? InBlueprint->GeneratedClass : nullptr;
+	const UObject* Defaults = Class ? Class->GetDefaultObject(false) : nullptr;
+	const FSoftObjectProperty* Property = Class
+		? FindFProperty<FSoftObjectProperty>(Class, InVariable.VarName) : nullptr;
+	if (Defaults && Property)
+	{
+		const void* Address = Property->ContainerPtrToValuePtr<void>(Defaults);
+		const FString Path = Property->GetPropertyValue(Address).ToSoftObjectPath().ToString();
+		return {Path,
+			Path.IsEmpty() ? TEXT("unset class default") : TEXT("saved class default")};
+	}
+	if (!InVariable.DefaultValue.IsEmpty())
+	{
+		return {InVariable.DefaultValue, TEXT("declaration only; class default unavailable")};
+	}
+	return {FString(), TEXT("class default unavailable")};
+}
+
 FString FTurboMCPBlueprintRead::RenderVariables(const UBlueprint* InBlueprint, const TArray<UEdGraph*>* InGraphs)
 {
 	TArray<FBPVariableDescription> Variables;
@@ -375,11 +407,17 @@ FString FTurboMCPBlueprintRead::RenderVariables(const UBlueprint* InBlueprint, c
 			? TEXT("Default") : Variable.Category.ToString();
 		Out += FString::Printf(TEXT("\n      category: %s"), *Category);
 
-		// An empty default is a fact worth printing: it distinguishes "at the
-		// type's zero" from "has a value", which is what a caller deciding whether
-		// to set it needs.
-		Out += FString::Printf(TEXT("\n      default: %s"),
-			Variable.DefaultValue.IsEmpty() ? TEXT("(type default)") : *Variable.DefaultValue);
+		const FVariableDefault Default = DescribeVariableDefault(InBlueprint, Variable);
+		const FString DisplayValue = Default.Value.IsEmpty()
+			? (Default.Status == TEXT("unset class default") ? TEXT("(unset)")
+				: (Default.Status == TEXT("class default unavailable") ? TEXT("(unavailable)") : TEXT("(type default)")))
+			: Default.Value;
+		Out += FString::Printf(TEXT("\n      default: %s (%s)"), *DisplayValue, *Default.Status);
+		if (Default.Status == TEXT("saved class default")
+			&& !Variable.DefaultValue.IsEmpty() && Variable.DefaultValue != Default.Value)
+		{
+			Out += FString::Printf(TEXT("\n      declaration default: %s"), *Variable.DefaultValue);
+		}
 
 		Out += FString::Printf(TEXT("\n      flags: %s"), *VariableFlags(Variable));
 
@@ -958,7 +996,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 
 	Out += InGraphs.Num() < InTotalGraphCount
 		? TEXT("\nfunctions without static references: not evaluated for a filtered read")
-		: TEXT("\nfunctions with no observed static reference (not proof of runtime nonuse):");
+		: TEXT("\nfunctions with no static reference in this Blueprint's graphs (external, native and dynamic calls not scanned):");
 	if (Uncalled.Num() == 0 && InGraphs.Num() == InTotalGraphCount)
 	{
 		Out += TEXT(" none");

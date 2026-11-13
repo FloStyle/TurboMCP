@@ -173,6 +173,17 @@ public:
 	 */
 	static FString DescribeVariableType(const struct FEdGraphPinType& InType);
 
+	/** A member default and the evidence for it; an unloaded CDO is not an empty value. */
+	struct FVariableDefault
+	{
+		FString Value;
+		FString Status;
+	};
+
+	/** Shared text/JSON description of a declared or effective member default. */
+	static FVariableDefault DescribeVariableDefault(const UBlueprint* InBlueprint,
+		const struct FBPVariableDescription& InVariable);
+
 	/** A function or event's inputs and outputs, with direction marked. */
 	static FString DescribeSignature(const UFunction* InFunction);
 };
