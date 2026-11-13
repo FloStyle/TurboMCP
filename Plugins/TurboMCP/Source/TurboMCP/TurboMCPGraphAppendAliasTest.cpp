@@ -14,6 +14,7 @@
 #include "TurboMCPGraphTextLex.h"
 #include "Tools/TurboMCPToolsets.h"
 #include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
 #include "BlueprintActionDatabase.h"
 #include "TurboMCPNodeId.h"
 #include "TurboMCPNodeType.h"
@@ -526,6 +527,24 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("decode quoted literal"), TurboMCPGraphTextLex::DecodeLiteral(Value, Decoded, Error));
         TestEqual(TEXT("literal preserves exact content"), Decoded, Expected);
     }
+    // Pin names use the same quoting contract as literal values.
+    for (const FString ExpectedName : {FString(TEXT("Index Value")), FString(TEXT("Value \"quoted\"; name"))})
+    {
+        FString Name, Value;
+        int32 Column = 0;
+        TestTrue(TEXT("quoted pin name parses"),
+            TurboMCPGraphTextLex::ParsePinLine(
+                TurboMCPGraphTextLex::QuoteLiteral(ExpectedName) + TEXT(" 7 ; in 0"), Name, Value, Column));
+        TestEqual(TEXT("quoted pin name preserves exact identity"), Name, ExpectedName);
+        TestEqual(TEXT("quoted pin value remains non-default"), Value, FString(TEXT("7")));
+    }
+    for (const FString InvalidName : {FString(TEXT("\"Unclosed 7")), FString(TEXT("\"Index\"suffix 7"))})
+    {
+        FString Name, Value;
+        int32 Column = 0;
+        TestFalse(TEXT("malformed quoted pin name refuses"),
+            TurboMCPGraphTextLex::ParsePinLine(InvalidName, Name, Value, Column));
+    }
     FString InvalidDecoded, InvalidError;
     TestFalse(TEXT("unknown escape refuses"), TurboMCPGraphTextLex::DecodeLiteral(TEXT("\"bad\\q\""), InvalidDecoded, InvalidError));
     TestFalse(TEXT("unescaped inner quote refuses"), TurboMCPGraphTextLex::DecodeLiteral(TEXT("\"bad\"quote\""), InvalidDecoded, InvalidError));
@@ -731,6 +750,46 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 	FString LexId; int32 LexColumn = 0, LexAfter = 0;
 	TestTrue(TEXT("quoted ID permits closing parenthesis"), TurboMCPGraphTextLex::ExtractHeadTypeId(TEXT("(\"Example ID\")"), LexId, LexColumn, LexAfter));
 	TestEqual(TEXT("quoted ID decoded"), LexId, FString(TEXT("Example ID")));
+
+
+    // Append creates nodes; existing-only forms are references, not default edits.
+    UK2Node_FunctionEntry* SpacedEntry = nullptr;
+    for (UEdGraphNode* Node : Fixture.Unique->Nodes)
+        if (auto* Entry = Cast<UK2Node_FunctionEntry>(Node)) SpacedEntry = Entry;
+    if (!TestNotNull(TEXT("quoted-pin entry exists"), SpacedEntry)) return false;
+    UK2Node_VariableSet* SetterProbe = NewObject<UK2Node_VariableSet>(Fixture.Unique);
+    SetterProbe->VariableReference.SetSelfMember(TEXT("Purchase Count"));
+    SetterProbe->AllocateDefaultPins();
+    const FString SetterId = TurboMCPGraphTextLex::QuoteLiteral(TurboMCPNodeId::GetVariableNodeTypeId(SetterProbe));
+    const FString QuotedPinsRequest = FString::Printf(
+        TEXT("(%s ; label LiteralSetter\n    execute (-> %s:then)\n    \"Purchase Count\" 7\n)\n")
+        TEXT("(%s ; label LinkedSetter\n    execute (-> LiteralSetter:then)\n    \"Purchase Count\" (-> %s:\"Purchase Count\")\n)"),
+        *SetterId, *TurboMCPNodeId::MakeForNode(SpacedEntry, true),
+        *SetterId, *TurboMCPNodeId::MakeForNode(Getter, true));
+    const FString UnrelatedBefore = SerializeGraph(Fixture.Forward);
+    const FString BeforePinPreview = SerializeGraph(Fixture.Unique);
+    const int32 NodeCountBefore = Fixture.Unique->Nodes.Num();
+    const FString PinPreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
+        Fixture.AssetPath, Fixture.Unique->GetName(), QuotedPinsRequest);
+    TestTrue(FString::Printf(TEXT("quoted pins preview: %s"), *PinPreview), PinPreview.StartsWith(TEXT("preview:")));
+    TestEqual(TEXT("quoted pins preview preserves graph"), SerializeGraph(Fixture.Unique), BeforePinPreview);
+    const FString PinEdit = UTurboMCPEditToolset::EditTurboMCPGraphAppend(
+        Fixture.AssetPath, Fixture.Unique->GetName(), QuotedPinsRequest);
+    TestTrue(FString::Printf(TEXT("quoted pins edit: %s"), *PinEdit), PinEdit.StartsWith(TEXT("changed:")));
+    int32 LiteralSetters = 0, LinkedSetters = 0;
+    UEdGraphPin* SpacedOutput = Getter->FindPin(TEXT("Purchase Count"), EGPD_Output);
+    for (UEdGraphNode* Node : Fixture.Unique->Nodes)
+        if (auto* Setter = Cast<UK2Node_VariableSet>(Node))
+            if (UEdGraphPin* Input = Setter->FindPin(TEXT("Purchase Count"), EGPD_Input))
+            {
+                if (Input->LinkedTo.IsEmpty() && Input->DefaultValue == TEXT("7")) ++LiteralSetters;
+                if (SpacedOutput && Input->LinkedTo.Num() == 1 && Input->LinkedTo.Contains(SpacedOutput)
+                    && SpacedOutput->LinkedTo.Contains(Input)) ++LinkedSetters;
+            }
+    TestEqual(TEXT("one spaced input stores non-default value"), LiteralSetters, 1);
+    TestEqual(TEXT("one spaced input links to exact quoted output"), LinkedSetters, 1);
+    TestEqual(TEXT("quoted-pin append creates exactly two nodes"), Fixture.Unique->Nodes.Num(), NodeCountBefore + 2);
+    TestEqual(TEXT("quoted-pin append preserves unrelated graph"), SerializeGraph(Fixture.Forward), UnrelatedBefore);
 
 	const FString ForwardAKey = TurboMCPNodeId::MakeForNode(Fixture.ForwardA);
 	const FString ForwardBKey = TurboMCPNodeId::MakeForNode(Fixture.ForwardB);

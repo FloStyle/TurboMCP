@@ -237,13 +237,22 @@ namespace TurboMCPGraphTextLex
 		// A quoted pin name, which the writer uses when the real name holds a space.
 		if (Body[Index] == TEXT('"'))
 		{
-			const int32 Close = Body.Find(TEXT("\""), ESearchCase::CaseSensitive, ESearchDir::FromStart,
-				Index + 1);
-			if (Close == INDEX_NONE)
-			{
-				return false;
-			}
-			OutName = Body.Mid(Index + 1, Close - Index - 1);
+            // Use the same escape rules as quoted values; an escaped quote is
+            // part of the name, not its closing delimiter.
+            int32 Close = Index + 1;
+            for (; Close < Body.Len(); ++Close)
+            {
+                if (Body[Close] == TEXT('\\')) { ++Close; continue; }
+                if (Body[Close] == TEXT('"')) break;
+            }
+            FString NameError;
+            if (Close >= Body.Len()
+                || (Close + 1 < Body.Len() && !FChar::IsWhitespace(Body[Close + 1]))
+                || !DecodeLiteral(Body.Mid(Index, Close - Index + 1), OutName, NameError))
+            {
+                OutName.Empty();
+                return false;
+            }
 			Index = Close + 1;
 		}
 		else
