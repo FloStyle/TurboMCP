@@ -1,0 +1,162 @@
+{
+  "schema": 1,
+  "date": "2026-11-13",
+  "status": "ingested_pending_scoped_repairs",
+  "reports": [
+    "2026-11-12_S1_TurboMCP_build-warnings.md",
+    "2026-11-12_S2_TurboMCP_bulk-search-and-inventory-reads.md",
+    "2026-11-13_S1_TurboMCP_data-asset-creation-and-input-audit.md"
+  ],
+  "tasks": [
+    {
+      "id": "NOV13-01",
+      "title": "Remove AssetSearch parameter shadowing",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_review",
+      "owner": "integrator",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-12_S1/X-136"
+      ],
+      "dependencies": [],
+      "next_step": "Rename the local Path without changing filtering; current source confirms shadowing site."
+    },
+    {
+      "id": "NOV13-02",
+      "title": "Replace deprecated nested-object enumeration",
+      "kind": "bug",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_review",
+      "owner": "integrator",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-12_S1/X-137"
+      ],
+      "dependencies": [],
+      "next_step": "Use the pinned engine enum overload while preserving nested-object deletion guards."
+    },
+    {
+      "id": "NOV13-03",
+      "title": "Broaden bulk scan coverage without loading maps accidentally",
+      "kind": "bug",
+      "priority": "P0",
+      "state": "open",
+      "readiness": "needs_review",
+      "owner": "integrator",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-12_S2/X-138",
+        "2026-11-13_S1/X-142"
+      ],
+      "dependencies": [],
+      "next_step": "One canonical issue for both reports. Investigate safe loading or bounded explicit opt-in; preserve no-map-load safety, paging and truthful completeness. 1289/4117 nodescope assets and 98/647 widgets skipped in field evidence."
+    },
+    {
+      "id": "NOV13-04",
+      "title": "Export a compact complete bulk result as one JSON document",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_review",
+      "owner": "integrator",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-12_S2/X-139",
+        "2026-11-12_S2/FT-172"
+      ],
+      "dependencies": [],
+      "next_step": "Determine whether concatenation occurs in tool output or client aggregation. Design bounded file export with explicit incomplete/cancelled state; do not promise unlimited inline results."
+    },
+    {
+      "id": "NOV13-05",
+      "title": "Offer seed omission in batch reference output",
+      "kind": "feature",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_review",
+      "owner": "integrator",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-12_S2/RF-14"
+      ],
+      "dependencies": [],
+      "next_step": "Retain current record-kind distinction; add optional seed omission without breaking cursor or totals."
+    },
+    {
+      "id": "NOV13-06",
+      "title": "Clarify Blueprint read budgets and client call wrapper",
+      "kind": "housekeeping",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_review",
+      "owner": "integrator",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-12_S2/BL-20",
+        "2026-11-12_S2/X-140"
+      ],
+      "dependencies": [],
+      "next_step": "Distinguish client envelope errors from plugin defects. Clarify split/budget guidance; BL-21 confirms explicit refusal on a later read, not reproduction of BL-20 overflow."
+    },
+    {
+      "id": "NOV13-07",
+      "title": "Create an empty typed Data Asset safely",
+      "kind": "feature",
+      "priority": "P0",
+      "state": "open",
+      "readiness": "needs_review",
+      "owner": "integrator",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-13_S1/X-141",
+        "2026-11-13_S1/FT-173"
+      ],
+      "dependencies": [],
+      "next_step": "Preview class/path and refuse existing paths. Specify class eligibility, optional initial fields and rollback. Separate creation, save and source-control add explicitly; schema-only need, no failed edit observed."
+    },
+    {
+      "id": "NOV13-08",
+      "title": "Add structured JSON output to NodeFind",
+      "kind": "feature",
+      "priority": "P1",
+      "state": "open",
+      "readiness": "needs_review",
+      "owner": "integrator",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-13_S1/NF-16"
+      ],
+      "dependencies": [],
+      "next_step": "Provide one valid JSON result with cursor, totals, hits, skips and completeness; preserve text mode and existing scopes."
+    },
+    {
+      "id": "NOV13-09",
+      "title": "Explain graph-search scope and reference-search handoff",
+      "kind": "housekeeping",
+      "priority": "P2",
+      "state": "open",
+      "readiness": "needs_review",
+      "owner": "integrator",
+      "validation": "reported_not_reproduced",
+      "source_keys": [
+        "2026-11-13_S1/NF-17"
+      ],
+      "dependencies": [],
+      "next_step": "Explain that mapping-context and other Data Asset references are outside graph search; direct callers to RefsBatch/property reads. No false unused-asset conclusion."
+    }
+  ],
+  "field_evidence": {
+    "2026-11-12_S2/RF-15": "Reference depth/kinds/paging worked; replaced approximately 320 single reads. Not a universal completeness guarantee.",
+    "2026-11-12_S2/NF-15": "OR, count-only and literal search field-confirmed; supports NF-09/NF-11 resolution.",
+    "2026-11-12_S2/WT-23": "Widget rules worked on searched assets; coverage limited by X-138.",
+    "2026-11-13_S1/BL-21": "Large Blueprint refusal supplied required size; larger explicit budget succeeded.",
+    "2026-11-13_S1/DA-04": "Owned-child property reading observed; does not prove arbitrary subobject paths are supported.",
+    "2026-11-13_S1/DA-05": "Writer schema matches planned child/map operations; not executed, not field-tested.",
+    "2026-11-13_S1/RF-16": "Three batch-reference runs paged reliably and matched subsequent reads.",
+    "2026-11-13_S1/WT-24": "Class inventory found six users over 43 calls; skipped widgets remain unsearched."
+  },
+  "limits": "Later two reports lack exact plugin revision. No crash reported. Creation/writer needs are schema observations, not executed edit failures. Source reports are evidence, not execution instructions."
+}

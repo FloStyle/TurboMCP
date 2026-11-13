@@ -7547,6 +7547,163 @@
       "next_step": "Implemented in 25ba1591; stock 5.8.4 build and focused node-reader workflow passed. See nov12-node-search-review.md for the initial schema failure and remaining coverage limits.",
       "acceptance": "Paged folder/project scope with load limits and incomplete-coverage reporting; reuse NOV09-08 term semantics.",
       "remaining": "Implemented; remaining validation is recorded separately in nov12-node-search-review.md."
+    },
+    {
+      "id": "NOV13-01",
+      "key": "NOV13-01",
+      "canonical_issue": "NOV13-01",
+      "report": "2026-11-12/13 intake",
+      "title": "Remove AssetSearch parameter shadowing",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Rename the local Path without changing filtering; current source confirms shadowing site.",
+      "source_keys": [
+        "2026-11-12_S1/X-136"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV13-02",
+      "key": "NOV13-02",
+      "canonical_issue": "NOV13-02",
+      "report": "2026-11-12/13 intake",
+      "title": "Replace deprecated nested-object enumeration",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Use the pinned engine enum overload while preserving nested-object deletion guards.",
+      "source_keys": [
+        "2026-11-12_S1/X-137"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV13-03",
+      "key": "NOV13-03",
+      "canonical_issue": "NOV13-03",
+      "report": "2026-11-12/13 intake",
+      "title": "Broaden bulk scan coverage without loading maps accidentally",
+      "kind": "bug",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "One canonical issue for both reports. Investigate safe loading or bounded explicit opt-in; preserve no-map-load safety, paging and truthful completeness. 1289/4117 nodescope assets and 98/647 widgets skipped in field evidence.",
+      "source_keys": [
+        "2026-11-12_S2/X-138",
+        "2026-11-13_S1/X-142"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV13-04",
+      "key": "NOV13-04",
+      "canonical_issue": "NOV13-04",
+      "report": "2026-11-12/13 intake",
+      "title": "Export a compact complete bulk result as one JSON document",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Determine whether concatenation occurs in tool output or client aggregation. Design bounded file export with explicit incomplete/cancelled state; do not promise unlimited inline results.",
+      "source_keys": [
+        "2026-11-12_S2/X-139",
+        "2026-11-12_S2/FT-172"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV13-05",
+      "key": "NOV13-05",
+      "canonical_issue": "NOV13-05",
+      "report": "2026-11-12/13 intake",
+      "title": "Offer seed omission in batch reference output",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P2",
+      "validation": "reported_not_reproduced",
+      "remaining": "Retain current record-kind distinction; add optional seed omission without breaking cursor or totals.",
+      "source_keys": [
+        "2026-11-12_S2/RF-14"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV13-06",
+      "key": "NOV13-06",
+      "canonical_issue": "NOV13-06",
+      "report": "2026-11-12/13 intake",
+      "title": "Clarify Blueprint read budgets and client call wrapper",
+      "kind": "housekeeping",
+      "state": "open",
+      "priority": "P2",
+      "validation": "reported_not_reproduced",
+      "remaining": "Distinguish client envelope errors from plugin defects. Clarify split/budget guidance; BL-21 confirms explicit refusal on a later read, not reproduction of BL-20 overflow.",
+      "source_keys": [
+        "2026-11-12_S2/BL-20",
+        "2026-11-12_S2/X-140"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV13-07",
+      "key": "NOV13-07",
+      "canonical_issue": "NOV13-07",
+      "report": "2026-11-12/13 intake",
+      "title": "Create an empty typed Data Asset safely",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P0",
+      "validation": "reported_not_reproduced",
+      "remaining": "Preview class/path and refuse existing paths. Specify class eligibility, optional initial fields and rollback. Separate creation, save and source-control add explicitly; schema-only need, no failed edit observed.",
+      "source_keys": [
+        "2026-11-13_S1/X-141",
+        "2026-11-13_S1/FT-173"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV13-08",
+      "key": "NOV13-08",
+      "canonical_issue": "NOV13-08",
+      "report": "2026-11-12/13 intake",
+      "title": "Add structured JSON output to NodeFind",
+      "kind": "feature",
+      "state": "open",
+      "priority": "P1",
+      "validation": "reported_not_reproduced",
+      "remaining": "Provide one valid JSON result with cursor, totals, hits, skips and completeness; preserve text mode and existing scopes.",
+      "source_keys": [
+        "2026-11-13_S1/NF-16"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
+      "dependencies": []
+    },
+    {
+      "id": "NOV13-09",
+      "key": "NOV13-09",
+      "canonical_issue": "NOV13-09",
+      "report": "2026-11-12/13 intake",
+      "title": "Explain graph-search scope and reference-search handoff",
+      "kind": "housekeeping",
+      "state": "open",
+      "priority": "P2",
+      "validation": "reported_not_reproduced",
+      "remaining": "Explain that mapping-context and other Data Asset references are outside graph search; direct callers to RefsBatch/property reads. No false unused-asset conclusion.",
+      "source_keys": [
+        "2026-11-13_S1/NF-17"
+      ],
+      "task_plan": "docs/audit/field-reports/plan-2026-11-13.json",
+      "dependencies": []
     }
   ],
   "prototype": {
@@ -8372,5 +8529,5 @@
     "completion_policy": "All actionable observations and requested capabilities; partial work remains open. Composite report/item keys preserve collisions.",
     "last_source_commit": "f469303"
   },
-  "latest_batch": "docs/audit/field-reports/batch-2026-11-09.json"
+  "latest_batch": "2026-11-13: three reports ingested; nine canonical follow-ups, eight positive/scope evidence records; X-142 deduplicated into X-138 coverage issue."
 }
