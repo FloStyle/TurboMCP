@@ -335,13 +335,14 @@ public:
 	 * @param StopAtRoot For referencers, include one shortest chain to each reached saved package with zero incoming edges of the selected kinds.
 	 * @param PageSize Maximum records per page, 1 to 500. The response size limit can reduce this count.
 	 * @param Cursor Omit, pass first, or pass an empty string to start. Continue with nextCursor until it is empty.
+	 * @param IncludeSeeds Include input-asset records (default true). False returns only reference edges. total, returned and offset count visible records; seedCount still counts inputs. Keep this option unchanged while paging.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPRefsBatch(
 		const FString& Assets = TEXT("<none>"), const FString& Folder = TEXT("<none>"), bool Recursive = false,
 		const FString& ClassFilter = TEXT("<none>"), const FString& Direction = TEXT("both"),
 		const FString& Kinds = TEXT("all"), int32 Depth = 1, bool Compact = true,
-		bool StopAtRoot = false, int32 PageSize = 100, const FString& Cursor = TEXT("first"));
+		bool StopAtRoot = false, int32 PageSize = 100, const FString& Cursor = TEXT("first"), bool IncludeSeeds = true);
 
 	/**
 	 * Read available and implemented Blueprint overrides from parent classes and interfaces. Loads the Blueprint; no explicit compile or save. Counts precede filtering.

@@ -63,6 +63,7 @@ namespace
 		bool bOut = false;
 		bool bLegacy = false;
 		bool bCompact = true;
+		bool bIncludeSeeds = true;
 		bool bRoots = false;
 		int32 Depth = 1;
 		uint8 Kinds = AllKinds;
@@ -576,6 +577,7 @@ namespace
 			Options.bIn, Options.bOut, Options.bLegacy, Options.bCompact, Options.bRoots,
 			Options.Depth, Options.Kinds, Traversal.Unavailable[0], Traversal.Unavailable[1],
 			Traversal.Filtered[0], Traversal.Filtered[1], Traversal.bCapped));
+		HashField(Digest, Options.bIncludeSeeds ? TEXT("seeds") : TEXT("edges-only"));
 		for (const FSeed& Seed : Seeds)
 		{
 			HashField(Digest, Seed.Package.ToString());
@@ -746,7 +748,11 @@ namespace
 		const FTraversal& Traversal, const FString& Cursor, int32 PageSize)
 	{
 		FPage Page;
-		const int32 Total = Traversal.Records.Num();
+        // Filter presentation indices only: root-chain parents index the full traversal.
+        TArray<int32> Visible;
+        for (int32 Index = 0; Index < Traversal.Records.Num(); ++Index)
+            if (Options.bIncludeSeeds || !Traversal.Records[Index].bSeed) Visible.Add(Index);
+        const int32 Total = Visible.Num();
 		if (!Cursor.IsEmpty() || Total > 0)
 		{
 			Page.Revision = Revision(Seeds, Options, Traversal);
@@ -759,7 +765,7 @@ namespace
 		FString Rows[2];
 		for (Page.End = Page.Start; Page.End < Total && Page.End - Page.Start < PageSize; ++Page.End)
 		{
-			const FRecord& Record = Traversal.Records[Page.End];
+			const FRecord& Record = Traversal.Records[Visible[Page.End]];
 			FString Row = Options.bLegacy ? LegacyRecord(Reader, Record)
 				: BatchRecord(Reader, Seeds[Record.Seed], Record, Traversal, Options);
 			if (!Options.bLegacy && !Rows[0].IsEmpty())
@@ -780,6 +786,7 @@ namespace
 
 		const TSharedRef<FJsonObject> Metadata = MakeShared<FJsonObject>();
 		Metadata->SetNumberField(TEXT("seedCount"), Seeds.Num());
+		Metadata->SetBoolField(TEXT("seedRecordsIncluded"), !Options.bLegacy && Options.bIncludeSeeds);
 		Metadata->SetNumberField(TEXT("total"), Total);
 		Metadata->SetNumberField(TEXT("edgeCount"), Traversal.Counts[0] + Traversal.Counts[1]);
 		Metadata->SetNumberField(TEXT("returned"), Page.End - Page.Start);
@@ -913,7 +920,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPRefs(const FString& Asset, const FStri
 
 FString UTurboMCPReadToolset::ReadTurboMCPRefsBatch(const FString& Assets, const FString& Folder, bool bRecursive,
 	const FString& ClassFilter, const FString& Direction, const FString& Kinds, int32 Depth, bool bCompact,
-	bool bStopAtRoot, int32 PageSize, const FString& Cursor)
+	bool bStopAtRoot, int32 PageSize, const FString& Cursor, bool IncludeSeeds)
 {
 	// The pinned tool schema treats a C++ default of TEXT("") as required.
 	const auto OptionalText = [](const FString& Input)
@@ -932,6 +939,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPRefsBatch(const FString& Assets, const
 	Options.Depth = Depth;
 	Options.bCompact = bCompact;
 	Options.bRoots = bStopAtRoot;
+	Options.bIncludeSeeds = IncludeSeeds;
 	const FString OptionError = ReadOptions(Direction, Kinds, PageSize, Options);
 	if (!OptionError.IsEmpty())
 	{
@@ -1151,6 +1159,30 @@ namespace TurboMCPRefsTests
 		while (!Cursor.IsEmpty() && Offset < 701);
 		Test.TestTrue(TEXT("All 700 incoming edges appear exactly once"), Identifiers.Num() == 700 && Cursor.IsEmpty());
 		Test.TestTrue(TEXT("Rejects invalid cursors"), ReadReferences(Registry, HubSeed, Hard, TEXT("invalid"), 100).StartsWith(TEXT("error:")));
+        FOptions EdgesOnly = Hard;
+        EdgesOnly.bIncludeSeeds = false;
+        TSet<FString> EdgeIds;
+        FString EdgeCursor;
+        do
+        {
+            const TSharedPtr<FJsonObject> Page = Parse(ReadReferences(Registry, HubSeed, EdgesOnly, EdgeCursor, 100));
+            if (!Page) return false;
+            Test.TestEqual(TEXT("Edges-only total excludes seed"), Page->GetNumberField(TEXT("total")), 700.0);
+            Test.TestEqual(TEXT("Edges-only retains seed count"), Page->GetNumberField(TEXT("seedCount")), 1.0);
+            for (const auto& Value : Page->GetArrayField(TEXT("records")))
+            {
+                const auto Row = Value->AsObject();
+                Test.TestFalse(TEXT("No seed rows"), Row->GetStringField(TEXT("type")) == TEXT("seed"));
+                const FString Id = Row->GetStringField(TEXT("identifier"));
+                Test.TestFalse(TEXT("Edges-only does not repeat edges"), EdgeIds.Contains(Id));
+                EdgeIds.Add(Id);
+            }
+            EdgeCursor = Page->GetStringField(TEXT("nextCursor"));
+            if (!EdgeCursor.IsEmpty())
+                Test.TestTrue(TEXT("Changing seed mode invalidates cursor"),
+                    ReadReferences(Registry, HubSeed, Hard, EdgeCursor, 100).StartsWith(TEXT("error:")));
+        } while (!EdgeCursor.IsEmpty() && EdgeIds.Num() < 701);
+        Test.TestTrue(TEXT("Edges-only returns all edges and terminates"), EdgeIds.Num() == 700 && EdgeCursor.IsEmpty());
 		Hard.bLegacy = true;
 		const auto LegacyPage = [&](const FString& LegacyCursor)
 		{
