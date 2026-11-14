@@ -647,6 +647,40 @@ namespace
         return true;
     }
 
+    // A scoped compact layout cannot call a loop Body handoff improved when it
+    // pulls the selected body farther from its fixed controller. The general
+    // boundary allowance above protects node clearance; it is too wide for this
+    // semantic row relationship. Force may accept this specific tradeoff, but
+    // it still cannot bypass the general boundary or overlap checks.
+    bool FindScopedLoopBodyRegression(const FTurboMCPGraphTidy::FPlan& Plan, int32 Mode, FString& Detail)
+    {
+        if (!Plan.bCompactBlocks || Plan.SelectedNodeKeys.IsEmpty()) return false;
+        for (const auto& Wire : Plan.Wires)
+        {
+            if (!Wire.OutputPin || !Wire.InputPin
+                || Wire.OutputPin->PinType.PinCategory != TEXT("exec")
+                || Wire.OutputPin->PinName != TEXT("LoopBody")) continue;
+            const auto& Source = Plan.Nodes[Wire.SourceNodeIndex];
+            const auto& Target = Plan.Nodes[Wire.TargetNodeIndex];
+            if (!Source.Node || !Target.Node
+                || Plan.SelectedNodeKeys.Contains(Source.Key) == Plan.SelectedNodeKeys.Contains(Target.Key)) continue;
+            auto PinAt = [](const UEdGraphPin* Pin, const FTurboMCPGraphTidy::FNode& Node, int32 PositionMode)
+            {
+                const FVector2D Current(Node.Node->NodePosX, Node.Node->NodePosY);
+                const FVector2D Position = PositionMode == 2 ? Current : PositionMode == 1
+                    ? FVector2D(Node.PlannedX, Node.PlannedY) : FVector2D(Node.X, Node.Y);
+                return FTurboMCPGraphTidy::AlignmentPinPosition(Pin) + Position - Current;
+            };
+            const double Before = FMath::Abs(PinAt(Wire.OutputPin, Source, 0).Y - PinAt(Wire.InputPin, Target, 0).Y);
+            const double After = FMath::Abs(PinAt(Wire.OutputPin, Source, Mode).Y - PinAt(Wire.InputPin, Target, Mode).Y);
+            if (After <= Before + 1.0) continue;
+            Detail = FString::Printf(TEXT("scoped LoopBody handoff %s:%s -> %s:%s increases vertical pin separation from %.1f to %.1f px. Expand nodeIds to include the fixed loop controller and connected body, or keep the current layout"),
+                *Source.Key, *Wire.OutputPin->PinName.ToString(), *Target.Key, *Wire.InputPin->PinName.ToString(), Before, After);
+            return true;
+        }
+        return false;
+    }
+
     // Match stock Kismet's actual spline endpoints: whole pin-widget right/left
     // midpoints with its four-unit brush inset (Blueprint arrows have radius zero).
     // GetNodeOffset alone is the left edge even for an output with a wide label;
@@ -3688,6 +3722,12 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
     FString QualityReason;
     OutPlan.bWouldApply = PlannedQuality.Overlaps <= OriginalQuality.Overlaps
         && (BetterLayout(OriginalQuality, PlannedQuality, OutPlan.WireLengthBefore, OutPlan.WireLengthAfter, &QualityReason) || bInForce);
+    FString HandoffReason;
+    if (FindScopedLoopBodyRegression(OutPlan, 1, HandoffReason) && !bInForce)
+    {
+        OutPlan.bWouldApply = false;
+        OutPlan.RollbackReason = HandoffReason + TEXT(". Force can accept this row tradeoff explicitly; it does not bypass other safety checks.");
+    }
     FString BoundaryReason;
     if (!CheckBoundaryGrowth(OutPlan, 1, BoundaryReason))
     {
@@ -4147,6 +4187,10 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan, int32 GeometryOff
 		Lines.Add(FString::Printf(TEXT("WOULD ROLL BACK: %s"), *InPlan.RollbackReason));
 		Lines.Add(TidyRecoveryGuidance(InPlan.SelectedNodeKeys.Num() > 0));
 	}
+	FString HandoffTradeoff;
+	if (InPlan.bForce && FindScopedLoopBodyRegression(InPlan, 1, HandoffTradeoff))
+		Lines.Add(TEXT("Force requested for boundary tradeoff: ") + HandoffTradeoff
+			+ TEXT(". Fixed-boundary safety and overlap checks still apply."));
 
 
     // The decision precedes all measurements. Label total wire length separately
@@ -4351,6 +4395,10 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	{
 		return TEXT("error: the plan has no graph to write to. Plan and Apply must be called on the same loaded asset.");
 	}
+	FString PlannedHandoffReason;
+	if (!InPlan.bForce && FindScopedLoopBodyRegression(InPlan, 1, PlannedHandoffReason))
+		return TEXT("unchanged: ") + PlannedHandoffReason
+			+ TEXT(". No node moved and no link changed. Expand the selection and preview again, or use Force to accept this row tradeoff within the other safety limits.");
 
 	// -----------------------------------------------------------------------------------------
 	// NOTHING IS WRITTEN UNTIL THE MEASURE IS IN. The planned positions are VALUES in the plan, the
@@ -4537,6 +4585,10 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
     FString BoundaryReason;
     if (!CheckBoundaryGrowth(InPlan, 2, BoundaryReason, &Created) && CopyFailure.IsEmpty())
         CopyFailure = BoundaryReason;
+    FString HandoffReason;
+    const bool bHandoffWorse = FindScopedLoopBodyRegression(InPlan, 2, HandoffReason);
+    if (bHandoffWorse && !InPlan.bForce && CopyFailure.IsEmpty())
+        CopyFailure = HandoffReason;
     if (ActualQuality.Overlaps > OriginalQuality.Overlaps && CopyFailure.IsEmpty())
         CopyFailure = TEXT("post-edit geometry introduced overlaps, including getter copies");
 	if (!CopyFailure.IsEmpty() || (!bBetter && !InPlan.bForce))
@@ -4689,6 +4741,9 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	const bool bWorse = MeasuredAfter >= InPlan.WireLengthBefore;
 	const bool bScoreMatchesPlan = FMath::IsNearlyEqual(MeasuredAfter, InPlan.WireLengthAfter, 1.0);
 	Lines.Add(FString::Printf(TEXT("changed: tidied %s in %s : total wire length %.1f -> %.1f%s"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, bWorse ? (InPlan.bForce ? TEXT(" (longer wires; Force enabled)") : TEXT(" (longer wires; structural quality improved)")) : TEXT("")));
+	if (bHandoffWorse && InPlan.bForce)
+		Lines.Add(TEXT("Force accepted boundary tradeoff: ") + HandoffReason
+			+ TEXT(". The surrounding nodes remained fixed."));
     int32 FeedbackCount = 0;
     for (const FWire& Wire : InPlan.Wires) if (Wire.bControlFeedback) ++FeedbackCount;
     if (FeedbackCount > 0)

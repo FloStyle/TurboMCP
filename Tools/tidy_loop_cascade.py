@@ -256,6 +256,68 @@ def record_scoped_regression(call, evidence, persist):
 
 
 
+def record_scoped_loop_boundary(call, evidence, persist):
+    """J5: a compact scoped edit must not worsen the fixed LoopBody handoff silently."""
+    asset, graph = evidence['asset'], 'LoopCascade'
+    labels = next(block['labels'] for block in evidence['blocks'] if block['name'] == 'L3B')
+    selected = [evidence['label_ids'][label] for label in labels]
+    args = dict(asset=asset, graphName=graph, bForce=False, nodeIds=selected,
+                mainPath='', horizontalGap=120.0, verticalGap=100.0,
+                lanePitch=280.0, wrapAfter='', layoutMode='blocks')
+    row = dict(selected_ids=selected, before_positions=read_positions(call, asset, graph),
+               before_graph=read_complete_graph(call, asset, graph))
+    evidence.setdefault('regressions', {})['J5_boundary'] = row
+    persist()
+    row['preview'] = call('PreviewTurboMCPGraphTidy', **args)
+    row['after_preview_positions'] = read_positions(call, asset, graph)
+    row['after_preview_graph'] = read_complete_graph(call, asset, graph)
+    if row['after_preview_positions'] != row['before_positions'] or row['after_preview_graph'] != row['before_graph']:
+        raise RuntimeError('J5 boundary preview mutated the graph')
+    handoff = re.search(r'scoped LoopBody handoff (\S+):LoopBody -> (\S+):(\S+)'
+                        r' increases vertical pin separation from ([\d.]+) to ([\d.]+) px', row['preview'])
+    if not row['preview'].startswith('WOULD ROLL BACK:') or not handoff:
+        raise RuntimeError('J5 boundary preview did not name the worsened LoopBody handoff')
+    source, target, _, before, after = handoff.groups()
+    selected_keys = {identity.rsplit('.', 1)[-1] for identity in selected}
+    if (source in selected_keys) == (target in selected_keys) or float(after) <= float(before):
+        raise RuntimeError('J5 boundary evidence does not cross scope or worsen separation')
+    if 'Expand nodeIds' not in row['preview']:
+        raise RuntimeError('J5 boundary refusal omitted expansion guidance')
+    row['edit'] = call('EditTurboMCPGraphTidy', **args)
+    row['after_edit_positions'] = read_positions(call, asset, graph)
+    row['after_edit_graph'] = read_complete_graph(call, asset, graph)
+    if not row['edit'].startswith('unchanged:') or row['after_edit_positions'] != row['before_positions'] or row['after_edit_graph'] != row['before_graph']:
+        raise RuntimeError('J5 boundary refusal changed the graph')
+    forced = dict(args, bForce=True)
+    row['forced_preview'] = call('PreviewTurboMCPGraphTidy', **forced)
+    if 'Force requested for boundary tradeoff:' not in row['forced_preview']:
+        raise RuntimeError('J5 forced preview hid the boundary tradeoff')
+    row['forced_edit'] = call('EditTurboMCPGraphTidy', **forced)
+    row['forced_positions'] = read_positions(call, asset, graph)
+    row['forced_graph'] = read_complete_graph(call, asset, graph)
+    if not row['forced_edit'].startswith('changed:') or 'Force accepted boundary tradeoff:' not in row['forced_edit']:
+        raise RuntimeError('J5 forced edit did not disclose an accepted boundary tradeoff')
+    if row['forced_graph'] != row['before_graph']:
+        raise RuntimeError('J5 forced edit changed graph semantics')
+    if any(row['forced_positions'][identity] != rectangle for identity, rectangle in row['before_positions'].items()
+           if identity not in selected):
+        raise RuntimeError('J5 forced edit moved an unselected node')
+    row['control_preview'] = call('PreviewTurboMCPGraphTidy', **dict(args, nodeIds=[]))
+    if 'scoped LoopBody handoff' in row['control_preview']:
+        raise RuntimeError('J5 whole-graph control was mistaken for a scoped boundary')
+    undo_preview = call('PreviewTurboMCPAssetUndo', asset=asset)
+    confirmation = re.search(r'Confirm=([0-9A-Fa-f-]+)', undo_preview)
+    if not confirmation:
+        raise RuntimeError('J5 forced edit has no undo confirmation')
+    row['undo'] = call('EditTurboMCPAssetUndo', asset=asset, confirm=confirmation.group(1))
+    row['undo_positions'] = read_positions(call, asset, graph)
+    row['undo_graph'] = read_complete_graph(call, asset, graph)
+    if row['undo_positions'] != row['before_positions'] or row['undo_graph'] != row['before_graph']:
+        raise RuntimeError('J5 forced edit undo did not restore the graph')
+    row['passed'] = True
+    persist()
+
+
 def record_comment_regression(call, evidence, persist):
     """J4 records existing titled boxes; containment is checked independently of Tidy's summary."""
     asset, graph = evidence['asset'], 'LoopCascade'
@@ -1064,8 +1126,8 @@ def run():
     # A tracked selection survives the supervisor's deliberate environment filter.
     scenario = json.loads((root / 'Tests' / 'tidy-loop-cascade.json').read_text(encoding='utf-8'))
     subset = os.environ.get('TURBOMCP_TIDY_BASELINE_SUBSET', scenario.get('run_subset', 'all'))
-    if subset not in ('all', 'events', 'preview', 'routing'):
-        raise RuntimeError('Unknown baseline subset; expected all, events, preview or routing')
+    if subset not in ('all', 'events', 'preview', 'routing', 'boundary'):
+        raise RuntimeError('Unknown baseline subset; expected all, events, preview, routing or boundary')
     evidence = {'stage': 'discovery', 'layout_acceptance': False, 'subset': subset, 'calls': []}
 
     def persist():
@@ -1212,6 +1274,13 @@ def run():
         evidence['initial_graph'] = call('ReadTurboMCPGraphLoad', asset=asset, graphName='LoopCascade', format='read', detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
         build_graph(call, evidence, persist)
         record_baseline(call, evidence, persist)
+        record_scoped_loop_boundary(call, evidence, persist)
+        if subset == 'boundary':
+            evidence['stage'] = 'scoped_loop_boundary_passed_full_cascade_pending'
+            persist()
+            print('Evidence: ' + str(directory), flush=True)
+            print('RESULT: PASS (focused J5 boundary only; full cascade and visual acceptance remain pending)')
+            return
         record_loop_locals(call, evidence, persist)
         record_scoped_regression(call, evidence, persist)
         record_break_regression(call, evidence, persist)
