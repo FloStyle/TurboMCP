@@ -153,9 +153,11 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
     ON_SCOPE_EXIT { Package->SetDirtyFlag(false); };
     UBlueprint* BP=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("BP_Feedback"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
     if (!TestNotNull(TEXT("Fixture Blueprint"),BP)) return false;
-    // Exercise the public planning/application path, not only synthetic rectangles.
+    // Exercise both flat and nested sections through native planning and undo.
+    for (const bool WithChildSection : { false, true })
     {
-        UEdGraph* SectionGraph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("SectionGrowth"),
+        UEdGraph* SectionGraph = FBlueprintEditorUtils::CreateNewGraph(BP,
+            WithChildSection ? TEXT("SectionGrowthNested") : TEXT("SectionGrowth"),
             UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
         BP->UbergraphPages.Add(SectionGraph);
         SectionGraph->SetFlags(RF_Transactional);
@@ -191,6 +193,15 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
             Selected.Add(TurboMCPNodeId::MakeForNode(Event));
             Selected.Add(TurboMCPNodeId::MakeForNode(Call));
         }
+        UEdGraphNode_Comment* ChildSection = nullptr;
+        if (WithChildSection)
+        {
+            ChildSection = NewObject<UEdGraphNode_Comment>(SectionGraph);
+            AddSectionNode(ChildSection, 40, 70);
+            ChildSection->NodeComment = TEXT("Anchored child flow");
+            ChildSection->NodeWidth = 850;
+            ChildSection->NodeHeight = 170;
+        }
         TMap<UEdGraphNode*, FIntPoint> OriginalPositions;
         TMap<UEdGraphPin*, TArray<UEdGraphPin*>> OriginalLinks;
         for (UEdGraphNode* Node : SectionGraph->Nodes)
@@ -209,6 +220,8 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         if (!TestTrue(TEXT("Section edit: ") + SectionEdit, SectionEdit.StartsWith(TEXT("changed:")))) return false;
         TestTrue(TEXT("Section uses rightward space"), Section->NodeWidth > 1000);
         TestTrue(TEXT("Section clears the fixed box below"), Section->NodeHeight <= Fixed->NodePosY);
+        if (ChildSection)
+            TestTrue(TEXT("Nested section keeps its anchor"), ChildSection->NodePosX == 40 && ChildSection->NodePosY == 70);
         TestTrue(TEXT("Fixed box geometry is unchanged"), Fixed->NodePosX == 0 && Fixed->NodePosY == 720
             && Fixed->NodeWidth == 1000 && Fixed->NodeHeight == 200);
         for (const auto& Node : SectionPlan.Nodes)
@@ -223,6 +236,8 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         for (const auto& Pair : OriginalPositions)
             TestTrue(TEXT("Section undo restores positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
         TestTrue(TEXT("Section undo restores size"), Section->NodeWidth == 1000 && Section->NodeHeight == 700);
+        if (ChildSection)
+            TestTrue(TEXT("Nested section undo restores size"), ChildSection->NodeWidth == 850 && ChildSection->NodeHeight == 170);
         // Both available growth directions are blocked. A refusal must preserve
         // the live graph rather than moving an unselected neighboring section.
         auto* RightObstacle = NewObject<UEdGraphNode_Comment>(SectionGraph);
