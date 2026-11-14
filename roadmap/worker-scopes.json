@@ -4055,6 +4055,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "nov09-donecheck-scope": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPReportScope.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-layout-output.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
