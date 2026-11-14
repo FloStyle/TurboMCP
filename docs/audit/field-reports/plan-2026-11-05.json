@@ -825,11 +825,11 @@
         "2026-11-04_S3/FT-144"
       ],
       "dependencies": [],
-      "next_step": "Reconcile existing member-variable removal against the requested local-variable operations, then scope remaining rename/removal and short struct-name gaps.",
+      "next_step": "Implement reviewed local-removal contract in nov14-timer-alias-review.md; review local/member rename separately. Existing member removal and TimerHandle alias have native acceptance.",
       "evidence": [
         "docs/audit/field-reports/nov14-timer-alias-review.md"
       ],
-      "remaining": "TimerHandle alias implemented, built and native-tested in execution 810ccf6e47f9459a9d9b7dc106d218fc. Existing member-variable removal must be reconciled with requested local operations; rename and other short struct names remain open."
+      "remaining": "Member removal and TimerHandle alias passed their native cases in execution 810ccf6e47f9459a9d9b7dc106d218fc. Local removal and member/local rename remain unimplemented. No additional specific short struct-name failure is identified."
     }
   ],
   "priority_order": [
