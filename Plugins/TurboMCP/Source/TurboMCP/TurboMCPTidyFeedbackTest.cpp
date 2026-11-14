@@ -6,6 +6,7 @@
 #include "Misc/ScopeExit.h"
 #include "TurboMCPNodeId.h"
 #include "TurboMCPGraphTidy.h"
+#include "TurboMCPComment.h"
 #include "Editor.h"
 #include "TurboMCPLayoutReport.h"
 #include "Engine/Blueprint.h"
@@ -197,10 +198,16 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         if (WithChildSection)
         {
             ChildSection = NewObject<UEdGraphNode_Comment>(SectionGraph);
-            AddSectionNode(ChildSection, 40, 70);
+            AddSectionNode(ChildSection, 40, 45);
             ChildSection->NodeComment = TEXT("Anchored child flow");
             ChildSection->NodeWidth = 850;
-            ChildSection->NodeHeight = 170;
+            ChildSection->NodeHeight = 210;
+        }
+        TArray<FString> ChildMembersBefore;
+        if (ChildSection)
+        {
+            FTurboMCPComment::MembersOf(ChildSection, ChildMembersBefore);
+            if (!TestEqual(TEXT("Nested fixture encloses the first event and call"), ChildMembersBefore.Num(), 2)) return false;
         }
         TMap<UEdGraphNode*, FIntPoint> OriginalPositions;
         TMap<UEdGraphPin*, TArray<UEdGraphPin*>> OriginalLinks;
@@ -221,7 +228,12 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Section uses rightward space"), Section->NodeWidth > 1000);
         TestTrue(TEXT("Section clears the fixed box below"), Section->NodeHeight <= Fixed->NodePosY);
         if (ChildSection)
-            TestTrue(TEXT("Nested section keeps its anchor"), ChildSection->NodePosX == 40 && ChildSection->NodePosY == 70);
+        {
+            TestTrue(TEXT("Nested section keeps its anchor"), ChildSection->NodePosX == 40 && ChildSection->NodePosY == 45);
+            TArray<FString> ChildMembersAfter;
+            FTurboMCPComment::MembersOf(ChildSection, ChildMembersAfter);
+            TestTrue(TEXT("Nested section retains its original contents"), ChildMembersAfter == ChildMembersBefore);
+        }
         TestTrue(TEXT("Fixed box geometry is unchanged"), Fixed->NodePosX == 0 && Fixed->NodePosY == 720
             && Fixed->NodeWidth == 1000 && Fixed->NodeHeight == 200);
         for (const auto& Node : SectionPlan.Nodes)
@@ -237,7 +249,7 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Section undo restores positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
         TestTrue(TEXT("Section undo restores size"), Section->NodeWidth == 1000 && Section->NodeHeight == 700);
         if (ChildSection)
-            TestTrue(TEXT("Nested section undo restores size"), ChildSection->NodeWidth == 850 && ChildSection->NodeHeight == 170);
+            TestTrue(TEXT("Nested section undo restores size"), ChildSection->NodeWidth == 850 && ChildSection->NodeHeight == 210);
         // Both available growth directions are blocked. A refusal must preserve
         // the live graph rather than moving an unselected neighboring section.
         auto* RightObstacle = NewObject<UEdGraphNode_Comment>(SectionGraph);
