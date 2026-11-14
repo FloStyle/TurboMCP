@@ -1806,7 +1806,23 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                                 && RowOf.Contains(W.SourceNodeIndex) && RowOf.Contains(W.TargetNodeIndex)
                                 && RowOf[W.TargetNodeIndex]==CandidateRow && RowOf[W.SourceNodeIndex]!=CandidateRow
                                 && PendingRows.Contains(RowOf[W.SourceNodeIndex])) {HasEarlierRow=true;break;}
-                        if(!HasEarlierRow) {Ready=CandidateRow;break;}
+                        if (HasEarlierRow) continue;
+                        if (Ready == INDEX_NONE) Ready = CandidateRow;
+                        // Keep a wrapped continuation beside its preceding row.
+                        // Unrelated event rows inserted between them inflate the
+                        // component's height when scoped packing moves it intact.
+                        // Only ready rows qualify, so dependency order is preserved.
+                        if (!OrderedRows.IsEmpty())
+                        {
+                            bool FollowsPrevious = false;
+                            for (const FWire& Wire : OutPlan.Wires)
+                                if (OutPlan.IsWrapBoundary(Wire.SourceNodeIndex, Wire.TargetNodeIndex)
+                                    && RowOf.Contains(Wire.SourceNodeIndex) && RowOf.Contains(Wire.TargetNodeIndex)
+                                    && RowOf[Wire.SourceNodeIndex] == OrderedRows.Last()
+                                    && RowOf[Wire.TargetNodeIndex] == CandidateRow)
+                                { FollowsPrevious = true; break; }
+                            if (FollowsPrevious) { Ready = CandidateRow; break; }
+                        }
                     }
                     if(Ready==INDEX_NONE) break; // Final validation reports an unsatisfied cyclic break.
                     OrderedRows.Add(Ready);PendingRows.RemoveSingle(Ready);
