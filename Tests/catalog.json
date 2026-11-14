@@ -1121,6 +1121,13 @@
       "tier": "engine",
       "timeout_seconds": 180,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-member-rename",
+      "path": "Tools/test-member-rename.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
     }
   ]
 }

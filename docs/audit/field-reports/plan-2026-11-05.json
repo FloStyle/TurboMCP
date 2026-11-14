@@ -816,10 +816,10 @@
       "title": "Reconcile variable removal, rename and short struct-name needs",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "removal_local_rename_and_timer_alias_native_pass_member_rename_pending",
+      "validation": "focused_native_pass_general_field_validation_pending",
       "source_ids": [
         "VA-11",
         "FT-144"
@@ -829,12 +829,13 @@
         "2026-11-04_S3/FT-144"
       ],
       "dependencies": [],
-      "next_step": "Implement the reviewed member rename contract: exact identity, dependent references, CDO defaults, child collisions and replication associations; then focused native validation.",
+      "next_step": "Field-check supported member rename on real content; separately scope child override and unsupported reference migration if needed.",
       "evidence": [
         "docs/audit/field-reports/nov14-timer-alias-review.md",
-        "docs/audit/field-reports/nov14-member-rename-contract.md"
+        "docs/audit/field-reports/nov14-member-rename-contract.md",
+        "docs/audit/field-reports/nov14-member-rename-review.md"
       ],
-      "remaining": "Member rename remains unimplemented. Member/local removal, local rename and TimerHandle alias have synthetic native acceptance. No additional specific short struct-name failure is identified."
+      "remaining": "No remaining implementation in the reviewed bounded contract. Different child default overrides, live instances and unsupported reference kinds refuse explicitly; these are not migrated. Nested struct shapes and arbitrary project callbacks are not certified by the focused fixture."
     }
   ],
   "priority_order": [

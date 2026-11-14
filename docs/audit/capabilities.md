@@ -72,6 +72,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPTrace | [TurboMCPTraceTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraceTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPVariableFlags | [TurboMCPVariableFlagsEdit.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableFlagsEdit.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPVariableRemove | [TurboMCPVariableRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPVariableRename | [TurboMCPVariableRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPVarsAdd | [TurboMCPVarsAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAddTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPVcsCheckout | [TurboMCPSourceControlTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp) | name_reference_only | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetAdd | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |
@@ -148,6 +149,7 @@ Generated from declarations, definitions and static test references. All runtime
 | PreviewTurboMCPToolset | [TurboMCPToolsets.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPVariableFlags | [TurboMCPVariableFlagsEdit.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableFlagsEdit.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPVariableRemove | [TurboMCPVariableRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPVariableRename | [TurboMCPVariableRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPVarsAdd | [TurboMCPVarsAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAddTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPVcsCheckout | [TurboMCPSourceControlTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp) | name_reference_only | not certified | compare-native-before-expanding |
 | PreviewTurboMCPWidgetAdd | [TurboMCPWidgetTreeTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp) | missing | not certified | compare-native-before-expanding |

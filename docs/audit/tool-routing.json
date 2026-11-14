@@ -1032,6 +1032,20 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPVariableRename",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPVarsAdd",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -2145,6 +2159,20 @@
     },
     {
       "tool": "PreviewTurboMCPVariableRemove",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPVariableRename",
       "family": "asset-and-data",
       "epic_5_8_3": {
         "status": "unverified",
