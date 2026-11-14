@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "1ccc3eab51a67303ebb981f39bbd8c3f5513b0f8",
+  "plugin_tree": "198c6f1508db1de1e50529090395a9f76ec08351",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 194,
@@ -1161,7 +1161,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
-          "line": 299
+          "line": 340
         }
       ],
       "test_references": [],
@@ -1185,7 +1185,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
-          "line": 422
+          "line": 463
         }
       ],
       "test_references": [],
@@ -1663,7 +1663,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
-          "line": 192
+          "line": 233
         }
       ],
       "test_references": [],
@@ -3142,7 +3142,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
-          "line": 297
+          "line": 338
         }
       ],
       "test_references": [],
@@ -3165,7 +3165,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
-          "line": 420
+          "line": 461
         }
       ],
       "test_references": [],
@@ -3516,7 +3516,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
-          "line": 190
+          "line": 231
         }
       ],
       "test_references": [],
