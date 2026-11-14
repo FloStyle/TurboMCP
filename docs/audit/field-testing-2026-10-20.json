@@ -6586,8 +6586,8 @@
       "kind": "bug",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "geometry_oracle_passed_plan_details_truncated",
-      "remaining": "Paged geometry now passes the independent score oracle, but the preview response cap omits most planned route-knot coordinates in the combined comments/routing case. Add a bounded plan-detail read or pagination before asserting exact preview/edit knot coordinates. Then inspect R3/R6 and cross-box visuals. Production layout acceptance remains open.",
+      "validation": "workflow_checks_passed_visual_acceptance_pending",
+      "remaining": "Complete planned-coordinate paging and the independent seven-score oracle now pass the disposable cascade workflow. Inspect R3/R6 classification and cross-box screenshots against the accepted visual reference before claiming full layout acceptance. The production Tidy issue remains open.",
       "source_keys": [
         "2026-11-05_S1/TD-63",
         "2026-11-05_S1/TD-64",
@@ -6645,10 +6645,16 @@
           "run": "ad06c87b79a040dfae120aae1435280a",
           "result": "integrated_checker_partial_acceptance_blocked",
           "scope": "Integrated a scoped cascade-checker repair. Stock Unreal 5.8.4 build passed; the disposable run reached 669 tool calls and restored its fixture. Paged geometry and the independent seven-score oracle passed the compact cases. The combined comments/routing case added 42 non-box nodes, while the bounded preview exposed only 11 planned knot/reader coordinates; those 11 matched and the remaining comparison was blocked by omitted detail. This is incomplete acceptance, not proof of a production layout defect or success."
+        },
+        {
+          "commit": "a85c10fbde192ea4644915074573cae9a303deda",
+          "run": "1400dc7bcf324bbb859108b8343d9239",
+          "result": "integrated_focused_workflow_passed_visual_pending",
+          "scope": "Integrated bounded plan-coordinate pages for large Tidy previews. Stock Unreal 5.8.4 build passed; focused cascade suite passed with 846 tool calls and restored its disposable fixture. Paged planned coordinates, eight generated-box rectangles and nested membership, routed knots, read-back and undo were checked. The workflow itself records visual acceptance pending; no full layout or release claim."
         }
       ],
-      "next_step": "Paged geometry now passes the independent score oracle, but the preview response cap omits most planned route-knot coordinates in the combined comments/routing case. Add a bounded plan-detail read or pagination before asserting exact preview/edit knot coordinates. Then inspect R3/R6 and cross-box visuals. Production layout acceptance remains open.",
-      "latest_evidence": "Integrated a scoped cascade-checker repair. Stock Unreal 5.8.4 build passed; the disposable run reached 669 tool calls and restored its fixture. Paged geometry and the independent seven-score oracle passed the compact cases. The combined comments/routing case added 42 non-box nodes, while the bounded preview exposed only 11 planned knot/reader coordinates; those 11 matched and the remaining comparison was blocked by omitted detail. This is incomplete acceptance, not proof of a production layout defect or success."
+      "next_step": "Complete planned-coordinate paging and the independent seven-score oracle now pass the disposable cascade workflow. Inspect R3/R6 classification and cross-box screenshots against the accepted visual reference before claiming full layout acceptance. The production Tidy issue remains open.",
+      "latest_evidence": "Integrated bounded plan-coordinate pages for large Tidy previews. Stock Unreal 5.8.4 build passed; focused cascade suite passed with 846 tool calls and restored its disposable fixture. Paged planned coordinates, eight generated-box rectangles and nested membership, routed knots, read-back and undo were checked. The workflow itself records visual acceptance pending; no full layout or release claim."
     },
     {
       "id": "NOV05-04",
