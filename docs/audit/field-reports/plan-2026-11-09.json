@@ -107,10 +107,10 @@
       "title": "Make DoneCheck capture useful for large scoped graphs",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "ready",
-      "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator",
+      "validation": "focused_runtime_passed_field_scale_unverified",
       "source_keys": [
         "2026-11-09_S1/CP-17"
       ],
@@ -118,10 +118,12 @@
         "NOV09-01"
       ],
       "complexity_estimate": 4,
-      "next_step": "Implement scoped DoneCheck capture per docs/audit/field-reports/nov09-donecheck-scope-contract.md; keep capture failures visible and test on the disposable Blueprint fixture.",
+      "next_step": "Scoped region and node capture passed on the disposable Blueprint fixture with stock UE 5.8.4, and invalid box scope refused before capture. A 421-node field screenshot and comment-box capture remain unverified; native zoom may still refuse a large frame. Reopen only on new field evidence.",
       "acceptance": "Reconcile current scope support first. Capture the selected section or bounded tiles; report native zoom limits honestly rather than silently omitting the image.",
       "evidence": [
-        "docs/audit/field-reports/nov09-donecheck-scope-contract.md"
+        "docs/audit/field-reports/nov09-donecheck-scope-contract.md",
+        "Private main 8fc854e1 (scoped DoneCheck and consistent wire-length output)",
+        "Focused supervised build and test-layout-output PASS: .local/executions/91286b79fe834a0da4b914276a0cbf47/report.json"
       ]
     },
     {
