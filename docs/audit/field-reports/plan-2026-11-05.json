@@ -676,7 +676,7 @@
       "kind": "feature",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "reported_not_reproduced",
       "source_ids": [
@@ -686,7 +686,7 @@
         "2026-11-04_S3/GC-98"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "next_step": "Use the approved nov05-return-node assignment to reproduce the exact creation-ID mismatch in a synthetic function graph, then repair discovery/preview/apply within the bounded task. Preserve stock action filtering and no-mutation refusals.",
       "evidence": []
     },
     {

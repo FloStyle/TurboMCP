@@ -9,6 +9,10 @@ Design: docs/design/protocol.md
 Kind: investigation
 Review: source-reviewed
 
+## Approved NOV05-13 Return-node repair (2026-11-14)
+
+Use assignment `nov05-return-node` for the exact source and fixture files in the schema-2 manifest. [The bounded task](nov05-return-node.md) records the field report, stock-engine constraints, preview and apply invariants, and focused verification. This does not close R04 or certify GraphAppend generally.
+
 ## Current purchase workflow review (2026-10-25)
 
 Scenario, named-local/reader repairs and getter direction/order are implemented with focused native evidence. WF-BP-01-WIRE-COMMENT remains open: the subtotal wire crosses the new annotation. Full per-tool acceptance remains open. See [the review and reproducible procedure](../docs/audit/purchase-workflow-review.md) and [per-tool status](../docs/audit/purchase-workflow-review.json). R04 is not complete; 125 inventoried tools are not 125 accepted tools.
