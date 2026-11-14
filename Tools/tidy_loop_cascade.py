@@ -580,6 +580,52 @@ def read_compact_preview(call, args, context):
                               page, re.M)
         if not next_page or (int(next_page.group(1)), int(next_page.group(2))) != (offset, 40):
             raise RuntimeError(context + ': invalid geometry continuation')
+    # Default preview is intentionally capped. Read the complete coordinate
+    # plan in numbered pages before comparing it with the one edit result.
+    detail_rows = []
+    detail_offset = 0
+    detail_total = None
+    stable_prefixes = ('WOULD ', 'ALREADY TIDY', 'unrelated box crossings:',
+                       'execution segment crossings:', 'diagonal execution length:',
+                       'within-block row breaks:', 'data segment crossings:',
+                       'total segment length:', 'bounding area:')
+    def stable_header(text):
+        return tuple(line for line in text.splitlines() if line.startswith(stable_prefixes))
+    while True:
+        page = call('PreviewTurboMCPGraphTidy', **dict(args, PlanOffset=detail_offset,
+                                                       PlanLimit=20))
+        if stable_header(page) != stable_header(preview):
+            raise RuntimeError(context + ': preview plan changed between coordinate pages')
+        match = re.search(r'^plan detail: rows (\d+)\.(-?\d+) of (\d+) for this plan\.$',
+                          page, re.M)
+        if not match:
+            raise RuntimeError(context + ': missing numbered plan-detail page')
+        first, last, count = map(int, match.groups())
+        if first != detail_offset or (detail_total is not None and count != detail_total):
+            raise RuntimeError(context + ': inconsistent plan-detail page range or total')
+        detail_total = count
+        page_rows = [line for line in page.splitlines()
+                     if line.startswith(('planned ', 'planned reader copy ',
+                                         'generated box ', 'route knot '))]
+        expected = max(0, last - first + 1)
+        if len(page_rows) != expected or expected > 20:
+            raise RuntimeError(context + ': plan-detail page omitted coordinate rows')
+        detail_rows.extend(page_rows)
+        detail_offset = last + 1
+        if detail_offset == detail_total:
+            if re.search(r'^plan detail next:', page, re.M):
+                raise RuntimeError(context + ': final plan-detail page has a continuation')
+            break
+        next_page = re.search(r'^plan detail next: PlanOffset=(\d+) PlanLimit=(\d+)\.',
+                              page, re.M)
+        if not next_page or (int(next_page.group(1)), int(next_page.group(2))) != (detail_offset, 20):
+            raise RuntimeError(context + ': invalid plan-detail continuation')
+    if len(detail_rows) != detail_total:
+        raise RuntimeError(context + ': incomplete coordinate plan')
+    preview = '\n'.join(line for line in preview.splitlines()
+                        if not line.startswith(('planned ', 'planned reader copy ',
+                                                'generated box ', 'route knot ')))
+    preview += '\n' + '\n'.join(detail_rows)
     return preview, '\n'.join(rows)
 
 

@@ -4135,7 +4135,7 @@ static FString JoinBoundedTidyLines(const TArray<FString>& Lines)
     return Output;
 }
 
-FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan, int32 GeometryOffset, int32 GeometryLimit)
+FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan, int32 GeometryOffset, int32 GeometryLimit, int32 PlanOffset, int32 PlanLimit)
 {
 	TArray<FString> Lines;
 	if (InPlan.bAlreadyTidy)
@@ -4166,6 +4166,40 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan, int32 GeometryOff
         Lines.Last().ReplaceInline(TEXT("quality priority:"), TEXT("additional diagnostics (not compact ranking):"));
         Lines.Last().ReplaceInline(TEXT(" Wire length breaks structural ties."), TEXT(""));
     }
+	// The ordinary preview retains its existing format. A coordinate page contains
+	// only the verdict, scores and numbered plan rows, so a large graph cannot
+	// silently lose the tail of its route-knot plan to the response limit.
+	if (PlanLimit > 0)
+	{
+		TArray<FString> Detail;
+		for (const FNode& Node : InPlan.Nodes)
+			if (!Node.bIsComment)
+				Detail.Add(FString::Printf(TEXT("planned %s x=%.0f y=%.0f"), *Node.Key,
+					FMath::RoundToDouble(Node.PlannedX), FMath::RoundToDouble(Node.PlannedY)));
+		for (int32 Index = 0; Index < InPlan.GetterCopies.Num(); ++Index)
+		{
+			const FGetterCopy& Copy = InPlan.GetterCopies[Index];
+			Detail.Add(FString::Printf(TEXT("planned reader copy index=%d x=%.0f y=%.0f width=%.0f height=%.0f"),
+				Index, Copy.PlannedX, Copy.PlannedY, Copy.Width, Copy.Height));
+		}
+		for (const FBox& Box : InPlan.Boxes)
+			if (Box.bGenerated)
+				Detail.Add(FString::Printf(TEXT("generated box %s title=\"%s\" x=%.0f y=%.0f width=%.0f height=%.0f members=%s"),
+					*Box.Key, *Box.Text, Box.PlannedX, Box.PlannedY, Box.PlannedWidth, Box.PlannedHeight,
+					*FString::Join(Box.MemberKeys, TEXT(","))));
+		for (const FWireRoute& Route : InPlan.WireRoutes)
+			for (int32 Index = 0; Index < Route.KnotPositions.Num(); ++Index)
+				Detail.Add(FString::Printf(TEXT("route knot wire=%d index=%d x=%.0f y=%.0f"),
+					Route.WireIndex, Index, Route.KnotPositions[Index].X, Route.KnotPositions[Index].Y));
+		if (PlanOffset >= Detail.Num() && !Detail.IsEmpty())
+			return FString::Printf(TEXT("error: PlanOffset %d is outside the %d planned coordinate rows; no graph edit occurred."), PlanOffset, Detail.Num());
+		const int32 End = FMath::Min(PlanOffset + PlanLimit, Detail.Num());
+		Lines.Add(FString::Printf(TEXT("plan detail: rows %d..%d of %d for this plan."), PlanOffset, End - 1, Detail.Num()));
+		for (int32 Index = PlanOffset; Index < End; ++Index) Lines.Add(Detail[Index]);
+		if (End < Detail.Num())
+			Lines.Add(FString::Printf(TEXT("plan detail next: PlanOffset=%d PlanLimit=%d. Replan only while the graph is unchanged."), End, PlanLimit));
+		return JoinBoundedTidyLines(Lines);
+	}
 	Lines.Add(FString::Printf(TEXT("preview: %s in %s : total wire length %.1f -> %.1f across %d wire(s)"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter, InPlan.WireCount));
     int32 FeedbackCount = 0;
     for (const FWire& Wire : InPlan.Wires) if (Wire.bControlFeedback) ++FeedbackCount;

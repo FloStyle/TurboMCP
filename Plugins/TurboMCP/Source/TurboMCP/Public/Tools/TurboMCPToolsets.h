@@ -1142,6 +1142,8 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row. Logical connections are preserved; explicit routing may insert reroute nodes.
 	 * @param GeometryOffset Zero-based row offset for optional measured scoring evidence in blocks mode. Use 0 for the first page. Each call replans the current graph; do not combine pages across an intervening edit.
 	 * @param GeometryLimit 0 (default) omits per-rectangle and per-wire evidence. Use 1..40 to request a bounded page in blocks mode; the result reports the total and next offset. Seven measured scores remain in the default result.
+	 * @param PlanOffset Zero-based offset for optional planned node, reader, generated-box and route-knot coordinates. Each call replans the current graph; do not combine pages across an intervening edit.
+	 * @param PlanLimit 0 (default) returns the usual preview. Use 1..20 to request a bounded coordinate page with total and next offset. Request plan and geometry pages separately; no edit, compile or save occurs.
 	 * Node references accept exact reader IDs or unique hexadecimal keys of at least six digits in the named graph. Ambiguous keys and mismatched qualified IDs are refused.
      * Stock ForLoopWithBreak/ForEachLoopWithBreak Break and DoOnce Reset wires are preserved as feedback, not forward layout dependencies. Other cycles in the selected dependencies still refuse. Unselected nodes remain fixed; unrelated fixed cycles do not prevent scoped tidy.
      */
@@ -1151,7 +1153,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 		const FString& GraphName,
 		bool bForce,
 		const TArray<FString>& NodeIds,
-		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""), const FString& LayoutMode = TEXT("rows"), const FString& RouteWires = TEXT("off"), double ChannelWidth = 60.0, bool bCreateBoxes = false, int32 GeometryOffset = 0, int32 GeometryLimit = 0);
+		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""), const FString& LayoutMode = TEXT("rows"), const FString& RouteWires = TEXT("off"), double ChannelWidth = 60.0, bool bCreateBoxes = false, int32 GeometryOffset = 0, int32 GeometryLimit = 0, int32 PlanOffset = 0, int32 PlanLimit = 0);
 
 	/**
      * Preview supported position repairs across one Blueprint graph; loads and measures transient graph widgets, but does not move live nodes, compile or save.

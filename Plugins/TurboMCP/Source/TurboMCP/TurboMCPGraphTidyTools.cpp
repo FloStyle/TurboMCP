@@ -20,11 +20,15 @@
  */
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(const FString& Asset,
-	const FString& GraphName, bool bForce, const TArray<FString>& NodeIds, const FString& MainPath, double HorizontalGap, double VerticalGap, double LanePitch, const FString& WrapAfter, const FString& LayoutMode, const FString& RouteWires, double ChannelWidth, bool bCreateBoxes, int32 GeometryOffset, int32 GeometryLimit)
+	const FString& GraphName, bool bForce, const TArray<FString>& NodeIds, const FString& MainPath, double HorizontalGap, double VerticalGap, double LanePitch, const FString& WrapAfter, const FString& LayoutMode, const FString& RouteWires, double ChannelWidth, bool bCreateBoxes, int32 GeometryOffset, int32 GeometryLimit, int32 PlanOffset, int32 PlanLimit)
 {
 	if (GeometryOffset < 0 || GeometryLimit < 0 || GeometryLimit > 40 || (GeometryLimit == 0 && GeometryOffset != 0))
 	{
 		return FTurboMCPToolError::AsError(TEXT("GeometryOffset must be nonnegative. GeometryLimit must be 0 (omit evidence) or 1..40; use offset 0 when the limit is 0."));
+	}
+	if (PlanOffset < 0 || PlanLimit < 0 || PlanLimit > 20 || (PlanLimit == 0 && PlanOffset != 0) || (PlanLimit > 0 && GeometryLimit > 0))
+	{
+		return FTurboMCPToolError::AsError(TEXT("PlanOffset must be nonnegative. PlanLimit must be 0 (default preview) or 1..20; use offset 0 when the limit is 0. Request plan and geometry pages separately."));
 	}
 	FTurboMCPGraphTidy::FPlan Plan;
 	FString Error;
@@ -33,7 +37,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(const FString& Asset,
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
-	return FTurboMCPGraphTidy::RenderPreview(Plan, GeometryOffset, GeometryLimit);
+	return FTurboMCPGraphTidy::RenderPreview(Plan, GeometryOffset, GeometryLimit, PlanOffset, PlanLimit);
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPGraphTidy(const FString& Asset,

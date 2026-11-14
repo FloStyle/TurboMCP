@@ -282,7 +282,7 @@ public:
     static FVector2D AlignmentNodeSize(const UEdGraphNode* Node);
 
 	/** What the pass would do, and both numbers, without touching the graph. */
-	static FString RenderPreview(const FPlan& InPlan, int32 GeometryOffset = 0, int32 GeometryLimit = 0);
+	static FString RenderPreview(const FPlan& InPlan, int32 GeometryOffset = 0, int32 GeometryLimit = 0, int32 PlanOffset = 0, int32 PlanLimit = 0);
 
     /** Refuse the first moved non-comment pair with intersecting planned rectangles. Unmoved overlaps are preserved. Does not mutate the plan or graph. */
     static bool ValidatePlannedNodeOverlaps(const FPlan& InPlan, FString& OutError);
