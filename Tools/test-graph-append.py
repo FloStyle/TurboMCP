@@ -442,18 +442,20 @@ def main():
 
     # A focused native case does not replace full-suite acceptance. It lets a repair
     # gather exact literal evidence while the independently recorded legacy failures remain open.
-    if os.environ.get("TMCP_APPEND_LITERAL_ONLY") == "1":
+    placement_only = os.environ.get("TMCP_APPEND_PLACEMENT_ONLY") == "1"
+    if placement_only or os.environ.get("TMCP_APPEND_LITERAL_ONLY") == "1":
+        selected_test = APPEND_PLACEMENT_TEST if placement_only else APPEND_ALIAS_TEST
         session = Session()
         session.connect()
         session.call(AUTO_TOOLSET, "DiscoverTests", {})
-        raw = session.call(AUTO_TOOLSET, "RunTests", {"testNames": [APPEND_ALIAS_TEST]})
+        raw = session.call(AUTO_TOOLSET, "RunTests", {"testNames": [selected_test]})
         print(str(raw))
         try:
-            entry, report = parse_run_tests_report(raw, APPEND_ALIAS_TEST)
-            check("focused literal/public append regression", entry["state"] == "Success" and not entry["errors"])
+            entry, report = parse_run_tests_report(raw, selected_test)
+            check("focused selected append regression", entry["state"] == "Success" and not entry["errors"])
         except (ValueError, TypeError) as exc:
-            check("focused literal/public append regression", False, str(exc))
-        print("RECORDED: focused literal regression only; full append/placement acceptance remains separate.")
+            check("focused selected append regression", False, str(exc))
+        print("RECORDED: focused selected native regression only; full append acceptance remains separate.")
         return report_result()
 
     session = rebuild_fixture_and_reconnect()

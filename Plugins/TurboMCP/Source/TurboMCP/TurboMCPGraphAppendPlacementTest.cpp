@@ -1204,7 +1204,7 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
             FTurboMCPGraphAppend::PlanPlacement(Graph,Forms,Positions,Estimated,Error,&Links,true));
         FTurboMCPGraphAppend::FPlan BadPlan;
         TestFalse(TEXT("Unknown placement mode refuses before graph lookup"),FTurboMCPGraphAppend::Plan(TEXT(""),TEXT(""),TEXT(""),BadPlan,Error,true,TEXT("auto"),TEXT("guess")));
-        TestTrue(TEXT("Unknown mode guidance"),Error.Contains(TEXT("local or outside")));
+        TestTrue(TEXT("Unknown mode guidance"),Error.Contains(TEXT("local, outside or per-anchor")));
 
     }
 
