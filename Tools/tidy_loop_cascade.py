@@ -55,7 +55,7 @@ def build_graph(call, evidence, persist):
         preview = call('PreviewTurboMCPGraphAppend', **args)
         if not preview.startswith('preview:'):
             raise RuntimeError('Append preview did not approve construction: ' + preview)
-        result = call('EditTurboMCPGraphAppend', **args)
+        result = call('EditTurboMCPGraphAppend', previewToken='', **args)
         created = re.findall(r'^created (.*?): type (.*)$', result, re.M)
         if len(created) != len(rows) or [x[1] for x in created] != types:
             raise RuntimeError('Created identities/types differ from submitted forms: ' + result)
@@ -412,7 +412,7 @@ def record_break_regression(call, evidence, persist):
     row['append_preview'] = call('PreviewTurboMCPGraphAppend', **args)
     if not row['append_preview'].startswith('preview:'):
         raise RuntimeError('J3 construction preview refused: ' + row['append_preview'])
-    appended = call('EditTurboMCPGraphAppend', **args)
+    appended = call('EditTurboMCPGraphAppend', previewToken='', **args)
     created = re.findall(r'^created (.*?): type (.*)$', appended, re.M)
     if [kind for _,kind in created] != [inputs[0],loop_type,'Utilities|FlowControl|Branch']:
         raise RuntimeError('J3 construction identities do not match the recipe')
@@ -464,7 +464,7 @@ def record_event_regressions(call, evidence, persist, only_case=None):
             preview=call('PreviewTurboMCPGraphAppend',**args)
             if not preview.startswith('preview:'):
                 raise RuntimeError(case + ': append preview refused: ' + preview)
-            answer=call('EditTurboMCPGraphAppend',**args)
+            answer=call('EditTurboMCPGraphAppend',previewToken='',**args)
             created=re.findall(r'^created (.*?): type (.*)$',answer,re.M)
             if [kind for _,kind in created] != expected:
                 raise RuntimeError(case + ': created node types differ from request')
