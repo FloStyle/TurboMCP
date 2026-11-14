@@ -47,7 +47,7 @@ namespace
 }
 
 bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<FNewNode>& InNodes,
-	TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal, const TArray<FNewLink>* InLinks, bool bPlaceOutside)
+	TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal, const TArray<FNewLink>* InLinks, bool bPlaceOutside, bool bPerAnchor, const TArray<FPlacementObstacle>* Reserved)
 {
 	OutPositions.Reset();
 	bOutUsedEstimatedSize = false;
@@ -71,6 +71,80 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 	{
 		return true;
 	}
+
+    // Components include data links: shared pure producers must never be duplicated.
+    // Keep original form indices so preview and apply refer to the same input forms.
+    if (bPerAnchor)
+    {
+        TSet<int32> Visited;
+        TArray<FPlacementObstacle> Occupied;
+        if (Reserved) Occupied = *Reserved;
+        for (int32 Seed = 0; Seed < InNodes.Num(); ++Seed)
+        {
+            if (InNodes[Seed].bLinksToExisting || Visited.Contains(Seed)) continue;
+            TSet<int32> Members;
+            TArray<int32> Pending;
+            Pending.Add(Seed); Members.Add(Seed); Visited.Add(Seed);
+            for (int32 Cursor = 0; Cursor < Pending.Num(); ++Cursor)
+                if (InLinks) for (const FNewLink& Link : *InLinks)
+                {
+                    const int32 Other = Link.FromFormIndex == Pending[Cursor] ? Link.ToFormIndex
+                        : Link.ToFormIndex == Pending[Cursor] ? Link.FromFormIndex : INDEX_NONE;
+                    if (InNodes.IsValidIndex(Other) && !InNodes[Other].bLinksToExisting && !Members.Contains(Other))
+                    { Members.Add(Other); Visited.Add(Other); Pending.Add(Other); }
+                }
+            TArray<FNewNode> Forms = InNodes;
+            for (int32 I = 0; I < Forms.Num(); ++I)
+                if (!Members.Contains(I)) Forms[I].bLinksToExisting = true;
+            TArray<FNewLink> Links;
+            TSet<FString> ExecAnchors;
+            bool bHasAnchor = false;
+            if (InLinks) for (const FNewLink& Link : *InLinks)
+                if (Members.Contains(Link.FromFormIndex) || Members.Contains(Link.ToFormIndex))
+                {
+                    Links.Add(Link);
+                    if (Link.FromFormIndex == INDEX_NONE && Members.Contains(Link.ToFormIndex))
+                    {
+                        bHasAnchor = true;
+                        if (Forms[Link.ToFormIndex].ProbeExecInputs.Contains(Link.ToPin)) ExecAnchors.Add(Link.FromNodeKey);
+                    }
+                    if (Link.ToFormIndex == INDEX_NONE && Members.Contains(Link.FromFormIndex)) bHasAnchor = true;
+                }
+            if (!bHasAnchor || ExecAnchors.Num() > 1)
+            {
+                OutPositions.Reset();
+                OutRefusal = FString::Printf(TEXT("per-anchor placement: component starting at line %d has %s. Split the request or use explicit local/outside placement; no nodes were moved."),
+                    InNodes[Seed].Line, !bHasAnchor ? TEXT("no fixed connection") : TEXT("multiple fixed execution sources"));
+                return false;
+            }
+            TArray<FPlannedPosition> Positions;
+            bool bEstimated = false;
+            FString Refusal;
+            if (!PlanPlacement(InGraph, Forms, Positions, bEstimated, Refusal, &Links, false, false, &Occupied))
+            {
+                OutPositions.Reset();
+                OutRefusal = FString::Printf(TEXT("per-anchor component starting at line %d: %s"), InNodes[Seed].Line, *Refusal);
+                return false;
+            }
+            bOutUsedEstimatedSize |= bEstimated;
+            for (const FPlannedPosition& Position : Positions)
+            {
+                const FNewNode& Form = InNodes[Position.FormIndex];
+                Occupied.Add({Position.X, Position.Y, Form.MeasuredWidth > 0 ? Form.MeasuredWidth : PlacementWidth,
+                    Form.MeasuredHeight > 0 ? Form.MeasuredHeight : PlacementHeight});
+                OutPositions.Add(Position);
+            }
+        }
+        OutPositions.Sort([](const FPlannedPosition& A, const FPlannedPosition& B) { return A.FormIndex < B.FormIndex; });
+        return true;
+    }
+    const auto ClearsReserved = [&](int64 X, int64 Y, int64 W, int64 H)
+    {
+        if (Reserved) for (const FPlacementObstacle& Box : *Reserved)
+            if (X < Box.X + Box.Width + PlacementHorizontalGap && X + W + PlacementHorizontalGap > Box.X
+                && Y < Box.Y + Box.Height + PlacementVerticalGap && Y + H + PlacementVerticalGap > Box.Y) return false;
+        return true;
+    };
 
     int64 CellWidth = 0, CellHeight = 0;
     for (const FNewNode& Form : InNodes)
@@ -187,7 +261,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                         const int64 CandidateY = PreferredY + int64(Row) * 64;
                         if (!FitsCoordinate(CandidateX) || !FitsCoordinate(CandidateX + CellWidth)
                             || !FitsCoordinate(CandidateY) || !FitsCoordinate(CandidateY + CellHeight)) continue;
-                        bool Clear = true;
+                        bool Clear = ClearsReserved(CandidateX, CandidateY, CellWidth, CellHeight);
                         for (const UEdGraphNode* Node : InGraph->Nodes)
                         {
                             if (!Node) continue;
@@ -449,6 +523,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                                     && Y[I] + DY + CellHeight + PlacementVerticalGap > Node->NodePosY)
                                 { bClear = false; break; }
                             }
+                            if (bClear && !ClearsReserved(X[I] + DX, Y[I] + DY, CellWidth, CellHeight)) bClear = false;
                             if (!bClear) break;
                         }
                         if (!bClear) continue;
@@ -491,6 +566,12 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                 }
             return true;
         }
+    }
+
+    if (Reserved)
+    {
+        OutRefusal = TEXT("per-anchor placement: this component has no supported execution-source or pure-data-consumer anchor. No outside fallback was applied.");
+        return false;
     }
 
 	int64 ColumnX = 0;

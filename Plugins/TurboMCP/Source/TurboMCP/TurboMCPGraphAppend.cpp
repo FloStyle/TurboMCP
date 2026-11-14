@@ -186,9 +186,10 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 	OutError.Empty();
 	OutPlan = FPlan();
     const FString PlacementMode=Placement.TrimStartAndEnd();
-    if (!PlacementMode.IsEmpty() && PlacementMode!=TEXT("local") && PlacementMode!=TEXT("outside"))
-    { OutError=TEXT("Placement must be local or outside. No graph changes were made."); return false; }
+    if (!PlacementMode.IsEmpty() && PlacementMode!=TEXT("local") && PlacementMode!=TEXT("outside") && PlacementMode!=TEXT("per-anchor"))
+    { OutError=TEXT("Placement must be local, outside or per-anchor. No graph changes were made."); return false; }
     OutPlan.bPlaceOutside=PlacementMode==TEXT("outside");
+    OutPlan.bPerAnchor=PlacementMode==TEXT("per-anchor");
     // Placement preflight executes the proposed links, so it must use the caller's continuation.
     OutPlan.Continuation = Continuation.TrimStartAndEnd();
     if (OutPlan.Continuation.IsEmpty()) OutPlan.Continuation = TEXT("auto");
@@ -743,7 +744,7 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		{
 			FString PlacementRefusal;
 			if (!PlanPlacement(Graph, OutPlan.Nodes, OutPlan.PlannedPositions,
-				OutPlan.bPlacementUsedEstimatedSize, PlacementRefusal, &OutPlan.Links, OutPlan.bPlaceOutside))
+				OutPlan.bPlacementUsedEstimatedSize, PlacementRefusal, &OutPlan.Links, OutPlan.bPlaceOutside, OutPlan.bPerAnchor))
 			{
 				OutPlan.Refusals.Add(PlacementRefusal);
 			}
@@ -828,7 +829,7 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 
 	if (InPlan.bPlacementRequested && InPlan.PlannedPositions.Num() > 0)
 	{
-		Out += InPlan.bPlaceOutside ? TEXT("\nplacement: outside; existing nodes stay fixed. Boundary wires may be long; inspect the layout before compiling or saving.") : TEXT("\nplacement:");
+		Out += InPlan.bPlaceOutside ? TEXT("\nplacement: outside; existing nodes stay fixed. Boundary wires may be long; inspect the layout before compiling or saving.") : InPlan.bPerAnchor ? TEXT("\nplacement: per-anchor; independent components use their own connections; existing nodes stay fixed.") : TEXT("\nplacement:");
 		for (const FPlannedPosition& Position : InPlan.PlannedPositions)
 		{
 			if (!InPlan.Nodes.IsValidIndex(Position.FormIndex))
@@ -1031,7 +1032,7 @@ bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FS
                         }
                     }
                     Accepted = PlanPlacement(Original, OutMeasuredPlan->Nodes, OutMeasuredPlan->PlannedPositions,
-                        OutMeasuredPlan->bPlacementUsedEstimatedSize, OutError, &LayoutLinks, OutMeasuredPlan->bPlaceOutside);
+                        OutMeasuredPlan->bPlacementUsedEstimatedSize, OutError, &LayoutLinks, OutMeasuredPlan->bPlaceOutside, OutMeasuredPlan->bPerAnchor);
                 }
             }
         }
@@ -1684,7 +1685,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 	// Placement evidence is appended only when the caller asked for it, so the legacy report is unchanged.
 	if (InPlan.bPlacementRequested)
 	{
-		Out += InPlan.bPlaceOutside ? TEXT("\nplacement: outside; existing nodes stay fixed. Boundary wires may be long; inspect the layout before compiling or saving.") : TEXT("\nplacement:");
+		Out += InPlan.bPlaceOutside ? TEXT("\nplacement: outside; existing nodes stay fixed. Boundary wires may be long; inspect the layout before compiling or saving.") : InPlan.bPerAnchor ? TEXT("\nplacement: per-anchor; independent components use their own connections; existing nodes stay fixed.") : TEXT("\nplacement:");
 		for (int32 FormIndex = 0; FormIndex < InPlan.Nodes.Num(); ++FormIndex)
 		{
 			if (InPlan.Nodes[FormIndex].bLinksToExisting

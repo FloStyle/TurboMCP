@@ -110,6 +110,12 @@ public:
 		bool bEstimatedSize = true;
 	};
 
+	/** Reserved geometry from an earlier independent append component. */
+	struct FPlacementObstacle
+	{
+		int64 X = 0, Y = 0, Width = 0, Height = 0;
+	};
+
 	/** What the plan decided, so `Apply` can act without deciding anything. */
 	struct FPlan
 	{
@@ -138,6 +144,7 @@ public:
 		 */
 		bool bPlacementRequested = false;
         bool bPlaceOutside = false;
+        bool bPerAnchor = false;
 
 		/** One entry per created form, in input order. Empty when placement was not requested. */
 		TArray<FPlannedPosition> PlannedPositions;
@@ -174,7 +181,8 @@ public:
 	 */
 	static bool PlanPlacement(const UEdGraph* InGraph, const TArray<FNewNode>& InNodes,
 		TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal,
-        const TArray<FNewLink>* InLinks = nullptr, bool bPlaceOutside = false);
+        const TArray<FNewLink>* InLinks = nullptr, bool bPlaceOutside = false,
+        bool bPerAnchor = false, const TArray<FPlacementObstacle>* Reserved = nullptr);
 
 	/**
 	 * Applies an accepted plan: one transaction, create, link, lay out, then read back and compare. Compile is separate.
