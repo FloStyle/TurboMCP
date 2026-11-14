@@ -80,7 +80,7 @@ The linked records distinguish implemented containment from unresolved causes. V
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>todo (54)</summary>
+<summary>todo (55)</summary>
 
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
 - **P1** [Verify append node structure and compile outcomes](todo/4f1bfd61.md)
@@ -88,6 +88,7 @@ These records preserve original requirements and evidence. Their status does not
 - **P1** [Defer a session change ledger pending semantics](todo/602feaab.md)
 - **P1** [Compare function creation and signature gaps](todo/63d5c9e2.md)
 - **P1** [Separate result decoding from compile-fixture verdicts](todo/7de8d185.md)
+- **P1** [Add another function Return node through GraphAppend](todo/nov05-return-node.md)
 - **P1** [Keep general multi-asset batch outside v1 scope](todo/bbb63d1e.md)
 - **P1** [Preserve all graph nodes and link endpoints in reads](todo/d3897f07.md)
 - **P1** [Retire the parallel-fix batch verifier](todo/ee4fde11.md)
