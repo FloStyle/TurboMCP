@@ -8,6 +8,10 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Approved NOV05-18 local-variable rename (2026-11-14)
+
+Readiness: ready. Assignment `nov14-local-variable-rename` uses the exact three existing source/header/fixture files in worker-scopes.json. Follow the rename contract in [the variable review](../docs/audit/field-reports/nov14-timer-alias-review.md). Only exact local references may change; same-named members, other functions and loaded children must survive unchanged. Preview reports affected nodes and requires fresh confirmation for edit. Preserve links, values, identities and positions. Do not invoke broad engine rename/child-validation helpers. Verify one focused fixture, compile and source checks. Member rename remains separate.
+
 ## Approved NOV05-18 local-variable removal (2026-11-14)
 
 Readiness: ready. Assignment `nov14-local-variable-remove` uses the exact three existing files in worker-scopes.json. Implement the [reviewed local-removal contract](../docs/audit/field-reports/nov14-timer-alias-review.md): exact function and declaration identity, all local references checked before mutation, fresh preview confirmation, declaration-only removal and postcondition/rollback reporting. Extend the existing VariableRemove native fixture with local scope cases; do not repeat unrelated suites. No member/local rename in this assignment. R04 and NOV05-18 remain incomplete after this slice.
