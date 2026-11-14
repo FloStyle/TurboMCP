@@ -71,3 +71,21 @@ and detail were inspected; long boundary wires remain visible, and this is
 not a claim of full visual acceptance. The default suite subset is restored
 to all; the recorded execution used boundary only. Accepted for private main
 as a partial scoped-placement repair, with NOV05-02 still open.
+
+## Scope reconciliation after integration
+
+Saved-evidence inspection of 2ed27fc5d51a44cea795047244108a3e confirms that
+all three loop controllers and their direct Completed targets are outside J5's
+26-node L3B selection: N12 -> N23, N24 -> N71 and N27 -> N56. Their continuation
+rectangles are identical before/after: (3101,165,201,82), (5372,257,175,77), and
+(7542,1847,135,100), respectively. No new editor execution was needed.
+
+GraphTidy's CompletedAboveBody diagnostic iterates every controller in the graph,
+not only selected controllers. Thus its unchanged 3 -> 3 count is not isolated
+evidence of a regression in the repaired scoped placement. Moving those fixed
+continuations to improve that count would violate the selection contract. This
+does not establish that every selected body arrangement is optimal, nor close
+NOV05-02. The next acceptance case must include complete loop controllers,
+bodies and continuations, and compare the accepted cascade reference. Preserve
+J5's outside-geometry assertions; do not widen its scope or relabel its passing
+boundary evidence as full loop-layout acceptance.
