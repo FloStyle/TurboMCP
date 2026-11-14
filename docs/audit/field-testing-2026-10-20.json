@@ -6586,8 +6586,8 @@
       "kind": "bug",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "scoring_passed_r4_classification_passed_r3_r6_workflow_pending",
-      "remaining": "Check R3/R6 against the accepted loop-cascade fixture and inspect cross-box findings. Do not mark the full Tidy layout or diagnostic task done from the stock-macro check.",
+      "validation": "r4_passed_cascade_checker_failed",
+      "remaining": "Update the cascade evidence checker for paged preview geometry and compare edit measures against independently checked preview geometry without weakening assertions. Then run the focused cascade once and inspect R3/R6 plus cross-box visuals. Keep the production layout result open until that evidence exists.",
       "source_keys": [
         "2026-11-05_S1/TD-63",
         "2026-11-05_S1/TD-64",
@@ -6627,10 +6627,22 @@
           "run": "66e2abb9d7d04f9897daea572d2b7ed2",
           "result": "integrated_partial_focused_pass",
           "scope": "Direct, unrouted Completed and False edges now remain defect candidates. The Body or True lane can start with reroutes; classification follows it to its first real node. Stock Unreal 5.8.4 build and focused test-layout passed on the exact commit. R3/R6 on the accepted loop-cascade fixture and cross-box visuals are not yet accepted."
+        },
+        {
+          "commit": "317bdf9c5ec891ad5b74207f653b4ef28c09465e",
+          "run": "40ce2a667eda46cf9b9b82d9b7d83910",
+          "result": "blocked_editor_preference_off",
+          "scope": "Doctor and stock 5.8.4 build passed. The main checkout's per-project user preference has TurboMCP disabled, so the supervised editor could not expose the plugin endpoint. The loop-cascade suite made no calls; 16 fixtures were restored. This is a test prerequisite failure, not a layout result."
+        },
+        {
+          "commit": "317bdf9c5ec891ad5b74207f653b4ef28c09465e",
+          "run": "9f703a9bea6844e8a22da6d44c3aacae",
+          "result": "failed_cascade_evidence_checker",
+          "scope": "The isolated worktree had TurboMCP enabled. Stock 5.8.4 build passed; the cascade reached 275 calls and restored its disposable fixture. The preview returned seven compact measures, but the checker failed at missing auditable before geometry because per-row geometry is now omitted by default and paged through GeometryOffset/GeometryLimit. The edit response also omits geometry. R3/R6 and cross-box visual acceptance were not reached."
         }
       ],
-      "next_step": "Check R3/R6 against the accepted loop-cascade fixture and inspect cross-box findings. Do not mark the full Tidy layout or diagnostic task done from the stock-macro check.",
-      "latest_evidence": "Direct, unrouted Completed and False edges now remain defect candidates. The Body or True lane can start with reroutes; classification follows it to its first real node. Stock Unreal 5.8.4 build and focused test-layout passed on the exact commit. R3/R6 on the accepted loop-cascade fixture and cross-box visuals are not yet accepted."
+      "next_step": "Update the cascade evidence checker for paged preview geometry and compare edit measures against independently checked preview geometry without weakening assertions. Then run the focused cascade once and inspect R3/R6 plus cross-box visuals. Keep the production layout result open until that evidence exists.",
+      "latest_evidence": "The isolated worktree had TurboMCP enabled. Stock 5.8.4 build passed; the cascade reached 275 calls and restored its disposable fixture. The preview returned seven compact measures, but the checker failed at missing auditable before geometry because per-row geometry is now omitted by default and paged through GeometryOffset/GeometryLimit. The edit response also omits geometry. R3/R6 and cross-box visual acceptance were not reached."
     },
     {
       "id": "NOV05-04",
