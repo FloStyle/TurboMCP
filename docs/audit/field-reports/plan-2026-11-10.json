@@ -181,12 +181,12 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "validation": "source_defect_identified_runtime_pending",
       "source_keys": [
         "2026-11-10_S1/GL-35"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "Repair supported scalar multi-target self-pin reading under the contract in nov14-placement-and-search-reconciliation.md. Engine schema explicitly permits this; current reader rejects all multi-source value inputs. Original field cause remains unconfirmed. Approve exact scope and reproduce with engine-created links before claiming a fix.",
       "acceptance": "Reproduce construction graph SetText target link; compare physical pin connections before changing malformed reporting. Prior NOV09-09 does not establish resolution."
     },
     {
