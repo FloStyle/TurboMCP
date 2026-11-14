@@ -2470,3 +2470,7 @@ Readiness: ready. Assignment nov10-widget-inventory follows [the approved contra
 ## Variable reference inspection load guard (2026-11-14)
 
 Readiness: ready. Assignment nov14-variable-reference-load-guard follows the load-safety contract in docs/audit/field-reports/nov14-timer-alias-review.md. Preserve removal and rename semantics; no engine changes.
+
+## Optional-action wrap boundary (2026-11-14)
+
+Readiness: ready. Assignment nov14-converging-wrap implements NOV09-05 following the common-continuation contract in docs/audit/field-reports/nov14-placement-and-search-reconciliation.md. Only row boundaries, their reporting and scoped native coverage; no tail shifting or graph rewiring.
