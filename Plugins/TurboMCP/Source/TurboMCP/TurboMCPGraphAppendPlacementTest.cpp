@@ -597,10 +597,7 @@ namespace
 	}
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPAppendPerAnchorTest,
-    "TurboMCP.Graph.AppendPerAnchor", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FTurboMCPAppendPerAnchorTest::RunTest(const FString& Parameters)
+static bool CheckPerAnchorPlacement(FAutomationTestBase& Test)
 {
     UEdGraph* Graph = NewObject<UEdGraph>(GetTransientPackage());
     TArray<FTurboMCPGraphAppend::FNewNode> Forms;
@@ -621,26 +618,26 @@ bool FTurboMCPAppendPerAnchorTest::RunTest(const FString& Parameters)
     }
     TArray<FTurboMCPGraphAppend::FPlannedPosition> Positions, Repeat;
     bool Estimated = false; FString Error;
-    if (!TestTrue(TEXT("Four independent anchors plan"), FTurboMCPGraphAppend::PlanPlacement(
+    if (!Test.TestTrue(TEXT("Four independent anchors plan"), FTurboMCPGraphAppend::PlanPlacement(
         Graph, Forms, Positions, Estimated, Error, &Links, false, true)))
-    { AddError(Error); return false; }
-    TestEqual(TEXT("Every form gets a position"), Positions.Num(), 4);
+    { Test.AddError(Error); return false; }
+    Test.TestEqual(TEXT("Every form gets a position"), Positions.Num(), 4);
     for (const auto& Position : Positions)
     {
-        TestTrue(TEXT("Each component stays near its own source"), FMath::Abs(Position.Y - Anchors[Position.FormIndex]->NodePosY) < 500);
-        TestEqual(TEXT("Existing source remains fixed"), Anchors[Position.FormIndex]->NodePosY, Position.FormIndex * 2000);
+        Test.TestTrue(TEXT("Each component stays near its own source"), FMath::Abs(Position.Y - Anchors[Position.FormIndex]->NodePosY) < 500);
+        Test.TestEqual(TEXT("Existing source remains fixed"), Anchors[Position.FormIndex]->NodePosY, Position.FormIndex * 2000);
     }
-    TestTrue(TEXT("Repeated planning succeeds"), FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Repeat, Estimated, Error, &Links, false, true));
+    Test.TestTrue(TEXT("Repeated planning succeeds"), FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Repeat, Estimated, Error, &Links, false, true));
     if (Repeat.Num() == Positions.Num()) for (int32 I = 0; I < Repeat.Num(); ++I)
-    { TestEqual(TEXT("Deterministic X"), Repeat[I].X, Positions[I].X); TestEqual(TEXT("Deterministic Y"), Repeat[I].Y, Positions[I].Y); }
+    { Test.TestEqual(TEXT("Deterministic X"), Repeat[I].X, Positions[I].X); Test.TestEqual(TEXT("Deterministic Y"), Repeat[I].Y, Positions[I].Y); }
     // One shared new dependency joins the groups; two execution sources must not
     // be silently resolved using whichever link happens to appear first.
     FTurboMCPGraphAppend::FNewLink Shared;
     Shared.FromFormIndex = 0; Shared.ToFormIndex = 1; Links.Add(Shared);
-    TestFalse(TEXT("Conflicting execution sources refuse"), FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Repeat, Estimated, Error, &Links, false, true));
-    TestTrue(TEXT("Refusal explains the anchor conflict"), Error.Contains(TEXT("multiple fixed execution sources")));
-    TestEqual(TEXT("Refusal returns no partial geometry"), Repeat.Num(), 0);
-    return !HasAnyErrors();
+    Test.TestFalse(TEXT("Conflicting execution sources refuse"), FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Repeat, Estimated, Error, &Links, false, true));
+    Test.TestTrue(TEXT("Refusal explains the anchor conflict"), Error.Contains(TEXT("multiple fixed execution sources")));
+    Test.TestEqual(TEXT("Refusal returns no partial geometry"), Repeat.Num(), 0);
+    return !Test.HasAnyErrors();
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -650,8 +647,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 {
-    FTurboMCPAppendPerAnchorTest PerAnchor(TEXT("TurboMCP.Graph.AppendPerAnchor"));
-    if (!TestTrue(TEXT("Per-anchor component geometry"), PerAnchor.RunTest(Parameters))) return false;
+    if (!CheckPerAnchorPlacement(*this)) return false;
 
 	FFixture Fixture;
 	FScopedFixtureCleanup Cleanup(Fixture);
