@@ -37,3 +37,13 @@ and TurboMCPCommonPlayWorkflowTest.cpp under Plugins/TurboMCP/Source/TurboMCP.
 Catalog and tracking are integrator-owned.
 
 Integrator scope amendment: include TurboMCP.Build.cs to declare the ApplicationCore dependency required by the stock input-device mapper. Build ad07a0bce22d40148038fcd695c76497 reached linking and failed with an unresolved IPlatformInputDeviceMapper::Get symbol; no runtime success is claimed.
+
+## Integration evidence
+
+Candidate 91129b4c8541c202e015915ca3a1cd4909601caa passed the exact four-file scope gate from the trusted integration checkout. The focused native two-client probe passed in execution ea0cf7dac7444a32b96e7c36138661a2: two discovered targets, exact world resolution, ambiguous legacy alias refusal, selected-client keyboard delivery with the other unchanged, wrong-target release refusal and ended-session token refusal. The wrapper says CommonUI controller workflow, but this run explicitly selected TMCP_PIE_TARGET_ONLY=1: it is not the full CommonPlay or vision suite. Sixteen fixture files were restored.
+
+Final output/help wording corrections compiled successfully in db0170ce4a6641318743d8e1435efcbd. Runtime behavior was unchanged after the focused pass, so the scenario was not repeated. Prior run 47be17cca20c492cb987949c65098029 compiled successfully but its validation was rejected because review documentation changed during execution; that failure is retained.
+
+Limits: the probe covers keyboard input to one of two in-process worlds, not every gamepad/CommonUI routing configuration or split-screen device mapping. Cross-window gamepad forwarding refuses without changing preferences. General console execution is not added. Existing DiagnosticConsole uses pie:<instance number> and an allowlist whose effects remain process-wide. NOV05-15 stays open/partial for the broader console requirement; no full multiplayer certification.
+
+Offline validation passed: .local/validation/79a291847cc74376b5c92540d7d62222/report.json. Implementation is complete for this bounded input slice; testing limits and remaining console work above remain explicit.

@@ -759,7 +759,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_input_isolation_passed_partial",
       "source_ids": [
         "X-128",
         "FT-142"
@@ -769,8 +769,10 @@
         "2026-11-04_S3/FT-142"
       ],
       "dependencies": [],
-      "next_step": "Design explicit stable world/client targeting and read-back; retain ambiguity refusal. General console execution is a separate capability/safety decision, not an implied widening of diagnostic commands.",
-      "evidence": []
+      "next_step": "Input discovery and explicit session-bound client targeting implemented (91129b4c); focused two-world keyboard isolation passed. Broader console requirement remains open: existing diagnostic console targets an instance but its allowlisted effects are process-wide. Gamepad/CommonUI and split-screen coverage is limited; no general console widening.",
+      "evidence": [
+        "docs/audit/field-reports/nov14-pie-client-target-contract.md"
+      ]
     },
     {
       "id": "NOV05-16",

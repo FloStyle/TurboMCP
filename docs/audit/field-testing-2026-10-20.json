@@ -7087,8 +7087,8 @@
       "kind": "feature",
       "state": "open",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Design explicit stable world/client targeting and read-back; retain ambiguity refusal. General console execution is a separate capability/safety decision, not an implied widening of diagnostic commands.",
+      "validation": "focused_input_isolation_passed_partial",
+      "remaining": "Input discovery and explicit session-bound client targeting implemented (91129b4c); focused two-world keyboard isolation passed. Broader console requirement remains open: existing diagnostic console targets an instance but its allowlisted effects are process-wide. Gamepad/CommonUI and split-screen coverage is limited; no general console widening.",
       "source_keys": [
         "2026-11-04_S3/X-128",
         "2026-11-04_S3/FT-142"
