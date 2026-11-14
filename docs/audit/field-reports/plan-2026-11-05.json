@@ -825,7 +825,7 @@
         "2026-11-04_S3/FT-144"
       ],
       "dependencies": [],
-      "next_step": "Review and implement member/local rename. Local removal now has native acceptance; retain dynamic/custom-reference limitations.",
+      "next_step": "Implement the reviewed exact-scope local rename contract; avoid the stock helper's name-only node dispatch and child collision rewrites. Member rename requires separate dependency/binding review.",
       "evidence": [
         "docs/audit/field-reports/nov14-timer-alias-review.md"
       ],
