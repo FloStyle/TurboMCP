@@ -59,6 +59,10 @@ namespace
                 if (!Pin) { Append(Record, TEXT("null-pin")); continue; }
                 Append(Record, Pin->PinId.ToString()); Append(Record, Pin->PinName.ToString());
                 Append(Record, FString::FromInt(int32(Pin->Direction)));
+                // Include container/value types and qualifiers, not only the visible pin name.
+                FString TypeState;
+                FEdGraphPinType::StaticStruct()->ExportText(TypeState, &Pin->PinType, nullptr, nullptr, PPF_None, nullptr);
+                Append(Record, TypeState);
                 Append(Record, Pin->DefaultValue); Append(Record, Pin->DefaultTextValue.ToString());
                 Append(Record, GetPathNameSafe(Pin->DefaultObject));
                 TArray<FString> Links;

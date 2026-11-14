@@ -938,6 +938,10 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
         ChangedDefault->DefaultValue = TEXT("changed after planning");
         RefusesRequestedPlan(TEXT("stale existing default"), Base);
         ChangedDefault->DefaultValue = OriginalDefault;
+        const FEdGraphPinType OriginalType = ChangedDefault->PinType;
+        ChangedDefault->PinType.bIsReference = !OriginalType.bIsReference;
+        RefusesRequestedPlan(TEXT("stale existing pin type"), Base);
+        ChangedDefault->PinType = OriginalType;
 
 		if (Base.PlannedPositions.Num() == 2)
 		{

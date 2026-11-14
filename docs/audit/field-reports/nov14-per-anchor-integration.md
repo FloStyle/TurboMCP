@@ -46,3 +46,7 @@ Reviewed candidate 45855967e82d6219e6a42ccaa794521cbb03cd3a. Supervised build an
 This is an internal FPlan safeguard, not a public preview confirmation token. The snapshot covers node identity, geometry, pin identity, defaults and connections; it is not a complete serialization of pin types, node properties or comment membership. Explicit movable-tail insertion and its stronger authorization/rollback contract remain open as NOV09-02. No full append-suite pass is claimed. Backlog remains 109/121 done, 12 open.
 
 Takeover goal: finish NOV09-02 explicitly scoped tail insertion with preview/apply agreement, stale-plan refusal, fixed-neighbor preservation and atomic undo. Then resolve remaining actionable backlog by safety and impact. Keep unknown-cause investigations open, DSH paused and Unreal stock. Batch changes, run minimal focused checks, and integrate reviewed work into private main with tracking and dashboard updates. Implementation status and test evidence remain separate.
+
+## Follow-up in progress
+
+Source review found that the retained-plan snapshot omitted pin types: a type or qualifier could change without invalidating the plan. The follow-up serializes the reflected pin type and adds a qualifier-change refusal assertion. This follow-up is implemented but untested, and is not integrated into main yet; include it in the next focused placement build/check rather than claim the earlier evidence covers it.
