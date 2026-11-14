@@ -4180,6 +4180,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemoveTest.cpp"
           ],
           "new_files": []
+        },
+        "nov14-scoped-loop-placement": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTidyFeedbackTest.cpp",
+            "Tools/tidy_loop_cascade.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
