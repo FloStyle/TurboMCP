@@ -4740,7 +4740,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		FString Out = FString::Printf(TEXT("%s: %s in %s did not complete an acceptable layout (total wire length %.1f -> %.1f), so rollback was attempted. Preview predicted %.1f; the post-write measurement was %.1f. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), bRollbackComplete ? TEXT("unchanged") : TEXT("partial"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, InPlan.WireLengthAfter, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
 		if (InPlan.SelectedNodeKeys.Num() > 0)
 		{
-			Out += FString::Printf(TEXT(" Scope was %d selected node(s); %d surrounding node(s) and all comment boxes were fixed anchors."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount);
+			Out += FString::Printf(TEXT(" Scope was %d selected node(s); %d surrounding node(s) were fixed anchors. The plan allowed %d comment box(es) to be fitted; restoration status is reported above."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount, InPlan.BoxesToFit);
 		}
 
 		// *** THE WIRE LENGTH COMING BACK IS NOT THE SAME AS EVERY READER BEING RE-ATTACHED, SO THE
@@ -4832,7 +4832,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	Lines.Add(FString::Printf(TEXT("moved %d node(s). Fitted %d of %d box(es), using the planned comment rectangles."), OriginalPositions.Num(), BoxesResized, InPlan.Boxes.Num()));
 	if (InPlan.SelectedNodeKeys.Num() > 0)
 	{
-		Lines.Add(FString::Printf(TEXT("scope: only the %d selected node(s) were eligible to move; %d surrounding node(s) and all comment boxes remained fixed anchors."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount));
+		Lines.Add(FString::Printf(TEXT("scope: only the %d selected node(s) were eligible to move; %d surrounding node(s) remained fixed anchors. Fitted %d comment box(es) to the planned rectangles. Existing selected boxes retained their top-left positions; surrounding boxes stayed unchanged."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount, BoxesResized));
 		Lines.Add(FString::Printf(TEXT("scope moved: %s"), *FString::Join(ActuallyMovedKeys, TEXT(", "))));
 	}
 	if (GettersSplit > 0)
