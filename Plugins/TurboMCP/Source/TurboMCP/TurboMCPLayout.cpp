@@ -255,7 +255,8 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutDoneCheck(const FString& Asset,c
     const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
     if (!ResolveError.IsEmpty()) return Report + TEXT("\n\ncapture error: ") + ResolveError;
     UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
-    UEdGraph* Graph = Blueprint ? TurboMCPNodeId::FindGraphByName(Blueprint, GraphName) : nullptr;
+    if (!Blueprint) return Report + TEXT("\n\ncapture error: The Blueprint became unavailable after measurement. No image captured.");
+    UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(Blueprint, GraphName);
     if (!Graph) return Report + TEXT("\n\ncapture error: The graph became unavailable after measurement. No image captured.");
     TurboMCPReportScope::FSelection Selection;
     FString ScopeError;
