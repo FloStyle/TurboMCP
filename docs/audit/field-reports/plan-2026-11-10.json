@@ -178,15 +178,15 @@
       "title": "Investigate malformed self-pin read evidence",
       "kind": "investigation",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "ready",
       "owner": "unassigned",
-      "validation": "source_defect_identified_runtime_pending",
+      "validation": "related_reader_fix_runtime_passed_field_cause_unconfirmed",
       "source_keys": [
         "2026-11-10_S1/GL-35"
       ],
       "dependencies": [],
-      "next_step": "Repair supported scalar multi-target self-pin reading under the contract in nov14-placement-and-search-reconciliation.md. Engine schema explicitly permits this; current reader rejects all multi-source value inputs. Original field cause remains unconfirmed. Approve exact scope and reproduce with engine-created links before claiming a fix.",
+      "next_step": "Supported multi-target self reading repaired and tested in ca280e86c5de40f88fcd2f1dd7f3fd67. Original one-time field cause remains unknown; capture exact endpoints if it recurs. See nov14-placement-and-search-reconciliation.md; do not count this historical investigation as resolved.",
       "acceptance": "Reproduce construction graph SetText target link; compare physical pin connections before changing malformed reporting. Prior NOV09-09 does not establish resolution."
     },
     {
