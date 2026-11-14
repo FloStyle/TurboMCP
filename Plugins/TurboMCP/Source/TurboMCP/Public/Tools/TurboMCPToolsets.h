@@ -627,7 +627,7 @@ public:
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
 	 * @param GraphName Required exact graph name, e.g. EventGraph. The same graph is measured and captured; empty or unresolved names are refused.
 	 * @param AlignmentTolerance Optional finite vertical pin-offset tolerance in graph units, 0..1024; default 64. Use 8 for stricter review. Affects alignment findings, not capture framing, overlaps or backward-wire findings.
-	 * @param Scope Optional layout-report scope: empty for the whole graph, node:<reader ID or unique hex key>, box:<comment ID>, or region:x,y,width,height. A box captures its current rectangle; a node captures the resolved node. Invalid or ambiguous scopes refuse before capture. Report findings remain paged by LookTurboMCPLayoutReport defaults; use that tool for further pages.
+	 * @param Scope Required string in the tool schema: pass an empty string for the whole graph, node:<reader ID or unique hex key>, box:<comment ID>, or region:x,y,width,height. A box captures its current rectangle; a node captures the resolved node. Invalid or ambiguous scopes refuse before capture. Report findings remain paged by LookTurboMCPLayoutReport defaults; use that tool for further pages.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName,double AlignmentTolerance = 64.0,const FString& Scope = TEXT(""));
