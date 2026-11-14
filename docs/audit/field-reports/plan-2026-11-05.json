@@ -788,7 +788,7 @@
       "kind": "feature",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "reported_not_reproduced",
       "source_ids": [
@@ -798,8 +798,8 @@
         "2026-11-04_S3/WT-18"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
-      "evidence": []
+      "next_step": "Implement the exact path and reference-type boundary in nov14-widget-reference-property-contract.md under the approved R04 assignment. Keep field-project validation separate.",
+      "evidence": ["docs/audit/field-reports/nov14-widget-reference-property-contract.md"]
     },
     {
       "id": "NOV05-18",
