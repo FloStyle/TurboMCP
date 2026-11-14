@@ -929,6 +929,16 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 				Package != nullptr && Package->IsDirty() == bDirtyBefore);
 		};
 
+        const int32 OriginalX = Fixture.ApplyB->NodePosX;
+        Fixture.ApplyB->NodePosX += 64;
+        RefusesRequestedPlan(TEXT("stale existing geometry"), Base);
+        Fixture.ApplyB->NodePosX = OriginalX;
+        UEdGraphPin* ChangedDefault = Fixture.ApplyC->FindPinChecked(TEXT("InString"));
+        const FString OriginalDefault = ChangedDefault->DefaultValue;
+        ChangedDefault->DefaultValue = TEXT("changed after planning");
+        RefusesRequestedPlan(TEXT("stale existing default"), Base);
+        ChangedDefault->DefaultValue = OriginalDefault;
+
 		if (Base.PlannedPositions.Num() == 2)
 		{
 			FTurboMCPGraphAppend::FPlan Duplicate = Base;

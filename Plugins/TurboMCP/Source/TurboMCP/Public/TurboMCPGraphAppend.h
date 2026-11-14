@@ -146,6 +146,9 @@ public:
         bool bPlaceOutside = false;
         bool bPerAnchor = false;
 
+		/** Live placement inputs captured after scratch measurement; checked before apply. */
+		FString PlacementSourceState;
+
 		/** One entry per created form, in input order. Empty when placement was not requested. */
 		TArray<FPlannedPosition> PlannedPositions;
 

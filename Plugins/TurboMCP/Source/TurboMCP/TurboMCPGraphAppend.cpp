@@ -40,6 +40,39 @@
 
 namespace
 {
+    // Length-prefix strings so user text cannot masquerade as another field.
+    // Sorting records ignores array ordering while retaining geometry and pin/link identity.
+    FString PlacementSourceState(const UEdGraph* Graph)
+    {
+        TArray<FString> Records;
+        auto Append = [](FString& Record, const FString& Value)
+        { Record += FString::Printf(TEXT("%d:"), Value.Len()) + Value; };
+        for (const UEdGraphNode* Node : Graph->Nodes)
+        {
+            if (!Node) { Records.Add(TEXT("null-node")); continue; }
+            FString Record;
+            Append(Record, Node->GetPathName()); Append(Record, Node->NodeGuid.ToString());
+            Append(Record, Node->GetClass()->GetPathName());
+            Append(Record, FString::Printf(TEXT("%d,%d,%d,%d"), Node->NodePosX, Node->NodePosY, Node->NodeWidth, Node->NodeHeight));
+            for (const UEdGraphPin* Pin : Node->Pins)
+            {
+                if (!Pin) { Append(Record, TEXT("null-pin")); continue; }
+                Append(Record, Pin->PinId.ToString()); Append(Record, Pin->PinName.ToString());
+                Append(Record, FString::FromInt(int32(Pin->Direction)));
+                Append(Record, Pin->DefaultValue); Append(Record, Pin->DefaultTextValue.ToString());
+                Append(Record, GetPathNameSafe(Pin->DefaultObject));
+                TArray<FString> Links;
+                for (const UEdGraphPin* Other : Pin->LinkedTo)
+                    Links.Add(Other ? Other->GetOwningNode()->GetPathName() + TEXT(":") + Other->PinId.ToString() : TEXT("null-link"));
+                Links.Sort(); for (const FString& Link : Links) Append(Record, Link);
+            }
+            Records.Add(Record);
+        }
+        Records.Sort();
+        FString State; for (const FString& Record : Records) Append(State, Record);
+        return State;
+    }
+
     bool SetLiteral(UEdGraph* Graph, UEdGraphPin* Pin, const FString& Value, bool& Changed, FString& Error)
     {
         Changed = false;
@@ -756,6 +789,7 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
         FString ScratchReport, MeasureError;
         if (!Preflight(OutPlan, ScratchReport, MeasureError, &OutPlan)) OutPlan.Refusals.Add(MeasureError);
     }
+    if (OutPlan.bPlacementRequested && OutPlan.bAcceptable()) OutPlan.PlacementSourceState = PlacementSourceState(Graph);
 	return true;
 }
 
@@ -906,6 +940,12 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		return false;
 	}
 
+    if (InPlan.bPlacementRequested && (InPlan.PlacementSourceState.IsEmpty()
+        || InPlan.PlacementSourceState != PlacementSourceState(Graph)))
+    {
+        OutError = TEXT("placement plan is stale: graph geometry, nodes, pins, defaults or connections changed. Preview again. NOTHING was written.");
+        return false;
+    }
     FString PreflightReport;
     if (!Preflight(InPlan, PreflightReport, OutError)) return false;
     return ExecuteGraph(InPlan, Blueprint, Graph, OutReport, OutError, false, bJoinCallerTransaction);
