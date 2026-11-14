@@ -225,6 +225,7 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Section preview does not move nodes"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
         const FString SectionEdit = FTurboMCPGraphTidy::Apply(SectionPlan);
         if (!TestTrue(TEXT("Section edit: ") + SectionEdit, SectionEdit.StartsWith(TEXT("changed:")))) return false;
+        TestTrue(TEXT("Section keeps its stored top-left"), Section->NodePosX == 0 && Section->NodePosY == 0);
         TestTrue(TEXT("Section uses rightward space"), Section->NodeWidth > 1000);
         TestTrue(TEXT("Section clears the fixed box below"), Section->NodeHeight <= Fixed->NodePosY);
         if (ChildSection)
@@ -345,8 +346,9 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Connected preview preserves positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
         const FString Applied = FTurboMCPGraphTidy::Apply(Plan);
         if (!TestTrue(TEXT("Connected section applies: ") + Applied, Applied.StartsWith(TEXT("changed:")))) return false;
+        TestTrue(TEXT("Connected section keeps its stored top-left"), Box->NodePosX == 0 && Box->NodePosY == 0);
         TestTrue(FString::Printf(TEXT("Connected section grows right and clears neighbor: width=%d height=%d neighbor_y=%d"),
-            Box->NodeWidth, Box->NodeHeight, NeighborY), Box->NodeWidth > 1000 && Box->NodeHeight <= NeighborY);
+            Box->NodeWidth, Box->NodeHeight, NeighborY), Box->NodeWidth > 1000 && Box->NodePosY + Box->NodeHeight <= NeighborY);
         TestTrue(TEXT("Connected section keeps fixed neighbor"), Neighbor->NodePosX == 0 && Neighbor->NodePosY == NeighborY
             && Neighbor->NodeWidth == 1000 && Neighbor->NodeHeight == 200);
         for (const auto& Node : Plan.Nodes) if (Node.Node && !Node.bIsComment)

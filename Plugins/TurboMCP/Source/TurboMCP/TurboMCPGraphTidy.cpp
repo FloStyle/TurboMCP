@@ -1016,15 +1016,14 @@ namespace
 
 namespace
 {
-	/** The graph-space rectangle of a comment box, using the rule `P/E-COMMENT` uses. */
+	/** Stored outer bounds. Content padding is applied separately by layout and membership. */
 	void BoxRect(const UEdGraphNode_Comment* InComment, double& OutX, double& OutY,
 		double& OutWidth, double& OutHeight)
 	{
 		OutX = static_cast<double>(InComment->NodePosX);
-		OutY = static_cast<double>(InComment->NodePosY) + FTurboMCPGraphTidy::TitleBarHeight;
+		OutY = static_cast<double>(InComment->NodePosY);
 		OutWidth = static_cast<double>(InComment->NodeWidth);
-		OutHeight = static_cast<double>(InComment->NodeHeight)
-			- FTurboMCPGraphTidy::TitleBarHeight;
+		OutHeight = static_cast<double>(InComment->NodeHeight);
 	}
 
 	/** True when `InOuter` wholly contains `InInner`, on all four sides. */
