@@ -104,3 +104,26 @@ Do not treat that overview or numeric success as complete visual acceptance.
 Next inspect the corresponding routed detail and accepted reference; improve
 only confirmed remaining routing behavior. The previous next-step text about
 Completed-above-body remaining unresolved was stale for complete-loop scope.
+
+## Approved follow-up: native spline clearance
+
+Readiness: ready. Integrator-approved scope remains the same three files.
+
+The routed after-block-4-row-0-col-0 image from preview
+081D441A4A2BD31C228B90B6CB6DBF29 shows the white execution spline crossing
+the lower integer-add node. This is the routed variant, not the earlier
+unrouted capture. PlanOrthogonalRoutes checks obstacle clearance using straight
+segments while sampling native splines only for wire-to-wire ranking.
+
+Repair candidate clearance against native spline geometry, including generated
+knots and unrelated comment obstacles. Preserve source/destination endpoint
+exceptions and scope. Do not call an accepted route collision-free merely
+because its straight chord is clear. Where candidate routes fail, retain the
+original connection and report the skipped route honestly. A skipped route
+alone does not resolve the requested layout.
+
+Add a focused regression with a node beside a vertical chord but inside the
+native spline bulge. Verify a clear alternate channel or an explicit skipped
+route, unchanged logical connections and undo. Build once after the batch and
+inspect one focused native image; do not repeat the full cascade. Completion
+requires the actual routing issue to be resolved, not just a stronger refusal.
