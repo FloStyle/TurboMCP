@@ -39,7 +39,7 @@
         "NOV09-01"
       ],
       "complexity_estimate": 8,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Source review confirms that the current append planner never shifts a fixed downstream tail. Specify the exact allowed tail and boxed-section boundary, preview every moved node, and define refusal and undo before approving an assignment. See nov14-placement-and-search-reconciliation.md.",
       "acceptance": "Build the clean-room boxed-section case. Preview every shifted tail node; preserve unrelated lanes, links and undo. Never silently move nodes outside the approved scope."
     },
     {
@@ -59,7 +59,7 @@
         "NOV09-02"
       ],
       "complexity_estimate": 6,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "The four-group report used outside placement, which deliberately places new nodes beyond graph bounds. After NOV09-02's scope is defined, specify a separate per-anchor mode for independent groups, conflicts and collision refusal. See nov14-placement-and-search-reconciliation.md.",
       "acceptance": "Plan each independent group from its own anchor, keep pure dependencies left/below their consumer, retain collision refusal and exact preview/edit placement."
     },
     {

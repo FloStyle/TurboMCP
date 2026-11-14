@@ -60,7 +60,7 @@
         "2026-11-13_S1/X-142"
       ],
       "dependencies": [],
-      "next_step": "Loaded and unsaved NodeFind coverage repaired and tested. Unloaded map/redirector-dependent coverage remains unresolved; all dependency-load guards retained.",
+      "next_step": "Loaded and unsaved NodeFind coverage repaired and tested. Investigate an explicitly labelled Find-in-Blueprints index path for unloaded assets, proving freshness and no force-load calls before assigning code. Keep complete=false for unavailable or stale index data and retain all dependency-load guards. See nov14-placement-and-search-reconciliation.md.",
       "evidence": [
         "docs/audit/field-reports/nov13-loaded-node-search-review.md"
       ],

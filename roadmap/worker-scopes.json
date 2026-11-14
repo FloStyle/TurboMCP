@@ -3980,6 +3980,12 @@
             "Tools/test-data-asset-create.py"
           ]
         },
+        "nov14-data-asset-lookup-guard": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataAssetCreateTest.cpp"
+          ],
+          "new_files": []
+        },
         "nov13-node-json": {
           "files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
