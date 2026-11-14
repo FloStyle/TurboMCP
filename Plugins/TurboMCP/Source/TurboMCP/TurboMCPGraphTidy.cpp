@@ -2940,7 +2940,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         FString GrowthError;
         if (!ValidateScopedBoxGrowth(OutPlan, GrowthError))
             for (const int32 BoxIndex : BoxOrder)
-                TryPackScopedSection(OutPlan, BoxIndex, SpacingX);
+                TryPackScopedSection(OutPlan, BoxIndex, SpacingX, SpacingY);
     }
 
 	// -----------------------------------------------------------------------------------------
@@ -4869,10 +4869,10 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 }
 
 // Translate complete components only after a candidate clears the section guards.
-bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, double Gap)
+bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, double Gap, double VerticalGap)
 {
     if (InPlan.SelectedNodeKeys.IsEmpty() || !InPlan.Boxes.IsValidIndex(BoxIndex)
-        || !FMath::IsFinite(Gap) || Gap < 0.0) return false;
+        || !FMath::IsFinite(Gap) || Gap < 0.0 || !FMath::IsFinite(VerticalGap) || VerticalGap < 0.0) return false;
     const FBox& Box = InPlan.Boxes[BoxIndex];
     if (!Box.bWouldFit || Box.bGenerated || Box.ParentIndex != INDEX_NONE) return false;
     // Child sections are fixed obstacles. Only directly owned nodes participate;
@@ -4932,7 +4932,12 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
                 && Source.PackingLane != Target.PackingLane;
             const bool ForwardExecution = Wire.OutputPin && Wire.OutputPin->PinType.PinCategory == TEXT("exec")
                 && !Wire.bControlFeedback && !InPlan.IsWrapBoundary(Wire.SourceNodeIndex, Wire.TargetNodeIndex);
-            if (SeparateLanes && ForwardExecution) continue;
+            TSet<const UEdGraphPin*> ExecutionOutputs;
+            if (ForwardExecution && Source.PackingLane != INDEX_NONE && Target.PackingLane != INDEX_NONE)
+                for (const FWire& Other : InPlan.Wires)
+                    if (Other.SourceNodeIndex == Wire.SourceNodeIndex && Other.OutputPin && !Other.bControlFeedback
+                        && Other.OutputPin->PinType.PinCategory == TEXT("exec")) ExecutionOutputs.Add(Other.OutputPin);
+            if (ForwardExecution && (SeparateLanes || ExecutionOutputs.Num() > 1)) continue;
             const int32 Root = FMath::Min(Group[Wire.SourceNodeIndex], Group[Wire.TargetNodeIndex]);
             Changed |= Group[Wire.SourceNodeIndex] != Root || Group[Wire.TargetNodeIndex] != Root;
             Group[Wire.SourceNodeIndex] = Group[Wire.TargetNodeIndex] = Root;
@@ -4970,8 +4975,9 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
     FBox& CandidateBox = Candidate.Boxes[BoxIndex];
     double CursorX = ChildRight;
     double Bottom = ChildBottom;
-    for (const int32 Root : Groups)
+    for (int32 GroupIndex = 0; GroupIndex < Groups.Num(); ++GroupIndex)
     {
+        const int32 Root = Groups[GroupIndex];
         double Left = TNumericLimits<double>::Max(), Top = Left;
         double Right = -Left, ComponentBottom = -Left;
         for (const int32 Member : Members)
@@ -4984,7 +4990,31 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
             ComponentBottom = FMath::Max(ComponentBottom, Node.PlannedY + Node.Height);
         }
         const double DX = CursorX - Left;
-        const double DY = Box.Y + TitleBarHeight + FitPadding - Top;
+        // Sibling arms fan out below-to-above as their columns advance. Keeping
+        // every arm on one baseline sends later wires through earlier nodes.
+        TSet<int32> Parents;
+        for (const FWire& Wire : InPlan.Wires)
+            if (Group.Contains(Wire.SourceNodeIndex) && Group.Contains(Wire.TargetNodeIndex)
+                && Group[Wire.TargetNodeIndex] == Root && Group[Wire.SourceNodeIndex] != Root)
+                Parents.Add(Group[Wire.SourceNodeIndex]);
+        double SiblingOffset = 0.0;
+        for (int32 Later = GroupIndex + 1; Later < Groups.Num(); ++Later)
+        {
+            bool IsSibling = false;
+            for (const FWire& Wire : InPlan.Wires)
+                if (Group.Contains(Wire.SourceNodeIndex) && Group.Contains(Wire.TargetNodeIndex)
+                    && Group[Wire.TargetNodeIndex] == Groups[Later] && Parents.Contains(Group[Wire.SourceNodeIndex]))
+                    IsSibling = true;
+            if (!IsSibling) continue;
+            double SiblingTop = TNumericLimits<double>::Max(), SiblingBottom = -SiblingTop;
+            for (int32 Member : Members) if (Group[Member] == Groups[Later])
+            {
+                SiblingTop = FMath::Min(SiblingTop, InPlan.Nodes[Member].PlannedY);
+                SiblingBottom = FMath::Max(SiblingBottom, InPlan.Nodes[Member].PlannedY + InPlan.Nodes[Member].Height);
+            }
+            SiblingOffset += SiblingBottom - SiblingTop + VerticalGap;
+        }
+        const double DY = Box.Y + TitleBarHeight + FitPadding + SiblingOffset - Top;
         for (const int32 Member : Members)
             if (Group[Member] == Root)
             {
@@ -4999,6 +5029,34 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
     CandidateBox.bWouldFit = CandidateBox.PlannedWidth != Box.Width || CandidateBox.PlannedHeight != Box.Height;
     FString Error;
     if (!ValidateScopedBoxGrowth(Candidate, Error) || !ValidatePlannedNodeOverlaps(Candidate, Error)) return false;
+    // Check the native spline shape, not just disjoint node rectangles. Only
+    // translated inter-group wires are new routing choices made by this pass.
+    for (const FWire& Wire : Candidate.Wires)
+    {
+        if (!Wire.OutputPin || !Wire.InputPin || !Group.Contains(Wire.SourceNodeIndex)
+            || !Group.Contains(Wire.TargetNodeIndex) || Group[Wire.SourceNodeIndex] == Group[Wire.TargetNodeIndex]) continue;
+        const FNode& Source = Candidate.Nodes[Wire.SourceNodeIndex];
+        const FNode& Target = Candidate.Nodes[Wire.TargetNodeIndex];
+        const FVector2D A = AlignmentPinPosition(Wire.OutputPin) + FVector2D(Source.PlannedX - Source.X, Source.PlannedY - Source.Y);
+        const FVector2D B = AlignmentPinPosition(Wire.InputPin) + FVector2D(Target.PlannedX - Target.X, Target.PlannedY - Target.Y);
+        const FVector2D Tangent(GetDefault<UGraphEditorSettings>()->ComputeSplineTangent(A, B));
+        FVector2D Previous = A;
+        for (int32 Step = 1; Step <= 32; ++Step)
+        {
+            const double T = Step / 32.0, T2 = T*T, T3 = T2*T;
+            const FVector2D Next = A*(2*T3-3*T2+1) + Tangent*(T3-2*T2+T) + B*(-2*T3+3*T2) + Tangent*(T3-T2);
+            for (int32 Index = 0; Index < Candidate.Nodes.Num(); ++Index)
+            {
+                const FNode& Obstacle = Candidate.Nodes[Index];
+                if (Obstacle.bIsComment || Index == Wire.SourceNodeIndex || Index == Wire.TargetNodeIndex) continue;
+                const ::FBox Bounds(FVector(Obstacle.PlannedX - 4.0, Obstacle.PlannedY - 4.0, -1.0),
+                    FVector(Obstacle.PlannedX + Obstacle.Width + 4.0, Obstacle.PlannedY + Obstacle.Height + 4.0, 1.0));
+                const FVector Start(Previous.X, Previous.Y, 0.0), End(Next.X, Next.Y, 0.0);
+                if (FMath::LineBoxIntersection(Bounds, Start, End, End - Start)) return false;
+            }
+            Previous = Next;
+        }
+    }
     for (const int32 Member : Members)
     {
         InPlan.Nodes[Member].PlannedX = Candidate.Nodes[Member].PlannedX;

@@ -299,7 +299,7 @@ public:
     static bool ValidateScopedBoxGrowth(const FPlan& InPlan, FString& OutError);
 
     /** Try a rightward arrangement of independent section components. Retains the original plan on failure. */
-    static bool TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, double Gap);
+    static bool TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, double Gap, double VerticalGap = 100.0);
 
     /** Build bounded orthogonal route candidates from measured knot geometry.
      * This only fills WireRoutes; it does not change live links or authorize an edit.

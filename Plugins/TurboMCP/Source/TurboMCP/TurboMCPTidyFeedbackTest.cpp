@@ -265,10 +265,10 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
             Node->NodePosX = X; Node->NodePosY = Y;
         };
         auto* Box = NewObject<UEdGraphNode_Comment>(Graph);
-        Add(Box, 0, 0); Box->NodeWidth = 1200; Box->NodeHeight = 450;
+        Add(Box, 0, 0); Box->NodeWidth = 1000; Box->NodeHeight = 550;
         Box->NodeComment = TEXT("Selected connected branches");
         auto* Neighbor = NewObject<UEdGraphNode_Comment>(Graph);
-        Add(Neighbor, 0, 470); Neighbor->NodeWidth = 1200; Neighbor->NodeHeight = 200;
+        Add(Neighbor, 0, 570); Neighbor->NodeWidth = 1000; Neighbor->NodeHeight = 200;
         Neighbor->NodeComment = TEXT("Fixed section below");
         auto* Entry = NewObject<UK2Node_CustomEvent>(Graph);
         Entry->CustomFunctionName = TEXT("BranchSectionEntry");
@@ -300,9 +300,9 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Connected preview preserves positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
         const FString Applied = FTurboMCPGraphTidy::Apply(Plan);
         if (!TestTrue(TEXT("Connected section applies: ") + Applied, Applied.StartsWith(TEXT("changed:")))) return false;
-        TestTrue(TEXT("Connected section grows right, not into its neighbor"), Box->NodeWidth > 1200 && Box->NodeHeight <= 470);
-        TestTrue(TEXT("Connected section keeps fixed neighbor"), Neighbor->NodePosX == 0 && Neighbor->NodePosY == 470
-            && Neighbor->NodeWidth == 1200 && Neighbor->NodeHeight == 200);
+        TestTrue(TEXT("Connected section grows right, not into its neighbor"), Box->NodeWidth > 1000 && Box->NodeHeight <= 570);
+        TestTrue(TEXT("Connected section keeps fixed neighbor"), Neighbor->NodePosX == 0 && Neighbor->NodePosY == 570
+            && Neighbor->NodeWidth == 1000 && Neighbor->NodeHeight == 200);
         for (const auto& Node : Plan.Nodes) if (Node.Node && !Node.bIsComment)
             TestTrue(TEXT("Connected apply matches preview"), Node.Node->NodePosX == Node.PlannedX && Node.Node->NodePosY == Node.PlannedY);
         for (const auto& Pair : Links) TestTrue(TEXT("Connected links unchanged"), Pair.Key->LinkedTo == Pair.Value);
@@ -312,7 +312,7 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         if (!TestTrue(TEXT("Connected undo succeeds"), GEditor->UndoTransaction(false))) return false;
         for (const auto& Pair : Positions)
             TestTrue(TEXT("Connected undo restores positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
-        TestTrue(TEXT("Connected undo restores box"), Box->NodeWidth == 1200 && Box->NodeHeight == 450);
+        TestTrue(TEXT("Connected undo restores box"), Box->NodeWidth == 1000 && Box->NodeHeight == 550);
     }
     for (const FName MacroName : {FName(TEXT("ForLoopWithBreak")),FName(TEXT("DoOnce"))})
     {
