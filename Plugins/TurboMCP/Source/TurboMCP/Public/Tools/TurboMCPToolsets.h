@@ -1006,6 +1006,14 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPVariableRemove(const FString& Asset, const FString& Name);
 
+    /** Remove one unused local declaration from an exact owned function. Referenced locals refuse; no graph nodes are deleted. Preview loads the asset but does not edit it. Edit requires a fresh preview token. No save or checkout; structural refresh can compile and affect undo.
+     * @param Asset Blueprint path or unique name; prefer the full path.
+     * @param Function Exact owned function graph name. Event graphs and ambiguous names refuse.
+     * @param Name Exact case-sensitive local variable name.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPLocalVariableRemove(const FString& Asset, const FString& Function, const FString& Name);
+
 
 	/**
 	 * Preview an event or function override; loads the Blueprint and inspects editor metadata without creating the override, compiling or saving.
@@ -1902,6 +1910,15 @@ public:
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPVariableRemove(const FString& Asset, const FString& Name, const FString& Confirm);
+
+    /** Remove one unused local declaration from an exact owned function. Referenced locals refuse; no graph nodes are deleted. Preview loads the asset but does not edit it. Edit requires a fresh preview token. No save or checkout; structural refresh can compile and affect undo.
+     * @param Asset Blueprint path or unique name; prefer the full path.
+     * @param Function Exact owned function graph name. Event graphs and ambiguous names refuse.
+     * @param Name Exact case-sensitive local variable name.
+     * @param Confirm Copy the confirm token from a successful preview. Stale tokens refuse without edits.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPLocalVariableRemove(const FString& Asset, const FString& Function, const FString& Name, const FString& Confirm);
 
 
     /**

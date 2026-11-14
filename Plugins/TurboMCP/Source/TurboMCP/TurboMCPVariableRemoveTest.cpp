@@ -10,6 +10,8 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "K2Node_VariableGet.h"
+#include "K2Node_FunctionEntry.h"
+#include "BlueprintEditorLibrary.h"
 #include "K2Node_VariableSet.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
@@ -82,6 +84,45 @@ bool FTurboMCPVariableRemoveTest::RunTest(const FString& Parameters)
     const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCPEditToolset"), TEXT("EditTurboMCPVariableRemove"));
     AddInfo(Help);
     TestTrue(TEXT("Help explains confirmation"), Help.Contains(TEXT("Confirm")) && Help.Contains(TEXT("token")));
+
+    // Same-name declarations in other scopes must survive local removal.
+    UEdGraph* LocalGraph = UBlueprintEditorLibrary::AddFunctionGraph(BP, TEXT("LocalScope"));
+    UEdGraph* OtherGraph = UBlueprintEditorLibrary::AddFunctionGraph(BP, TEXT("OtherScope"));
+    if (!LocalGraph || !OtherGraph) { AddError(TEXT("Local function fixtures are missing.")); return false; }
+    TArray<UK2Node_FunctionEntry*> LocalEntries, OtherEntries;
+    LocalGraph->GetNodesOfClass(LocalEntries);
+    OtherGraph->GetNodesOfClass(OtherEntries);
+    if (LocalEntries.Num() != 1 || OtherEntries.Num() != 1) { AddError(TEXT("Fixture requires one entry per function.")); return false; }
+    FBPVariableDescription Local;
+    Local.VarName = TEXT("KeepValue"); Local.VarGuid = FGuid::NewGuid(); Local.VarType = Type; Local.DefaultValue = TEXT("3");
+    LocalEntries[0]->LocalVariables.Add(Local);
+    FBPVariableDescription Other = Local; Other.VarGuid = FGuid::NewGuid();
+    OtherEntries[0]->LocalVariables.Add(Other);
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    auto LocalPreview = [&]() { return UTurboMCPPreviewToolset::PreviewTurboMCPLocalVariableRemove(Asset, TEXT("LocalScope"), TEXT("KeepValue")); };
+    const FString InitialLocalPreview = LocalPreview();
+    TestTrue(TEXT("Unused local preview succeeds despite same-name member and other local"), InitialLocalPreview.StartsWith(TEXT("preview:")));
+    LocalEntries[0]->LocalVariables[0].DefaultValue = TEXT("4");
+    TestTrue(TEXT("Local stale token refuses"), UTurboMCPEditToolset::EditTurboMCPLocalVariableRemove(Asset, TEXT("LocalScope"), TEXT("KeepValue"), Token(InitialLocalPreview)).Contains(TEXT("stale")));
+    UK2Node_VariableGet* LocalGetter = NewObject<UK2Node_VariableGet>(LocalGraph);
+    LocalGetter->VariableReference.SetLocalMember(Local.VarName, LocalGraph->GetName(), Local.VarGuid);
+    LocalGetter->CreateNewGuid(); LocalGraph->AddNode(LocalGetter, false, false); LocalGetter->AllocateDefaultPins();
+    const int32 NodeCount = LocalGraph->Nodes.Num();
+    TestTrue(TEXT("Disconnected local getter refuses"), LocalPreview().Contains(TEXT("referenced")));
+    TestEqual(TEXT("Refusal leaves local graph nodes"), LocalGraph->Nodes.Num(), NodeCount);
+    TestEqual(TEXT("Refusal leaves local declaration"), LocalEntries[0]->LocalVariables.Num(), 1);
+    LocalGraph->RemoveNode(LocalGetter);
+    const FString ReadyLocal = LocalPreview();
+    const FString RemovedLocal = UTurboMCPEditToolset::EditTurboMCPLocalVariableRemove(Asset, TEXT("LocalScope"), TEXT("KeepValue"), Token(ReadyLocal));
+    AddInfo(RemovedLocal);
+    TestTrue(TEXT("Confirmed unused local removal succeeds"), RemovedLocal.StartsWith(TEXT("edited:")));
+    TestEqual(TEXT("Local declaration removed"), LocalEntries[0]->LocalVariables.Num(), 0);
+    TestEqual(TEXT("Other function local retained"), OtherEntries[0]->LocalVariables.Num(), 1);
+    TestEqual(TEXT("Same-name member retained"), BP->NewVariables.Num(), 1);
+    TestTrue(TEXT("Missing local refuses"), LocalPreview().StartsWith(TEXT("error:")));
+    TestTrue(TEXT("Event scope refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPLocalVariableRemove(Asset, TEXT("EventGraph"), TEXT("KeepValue")).StartsWith(TEXT("error:")));
+    const FString LocalHelp = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCPEditToolset"), TEXT("EditTurboMCPLocalVariableRemove"));
+    TestTrue(TEXT("Local help documents token"), LocalHelp.Contains(TEXT("Confirm")) && LocalHelp.Contains(TEXT("token")));
     return !HasAnyErrors();
 }
 #endif

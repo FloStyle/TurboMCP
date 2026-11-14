@@ -11,6 +11,7 @@
 #include "EdGraph/EdGraphPin.h"
 #include "UObject/UnrealType.h"
 #include "K2Node.h"
+#include "K2Node_FunctionEntry.h"
 #include "K2Node_Variable.h"
 #include "K2Node_GetClassDefaults.h"
 #include "WidgetBlueprint.h"
@@ -187,3 +188,110 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPVariableRemove(const FString& As
 { return TurboMCPVariableRemoval::Remove(Asset,Name,TEXT(""),false); }
 FString UTurboMCPEditToolset::EditTurboMCPVariableRemove(const FString& Asset,const FString& Name,const FString& Confirm)
 { return TurboMCPVariableRemoval::Remove(Asset,Name,Confirm,true); }
+
+
+namespace TurboMCPVariableRemoval
+{
+FString LocalDeclarations(UBlueprint* Blueprint)
+{
+    FString Result;
+    TArray<UEdGraph*> Graphs;
+    Blueprint->GetAllGraphs(Graphs);
+    for (UEdGraph* Graph : Graphs) if (Graph)
+        for (UEdGraphNode* Node : Graph->Nodes)
+            if (const auto* Entry = Cast<UK2Node_FunctionEntry>(Node))
+            {
+                Result += Entry->GetPathName();
+                for (const FBPVariableDescription& Variable : Entry->LocalVariables)
+                {
+                    FString Item;
+                    FBPVariableDescription::StaticStruct()->ExportText(Item, &Variable, nullptr, Blueprint, PPF_None, nullptr);
+                    Result += FString::Printf(TEXT("%d:"), Item.Len()) + Item;
+                }
+            }
+    return Result;
+}
+
+FString RemoveLocal(const FString& Asset, const FString& Function, const FString& Name, const FString& Confirm, bool Apply)
+{
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+        return TEXT("error: Requires an idle editor outside PIE and active transactions. Nothing removed.");
+    FTurboMCPAssetResolver::FResolved Resolved;
+    const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+    if (!ResolveError.IsEmpty()) return ResolveError;
+    UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+    if (!Blueprint) return TEXT("error: Blueprint could not be loaded. Nothing removed.");
+    if (Function.IsEmpty() || Name.IsEmpty())
+        return TEXT("error: Specify an exact owned function and local variable name. Nothing removed.");
+    UEdGraph* ScopeGraph = nullptr;
+    for (UEdGraph* Graph : Blueprint->FunctionGraphs)
+        if (Graph && Graph->GetName() == Function)
+        {
+            if (ScopeGraph) return TEXT("error: Function name is ambiguous. Nothing removed.");
+            ScopeGraph = Graph;
+        }
+    if (!ScopeGraph) return TEXT("error: Exact owned function graph not found. Inherited functions, events and macros are not supported.");
+    TArray<UK2Node_FunctionEntry*> Entries;
+    ScopeGraph->GetNodesOfClass(Entries);
+    if (Entries.Num() != 1 || !Entries[0])
+        return TEXT("error: Function must have exactly one entry node. Nothing removed.");
+    UK2Node_FunctionEntry* Entry = Entries[0];
+    const int32 Index = Entry->LocalVariables.IndexOfByPredicate([&](const FBPVariableDescription& V) { return V.VarName.ToString() == Name; });
+    if (Index == INDEX_NONE) return TEXT("error: Exact local variable declaration not found. Nothing removed.");
+    const FBPVariableDescription Variable = Entry->LocalVariables[Index];
+    if (!Variable.VarGuid.IsValid() || !Blueprint->SkeletonGeneratedClass || Blueprint->Status == BS_Error)
+        return TEXT("error: Local identity or skeleton is unavailable. Compile successfully and preview again; nothing removed.");
+    TArray<UEdGraph*> Graphs;
+    Blueprint->GetAllGraphs(Graphs);
+    TArray<FString> References;
+    for (UEdGraph* Graph : Graphs) if (Graph)
+        for (UEdGraphNode* Node : Graph->Nodes)
+            if (const auto* VariableNode = Cast<UK2Node_Variable>(Node))
+            {
+                const auto& Reference = VariableNode->VariableReference;
+                const bool SameGuid = Reference.GetMemberGuid() == Variable.VarGuid;
+                const bool SameLocalName = Reference.IsLocalScope() && Reference.GetMemberName() == Variable.VarName;
+                const FString ScopeName = Reference.GetMemberScopeName();
+                if (SameGuid || (SameLocalName && (ScopeName == Function || ScopeName.IsEmpty())))
+                    References.Add(Node->GetPathName());
+            }
+    if (!References.IsEmpty())
+        return TEXT("error: Local variable is referenced by these nodes; remove or rewire them explicitly first. Nothing removed.\n") + FString::Join(References, TEXT("\n"));
+    const FString BeforeLocals = LocalDeclarations(Blueprint);
+    const FString BeforeMembers = Declarations(Blueprint);
+    const FString BeforeGraphs = GraphState(Blueprint);
+    const FString Token = FMD5::HashAnsiString(*(Blueprint->GetPathName() + Function + Name + BeforeLocals + BeforeMembers + BeforeGraphs));
+    const FString Limits = TEXT("\nNo save or checkout. Structural refresh can compile and affect undo. Native or dynamic references are not proven safe.");
+    if (!Apply)
+    {
+        FString Description;
+        FBPVariableDescription::StaticStruct()->ExportText(Description, &Variable, nullptr, Blueprint, PPF_None, nullptr);
+        return TEXT("preview: Remove one unused local declaration. No edits performed.\nfunction: ") + Function
+            + TEXT("\nvariable: ") + Name + TEXT("\ndeclaration: ") + Description + TEXT("\nconfirm: ") + Token + Limits;
+    }
+    if (Confirm != Token) return TEXT("error: Confirmation is missing or stale. Preview again and copy its confirm token; nothing removed.");
+    const bool WasDirty = Blueprint->GetOutermost()->IsDirty();
+    FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP remove unused local variable")));
+    Blueprint->Modify();
+    Entry->Modify();
+    // The engine removal helper also deletes variable nodes. Remove only the declaration.
+    Entry->LocalVariables.RemoveAt(Index);
+    const FString ExpectedLocals = LocalDeclarations(Blueprint);
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+    if (LocalDeclarations(Blueprint) != ExpectedLocals || Declarations(Blueprint) != BeforeMembers || GraphState(Blueprint) != BeforeGraphs)
+    {
+        const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+        const bool Restored = Undone && LocalDeclarations(Blueprint) == BeforeLocals && Declarations(Blueprint) == BeforeMembers && GraphState(Blueprint) == BeforeGraphs;
+        if (Restored) Blueprint->GetOutermost()->SetDirtyFlag(WasDirty);
+        return Restored ? TEXT("error: Removal verification failed; declaration and graph baseline restored. Nothing saved.")
+            : TEXT("error: Removal verification failed and rollback could not be verified. Inspect the Blueprint before saving; changes may remain.");
+    }
+    return TEXT("edited: Removed unused local variable ") + Function + TEXT(".") + Name
+        + TEXT(". Other declarations and graph state verified unchanged. Compile and inspect before saving.") + Limits;
+}
+}
+
+FString UTurboMCPPreviewToolset::PreviewTurboMCPLocalVariableRemove(const FString& Asset, const FString& Function, const FString& Name)
+{ return TurboMCPVariableRemoval::RemoveLocal(Asset, Function, Name, TEXT(""), false); }
+FString UTurboMCPEditToolset::EditTurboMCPLocalVariableRemove(const FString& Asset, const FString& Function, const FString& Name, const FString& Confirm)
+{ return TurboMCPVariableRemoval::RemoveLocal(Asset, Function, Name, Confirm, true); }
