@@ -19,6 +19,7 @@
 #include "EdGraph/EdGraphSchema.h"
 #include "EdGraphNode_Comment.h"
 #include "EdGraphSchema_K2.h"
+#include "Editor.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
@@ -734,6 +735,49 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 	const FString AKey = TurboMCPNodeId::MakeForNode(Fixture.ApplyA, /*bLongForm=*/true);
 	const FString BKey = TurboMCPNodeId::MakeForNode(Fixture.ApplyB, /*bLongForm=*/true);
 
+    // Insertion planning combines created placement and authorized tail movement.
+    // It must not relocate the live fixture while searching for space.
+    {
+        UEdGraph* Graph = NewObject<UEdGraph>(Fixture.Blueprint);
+        UEdGraphNode* Source = NewObject<UEdGraphNode>(Graph);
+        Source->CreateNewGuid(); Source->NodePosX = 0; Source->NodePosY = 80;
+        Source->NodeWidth = 200; Source->NodeHeight = 100; Graph->AddNode(Source, false, false);
+        UEdGraphNode* Tail = NewObject<UEdGraphNode>(Graph);
+        Tail->CreateNewGuid(); Tail->NodePosX = 400; Tail->NodePosY = 80;
+        Tail->NodeWidth = 200; Tail->NodeHeight = 100; Graph->AddNode(Tail, false, false);
+        FTurboMCPGraphAppend::FPlan Plan;
+        Plan.bInsertion = true; Plan.bPlacementRequested = true;
+        Plan.MovableNodeIds.Add(TurboMCPNodeId::MakeForNode(Tail, true));
+        FTurboMCPGraphAppend::FNewNode Form;
+        Form.MeasuredWidth = 300; Form.MeasuredHeight = 100;
+        Form.ProbeExecInputs.Add(TEXT("execute")); Form.ProbeExecOutputs.Add(TEXT("then"));
+        Plan.Nodes.Add(Form);
+        FTurboMCPGraphAppend::FNewLink Edge;
+        Edge.FromNodeKey = TurboMCPNodeId::MakeForNode(Source, true);
+        Edge.FromPin = TEXT("then"); Edge.ToFormIndex = 0; Edge.ToPin = TEXT("execute");
+        Plan.Links.Add(Edge);
+        FString Error;
+        const bool Planned = FTurboMCPGraphAppend::PlanInsertion(Graph, Plan, Plan.Links, Error);
+        TestTrue(TEXT("Explicit insertion plans an occupied execution lane"), Planned);
+        if (Planned)
+        {
+            TestEqual(TEXT("Insertion plans one new node"), Plan.PlannedPositions.Num(), 1);
+            TestEqual(TEXT("Insertion moves only the allowed tail"), Plan.ExistingPositions.Num(), 1);
+            if (Plan.PlannedPositions.Num() == 1)
+            {
+                TestEqual(TEXT("Insertion stays directly after source"), Plan.PlannedPositions[0].X, 360);
+                TestEqual(TEXT("Insertion preserves execution lane"), Plan.PlannedPositions[0].Y, 80);
+            }
+            if (Plan.ExistingPositions.Num() == 1)
+                TestEqual(TEXT("Tail clears the inserted footprint and gap"), Plan.ExistingPositions[0].NewX, 820);
+        }
+        TestEqual(TEXT("Insertion planning keeps live tail fixed"), Tail->NodePosX, 400);
+        Plan.MovableNodeIds = {TurboMCPNodeId::MakeForNode(Source, true)};
+        TestFalse(TEXT("Insertion cannot authorize moving its own attachment"),
+            FTurboMCPGraphAppend::PlanInsertion(Graph, Plan, Plan.Links, Error));
+        TestTrue(TEXT("Attachment refusal names the source"), Error.Contains(Edge.FromNodeKey));
+    }
+
     // Comment growth is evaluated on a copy, including existing membership.
     {
         UEdGraph* Graph = NewObject<UEdGraph>(Fixture.Blueprint);
@@ -765,6 +809,40 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
         TestFalse(TEXT("Rightward growth refuses a fixed neighboring comment"),
             FTurboMCPGraphAppend::PlanInsertionComment(Graph, BoxId, Moves, Bounds, Growth, Error));
         TestTrue(TEXT("Blocked growth names the fixed comment"), Error.Contains(TurboMCPNodeId::MakeForNode(Neighbor, true)));
+    }
+
+    // Empty nested frames still carry layout structure even with no node members.
+    {
+        UEdGraph* Graph = NewObject<UEdGraph>(Fixture.Blueprint);
+        auto AddBox = [&](int32 X, int32 Y, int32 Width, int32 Height)
+        {
+            auto* Box = NewObject<UEdGraphNode_Comment>(Graph);
+            Box->CreateNewGuid(); Box->NodePosX = X; Box->NodePosY = Y;
+            Box->NodeWidth = Width; Box->NodeHeight = Height;
+            Graph->AddNode(Box, false, false); return Box;
+        };
+        auto* Outer = AddBox(0, 0, 600, 400);
+        auto* Inner = AddBox(100, 80, 200, 200);
+        FTurboMCPGraphAppend::FExistingPosition Move;
+        Move.NodeId = TurboMCPNodeId::MakeForNode(Inner, true);
+        Move.OldX = 100; Move.OldY = 80; Move.NewX = 700; Move.NewY = 80;
+        TArray<FTurboMCPGraphAppend::FExistingPosition> Moves{Move};
+        TArray<FTurboMCPGraphAppend::FPlacementObstacle> Bounds{{300, 80, 100, 60}};
+        FTurboMCPGraphAppend::FCommentGrowth Growth;
+        FString Error;
+        const FString OuterId = TurboMCPNodeId::MakeForNode(Outer, true);
+        TestTrue(TEXT("Named outer frame grows around a translated empty nested frame"),
+            FTurboMCPGraphAppend::PlanInsertionComment(Graph, OuterId, Moves, Bounds, Growth, Error));
+        TestEqual(TEXT("Nested frame padding contributes to outer growth"), Growth.NewWidth, 932);
+        TestFalse(TEXT("An empty nested frame cannot escape an unnamed fixed outer frame"),
+            FTurboMCPGraphAppend::PlanInsertionComment(Graph, FString(), Moves, Bounds, Growth, Error));
+        TestTrue(TEXT("Nested refusal identifies the structural conflict"), Error.Contains(TEXT("nesting")));
+        TestEqual(TEXT("Nested planning does not move live frames"), Inner->NodePosX, 100);
+        TestEqual(TEXT("Nested planning does not resize live outer frame"), Outer->NodeWidth, 600);
+        auto* Neighbor = AddBox(850, 80, 200, 200);
+        TestFalse(TEXT("Translated nested frame cannot overlap a fixed neighboring frame"),
+            FTurboMCPGraphAppend::PlanInsertionComment(Graph, OuterId, Moves, Bounds, Growth, Error));
+        TestTrue(TEXT("Nested collision reports the neighboring frame"), Error.Contains(TurboMCPNodeId::MakeForNode(Neighbor, true)));
     }
 
 	// ---- 1. EMPTY GRAPH -------------------------------------------------------------------------------
@@ -1324,7 +1402,7 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
             FTurboMCPGraphAppend::PlanPlacement(Graph,Forms,Positions,Estimated,Error,&Links,true));
         FTurboMCPGraphAppend::FPlan BadPlan;
         TestFalse(TEXT("Unknown placement mode refuses before graph lookup"),FTurboMCPGraphAppend::Plan(TEXT(""),TEXT(""),TEXT(""),BadPlan,Error,true,TEXT("auto"),TEXT("guess")));
-        TestTrue(TEXT("Unknown mode guidance"),Error.Contains(TEXT("local, outside or per-anchor")));
+        TestTrue(TEXT("Unknown mode guidance"),Error.Contains(TEXT("local, outside, per-anchor or insert")));
 
     }
 
@@ -1415,6 +1493,105 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Per-anchor capture generated"), Capture.Contains(TEXT("image:")));
     }
 
+
+    // Public insertion must apply the reviewed plan once, and reject stale geometry.
+    {
+        UEdGraph* Graph = AddPage(Fixture.Blueprint, TEXT("InsertionTokenGraph"));
+        auto* Source = NewObject<UK2Node_CustomEvent>(Graph);
+        Source->CustomFunctionName = TEXT("InsertionTokenEvent");
+        Graph->AddNode(Source, false, false);
+        Source->CreateNewGuid(); Source->AllocateDefaultPins();
+        Source->NodePosX = 0; Source->NodePosY = 0;
+        const FString Text = FString::Printf(TEXT("(Development|PrintString\n InString \"inserted\"\n execute (-> %s:then))"),
+            *TurboMCPNodeId::MakeForNode(Source, true));
+        const FString Seed = UTurboMCPEditToolset::EditTurboMCPGraphAppend(Fixture.AssetPath, Graph->GetName(), Text);
+        TestTrue(TEXT("Insertion fixture creates a reachable tail"), Seed.StartsWith(TEXT("changed")));
+        UEdGraphPin* Output = Source->FindPinChecked(TEXT("then"));
+        if (Output->LinkedTo.Num() == 1)
+        {
+            UEdGraphNode* Tail = Output->LinkedTo[0]->GetOwningNode();
+            Tail->NodePosX = 400; Tail->NodePosY = 0;
+            auto* Container = NewObject<UEdGraphNode_Comment>(Graph);
+            Container->CreateNewGuid(); Container->NodePosX = -80; Container->NodePosY = -80;
+            Container->NodeWidth = 900; Container->NodeHeight = 800;
+            Container->NodeComment = TEXT("Insertion workflow"); Graph->AddNode(Container, false, false);
+            const FString ContainerId = TurboMCPNodeId::MakeForNode(Container, true);
+            auto* Unrelated = NewObject<UK2Node_CustomEvent>(Graph);
+            Unrelated->CustomFunctionName = TEXT("UnrelatedInsertionLane");
+            Graph->AddNode(Unrelated, false, false); Unrelated->CreateNewGuid(); Unrelated->AllocateDefaultPins();
+            Unrelated->NodePosX = 0; Unrelated->NodePosY = 2000;
+            const FString Scope = FString::Printf(TEXT("[\"%s\"]"), *TurboMCPNodeId::MakeForNode(Tail, true));
+            auto Preview = [&]() { return UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
+                Fixture.AssetPath, Graph->GetName(), Text, TEXT("auto"), TEXT("insert"), Scope, ContainerId); };
+            auto TokenFrom = [](const FString& Report)
+            {
+                const FString Prefix = TEXT("preview_token=");
+                const int32 Start = Report.Find(Prefix);
+                return Start == INDEX_NONE ? FString() : Report.Mid(Start + Prefix.Len(), 32);
+            };
+            auto Apply = [&](const FString& Token) { return UTurboMCPEditToolset::EditTurboMCPGraphAppend(
+                Fixture.AssetPath, Graph->GetName(), Text, TEXT("auto"), TEXT("insert"), Scope, ContainerId, Token); };
+            const FGraphSnapshot Before = CaptureGraph(Graph);
+            const FString PreviewText = Preview(); AddInfo(PreviewText);
+            const FString Token = TokenFrom(PreviewText);
+            TestFalse(TEXT("Insertion preview issues a token"), Token.IsEmpty());
+            TestTrue(TEXT("Insertion preview preserves source graph"), SameGraph(Before, CaptureGraph(Graph)));
+            if (!Token.IsEmpty())
+            {
+                const int32 OldX = Tail->NodePosX;
+                const FString Applied = Apply(Token); AddInfo(Applied);
+                TestTrue(TEXT("Token-authorized insertion succeeds"), Applied.StartsWith(TEXT("changed")));
+                if (Applied.StartsWith(TEXT("changed")))
+                {
+                    TestTrue(TEXT("Insertion shifts the authorized tail"), Tail->NodePosX > OldX);
+                    TestEqual(TEXT("Insertion creates exactly one node"), Graph->Nodes.Num(), 5);
+                    TestEqual(TEXT("Insertion keeps unrelated event lane fixed"), Unrelated->NodePosY, 2000);
+                    TestEqual(TEXT("Insertion keeps containing frame left fixed"), Container->NodePosX, -80);
+                    TestEqual(TEXT("Insertion keeps containing frame top fixed"), Container->NodePosY, -80);
+                    const FString Image = UTurboMCPLookToolset::LookTurboMCPCapture(Fixture.AssetPath, Graph->GetName(),
+                        TEXT("region"), TEXT("-200,-200,2400,1400"), TEXT("1600x900"));
+                    AddInfo(TEXT("Insertion workflow capture: ") + Image);
+                    TestTrue(TEXT("Insertion workflow capture generated"), Image.Contains(TEXT("image:")));
+                    TestTrue(TEXT("Consumed insertion token refuses a second apply"), Apply(Token).Contains(TEXT("PreviewToken")));
+                    TestEqual(TEXT("Token replay creates no node"), Graph->Nodes.Num(), 5);
+                    if (TestNotNull(TEXT("Editor available for insertion undo"), GEditor))
+                    {
+                        GEditor->UndoTransaction();
+                        TestTrue(TEXT("One undo restores insertion geometry and connections"), SameGraph(Before, CaptureGraph(Graph)));
+                    }
+                }
+                FTurboMCPGraphAppend::FPlan FailurePlan;
+                FString FailureError, FailureReport;
+                const TArray<FString> Allowed{TurboMCPNodeId::MakeForNode(Tail, true)};
+                const bool FailurePlanned = FTurboMCPGraphAppend::Plan(Fixture.AssetPath, Graph->GetName(), Text,
+                    FailurePlan, FailureError, true, TEXT("auto"), TEXT("insert"), Allowed, ContainerId);
+                TestTrue(TEXT("Failure fixture obtains an insertion plan"), FailurePlanned && FailurePlan.bAcceptable());
+                if (FailurePlanned && FailurePlan.bAcceptable() && !FailurePlan.Nodes.IsEmpty())
+                {
+                    const FGraphSnapshot BeforeFailure = CaptureGraph(Graph);
+                    const bool DirtyBeforeFailure = Fixture.Package->IsDirty();
+                    // Simulate a spawner disappearing after preflight. The private
+                    // test hook reaches the failure after authorized tail movement.
+                    FailurePlan.Nodes[0].TypeId = TEXT("MissingInsertionFixtureType");
+                    TestFalse(TEXT("Spawner failure aborts insertion after movement"), FTurboMCPGraphAppend::ExecuteGraph(
+                        FailurePlan, Fixture.Blueprint, Graph, FailureReport, FailureError, false, false));
+                    AddInfo(FailureError);
+                    TestTrue(TEXT("Failed insertion restores graph and comment dimensions"), SameGraph(BeforeFailure, CaptureGraph(Graph)));
+                    TestEqual(TEXT("Failed insertion restores dirty state"), Fixture.Package->IsDirty(), DirtyBeforeFailure);
+                    TestTrue(TEXT("Failed insertion reports verified restoration"), FailureError.Contains(TEXT("package dirty state restored")));
+                }
+                const FString StaleToken = TokenFrom(Preview());
+                TestFalse(TEXT("Fresh insertion preview issues another token"), StaleToken.IsEmpty());
+                if (!StaleToken.IsEmpty())
+                {
+                    Source->NodePosY += 16;
+                    const FGraphSnapshot Changed = CaptureGraph(Graph);
+                    TestTrue(TEXT("Changed graph refuses insertion token"), Apply(StaleToken).Contains(TEXT("stale")));
+                    TestTrue(TEXT("Stale refusal preserves current graph"), SameGraph(Changed, CaptureGraph(Graph)));
+                }
+            }
+        }
+    }
 
 	return true;
 }

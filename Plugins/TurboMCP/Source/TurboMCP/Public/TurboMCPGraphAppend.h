@@ -161,6 +161,13 @@ public:
         bool bPlaceOutside = false;
         bool bPerAnchor = false;
 
+		/** Explicit insertion geometry, authorized by a short-lived public preview token. */
+		bool bInsertion = false;
+		TArray<FString> MovableNodeIds;
+		FString ContainingCommentId;
+		TArray<FExistingPosition> ExistingPositions;
+		FCommentGrowth CommentGrowth;
+
 		/** Live placement inputs captured after scratch measurement; checked before apply. */
 		FString PlacementSourceState;
 
@@ -185,7 +192,11 @@ public:
 	 *                           the legacy behavior and no positions are computed.
 	 */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, const FString& InText,
-		FPlan& OutPlan, FString& OutError, bool bRequestPlacement = false, const FString& Continuation = FString(), const FString& Placement = TEXT("local"));
+		FPlan& OutPlan, FString& OutError, bool bRequestPlacement = false, const FString& Continuation = FString(), const FString& Placement = TEXT("local"),
+        const TArray<FString>& MovableNodeIds = TArray<FString>(), const FString& ContainingCommentId = FString());
+
+	/** Plans new geometry and the explicitly authorized tail movement without changing the live graph. */
+	static bool PlanInsertion(UEdGraph* Graph, FPlan& Plan, const TArray<FNewLink>& LayoutLinks, FString& OutError);
 
 	/**
 	 * Plans an attachment-relative block when links identify an existing exec source; otherwise a deterministic column.
@@ -237,6 +248,7 @@ private:
 #if WITH_DEV_AUTOMATION_TESTS
     // Exercise failures after scratch preflight without exposing a runtime bypass.
     friend class FTurboMCPAppendFailureTest;
+    friend class FTurboMCPGraphAppendPlacementTest;
     friend class FTurboMCPDelegateAppendTest;
 #endif
     static bool ExecuteGraph(const FPlan& InPlan, UBlueprint* Blueprint, UEdGraph* Graph,

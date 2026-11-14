@@ -68,9 +68,6 @@ bool FTurboMCPGraphAppend::PlanTailTranslation(const UEdGraph* Graph,
         const UEdGraphNode* const* Found = ById.Find(Id);
         if (!Found || Allowed.Contains(*Found))
         { OutError = TEXT("insertion has an unknown or duplicate movable node ID: ") + Id; return false; }
-        // Nested comment movement needs explicit member closure in the enclosing planner.
-        if ((*Found)->IsA<UEdGraphNode_Comment>())
-        { OutError = TEXT("insertion tail geometry must contain nodes, not comment containers: ") + Id; return false; }
         Allowed.Add(*Found);
     }
     auto Bounds = [](const UEdGraphNode* Node, int64 Shift)
@@ -84,6 +81,28 @@ bool FTurboMCPGraphAppend::PlanTailTranslation(const UEdGraph* Graph,
         return A.X < B.X + B.Width && B.X < A.X + A.Width
             && A.Y < B.Y + B.Height && B.Y < A.Y + A.Height;
     };
+    TMap<const UEdGraphNode*, TArray<const UEdGraphNode*>> CommentGroups;
+    for (const UEdGraphNode* Node : Allowed)
+        if (const UEdGraphNode_Comment* Box = Cast<UEdGraphNode_Comment>(Node))
+        {
+            TArray<FString> Members;
+            FTurboMCPComment::MembersOf(const_cast<UEdGraphNode_Comment*>(Box), Members);
+            TArray<const UEdGraphNode*>& Group = CommentGroups.Add(Box);
+            const FPlacementObstacle Outer = Bounds(Box, 0);
+            for (const UEdGraphNode* Candidate : Graph->Nodes)
+            {
+                if (!Candidate || Candidate == Box) continue;
+                const FPlacementObstacle Inner = Bounds(Candidate, 0);
+                const bool NestedBox = Candidate->IsA<UEdGraphNode_Comment>()
+                    && Inner.X >= Outer.X && Inner.Y >= Outer.Y
+                    && Inner.X + Inner.Width <= Outer.X + Outer.Width
+                    && Inner.Y + Inner.Height <= Outer.Y + Outer.Height;
+                if (!Members.Contains(Candidate->GetName()) && !NestedBox) continue;
+                if (!Allowed.Contains(Candidate))
+                { OutError = TEXT("Moving a comment requires explicit authorization for its contents: ") + TurboMCPNodeId::MakeForNode(Candidate, true); return false; }
+                Group.Add(Candidate);
+            }
+        }
     for (const FPlacementObstacle& Rect : NewBounds)
         if (Rect.Width <= 0 || Rect.Height <= 0 || !FitsCoordinate(Rect.X)
             || !FitsCoordinate(Rect.Y) || Rect.Width > MAX_int32 || Rect.Height > MAX_int32
@@ -92,7 +111,7 @@ bool FTurboMCPGraphAppend::PlanTailTranslation(const UEdGraph* Graph,
 
     TSet<const UEdGraphNode*> Moving;
     for (const UEdGraphNode* Node : Graph->Nodes)
-        if (Node && !Node->IsA<UEdGraphNode_Comment>())
+        if (Node && (!Node->IsA<UEdGraphNode_Comment>() || Allowed.Contains(Node)))
             for (const FPlacementObstacle& Rect : NewBounds)
                 if (Overlaps(Bounds(Node, 0), Rect))
                 {
@@ -108,6 +127,22 @@ bool FTurboMCPGraphAppend::PlanTailTranslation(const UEdGraph* Graph,
     int64 Shift = 0;
     for (int32 Iteration = 0; Iteration <= Allowed.Num(); ++Iteration)
     {
+        // A movable box and its explicitly authorized contents translate as one
+        // group. Repeat closure for nested boxes before computing the shared shift.
+        bool Expanded;
+        do
+        {
+            Expanded = false;
+            for (const auto& Pair : CommentGroups)
+            {
+                bool Touched = Moving.Contains(Pair.Key);
+                for (const UEdGraphNode* Member : Pair.Value) Touched |= Moving.Contains(Member);
+                if (!Touched) continue;
+                if (!Moving.Contains(Pair.Key)) { Moving.Add(Pair.Key); Expanded = true; }
+                for (const UEdGraphNode* Member : Pair.Value)
+                    if (!Moving.Contains(Member)) { Moving.Add(Member); Expanded = true; }
+            }
+        } while (Expanded);
         for (const UEdGraphNode* Node : Moving)
         {
             const FPlacementObstacle Original = Bounds(Node, 0);
@@ -187,6 +222,19 @@ bool FTurboMCPGraphAppend::PlanInsertionComment(UEdGraph* Graph, const FString& 
     TurboMCPGraphScratch::FCopy Scratch;
     if (!Scratch.Init(Blueprint, Graph))
     { OutError = TEXT("insertion could not create a scratch graph for comment validation"); return false; }
+    auto ContainsBox = [](const UEdGraphNode_Comment* Outer, const UEdGraphNode_Comment* Inner)
+    {
+        return Inner->NodePosX >= Outer->NodePosX && Inner->NodePosY >= Outer->NodePosY
+            && int64(Inner->NodePosX) + Inner->NodeWidth <= int64(Outer->NodePosX) + Outer->NodeWidth
+            && int64(Inner->NodePosY) + Inner->NodeHeight <= int64(Outer->NodePosY) + Outer->NodeHeight;
+    };
+    auto BoxesOverlap = [](const UEdGraphNode_Comment* A, const UEdGraphNode_Comment* B)
+    {
+        return int64(A->NodePosX) < int64(B->NodePosX) + B->NodeWidth
+            && int64(B->NodePosX) < int64(A->NodePosX) + A->NodeWidth
+            && int64(A->NodePosY) < int64(B->NodePosY) + B->NodeHeight
+            && int64(B->NodePosY) < int64(A->NodePosY) + A->NodeHeight;
+    };
     TMap<FGuid, TArray<FString>> Before;
     for (UEdGraphNode* Node : Scratch.Graph->Nodes)
         if (UEdGraphNode_Comment* Box = Cast<UEdGraphNode_Comment>(Node))
@@ -199,6 +247,8 @@ bool FTurboMCPGraphAppend::PlanInsertionComment(UEdGraph* Graph, const FString& 
         if (!Copy || Seen.Contains(Original->NodeGuid) || Original->NodePosX != Move.OldX
             || Original->NodePosY != Move.OldY || Move.NewX < Move.OldX || Move.NewY != Move.OldY)
         { OutError = TEXT("insertion has stale, duplicate or non-horizontal movement: ") + Move.NodeId; return false; }
+        if (Original == Container)
+        { OutError = TEXT("The containing comment must keep its top-left fixed; remove it from the movable node list."); return false; }
         Seen.Add(Original->NodeGuid);
         Copy->NodePosX = Move.NewX; Copy->NodePosY = Move.NewY;
     }
@@ -222,10 +272,18 @@ bool FTurboMCPGraphAppend::PlanInsertionComment(UEdGraph* Graph, const FString& 
         for (UEdGraphNode* Node : Scratch.Graph->Nodes)
             if (Node && Seen.Contains(Node->NodeGuid) && OriginalMembers.Contains(Node->GetName()))
             {
-                const FVector2D Size = FTurboMCPGraphTidy::AlignmentNodeSize(Node);
-                if (!FMath::IsFinite(Size.X) || Size.X <= 0 || Size.X > MAX_int32)
-                { OutError = TEXT("insertion cannot determine comment member width: ") + Node->GetName(); return false; }
-                Right = FMath::Max(Right, int64(Node->NodePosX) + FMath::CeilToInt(Size.X) + 32);
+                // Use the same existing-node bounds as tail collision planning.
+                // Scratch copies do not carry the live Slate measurement cache.
+                const int64 Width = Node->NodeWidth > 0 ? Node->NodeWidth : PlacementWidth;
+                Right = FMath::Max(Right, int64(Node->NodePosX) + Width + 32);
+            }
+        // Membership helpers cover ordinary nodes. Nested comments also need
+        // their complete frame preserved, including its empty right-hand padding.
+        for (UEdGraphNode* Node : Graph->Nodes)
+            if (auto* Inner = Cast<UEdGraphNode_Comment>(Node); Inner && Inner != Container && Seen.Contains(Inner->NodeGuid) && ContainsBox(Container, Inner))
+            {
+                const UEdGraphNode* Moved = TurboMCPGraphScratch::ByGuid(Scratch.Graph, Inner->NodeGuid);
+                Right = FMath::Max(Right, int64(Moved->NodePosX) + Inner->NodeWidth + 32);
             }
         if (!FitsCoordinate(Right) || Right - Left > MAX_int32)
         { OutError = TEXT("insertion comment growth would overflow graph coordinates"); return false; }
@@ -238,13 +296,31 @@ bool FTurboMCPGraphAppend::PlanInsertionComment(UEdGraph* Graph, const FString& 
                 const int64 OtherBottom = int64(Other->NodePosY) + Other->NodeHeight;
                 const bool Ancestor = Other->NodePosX <= Left && Other->NodePosY <= Container->NodePosY
                     && OtherRight >= int64(Container->NodePosX) + Container->NodeWidth && OtherBottom >= Bottom;
+                const bool Nested = ContainsBox(Container, Other);
                 const bool HitsGrowth = Right > int64(Container->NodePosX) + Container->NodeWidth
                     && Other->NodePosX < Right && OtherRight > int64(Container->NodePosX) + Container->NodeWidth
                     && Other->NodePosY < Bottom && OtherBottom > Container->NodePosY;
-                if ((Ancestor && Right > OtherRight) || (!Ancestor && HitsGrowth))
+                if ((Ancestor && Right > OtherRight) || (!Ancestor && !Nested && HitsGrowth))
                 { OutError = TEXT("insertion comment growth is blocked by fixed comment: ") + TurboMCPNodeId::MakeForNode(Other, true); return false; }
             }
     }
+    // Preserve nested relationships and prevent translated frames from crossing
+    // formerly disjoint frames. Checking ordinary members alone misses empty boxes.
+    for (UEdGraphNode* NodeA : Graph->Nodes)
+        if (const auto* A = Cast<UEdGraphNode_Comment>(NodeA))
+            for (UEdGraphNode* NodeB : Graph->Nodes)
+                if (const auto* B = Cast<UEdGraphNode_Comment>(NodeB); B && A != B)
+                {
+                    const auto* AfterA = Cast<UEdGraphNode_Comment>(TurboMCPGraphScratch::ByGuid(Scratch.Graph, A->NodeGuid));
+                    const auto* AfterB = Cast<UEdGraphNode_Comment>(TurboMCPGraphScratch::ByGuid(Scratch.Graph, B->NodeGuid));
+                    if (!AfterA || !AfterB || ContainsBox(A, B) != ContainsBox(AfterA, AfterB)
+                        || (!BoxesOverlap(A, B) && BoxesOverlap(AfterA, AfterB)))
+                    {
+                        OutError = TEXT("Insertion would change comment nesting or overlap: ")
+                            + TurboMCPNodeId::MakeForNode(A, true) + TEXT(" and ") + TurboMCPNodeId::MakeForNode(B, true);
+                        return false;
+                    }
+                }
     for (UEdGraphNode* Node : Scratch.Graph->Nodes)
         if (UEdGraphNode_Comment* Box = Cast<UEdGraphNode_Comment>(Node))
         {
@@ -259,6 +335,82 @@ bool FTurboMCPGraphAppend::PlanInsertionComment(UEdGraph* Graph, const FString& 
         OutGrowth.OldWidth = Container->NodeWidth; OutGrowth.NewWidth = CopyContainer->NodeWidth;
     }
     return true;
+}
+
+bool FTurboMCPGraphAppend::PlanInsertion(UEdGraph* Graph, FPlan& Plan,
+    const TArray<FNewLink>& LayoutLinks, FString& OutError)
+{
+    Plan.PlannedPositions.Reset(); Plan.ExistingPositions.Reset(); Plan.CommentGrowth = FCommentGrowth();
+    OutError.Empty();
+    UBlueprint* Blueprint = Graph ? Graph->GetTypedOuter<UBlueprint>() : nullptr;
+    if (!Blueprint || Plan.MovableNodeIds.IsEmpty())
+    { OutError = TEXT("Insertion requires a Blueprint graph and explicit movable node IDs."); return false; }
+    TSet<FGuid> Movable;
+    for (FString& Id : Plan.MovableNodeIds)
+    {
+        const UEdGraphNode* Node = TurboMCPGraphScratch::Find(Graph, Id);
+        if (!Node || Movable.Contains(Node->NodeGuid))
+        { OutError = TEXT("Unknown or repeated movable node: ") + Id; return false; }
+        Movable.Add(Node->NodeGuid);
+        Id = TurboMCPNodeId::MakeForNode(Node, true);
+    }
+    const UEdGraphNode* Anchor = nullptr;
+    int32 AnchorForm = INDEX_NONE;
+    for (const FNewLink& Link : LayoutLinks)
+    {
+        if (Link.FromFormIndex != INDEX_NONE || !Plan.Nodes.IsValidIndex(Link.ToFormIndex)
+            || !Plan.Nodes[Link.ToFormIndex].ProbeExecInputs.Contains(Link.ToPin)) continue;
+        const UEdGraphNode* Candidate = TurboMCPGraphScratch::Find(Graph, Link.FromNodeKey);
+        if (!Candidate || Movable.Contains(Candidate->NodeGuid)
+            || (Anchor && (Candidate != Anchor || AnchorForm != Link.ToFormIndex)))
+        { OutError = TEXT("Insertion requires one fixed execution attachment; conflicting source: ") + Link.FromNodeKey; return false; }
+        Anchor = Candidate; AnchorForm = Link.ToFormIndex;
+    }
+    if (!Anchor) { OutError = TEXT("Insertion requires an existing execution source connected to the new chain."); return false; }
+
+    // Remove only authorized obstacles from a disposable layout view. The full
+    // live graph is used below to compute movement and validate comment containment.
+    TurboMCPGraphScratch::FCopy Scratch;
+    if (!Scratch.Init(Blueprint, Graph)) { OutError = TEXT("Could not create insertion layout scratch graph."); return false; }
+    TArray<FNewLink> ScratchLinks = LayoutLinks;
+    for (FNewLink& Link : ScratchLinks)
+    {
+        for (FString* Key : {&Link.FromNodeKey, &Link.ToNodeKey})
+        {
+            if (Key->IsEmpty()) continue;
+            if (const UEdGraphNode* Original = TurboMCPGraphScratch::Find(Graph, *Key))
+                if (const UEdGraphNode* Copy = TurboMCPGraphScratch::ByGuid(Scratch.Graph, Original->NodeGuid))
+                    *Key = TurboMCPNodeId::MakeForNode(Copy, true);
+        }
+    }
+    Scratch.Graph->Nodes.RemoveAll([&](const UEdGraphNode* Node)
+    { return Node && (Movable.Contains(Node->NodeGuid) || Node->IsA<UEdGraphNode_Comment>()); });
+    if (!PlanPlacement(Scratch.Graph, Plan.Nodes, Plan.PlannedPositions,
+        Plan.bPlacementUsedEstimatedSize, OutError, &ScratchLinks)) return false;
+    const FPlannedPosition* First = Plan.PlannedPositions.FindByPredicate([&](const FPlannedPosition& P)
+    { return P.FormIndex == AnchorForm; });
+    if (!First) { OutError = TEXT("Insertion placement did not include its execution attachment."); return false; }
+    // Keep insertion in the attachment lane. A fixed obstacle must cause a
+    // refusal rather than silently relocating the new block beyond the tail.
+    const int64 DeltaX = int64(Anchor->NodePosX)
+        + (Anchor->NodeWidth > 0 ? Anchor->NodeWidth : PlacementWidth)
+        + PlacementHorizontalGap - First->X;
+    const int64 DeltaY = int64(Anchor->NodePosY) - First->Y;
+    TArray<FPlacementObstacle> Bounds;
+    for (FPlannedPosition& Position : Plan.PlannedPositions)
+    {
+        const FNewNode& Form = Plan.Nodes[Position.FormIndex];
+        const int64 X = int64(Position.X) + DeltaX;
+        const int64 Width = Form.MeasuredWidth > 0 ? Form.MeasuredWidth : PlacementWidth;
+        const int64 Y = int64(Position.Y) + DeltaY;
+        const int64 Height = Form.MeasuredHeight > 0 ? Form.MeasuredHeight : PlacementHeight;
+        if (!FitsCoordinate(X) || !FitsCoordinate(X + Width) || !FitsCoordinate(Y) || !FitsCoordinate(Y + Height))
+        { OutError = TEXT("Insertion geometry exceeds the supported coordinate range."); return false; }
+        Position.X = int32(X); Position.Y = int32(Y);
+        Bounds.Add({X, Y, Width, Height});
+    }
+    if (!PlanTailTranslation(Graph, Plan.MovableNodeIds, Bounds, Plan.ExistingPositions, OutError)) return false;
+    return PlanInsertionComment(Graph, Plan.ContainingCommentId, Plan.ExistingPositions, Bounds, Plan.CommentGrowth, OutError);
 }
 
 bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<FNewNode>& InNodes,

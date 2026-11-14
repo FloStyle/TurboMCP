@@ -1251,10 +1251,12 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param Text Nonempty append graph text. New forms create nodes; reader-derived IDs refer to existing nodes. Use Preview first and preserve exact type IDs and pin names. Partial reader pages are not standalone append input. Engine-created companion nodes are reported with IDs. Explicit delegate wiring removes only newly generated events left completely disconnected; existing events are preserved.
-	 * Connected append placement searches nearby space above and below fixed connections. Existing nodes stay fixed. If no local slot fits, free space or submit a smaller connected block. Tight gaps may require bent wires; this is not whole-graph tidy.
+	 * Connected append placement searches nearby space above and below fixed connections. In local mode, existing nodes stay fixed. If no local slot fits, free space or submit a smaller connected block. Tight gaps may require bent wires; this is not whole-graph tidy.
 	 *
-	 * @param Placement local (default or empty) searches nearby space. outside places new nodes beyond existing graph bounds while keeping existing nodes fixed; boundary wires may be long. per-anchor places independent connected groups near their own fixed connections, keeping shared producers together; incompatible anchors or unavailable local space refuse. None of these modes moves existing nodes. Preview and inspect before compiling/saving. Unknown values refuse.
+	 * @param Placement local (default or empty) searches nearby space. outside places new nodes beyond existing graph bounds while keeping existing nodes fixed; boundary wires may be long. per-anchor places independent connected groups near their own fixed connections, keeping shared producers together; incompatible anchors or unavailable local space refuse. These three modes keep existing nodes fixed. insert reserves space after one fixed execution source and moves only explicitly authorized tail nodes; it requires a preview token to apply. Preview and inspect before compiling/saving. Unknown values refuse.
 	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence, so Continuation is skipped for those targets and adds no second execution path. Remove the explicit target link if you want Continuation to reconnect it. Example: Done:then for a submitted local label.
+	 * @param MovableNodeIdsJson JSON array of existing node IDs, e.g. ["LONG_NODE_ID"]. Required for insert; an empty list never permits whole-graph movement. Use [] for other modes.
+	 * @param ContainingCommentId Optional existing comment ID for insert. Only that box may grow rightward; other boxes and existing membership remain constraints. Empty for other modes.
 	*/
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphAppend(
@@ -1262,7 +1264,9 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 		const FString& GraphName,
 		const FString& Text,
         const FString& Continuation = TEXT("auto"),
-        const FString& Placement = TEXT("local"));
+        const FString& Placement = TEXT("local"),
+        const FString& MovableNodeIdsJson = TEXT("[]"),
+        const FString& ContainingCommentId = TEXT(""));
 
 	/**
      * Plan graph replacement and list deletions; loads the Blueprint without applying the replacement, compiling or saving.
@@ -2251,10 +2255,13 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param Text Nonempty append graph text. New forms create nodes; reader-derived IDs refer to existing nodes. Use Preview first and preserve exact type IDs and pin names. Partial reader pages are not standalone append input. Engine-created companion nodes are reported with IDs. Explicit delegate wiring removes only newly generated events left completely disconnected; existing events are preserved.
-	 * Connected append placement searches nearby space above and below fixed connections. Existing nodes stay fixed. If no local slot fits, free space or submit a smaller connected block. Tight gaps may require bent wires; this is not whole-graph tidy.
+	 * Connected append placement searches nearby space above and below fixed connections. In local mode, existing nodes stay fixed. If no local slot fits, free space or submit a smaller connected block. Tight gaps may require bent wires; this is not whole-graph tidy.
 	 *
-	 * @param Placement local (default or empty) searches nearby space. outside places new nodes beyond existing graph bounds while keeping existing nodes fixed; boundary wires may be long. per-anchor places independent connected groups near their own fixed connections, keeping shared producers together; incompatible anchors or unavailable local space refuse. None of these modes moves existing nodes. Preview and inspect before compiling/saving. Unknown values refuse.
+	 * @param Placement local (default or empty) searches nearby space. outside places new nodes beyond existing graph bounds while keeping existing nodes fixed; boundary wires may be long. per-anchor places independent connected groups near their own fixed connections, keeping shared producers together; incompatible anchors or unavailable local space refuse. These three modes keep existing nodes fixed. insert reserves space after one fixed execution source and moves only explicitly authorized tail nodes; it requires a preview token to apply. Preview and inspect before compiling/saving. Unknown values refuse.
 	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence, so Continuation is skipped for those targets and adds no second execution path. Remove the explicit target link if you want Continuation to reconnect it. Example: Done:then for a submitted local label.
+	 * @param MovableNodeIdsJson JSON array of existing node IDs, e.g. ["LONG_NODE_ID"]. Required for insert; an empty list never permits whole-graph movement. Use [] for other modes.
+	 * @param ContainingCommentId Optional existing comment ID for insert. Only that box may grow rightward; other boxes and existing membership remain constraints. Empty for other modes.
+	 * @param PreviewToken Single-use token returned by insertion preview, valid for ten minutes. Repeat identical request arguments. Changed graph state refuses before mutation. Empty for other placement modes.
 	*/
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphAppend(
@@ -2262,7 +2269,10 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 		const FString& GraphName,
 		const FString& Text,
         const FString& Continuation = TEXT("auto"),
-        const FString& Placement = TEXT("local"));
+        const FString& Placement = TEXT("local"),
+        const FString& MovableNodeIdsJson = TEXT("[]"),
+        const FString& ContainingCommentId = TEXT(""),
+        const FString& PreviewToken = TEXT(""));
 
 	/**
      * Replace graph content and delete omitted eligible nodes in one undo transaction; loads the Blueprint, but does not compile or save.

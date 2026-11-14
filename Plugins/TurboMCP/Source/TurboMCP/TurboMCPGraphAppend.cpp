@@ -22,6 +22,7 @@
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "EdGraphSchema_K2.h"
+#include "EdGraphNode_Comment.h"
 #include "K2Node_AssignDelegate.h"
 #include "K2Node_CustomEvent.h"
 #include "Engine/Blueprint.h"
@@ -215,16 +216,72 @@ namespace
 		}
 		return true;
 	}
+    bool ValidateInsertionGeometry(const FTurboMCPGraphAppend::FPlan& Plan, UEdGraph* Graph, FString& Error)
+    {
+        if (!Plan.bInsertion)
+        {
+            if (!Plan.ExistingPositions.IsEmpty() || !Plan.CommentGrowth.NodeId.IsEmpty())
+            { Error = TEXT("existing geometry changes require an explicit insertion plan; nothing was written"); return false; }
+            return true;
+        }
+        if (!Plan.bPlacementRequested || Plan.bPerAnchor || Plan.bPlaceOutside)
+        { Error = TEXT("insertion cannot be combined with another placement mode; nothing was written"); return false; }
+        if (!ValidatePlannedPositions(Plan, Error)) return false;
+        TArray<FTurboMCPGraphAppend::FPlacementObstacle> Bounds;
+        for (const auto& Position : Plan.PlannedPositions)
+        {
+            const auto& Form = Plan.Nodes[Position.FormIndex];
+            Bounds.Add({Position.X, Position.Y, Form.MeasuredWidth > 0 ? Form.MeasuredWidth : 320,
+                Form.MeasuredHeight > 0 ? Form.MeasuredHeight : 160});
+        }
+        TArray<FTurboMCPGraphAppend::FExistingPosition> Expected;
+        if (!FTurboMCPGraphAppend::PlanTailTranslation(Graph, Plan.MovableNodeIds, Bounds, Expected, Error)) return false;
+        if (Expected.Num() != Plan.ExistingPositions.Num())
+        { Error = TEXT("insertion movement no longer matches the approved geometry; preview again; nothing was written"); return false; }
+        for (int32 I = 0; I < Expected.Num(); ++I)
+        {
+            const auto& A = Expected[I]; const auto& B = Plan.ExistingPositions[I];
+            if (A.NodeId != B.NodeId || A.OldX != B.OldX || A.OldY != B.OldY || A.NewX != B.NewX || A.NewY != B.NewY)
+            { Error = TEXT("insertion movement changed for ") + A.NodeId + TEXT("; preview again; nothing was written"); return false; }
+        }
+        FTurboMCPGraphAppend::FCommentGrowth Growth;
+        if (!FTurboMCPGraphAppend::PlanInsertionComment(Graph, Plan.ContainingCommentId,
+            Expected, Bounds, Growth, Error)) return false;
+        if (Growth.NodeId != Plan.CommentGrowth.NodeId || Growth.OldWidth != Plan.CommentGrowth.OldWidth
+            || Growth.NewWidth != Plan.CommentGrowth.NewWidth)
+        { Error = TEXT("insertion comment growth changed; preview again; nothing was written"); return false; }
+        return true;
+    }
+
+    FString RenderExistingGeometry(const FTurboMCPGraphAppend::FPlan& Plan)
+    {
+        FString Out;
+        for (const auto& Move : Plan.ExistingPositions)
+            Out += FString::Printf(TEXT("\n  existing node %s: (%d,%d) -> (%d,%d)"),
+                *Move.NodeId, Move.OldX, Move.OldY, Move.NewX, Move.NewY);
+        if (!Plan.CommentGrowth.NodeId.IsEmpty())
+            Out += FString::Printf(TEXT("\n  comment %s: width %d -> %d; top-left and height unchanged"),
+                *Plan.CommentGrowth.NodeId, Plan.CommentGrowth.OldWidth, Plan.CommentGrowth.NewWidth);
+        return Out;
+    }
 }
 
 bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphName,
-	const FString& InText, FPlan& OutPlan, FString& OutError, bool bRequestPlacement, const FString& Continuation, const FString& Placement)
+	const FString& InText, FPlan& OutPlan, FString& OutError, bool bRequestPlacement, const FString& Continuation, const FString& Placement,
+    const TArray<FString>& MovableNodeIds, const FString& ContainingCommentId)
 {
 	OutError.Empty();
 	OutPlan = FPlan();
     const FString PlacementMode=Placement.TrimStartAndEnd();
-    if (!PlacementMode.IsEmpty() && PlacementMode!=TEXT("local") && PlacementMode!=TEXT("outside") && PlacementMode!=TEXT("per-anchor"))
-    { OutError=TEXT("Placement must be local, outside or per-anchor. No graph changes were made."); return false; }
+    if (!PlacementMode.IsEmpty() && PlacementMode!=TEXT("local") && PlacementMode!=TEXT("outside") && PlacementMode!=TEXT("per-anchor") && PlacementMode!=TEXT("insert"))
+    { OutError=TEXT("Placement must be local, outside, per-anchor or insert. No graph changes were made."); return false; }
+    OutPlan.bInsertion = PlacementMode == TEXT("insert");
+    if (OutPlan.bInsertion && (!bRequestPlacement || MovableNodeIds.IsEmpty()))
+    { OutError = TEXT("Insertion requires placement and explicit movable node IDs; nothing was written."); return false; }
+    if (!OutPlan.bInsertion && (!MovableNodeIds.IsEmpty() || !ContainingCommentId.IsEmpty()))
+    { OutError = TEXT("Movable nodes and a containing comment are supported only by insert placement; nothing was written."); return false; }
+    OutPlan.MovableNodeIds = MovableNodeIds;
+    OutPlan.ContainingCommentId = ContainingCommentId;
     OutPlan.bPlaceOutside=PlacementMode==TEXT("outside");
     OutPlan.bPerAnchor=PlacementMode==TEXT("per-anchor");
     // Placement preflight executes the proposed links, so it must use the caller's continuation.
@@ -780,8 +837,11 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		if (OutPlan.Refusals.Num() == 0 && !OutPlan.bNothingToDo)
 		{
 			FString PlacementRefusal;
-			if (!PlanPlacement(Graph, OutPlan.Nodes, OutPlan.PlannedPositions,
-				OutPlan.bPlacementUsedEstimatedSize, PlacementRefusal, &OutPlan.Links, OutPlan.bPlaceOutside, OutPlan.bPerAnchor))
+			const bool Placed = OutPlan.bInsertion
+                ? PlanInsertion(Graph, OutPlan, OutPlan.Links, PlacementRefusal)
+                : PlanPlacement(Graph, OutPlan.Nodes, OutPlan.PlannedPositions,
+                    OutPlan.bPlacementUsedEstimatedSize, PlacementRefusal, &OutPlan.Links, OutPlan.bPlaceOutside, OutPlan.bPerAnchor);
+            if (!Placed)
 			{
 				OutPlan.Refusals.Add(PlacementRefusal);
 			}
@@ -882,6 +942,7 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 		Out += TEXT("one; footprint labels distinguish scratch-measured nodes from estimated fallback geometry.");
 	}
 
+	Out += RenderExistingGeometry(InPlan);
 	Out += TEXT("\n; No append was applied to the target graph. Planning may load assets and create temporary nodes. No compile or save was requested. After a successful preview, call EditTurboMCPGraphAppend to apply the edit.");
 	return Out;
 }
@@ -995,6 +1056,10 @@ bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FS
         if (Link.FromFormIndex == INDEX_NONE && !RemapKey(Link.FromNodeKey)) return false;
         if (Link.ToFormIndex == INDEX_NONE && !RemapKey(Link.ToNodeKey)) return false;
     }
+    for (FString& Id : ScratchPlan.MovableNodeIds) if (!RemapKey(Id)) return false;
+    if (!RemapKey(ScratchPlan.ContainingCommentId) || !RemapKey(ScratchPlan.CommentGrowth.NodeId)) return false;
+    for (FExistingPosition& Move : ScratchPlan.ExistingPositions) if (!RemapKey(Move.NodeId)) return false;
+    ScratchPlan.ExistingPositions.Sort([](const FExistingPosition& A, const FExistingPosition& B) { return A.NodeId < B.NodeId; });
     // Resolve type IDs in the real Blueprint context; all created nodes and schema
     // mutations belong to the scratch graph, whose owner is transient.
     TArray<UEdGraphNode*> ScratchCreated;
@@ -1075,8 +1140,10 @@ bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FS
                             }
                         }
                     }
-                    Accepted = PlanPlacement(Original, OutMeasuredPlan->Nodes, OutMeasuredPlan->PlannedPositions,
-                        OutMeasuredPlan->bPlacementUsedEstimatedSize, OutError, &LayoutLinks, OutMeasuredPlan->bPlaceOutside, OutMeasuredPlan->bPerAnchor);
+                    Accepted = OutMeasuredPlan->bInsertion
+                        ? PlanInsertion(Original, *OutMeasuredPlan, LayoutLinks, OutError)
+                        : PlanPlacement(Original, OutMeasuredPlan->Nodes, OutMeasuredPlan->PlannedPositions,
+                            OutMeasuredPlan->bPlacementUsedEstimatedSize, OutError, &LayoutLinks, OutMeasuredPlan->bPlaceOutside, OutMeasuredPlan->bPerAnchor);
                 }
             }
         }
@@ -1097,12 +1164,29 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
     FString& OutReport, FString& OutError, bool bScratch, bool bJoinCallerTransaction, TArray<UEdGraphNode*>* OutCreatedByForm)
 {
     OutReport.Empty(); OutError.Empty();
+    // Recompute permitted geometry before opening a transaction or changing any
+    // object. The same guard runs against live and scratch graph identities.
+    if (!ValidateInsertionGeometry(InPlan, Graph, OutError)) return false;
     // Scratch failures discard the entire transient graph, without touching undo.
-    auto Rollback = [bScratch]() { return bScratch || FTurboMCPRollback::EndAndUndoActiveTransaction(); };
-    // Undo completion alone does not prove that callbacks and all graph state were restored.
-    auto RollbackStatus = [bScratch](bool bUndone) -> const TCHAR*
+    const FString BeforeInsertion = !bScratch && InPlan.bInsertion ? PlacementSourceState(Graph) : FString();
+    const bool WasDirty = Blueprint->GetOutermost()->IsDirty();
+    bool bInsertionRestored = false;
+    auto Rollback = [&]()
+    {
+        if (bScratch) return true;
+        const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+        // Do not infer restoration from Undo's return value. Compare every node,
+        // frame rectangle, pin/default and connection used by insertion planning.
+        bInsertionRestored = Undone && InPlan.bInsertion
+            && PlacementSourceState(Graph) == BeforeInsertion
+            && Blueprint->GetOutermost()->IsDirty() == WasDirty;
+        return Undone;
+    };
+    auto RollbackStatus = [&](bool bUndone) -> const TCHAR*
     {
         if (bScratch) return TEXT("scratch execution failed; live graph unchanged");
+        if (bInsertionRestored)
+            return TEXT("unchanged: insertion graph geometry, pins, defaults, links and package dirty state restored; compile=not_run; save=not_requested");
         return bUndone
             ? TEXT("partial: undo completed; restoration is unverified; inspect the graph before retrying; compile=not_run; save=not_requested")
             : TEXT("partial: undo did not complete; inspect the graph before retrying; compile=not_run; save=not_requested");
@@ -1113,6 +1197,22 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
         Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "GraphAppend", "TurboMCP append to graph"));
 	if (!bScratch) Blueprint->Modify();
 	Graph->Modify();
+
+    for (const FExistingPosition& Move : InPlan.ExistingPositions)
+    {
+        UEdGraphNode* Node = TurboMCPGraphScratch::Find(Graph, Move.NodeId);
+        // Validation above resolved every ID on this game-thread execution.
+        // Imported or programmatically created nodes may lack the editor flag.
+        // Enroll every existing object we change in this undo transaction.
+        Node->SetFlags(RF_Transactional);
+        Node->Modify(); Node->NodePosX = Move.NewX; Node->NodePosY = Move.NewY;
+    }
+    if (!InPlan.CommentGrowth.NodeId.IsEmpty())
+    {
+        UEdGraphNode* Box = TurboMCPGraphScratch::Find(Graph, InPlan.CommentGrowth.NodeId);
+        Box->SetFlags(RF_Transactional);
+        Box->Modify(); Box->NodeWidth = InPlan.CommentGrowth.NewWidth;
+    }
 
 	// ---- CREATE, THEN LINK, THEN SET PINS. THAT ORDER IS NOT ARBITRARY: a pin value can only be written on a
 	// node whose pins exist, and pins exist only after `AllocateDefaultPins`, which the factory runs. ---------
@@ -1801,7 +1901,43 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
         OutReport = TEXT("compile=not_run; save=not_requested; connect each impure node through its execution input to a recognized event or function entry; data links alone do not execute it");
         return false;
     }
+    // Schema callbacks can reconstruct nodes while links are written. Report
+    // planned geometry only after checking the objects that survived those callbacks.
+    FString GeometryMismatch;
+    if (InPlan.bInsertion)
+    {
+        for (const FExistingPosition& Move : InPlan.ExistingPositions)
+        {
+            const UEdGraphNode* Node = TurboMCPGraphScratch::Find(Graph, Move.NodeId);
+            if (!Node || Node->NodePosX != Move.NewX || Node->NodePosY != Move.NewY)
+            { GeometryMismatch = TEXT("existing node ") + Move.NodeId; break; }
+        }
+        if (GeometryMismatch.IsEmpty() && !InPlan.CommentGrowth.NodeId.IsEmpty())
+        {
+            const UEdGraphNode* Box = TurboMCPGraphScratch::Find(Graph, InPlan.CommentGrowth.NodeId);
+            if (!Box || Box->NodeWidth != InPlan.CommentGrowth.NewWidth)
+                GeometryMismatch = TEXT("comment ") + InPlan.CommentGrowth.NodeId;
+        }
+        if (GeometryMismatch.IsEmpty())
+        {
+            for (const FPlannedPosition& Position : InPlan.PlannedPositions)
+            {
+                const UEdGraphNode* Node = CreatedByForm.IsValidIndex(Position.FormIndex)
+                    ? CreatedByForm[Position.FormIndex] : nullptr;
+                if (!Node || !Graph->Nodes.Contains(Node) || Node->NodePosX != Position.X || Node->NodePosY != Position.Y)
+                { GeometryMismatch = FString::Printf(TEXT("created form %d"), Position.FormIndex); break; }
+            }
+        }
+        if (!GeometryMismatch.IsEmpty())
+        {
+            const bool Undone = Rollback();
+            OutError = FString(RollbackStatus(Undone)) + TEXT("; insertion geometry did not match the plan: ") + GeometryMismatch;
+            OutReport = TEXT("compile=not_run; save=not_requested; attempted geometry is not final state");
+            return false;
+        }
+    }
     Out += TEXT("\nnew_execution_nodes=structurally_reachable; runtime_behavior=not_verified");
+    Out += RenderExistingGeometry(InPlan);
 	OutReport = Out;
     if (OutCreatedByForm) *OutCreatedByForm = CreatedByForm;
 	return true;
