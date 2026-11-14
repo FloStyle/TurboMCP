@@ -908,6 +908,8 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 			{ AddError(TEXT("engine schema refused the multi-target fixture")); return false; }
 		}
 		Call->CreateNewGuid();
+		if (!LinkEntryToPrint(Graph, FindFunctionEntry(Graph), Call))
+		{ AddError(TEXT("multi-target call could not connect to the function entry")); return false; }
 		if (SelfPin->LinkedTo.Num() != 2)
 		{ AddError(TEXT("engine schema did not preserve both targets")); return false; }
 		const auto Links = SelfPin->LinkedTo;
