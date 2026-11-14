@@ -7356,22 +7356,23 @@
       "title": "State reference-scan scope and expose stored soft paths",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator-reference-default",
+      "validation": "focused_runtime_passed",
       "source_keys": [
         "2026-11-09_S2/BL-18"
       ],
       "dependencies": [],
       "complexity_estimate": 4,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Scoped reference wording and current soft-class-default reporting are implemented. The stock UE 5.8.4 build and focused native fixture passed; the original field asset was unavailable.",
       "acceptance": "Label asset-local reference scans. Reproduce a known stored soft path before claiming a read defect; distinguish unset/default/unavailable.",
       "key": "NOV09-13",
       "canonical_issue": "NOV09-13",
       "report": "2026-11-09 intake",
       "task_plan": "docs/audit/field-reports/plan-2026-11-09.json",
-      "remaining": "Label asset-local reference scans. Reproduce a known stored soft path before claiming a read defect; distinguish unset/default/unavailable."
+      "remaining": "The original field asset and its disk state were not available for confirmation.",
+      "implementation": "The reader now labels asset-local static references and reports current soft class defaults with explicit unset or unavailable states in text and JSON. Stock UE 5.8.4 build and focused native fixture passed in run 7f4af72d63c04357aa16be15d42afb41; field recheck remains unperformed."
     },
     {
       "id": "NOV09-14",
