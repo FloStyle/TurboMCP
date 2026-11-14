@@ -6586,8 +6586,8 @@
       "kind": "bug",
       "state": "in_progress",
       "priority": "P0",
-      "validation": "scoring_passed_r4_classification_passed_r3_r6_pending",
-      "remaining": "R4 Sequence handoffs are classified and passed a focused editor suite. R3/R6 on the accepted cascade and cross-box visual false positives still need verification.",
+      "validation": "scoring_passed_r4_classification_passed_r3_r6_workflow_pending",
+      "remaining": "Check R3/R6 against the accepted loop-cascade fixture and inspect cross-box findings. Do not mark the full Tidy layout or diagnostic task done from the stock-macro check.",
       "source_keys": [
         "2026-11-05_S1/TD-63",
         "2026-11-05_S1/TD-64",
@@ -6621,10 +6621,16 @@
           "run": "5cca6fed57de442085a2c826ed51de61",
           "result": "integrated_partial_r4_editor_passed",
           "scope": "Stock Unreal build and focused test-layout passed; R4 is rule-backed and other findings remain review candidates. NOV05-03 remains in progress pending R3/R6 and visual cross-box review."
+        },
+        {
+          "commit": "b9e495fefe897b8c0d5f7b81d877841b59fc1753",
+          "run": "66e2abb9d7d04f9897daea572d2b7ed2",
+          "result": "integrated_partial_focused_pass",
+          "scope": "Direct, unrouted Completed and False edges now remain defect candidates. The Body or True lane can start with reroutes; classification follows it to its first real node. Stock Unreal 5.8.4 build and focused test-layout passed on the exact commit. R3/R6 on the accepted loop-cascade fixture and cross-box visuals are not yet accepted."
         }
       ],
-      "next_step": "Seven metrics and arithmetic cross-check implemented. Finish actual LayoutReport/DoneCheck intended-versus-defect classification, then its focused validation.",
-      "latest_evidence": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
+      "next_step": "Check R3/R6 against the accepted loop-cascade fixture and inspect cross-box findings. Do not mark the full Tidy layout or diagnostic task done from the stock-macro check.",
+      "latest_evidence": "Direct, unrouted Completed and False edges now remain defect candidates. The Body or True lane can start with reroutes; classification follows it to its first real node. Stock Unreal 5.8.4 build and focused test-layout passed on the exact commit. R3/R6 on the accepted loop-cascade fixture and cross-box visuals are not yet accepted."
     },
     {
       "id": "NOV05-04",

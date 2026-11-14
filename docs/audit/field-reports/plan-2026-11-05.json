@@ -202,7 +202,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "scoring_passed_r4_classification_passed_r3_r6_pending",
+      "validation": "scoring_passed_r4_classification_passed_r3_r6_workflow_pending",
       "source_ids": [
         "TD-63",
         "TD-64",
@@ -222,7 +222,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "LayoutReport and DoneCheck now separate defect candidates from rule-backed handoffs. R4 was verified in a focused editor suite. Verify R3/R6 on the accepted cascade and independently review cross-box false positives before closing this issue.",
+      "next_step": "Check R3/R6 against the accepted loop-cascade fixture and inspect cross-box findings. Do not mark the full Tidy layout or diagnostic task done from the stock-macro check.",
       "evidence": [
         {
           "commit": "fb6c2228",
@@ -252,12 +252,20 @@
           "run": "5cca6fed57de442085a2c826ed51de61",
           "result": "integrated_partial_r4_editor_passed",
           "scope": "Scoped patch passed the approved-base file gate, stock Unreal build and focused test-layout suite. A stock ForEachLoop Sequence handoff is classed intended under R4; other backward and cross-box findings remain defect candidates. Basic graph metrics now precede paged findings; empty Scope requirement is documented. R3/R6 on the accepted loop-cascade fixture and cross-box visual false positives remain unverified. The preceding run d98c66e47a00467d9e02d50fd4c9ca6a had a passing suite but failed the supervisor because files changed during validation; the final unchanged rerun passed."
+        },
+        {
+          "commit": "b9e495fefe897b8c0d5f7b81d877841b59fc1753",
+          "run": "66e2abb9d7d04f9897daea572d2b7ed2",
+          "result": "integrated_partial_focused_pass",
+          "scope": "Direct, unrouted Completed and False edges now remain defect candidates. The Body or True lane can start with reroutes; classification follows it to its first real node. Stock Unreal 5.8.4 build and focused test-layout passed on the exact commit. R3/R6 on the accepted loop-cascade fixture and cross-box visuals are not yet accepted."
         }
       ],
       "design_notes": [
         "Candidate BodyRowDrift and CompletedAboveBody are partial diagnostics, not Appendix H scoring. Still required: unrelated box crossings, exec segment crossings, diagonal exec length, block row breaks, data crossings, total length, area, 5-percent tie handling and every greater-than-10-percent regression warning."
       ],
-      "readiness_review": "Appendix H defines the seven measures and thresholds. Straight-segment scoring is integrated; independent geometry checks and intended handoff classification remain specified work."
+      "readiness_review": "Appendix H defines the seven measures and thresholds. Straight-segment scoring is integrated; independent geometry checks and intended handoff classification remain specified work.",
+      "remaining": "Check R3/R6 against the accepted loop-cascade fixture and inspect cross-box findings. Do not mark the full Tidy layout or diagnostic task done from the stock-macro check.",
+      "latest_evidence": "Direct, unrouted Completed and False edges now remain defect candidates. The Body or True lane can start with reroutes; classification follows it to its first real node. Stock Unreal 5.8.4 build and focused test-layout passed on the exact commit. R3/R6 on the accepted loop-cascade fixture and cross-box visuals are not yet accepted."
     },
     {
       "id": "NOV05-04",
