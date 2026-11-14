@@ -359,7 +359,7 @@ FTurboMCPBlueprintRead::FVariableDefault FTurboMCPBlueprintRead::DescribeVariabl
 		const void* Address = Property->ContainerPtrToValuePtr<void>(Defaults);
 		const FString Path = Property->GetPropertyValue(Address).ToSoftObjectPath().ToString();
 		return {Path,
-			Path.IsEmpty() ? TEXT("unset class default") : TEXT("saved class default")};
+			Path.IsEmpty() ? TEXT("unset class default") : TEXT("current class default")};
 	}
 	if (!InVariable.DefaultValue.IsEmpty())
 	{
@@ -413,7 +413,7 @@ FString FTurboMCPBlueprintRead::RenderVariables(const UBlueprint* InBlueprint, c
 				: (Default.Status == TEXT("class default unavailable") ? TEXT("(unavailable)") : TEXT("(type default)")))
 			: Default.Value;
 		Out += FString::Printf(TEXT("\n      default: %s (%s)"), *DisplayValue, *Default.Status);
-		if (Default.Status == TEXT("saved class default")
+		if (Default.Status == TEXT("current class default")
 			&& !Variable.DefaultValue.IsEmpty() && Variable.DefaultValue != Default.Value)
 		{
 			Out += FString::Printf(TEXT("\n      declaration default: %s"), *Variable.DefaultValue);

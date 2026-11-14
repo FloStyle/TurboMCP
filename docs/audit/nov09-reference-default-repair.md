@@ -4,7 +4,7 @@
 
 `FTurboMCPBlueprintRead::RenderRelations` scans graphs in the requested Blueprint only. Its unreferenced-function heading omits that boundary, so an external caller can be mistaken for an unused function. A filtered read already refuses to make the claim.
 
-`RenderVariables` and the JSON writer use `FBPVariableDescription::DefaultValue` as if an empty declaration proved a type default. For soft object and soft class properties, the generated class default object may contain the effective saved path. The field report does not establish whether its specific asset stored that path, so the repair must report source and availability rather than infer it.
+`RenderVariables` and the JSON writer use `FBPVariableDescription::DefaultValue` as if an empty declaration proved a type default. For soft object and soft class properties, the generated class default object may contain the current effective path. Reading the in-memory default does not prove what is saved on disk. The field report does not establish whether its specific asset stored that path, so the repair must report source and availability rather than infer it.
 
 ## Approved repair contract
 

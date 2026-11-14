@@ -43,15 +43,15 @@ bool FTurboMCPBlueprintReferenceDefaultTest::RunTest(const FString& Parameters)
     if (!TestNotNull(TEXT("Generated default object"), Defaults)
         || !TestNotNull(TEXT("Generated soft property"), Property)) return false;
 
-    const FString SavedPath = TEXT("/Game/Tests/T_ReferenceTarget.T_ReferenceTarget");
+    const FString CurrentPath = TEXT("/Game/Tests/T_ReferenceTarget.T_ReferenceTarget");
     Property->SetPropertyValue(Property->ContainerPtrToValuePtr<void>(Defaults),
-        FSoftObjectPtr(FSoftObjectPath(SavedPath)));
+        FSoftObjectPtr(FSoftObjectPath(CurrentPath)));
     Package->SetDirtyFlag(false);
     FTurboMCPBlueprintRead::FRequest Request;
     Request.Detail = FTurboMCPBlueprintRead::EDetail::Signatures;
     const FString Text = FTurboMCPBlueprintRead::Read(Blueprint, Request).Text;
-    TestTrue(TEXT("Saved soft path appears in text"), Text.Contains(SavedPath));
-    TestTrue(TEXT("Saved path source is explicit"), Text.Contains(TEXT("saved class default")));
+    TestTrue(TEXT("Current soft path appears in text"), Text.Contains(CurrentPath));
+    TestTrue(TEXT("Current path source is explicit"), Text.Contains(TEXT("current class default")));
     TestTrue(TEXT("Static scan names the asset boundary"),
         Text.Contains(TEXT("in this Blueprint's graphs")));
     FString Error;
@@ -59,9 +59,9 @@ bool FTurboMCPBlueprintReferenceDefaultTest::RunTest(const FString& Parameters)
     JsonRequest.DetailLevel = 1;
     const FString Json = FTurboMCPBlueprintJson::Write(Blueprint, JsonRequest, Error);
     TestTrue(TEXT("JSON read succeeds"), Error.IsEmpty());
-    TestTrue(TEXT("JSON carries effective path"), Json.Contains(SavedPath));
+    TestTrue(TEXT("JSON carries effective path"), Json.Contains(CurrentPath));
     TestTrue(TEXT("JSON carries default provenance"),
-        Json.Contains(TEXT("default_status")) && Json.Contains(TEXT("saved class default")));
+        Json.Contains(TEXT("default_status")) && Json.Contains(TEXT("current class default")));
     TestFalse(TEXT("Reader leaves package clean"), Package->IsDirty());
 
     Property->SetPropertyValue(Property->ContainerPtrToValuePtr<void>(Defaults), FSoftObjectPtr());
