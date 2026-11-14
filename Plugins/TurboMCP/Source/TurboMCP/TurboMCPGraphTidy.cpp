@@ -3770,7 +3770,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             const FNode& WrapTarget=OutPlan.Nodes[W.TargetNodeIndex];
             if(WrapTarget.PlannedY<=WrapSource.PlannedY+WrapSource.Height)
             {
-                OutError=FString::Printf(TEXT("WrapAfter %s cannot separate this continuation into a lower row within its current scope/comment boundaries; choose a chain break without a bypass or include the continuation. Unchanged."),*WrapSource.Key);
+                OutError=FString::Printf(TEXT("WrapAfter %s cannot separate this continuation into a lower row within its current scope/comment boundaries; include the complete continuation or choose another row boundary. Unchanged."),*WrapSource.Key);
                 return false;
             }
         }
