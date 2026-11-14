@@ -6,7 +6,7 @@ The 9 November field call returned about 451,000 characters for a scoped 65-node
 
 ## Approved repair
 
-Put the preview decision and moved-node count first. Keep the seven compact scores and safety/refusal explanation in the default result. Omit per-rectangle, per-edge and per-segment evidence by default. Add optional, bounded `GeometryOffset` and `GeometryLimit` parameters to preview and edit. An explicit request returns a numbered slice of the same scoring evidence with total row count and next offset. Reject invalid offsets or limits. Each preview replans current editor state; a page is evidence for that current plan only. The edit result reports geometry from the applied plan and measured result; it does not save or compile.
+Put the preview decision and moved-node count first. Keep the seven compact scores and safety/refusal explanation in the default result. Omit per-rectangle, per-edge and per-segment evidence by default. Add optional, bounded `GeometryOffset` and `GeometryLimit` parameters to preview. An explicit request returns a numbered slice of the same scoring evidence with total row count and next offset. Reject invalid offsets or limits. Each preview replans current editor state; a page is evidence for that current plan only. The edit result retains the seven measured scores and omits full geometry; requesting another edit solely to fetch a page would risk a second mutation. The edit does not save or compile.
 
 Keep native preview image paths and existing non-geometry diagnostics. Do not change scoring, layout positions, graph mutation or safety guards. Do not claim that a paged output is a stable snapshot across intervening editor changes.
 
@@ -16,4 +16,4 @@ Keep native preview image paths and existing non-geometry diagnostics. Do not ch
 
 ## Focused verification
 
-Build the plugin under the stock 5.8.4 supervisor. On a disposable dense graph, check that default preview starts with the verdict, remains under a bounded response size, retains the seven scores and skips `score rect` rows; request consecutive evidence pages and compare their concatenation with the original geometry generator. Confirm invalid page arguments refuse without graph changes. Use one focused Tidy workflow and preserve any existing unrelated suite failure.
+Build the plugin under the stock 5.8.4 supervisor. On a disposable graph, check that default preview starts with the verdict, remains under a bounded response size, retains the seven scores and skips `score rect` rows; request consecutive evidence pages and check their row numbering and total. Confirm invalid page arguments refuse without graph changes. Use one focused Tidy workflow and preserve any existing unrelated suite failure. The reported 450-node field graph is unavailable locally, so its exact response size remains a field follow-up.

@@ -212,6 +212,28 @@ def main():
     preview = tidy_preview(session, RICH)
     print(preview[:900])
     print()
+    check("the default preview opens with a decision",
+          preview.startswith(("WOULD APPLY:", "WOULD ROLL BACK:", "ALREADY TIDY:")),
+          preview[:180])
+    check("the default preview is bounded and omits rectangle rows",
+          len(preview) <= 32500 and "score rect" not in preview,
+          "characters=%d" % len(preview))
+    page0 = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphTidy",
+                         {"asset": ASSET, "graphName": RICH, "layoutMode": "blocks",
+                          "geometryOffset": 0, "geometryLimit": 2})
+    check("blocks preview returns a numbered geometry page",
+          "geometry evidence: rows 0..1 of " in page0 and "score rect" in page0,
+          page0[:550])
+    page1 = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphTidy",
+                         {"asset": ASSET, "graphName": RICH, "layoutMode": "blocks",
+                          "geometryOffset": 2, "geometryLimit": 2})
+    check("the next geometry page advances without repeating rows",
+          "geometry evidence: rows 2..3 of " in page1,
+          page1[:550])
+    bad_page = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphTidy",
+                            {"asset": ASSET, "graphName": RICH,
+                             "geometryOffset": 1, "geometryLimit": 0})
+    check("invalid pagination is refused", bad_page.startswith("error:"), bad_page[:180])
     tidy_before = re.search(r"total wire length ([\d.]+) ->", preview)
     check("the preview reports a before-number", tidy_before is not None, preview[:200])
     print("    reader %.1f vs tidy %s" % (reader_before or -1.0,
