@@ -6,6 +6,13 @@ Priority: P1
 Readiness: ready
 Owner: unassigned
 Design: docs/design/graphs.md
+Review: source-reviewed
+
+## Current review
+
+Finding: The reader's `Function|Result` ID and GraphAppend's filtered action ID may differ; the synthetic preview graph also lacks the existing function signature. The field failure is repeated, but the exact requested ID is unavailable.
+
+Action: Reproduce both discovery and preview in a synthetic function with an output, then expose an exact supported Return creation ID and preserve the real function signature through preview and apply. Refuse unsupported graph kinds without mutation.
 
 ## Problem
 

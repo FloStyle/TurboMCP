@@ -4137,6 +4137,34 @@
           "sha256": "ac9e0beda7f3f1bb0cacc4c25f9e24db4ecb4a2fd7e2f8f98101eda815379fb6"
         }
       ]
+    },
+    {
+      "id": "NOV05-13",
+      "path": "todo/nov05-return-node.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py",
+        "python Tools/execute-tests.py --profile build --execute",
+        "python Tools/execute-tests.py --profile engine --suites test-graph-append --execute"
+      ],
+      "title": "Add another function Return node through GraphAppend",
+      "decision": "confirmed",
+      "finding": "The reader's `Function|Result` ID and GraphAppend's filtered action ID may differ; the synthetic preview graph also lacks the existing function signature. The field failure is repeated, but the exact requested ID is unavailable.",
+      "action": "Reproduce both discovery and preview in a synthetic function with an output, then expose an exact supported Return creation ID and preserve the real function signature through preview and apply. Refuse unsupported graph kinds without mutation.",
+      "source_refs": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+          "line": 229,
+          "sha256": "97f134218a8b7e51e486a17624307a7a5aabb900276d156264d5af504ae3790d"
+        },
+        {
+          "path": "docs/audit/field-reports/batch-2026-11-05.json",
+          "line": 115,
+          "sha256": "63ff0ce864751f1c49bef50af6bf64fc2a556d4ecc528ac576f66a45ad5f1a7e"
+        }
+      ]
     }
   ]
 }
