@@ -26,3 +26,9 @@ Candidate 8670c0c3 passed the focused placement workflow in execution 620a66e019
 Execution 98a4dd9f2eb441ab97ecfc1d0989da07 failed because the new fixture ran before an older crowded-space/capture case and changed its graph. Moving the new case after the older case corrected test interference; both failures remain recorded. This focused pass does not supersede historical full-suite failures.
 
 Still outstanding: positive shared-pure-producer geometry, preview/apply coordinate equality and visual evidence for per-anchor mode. Explicit insertion and stale-preview authorization remain separate unfinished work. NOV09-03 stays open.
+
+## Shared producer and capture follow-up
+
+Candidate 5a033bc6 passed focused execution 79e6ae0b40de45b6b3388970d929af4f. The shared pure producer remains one form left of both consumers; applied public consumer coordinates appear in the preview. Inspected the final LegacyGraph region capture ending A83DD5A9414548BE2EE1C1959D6B9693: two separate event/consumer pairs remain near their own sources with no visible overlap. The overview is zoomed out and is not fine typography or pin-alignment acceptance.
+
+Remaining capability gap: connected components with multiple execution sources are conservatively refused regardless of compatibility. Do not equate this refusal with support for all compatible anchors. NOV09-03 remains partial on that specific gap; the previously missing focused workflow evidence is now available. Full append-suite acceptance remains separate.

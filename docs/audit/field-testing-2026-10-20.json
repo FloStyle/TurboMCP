@@ -7223,13 +7223,13 @@
         "NOV09-02"
       ],
       "complexity_estimate": 6,
-      "next_step": "Public per-anchor preview/apply and nearby-component reservations passed focused native execution 620a66e019264986918a22fabac21321. Finish shared-pure-producer geometry, exact preview/apply coordinates and visual evidence. See nov14-per-anchor-integration.md; remains partial.",
+      "next_step": "Focused public workflow, nearby collision, shared producer and preview-coordinate checks passed in 79e6ae0b40de45b6b3388970d929af4f; final capture inspected. Remaining: distinguish compatible multiple execution anchors from genuine conflicts instead of refusing all. Full suite acceptance remains separate.",
       "acceptance": "Plan each independent group from its own anchor, keep pure dependencies left/below their consumer, retain collision refusal and exact preview/edit placement.",
       "key": "NOV09-03",
       "canonical_issue": "NOV09-03",
       "report": "2026-11-09 intake",
       "task_plan": "docs/audit/field-reports/plan-2026-11-09.json",
-      "remaining": "Shared-pure-producer geometry, preview/apply coordinate equality and per-anchor visual evidence."
+      "remaining": "Compatible multiple execution anchors are still conservatively refused; implement compatibility handling without silently selecting the first source."
     },
     {
       "id": "NOV09-04",
