@@ -675,10 +675,10 @@
       "title": "Support additional function return nodes in append",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "focused_pass",
       "source_ids": [
         "GC-98"
       ],
@@ -686,8 +686,24 @@
         "2026-11-04_S3/GC-98"
       ],
       "dependencies": [],
-      "next_step": "Use the approved nov05-return-node assignment to reproduce the exact creation-ID mismatch in a synthetic function graph, then repair discovery/preview/apply within the bounded task. Preserve stock action filtering and no-mutation refusals.",
-      "evidence": []
+      "next_step": "Implementation is complete. Confirm in a future field session that the additional Return node appears with the expected outputs and links. This local focused pass does not certify every GraphAppend case.",
+      "evidence": [
+        {
+          "run": "bfb41ede121f4533a226de3c1f45ae4f",
+          "result": "passed",
+          "scope": "Supervised build on stock Unreal 5.8.4 in the isolated candidate worktree."
+        },
+        {
+          "run": "5fe0edc6782f47fb9f02347636093988",
+          "result": "passed",
+          "scope": "Focused GraphAppend suite: exact Return creation ID, signature-preserving preview, second Return apply and links, original Return preserved. Earlier blocked and failed attempts remain in local execution evidence."
+        },
+        {
+          "run": "78011b1c558d4fd3b5ecdb2877fdcbf7",
+          "result": "failed_unrelated",
+          "scope": "Offline validate.py stopped at the pre-existing DataAssetCreate lookup guard outside this assignment; other offline checks passed."
+        }
+      ]
     },
     {
       "id": "NOV05-14",

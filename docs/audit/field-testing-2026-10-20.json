@@ -6995,15 +6995,16 @@
       "report": "2026-11-05 intake",
       "title": "Support additional function return nodes in append",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "focused_native_passed; field_confirmation_pending",
+      "remaining": "Implementation closed. Future field use should confirm the second Return workflow; no further implementation is currently identified.",
       "source_keys": [
         "2026-11-04_S3/GC-98"
       ],
       "task_plan": "docs/audit/field-reports/plan-2026-11-05.json",
-      "dependencies": []
+      "dependencies": [],
+      "implementation": "GraphAppend exposes Function|Result and creates another Return with the existing function output signature. Preview and apply passed the focused stock UE 5.8.4 GraphAppend suite (5fe0edc6782f47fb9f02347636093988); integrated in e0484205096cfa0033da4acad2c0aa01e9ac919f. Broader plugin acceptance and field confirmation are pending."
     },
     {
       "id": "NOV05-14",
