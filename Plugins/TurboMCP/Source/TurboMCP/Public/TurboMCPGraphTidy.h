@@ -293,6 +293,9 @@ public:
     /** Refuse the first moved non-comment pair with intersecting planned rectangles. Unmoved overlaps are preserved. Does not mutate the plan or graph. */
     static bool ValidatePlannedNodeOverlaps(const FPlan& InPlan, FString& OutError);
 
+    /** Scoped box fitting must not acquire unrelated nodes or overlap unrelated sections. Existing overlap may not increase. */
+    static bool ValidateScopedBoxGrowth(const FPlan& InPlan, FString& OutError);
+
     /** Build bounded orthogonal route candidates from measured knot geometry.
      * This only fills WireRoutes; it does not change live links or authorize an edit.
      * Preview/apply integration must consume exactly these positions before enabling it.

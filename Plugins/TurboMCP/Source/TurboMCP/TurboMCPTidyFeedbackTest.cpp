@@ -26,6 +26,44 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPTidyFeedbackTest,
     "TurboMCP.GraphAppend.TidyFeedback", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
 {
+    // Box fitting must check section bounds, even when no node rectangles overlap.
+    {
+        FTurboMCPGraphTidy::FPlan Growth;
+        Growth.SelectedNodeKeys.Add(TEXT("member"));
+        FTurboMCPGraphTidy::FBox Section;
+        Section.Key = TEXT("section");
+        Section.Width = Section.PlannedWidth = 300;
+        Section.Height = 200;
+        Section.PlannedHeight = 400;
+        Section.bWouldFit = true;
+        Section.MemberKeys.Add(TEXT("member"));
+        Growth.Boxes.Add(Section);
+        FTurboMCPGraphTidy::FBox Neighbor;
+        Neighbor.Key = TEXT("neighbor");
+        Neighbor.Y = Neighbor.PlannedY = 300;
+        Neighbor.Width = Neighbor.PlannedWidth = 300;
+        Neighbor.Height = Neighbor.PlannedHeight = 100;
+        Growth.Boxes.Add(Neighbor);
+        FString GrowthError;
+        TestFalse(TEXT("Section growth refuses a fixed box below"), FTurboMCPGraphTidy::ValidateScopedBoxGrowth(Growth, GrowthError));
+        TestTrue(TEXT("Growth refusal identifies the blocking section"), GrowthError.Contains(TEXT("neighbor")));
+        Growth.Boxes[0].PlannedHeight = 200;
+        Growth.Boxes[0].PlannedWidth = 600;
+        TestTrue(TEXT("Free rightward growth is valid"), FTurboMCPGraphTidy::ValidateScopedBoxGrowth(Growth, GrowthError));
+        FTurboMCPGraphTidy::FNode Outside;
+        Outside.Key = TEXT("outside");
+        Outside.X = Outside.PlannedX = 450;
+        Outside.Y = Outside.PlannedY = 50;
+        Outside.Width = Outside.Height = 50;
+        Growth.Nodes.Add(Outside);
+        TestFalse(TEXT("Growth cannot acquire an unrelated node"), FTurboMCPGraphTidy::ValidateScopedBoxGrowth(Growth, GrowthError));
+        TestTrue(TEXT("Growth refusal identifies the unrelated node"), GrowthError.Contains(TEXT("outside")));
+        Growth.Nodes.Reset();
+        Growth.Boxes[1].ParentIndex = 0;
+        Growth.Boxes[0].PlannedHeight = 450;
+        TestTrue(TEXT("A known nested section is not an unrelated obstacle"), FTurboMCPGraphTidy::ValidateScopedBoxGrowth(Growth, GrowthError));
+        TestEqual(TEXT("Validation does not move the fixed section"), Growth.Boxes[1].PlannedY, 300.0);
+    }
     UBlueprint* Macros=LoadObject<UBlueprint>(nullptr,TEXT("/Engine/EditorBlueprintResources/StandardMacros.StandardMacros"));
     if (Macros == nullptr)
     {

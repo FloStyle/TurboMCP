@@ -3727,6 +3727,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		}
 
     if (!ValidatePlannedNodeOverlaps(OutPlan, OutError)) return false;
+    if (!ValidateScopedBoxGrowth(OutPlan, OutError)) return false;
 
 	// How many nodes and boxes the plan would actually change.
 	for (const FNode& Entry : OutPlan.Nodes)
@@ -4853,6 +4854,63 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 }
 
 // Reject newly planned intersections without changing the live graph or plan.
+bool FTurboMCPGraphTidy::ValidateScopedBoxGrowth(const FPlan& InPlan, FString& OutError)
+{
+    if (InPlan.SelectedNodeKeys.IsEmpty()) return true;
+    auto OverlapArea = [](double AX, double AY, double AW, double AH,
+                          double BX, double BY, double BW, double BH)
+    {
+        return FMath::Max(0.0, FMath::Min(AX + AW, BX + BW) - FMath::Max(AX, BX))
+            * FMath::Max(0.0, FMath::Min(AY + AH, BY + BH) - FMath::Max(AY, BY));
+    };
+    auto IsAncestor = [&InPlan](int32 Ancestor, int32 Child)
+    {
+        // Membership is resolved before planning. Bound traversal even for an invalid plan.
+        for (int32 Step = 0; Step < InPlan.Boxes.Num() && InPlan.Boxes.IsValidIndex(Child); ++Step)
+        {
+            Child = InPlan.Boxes[Child].ParentIndex;
+            if (Child == Ancestor) return true;
+        }
+        return false;
+    };
+    for (int32 Index = 0; Index < InPlan.Boxes.Num(); ++Index)
+    {
+        const FBox& Box = InPlan.Boxes[Index];
+        if (!Box.bWouldFit || Box.bGenerated) continue;
+        auto AddsOverlap = [&](double X, double Y, double W, double H,
+                               double PlannedX, double PlannedY, double PlannedW, double PlannedH)
+        {
+            const double Before = OverlapArea(Box.X, Box.Y, Box.Width, Box.Height, X, Y, W, H);
+            const double After = OverlapArea(Box.PlannedX, Box.PlannedY, Box.PlannedWidth, Box.PlannedHeight,
+                                            PlannedX, PlannedY, PlannedW, PlannedH);
+            return After > Before + 0.01;
+        };
+        for (int32 OtherIndex = 0; OtherIndex < InPlan.Boxes.Num(); ++OtherIndex)
+        {
+            if (OtherIndex == Index || IsAncestor(Index, OtherIndex) || IsAncestor(OtherIndex, Index)) continue;
+            const FBox& Other = InPlan.Boxes[OtherIndex];
+            if (Other.bGenerated) continue;
+            if (AddsOverlap(Other.X, Other.Y, Other.Width, Other.Height,
+                            Other.PlannedX, Other.PlannedY, Other.PlannedWidth, Other.PlannedHeight))
+            {
+                OutError = FString::Printf(TEXT("Comment %s would grow into unrelated comment %s. Nothing changed. Choose a layout with room for the complete section; moving neighboring sections requires a separate explicit scope."), *Box.Key, *Other.Key);
+                return false;
+            }
+        }
+        for (const FNode& Node : InPlan.Nodes)
+        {
+            if (Node.bIsComment || Box.MemberKeys.Contains(Node.Key)) continue;
+            if (AddsOverlap(Node.X, Node.Y, Node.Width, Node.Height,
+                            Node.PlannedX, Node.PlannedY, Node.Width, Node.Height))
+            {
+                OutError = FString::Printf(TEXT("Comment %s would grow into unrelated node %s. Nothing changed. Choose a layout with room for the complete section; this selection does not authorize acquiring surrounding nodes."), *Box.Key, *Node.Key);
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool FTurboMCPGraphTidy::ValidatePlannedNodeOverlaps(const FPlan& InPlan, FString& OutError)
 {
     OutError.Reset();
