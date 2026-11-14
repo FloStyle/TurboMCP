@@ -155,10 +155,12 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
     UBlueprint* BP=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("BP_Feedback"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
     if (!TestNotNull(TEXT("Fixture Blueprint"),BP)) return false;
     // Exercise both flat and nested sections through native planning and undo.
-    for (const bool WithChildSection : { false, true })
+    for (int32 SectionCase = 0; SectionCase < 3; ++SectionCase)
     {
+        const bool WithChildSection = SectionCase == 1;
+        const bool WithExplicitWrap = SectionCase == 2;
         UEdGraph* SectionGraph = FBlueprintEditorUtils::CreateNewGraph(BP,
-            WithChildSection ? TEXT("SectionGrowthNested") : TEXT("SectionGrowth"),
+            WithChildSection ? TEXT("SectionGrowthNested") : WithExplicitWrap ? TEXT("SectionGrowthWrapped") : TEXT("SectionGrowth"),
             UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
         BP->UbergraphPages.Add(SectionGraph);
         SectionGraph->SetFlags(RF_Transactional);
@@ -182,6 +184,8 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         Fixed->NodeWidth = 1000;
         Fixed->NodeHeight = 200;
         TArray<FString> Selected;
+        UEdGraphNode* WrappedSource = nullptr;
+        UEdGraphNode* WrappedTarget = nullptr;
         for (int32 Index = 0; Index < 3; ++Index)
         {
             auto* Event = NewObject<UK2Node_CustomEvent>(SectionGraph);
@@ -191,6 +195,7 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
             Call->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
             AddSectionNode(Call, 430, 90 + Index * 190);
             Event->FindPin(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Call->FindPin(UEdGraphSchema_K2::PN_Execute));
+            if (Index == 0) { WrappedSource = Event; WrappedTarget = Call; }
             Selected.Add(TurboMCPNodeId::MakeForNode(Event));
             Selected.Add(TurboMCPNodeId::MakeForNode(Call));
         }
@@ -220,11 +225,14 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         FString SectionError;
         if (!TestTrue(TEXT("Blocked section plans rightward: ") + SectionError,
             FTurboMCPGraphTidy::Plan(BP->GetPathName(), SectionGraph->GetName(), true, false,
-                Selected, SectionPlan, SectionError))) return false;
+                Selected, SectionPlan, SectionError, FString(), 120.0, 100.0, 280.0,
+                WithExplicitWrap ? TurboMCPNodeId::MakeForNode(WrappedSource) : FString()))) return false;
         for (const auto& Pair : OriginalPositions)
             TestTrue(TEXT("Section preview does not move nodes"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
         const FString SectionEdit = FTurboMCPGraphTidy::Apply(SectionPlan);
         if (!TestTrue(TEXT("Section edit: ") + SectionEdit, SectionEdit.StartsWith(TEXT("changed:")))) return false;
+        if (WithExplicitWrap)
+            TestTrue(TEXT("Rightward packing preserves the explicit wrapped row"), WrappedTarget->NodePosY > WrappedSource->NodePosY);
         TestTrue(TEXT("Section keeps its stored top-left"), Section->NodePosX == 0 && Section->NodePosY == 0);
         TestTrue(TEXT("Section uses rightward space"), Section->NodeWidth > 1000);
         TestTrue(TEXT("Section clears the fixed box below"), Section->NodeHeight <= Fixed->NodePosY);
@@ -346,6 +354,10 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Connected preview preserves positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
         const FString Applied = FTurboMCPGraphTidy::Apply(Plan);
         if (!TestTrue(TEXT("Connected section applies: ") + Applied, Applied.StartsWith(TEXT("changed:")))) return false;
+        UEdGraphNode* TrueArm = Branch->GetThenPin()->LinkedTo[0]->GetOwningNode();
+        UEdGraphNode* FalseArm = Branch->GetElsePin()->LinkedTo[0]->GetOwningNode();
+        TestTrue(TEXT("Packed branches retain native output order"), TrueArm->NodePosY < FalseArm->NodePosY);
+        TestTrue(TEXT("Lower arm uses earlier column"), FalseArm->NodePosX < TrueArm->NodePosX);
         TestTrue(TEXT("Connected section keeps its stored top-left"), Box->NodePosX == 0 && Box->NodePosY == 0);
         TestTrue(FString::Printf(TEXT("Connected section grows right and clears neighbor: width=%d height=%d neighbor_y=%d"),
             Box->NodeWidth, Box->NodeHeight, NeighborY), Box->NodeWidth > 1000 && Box->NodePosY + Box->NodeHeight <= NeighborY);

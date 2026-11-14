@@ -4950,6 +4950,24 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
     // group cannot be flattened this way: keep the original candidate instead.
     TArray<int32> Pending = Groups;
     Groups.Reset();
+    // Pack lower output arms first: earlier columns are placed lower below.
+    // Preserving the source pin order prevents sibling wires crossing each other.
+    // Ambiguous multi-source groups retain their stable graph order.
+    auto IncomingArm = [&](int32 Root, int32& SourceIndex, double& PinY)
+    {
+        SourceIndex = INDEX_NONE;
+        const UEdGraphPin* Port = nullptr;
+        for (const FWire& Wire : InPlan.Wires)
+        {
+            if (!Group.Contains(Wire.SourceNodeIndex) || !Group.Contains(Wire.TargetNodeIndex)
+                || Group[Wire.TargetNodeIndex] != Root || Group[Wire.SourceNodeIndex] == Root
+                || !Wire.OutputPin || Wire.OutputPin->PinType.PinCategory != TEXT("exec")) continue;
+            if (Port && Port != Wire.OutputPin) { SourceIndex = INDEX_NONE; return; }
+            Port = Wire.OutputPin;
+            SourceIndex = Wire.SourceNodeIndex;
+            PinY = AlignmentPinPosition(Port).Y;
+        }
+    };
     while (!Pending.IsEmpty())
     {
         int32 Ready = INDEX_NONE;
@@ -4962,7 +4980,14 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
                 const int32 Source = Group[Wire.SourceNodeIndex], Target = Group[Wire.TargetNodeIndex];
                 if (Target == Root && Source != Root && Pending.Contains(Source)) { HasPredecessor = true; break; }
             }
-            if (!HasPredecessor) { Ready = Root; break; }
+            if (HasPredecessor) continue;
+            if (Ready == INDEX_NONE) { Ready = Root; continue; }
+            int32 CandidateSource, ReadySource;
+            double CandidateY = 0.0, ReadyY = 0.0;
+            IncomingArm(Root, CandidateSource, CandidateY);
+            IncomingArm(Ready, ReadySource, ReadyY);
+            if (CandidateSource != INDEX_NONE && CandidateSource == ReadySource && CandidateY > ReadyY)
+                Ready = Root;
         }
         if (Ready == INDEX_NONE) return false;
         Groups.Add(Ready);
