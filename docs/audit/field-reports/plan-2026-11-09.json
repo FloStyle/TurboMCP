@@ -67,10 +67,10 @@
       "title": "Grow an edited section box safely without disturbing neighbors",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
+      "state": "in_progress",
       "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "source_reviewed_runtime_unverified",
+      "owner": "integrator-section-growth",
+      "validation": "partial_focused_pass",
       "source_keys": [
         "2026-11-09_S1/TD-77",
         "2026-11-09_S1/TD-78",
@@ -78,7 +78,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 8,
-      "next_step": "Implement the section-growth contract in nov14-placement-and-search-reconciliation.md under an exact reviewed scope. Vertical row stacking currently ignores free rightward space; retain connected-group, nested-comment and wrap acceptance, and correct resized-box reporting.",
+      "next_step": "Partial candidate 29854783: scoped growth collision guards and independent-component rightward packing pass native plan/apply/undo and screenshot checks (230b06132e3842b49b9282dcd9525856). Reviewed partial batch for integration. Finish connected branching layouts, explicit-wrap and nested native acceptance, and right-obstacle refusal. Preserve failed run 26758cd43278415a819ea3539f14c81a (native membership names were not recognized). Do not close on the independent-flow fixture.",
       "acceptance": "Prefer rightward growth into free space. Moving neighboring boxes is a separately explicit scope, never implied by selecting the section. Preserve working regression guards."
     },
     {
