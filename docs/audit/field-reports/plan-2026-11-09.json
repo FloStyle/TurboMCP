@@ -67,10 +67,10 @@
       "title": "Grow an edited section box safely without disturbing neighbors",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "state": "done",
+      "readiness": "implemented",
       "owner": "integrator-section-growth",
-      "validation": "partial_focused_pass",
+      "validation": "focused_runtime_passed",
       "source_keys": [
         "2026-11-09_S1/TD-77",
         "2026-11-09_S1/TD-78",
@@ -78,7 +78,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 8,
-      "next_step": "Partial candidate 80ddb082 passes build and registered append workflow fdb15cd0153a41ae83db097eefe7377d. Native connected and populated nested section growth now preserve stored top-left anchors, links, outside geometry and undo; screenshots inspected. Both-direction obstacle refusal passes. Keep open: explicit-wrap native acceptance and connected branch wire-crossing refinement. The private field graph was not replayed. Earlier failures and the empty-child fixture false confidence remain documented in nov14-placement-and-search-reconciliation.md.",
+      "next_step": "Implemented scoped rightward packing, stored comment anchors, nested-content preservation, wrapped-row adjacency and native branch-pin ordering. Build and registered graph-append workflow passed at da10e517 in 7a0b9e480d3d4a69a3cd2bfa40f70f68; wrapped and branch screenshots inspected. Focused fixtures cover links, preview/apply geometry, fixed neighbors, undo and blocked-growth refusal. Private field graph not replayed; retain prior failures and fixture corrections in nov14-placement-and-search-reconciliation.md. Other append placement tasks remain separate.",
       "acceptance": "Prefer rightward growth into free space. Moving neighboring boxes is a separately explicit scope, never implied by selecting the section. Preserve working regression guards."
     },
     {
