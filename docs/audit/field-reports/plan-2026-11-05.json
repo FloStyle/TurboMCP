@@ -790,8 +790,10 @@
         "2026-11-04_S3/FT-143"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
-      "evidence": []
+      "next_step": "Review nov14-widget-class-replacement-contract.md: preserve placed identity, slot, order and compatible references. Runtime ListView-to-DynamicEntryBox migration is a separate pending product distinction; no implementation claimed.",
+      "evidence": [
+        "docs/audit/field-reports/nov14-widget-class-replacement-contract.md"
+      ]
     },
     {
       "id": "NOV05-17",
