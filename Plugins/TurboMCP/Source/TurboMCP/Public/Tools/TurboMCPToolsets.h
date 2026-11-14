@@ -1014,6 +1014,15 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPLocalVariableRemove(const FString& Asset, const FString& Function, const FString& Name);
 
+    /** Rename one local variable and its exact local getter/setter references. Same-named members and other functions are unchanged. Preview lists affected nodes; edit requires fresh confirmation. No save or checkout. Structural refresh can compile and affect undo; inspect before saving.
+     * @param Asset Blueprint asset path or unique name; prefer a full path.
+     * @param Function Exact owned function graph name.
+     * @param Name Exact current local declaration name.
+     * @param NewName New identifier; collisions with function parameters or locals refuse.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPLocalVariableRename(const FString& Asset, const FString& Function, const FString& Name, const FString& NewName);
+
 
 	/**
 	 * Preview an event or function override; loads the Blueprint and inspects editor metadata without creating the override, compiling or saving.
@@ -1919,6 +1928,16 @@ public:
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPLocalVariableRemove(const FString& Asset, const FString& Function, const FString& Name, const FString& Confirm);
+
+    /** Rename one local variable and its exact local getter/setter references. Same-named members and other functions are unchanged. Preview lists affected nodes; edit requires fresh confirmation. No save or checkout. Structural refresh can compile and affect undo; inspect before saving.
+     * @param Asset Blueprint asset path or unique name; prefer a full path.
+     * @param Function Exact owned function graph name.
+     * @param Name Exact current local declaration name.
+     * @param NewName New identifier; collisions with function parameters or locals refuse.
+     * @param Confirm Copy the confirm token from the latest preview. Stale tokens refuse without edits.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPLocalVariableRename(const FString& Asset, const FString& Function, const FString& Name, const FString& NewName, const FString& Confirm);
 
 
     /**

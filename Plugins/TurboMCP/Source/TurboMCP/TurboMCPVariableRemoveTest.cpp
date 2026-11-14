@@ -123,6 +123,50 @@ bool FTurboMCPVariableRemoveTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Event scope refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPLocalVariableRemove(Asset, TEXT("EventGraph"), TEXT("KeepValue")).StartsWith(TEXT("error:")));
     const FString LocalHelp = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCPEditToolset"), TEXT("EditTurboMCPLocalVariableRemove"));
     TestTrue(TEXT("Local help documents token"), LocalHelp.Contains(TEXT("Confirm")) && LocalHelp.Contains(TEXT("token")));
+
+    LocalEntries[0]->LocalVariables.Add(Local);
+    FBlueprintEditorUtils::AddMemberVariable(Child, TEXT("RenamedLocal"), Type, TEXT("12"));
+    FKismetEditorUtilities::CompileBlueprint(Child);
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    UK2Node_VariableGet* RenameGet = NewObject<UK2Node_VariableGet>(LocalGraph);
+    UK2Node_VariableSet* RenameSet = NewObject<UK2Node_VariableSet>(LocalGraph);
+    UK2Node_VariableGet* MemberGet = NewObject<UK2Node_VariableGet>(LocalGraph);
+    RenameGet->VariableReference.SetLocalMember(Local.VarName, LocalGraph->GetName(), Local.VarGuid);
+    RenameSet->VariableReference.SetLocalMember(Local.VarName, LocalGraph->GetName(), Local.VarGuid);
+    MemberGet->VariableReference.SetSelfMember(Local.VarName);
+    for (UK2Node_Variable* Node : {static_cast<UK2Node_Variable*>(RenameGet), static_cast<UK2Node_Variable*>(RenameSet), static_cast<UK2Node_Variable*>(MemberGet)})
+    { Node->CreateNewGuid(); LocalGraph->AddNode(Node, false, false); Node->AllocateDefaultPins(); }
+    UEdGraphPin* RenameOutput = RenameGet->FindPin(Local.VarName, EGPD_Output);
+    UEdGraphPin* RenameInput = RenameSet->FindPin(Local.VarName, EGPD_Input);
+    if (!RenameOutput || !RenameInput) { AddError(TEXT("Rename fixture pins are missing.")); return false; }
+    RenameOutput->MakeLinkTo(RenameInput);
+    RenameInput->DefaultValue = TEXT("17");
+    const FGuid OutputId = RenameOutput->PinId, InputId = RenameInput->PinId;
+    auto RenamePreview = [&]() { return UTurboMCPPreviewToolset::PreviewTurboMCPLocalVariableRename(Asset, TEXT("LocalScope"), TEXT("KeepValue"), TEXT("RenamedLocal")); };
+    const FString FirstRename = RenamePreview();
+    AddInfo(FirstRename);
+    TestTrue(TEXT("Local rename preview succeeds"), FirstRename.StartsWith(TEXT("preview:")));
+    RenameSet->NodePosX += 32;
+    TestTrue(TEXT("Rename stale confirmation refuses"), UTurboMCPEditToolset::EditTurboMCPLocalVariableRename(Asset, TEXT("LocalScope"), TEXT("KeepValue"), TEXT("RenamedLocal"), Token(FirstRename)).Contains(TEXT("stale")));
+    const FString FreshRename = RenamePreview();
+    const FString RenameResult = UTurboMCPEditToolset::EditTurboMCPLocalVariableRename(Asset, TEXT("LocalScope"), TEXT("KeepValue"), TEXT("RenamedLocal"), Token(FreshRename));
+    AddInfo(RenameResult);
+    TestTrue(TEXT("Local rename succeeds"), RenameResult.StartsWith(TEXT("edited:")));
+    TestEqual(TEXT("Local GUID preserved"), LocalEntries[0]->LocalVariables[0].VarGuid, Local.VarGuid);
+    TestEqual(TEXT("Local declaration renamed"), LocalEntries[0]->LocalVariables[0].VarName, FName(TEXT("RenamedLocal")));
+    TestEqual(TEXT("Local getter renamed"), RenameGet->VariableReference.GetMemberName(), FName(TEXT("RenamedLocal")));
+    TestEqual(TEXT("Local setter renamed"), RenameSet->VariableReference.GetMemberName(), FName(TEXT("RenamedLocal")));
+    TestEqual(TEXT("Same-name member getter untouched"), MemberGet->VariableReference.GetMemberName(), Local.VarName);
+    TestEqual(TEXT("Other function local untouched"), OtherEntries[0]->LocalVariables[0].VarName, Local.VarName);
+    TestEqual(TEXT("Child member untouched"), Child->NewVariables[0].VarName, FName(TEXT("RenamedLocal")));
+    UEdGraphPin* RenamedOutput = RenameGet->FindPin(TEXT("RenamedLocal"), EGPD_Output);
+    UEdGraphPin* RenamedInput = RenameSet->FindPin(TEXT("RenamedLocal"), EGPD_Input);
+    TestTrue(TEXT("Renamed pins preserve identities, connection and literal"),
+        RenamedOutput && RenamedInput && RenamedOutput->PinId == OutputId && RenamedInput->PinId == InputId
+        && RenamedOutput->LinkedTo.Contains(RenamedInput) && RenamedInput->DefaultValue == TEXT("17"));
+    TestTrue(TEXT("Invalid new name refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPLocalVariableRename(Asset, TEXT("LocalScope"), TEXT("RenamedLocal"), TEXT("")).StartsWith(TEXT("error:")));
+    const FString RenameHelp = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCPEditToolset"), TEXT("EditTurboMCPLocalVariableRename"));
+    TestTrue(TEXT("Rename help documents scope and confirmation"), RenameHelp.Contains(TEXT("Function")) && RenameHelp.Contains(TEXT("Confirm")));
     return !HasAnyErrors();
 }
 #endif
