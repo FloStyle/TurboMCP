@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "Tools/TurboMCPToolsets.h"
 #include "TurboMCPAssetResolver.h"
+#include "TurboMCPFunctionDependencyScan.h"
 #include "Editor.h"
 #include "Engine/Blueprint.h"
 #include "EdGraph/EdGraph.h"
@@ -10,10 +11,7 @@
 #include "K2Node_VariableSet.h"
 #include "K2Node_MacroInstance.h"
 #include "EdGraphSchema_K2.h"
-#include "AssetRegistry/AssetRegistryModule.h"
-#include "AssetRegistry/IAssetRegistry.h"
 #include "K2Node_CreateDelegate.h"
-#include "Modules/ModuleManager.h"
 #include "UObject/UObjectIterator.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "ScopedTransaction.h"
@@ -29,6 +27,8 @@ struct FPlan
     UK2Node_FunctionEntry* Entry = nullptr;
     TArray<UK2Node_CallFunction*> Calls;
     TArray<UBlueprint*> Affected;
+    int32 CandidatePackagesInspected = 0;
+    int32 NonBlueprintAssetsSkipped = 0;
     bool WasPure = false;
     bool WasConst = false;
     bool Pure = false;
@@ -95,41 +95,10 @@ bool DerivesFrom(UClass* Class, const UBlueprint* Owner)
 
 FString InspectCallers(FPlan& Plan)
 {
-    IAssetRegistry& Registry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
-    if (Registry.IsLoadingAssets())
-        return TEXT("error: Asset discovery is still running. Wait for it to finish, then preview again. Nothing changed.");
-    TArray<FName> Packages;
-    Packages.Add(Plan.Blueprint->GetOutermost()->GetFName());
-    TSet<FName> Seen;
-    Seen.Add(Packages[0]);
-    for (int32 Index = 0; Index < Packages.Num(); ++Index)
-    {
-        TArray<FName> Referencers;
-        Registry.GetReferencers(Packages[Index], Referencers);
-        for (FName Package : Referencers)
-        {
-            if (Seen.Contains(Package)) continue;
-            if (Seen.Num() >= 256)
-                return TEXT("error: More than 256 dependent packages require inspection. Use the editor for this project-wide change. Nothing changed.");
-            Seen.Add(Package);
-            Packages.Add(Package);
-        }
-    }
-    for (FName Package : Packages)
-    {
-        TArray<FAssetData> Assets;
-        Registry.GetAssetsByPackageName(Package, Assets);
-        for (const FAssetData& Data : Assets)
-        {
-            if (Data.AssetClassPath.GetAssetName() == FName(TEXT("World")))
-                return TEXT("error: A dependent map may contain level-script callers: ") + Data.GetObjectPathString() + TEXT(". Map callers are not supported. Nothing changed.");
-            UClass* Class = Data.GetClass();
-            if (!Class)
-                return TEXT("error: Cannot classify dependent asset: ") + Data.GetObjectPathString() + TEXT(". Nothing changed.");
-            if (Class->IsChildOf(UBlueprint::StaticClass()) && !Cast<UBlueprint>(Data.GetAsset()))
-                return TEXT("error: Cannot load dependent Blueprint: ") + Data.GetObjectPathString() + TEXT(". Nothing changed.");
-        }
-    }
+    const FTurboMCPFunctionDependencyScan Scan = FTurboMCPFunctionDependencyScan::Collect(Plan.Blueprint);
+    if (!Scan.Error.IsEmpty()) return Scan.Error;
+    Plan.CandidatePackagesInspected = Scan.PackagesInspected;
+    Plan.NonBlueprintAssetsSkipped = Scan.NonBlueprintAssetsSkipped;
     Plan.Affected.Add(Plan.Blueprint);
     for (TObjectIterator<UBlueprint> It; It; ++It)
     {
@@ -211,8 +180,8 @@ FString Change(const FString& Asset, const FString& Function, const FString& Pur
     if (!Error.IsEmpty()) return Error + Summary;
     FString Details = Summary;
     for (UBlueprint* Blueprint : Plan.Affected) Details += TEXT("\naffected asset: ") + Blueprint->GetPathName();
-    Details += FString::Printf(TEXT("\ncallers inspected: %d"), Plan.Calls.Num());
-    const FString Limits = TEXT("\nScope: registered Blueprint dependencies and loaded callers. Dependency loading may run engine callbacks. Dynamic/native references are not verified. Const constrains the receiver, not all external objects. No save. Compile affected assets and inspect the result before saving.");
+    Details += FString::Printf(TEXT("\ndirect candidate packages inspected: %d\nnon-Blueprint assets skipped: %d\ncall nodes: %d"), Plan.CandidatePackagesInspected, Plan.NonBlueprintAssetsSkipped, Plan.Calls.Num());
+    const FString Limits = TEXT("\nScope: direct registered referencers of the defining Blueprint and derived Blueprint classes, plus loaded Blueprint graphs. Unrelated transitive consumers are excluded. Candidate loading may run engine callbacks. Dynamic/native and unregistered references are not verified. Const constrains the receiver, not all external objects. No save. Compile affected assets and inspect the result before saving.");
     if (!Apply) return TEXT("preview: The requested flag change passed preflight. No flags or links changed. Edit repeats inspection.") + Details + Limits;
 
     struct FPinState

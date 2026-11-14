@@ -822,18 +822,18 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPDispatcherAdd(const FString& Asset, const FString& Name, const FString& Inputs);
     /**
-     * Rename an owned Blueprint function and discovered callers. Preview loads dependencies; edit repeats discovery using the same arguments. Requires a compiled owner and idle editor. Dependent maps and more than 256 packages refuse. No save or guaranteed rollback. Compile affected assets before saving; dynamic/native references are not verified.
-     * Requires an idle editor outside play/transactions and a successfully compiled defining Blueprint. Dependent maps refuse; discovery refuses above 256 packages. Preview does not reserve a plan: edit discovers references again.
+     * Rename an owned Blueprint function and discovered callers. Preview loads candidates; edit repeats discovery using the same arguments. Requires a compiled owner and idle editor. Direct dependent maps and more than 4096 candidate packages refuse. No save or guaranteed rollback. Compile affected assets before saving; dynamic/native references are not verified.
+     * Requires an idle editor outside play/transactions and a successfully compiled defining Blueprint. Direct dependent maps refuse; discovery refuses above 4096 candidate packages. Preview does not reserve a plan: edit discovers references again.
      * Example: Asset=/Game/UI/WBP_Menu, Function=RefreshState, NewName=RefreshLegacyState. Preview first, inspect affected assets, then edit with the same arguments.
      * Preview lists affected assets and call/delegate nodes. Dependencies are loaded; load callbacks may run. Edit repeats discovery, renames child overrides through stock editor APIs and updates references. No save or guaranteed rollback; compile affected assets before saving. Inherited/interface functions and name conflicts refuse. Dynamic strings, native code and unavailable content are not verified.
-     * @param Asset Required defining Blueprint path or unique name. Example: /Game/UI/WBP_Menu with Function=RefreshState and NewName=RefreshLegacyState. Preview first and inspect affected assets. Requires a compiled owner and idle editor. Dependent maps and more than 256 packages refuse.
+     * @param Asset Required defining Blueprint path or unique name. Example: /Game/UI/WBP_Menu with Function=RefreshState and NewName=RefreshLegacyState. Preview first and inspect affected assets. Requires a compiled owner and idle editor. Discovery inspects direct referencers of the owner and derived classes; dependent maps and more than 4096 direct candidate packages refuse.
      * @param Function Required exact owned function name; inherited overrides are not independently renamed.
      * @param NewName Required valid new member name, 1 to 100 characters. Same name is a no-op. Edit repeats discovery with the same arguments. No save or guaranteed rollback; compile affected assets before saving. Dynamic/native references are not verified.
      */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPFunctionRename(const FString& Asset, const FString& Function, const FString& NewName);
     /**
-     * Inspect or change owned function purity and receiver constness. Preview first; edit repeats preflight. Requires an idle editor and compiled owner. Refuses unsafe connected callers, overrides and delegate references. Dependencies are loaded and callbacks may run. No automatic save; compile affected assets before saving. A failed postcondition explicitly reports partial changes.
+     * Inspect or change owned function purity and receiver constness. Preview first; edit repeats preflight. Requires an idle editor and compiled owner. Inspects direct referencers of the owner and derived classes, with a 4096-package limit. Refuses unsafe connected callers, overrides and delegate references. Candidate assets are loaded and callbacks may run. No automatic save; compile affected assets before saving. A failed postcondition explicitly reports partial changes.
      * @param Asset Required Blueprint path or unique asset name.
      * @param Function Required exact owned function name. Use FunctionAdd first to create a new helper.
      * @param Pure Required keep, true or false. Removing connected execution pins or introducing an unexecuted data producer refuses.
@@ -1722,18 +1722,18 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPDispatcherAdd(const FString& Asset, const FString& Name, const FString& Inputs);
     /**
-     * Rename an owned Blueprint function and discovered callers. Preview loads dependencies; edit repeats discovery using the same arguments. Requires a compiled owner and idle editor. Dependent maps and more than 256 packages refuse. No save or guaranteed rollback. Compile affected assets before saving; dynamic/native references are not verified.
-     * Requires an idle editor outside play/transactions and a successfully compiled defining Blueprint. Dependent maps refuse; discovery refuses above 256 packages. Preview does not reserve a plan: edit discovers references again.
+     * Rename an owned Blueprint function and discovered callers. Preview loads candidates; edit repeats discovery using the same arguments. Requires a compiled owner and idle editor. Direct dependent maps and more than 4096 candidate packages refuse. No save or guaranteed rollback. Compile affected assets before saving; dynamic/native references are not verified.
+     * Requires an idle editor outside play/transactions and a successfully compiled defining Blueprint. Direct dependent maps refuse; discovery refuses above 4096 candidate packages. Preview does not reserve a plan: edit discovers references again.
      * Example: Asset=/Game/UI/WBP_Menu, Function=RefreshState, NewName=RefreshLegacyState. Preview first, inspect affected assets, then edit with the same arguments.
      * Preview lists affected assets and call/delegate nodes. Dependencies are loaded; load callbacks may run. Edit repeats discovery, renames child overrides through stock editor APIs and updates references. No save or guaranteed rollback; compile affected assets before saving. Inherited/interface functions and name conflicts refuse. Dynamic strings, native code and unavailable content are not verified.
-     * @param Asset Required defining Blueprint path or unique name. Example: /Game/UI/WBP_Menu with Function=RefreshState and NewName=RefreshLegacyState. Preview first and inspect affected assets. Requires a compiled owner and idle editor. Dependent maps and more than 256 packages refuse.
+     * @param Asset Required defining Blueprint path or unique name. Example: /Game/UI/WBP_Menu with Function=RefreshState and NewName=RefreshLegacyState. Preview first and inspect affected assets. Requires a compiled owner and idle editor. Discovery inspects direct referencers of the owner and derived classes; dependent maps and more than 4096 direct candidate packages refuse.
      * @param Function Required exact owned function name; inherited overrides are not independently renamed.
      * @param NewName Required valid new member name, 1 to 100 characters. Same name is a no-op. Edit repeats discovery with the same arguments. No save or guaranteed rollback; compile affected assets before saving. Dynamic/native references are not verified.
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPFunctionRename(const FString& Asset, const FString& Function, const FString& NewName);
     /**
-     * Inspect or change owned function purity and receiver constness. Preview first; edit repeats preflight. Requires an idle editor and compiled owner. Refuses unsafe connected callers, overrides and delegate references. Dependencies are loaded and callbacks may run. No automatic save; compile affected assets before saving. A failed postcondition explicitly reports partial changes.
+     * Inspect or change owned function purity and receiver constness. Preview first; edit repeats preflight. Requires an idle editor and compiled owner. Inspects direct referencers of the owner and derived classes, with a 4096-package limit. Refuses unsafe connected callers, overrides and delegate references. Candidate assets are loaded and callbacks may run. No automatic save; compile affected assets before saving. A failed postcondition explicitly reports partial changes.
      * @param Asset Required Blueprint path or unique asset name.
      * @param Function Required exact owned function name. Use FunctionAdd first to create a new helper.
      * @param Pure Required keep, true or false. Removing connected execution pins or introducing an unexecuted data producer refuses.

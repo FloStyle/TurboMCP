@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 #include "Tools/TurboMCPToolsets.h"
 #include "TurboMCPAssetResolver.h"
-#include "AssetRegistry/AssetRegistryModule.h"
-#include "AssetRegistry/IAssetRegistry.h"
+#include "TurboMCPFunctionDependencyScan.h"
 #include "Editor.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
@@ -12,7 +11,6 @@
 #include "K2Node_CreateDelegate.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/Kismet2NameValidators.h"
-#include "Modules/ModuleManager.h"
 #include "UObject/UObjectIterator.h"
 
 namespace
@@ -45,34 +43,11 @@ FString RenameFunction(const FString& Asset,const FString& Function,const FStrin
     if(!Owner->GeneratedClass || !Owner->SkeletonGeneratedClass || Owner->Status==BS_Error)
         return TEXT("error: Compile the defining Blueprint successfully before renaming its function.");
 
-    // Resolve registered referencers before calling the stock rename helper, which
-    // updates loaded caller nodes and child overrides. Never silently stop at a cap.
-    IAssetRegistry& Registry=FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
-    if(Registry.IsLoadingAssets()) return TEXT("error: Asset discovery is still running. Wait for it to finish, then preview again.");
-    TArray<FName> Packages; Packages.Add(Owner->GetOutermost()->GetFName());
-    TSet<FName> Seen; Seen.Add(Packages[0]);
-    for(int32 Index=0;Index<Packages.Num();++Index)
-    {
-        TArray<FName> Referencers; Registry.GetReferencers(Packages[Index],Referencers);
-        for(FName Package:Referencers) if(!Seen.Contains(Package))
-        {
-            if(Seen.Num()>=256) return TEXT("error: More than 256 dependent packages require inspection. Nothing renamed; use the editor for this project-wide rename.");
-            Seen.Add(Package); Packages.Add(Package);
-        }
-    }
-    for(FName Package:Packages)
-    {
-        TArray<FAssetData> Assets; Registry.GetAssetsByPackageName(Package,Assets);
-        for(const FAssetData& Data:Assets)
-        {
-            if(Data.AssetClassPath.GetAssetName()==FName(TEXT("World")))
-                return TEXT("error: A dependent map may contain level-script references: ")+Data.GetObjectPathString()+TEXT(". Map-contained callers are not supported; nothing renamed.");
-            UClass* Class=Data.GetClass();
-            if(!Class) return TEXT("error: Cannot classify dependent asset: ")+Data.GetObjectPathString()+TEXT(". Nothing renamed.");
-            if(Class && Class->IsChildOf(UBlueprint::StaticClass()) && !Cast<UBlueprint>(Data.GetAsset()))
-                return TEXT("error: Could not load dependent Blueprint: ")+Data.GetObjectPathString()+TEXT(". Nothing renamed.");
-        }
-    }
+    // Collect only direct referencers of this class and its Blueprint children.
+    // Ordinary consumers do not extend the frontier; their own consumers need
+    // no inspection for a function call on this owner.
+    const FTurboMCPFunctionDependencyScan Scan=FTurboMCPFunctionDependencyScan::Collect(Owner);
+    if(!Scan.Error.IsEmpty()) return Scan.Error;
     TArray<UBlueprint*> Affected; Affected.Add(Owner);
     TArray<UK2Node_CallFunction*> Calls;
     TArray<UK2Node_CreateDelegate*> Delegates;
@@ -103,11 +78,11 @@ FString RenameFunction(const FString& Asset,const FString& Function,const FStrin
         }
     }
     Affected.Sort([](const UBlueprint& A,const UBlueprint& B){return A.GetPathName()<B.GetPathName();});
-    FString Summary=FString::Printf(TEXT("\nfunction: %s:%s -> %s\nregistered dependency packages inspected: %d"),*Owner->GetPathName(),*Function,*NewName,Packages.Num());
+    FString Summary=FString::Printf(TEXT("\nfunction: %s:%s -> %s\ndirect candidate packages inspected: %d\nnon-Blueprint assets skipped: %d\ncall nodes: %d\ndelegate nodes: %d"),*Owner->GetPathName(),*Function,*NewName,Scan.PackagesInspected,Scan.NonBlueprintAssetsSkipped,Calls.Num(),Delegates.Num());
     for(UBlueprint* BP:Affected) Summary+=TEXT("\naffected asset: ")+BP->GetPathName();
     for(auto* Call:Calls) Summary+=TEXT("\ncall node: ")+Call->GetPathName()+TEXT(" | ")+Call->NodeGuid.ToString();
     for(auto* Delegate:Delegates) Summary+=TEXT("\ndelegate node: ")+Delegate->GetPathName()+TEXT(" | ")+Delegate->NodeGuid.ToString();
-    const FString Limits=TEXT("\nScope: registered Blueprint dependencies and loaded Blueprint callers. Dynamic strings, native code and unregistered/unavailable content are not verified. Preview loads dependencies and may trigger engine load callbacks. Rename can refresh dependent classes; no automatic save or guaranteed rollback. Compile and inspect all listed assets before saving.");
+    const FString Limits=TEXT("\nScope: direct registered referencers of the defining Blueprint and derived Blueprint classes, plus loaded Blueprint graphs. Unrelated transitive consumers are excluded. Dynamic strings, native code and unregistered/unavailable content are not verified. Preview loads candidates and may trigger engine load callbacks. Rename can refresh dependent classes; no automatic save or guaranteed rollback. Compile and inspect all listed assets before saving.");
     if(!Apply) return TEXT("preview: Rename function and update discovered Blueprint references. No rename performed.")+Summary+Limits;
     for(UBlueprint* BP:Affected) BP->Modify();
     // Delegate references use a stored function name; update them explicitly in

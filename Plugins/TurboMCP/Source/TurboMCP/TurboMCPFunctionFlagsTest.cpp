@@ -1,4 +1,5 @@
 #include "Tools/TurboMCPToolsets.h"
+#include "TurboMCPFunctionDependencyScan.h"
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
@@ -21,9 +22,58 @@
 #include "UObject/Package.h"
 #include "UObject/StructOnScope.h"
 
+static void CheckDirectDependencyScan(FAutomationTestBase& Test)
+{
+    // The old package walk reached all 300 unrelated consumers and hit its cap.
+    // Only class descendants may expand the new frontier.
+    const FName Owner(TEXT("/Game/Tests/Owner"));
+    const FName Child(TEXT("/Game/Tests/Child"));
+    const FName DirectCaller(TEXT("/Game/Tests/DirectCaller"));
+    const FName ChildCaller(TEXT("/Game/Tests/ChildCaller"));
+    TMap<FName,TArray<FName>> Links;
+    Links.FindOrAdd(Owner).Add(Child);
+    Links.FindOrAdd(Owner).Add(DirectCaller);
+    Links.FindOrAdd(Child).Add(ChildCaller);
+    FName Previous=DirectCaller;
+    for(int32 Index=0;Index<300;++Index)
+    {
+        const FName Next(*FString::Printf(TEXT("/Game/Tests/Unrelated_%03d"),Index));
+        Links.FindOrAdd(Previous).Add(Next);
+        Previous=Next;
+    }
+    int32 Queries=0;
+    TArray<FName> Seeds;
+    Seeds.Add(Owner);
+    const FTurboMCPFunctionPackageScan Scan=FTurboMCPFunctionDependencyScan::CollectPackages(Seeds,
+        [&Links,&Queries](FName Package,TArray<FName>& Out)
+        {
+            ++Queries;
+            if(const TArray<FName>* Found=Links.Find(Package)) Out=*Found;
+        },
+        [Child](FName Package,FString&) { return Package==Child; });
+    Test.TestTrue(TEXT("Direct discovery complete"),Scan.Error.IsEmpty());
+    Test.TestEqual(TEXT("Only owner and child class queried"),Queries,2);
+    Test.TestEqual(TEXT("Only direct candidates inspected"),Scan.Candidates.Num(),4);
+    Test.TestTrue(TEXT("Child caller found"),Scan.Candidates.Contains(ChildCaller));
+    Test.TestFalse(TEXT("Unrelated transitive consumer excluded"),Scan.Candidates.Contains(Previous));
+
+    const FTurboMCPFunctionPackageScan Incomplete=FTurboMCPFunctionDependencyScan::CollectPackages(Seeds,
+        [&Links](FName Package,TArray<FName>& Out)
+        {
+            if(const TArray<FName>* Found=Links.Find(Package)) Out=*Found;
+        },
+        [DirectCaller](FName Package,FString& Error)
+        {
+            if(Package==DirectCaller) Error=TEXT("error: Candidate unavailable. Nothing changed.");
+            return false;
+        });
+    Test.TestTrue(TEXT("Incomplete candidate set refuses"),Incomplete.Error.Contains(TEXT("Candidate unavailable")));
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPFunctionFlagsTest,"TurboMCP.Workflow.FunctionFlags",EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
 bool FTurboMCPFunctionFlagsTest::RunTest(const FString&)
 {
+    CheckDirectDependencyScan(*this);
     const FString Suffix=FGuid::NewGuid().ToString(EGuidFormats::Digits);
     UPackage* Package=CreatePackage(*(TEXT("/Game/Tests/FunctionFlags_")+Suffix));
     FString Transcript;
