@@ -15,6 +15,9 @@ namespace TurboMCPReportScope
     {
         TSet<const UEdGraphNode*> Nodes;
         bool bAll = true;
+        // Use the same resolved graph-space target for an optional visual capture.
+        FString CaptureMode = TEXT("graph");
+        FString CaptureTarget;
         bool Includes(const UEdGraphNode* Node) const { return bAll || Nodes.Contains(Node); }
     };
 
@@ -37,6 +40,8 @@ namespace TurboMCPReportScope
                 || !FMath::IsFinite(X) || !FMath::IsFinite(Y) || !FMath::IsFinite(Width) || !FMath::IsFinite(Height)
                 || Width <= 0 || Height <= 0 || !FMath::IsFinite(X + Width) || !FMath::IsFinite(Y + Height))
             { Error = TEXT("Region requires four finite graph-unit numbers: x,y,width,height, with positive width and height."); return false; }
+            Out.CaptureMode = TEXT("region");
+            Out.CaptureTarget = Target;
         }
         else if (Mode == TEXT("node") || Mode == TEXT("box"))
         {
@@ -48,10 +53,18 @@ namespace TurboMCPReportScope
             if (Matches.Num() != 1)
             { Error = TEXT("Scope node ID is missing or ambiguous in the named graph; use an exact reader ID or unique hexadecimal key."); return false; }
             UEdGraphNode* Node = Matches[0];
-            if (Mode == TEXT("node")) { Out.Nodes.Add(Node); return true; }
+            if (Mode == TEXT("node"))
+            {
+                Out.Nodes.Add(Node);
+                Out.CaptureMode = TEXT("node");
+                Out.CaptureTarget = TurboMCPNodeId::MakeForNode(Node, true);
+                return true;
+            }
             if (!Node->IsA<UEdGraphNode_Comment>())
             { Error = TEXT("Box scope requires a comment-box ID, not an ordinary node."); return false; }
             X = Node->NodePosX; Y = Node->NodePosY; Width = Node->NodeWidth; Height = Node->NodeHeight;
+            Out.CaptureMode = TEXT("region");
+            Out.CaptureTarget = FString::Printf(TEXT("%.17g,%.17g,%.17g,%.17g"), X, Y, Width, Height);
             Out.Nodes.Add(Node);
         }
         else { Error = TEXT("Unknown scope mode; use node, box or region."); return false; }

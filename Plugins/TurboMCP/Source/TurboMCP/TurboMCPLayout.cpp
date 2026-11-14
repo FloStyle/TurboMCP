@@ -243,10 +243,25 @@ FString UTurboMCPLookToolset::LookTurboMCPGraphPositions(const FString& Asset, c
     return Result;
 }
 
-FString UTurboMCPLookToolset::LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName,double AlignmentTolerance)
+FString UTurboMCPLookToolset::LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName,double AlignmentTolerance,const FString& Scope)
 {
-    const FString Report = LookTurboMCPLayoutReport(Asset,GraphName,AlignmentTolerance);
+    const FString Report = LookTurboMCPLayoutReport(Asset,GraphName,AlignmentTolerance,Scope);
     if (!Report.StartsWith(TEXT("look:"))) return Report;
-    const FString Capture = LookTurboMCPCapture(Asset,GraphName,TEXT("graph"),TEXT(""),TEXT(""));
-    return Report + TEXT("\n\nfull-graph capture (review aid; not automatic layout approval):\n") + Capture;
+
+    // The report has already validated the scope. Resolve its target again so
+    // the image frames the same node or graph-space rectangle, including boxes
+    // identified by reader ID rather than the capture tool's numeric box index.
+    FTurboMCPAssetResolver::FResolved Resolved;
+    const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+    if (!ResolveError.IsEmpty()) return Report + TEXT("\n\ncapture error: ") + ResolveError;
+    UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+    UEdGraph* Graph = Blueprint ? TurboMCPNodeId::FindGraphByName(Blueprint, GraphName) : nullptr;
+    if (!Graph) return Report + TEXT("\n\ncapture error: The graph became unavailable after measurement. No image captured.");
+    TurboMCPReportScope::FSelection Selection;
+    FString ScopeError;
+    if (!TurboMCPReportScope::Resolve(Graph, Scope, Selection, ScopeError))
+        return Report + TEXT("\n\ncapture error: ") + ScopeError;
+    const FString Capture = LookTurboMCPCapture(Asset,GraphName,Selection.CaptureMode,Selection.CaptureTarget,TEXT(""));
+    return Report + FString::Printf(TEXT("\n\n%s capture (review aid; not automatic layout approval):\n"),
+        Selection.bAll ? TEXT("full-graph") : TEXT("scoped")) + Capture;
 }

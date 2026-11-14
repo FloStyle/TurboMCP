@@ -24,6 +24,11 @@ for value in (-1, 1025):
 # Invalid input must stop DoneCheck before capture is attempted.
 refused = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutDoneCheck", dict(args, alignmentTolerance=-1))
 assert refused.startswith("error:") and "full-graph capture" not in refused, refused
+refused = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutDoneCheck", dict(args, scope="box:missing"))
+assert refused.startswith("error:") and "capture (review aid" not in refused, refused
+scoped = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutDoneCheck", dict(args, scope="region:0,0,400,300"))
+assert scoped.startswith("look:") and "scoped capture (review aid" in scoped, scoped
+assert "explicit graph-coordinate region" in scoped, scoped
 # Numeric refusals happen before asset resolution or opening an editor.
 for size in ("1.5x900", "+1600x900", "-1x900", "0x900", "4097x900", "9" * 80 + "x900", "1600x0"):
     result = session.call(LOOK_TOOLSET, "LookTurboMCPCapture", dict(args, mode="graph", target="", size=size))
