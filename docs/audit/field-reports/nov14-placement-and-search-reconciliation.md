@@ -131,3 +131,27 @@ Required next evidence: prove registry freshness against the saved package, insp
 Further stock-source inspection: UEdGraphNode::AddSearchMetaDataInfo records the ListView title, short class name, full node GUID and comment. AddPinSearchMetaDataInfo records display names and default text. These fields are useful but are not identical to the live NodeFind contract (object names, full class paths and specialized node identities must be reconciled). Do not silently mix the two match semantics or infer a complete negative result from an index that omits a field.
 
 GetSearchDataForAssetPath only locks and copies the existing entry; using an already initialized manager avoids BeginSearchQuery's indexing trigger. Imaginary data has protected raw metadata and several non-exported traversal methods, while GetBlueprint explicitly force-loads: do not use it. ConvertJsonStringToObject is exported, but it asserts on invalid version information and deserializes an encoded lookup table. A plugin adapter must validate the envelope and use package custom versions before decoding; version compatibility alone is not proof of freshness. Keep this capability unimplemented until a bounded adapter proves saved-package identity, no-load behavior and exact supported fields. Prefer a small synthetic saved/modified/unindexed fixture over a project-wide repeated scan.
+
+### Saved package identity does not establish index completeness
+
+Additional stock 5.8.4 source inspection found that Blueprint.cpp emits the
+FindInBlueprintsData tag using QuerySingleBlueprint with bRebuildSearchData=false
+(around lines 1115-1122 and the saving/cooking path around 1167-1174). Therefore
+matching registry metadata to the current package is necessary but insufficient:
+the saved package can itself contain cached or empty search data. A timestamp or
+package hash must not upgrade index candidates into exhaustive live-node results.
+
+FindInBlueprintManager.cpp:3671 decodes a binary version/size/FText lookup-table
+envelope followed by JSON. It checks version validity with checkf, then reads the
+lookup table through engine deserialization. Merely checking the outer string
+length is not proof that malformed nested text data is safe to decode. The
+unloaded helper at line 2298 validates versions and creates imaginary metadata;
+it does not establish that every node/pin field is indexed.
+
+Implementation decision: keep exact live search and saved-index candidate
+coverage distinct. A future bounded adapter must preserve complete=false when
+only candidates are available, give per-asset provenance and gaps, and never
+load a rejected dependency to turn a candidate into an exact match. This is not
+a completed repair of NOV13-03. Next review should inspect QuerySingleBlueprint
+cache invalidation and the serializer's bounded-read behavior before choosing
+an adapter; do not spend an editor run on an unproven completeness assumption.
