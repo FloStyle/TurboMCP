@@ -2419,6 +2419,8 @@ The integration owner extends the existing assignment to LayoutReport.cpp/h, Lay
 
 Also finish the scoped external LoopBody regression guard. In J5, fixed nodes outside the selection prevent satisfying the complete Body/Completed geometry. The selected handoff nevertheless worsened from 860 to 1043 units. Refuse that worsening when Force is false, with exact node identities and guidance to expand selection; Force must explicitly disclose the boundary tradeoff. Never move unselected nodes. Verify refusal/no mutation, forced reporting and a non-worsening control in the focused fixture. Whole-graph preservation evidence remains applicable to unchanged placement/routing code; this guard requires its own targeted check.
 
+J5 scoped LoopBody guard integrated on private main as `91c443b9a6e705f0604c8108a3d097587077bbf7`. Focused stock 5.8.4 execution `567aea6ea60348e49d9e0a550a21166a` passed 158 calls: preview reports the 860-to-1043 px regression, unforced Edit refuses before mutation, forced preview/edit disclose the tradeoff, outside nodes and graph semantics stay fixed, and undo restores exact geometry. The full cascade and independent reference comparison were not rerun. Retain NOV05-02/03 in progress. Offline validation was 25/26 due to the pre-existing unrelated `test-lookup-guards` failure in `TurboMCPDataAssetCreateTest.cpp:123`.
+
 User accepted the final scenario overview and detail on November 6; NOV05-09 records that approval. Separate E8/E9 reference comparison remains unverified. Do not classify the remaining 13 data-wire crossings as eliminated, or claim an independent semantic classifier from the arithmetic oracle that consumes native block ownership.
 
 

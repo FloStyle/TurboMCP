@@ -119,7 +119,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Whole-graph compact placement and nested continuations are implemented, and the user accepted the reference overview and detail for now. Scoped J5 keeps fixed outside nodes and still has Body drift 3513 to 3696 and Completed-above-body 3 to 3. Retain that boundary limitation; do not claim full layout acceptance.",
+      "next_step": "Whole-graph compact placement and nested continuations are implemented, and the user accepted the reference overview and detail for now. Scoped J5 now refuses the known LoopBody row regression before editing unless Force explicitly accepts it; the focused fixture proves no mutation on refusal and exact undo after forced edit. The original scoped Body drift 3513 to 3696 and Completed-above-body 3 to 3 remain layout limitations. Full cascade, independent visual/reference comparison and broader boundary cases remain unverified.",
       "evidence": [
         {
           "run": "b04c38d19d264d37b7aa9613ed09eacd",
@@ -188,6 +188,12 @@
           "run": "31ce343dffc14e9a8e73fcbe661d3a83",
           "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
           "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
+        },
+        {
+          "commit": "91c443b9a6e705f0604c8108a3d097587077bbf7",
+          "run": "567aea6ea60348e49d9e0a550a21166a",
+          "result": "integrated_focused_J5_boundary_guard_passed_full_cascade_pending",
+          "scope": "Stock Unreal 5.8.4 build and focused 158-call J5 fixture passed. Preview names the exact fixed LoopBody handoff and 860 to 1043 px regression; unforced Edit returns unchanged before any mutation; Force preview/edit disclose the tradeoff, preserve all outside nodes and graph semantics, and undo restores exact graph and positions. Earlier pre-fix runs 182a610b31c74373b8fb6431fdcc394d (identity assertion) and f983ba5a5222438abba391cafa91188d (incomplete rollback after edit) are retained. Offline validate.py passed 25/26; unrelated pre-existing test-lookup-guards fails at TurboMCPDataAssetCreateTest.cpp:123. Full cascade and visual acceptance were not rerun."
         }
       ],
       "design_notes": [

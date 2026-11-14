@@ -6501,7 +6501,7 @@
       "state": "in_progress",
       "priority": "P0",
       "validation": "workflow_passed_scoped_boundary_limitation",
-      "remaining": "Whole-graph compact placement and nested continuations implemented. J5 retains fixed outside nodes: Body drift 3513 to 3696 and Completed-above-body 3 to 3. Assess this scoped boundary limitation separately; no full visual acceptance claim.",
+      "remaining": "Whole-graph compact placement and nested continuations implemented. J5 now refuses the known scoped LoopBody row regression before editing unless Force explicitly accepts the tradeoff. The focused fixture passed on stock Unreal 5.8.4; full cascade and independent visual/reference comparison were not rerun. Fixed outside nodes still limit scoped Body and Completed placement; keep the broader layout task in progress.",
       "source_keys": [
         "2026-11-05_S1/TD-62",
         "2026-11-05_S1/TD-70",
@@ -6572,10 +6572,16 @@
           "run": "31ce343dffc14e9a8e73fcbe661d3a83",
           "result": "integrated_focused_workflow_passed_visual_acceptance_pending",
           "scope": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
+        },
+        {
+          "commit": "91c443b9a6e705f0604c8108a3d097587077bbf7",
+          "run": "567aea6ea60348e49d9e0a550a21166a",
+          "result": "focused_J5_guard_passed_full_cascade_pending",
+          "scope": "Stock Unreal 5.8.4 focused 158-call fixture passed: unforced preview/edit refuse the 860-to-1043 px scoped LoopBody regression without mutation; forced calls disclose the tradeoff, preserve outside nodes and graph semantics, and undo restores exact geometry. Full cascade and independent visual/reference comparison not rerun. Offline validate.py 25/26 due to unrelated pre-existing test-lookup-guards failure."
         }
       ],
-      "next_step": "Whole-graph compact placement and nested continuations implemented. J5 retains fixed outside nodes: Body drift 3513 to 3696 and Completed-above-body 3 to 3. Assess this scoped boundary limitation separately; no full visual acceptance claim.",
-      "latest_evidence": "Four native suites passed, 789 public calls; exact preview/edit positions and seven measures, contracted topology, scoped outside-node preservation, layout undo and local-promotion undo. Combined explicit local promotion plus routing and nested comments was a forced mechanics check. Exec crossings 4 to 0, diagonal exec length 10938.2 to 0, row breaks 4 to 0, data crossings 36 to 13, wire length 72726.1 to 64237.6, area +3.8%. Arithmetic oracle uses native ownership classifications. User visual/reference acceptance remains open."
+      "next_step": "Whole-graph compact placement and nested continuations implemented. J5 now refuses the known scoped LoopBody row regression before editing unless Force explicitly accepts the tradeoff. The focused fixture passed on stock Unreal 5.8.4; full cascade and independent visual/reference comparison were not rerun. Fixed outside nodes still limit scoped Body and Completed placement; keep the broader layout task in progress.",
+      "latest_evidence": "Focused J5 boundary guard passed on stock Unreal 5.8.4 in run 567aea6ea60348e49d9e0a550a21166a: unforced edit refused before mutation; forced tradeoff was disclosed and undone exactly. Broader scoped placement and visual/reference acceptance remain open."
     },
     {
       "id": "NOV05-03",
