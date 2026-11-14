@@ -88,6 +88,24 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Second component is placed to the right"), Growth.Nodes[2].PlannedX > Growth.Nodes[1].PlannedX + 50);
         TestEqual(TEXT("Packing preserves execution/data edge count"), Growth.Wires.Num(), 1);
         TestEqual(TEXT("Packing preserves neighboring box position"), Growth.Boxes[1].PlannedY, 300.0);
+        // A parent may use space beside a child without translating that child.
+        Growth.Boxes[1].ParentIndex = 0;
+        Growth.Boxes[1].X = Growth.Boxes[1].PlannedX = 40;
+        Growth.Boxes[1].Y = Growth.Boxes[1].PlannedY = 82;
+        Growth.Boxes[1].Width = Growth.Boxes[1].PlannedWidth = 200;
+        Growth.Boxes[1].Height = Growth.Boxes[1].PlannedHeight = 100;
+        Growth.Boxes[1].MemberKeys = { TEXT("member0"), TEXT("member1") };
+        Growth.Boxes[0].ChildBoxIndices.Add(1);
+        Growth.Boxes[0].Height = 240;
+        Growth.Boxes[0].PlannedHeight = 500;
+        Growth.Nodes[2].PlannedY = 350;
+        const double ChildNodeX = Growth.Nodes[0].PlannedX;
+        TestTrue(TEXT("Parent packs direct members beside a fixed nested section"), FTurboMCPGraphTidy::TryPackScopedSection(Growth, 0, 120));
+        TestEqual(TEXT("Child member retains its position"), Growth.Nodes[0].PlannedX, ChildNodeX);
+        TestEqual(TEXT("Child box retains its anchor"), Growth.Boxes[1].PlannedX, 40.0);
+        TestTrue(TEXT("Direct member clears the child rectangle"), Growth.Nodes[2].PlannedX >= 360.0);
+        TestEqual(TEXT("Parent no longer needs downward growth"), Growth.Boxes[0].PlannedHeight, 240.0);
+
 
     }
     UBlueprint* Macros=LoadObject<UBlueprint>(nullptr,TEXT("/Engine/EditorBlueprintResources/StandardMacros.StandardMacros"));

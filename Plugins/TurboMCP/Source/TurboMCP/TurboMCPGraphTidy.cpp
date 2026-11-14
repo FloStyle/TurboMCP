@@ -4863,22 +4863,32 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	return FString::Join(Lines, TEXT("\n"));
 }
 
-// Reject newly planned intersections without changing the live graph or plan.
+// Translate complete components only after a candidate clears the section guards.
 bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, double Gap)
 {
     if (InPlan.SelectedNodeKeys.IsEmpty() || !InPlan.Boxes.IsValidIndex(BoxIndex)
         || !FMath::IsFinite(Gap) || Gap < 0.0) return false;
     const FBox& Box = InPlan.Boxes[BoxIndex];
-    // Nested sections retain their anchors. Their joint packing needs a separate
-    // candidate rather than moving only the parent's directly owned nodes.
-    if (!Box.bWouldFit || Box.bGenerated || Box.ParentIndex != INDEX_NONE
-        || !Box.ChildBoxIndices.IsEmpty()) return false;
+    if (!Box.bWouldFit || Box.bGenerated || Box.ParentIndex != INDEX_NONE) return false;
+    // Child sections are fixed obstacles. Only directly owned nodes participate;
+    // moving a nested section is not implied by selecting its parent.
+    TSet<FString> ChildMembers;
+    double ChildRight = Box.X + FitPadding;
+    double ChildBottom = Box.Y + Box.Height;
+    for (const int32 ChildIndex : Box.ChildBoxIndices)
+    {
+        if (!InPlan.Boxes.IsValidIndex(ChildIndex)) return false;
+        const FBox& Child = InPlan.Boxes[ChildIndex];
+        for (const FString& Key : Child.MemberKeys) ChildMembers.Add(Key);
+        ChildRight = FMath::Max(ChildRight, Child.PlannedX + Child.PlannedWidth + Gap);
+        ChildBottom = FMath::Max(ChildBottom, Child.PlannedY + Child.PlannedHeight + FitPadding);
+    }
     TArray<int32> Members;
     TMap<int32, int32> Group;
     for (int32 Index = 0; Index < InPlan.Nodes.Num(); ++Index)
     {
         const FNode& Node = InPlan.Nodes[Index];
-        if (Node.bIsComment || !Box.MemberKeys.Contains(Node.Key)) continue;
+        if (Node.bIsComment || !Box.MemberKeys.Contains(Node.Key) || ChildMembers.Contains(Node.Key)) continue;
         if (Node.bUnreachable || !InPlan.SelectedNodeKeys.Contains(Node.Key)) return false;
         Members.Add(Index);
         Group.Add(Index, Index);
@@ -4899,13 +4909,13 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
     }
     TArray<int32> Groups;
     for (const int32 Member : Members) Groups.AddUnique(Group[Member]);
-    if (Groups.Num() < 2) return false;
+    if (Groups.IsEmpty() || (Groups.Num() < 2 && Box.ChildBoxIndices.IsEmpty())) return false;
     // Graph order is stable; translate each complete component without changing
     // its internal geometry, pin alignment or links.
     FPlan Candidate = InPlan;
     FBox& CandidateBox = Candidate.Boxes[BoxIndex];
-    double CursorX = Box.X + FitPadding;
-    double Bottom = Box.Y + Box.Height;
+    double CursorX = ChildRight;
+    double Bottom = ChildBottom;
     for (const int32 Root : Groups)
     {
         double Left = TNumericLimits<double>::Max(), Top = Left;
