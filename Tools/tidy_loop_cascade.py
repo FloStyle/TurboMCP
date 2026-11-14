@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 import re
+import runpy
 import uuid
 from execution_runtime import require_context
 from tmcp import Session, toolset_for, READ_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET, LOOK_TOOLSET
@@ -273,47 +274,55 @@ def record_scoped_loop_boundary(call, evidence, persist):
     row['after_preview_graph'] = read_complete_graph(call, asset, graph)
     if row['after_preview_positions'] != row['before_positions'] or row['after_preview_graph'] != row['before_graph']:
         raise RuntimeError('J5 boundary preview mutated the graph')
-    handoff = re.search(r'scoped LoopBody handoff (\S+):LoopBody -> (\S+):(\S+)'
-                        r' increases vertical pin separation from ([\d.]+) to ([\d.]+) px', row['preview'])
-    if not row['preview'].startswith('WOULD ROLL BACK:') or not handoff:
-        raise RuntimeError('J5 boundary preview did not name the worsened LoopBody handoff')
-    source, target, _, before, after = handoff.groups()
-    selected_keys = {identity.rsplit('.', 1)[-1] for identity in selected}
-    if (source in selected_keys) == (target in selected_keys) or float(after) <= float(before):
-        raise RuntimeError('J5 boundary evidence does not cross scope or worsen separation')
-    if 'Expand nodeIds' not in row['preview']:
-        raise RuntimeError('J5 boundary refusal omitted expansion guidance')
+    if not row['preview'].startswith('WOULD APPLY:'):
+        raise RuntimeError('J5 boundary placement was refused: ' + row['preview'])
+    drift = re.search(r'Body row drift ([\d.]+) -> ([\d.]+)', row['preview'])
+    if not drift or float(drift[2]) > float(drift[1]) + 1.0:
+        raise RuntimeError('J5 boundary preview did not preserve or improve LoopBody separation')
+    row['body_drift'] = dict(before=float(drift[1]), proposed=float(drift[2]))
     row['edit'] = call('EditTurboMCPGraphTidy', **args)
     row['after_edit_positions'] = read_positions(call, asset, graph)
     row['after_edit_graph'] = read_complete_graph(call, asset, graph)
-    if not row['edit'].startswith('unchanged:') or row['after_edit_positions'] != row['before_positions'] or row['after_edit_graph'] != row['before_graph']:
-        raise RuntimeError('J5 boundary refusal changed the graph')
-    forced = dict(args, bForce=True)
-    row['forced_preview'] = call('PreviewTurboMCPGraphTidy', **forced)
-    if 'Force requested for boundary tradeoff:' not in row['forced_preview']:
-        raise RuntimeError('J5 forced preview hid the boundary tradeoff')
-    row['forced_edit'] = call('EditTurboMCPGraphTidy', **forced)
-    row['forced_positions'] = read_positions(call, asset, graph)
-    row['forced_graph'] = read_complete_graph(call, asset, graph)
-    if not row['forced_edit'].startswith('changed:') or 'Force accepted boundary tradeoff:' not in row['forced_edit']:
-        raise RuntimeError('J5 forced edit did not disclose an accepted boundary tradeoff')
-    if row['forced_graph'] != row['before_graph']:
-        raise RuntimeError('J5 forced edit changed graph semantics')
-    if any(row['forced_positions'][identity] != rectangle for identity, rectangle in row['before_positions'].items()
-           if identity not in selected):
-        raise RuntimeError('J5 forced edit moved an unselected node')
+    if not row['edit'].startswith('changed:'):
+        raise RuntimeError('J5 valid scoped placement was not applied: ' + row['edit'])
+    if row['after_edit_graph'] != row['before_graph']:
+        raise RuntimeError('J5 scoped edit changed graph semantics')
+    if set(row['after_edit_positions']) != set(row['before_positions']):
+        raise RuntimeError('J5 scoped edit changed the node identity set')
+    if any(row['after_edit_positions'][identity] != rectangle
+           for identity, rectangle in row['before_positions'].items() if identity not in selected):
+        raise RuntimeError('J5 scoped edit moved an unselected node')
+    if row['after_edit_positions'] == row['before_positions']:
+        raise RuntimeError('J5 reported a change without moving any selected node')
+    row['capture'] = call('LookTurboMCPCapture', asset=asset, graphName=graph,
+                          mode='graph', target='', size='1600x900')
+    persist()
     row['control_preview'] = call('PreviewTurboMCPGraphTidy', **dict(args, nodeIds=[]))
     if 'scoped LoopBody handoff' in row['control_preview']:
         raise RuntimeError('J5 whole-graph control was mistaken for a scoped boundary')
     undo_preview = call('PreviewTurboMCPAssetUndo', asset=asset)
     confirmation = re.search(r'Confirm=([0-9A-Fa-f-]+)', undo_preview)
     if not confirmation:
-        raise RuntimeError('J5 forced edit has no undo confirmation')
+        raise RuntimeError('J5 scoped edit has no undo confirmation')
     row['undo'] = call('EditTurboMCPAssetUndo', asset=asset, confirm=confirmation.group(1))
     row['undo_positions'] = read_positions(call, asset, graph)
     row['undo_graph'] = read_complete_graph(call, asset, graph)
     if row['undo_positions'] != row['before_positions'] or row['undo_graph'] != row['before_graph']:
-        raise RuntimeError('J5 forced edit undo did not restore the graph')
+        raise RuntimeError('J5 scoped edit undo did not restore the graph')
+    # Reuse the existing fixed-obstacle and containment controls rather than
+    # constructing another large cascade. A passing placement is not proof
+    # that constrained section growth still refuses safely.
+    test_name = 'TurboMCP.GraphAppend.TidyFeedback'
+    automation = 'AutomationTestToolset.AutomationTestToolset'
+    call('DiscoverTests', _toolset=automation)
+    listed = call('ListTests', _toolset=automation, nameFilter=test_name, tagFilter='')
+    if test_name not in listed:
+        raise RuntimeError('J5 fixed-obstacle control was not registered')
+    row['obstacle_control'] = call('RunTests', _toolset=automation, testNames=[test_name])
+    parse_report = runpy.run_path(str(Path(__file__).with_name('test-graph-append.py')))['parse_run_tests_report']
+    entry, report = parse_report(row['obstacle_control'], test_name)
+    if entry['state'] != 'Success' or entry['errors']:
+        raise RuntimeError('J5 fixed-obstacle control failed')
     row['passed'] = True
     persist()
 

@@ -2743,6 +2743,21 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 // Large distance differences still dominate this small preference.
                 const bool ExecWire = !Wire.bControlFeedback && Wire.OutputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec;
                 AnchorPreferences.Add(ExecWire ? (SourceMoves ? 32.0 : 0.0) : 64.0);
+                if (OutPlan.bCompactBlocks && ExecWire && Wire.OutputPin->PinName == TEXT("LoopBody"))
+                {
+                    // A fixed loop can be far from the selected body. Preserve
+                    // its original handoff row as a candidate instead of only
+                    // trying full alignment or the first selected node's row.
+                    const FVector2D OriginalStart = AlignmentPinPosition(Wire.OutputPin);
+                    const FVector2D OriginalEnd = AlignmentPinPosition(Wire.InputPin);
+                    const double PreserveY = SourceMoves
+                        ? OriginalStart.Y - OriginalEnd.Y - (Start.Y - End.Y)
+                        : OriginalEnd.Y - OriginalStart.Y - (End.Y - Start.Y);
+                    Candidates.Add(FVector2D(0.0, PreserveY));
+                    AnchorPreferences.Add(0.0);
+                    Candidates.Add(FVector2D(ShiftX, PreserveY));
+                    AnchorPreferences.Add(0.0);
+                }
             }
             if (Boundary.IsEmpty()) continue;
             // A selected component may already have a valid boundary position.
@@ -2783,6 +2798,19 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         FVector2D Start = PlannedPin(Wire->OutputPin, Wire->SourceNodeIndex);
                         FVector2D End = PlannedPin(Wire->InputPin, Wire->TargetNodeIndex);
                         if (Members.Contains(Wire->SourceNodeIndex)) Start += Shift; else End += Shift;
+                        // Apply the final loop handoff rule while selecting a
+                        // candidate, not only after the cheapest one is chosen.
+                        // Otherwise a valid alternative can be discarded in
+                        // favour of a shorter but ultimately refused layout.
+                        if (OutPlan.bCompactBlocks && !bInForce
+                            && Wire->OutputPin->PinName == TEXT("LoopBody")
+                            && Wire->OutputPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                        {
+                            const double OriginalDY = FMath::Abs(AlignmentPinPosition(Wire->OutputPin).Y
+                                - AlignmentPinPosition(Wire->InputPin).Y);
+                            if (FMath::Abs(Start.Y - End.Y) > OriginalDY + 1.0)
+                            { BoundarySafe = false; break; }
+                        }
                         if (Start.X > End.X) ++BackwardCount;
                         const double CandidateLength = FVector2D::Distance(Start, End);
                         const double OriginalLength = FVector2D::Distance(AlignmentPinPosition(Wire->OutputPin), AlignmentPinPosition(Wire->InputPin));
