@@ -118,7 +118,11 @@ bool FTurboMCPTidyHandoffAxisTest::RunTest(const FString& Parameters)
 {
     UBlueprint* Macros = LoadObject<UBlueprint>(nullptr,
         TEXT("/Engine/EditorBlueprintResources/StandardMacros.StandardMacros"));
-    if (!TestNotNull(TEXT("Stock macro library"), Macros)) return false;
+    if (Macros == nullptr)
+    {
+        AddError(TEXT("The stock macro library could not be loaded; the handoff fixture was not run."));
+        return false;
+    }
     UEdGraph* LoopDefinition = nullptr;
     for (UEdGraph* Candidate : Macros->MacroGraphs)
         if (Candidate && Candidate->GetFName() == TEXT("ForLoopWithBreak")) LoopDefinition = Candidate;
