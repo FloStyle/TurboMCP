@@ -110,7 +110,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                     }
                     if (Link.ToFormIndex == INDEX_NONE && Members.Contains(Link.FromFormIndex)) bHasAnchor = true;
                 }
-            if (!bHasAnchor || ExecAnchors.Num() > 1)
+            if (!bHasAnchor)
             {
                 OutPositions.Reset();
                 OutRefusal = FString::Printf(TEXT("per-anchor placement: component starting at line %d has %s. Split the request or use explicit local/outside placement; no nodes were moved."),
@@ -120,10 +120,47 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
             TArray<FPlannedPosition> Positions;
             bool bEstimated = false;
             FString Refusal;
-            if (!PlanPlacement(InGraph, Forms, Positions, bEstimated, Refusal, &Links, false, false, &Occupied))
+            // Try each source deterministically. A candidate must satisfy every
+            // incoming execution attachment, not merely the first link in the text.
+            TArray<FString> AnchorKeys = ExecAnchors.Array();
+            AnchorKeys.Sort();
+            if (AnchorKeys.IsEmpty()) AnchorKeys.Add(FString());
+            bool bPlaced = false;
+            for (const FString& AnchorKey : AnchorKeys)
+            {
+                TArray<FNewLink> OrderedLinks;
+                for (const FNewLink& Link : Links)
+                    if (Link.FromFormIndex == INDEX_NONE && Link.FromNodeKey == AnchorKey) OrderedLinks.Add(Link);
+                for (const FNewLink& Link : Links)
+                    if (!(Link.FromFormIndex == INDEX_NONE && Link.FromNodeKey == AnchorKey)) OrderedLinks.Add(Link);
+                if (!PlanPlacement(InGraph, Forms, Positions, bEstimated, Refusal, &OrderedLinks, false, false, &Occupied)) continue;
+                bool bCompatible = true;
+                if (ExecAnchors.Num() > 1) for (const FNewLink& Link : Links)
+                {
+                    if (Link.FromFormIndex != INDEX_NONE || !Members.Contains(Link.ToFormIndex)
+                        || !Forms[Link.ToFormIndex].ProbeExecInputs.Contains(Link.ToPin)) continue;
+                    const UEdGraphNode* Source = nullptr;
+                    for (const UEdGraphNode* Node : InGraph->Nodes)
+                        if (Node && TurboMCPNodeId::MakeForNode(Node, true) == Link.FromNodeKey) { Source = Node; break; }
+                    const FPlannedPosition* Target = Positions.FindByPredicate([&](const FPlannedPosition& P) { return P.FormIndex == Link.ToFormIndex; });
+                    if (!Source || !Target) { bCompatible = false; break; }
+                    const int64 Width = FMath::Max<int64>(PlacementWidth, Forms[Link.ToFormIndex].MeasuredWidth);
+                    const int64 Height = FMath::Max<int64>(PlacementHeight, Forms[Link.ToFormIndex].MeasuredHeight);
+                    const int64 SourceRight = int64(Source->NodePosX) + (Source->NodeWidth > 0 ? Source->NodeWidth : PlacementWidth);
+                    // Local compatibility permits two footprint strides, but never
+                    // a backward execution wire or a remote source-to-lane jump.
+                    const int64 DX = int64(Target->X) - SourceRight;
+                    const int64 DY = FMath::Abs(int64(Target->Y) - int64(Source->NodePosY));
+                    if (DX < 0 || DX > 2 * (Width + PlacementHorizontalGap)
+                        || DY > 2 * (Height + PlacementVerticalGap)) { bCompatible = false; break; }
+                }
+                if (bCompatible) { bPlaced = true; break; }
+            }
+            if (!bPlaced)
             {
                 OutPositions.Reset();
-                OutRefusal = FString::Printf(TEXT("per-anchor component starting at line %d: %s"), InNodes[Seed].Line, *Refusal);
+                OutRefusal = FString::Printf(TEXT("per-anchor component starting at line %d: %s"), InNodes[Seed].Line,
+                    ExecAnchors.Num() > 1 ? TEXT("multiple fixed execution sources have no collision-free compatible local placement; no nodes were moved") : *Refusal);
                 return false;
             }
             bOutUsedEstimatedSize |= bEstimated;

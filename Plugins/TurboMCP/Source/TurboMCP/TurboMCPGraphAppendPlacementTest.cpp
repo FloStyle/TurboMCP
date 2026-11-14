@@ -665,6 +665,8 @@ static bool CheckPerAnchorPlacement(FAutomationTestBase& Test)
     // be silently resolved using whichever link happens to appear first.
     FTurboMCPGraphAppend::FNewLink Shared;
     Shared.FromFormIndex = 0; Shared.ToFormIndex = 1; Links.Add(Shared);
+    Test.TestTrue(TEXT("Nearby compatible execution sources plan"), FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Repeat, Estimated, Error, &Links, false, true));
+    Anchors[1]->NodePosY = 10000;
     Test.TestFalse(TEXT("Conflicting execution sources refuse"), FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Repeat, Estimated, Error, &Links, false, true));
     Test.TestTrue(TEXT("Refusal explains the anchor conflict"), Error.Contains(TEXT("multiple fixed execution sources")));
     Test.TestEqual(TEXT("Refusal returns no partial geometry"), Repeat.Num(), 0);
