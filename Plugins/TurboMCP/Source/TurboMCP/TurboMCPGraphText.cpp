@@ -495,7 +495,7 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 		// Unreal permits several scalar targets for certain impure calls. This
 		// is inspection evidence, not single-value append syntax or an inline value.
 		const UK2Node* Owner = Cast<UK2Node>(InPin->GetOwningNodeUnchecked());
-		if (InPin->LinkedTo.Num() > 1 && UEdGraphSchema_K2::IsSelfPin(*InPin)
+		if (InPin->LinkedTo.Num() > 1 && GetDefault<UEdGraphSchema_K2>()->IsSelfPin(*InPin)
 			&& Owner && Owner->AllowMultipleSelfs(false) && !InPin->PinType.IsContainer())
 		{
 			TSet<const UEdGraphPin*> Seen;
