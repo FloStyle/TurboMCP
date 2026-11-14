@@ -14,3 +14,9 @@
 - Prove the behavior using one disposable synthetic Blueprint with a known soft path in its class default object, an unset soft path, and an unavailable class case. Check that read-only inspection does not dirty the package. Run only this focused native test and the offline gate.
 
 Scope: `TurboMCPBlueprintRead.cpp`, `TurboMCPBlueprintJson.cpp`, `Public/TurboMCPBlueprintRead.h`, and one new focused test file. No asset save, new tool, engine change, or project-wide reference walk.
+
+## Integration evidence and limits
+
+The stock Unreal 5.8.4 build and `test-blueprint-reference-default` passed in supervised run `7f4af72d63c04357aa16be15d42afb41` at candidate `6c10eea54b04702453c56b9c6e076efd65c7dfea`. The fixture set a known soft path in the generated class default, checked text and JSON provenance, then checked unset and unavailable cases and package cleanliness. It did not save or reload the fixture, and the original field asset was unavailable. `current class default` deliberately describes in-memory state, not a verified disk value. The local test preference was restored byte for byte afterward.
+
+The offline gate reported the existing unrelated `test-lookup-guards` failure in `TurboMCPDataAssetCreateTest.cpp:123`; this run does not claim a full offline pass.

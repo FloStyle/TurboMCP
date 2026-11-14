@@ -260,16 +260,16 @@
       "title": "State reference-scan scope and expose stored soft paths",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "ready",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator-reference-default",
+      "validation": "focused_runtime_passed",
       "source_keys": [
         "2026-11-09_S2/BL-18"
       ],
       "dependencies": [],
       "complexity_estimate": 4,
-      "next_step": "Implement the approved asset-local scope and effective soft-default contract in docs/audit/nov09-reference-default-repair.md; run one focused fixture.",
+      "next_step": "Scoped reference wording and current soft-class-default reporting implemented. Stock UE 5.8.4 build and one focused native fixture passed (7f4af72d63c04357aa16be15d42afb41). The original field asset was unavailable; its disk state remains unverified.",
       "acceptance": "Label asset-local reference scans. Reproduce a known stored soft path before claiming a read defect; distinguish unset/default/unavailable."
     },
     {
@@ -414,11 +414,11 @@
     ],
     "boundary": "Do not silently expand selection or move neighboring boxes. Explicit previewed movement scope required."
   },
-  "updated": "2026-11-10",
+  "updated": "2026-11-14",
   "next_priority_order": [
-    "NOV09-18",
-    "NOV09-08",
-    "NOV09-11",
-    "NOV09-12"
+    "NOV09-01",
+    "NOV09-02",
+    "NOV09-03",
+    "NOV09-04"
   ]
 }
