@@ -4142,6 +4142,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "nov14-variable-reference-load-guard": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemoveTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
