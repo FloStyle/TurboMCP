@@ -630,6 +630,16 @@ static bool CheckPerAnchorPlacement(FAutomationTestBase& Test)
     Test.TestTrue(TEXT("Repeated planning succeeds"), FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Repeat, Estimated, Error, &Links, false, true));
     if (Repeat.Num() == Positions.Num()) for (int32 I = 0; I < Repeat.Num(); ++I)
     { Test.TestEqual(TEXT("Deterministic X"), Repeat[I].X, Positions[I].X); Test.TestEqual(TEXT("Deterministic Y"), Repeat[I].Y, Positions[I].Y); }
+    // Nearby independent sources compete for the same space. Earlier components
+    // must reserve their rectangles instead of accepting overlapping placements.
+    for (UEdGraphNode* Anchor : Anchors) Anchor->NodePosY = 0;
+    Test.TestTrue(TEXT("Nearby independent anchors plan"), FTurboMCPGraphAppend::PlanPlacement(Graph, Forms, Repeat, Estimated, Error, &Links, false, true));
+    Test.TestEqual(TEXT("Nearby anchors retain every form"), Repeat.Num(), 4);
+    for (int32 I = 0; I < Repeat.Num(); ++I)
+        for (int32 J = I + 1; J < Repeat.Num(); ++J)
+            Test.TestTrue(TEXT("Independent components do not overlap"),
+                Repeat[I].X + 200 <= Repeat[J].X || Repeat[J].X + 200 <= Repeat[I].X
+                || Repeat[I].Y + 100 <= Repeat[J].Y || Repeat[J].Y + 100 <= Repeat[I].Y);
     // One shared new dependency joins the groups; two execution sources must not
     // be silently resolved using whichever link happens to appear first.
     FTurboMCPGraphAppend::FNewLink Shared;
@@ -1206,6 +1216,50 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
         TestFalse(TEXT("Unknown placement mode refuses before graph lookup"),FTurboMCPGraphAppend::Plan(TEXT(""),TEXT(""),TEXT(""),BadPlan,Error,true,TEXT("auto"),TEXT("guess")));
         TestTrue(TEXT("Unknown mode guidance"),Error.Contains(TEXT("local, outside or per-anchor")));
 
+    }
+
+    // Exercise the public per-anchor path, including scratch measurement and live links.
+    {
+        UEdGraph* Graph = Fixture.Legacy;
+        TArray<UK2Node_CustomEvent*> Sources;
+        FString Text;
+        for (int32 I = 0; I < 2; ++I)
+        {
+            auto* Source = NewObject<UK2Node_CustomEvent>(Graph);
+            Source->CustomFunctionName = FName(*FString::Printf(TEXT("IndependentPlacement%d"), I));
+            Graph->AddNode(Source, false, false);
+            Source->CreateNewGuid(); Source->AllocateDefaultPins();
+            Source->NodePosX = 12000; Source->NodePosY = I * 2000;
+            Sources.Add(Source);
+            Text += FString::Printf(TEXT("(Development|PrintString\n    InString \"anchor %d\"\n    execute (-> %s:then))\n"),
+                I, *TurboMCPNodeId::MakeForNode(Source, true));
+        }
+        const FGraphSnapshot Before = CaptureGraph(Graph);
+        TMap<UEdGraphNode*, FIntPoint> Existing;
+        for (UEdGraphNode* Node : Graph->Nodes) if (Node) Existing.Add(Node, FIntPoint(Node->NodePosX, Node->NodePosY));
+        Fixture.Package->SetDirtyFlag(false);
+        const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Fixture.AssetPath, Graph->GetName(), Text, TEXT("auto"), TEXT("per-anchor"));
+        AddInfo(Preview);
+        TestTrue(TEXT("Public per-anchor preview reports mode"), Preview.Contains(TEXT("placement: per-anchor")));
+        TestTrue(TEXT("Per-anchor preview preserves graph"), SameGraph(Before, CaptureGraph(Graph)));
+        TestFalse(TEXT("Per-anchor preview leaves package clean"), Fixture.Package->IsDirty());
+        const FString Applied = UTurboMCPEditToolset::EditTurboMCPGraphAppend(Fixture.AssetPath, Graph->GetName(), Text, TEXT("auto"), TEXT("per-anchor"));
+        AddInfo(Applied);
+        TestTrue(TEXT("Public per-anchor apply succeeds"), Applied.StartsWith(TEXT("changed")));
+        TestEqual(TEXT("Per-anchor adds exactly two nodes"), Graph->Nodes.Num(), Existing.Num() + 2);
+        for (const auto& Item : Existing)
+            TestTrue(TEXT("Per-anchor keeps existing positions"), Item.Key->NodePosX == Item.Value.X && Item.Key->NodePosY == Item.Value.Y);
+        for (UK2Node_CustomEvent* Source : Sources)
+        {
+            UEdGraphPin* Output = Source->FindPinChecked(TEXT("then"));
+            TestEqual(TEXT("Each source has its own appended consumer"), Output->LinkedTo.Num(), 1);
+            if (Output->LinkedTo.Num() == 1)
+            {
+                UEdGraphNode* Consumer = Output->LinkedTo[0]->GetOwningNode();
+                TestFalse(TEXT("Consumer is newly created"), Existing.Contains(Consumer));
+                TestTrue(TEXT("Consumer stays near its source"), FMath::Abs(Consumer->NodePosY - Source->NodePosY) < 1000);
+            }
+        }
     }
 
     // Public workflow: use a reachable existing flow, not an isolated geometry
