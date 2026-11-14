@@ -8,17 +8,17 @@
       "title": "Bound Tidy output and put the verdict first",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "ready",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator",
+      "validation": "build_pass_editor_blocked",
       "source_keys": [
         "2026-11-09_S1/X-130",
         "2026-11-09_S1/FT-160"
       ],
       "dependencies": [],
       "complexity_estimate": 3,
-      "next_step": "Implement the reviewed response repair in docs/audit/nov09-tidy-output-repair.md under the nov09-tidy-output scope.",
+      "next_step": "Run the focused Tidy workflow when the editor binds port 8000; the 450-node field graph remains unavailable locally. The supervised stock 5.8.4 build passed, but the editor suite was blocked before any assertion ran.",
       "acceptance": "Default response must be bounded and summary-first; optional paginated geometry evidence retains exact scores. Do not remove measurement coverage."
     },
     {

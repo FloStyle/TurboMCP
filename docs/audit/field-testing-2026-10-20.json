@@ -7063,23 +7063,27 @@
       "title": "Bound Tidy output and put the verdict first",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator",
+      "validation": "build_pass_editor_blocked",
       "source_keys": [
         "2026-11-09_S1/X-130",
         "2026-11-09_S1/FT-160"
       ],
       "dependencies": [],
       "complexity_estimate": 3,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Run the focused Tidy workflow when the editor binds port 8000; the 450-node field graph remains unavailable locally. The supervised stock 5.8.4 build passed, but the editor suite was blocked before any assertion ran.",
       "acceptance": "Default response must be bounded and summary-first; optional paginated geometry evidence retains exact scores. Do not remove measurement coverage.",
       "key": "NOV09-01",
       "canonical_issue": "NOV09-01",
       "report": "2026-11-09 intake",
       "task_plan": "docs/audit/field-reports/plan-2026-11-09.json",
-      "remaining": "Default response must be bounded and summary-first; optional paginated geometry evidence retains exact scores. Do not remove measurement coverage."
+      "remaining": "Implementation built; editor acceptance and the original 450-node field case remain untested.",
+      "evidence": [
+        "docs/audit/nov09-tidy-output-repair.md",
+        "docs/audit/field-reports/nov14-tidy-output-review.md"
+      ]
     },
     {
       "id": "NOV09-02",

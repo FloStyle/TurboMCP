@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "1ce85b35032559bb5b94bef4dcb190e8a0983f0d",
+  "plugin_tree": "1b21f5539d9368ab4b8a4e6cbdc83f6f4c29d2bf",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 190,
@@ -44,7 +44,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 280
+          "line": 284
         }
       ],
       "test_references": [
@@ -68,7 +68,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 144
+          "line": 148
         }
       ],
       "test_references": [
@@ -782,7 +782,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 539
+          "line": 543
         }
       ],
       "test_references": [
@@ -854,7 +854,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 60
+          "line": 64
         }
       ],
       "test_references": [
@@ -1044,7 +1044,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 35
+          "line": 39
         }
       ],
       "test_references": [
@@ -2084,7 +2084,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 279
+          "line": 283
         }
       ],
       "test_references": [
@@ -2107,7 +2107,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 143
+          "line": 147
         }
       ],
       "test_references": [
@@ -2716,7 +2716,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 538
+          "line": 542
         }
       ],
       "test_references": [
@@ -2740,7 +2740,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-          "line": 541
+          "line": 545
         }
       ],
       "test_references": [
@@ -2969,7 +2969,9 @@
         "LayoutMode",
         "RouteWires",
         "ChannelWidth",
-        "bCreateBoxes"
+        "bCreateBoxes",
+        "GeometryOffset",
+        "GeometryLimit"
       ],
       "family": "graph",
       "definitions": [
