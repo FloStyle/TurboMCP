@@ -672,6 +672,20 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPLocalVariableRemove",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPLocalVars",
       "family": "graph",
       "epic_5_8_3": {
@@ -1851,6 +1865,20 @@
     },
     {
       "tool": "PreviewTurboMCPLocalVariableAdd",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPLocalVariableRemove",
       "family": "asset-and-data",
       "epic_5_8_3": {
         "status": "unverified",

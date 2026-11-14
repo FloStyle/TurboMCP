@@ -25,3 +25,13 @@ Use a freshness token covering the asset, scope, declarations and graph baseline
 Focused fixture: two functions and a member sharing a name; reject a used local and stale token without mutation; remove an unused local while preserving the other scopes and graph state; confirm missing/malformed scope refusal and help. Reuse the next scheduled native pass rather than rerunning unaffected suites.
 
 Local rename needs a separate review: stock RenameLocalVariable calls ValidateBlueprintChildVariables and structural refresh, so it is not automatically a function-only change. Member rename needs dependency and binding discovery. Do not expose either helper as a narrow atomic edit without auditing those effects.
+
+## Local removal implementation and acceptance
+
+Candidate 9e8f9959072f8e8381de6623bf0c38f7147b19db implements Preview/EditTurboMCPLocalVariableRemove with fresh confirmation, exact owned function selection, local reference refusal and declaration-only mutation. The exact three-file scope passed against 7c0f8bfd89d6561baec3d3ba5dea9af4f3cd5134. Claim: 144f62e3ff8e4b4d92433de81881595f.
+
+Stock 5.8.4 supervised build 59a4839afce942a3a941ffb64c71c8be passed. Supervised engine execution 2f52f068cbad408abad0e47d96debdc9 passed the selected test-graph-append wrapper, including the extended VariableRemove case (1 passed, 0 failed, 0 skipped). Assertions cover unused local removal; same-named member and other-function local preservation; stale token refusal; disconnected local getter refusal without deletion; missing/event scope refusal; and token help. This synthetic fixture does not certify arbitrary custom nodes, dynamic references or field-project behavior.
+
+Offline run e840b7c9f76446b383d77fe750400871 passed all checks except validate-repo's stale capability inventory. Integration regenerated the inventory for the two new tools and reran validate-repo separately. No unrelated native suites were repeated.
+
+NOV05-18 remains in progress: local and member rename remain unimplemented. The historical local-removal contract above is now implemented, with this evidence defining its verified scope.

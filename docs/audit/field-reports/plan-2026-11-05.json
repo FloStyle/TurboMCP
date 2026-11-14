@@ -815,7 +815,7 @@
       "state": "in_progress",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "timer_alias_native_pass_remaining_operations_unverified",
+      "validation": "member_local_removal_and_timer_alias_native_pass_rename_pending",
       "source_ids": [
         "VA-11",
         "FT-144"
@@ -825,11 +825,11 @@
         "2026-11-04_S3/FT-144"
       ],
       "dependencies": [],
-      "next_step": "Implement reviewed local-removal contract in nov14-timer-alias-review.md; review local/member rename separately. Existing member removal and TimerHandle alias have native acceptance.",
+      "next_step": "Review and implement member/local rename. Local removal now has native acceptance; retain dynamic/custom-reference limitations.",
       "evidence": [
         "docs/audit/field-reports/nov14-timer-alias-review.md"
       ],
-      "remaining": "Member removal and TimerHandle alias passed their native cases in execution 810ccf6e47f9459a9d9b7dc106d218fc. Local removal and member/local rename remain unimplemented. No additional specific short struct-name failure is identified."
+      "remaining": "Member removal and TimerHandle alias have native acceptance. Local removal passed the extended VariableRemove fixture in execution 2f52f068cbad408abad0e47d96debdc9. Member/local rename remain unimplemented. No additional specific short struct-name failure is identified."
     }
   ],
   "priority_order": [

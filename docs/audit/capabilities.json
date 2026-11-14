@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "plugin_tree": "70f89ab1eca41f9203f41cff2c0dc1c64d158ab5",
+  "plugin_tree": "4be9e607dfec97618593730794f27a072d0bb872",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 190,
+    "tools": 192,
     "by_toolset": {
-      "UTurboMCPEditToolset": 78,
+      "UTurboMCPEditToolset": 79,
       "UTurboMCPLookToolset": 6,
-      "UTurboMCPPreviewToolset": 65,
+      "UTurboMCPPreviewToolset": 66,
       "UTurboMCPReadToolset": 41
     }
   },
@@ -1149,6 +1149,29 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "EditTurboMCPLocalVariableRemove",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Function",
+        "Name",
+        "Confirm"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
+          "line": 296
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "EditTurboMCPLocalVars",
       "toolset": "UTurboMCPEditToolset",
       "parameters": [
@@ -1616,7 +1639,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
-          "line": 188
+          "line": 189
         }
       ],
       "test_references": [],
@@ -3084,6 +3107,28 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "PreviewTurboMCPLocalVariableRemove",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "Function",
+        "Name"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
+          "line": 294
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "PreviewTurboMCPLocalVars",
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
@@ -3424,7 +3469,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
-          "line": 186
+          "line": 187
         }
       ],
       "test_references": [],
