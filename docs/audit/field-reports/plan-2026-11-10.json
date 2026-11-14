@@ -179,7 +179,7 @@
       "kind": "investigation",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "unassigned",
       "validation": "source_defect_identified_runtime_pending",
       "source_keys": [
