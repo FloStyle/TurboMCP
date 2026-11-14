@@ -88,16 +88,16 @@
       "title": "Allow safe wraps after converging optional-action branches",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "readiness": "ready",
-      "owner": "codex",
-      "validation": "source_cause_identified_runtime_pending",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator",
+      "validation": "focused_runtime_passed",
       "source_keys": [
         "2026-11-09_S1/TD-76"
       ],
       "dependencies": [],
       "complexity_estimate": 6,
-      "next_step": "Implement the reviewed common-continuation edge boundary in nov14-placement-and-search-reconciliation.md. Source identifies bypass row-union reconnection; independent of tail movement. Native reproduction and acceptance remain pending.",
+      "next_step": "Implemented common-continuation edge boundaries. Build and selected append wrapper passed in 3b655a5ed8104ef7994a6b56f3e95a60 at 3e0c774e; native screenshot inspected. Three synthetic optional-action repeats cover links, rows, planned/applied coordinates, undo and refusal. Exact 15-node field graph remains field-unverified. See nov14-placement-and-search-reconciliation.md.",
       "acceptance": "Recognize the branch/action merge only when all exits converge at the same next node; preserve every bypass link and refuse ambiguous branches."
     },
     {
