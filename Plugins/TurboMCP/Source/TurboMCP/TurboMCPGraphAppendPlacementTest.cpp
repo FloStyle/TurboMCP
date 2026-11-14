@@ -734,6 +734,39 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 	const FString AKey = TurboMCPNodeId::MakeForNode(Fixture.ApplyA, /*bLongForm=*/true);
 	const FString BKey = TurboMCPNodeId::MakeForNode(Fixture.ApplyB, /*bLongForm=*/true);
 
+    // Comment growth is evaluated on a copy, including existing membership.
+    {
+        UEdGraph* Graph = NewObject<UEdGraph>(Fixture.Blueprint);
+        UEdGraphNode_Comment* Box = NewObject<UEdGraphNode_Comment>(Graph);
+        Box->CreateNewGuid(); Box->NodePosX = 0; Box->NodePosY = 0;
+        Box->NodeWidth = 600; Box->NodeHeight = 300; Graph->AddNode(Box, false, false);
+        UEdGraphNode* Member = NewObject<UEdGraphNode>(Graph);
+        Member->CreateNewGuid(); Member->NodePosX = 100; Member->NodePosY = 80;
+        Member->NodeWidth = 100; Member->NodeHeight = 60; Graph->AddNode(Member, false, false);
+        FTurboMCPGraphAppend::FExistingPosition Move;
+        Move.NodeId = TurboMCPNodeId::MakeForNode(Member, true);
+        Move.OldX = 100; Move.OldY = 80; Move.NewX = 700; Move.NewY = 80;
+        TArray<FTurboMCPGraphAppend::FExistingPosition> Moves{Move};
+        TArray<FTurboMCPGraphAppend::FPlacementObstacle> Bounds{{300, 80, 200, 60}};
+        FTurboMCPGraphAppend::FCommentGrowth Growth;
+        FString Error;
+        const FString BoxId = TurboMCPNodeId::MakeForNode(Box, true);
+        TestTrue(TEXT("Named comment can grow rightward around its translated member"),
+            FTurboMCPGraphAppend::PlanInsertionComment(Graph, BoxId, Moves, Bounds, Growth, Error));
+        TestTrue(TEXT("Comment growth covers the moved member"), Growth.NewWidth >= 832);
+        TestEqual(TEXT("Comment planning preserves live width"), Box->NodeWidth, 600);
+        TestEqual(TEXT("Comment planning preserves live member position"), Member->NodePosX, 100);
+        TestFalse(TEXT("Unnamed fixed comment cannot lose its member"),
+            FTurboMCPGraphAppend::PlanInsertionComment(Graph, FString(), Moves, Bounds, Growth, Error));
+        TestTrue(TEXT("Comment refusal clears growth output"), Growth.NodeId.IsEmpty());
+        UEdGraphNode_Comment* Neighbor = NewObject<UEdGraphNode_Comment>(Graph);
+        Neighbor->CreateNewGuid(); Neighbor->NodePosX = 650; Neighbor->NodePosY = 0;
+        Neighbor->NodeWidth = 300; Neighbor->NodeHeight = 300; Graph->AddNode(Neighbor, false, false);
+        TestFalse(TEXT("Rightward growth refuses a fixed neighboring comment"),
+            FTurboMCPGraphAppend::PlanInsertionComment(Graph, BoxId, Moves, Bounds, Growth, Error));
+        TestTrue(TEXT("Blocked growth names the fixed comment"), Error.Contains(TurboMCPNodeId::MakeForNode(Neighbor, true)));
+    }
+
 	// ---- 1. EMPTY GRAPH -------------------------------------------------------------------------------
 	{
 		FTurboMCPGraphAppend::FPlan Plan;

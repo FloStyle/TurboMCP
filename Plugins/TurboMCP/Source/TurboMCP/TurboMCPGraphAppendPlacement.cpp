@@ -14,6 +14,9 @@
 #include "EdGraphSchema_K2.h"
 #include "Math/NumericLimits.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPComment.h"
+#include "TurboMCPGraphScratch.h"
+#include "TurboMCPGraphTidy.h"
 
 /**
  * Deterministic placement for the forms an append creates.
@@ -140,6 +143,19 @@ bool FTurboMCPGraphAppend::PlanTailTranslation(const UEdGraph* Graph,
     TArray<FExistingPosition> Candidate;
     for (const UEdGraphNode* Node : Moving)
     {
+        // Moving an output past a fixed data consumer creates a new backward
+        // cable. Do not silently add that shared consumer to the execution tail.
+        for (const UEdGraphPin* Pin : Node->Pins)
+            if (Pin && Pin->Direction == EGPD_Output && Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec)
+                for (const UEdGraphPin* Input : Pin->LinkedTo)
+                    if (Input && Input->GetOwningNode() && !Moving.Contains(Input->GetOwningNode()))
+                    {
+                        const UEdGraphNode* Consumer = Input->GetOwningNode();
+                        const FPlacementObstacle Original = Bounds(Node, 0);
+                        if (Original.X + Original.Width <= Consumer->NodePosX
+                            && Original.X + Original.Width + Shift > Consumer->NodePosX)
+                        { OutError = TEXT("insertion would cross a fixed data consumer: ") + TurboMCPNodeId::MakeForNode(Consumer, true); return false; }
+                    }
         FExistingPosition Move;
         Move.NodeId = TurboMCPNodeId::MakeForNode(Node, true);
         Move.OldX = Node->NodePosX; Move.OldY = Node->NodePosY;
@@ -148,6 +164,100 @@ bool FTurboMCPGraphAppend::PlanTailTranslation(const UEdGraph* Graph,
     }
     Candidate.Sort([](const FExistingPosition& A, const FExistingPosition& B) { return A.NodeId < B.NodeId; });
     OutMoves = MoveTemp(Candidate);
+    return true;
+}
+
+bool FTurboMCPGraphAppend::PlanInsertionComment(UEdGraph* Graph, const FString& ContainingCommentId,
+    const TArray<FExistingPosition>& Moves, const TArray<FPlacementObstacle>& NewBounds,
+    FCommentGrowth& OutGrowth, FString& OutError)
+{
+    OutGrowth = FCommentGrowth(); OutError.Empty();
+    UBlueprint* Blueprint = Graph ? Graph->GetTypedOuter<UBlueprint>() : nullptr;
+    if (!Blueprint)
+    { OutError = TEXT("insertion comment validation requires a Blueprint graph"); return false; }
+    UEdGraphNode_Comment* Container = nullptr;
+    if (!ContainingCommentId.IsEmpty())
+    {
+        Container = Cast<UEdGraphNode_Comment>(TurboMCPGraphScratch::Find(Graph, ContainingCommentId));
+        if (!Container || Container->NodeWidth <= 0 || Container->NodeHeight <= 0)
+        { OutError = TEXT("insertion containing comment is missing or has invalid dimensions: ") + ContainingCommentId; return false; }
+    }
+    // Use the shared membership implementation on a temporary graph. No live
+    // coordinates, comment caches, package dirtiness or undo records are changed.
+    TurboMCPGraphScratch::FCopy Scratch;
+    if (!Scratch.Init(Blueprint, Graph))
+    { OutError = TEXT("insertion could not create a scratch graph for comment validation"); return false; }
+    TMap<FGuid, TArray<FString>> Before;
+    for (UEdGraphNode* Node : Scratch.Graph->Nodes)
+        if (UEdGraphNode_Comment* Box = Cast<UEdGraphNode_Comment>(Node))
+            FTurboMCPComment::MembersOf(Box, Before.Add(Box->NodeGuid));
+    TSet<FGuid> Seen;
+    for (const FExistingPosition& Move : Moves)
+    {
+        UEdGraphNode* Original = TurboMCPGraphScratch::Find(Graph, Move.NodeId);
+        UEdGraphNode* Copy = Original ? TurboMCPGraphScratch::ByGuid(Scratch.Graph, Original->NodeGuid) : nullptr;
+        if (!Copy || Seen.Contains(Original->NodeGuid) || Original->NodePosX != Move.OldX
+            || Original->NodePosY != Move.OldY || Move.NewX < Move.OldX || Move.NewY != Move.OldY)
+        { OutError = TEXT("insertion has stale, duplicate or non-horizontal movement: ") + Move.NodeId; return false; }
+        Seen.Add(Original->NodeGuid);
+        Copy->NodePosX = Move.NewX; Copy->NodePosY = Move.NewY;
+    }
+    UEdGraphNode_Comment* CopyContainer = Container
+        ? Cast<UEdGraphNode_Comment>(TurboMCPGraphScratch::ByGuid(Scratch.Graph, Container->NodeGuid)) : nullptr;
+    if (CopyContainer)
+    {
+        int64 Right = int64(Container->NodePosX) + Container->NodeWidth;
+        const int64 Left = Container->NodePosX;
+        const int64 Top = int64(Container->NodePosY) + int64(FTurboMCPComment::TitleBarHeight);
+        const int64 Bottom = int64(Container->NodePosY) + Container->NodeHeight;
+        for (const FPlacementObstacle& Rect : NewBounds)
+        {
+            if (Rect.Width <= 0 || Rect.Height <= 0 || !FitsCoordinate(Rect.X) || !FitsCoordinate(Rect.Y)
+                || Rect.Width > MAX_int32 || Rect.Height > MAX_int32
+                || Rect.X < Left || Rect.Y < Top || Rect.Y + Rect.Height > Bottom)
+            { OutError = TEXT("insertion does not fit the named comment vertically or to its right; its top-left and height stay fixed"); return false; }
+            Right = FMath::Max(Right, Rect.X + Rect.Width + 32);
+        }
+        const TArray<FString>& OriginalMembers = Before.FindChecked(Container->NodeGuid);
+        for (UEdGraphNode* Node : Scratch.Graph->Nodes)
+            if (Node && Seen.Contains(Node->NodeGuid) && OriginalMembers.Contains(Node->GetName()))
+            {
+                const FVector2D Size = FTurboMCPGraphTidy::AlignmentNodeSize(Node);
+                if (!FMath::IsFinite(Size.X) || Size.X <= 0 || Size.X > MAX_int32)
+                { OutError = TEXT("insertion cannot determine comment member width: ") + Node->GetName(); return false; }
+                Right = FMath::Max(Right, int64(Node->NodePosX) + FMath::CeilToInt(Size.X) + 32);
+            }
+        if (!FitsCoordinate(Right) || Right - Left > MAX_int32)
+        { OutError = TEXT("insertion comment growth would overflow graph coordinates"); return false; }
+        CopyContainer->NodeWidth = int32(Right - Left);
+        // Growth must not cover a neighboring comment or escape an existing ancestor.
+        for (UEdGraphNode* Node : Graph->Nodes)
+            if (UEdGraphNode_Comment* Other = Cast<UEdGraphNode_Comment>(Node); Other && Other != Container)
+            {
+                const int64 OtherRight = int64(Other->NodePosX) + Other->NodeWidth;
+                const int64 OtherBottom = int64(Other->NodePosY) + Other->NodeHeight;
+                const bool Ancestor = Other->NodePosX <= Left && Other->NodePosY <= Container->NodePosY
+                    && OtherRight >= int64(Container->NodePosX) + Container->NodeWidth && OtherBottom >= Bottom;
+                const bool HitsGrowth = Right > int64(Container->NodePosX) + Container->NodeWidth
+                    && Other->NodePosX < Right && OtherRight > int64(Container->NodePosX) + Container->NodeWidth
+                    && Other->NodePosY < Bottom && OtherBottom > Container->NodePosY;
+                if ((Ancestor && Right > OtherRight) || (!Ancestor && HitsGrowth))
+                { OutError = TEXT("insertion comment growth is blocked by fixed comment: ") + TurboMCPNodeId::MakeForNode(Other, true); return false; }
+            }
+    }
+    for (UEdGraphNode* Node : Scratch.Graph->Nodes)
+        if (UEdGraphNode_Comment* Box = Cast<UEdGraphNode_Comment>(Node))
+        {
+            TArray<FString> After;
+            FTurboMCPComment::MembersOf(Box, After);
+            if (Before.FindChecked(Box->NodeGuid) != After)
+            { OutError = TEXT("insertion would change existing comment membership: ") + Box->GetName(); return false; }
+        }
+    if (CopyContainer && CopyContainer->NodeWidth != Container->NodeWidth)
+    {
+        OutGrowth.NodeId = TurboMCPNodeId::MakeForNode(Container, true);
+        OutGrowth.OldWidth = Container->NodeWidth; OutGrowth.NewWidth = CopyContainer->NodeWidth;
+    }
     return true;
 }
 

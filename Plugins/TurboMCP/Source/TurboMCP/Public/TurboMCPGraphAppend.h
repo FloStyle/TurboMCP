@@ -124,6 +124,13 @@ public:
 		int32 NewX = 0, NewY = 0;
 	};
 
+	struct FCommentGrowth
+	{
+		FString NodeId;
+		int32 OldWidth = 0;
+		int32 NewWidth = 0;
+	};
+
 	/** What the plan decided, so `Apply` can act without deciding anything. */
 	struct FPlan
 	{
@@ -204,6 +211,11 @@ public:
 	static bool PlanTailTranslation(const UEdGraph* Graph, const TArray<FString>& MovableNodeIds,
 		const TArray<FPlacementObstacle>& NewBounds, TArray<FExistingPosition>& OutMoves,
 		FString& OutError);
+
+	/** Validate existing comment membership on a scratch graph; grow only the named box rightward. */
+	static bool PlanInsertionComment(UEdGraph* Graph, const FString& ContainingCommentId,
+		const TArray<FExistingPosition>& Moves, const TArray<FPlacementObstacle>& NewBounds,
+		FCommentGrowth& OutGrowth, FString& OutError);
 
 	/**
 	 * Applies an accepted plan: one transaction, create, link, lay out, then read back and compare. Compile is separate.
