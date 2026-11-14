@@ -522,12 +522,12 @@ public:
 		int32 Cap);
 
 	/**
-     * Read supported widget or slot value properties without explicitly editing, compiling or saving.
-     * Supports editable scalar values and structs composed of those values. Objects, containers, delegates, localized text and ownership fields are not supported. Writes parse into temporary storage before mutation. Preview does not change the object; edit uses a transaction and native property-change notification. Compile/save are separate; rendered/runtime behavior is not verified.
+     * Read supported widget or parent-slot properties without compiling or saving.
+     * Supports editable scalar values, simple value structs, and exact hard object/class references. Dotted paths descend named struct fields only. Containers, delegates, localized text, ownership and instanced references are excluded. Reference values are exact paths or None when unset. This is not a full widget export.
      * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu.
      * @param Widget Required designer object name from ReadTurboMCPWidgetTree, not display text or a runtime instance path.
      * @param Target Required widget or slot. Slot means the named widget's parent slot; a root without a slot refuses.
-     * @param Property Exact supported editable value name, or empty to list names, types and values. Navigation is a read-only special case for Target=widget: it reports six stored Designer rules and explicit target/custom function names. Preview/Edit cannot change Navigation. This does not observe runtime focus.
+     * @param Property Exact name or dotted struct-field path, such as Visibility, Brush.ResourceObject or EntryWidgetClass. Empty lists up to 160 supported paths, types and values. Navigation is read-only on Target=widget and reports stored Designer rules; it does not observe runtime focus.
      */
     UFUNCTION(meta = (AICallable))
     static FString ReadTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property);
@@ -878,13 +878,12 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphTransfer(const FString& SourceAsset, const FString& SourceGraph, const FString& TargetAsset, const FString& TargetGraph);
     /**
-     * Validate and preview one widget or parent-slot value property; returns before/after values.
-     * Supports editable scalar values and structs composed of those values. Objects, containers, delegates, localized text and ownership fields are not supported. Writes parse into temporary storage before mutation. Preview does not change the object; edit uses a transaction and native property-change notification. Compile/save are separate; rendered/runtime behavior is not verified.
+     * Validate and preview one widget or parent-slot property; returns before/after values without changing the widget. Exact hard reference validation can load the named asset and run native load hooks. Compile/save and rendered/runtime verification are separate.
      * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu.
      * @param Widget Required designer object name from ReadTurboMCPWidgetTree, not display text or a runtime instance path.
      * @param Target Required widget or slot. Slot means the named widget's parent slot; a root without a slot refuses.
-     * @param Property Required exact supported property name from ReadTurboMCPWidgetProperty; no dotted paths. Example: Visibility or LayoutData.
-     * @param Value Required Unreal property text, not JSON; use the reader value as a template. Examples: Hidden for Visibility, True for bAutoSize, (Offsets=(Left=12,Top=20,Right=320,Bottom=80)) for canvas LayoutData. Unspecified struct fields retain current values. Invalid/trailing text and non-finite numbers refuse. Maximum 65536 characters. Writes/previews require an idle editor outside PIE.
+     * @param Property Exact name or dotted struct-field path returned by ReadTurboMCPWidgetProperty, for example Visibility, LayoutData, Brush.ResourceObject or EntryWidgetClass. Paths cannot descend objects or containers.
+     * @param Value Required Unreal property text for values (for example Hidden), or None/exact Unreal object or generated-class path for a hard reference. The referenced asset must exist and satisfy the field's type and metadata constraints. Other struct fields are preserved. Maximum 65536 characters. Requires an idle editor outside PIE.
      */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property, const FString& Value);
@@ -1906,13 +1905,12 @@ public:
 
 
     /**
-     * Validate and set one widget or parent-slot value property; returns before/after values.
-     * Supports editable scalar values and structs composed of those values. Objects, containers, delegates, localized text and ownership fields are not supported. Writes parse into temporary storage before mutation. Preview does not change the object; edit uses a transaction and native property-change notification. Compile/save are separate; rendered/runtime behavior is not verified.
+     * Set one supported widget or parent-slot property in memory; returns before/after values read after native editor notification. Uses an undo transaction. Reference validation may load the named asset and native hooks may run. No compile or save is requested; rendered/runtime behavior is not verified.
      * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu.
      * @param Widget Required designer object name from ReadTurboMCPWidgetTree, not display text or a runtime instance path.
      * @param Target Required widget or slot. Slot means the named widget's parent slot; a root without a slot refuses.
-     * @param Property Required exact supported property name from ReadTurboMCPWidgetProperty; no dotted paths. Example: Visibility or LayoutData.
-     * @param Value Required Unreal property text, not JSON; use the reader value as a template. Examples: Hidden for Visibility, True for bAutoSize, (Offsets=(Left=12,Top=20,Right=320,Bottom=80)) for canvas LayoutData. Unspecified struct fields retain current values. Invalid/trailing text and non-finite numbers refuse. Maximum 65536 characters. Writes/previews require an idle editor outside PIE.
+     * @param Property Exact name or dotted struct-field path returned by ReadTurboMCPWidgetProperty, for example Visibility, LayoutData, Brush.ResourceObject or EntryWidgetClass. Paths cannot descend objects or containers.
+     * @param Value Required Unreal property text for values, or None/exact Unreal object or generated-class path for a hard reference. Asset type and field metadata are checked before mutation. Other struct fields are preserved. Maximum 65536 characters. Requires an idle editor outside PIE.
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property, const FString& Value);

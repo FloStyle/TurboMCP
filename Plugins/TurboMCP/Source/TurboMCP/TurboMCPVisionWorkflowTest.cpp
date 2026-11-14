@@ -15,6 +15,10 @@
 #include "Components/TextBlock.h"
 #include "Components/SizeBox.h"
 #include "Components/Button.h"
+#include "Components/Image.h"
+#include "Components/DynamicEntryBox.h"
+#include "Engine/Texture2D.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraphUtilities.h"
 #include "EdGraphNode_Comment.h"
@@ -702,6 +706,50 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  TestTrue(TEXT("Unsupported fit refuses"),UTurboMCPLookToolset::LookTurboMCPCapture(WB->GetPathName(),TEXT(""),TEXT("asset-editor"),TEXT("fit"),TEXT("" )).StartsWith(TEXT("error:")));
  TestTrue(TEXT("Invalid framing refuses"),UTurboMCPLookToolset::LookTurboMCPCapture(Material->GetPathName(),TEXT(""),TEXT("asset-editor"),TEXT("unknown"),TEXT("" )).StartsWith(TEXT("error:")));
  ImageCheck(Record(TEXT("Widget designer editor"),UTurboMCPLookToolset::LookTurboMCPCapture(WB->GetPathName(),TEXT(""),TEXT("asset-editor"),TEXT(""),TEXT(""))));
+ return !HasAnyErrors();
+}
+
+// NOV05-17: a small disposable case for exact hard references, independent of
+// the larger vision workflow. No fixture package is saved to disk.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPWidgetReferencePropertyTest,
+ "TurboMCP.Workflow.WidgetReferenceProperty", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPWidgetReferencePropertyTest::RunTest(const FString& Parameters)
+{
+ const FString Suffix = FGuid::NewGuid().ToString(EGuidFormats::Digits);
+ UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/WidgetReference_") + Suffix));
+ ON_SCOPE_EXIT { Package->SetDirtyFlag(false); };
+ UWidgetBlueprint* BP = FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(Package, TEXT("WBP_Reference"),
+  BPTYPE_Normal, UUserWidget::StaticClass(), UCanvasPanel::StaticClass(), TEXT("Reference"), false);
+ if (!TestNotNull(TEXT("Disposable Widget Blueprint"), BP)) return false;
+ UCanvasPanel* Root = Cast<UCanvasPanel>(BP->WidgetTree->RootWidget);
+ if (!TestNotNull(TEXT("Disposable canvas"), Root)) return false;
+ UImage* Image = BP->WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("ReferenceImage"));
+ UDynamicEntryBox* Entries = BP->WidgetTree->ConstructWidget<UDynamicEntryBox>(UDynamicEntryBox::StaticClass(), TEXT("ReferenceEntries"));
+ Root->AddChild(Image); Root->AddChild(Entries);
+ UTexture2D* Texture = NewObject<UTexture2D>(Package, TEXT("T_Reference"), RF_Public | RF_Standalone);
+ FAssetRegistryModule::AssetCreated(Texture);
+ const FString Asset = BP->GetPathName();
+ const FString BrushPath = TEXT("Brush.ResourceObject");
+ const FString Before = UTurboMCPReadToolset::ReadTurboMCPWidgetProperty(Asset, TEXT("ReferenceImage"), TEXT("widget"), BrushPath);
+ TestTrue(TEXT("Unset brush resource is explicit"), Before.Contains(TEXT("value: None")));
+ const FString Preview = UTurboMCPPreviewToolset::PreviewTurboMCPWidgetProperty(Asset, TEXT("ReferenceImage"), TEXT("widget"), BrushPath, Texture->GetPathName());
+ TestTrue(TEXT("Brush reference preview accepted"), Preview.StartsWith(TEXT("preview:")) && Preview.Contains(Texture->GetPathName()));
+ TestNull(TEXT("Preview leaves brush resource unset"), Image->GetBrush().GetResourceObject());
+ const auto BrushSize = Image->GetBrush().ImageSize;
+ TestTrue(TEXT("Brush reference edit accepted"), UTurboMCPEditToolset::EditTurboMCPWidgetProperty(Asset, TEXT("ReferenceImage"), TEXT("widget"), BrushPath, Texture->GetPathName()).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Brush resource read back"), Image->GetBrush().GetResourceObject() == Texture);
+ TestTrue(TEXT("Sibling brush size preserved"), Image->GetBrush().ImageSize == BrushSize);
+ TestTrue(TEXT("Repeated reference is unchanged"), UTurboMCPEditToolset::EditTurboMCPWidgetProperty(Asset, TEXT("ReferenceImage"), TEXT("widget"), BrushPath, Texture->GetPathName()).StartsWith(TEXT("unchanged:")));
+ TestTrue(TEXT("Missing reference refused"), UTurboMCPEditToolset::EditTurboMCPWidgetProperty(Asset, TEXT("ReferenceImage"), TEXT("widget"), BrushPath, TEXT("/Game/Tests/Missing.Missing")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Incompatible class refused"), UTurboMCPEditToolset::EditTurboMCPWidgetProperty(Asset, TEXT("ReferenceEntries"), TEXT("widget"), TEXT("EntryWidgetClass"), UTexture2D::StaticClass()->GetPathName()).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Ownership field refused"), UTurboMCPEditToolset::EditTurboMCPWidgetProperty(Asset, TEXT("ReferenceImage"), TEXT("widget"), TEXT("Slot"), TEXT("None")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Container field refused"), UTurboMCPEditToolset::EditTurboMCPWidgetProperty(Asset, TEXT("ReferenceEntries"), TEXT("widget"), TEXT("EntryItems"), TEXT("None")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Entry class edit accepted"), UTurboMCPEditToolset::EditTurboMCPWidgetProperty(Asset, TEXT("ReferenceEntries"), TEXT("widget"), TEXT("EntryWidgetClass"), BP->GeneratedClass->GetPathName()).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Entry class read back"), Entries->GetEntryWidgetClass() == BP->GeneratedClass);
+ TestTrue(TEXT("Clear entry class accepted"), UTurboMCPEditToolset::EditTurboMCPWidgetProperty(Asset, TEXT("ReferenceEntries"), TEXT("widget"), TEXT("EntryWidgetClass"), TEXT("None")).StartsWith(TEXT("edited:")));
+ TestNull(TEXT("Entry class cleared"), Entries->GetEntryWidgetClass());
+ TestTrue(TEXT("Clear brush reference accepted"), UTurboMCPEditToolset::EditTurboMCPWidgetProperty(Asset, TEXT("ReferenceImage"), TEXT("widget"), BrushPath, TEXT("None")).StartsWith(TEXT("edited:")));
+ TestNull(TEXT("Brush resource cleared"), Image->GetBrush().GetResourceObject());
  return !HasAnyErrors();
 }
 #endif

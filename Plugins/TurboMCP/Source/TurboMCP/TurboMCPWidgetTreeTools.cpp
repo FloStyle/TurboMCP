@@ -31,6 +31,13 @@
 #include "K2Node_ComponentBoundEvent.h"
 #include "TurboMCPNodeId.h"
 #include "Blueprint/WidgetNavigation.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetRegistry/IAssetRegistry.h"
+#include "AssetRegistry/AssetData.h"
+#include "Misc/PackageName.h"
+#include "Modules/ModuleManager.h"
+#include "UObject/ObjectRedirector.h"
+#include "Engine/World.h"
 
 // Read selected widget-tree data through the shared inspector; no writer is invoked here.
 FString UTurboMCPReadToolset::ReadTurboMCPWidgetTree(const FString& Asset)
@@ -273,8 +280,8 @@ FString UTurboMCPEditToolset::EditTurboMCPWidgetAdd(const FString& Asset, const 
 
 namespace
 {
-// Deliberately exclude reference-bearing data and localized text: this operation
-// changes layout values, not object ownership, delegates or localization identity.
+// Whole-struct text imports remain limited to simple values. Reference fields
+// must be addressed explicitly so imports cannot replace object ownership.
 bool IsWidgetValueType(const FProperty* Property, int32 Depth = 0)
 {
     if (!Property || Property->ArrayDim != 1 || Depth > 12) return false;
@@ -288,11 +295,26 @@ bool IsWidgetValueType(const FProperty* Property, int32 Depth = 0)
         CastField<FEnumProperty>(Property) || CastField<FStrProperty>(Property) || CastField<FNameProperty>(Property);
 }
 
+bool IsSafeWidgetField(const FProperty* Property)
+{
+    if (!Property || Property->ArrayDim != 1 || !Property->HasAnyPropertyFlags(CPF_Edit) ||
+        Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnTemplate | CPF_Transient | CPF_EditorOnly |
+            CPF_InstancedReference | CPF_ContainsInstancedReference | CPF_ExportObject)) return false;
+    const FName Name = Property->GetFName();
+    return Name != TEXT("bIsVariable") && Name != TEXT("Slot") && Name != TEXT("Parent") &&
+        Name != TEXT("WidgetTree") && Name != TEXT("Navigation");
+}
+
+bool IsWidgetReferenceType(const FProperty* Property)
+{
+    // Hard asset references only. Soft, weak, interface and instanced pointers
+    // have different lifetime/ownership rules and are not imported here.
+    return CastField<FObjectProperty>(Property) != nullptr;
+}
+
 bool IsEditableWidgetValue(const FProperty* Property)
 {
-    return Property && Property->HasAnyPropertyFlags(CPF_Edit) &&
-        !Property->HasAnyPropertyFlags(CPF_EditConst | CPF_DisableEditOnTemplate | CPF_Transient) &&
-        Property->GetFName() != TEXT("bIsVariable") && IsWidgetValueType(Property);
+    return IsSafeWidgetField(Property) && (IsWidgetValueType(Property) || IsWidgetReferenceType(Property));
 }
 
 bool IsFiniteWidgetValue(const FProperty* Property, const void* Value)
@@ -314,6 +336,149 @@ struct FWidgetImportErrors : FOutputDevice
         Message += Text;
     }
 };
+
+struct FWidgetFieldPath
+{
+    FProperty* Root = nullptr;
+    FProperty* Leaf = nullptr;
+    TArray<FProperty*> Children;
+    void* Live = nullptr;
+};
+
+bool ResolveWidgetFieldPath(UObject* Object, const FString& Requested, FWidgetFieldPath& Result)
+{
+    TArray<FString> Parts;
+    Requested.ParseIntoArray(Parts, TEXT("."), false);
+    if (Parts.IsEmpty() || Parts.Num() > 12 || Requested.StartsWith(TEXT(".")) ||
+        Requested.EndsWith(TEXT(".")) || Requested.Contains(TEXT(".."))) return false;
+    UStruct* Type = Object->GetClass();
+    void* Container = Object;
+    for (int32 Index = 0; Index < Parts.Num(); ++Index)
+    {
+        FProperty* Field = FindFProperty<FProperty>(Type, FName(*Parts[Index]));
+        if (!IsSafeWidgetField(Field) || Field->GetName() != Parts[Index]) return false;
+        if (!Result.Root) Result.Root = Field;
+        Result.Leaf = Field;
+        if (Index + 1 == Parts.Num())
+        {
+            if (!IsEditableWidgetValue(Field)) return false;
+            Result.Live = Field->ContainerPtrToValuePtr<void>(Container);
+        }
+        else
+        {
+            const FStructProperty* Struct = CastField<FStructProperty>(Field);
+            if (!Struct) return false;
+            Result.Children.Add(Field);
+            Container = Field->ContainerPtrToValuePtr<void>(Container);
+            Type = Struct->Struct;
+        }
+    }
+    return Result.Live != nullptr;
+}
+
+void* WidgetLeafInCopy(const FWidgetFieldPath& Path, void* RootCopy)
+{
+    void* Container = RootCopy;
+    for (int32 Index = 1; Index < Path.Children.Num(); ++Index)
+        Container = Path.Children[Index]->ContainerPtrToValuePtr<void>(Container);
+    return Path.Children.IsEmpty() ? RootCopy : Path.Leaf->ContainerPtrToValuePtr<void>(Container);
+}
+
+FString ExportWidgetField(const FProperty* Property, const void* Value, UObject* Object)
+{
+    if (const FObjectProperty* Reference = CastField<FObjectProperty>(Property))
+    {
+        UObject* Target = Reference->GetObjectPropertyValue(Value);
+        return Target ? Target->GetPathName() : TEXT("None");
+    }
+    FString Text;
+    Property->ExportTextItem_Direct(Text, Value, nullptr, Object, PPF_None);
+    return Text;
+}
+
+void ListWidgetFields(UStruct* Type, void* Container, const FString& Prefix, UObject* Object,
+    TArray<FString>& Lines, int32 Depth = 0)
+{
+    if (Depth > 5 || Lines.Num() >= 160) return;
+    for (TFieldIterator<FProperty> It(Type); It && Lines.Num() < 160; ++It)
+    {
+        FProperty* Field = *It;
+        if (!IsSafeWidgetField(Field)) continue;
+        const FString Path = Prefix.IsEmpty() ? Field->GetName() : Prefix + TEXT(".") + Field->GetName();
+        void* Value = Field->ContainerPtrToValuePtr<void>(Container);
+        if (IsEditableWidgetValue(Field))
+            Lines.Add(FString::Printf(TEXT("%s [%s] = %s"), *Path, *Field->GetCPPType(),
+                *ExportWidgetField(Field, Value, Object)));
+        if (const FStructProperty* Struct = CastField<FStructProperty>(Field))
+            if (!IsWidgetValueType(Field)) ListWidgetFields(Struct->Struct, Value, Path, Object, Lines, Depth + 1);
+    }
+}
+
+FString ValidateWidgetReference(const FObjectProperty* Property, const FString& Input, UObject*& Resolved)
+{
+    const FString Path = Input.TrimStartAndEnd();
+    if (Path == TEXT("None"))
+        return Property->HasMetaData(TEXT("NoClear")) ? TEXT("This reference cannot be cleared.") : FString();
+    if (!FPackageName::IsValidObjectPath(Path) || Path.Contains(TEXT(":")) ||
+        !Path.StartsWith(TEXT("/"))) return TEXT("Use an exact Unreal object or generated-class path, or None.");
+    if (!Path.StartsWith(TEXT("/Script/")))
+    {
+        const FString RegistryPath = Path.EndsWith(TEXT("_C")) ? Path.LeftChop(2) : Path;
+        IAssetRegistry& Registry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+        const FAssetData Data = Registry.GetAssetByObjectPath(FSoftObjectPath(RegistryPath));
+        if (!Data.IsValid()) return TEXT("The referenced asset is missing from the Asset Registry. Nothing changed.");
+        if (Data.AssetClassPath == UObjectRedirector::StaticClass()->GetClassPathName() ||
+            Data.AssetClassPath == UWorld::StaticClass()->GetClassPathName())
+            return TEXT("Redirectors and maps cannot be widget property references. Nothing changed.");
+    }
+    // LOAD_NoRedirects keeps a stale path from silently selecting another asset.
+    Resolved = StaticLoadObject(UObject::StaticClass(), nullptr, *Path, nullptr, LOAD_NoRedirects);
+    if (!Resolved || Resolved->IsA<UObjectRedirector>() || Resolved->IsA<UWorld>())
+        return TEXT("The exact object or class path could not be loaded safely. Nothing changed.");
+    if (!Resolved->IsA<UClass>() && !Resolved->IsAsset())
+        return TEXT("Reference must name an asset or class, not an editor object or subobject. Nothing changed.");
+    if (!Resolved->IsA(Property->PropertyClass))
+        return FString::Printf(TEXT("Reference has class %s; expected %s. Nothing changed."),
+            *Resolved->GetClass()->GetPathName(), *Property->PropertyClass->GetPathName());
+    if (const FClassProperty* ClassField = CastField<FClassProperty>(Property))
+    {
+        const UClass* Class = Cast<UClass>(Resolved);
+        if (!Class || !Class->IsChildOf(ClassField->MetaClass))
+            return TEXT("Generated class is not a subclass of this field's required class. Nothing changed.");
+    }
+    auto MatchesClass = [Resolved](const FString& Name)
+    {
+        UClass* Constraint = LoadObject<UClass>(nullptr, *Name);
+        if (!Constraint) return false;
+        const UClass* Candidate = Cast<UClass>(Resolved);
+        return Resolved->IsA(Constraint) || (Candidate &&
+            (Candidate->IsChildOf(Constraint) || Candidate->ImplementsInterface(Constraint)));
+    };
+    const FString Allowed = Property->GetMetaData(TEXT("AllowedClasses"));
+    if (!Allowed.IsEmpty())
+    {
+        TArray<FString> Classes; Allowed.ParseIntoArray(Classes, TEXT(","), true);
+        bool bAllowed = false;
+        for (FString Name : Classes) if (MatchesClass(Name.TrimStartAndEnd())) bAllowed = true;
+        if (!bAllowed) return TEXT("Reference does not meet this field's AllowedClasses constraint. Nothing changed.");
+    }
+    const FString Disallowed = Property->GetMetaData(TEXT("DisallowedClasses"));
+    if (!Disallowed.IsEmpty())
+    {
+        TArray<FString> Classes; Disallowed.ParseIntoArray(Classes, TEXT(","), true);
+        for (FString Name : Classes) if (MatchesClass(Name.TrimStartAndEnd()))
+            return TEXT("Reference matches this field's DisallowedClasses constraint. Nothing changed.");
+    }
+    const FString MustImplement = Property->GetMetaData(TEXT("MustImplement"));
+    if (!MustImplement.IsEmpty())
+    {
+        UClass* Interface = LoadObject<UClass>(nullptr, *MustImplement);
+        const UClass* Candidate = Cast<UClass>(Resolved);
+        if (!Interface || !Candidate || !Candidate->ImplementsInterface(Interface))
+            return TEXT("Class does not implement the interface required by this field. Nothing changed.");
+    }
+    return FString();
+}
 
 FString WidgetPropertyOperation(const FString& Asset, const FString& Widget, const FString& Target,
     const FString& PropertyName, const FString* Input, bool bApply)
@@ -341,53 +506,65 @@ FString WidgetPropertyOperation(const FString& Asset, const FString& Widget, con
             + FString::Printf(TEXT("asset: %s\nwidget: %s\ntarget: widget\n"), *Resolved.ObjectPath, *Item->GetName())
             + FTurboMCPWidgetTreeSync::ReadDesignerNavigation(Item);
     }
-    auto Export = [Object](const FProperty* Property, const void* Value)
-    {
-        FString Text;
-        Property->ExportTextItem_Direct(Text, Value, nullptr, Object, PPF_None);
-        return Text;
-    };
     const FString Identity = FString::Printf(TEXT("asset: %s\nwidget: %s\ntarget: %s\nclass: %s"), *Resolved.ObjectPath, *Item->GetName(), *TargetName, *Object->GetClass()->GetPathName());
     if (Requested.IsEmpty())
     {
         TArray<FString> Lines;
-        for (TFieldIterator<FProperty> It(Object->GetClass()); It; ++It)
-            if (IsEditableWidgetValue(*It))
-                Lines.Add(FString::Printf(TEXT("%s [%s] = %s"), *It->GetName(), *It->GetCPPType(), *Export(*It, It->ContainerPtrToValuePtr<void>(Object))));
+        ListWidgetFields(Object->GetClass(), Object, TEXT(""), Object, Lines);
         Lines.Sort();
-        return TEXT("read: Supported editable value properties.\n") + Identity + TEXT("\n") + FString::Join(Lines, TEXT("\n")) + TEXT("\nRead-only special case: Property=Navigation with Target=widget reads stored Designer rules; it cannot be previewed or edited here.\nValues use Unreal property text, not JSON. Objects, containers, delegates and localized text are omitted; this is not a full object export.");
+        return TEXT("read: Supported editable widget properties.\n") + Identity + TEXT("\n") + FString::Join(Lines, TEXT("\n")) + TEXT("\nReference fields show exact paths or None when unset. Nested paths descend structs only; containers, ownership fields, delegates and localized text are omitted. At most 160 fields are listed. Property=Navigation on Target=widget is read-only. Values use Unreal property text, not JSON; this is not a full object export.");
     }
-    FProperty* Property = FindFProperty<FProperty>(Object->GetClass(), FName(*Requested));
-    if (!IsEditableWidgetValue(Property))
-        return TEXT("error: Property is missing, read-only or outside supported value types. Use ReadTurboMCPWidgetProperty with empty Property to list supported names. Nothing changed.");
-    void* Live = Property->ContainerPtrToValuePtr<void>(Object);
-    const FString Before = Export(Property, Live);
-    const FString Header = Identity + FString::Printf(TEXT("\nproperty: %s\ntype: %s"), *Property->GetName(), *Property->GetCPPType());
+    FWidgetFieldPath Field;
+    if (!ResolveWidgetFieldPath(Object, Requested, Field))
+        return TEXT("error: Property path is missing, not editable or outside supported value/reference types. Paths may descend structs only. Read with an empty Property to list supported paths. Nothing changed.");
+    FProperty* Property = Field.Leaf;
+    void* Live = Field.Live;
+    const FString Before = ExportWidgetField(Property, Live, Object);
+    const FString Header = Identity + FString::Printf(TEXT("\nproperty: %s\ntype: %s"), *Requested, *Property->GetCPPType());
     if (!Input) return TEXT("read: Widget property.\n") + Header + TEXT("\nvalue: ") + Before;
     if (Input->Len() > 65536) return TEXT("error: Value exceeds 65536 characters. Nothing changed.");
-    // Import into an initialized copy. Incomplete structs retain unspecified fields.
-    void* Temporary = FMemory::Malloc(Property->GetSize(), Property->GetMinAlignment());
-    Property->InitializeValue(Temporary);
-    ON_SCOPE_EXIT { Property->DestroyValue(Temporary); FMemory::Free(Temporary); };
-    Property->CopyCompleteValue(Temporary, Live);
-    FWidgetImportErrors Errors;
-    const TCHAR* End = Property->ImportText_Direct(**Input, Temporary, Object, PPF_None, &Errors);
-    if (!End || !FString(End).TrimStartAndEnd().IsEmpty() || !Errors.Message.IsEmpty() || !IsFiniteWidgetValue(Property, Temporary))
-        return TEXT("error: Value could not be read completely as the property's Unreal text type, or contains a non-finite number. Nothing changed. Read the current value for its format. ") + Errors.Message;
-    const FString Proposed = Export(Property, Temporary);
-    if (!bApply) return TEXT("preview: Property value only; nothing changed.\n") + Header + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed + TEXT("\nEdit reparses against current state. Compile/save are separate.");
-    if (Property->Identical(Live, Temporary)) return TEXT("unchanged: Property already has the requested value.\n") + Header + TEXT("\nvalue: ") + Before;
+    // Copy the entire top-level property. A nested field edit cannot discard
+    // sibling brush/slot settings, and preview never touches the live object.
+    void* Temporary = FMemory::Malloc(Field.Root->GetSize(), Field.Root->GetMinAlignment());
+    Field.Root->InitializeValue(Temporary);
+    ON_SCOPE_EXIT { Field.Root->DestroyValue(Temporary); FMemory::Free(Temporary); };
+    void* RootLive = Field.Root->ContainerPtrToValuePtr<void>(Object);
+    Field.Root->CopyCompleteValue(Temporary, RootLive);
+    void* ProposedValue = WidgetLeafInCopy(Field, Temporary);
+    const bool bReference = IsWidgetReferenceType(Property);
+    if (bReference)
+    {
+        UObject* Reference = nullptr;
+        const FString Validation = ValidateWidgetReference(CastFieldChecked<FObjectProperty>(Property), *Input, Reference);
+        if (!Validation.IsEmpty()) return TEXT("error: ") + Validation;
+        CastFieldChecked<FObjectProperty>(Property)->SetObjectPropertyValue(ProposedValue, Reference);
+    }
+    else
+    {
+        FWidgetImportErrors Errors;
+        const TCHAR* End = Property->ImportText_Direct(**Input, ProposedValue, Object, PPF_None, &Errors);
+        if (!End || !FString(End).TrimStartAndEnd().IsEmpty() || !Errors.Message.IsEmpty() ||
+            !IsFiniteWidgetValue(Property, ProposedValue))
+            return TEXT("error: Value is invalid, incomplete or non-finite. Nothing changed. Read the current value for its Unreal text format. ") + Errors.Message;
+    }
+    const FString Proposed = ExportWidgetField(Property, ProposedValue, Object);
+    const FString LoadNote = bReference ? TEXT(" Exact reference validation can load the named asset and run native load hooks; no asset was saved.\n") : TEXT("");
+    if (!bApply) return TEXT("preview: Widget property only; nothing changed.\n") + Header + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + Proposed + TEXT("\n") + LoadNote + TEXT("Edit revalidates against current state. Compile/save are separate.");
+    if (Property->Identical(Live, ProposedValue)) return TEXT("unchanged: Property already has the requested value.\n") + Header + TEXT("\nvalue: ") + Before;
     const FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "WidgetProperty", "Set widget property"));
     Blueprint->Modify();
     Object->SetFlags(RF_Transactional);
     Object->Modify();
-    Object->PreEditChange(Property);
-    Property->CopyCompleteValue(Live, Temporary);
-    FPropertyChangedEvent Changed(Property, EPropertyChangeType::ValueSet);
+    Object->PreEditChange(Field.Root);
+    Field.Root->CopyCompleteValue(RootLive, Temporary);
+    FPropertyChangedEvent Changed(Field.Root, EPropertyChangeType::ValueSet);
     Object->PostEditChangeProperty(Changed);
     FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
-    const FString After = Export(Property, Property->ContainerPtrToValuePtr<void>(Object));
-    return TEXT("edited: Property updated; current value read back after editor notification.\n") + Header + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + After + TEXT("\nNative property-change hooks may run. This does not prove rendered layout or runtime behavior. No compile or save was requested.");
+    FWidgetFieldPath Readback;
+    if (!ResolveWidgetFieldPath(Object, Requested, Readback))
+        return TEXT("edited: Property was changed, but its path was unavailable after native editor notifications. Re-read the widget before another edit. No compile or save was requested.");
+    const FString After = ExportWidgetField(Readback.Leaf, Readback.Live, Object);
+    return TEXT("edited: Widget property updated in memory; current value read back after editor notification.\n") + Header + TEXT("\nbefore: ") + Before + TEXT("\nafter: ") + After + TEXT("\n") + LoadNote + TEXT("Native property-change hooks may run. Inspect rendered behavior separately. No compile or save was requested.");
 }
 }
 
