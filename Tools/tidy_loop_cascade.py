@@ -1298,6 +1298,15 @@ def run():
             cache_path.write_text(json.dumps(dict(signature_version=1, asset=asset, evidence=str(directory), **{k:evidence[k] for k in ('discovery','types','pins')}), indent=2), encoding='utf-8')
         evidence['initial_graph'] = call('ReadTurboMCPGraphLoad', asset=asset, graphName='LoopCascade', format='read', detail='full', offset=0, maxChars=24000, revision='', entryFilter='')
         build_graph(call, evidence, persist)
+        if os.environ.get('TMCP_TIDY_CASCADE_ROUTING_ONLY') == '1':
+            # Reuse the real field fixture, but skip unrelated J1-J6 and local
+            # promotion checks. The routing checkpoint retains topology and undo.
+            record_routing_candidate(call, evidence, persist, case='cascade')
+            evidence['stage'] = 'focused_cascade_routing_passed_visual_pending'
+            persist()
+            print('Evidence: ' + str(directory), flush=True)
+            print('RESULT: PASS (cascade routing only; visual review pending)', flush=True)
+            return
         record_baseline(call, evidence, persist)
         record_scoped_loop_boundary(call, evidence, persist)
         if subset == 'boundary':
