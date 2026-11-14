@@ -506,7 +506,7 @@ def independently_score_geometry(text, context):
     return result
 
 
-def read_compact_measures(text, context):
+def read_compact_measures(text, context, geometry_text=None):
     """Read the documented score table; absent or invalid values are failures."""
     names = ('unrelated box crossings', 'execution segment crossings',
              'diagonal execution length', 'within-block row breaks',
@@ -517,12 +517,70 @@ def read_compact_measures(text, context):
         if len(matches) != 1:
             raise RuntimeError(context + ': expected exactly one compact measure: ' + name)
         result[name] = dict(before=float(matches[0][0]), after=float(matches[0][1]))
-    oracle = independently_score_geometry(text, context)
+    oracle = independently_score_geometry(geometry_text if geometry_text is not None else text, context)
     for i, name in enumerate(names):
         for side in ('before', 'after'):
             if abs(result[name][side] - oracle[side][i]) > .11:
                 raise RuntimeError(context + ': independent ' + side + ' score mismatch for ' + name + ': ' + str(oracle[side][i]) + ' vs ' + str(result[name][side]))
     return result
+
+
+def read_compact_preview(call, args, context):
+    """Collect every bounded geometry page for one unchanged preview plan.
+
+    Preview replans on each call. Compare its decision, scores and planned
+    positions before combining pages, then use those rows as the independent
+    score oracle. Edit has no geometry page and must not be replayed for one.
+    """
+    preview = call('PreviewTurboMCPGraphTidy', **args)
+
+    def plan_signature(text):
+        return tuple(line for line in text.splitlines()
+                     if line.startswith(('WOULD ', 'ALREADY TIDY', 'changed:',
+                                         'unrelated box crossings:',
+                                         'execution segment crossings:',
+                                         'diagonal execution length:',
+                                         'within-block row breaks:',
+                                         'data segment crossings:',
+                                         'total segment length:',
+                                         'bounding area:',
+                                         'planned ', 'route knot ', 'generated box ')))
+
+    signature = plan_signature(preview)
+    rows = []
+    offset = 0
+    total = None
+    while True:
+        page = call('PreviewTurboMCPGraphTidy', **dict(args, GeometryOffset=offset,
+                                                       GeometryLimit=40))
+        # The tool has a bounded response: a geometry page can consume space
+        # otherwise used by trailing planned-node sections. Its retained plan
+        # lines must match the same prefix of the default preview.
+        page_signature = plan_signature(page)
+        if len(page_signature) < 8 or page_signature != signature[:len(page_signature)]:
+            raise RuntimeError(context + ': preview plan changed between geometry pages')
+        match = re.search(r'^geometry evidence: rows (\d+)\.\.(\d+) of (\d+) for this plan\.$',
+                          page, re.M)
+        if not match:
+            raise RuntimeError(context + ': missing numbered geometry page')
+        first, last, count = map(int, match.groups())
+        if first != offset or last < first or last - first >= 40 or (total is not None and count != total):
+            raise RuntimeError(context + ': inconsistent geometry page range or total')
+        total = count
+        page_rows = re.findall(r'^score (?:rect|box|edge|segment) .+$', page, re.M)
+        if len(page_rows) != last - first + 1:
+            raise RuntimeError(context + ': geometry page omitted measured rows')
+        rows.extend(page_rows)
+        offset = last + 1
+        if offset == total:
+            if re.search(r'^geometry evidence next:', page, re.M):
+                raise RuntimeError(context + ': final geometry page has a continuation')
+            break
+        next_page = re.search(r'^geometry evidence next: GeometryOffset=(\d+) GeometryLimit=(\d+)\.',
+                              page, re.M)
+        if not next_page or (int(next_page.group(1)), int(next_page.group(2))) != (offset, 40):
+            raise RuntimeError(context + ': invalid geometry continuation')
+    return preview, '\n'.join(rows)
 
 
 def record_routing_candidate(call, evidence, persist, case='J2'):
@@ -576,8 +634,8 @@ def record_routing_candidate(call, evidence, persist, case='J2'):
     args = dict(asset=asset, graphName=graph, bForce=True, nodeIds=[], mainPath='',
                 horizontalGap=120.0, verticalGap=100.0, lanePitch=280.0, wrapAfter='',
                 layoutMode='blocks', routeWires='orthogonal', channelWidth=60.0)
-    row['preview'] = call('PreviewTurboMCPGraphTidy', **args)
-    row['preview_measures'] = read_compact_measures(row['preview'], 'routing J2 preview')
+    row['preview'], row['preview_geometry'] = read_compact_preview(call, args, 'routing J2 preview')
+    row['preview_measures'] = read_compact_measures(row['preview'], 'routing J2 preview', row['preview_geometry'])
     planned = re.findall(r'^route knot wire=\d+ index=\d+ x=(-?\d+) y=(-?\d+)$', row['preview'], re.M)
     row['planned_knots'] = [tuple(map(int, point)) for point in planned]
     persist()
@@ -591,7 +649,7 @@ def record_routing_candidate(call, evidence, persist, case='J2'):
     persist()
     if not row['edit'].startswith('changed:'):
         raise RuntimeError('J2 routed edit did not apply; inspect retained preview and rollback evidence')
-    row['edit_measures'] = read_compact_measures(row['edit'], 'routing J2 edit')
+    row['edit_measures'] = read_compact_measures(row['edit'], 'routing J2 edit', row['preview_geometry'])
     if row['preview_measures'] != row['edit_measures']:
         raise RuntimeError('Routing preview/edit score mismatch')
     row['score_regressions'] = [name for name, value in row['edit_measures'].items()
@@ -729,8 +787,8 @@ def record_generated_comments(call, evidence, persist, case='J2'):
     args = dict(asset=asset, graphName=graph, bForce=True, nodeIds=[], mainPath='',
                 horizontalGap=120., verticalGap=100., lanePitch=280., wrapAfter='',
                 layoutMode='blocks', routeWires='orthogonal' if case == 'cascade' else 'off', channelWidth=60., bCreateBoxes=True)
-    row['preview'] = call('PreviewTurboMCPGraphTidy', **args)
-    row['preview_measures'] = read_compact_measures(row['preview'], case + ' comments preview')
+    row['preview'], row['preview_geometry'] = read_compact_preview(call, args, case + ' comments preview')
+    row['preview_measures'] = read_compact_measures(row['preview'], case + ' comments preview', row['preview_geometry'])
     plans = re.findall(r'^generated box (\S+) title="(.*?)" x=(-?\d+) y=(-?\d+) width=(\d+) height=(\d+) members=(.*)$', row['preview'], re.M)
     row['plans'] = [dict(key=k,title=t,x=int(x),y=int(y),width=int(w),height=int(h),members=m.split(',')) for k,t,x,y,w,h,m in plans]
     persist()
@@ -742,7 +800,7 @@ def record_generated_comments(call, evidence, persist, case='J2'):
     row['after_positions'] = read_positions(call,asset,graph)
     if not row['edit'].startswith('changed:'):
         raise RuntimeError(case + ': comment edit refused; retained evidence is not acceptance')
-    row['edit_measures'] = read_compact_measures(row['edit'], case + ' comments edit')
+    row['edit_measures'] = read_compact_measures(row['edit'], case + ' comments edit', row['preview_geometry'])
     if row['edit_measures'] != row['preview_measures']:
         raise RuntimeError(case + ': generated-comment preview/edit score mismatch')
     added = set(row['after_positions']) - set(row['before_positions'])
@@ -754,6 +812,8 @@ def record_generated_comments(call, evidence, persist, case='J2'):
     planned_knots = sorted(tuple(map(int, point)) for point in re.findall(r'^route knot wire=\d+ index=\d+ x=(-?\d+) y=(-?\d+)$', row['preview'], re.M))
     planned_readers = [tuple(map(int, point)) for point in re.findall(r'^planned reader copy index=\d+ x=(-?\d+) y=(-?\d+) width=', row['preview'], re.M)]
     if sorted((row['after_positions'][identity]['x'],row['after_positions'][identity]['y']) for identity in added-actual_boxes) != sorted(planned_knots + planned_readers):
+        if 'Additional Tidy detail omitted after' in row['preview'] and len(planned_knots + planned_readers) < len(added - actual_boxes):
+            raise RuntimeError(case + ': preview omitted planned route-knot details; full coordinate comparison is blocked by the bounded response')
         raise RuntimeError(case + ': combined comment/router knot coordinates differ from the preview')
     def contains(a,b):
         return a['x'] <= b['x'] and a['y'] <= b['y'] and a['x']+a['width'] >= b['x']+b['width'] and a['y']+a['height'] >= b['y']+b['height']
@@ -833,8 +893,8 @@ def record_compact_candidates(call, evidence, persist, comments_only=False):
         row['before_positions']=read_positions(call,asset,graph)
         args=dict(asset=asset,graphName=graph,bForce=False,nodeIds=selection,mainPath='',
                   horizontalGap=120.0,verticalGap=100.0,lanePitch=280.0,wrapAfter='',layoutMode='blocks')
-        row['preview']=call('PreviewTurboMCPGraphTidy',**args)
-        row['compact_measures'] = read_compact_measures(row['preview'], name + ' preview')
+        row['preview'], row['preview_geometry'] = read_compact_preview(call, args, name + ' preview')
+        row['compact_measures'] = read_compact_measures(row['preview'], name + ' preview', row['preview_geometry'])
         row['after_preview_positions']=read_positions(call,asset,graph)
         row['after_preview_graph']=read_complete_graph(call,asset,graph)
         if row['after_preview_positions'] != row['before_positions'] or row['after_preview_graph'] != row['before_graph']:
@@ -883,7 +943,7 @@ def record_compact_candidates(call, evidence, persist, comments_only=False):
         if not planned:
             raise RuntimeError(name+': preview omitted its planned positions')
         if row['edit'].startswith('changed:'):
-            row['edit_compact_measures'] = read_compact_measures(row['edit'], name + ' edit')
+            row['edit_compact_measures'] = read_compact_measures(row['edit'], name + ' edit', row['preview_geometry'])
             row['preview_edit_score_mismatches'] = [measure for measure, values in row['compact_measures'].items()
                 if row['edit_compact_measures'][measure] != values]
             persist()
