@@ -3,6 +3,10 @@
 #include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetRegistry/IAssetRegistry.h"
+#include "Modules/ModuleManager.h"
+namespace TurboMCPVariableRemoval { FString ReferenceLoadBlocker(IAssetRegistry& Registry, FName Seed); }
 #include "Misc/ScopeExit.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
@@ -20,6 +24,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPVariableRemoveTest,
     "TurboMCP.GraphAppend.VariableRemove", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPVariableRemoveTest::RunTest(const FString& Parameters)
 {
+    IAssetRegistry& Registry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+    TestTrue(TEXT("Unknown package refuses reference loading"),
+        TurboMCPVariableRemoval::ReferenceLoadBlocker(Registry, FName(TEXT("/Game/TurboMCP_NoSuchReferencePackage_47B84"))).Contains(TEXT("metadata unavailable")));
+    TestTrue(TEXT("Known fixture map refuses reference loading"),
+        TurboMCPVariableRemoval::ReferenceLoadBlocker(Registry, FName(TEXT("/Game/Tests/TurboMCPTestMap"))).Contains(TEXT("map or redirector")));
+
     UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/VariableRemove_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
     ON_SCOPE_EXIT { Package->SetDirtyFlag(false); };
     UBlueprint* BP = FKismetEditorUtilities::CreateBlueprint(UUserWidget::StaticClass(), Package, TEXT("WBP_Remove"), BPTYPE_Normal, UWidgetBlueprint::StaticClass(), UWidgetBlueprintGeneratedClass::StaticClass());

@@ -36,6 +36,33 @@ bool DerivesFrom(UClass* Class, const UBlueprint* Owner)
     return false;
 }
 
+// Registry-only preflight: loading a Blueprint can also load hard dependencies.
+// This rejects known unsafe packages; it does not sandbox native PostLoad callbacks.
+FString ReferenceLoadBlocker(IAssetRegistry& Registry, FName Seed)
+{
+    using namespace UE::AssetRegistry;
+    TArray<FName> Pending{Seed};
+    TSet<FName> Seen; Seen.Add(Seed);
+    for (int32 Index = 0; Index < Pending.Num(); ++Index)
+    {
+        TArray<FAssetData> Assets;
+        Registry.GetAssetsByPackageName(Pending[Index], Assets, true, false);
+        if (Assets.ContainsByPredicate([](const FAssetData& Entry)
+            { return Entry.HasAnyPackageFlags(PKG_ContainsMap) || Entry.IsRedirector(); }))
+            return TEXT("map or redirector dependency: ") + Pending[Index].ToString();
+        TArray<FName> Dependencies;
+        if (!Registry.GetDependencies(Pending[Index], Dependencies, EDependencyCategory::Package, EDependencyQuery::Hard))
+            return TEXT("dependency metadata unavailable: ") + Pending[Index].ToString();
+        for (FName Dependency : Dependencies)
+        {
+            if (Dependency.ToString().StartsWith(TEXT("/Script/")) || Seen.Contains(Dependency)) continue;
+            if (Pending.Num() >= 2048) return TEXT("dependency inspection budget exceeded");
+            Seen.Add(Dependency); Pending.Add(Dependency);
+        }
+    }
+    return FString();
+}
+
 // Discovery may load dependent Blueprints. It never edits or removes references.
 // Incomplete discovery is a refusal, not evidence that a variable is unused.
 FString InspectReferences(UBlueprint* Owner, const FBPVariableDescription& Variable)
@@ -56,14 +83,28 @@ FString InspectReferences(UBlueprint* Owner, const FBPVariableDescription& Varia
     for (FName Package:Packages)
     {
         TArray<FAssetData> Assets; Registry.GetAssetsByPackageName(Package,Assets);
+        // The in-memory owner fixture need not have registry metadata. Other missing
+        // packages cannot be treated as inspected, reference-free dependencies.
+        if (Assets.IsEmpty() && Package != Owner->GetOutermost()->GetFName())
+            return TEXT("error: Referencer registry metadata is unavailable for ") + Package.ToString() + TEXT(". Nothing removed.");
         for (const FAssetData& Data:Assets)
         {
             if (Data.AssetClassPath.GetAssetName()==FName(TEXT("World")))
                 return TEXT("error: A dependent map requires manual reference inspection: ")+Data.GetObjectPathString();
             UClass* Class=Data.GetClass();
             if (!Class) return TEXT("error: Cannot classify dependent asset: ")+Data.GetObjectPathString();
-            if (Class->IsChildOf(UBlueprint::StaticClass()) && !Cast<UBlueprint>(Data.GetAsset()))
-                return TEXT("error: Cannot load dependent Blueprint: ")+Data.GetObjectPathString();
+            if (Class->IsChildOf(UBlueprint::StaticClass()))
+            {
+                // FindObject is non-loading. Already resident objects remain inspectable.
+                UBlueprint* Resident = FindObject<UBlueprint>(nullptr, *Data.GetObjectPathString());
+                if (IsValid(Resident)) continue;
+                const FString Blocker = ReferenceLoadBlocker(Registry, Package);
+                if (!Blocker.IsEmpty())
+                    return TEXT("error: Cannot safely inspect ") + Data.GetObjectPathString()
+                        + TEXT(": ") + Blocker + TEXT(". Nothing removed.");
+                if (!Cast<UBlueprint>(Data.GetAsset()))
+                    return TEXT("error: Cannot load dependent Blueprint: ") + Data.GetObjectPathString();
+            }
         }
     }
     for (TObjectIterator<UBlueprint> It; It; ++It)
