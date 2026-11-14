@@ -4888,7 +4888,10 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
     for (int32 Index = 0; Index < InPlan.Nodes.Num(); ++Index)
     {
         const FNode& Node = InPlan.Nodes[Index];
-        if (Node.bIsComment || !Box.MemberKeys.Contains(Node.Key) || ChildMembers.Contains(Node.Key)) continue;
+        const FString ObjectName = Node.Node ? Node.Node->GetName() : FString();
+        const bool InBox = Box.MemberKeys.Contains(Node.Key) || Box.MemberKeys.Contains(ObjectName);
+        const bool InChild = ChildMembers.Contains(Node.Key) || ChildMembers.Contains(ObjectName);
+        if (Node.bIsComment || !InBox || InChild) continue;
         if (Node.bUnreachable || !InPlan.SelectedNodeKeys.Contains(Node.Key)) return false;
         Members.Add(Index);
         Group.Add(Index, Index);
@@ -4901,8 +4904,13 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
             || !InPlan.Nodes.IsValidIndex(Wire.TargetNodeIndex)) return false;
         const bool SourceMoves = Group.Contains(Wire.SourceNodeIndex);
         const bool TargetMoves = Group.Contains(Wire.TargetNodeIndex);
-        if ((SourceMoves && ChildMembers.Contains(InPlan.Nodes[Wire.TargetNodeIndex].Key))
-            || (TargetMoves && ChildMembers.Contains(InPlan.Nodes[Wire.SourceNodeIndex].Key))) return false;
+        auto IsChildMember = [&](const FNode& Node)
+        {
+            return ChildMembers.Contains(Node.Key)
+                || (Node.Node && ChildMembers.Contains(Node.Node->GetName()));
+        };
+        if ((SourceMoves && IsChildMember(InPlan.Nodes[Wire.TargetNodeIndex]))
+            || (TargetMoves && IsChildMember(InPlan.Nodes[Wire.SourceNodeIndex]))) return false;
     }
     // Include data links, feedback and wrap boundaries: no connected expression
     // or explicitly ordered continuation may be split by this alternative.
@@ -5010,7 +5018,8 @@ bool FTurboMCPGraphTidy::ValidateScopedBoxGrowth(const FPlan& InPlan, FString& O
         }
         for (const FNode& Node : InPlan.Nodes)
         {
-            if (Node.bIsComment || Box.MemberKeys.Contains(Node.Key)) continue;
+            if (Node.bIsComment || Box.MemberKeys.Contains(Node.Key)
+                || (Node.Node && Box.MemberKeys.Contains(Node.Node->GetName()))) continue;
             if (AddsOverlap(Node.X, Node.Y, Node.Width, Node.Height,
                             Node.PlannedX, Node.PlannedY, Node.Width, Node.Height))
             {
