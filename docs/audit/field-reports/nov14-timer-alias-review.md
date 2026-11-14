@@ -45,3 +45,11 @@ Approved next slice: Preview/EditTurboMCPLocalVariableRename(Asset, Function, Na
 Focused regression: a function containing both a local getter/setter and a same-named member getter, another function with a same-named local, a loaded child with NewName already declared, connected local pins and nondefault literals. Verify only the selected local/references rename and other identities/defaults/links remain unchanged. Verify collision and stale-token refusals, fresh preview, and help. This is the next implementation slice; no passing runtime claim yet.
 
 Member rename remains separate: stock helper can show a RepNotify dialog after mutation, clears its association after confirmation, refreshes defaults from the CDO, validates child collisions, compiles and handles delegate signature graphs. Its preview must enumerate dependent assets and binding/reference kinds; it cannot safely be a blind wrapper or a loaded-assets-only completeness claim.
+
+## Local rename implementation and acceptance
+
+Candidate 3b25d16e9ea83e96c29bdcbaaf109c56569a5216 passed the exact three-file scope against approved base a188c16df2ad151d5a2c3faf485b228d3fafb70a (claim 39f60c4ba35a4955aabb1c28dcd2923e). Preview/EditTurboMCPLocalVariableRename updates the selected local declaration and native getter/setter references, preserving identity and topology. Unsupported reference kinds refuse explicitly; the broad engine rename helper is not used.
+
+Supervised execution 75e93064b9df49b7810134a11a975041 passed the build and selected test-graph-append wrapper. VariableRemove reported 1 passed, 0 failed, 0 skipped. Its added assertions cover stale confirmation, successful rename, same-named member/other-function local and loaded-child preservation, pin identity, links, literals, invalid empty name and help. The planned explicit name-collision case was not added; no collision-fixture or visual acceptance claim is made. Static lookup audit passed 126/126 including its negative control.
+
+NOV05-18 stays in progress for member rename. These results cover a synthetic fixture, not arbitrary custom nodes or field-project acceptance. Earlier pending statements above describe prior revisions.

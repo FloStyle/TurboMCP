@@ -51,6 +51,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPInterfaceRemove | [TurboMCPMergeMemberTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPLocalVariableAdd | [TurboMCPMergeMemberTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPLocalVariableRemove | [TurboMCPVariableRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPLocalVariableRename | [TurboMCPVariableRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPLocalVars | [TurboMCPLocalVarsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPMaterialBlocks | [TurboMCPMaterialBlocksTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPMaterialInstanceSet | [TurboMCPMaterialInstanceTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstanceTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
@@ -131,6 +132,7 @@ Generated from declarations, definitions and static test references. All runtime
 | PreviewTurboMCPInterfaceRemove | [TurboMCPMergeMemberTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPLocalVariableAdd | [TurboMCPMergeMemberTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeMemberTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPLocalVariableRemove | [TurboMCPVariableRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPLocalVariableRename | [TurboMCPVariableRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPLocalVars | [TurboMCPLocalVarsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPMaterialBlocks | [TurboMCPMaterialBlocksTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPMaterialLabelPromote | [TurboMCPMaterialLabelsPromoteTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromoteTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
