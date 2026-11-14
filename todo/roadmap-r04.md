@@ -18,6 +18,13 @@ explicit before dereferencing `Macros`, with a clear fixture error. Preserve
 the existing test's layout assertions and production behavior. Verify with
 `python Tools/test-lookup-guards.py`; no editor rerun is required for this
 guard-only change.
+
+Integrated at `c4cc5957` from approved base `82846369`. The exact one-file
+scope gate passed. The focused lookup audit passed on the candidate: 124 of
+124 lookup sites guarded, including its deliberately unguarded negative
+fixture. The earlier `TurboMCP.Layout.HandoffAxis` native run passed before
+this null-path clarification; it was not rerun. R04 and the cross-box Tidy
+visual acceptance remain open.
 Review: source-reviewed
 
 ## Approved NOV05-13 Return-node repair (2026-11-14)
