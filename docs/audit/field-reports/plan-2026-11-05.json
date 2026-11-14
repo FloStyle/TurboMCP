@@ -119,7 +119,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Complete-loop evidence 1400dc7bcf324bbb859108b8343d9239 already clears Body drift 3513 -> 0 and Completed-above-body 3 -> 0 with preview/apply and undo verified. J5 leaves controllers/continuations fixed by scope; its 3 -> 3 count is not an isolated placement defect. Remaining: visual routing/readability, including the Completed spline through the lower expression area in L3B capture 9A3154B14ED5BC6E7EC74988D19E0F25. Compare the routed variant and accepted reference before approving any repair; do not repeat the full suite merely to rediscover these facts.",
+      "next_step": "Spline-vs-node clearance repaired and focused native alternate-channel regression passed. Inspect a repaired native detail for the routed L3B case before full layout acceptance; preserve prior full-cascade evidence and do not repeat it without need.",
       "evidence": [
         {
           "run": "b04c38d19d264d37b7aa9613ed09eacd",
@@ -199,6 +199,12 @@
           "run": "55bdea70983a4ac2b6aae7696d1e8a1d",
           "result": "passed_scoped_application_undo_and_obstacle_controls",
           "scope": "Boundary-only run; 26 selected nodes, immutable preview, exact unselected rectangles and graph semantics preserved, exact undo. Body drift 3513 -> 3113. Native TidyFeedback passed without errors/warnings. Applied overview inspected. Completed-above-body remains 3 -> 3; not full cascade acceptance. See nov14-scoped-loop-placement-contract.md."
+        },
+        {
+          "commit": "c2addbf7a743deb514962cdeb570fea617d4e0b1",
+          "run": "08f9c589519c4669925d8907831febd8",
+          "result": "focused_native_spline_clearance_passed",
+          "scope": "Stock Unreal 5.8.4 build and TidyFeedback passed: native spline bulge obstacle requires a changed usable route; denser curve sampling clears the node and logical link is preserved. Scope gate passed. Offline 155c8e3320734d59a38010374e911095 failed only stale capability inventory; regenerated separately. Full cascade and repaired native detail capture remain pending; no complete visual acceptance."
         }
       ],
       "design_notes": [
