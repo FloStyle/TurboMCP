@@ -83,6 +83,10 @@ Focused acceptance must include a fully selected boxed section with a fixed sect
 
 ### Section-growth partial evidence
 
+Follow-up: candidate `726e44f4` passed build and the registered append workflow in execution `e24e7037c38d4a139b28f82405a69e09`. The added native refusal case places obstacles below and to the right, then checks unchanged positions, links, box sizes and dirty state after preview and edit refusal. This does not validate connected-branch reshaping.
+
+Candidate `46049b3a` retains row-layout lane identities and permits forward execution lanes to pack in dependency order. Data expressions, feedback and explicit wrap boundaries remain joined; a cyclic group dependency refuses the alternative. This candidate is implemented but untested. Native connected-branch, nested-section and wrap acceptance remain outstanding. NOV09-04 stays open.
+
 Candidate 29854783 builds and passes the registered test-graph-append workflow in run 230b06132e3842b49b9282dcd9525856. The added native SectionGrowth fixture verifies three independent event/call components pack rightward above a fixed neighboring box, preview/apply positions agree, links and outside geometry remain unchanged, and undo restores positions and section size. The native 1600x900 capture was inspected: components are spaced horizontally, with the neighboring box below unchanged. This is partial evidence, not completion of NOV09-04.
 
 Failed run 26758cd43278415a819ea3539f14c81a is retained: the initial fallback used reader IDs while native comment membership contained object names, so the planner refused the valid fixture. Candidate 29854783 accepts both established identifier forms; assertions were not weakened. Connected branching reshaping, native nested/wrap cases and right-obstacle refusal remain outstanding. The partial batch is approved for integration; NOV09-04 remains in progress. Scope check passed for candidate 298547837570e88713d1bce6a189a05c9f6666b8 against base cf4d16801975999bc3ee9974fd032981171326fb. Repository structure and offline validation passed (e325f554d24c42c29cf4cafd609850d2).
