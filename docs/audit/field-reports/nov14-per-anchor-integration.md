@@ -38,3 +38,11 @@ Remaining capability gap: connected components with multiple execution sources a
 Candidate 9a792e33 passed supervised build and focused placement execution b93d32bdfcad4a7e95995866dc21e529. Multiple fixed execution sources now receive deterministic candidate trials, and every incoming execution attachment is checked. Nearby compatible sources pass; moving one source to a remote lane refuses and returns no partial positions. Existing nodes never move.
 
 The implemented local policy requires forward execution connections and limits each source-to-consumer displacement to two footprint-plus-gap strides. This is a bounded local placement policy, not a general graph optimizer; infeasible local requests must use an explicit alternative. Shared producers, independent groups, nearby collision reservations, public preview/apply coordinates and final overview capture have focused evidence above. NOV09-03 implementation is complete under this policy. Historical full-suite failures remain open; NOV09-02 tail movement is not included.
+
+## Retained-plan freshness safeguard
+
+Reviewed candidate 45855967e82d6219e6a42ccaa794521cbb03cd3a. Supervised build and focused placement execution 9ea12abd2c3343df868b34e3fbe22b88 passed. Changed geometry and pin defaults invalidate a retained internal placement plan before mutation; the focused assertions preserve graph state and package dirtiness on refusal.
+
+This is an internal FPlan safeguard, not a public preview confirmation token. The snapshot covers node identity, geometry, pin identity, defaults and connections; it is not a complete serialization of pin types, node properties or comment membership. Explicit movable-tail insertion and its stronger authorization/rollback contract remain open as NOV09-02. No full append-suite pass is claimed. Backlog remains 109/121 done, 12 open.
+
+Takeover goal: finish NOV09-02 explicitly scoped tail insertion with preview/apply agreement, stale-plan refusal, fixed-neighbor preservation and atomic undo. Then resolve remaining actionable backlog by safety and impact. Keep unknown-cause investigations open, DSH paused and Unreal stock. Batch changes, run minimal focused checks, and integrate reviewed work into private main with tracking and dashboard updates. Implementation status and test evidence remain separate.
