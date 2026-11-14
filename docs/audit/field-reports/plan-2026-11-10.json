@@ -226,15 +226,16 @@
       "title": "Decide safe exhaustive-read API boundary",
       "kind": "design",
       "priority": "P2",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "decision_recorded",
+      "owner": "integrator",
+      "validation": "source_reviewed_design_decision",
       "source_keys": [
         "2026-11-10_S1/FT-167"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "The general script route remains filtered. Use bounded readers and track any unmet query or skipped coverage separately; NOV13-03 remains open.",
+      "evidence": "docs/audit/field-reports/nov14-exhaustive-read-boundary.md",
       "acceptance": "Prefer bounded purpose-built batch readers. Do not loosen arbitrary script safety based on a claim that a script is read-only; review residual need separately."
     }
   ]
