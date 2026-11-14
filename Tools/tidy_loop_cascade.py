@@ -1132,6 +1132,22 @@ def run():
     directory.mkdir(parents=True)
     session = Session()
     session.connect()
+    if os.environ.get('TMCP_TIDY_FEEDBACK_ONLY') == '1':
+        name = 'TurboMCP.GraphAppend.TidyFeedback'
+        automation = 'AutomationTestToolset.AutomationTestToolset'
+        session.call(automation, 'DiscoverTests', {})
+        listed = session.call(automation, 'ListTests', {'nameFilter': name, 'tagFilter': ''})
+        if name not in listed:
+            raise RuntimeError('Focused Tidy feedback test is not registered')
+        answer = session.call(automation, 'RunTests', {'testNames': [name]})
+        parse_report = runpy.run_path(str(Path(__file__).with_name('test-graph-append.py')))['parse_run_tests_report']
+        entry, report = parse_report(answer, name)
+        (directory / 'focused-native.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+        print(answer, flush=True)
+        if entry['state'] != 'Success' or entry['errors']:
+            raise RuntimeError('Focused Tidy feedback regression failed')
+        print('RESULT: PASS (focused Tidy feedback only; not cascade acceptance)', flush=True)
+        return
     # A tracked selection survives the supervisor's deliberate environment filter.
     scenario = json.loads((root / 'Tests' / 'tidy-loop-cascade.json').read_text(encoding='utf-8'))
     subset = os.environ.get('TURBOMCP_TIDY_BASELINE_SUBSET', scenario.get('run_subset', 'all'))
