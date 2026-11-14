@@ -6964,7 +6964,8 @@
       "dependencies": [],
       "evidence": [
         "docs/audit/field-reports/nov14-graph-copy-integration.md"
-      ]
+      ],
+      "implementation": "GraphCopy Plan and Apply refuse copied local getters or setters when the destination graph has a different local-variable scope. The mixed selection is rejected before mutation. Focused stock UE 5.8.4 GraphCopy checks passed; automatic local rebinding remains unsupported."
     },
     {
       "id": "NOV05-12",
@@ -6984,7 +6985,8 @@
       "dependencies": [],
       "evidence": [
         "docs/audit/field-reports/nov14-graph-copy-integration.md"
-      ]
+      ],
+      "implementation": "GraphCopy refuses a selection containing Format Text before mutation and tells the caller to recreate and reconnect it in the destination. Focused stock UE 5.8.4 GraphCopy checks passed; direct Format Text copying remains unsupported."
     },
     {
       "id": "NOV05-13",
