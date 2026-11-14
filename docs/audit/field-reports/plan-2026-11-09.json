@@ -335,10 +335,10 @@
       "title": "Read widget navigation, focus, clipping and render transforms",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "codex-integrator",
+      "validation": "focused_pass; workplace_field_validation_pending",
       "source_keys": [
         "2026-11-09_S3/WT-20",
         "2026-11-09_S3/WT-21",
@@ -347,7 +347,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 5,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Implemented and focused native fixture passed on stock 5.8.4. See nov14-widget-navigation-integration.md; runtime focus and workplace behavior remain unobserved.",
       "acceptance": "Expose per-direction rules, explicit targets and custom delegate names plus compact tree summaries. Stored Designer rules are not proof of runtime focus behavior."
     },
     {

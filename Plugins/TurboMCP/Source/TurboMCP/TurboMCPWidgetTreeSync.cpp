@@ -9,12 +9,14 @@
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetNavigation.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/NamedSlotInterface.h"
 #include "Components/PanelSlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/Widget.h"
+#include "Components/Button.h"
 #include "EdGraph/EdGraph.h"
 #include "Engine/Blueprint.h"
 #include "Misc/PackageName.h"
@@ -391,9 +393,100 @@ FString FTurboMCPWidgetTreeSync::Read(const FString& Asset)
         Context += CommonButtonContext(WidgetBlueprint->GeneratedClass->GetDefaultObject(), TEXT("compiled class defaults; not a live instance"));
     if (WidgetBlueprint->WidgetTree)
         WidgetBlueprint->WidgetTree->ForEachWidget([&](UWidget* Widget)
-        { Context += CommonButtonContext(Widget, Widget->GetPathName()); });
+        {
+            Context += CommonButtonContext(Widget, Widget->GetPathName());
+            const FString DesignerContext = ReadDesignerContext(Widget);
+            if (!DesignerContext.IsEmpty())
+                Context += TEXT("\n; Designer context: ") + Widget->GetPathName()
+                    + TEXT("; ") + DesignerContext.Replace(TEXT("\n"), TEXT("\n; "));
+        });
 	return TurboMCPWidgetTreeText::Render(Tree, 0)
 		+ TEXT("\n; Coverage: hierarchy, names, classes, paths, variable flags, non-default visibility and selected slot padding.\n")
 		+ TEXT("; This is not a complete widget export: other properties, bindings and animations are not included.\n")
 		+ TEXT("; Do not use this text as a lossless backup or assume replacement preserves omitted data.") + Context;
+}
+
+FString FTurboMCPWidgetTreeSync::ReadDesignerNavigation(const UWidget* Widget)
+{
+    if (!Widget) return TEXT("navigation: widget unavailable");
+    if (!Widget->Navigation) return TEXT("navigation: absent (engine defaults apply)");
+
+    const UWidgetNavigation* Navigation = Widget->Navigation;
+    const UEnum* RuleEnum = StaticEnum<EUINavigationRule>();
+    struct FDirection
+    {
+        const TCHAR* Name;
+        const FWidgetNavigationData* Data;
+    };
+    const FDirection Directions[] = {
+        { TEXT("Up"), &Navigation->Up }, { TEXT("Down"), &Navigation->Down },
+        { TEXT("Left"), &Navigation->Left }, { TEXT("Right"), &Navigation->Right },
+        { TEXT("Next"), &Navigation->Next }, { TEXT("Previous"), &Navigation->Previous }
+    };
+    FString Result = TEXT("navigation: stored Designer rules (not runtime focus)");
+    for (const FDirection& Direction : Directions)
+    {
+        const FWidgetNavigationData& Data = *Direction.Data;
+        const FString Rule = RuleEnum ? RuleEnum->GetNameStringByValue(static_cast<int64>(Data.Rule)) : TEXT("Unknown");
+        Result += FString::Printf(TEXT("\n%s: %s"), Direction.Name, *Rule);
+        if (!Data.WidgetToFocus.IsNone())
+        {
+            const TCHAR* NameKind = Data.Rule == EUINavigationRule::Explicit ? TEXT("target")
+                : (Data.Rule == EUINavigationRule::Custom || Data.Rule == EUINavigationRule::CustomBoundary)
+                    ? TEXT("function") : TEXT("stored name");
+            Result += FString::Printf(TEXT("; %s=%s"), NameKind, *Data.WidgetToFocus.ToString());
+        }
+    }
+    return Result;
+}
+
+FString FTurboMCPWidgetTreeSync::ReadDesignerContext(const UWidget* Widget)
+{
+    if (!Widget) return FString();
+    FString Result;
+    if (const UButton* Button = Cast<UButton>(Widget))
+        Result = FString::Printf(TEXT("focusable (Designer): %s"), Button->GetIsFocusable() ? TEXT("true") : TEXT("false"));
+    else if (const UUserWidget* UserWidget = Cast<UUserWidget>(Widget))
+        Result = FString::Printf(TEXT("focusable (Designer): %s"), UserWidget->IsFocusable() ? TEXT("true") : TEXT("false"));
+
+    auto AddFact = [&Result](const FString& Fact)
+    {
+        if (!Result.IsEmpty()) Result += TEXT("\n");
+        Result += Fact;
+    };
+    if (Widget->GetClipping() != EWidgetClipping::Inherit)
+    {
+        const UEnum* ClippingEnum = StaticEnum<EWidgetClipping>();
+        AddFact(TEXT("clipping: ") + (ClippingEnum
+            ? ClippingEnum->GetNameStringByValue(static_cast<int64>(Widget->GetClipping())) : TEXT("Unknown")));
+    }
+    const FWidgetTransform& Transform = Widget->GetRenderTransform();
+    if (!Transform.IsIdentity())
+        AddFact(FString::Printf(TEXT("render transform: translation=%s; scale=%s; shear=%s; angle=%.3f"),
+            *Transform.Translation.ToString(), *Transform.Scale.ToString(),
+            *Transform.Shear.ToString(), Transform.Angle));
+    if (Widget->Navigation)
+    {
+        // The property reader supplies all six rules. Keep the tree scannable by
+        // showing only exceptions to Escape while preserving explicit names.
+        const UWidgetNavigation* Navigation = Widget->Navigation;
+        const UEnum* RuleEnum = StaticEnum<EUINavigationRule>();
+        FString Summary;
+        const TPair<const TCHAR*, const FWidgetNavigationData*> Directions[] = {
+            { TEXT("Up"), &Navigation->Up }, { TEXT("Down"), &Navigation->Down },
+            { TEXT("Left"), &Navigation->Left }, { TEXT("Right"), &Navigation->Right },
+            { TEXT("Next"), &Navigation->Next }, { TEXT("Previous"), &Navigation->Previous }
+        };
+        for (const auto& Direction : Directions)
+        {
+            if (Direction.Value->Rule == EUINavigationRule::Escape && Direction.Value->WidgetToFocus.IsNone()) continue;
+            if (!Summary.IsEmpty()) Summary += TEXT("; ");
+            Summary += FString(Direction.Key) + TEXT("=") + (RuleEnum
+                ? RuleEnum->GetNameStringByValue(static_cast<int64>(Direction.Value->Rule)) : TEXT("Unknown"));
+            if (!Direction.Value->WidgetToFocus.IsNone())
+                Summary += TEXT("(") + Direction.Value->WidgetToFocus.ToString() + TEXT(")");
+        }
+        if (!Summary.IsEmpty()) AddFact(TEXT("navigation (Designer): ") + Summary);
+    }
+    return Result;
 }

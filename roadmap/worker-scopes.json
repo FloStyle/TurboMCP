@@ -3949,6 +3949,17 @@
           ],
           "new_files": []
         },
+        "nov09-widget-navigation-read": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeSync.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPWidgetTreeSync.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetNavigationReadTest.cpp"
+          ]
+        },
         "nov13-append-count-assertion": {
           "files": [
             "Tools/test-graph-append.py"

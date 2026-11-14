@@ -1760,7 +1760,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
-          "line": 394
+          "line": 402
         }
       ],
       "test_references": [],
@@ -3541,7 +3541,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
-          "line": 390
+          "line": 398
         }
       ],
       "test_references": [],
@@ -4753,7 +4753,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
-          "line": 386
+          "line": 394
         }
       ],
       "test_references": [],

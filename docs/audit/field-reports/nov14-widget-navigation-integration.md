@@ -1,0 +1,9 @@
+# NOV09-17: widget navigation read integration
+
+The reviewed `nov09-widget-navigation-read` assignment adds read-only Designer navigation details to `ReadTurboMCPWidgetProperty` and a compact context summary to `ReadTurboMCPWidgetTree`. The property read shows all six directions, rules and stored explicit target or custom function names. The tree adds focusability where the widget class exposes it, non-default clipping or render transforms, and non-default navigation rules. These are stored Designer values, not observations of live focus.
+
+The worker candidate was `3dce216854d03a815093d0662456045e6c539bc7`, based on approved `f200b0b8a68219a729361af3a96c2f8886cd6062`. `Tools/check-worker-scope.py` passed for the five assigned files. Source review against stock 5.8.4 confirmed the name semantics in `FWidgetNavigationData` and the required widget getters. The integrator removed default-context lines from ordinary widgets so large tree reads stay compact, and added a default-widget assertion.
+
+Evidence: supervised stock-5.8.4 build `b15bfbadbe9940888192a7d91eae93dd` passed. The focused `TurboMCP.Widget.NavigationRead` native fixture passed in run `1b901109746b4e0798912237f922b277` (one test, zero failures or warnings; project fixture restored). An initial editor run found TurboMCP disabled in this worktree's ignored local preference. That run was interrupted and recovered with `Tools/recover-tests.py`; it is not a passing test. The later run used an ignored local preference enabling the plugin.
+
+The broad offline gate remains red on unrelated baseline findings: stale capability inventory and a lookup-guard warning in `TurboMCPDataAssetCreateTest.cpp`. Neither is claimed as a navigation failure or pass. Workplace gamepad focus behavior, runtime clipping, and editor screenshots were not tested by this read-only fixture.

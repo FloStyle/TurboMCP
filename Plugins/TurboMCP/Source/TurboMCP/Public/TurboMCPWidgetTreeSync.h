@@ -137,4 +137,10 @@ public:
 
 	/** The live tree as dialect text. A pure read, and the round trip's first half. */
 	static FString Read(const FString& Asset);
+
+	/** Stored Designer navigation rules for one widget. This is not observed runtime focus. */
+	static FString ReadDesignerNavigation(const UWidget* Widget);
+
+	/** Compact read-only Designer context for a tree entry. No dialect fields are changed. */
+	static FString ReadDesignerContext(const UWidget* Widget);
 };

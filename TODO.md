@@ -169,7 +169,7 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (29)</summary>
+<summary>done (30)</summary>
 
 - **P0** [Local-variable promotion must preserve calculated values](todo/67f00521.md)
 - **P0** [Reproduce and contain native DataTable JSON-write crashes](todo/field-01.md)
@@ -182,6 +182,7 @@ These records preserve original requirements and evidence. Their status does not
 - **P1** [Avoid false unnecessary-cast warnings](todo/7bbe9c3c.md)
 - **P1** [Member variable reader and spawner identity alignment](todo/field-fix-27.md)
 - **P1** [Add another function Return node through GraphAppend](todo/nov05-return-node.md)
+- **P1** [Read Designer navigation and layout context](todo/nov09-widget-navigation-read.md)
 - **P2** [Make task-to-tool discovery bounded and evidence-based](todo/9e5d5c9a.md)
 - **P2** [Blueprint summary completeness and graph labels](todo/field-fix-21.md)
 - **P2** [Toolset help continuation](todo/field-fix-22.md)

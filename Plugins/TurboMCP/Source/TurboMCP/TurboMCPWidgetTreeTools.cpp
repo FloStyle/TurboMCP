@@ -333,6 +333,14 @@ FString WidgetPropertyOperation(const FString& Asset, const FString& Widget, con
     if (!Object) return TEXT("error: This widget has no parent slot. Select Target=widget or choose a child widget.");
     const FString Requested = PropertyName.TrimStartAndEnd();
     if (Requested.IsEmpty() && Input) return TEXT("error: Property is required for a write. Read properties first; empty never means all properties.");
+    if (Requested.Equals(TEXT("Navigation"), ESearchCase::IgnoreCase))
+    {
+        if (Input) return TEXT("error: Navigation is read-only here. Preview/EditTurboMCPWidgetProperty cannot change Designer navigation. Nothing changed.");
+        if (TargetName != TEXT("widget")) return TEXT("error: Navigation belongs to Target=widget, not its parent slot.");
+        return TEXT("read: Designer navigation; stored rules, not observed runtime focus.\n")
+            + FString::Printf(TEXT("asset: %s\nwidget: %s\ntarget: widget\n"), *Resolved.ObjectPath, *Item->GetName())
+            + FTurboMCPWidgetTreeSync::ReadDesignerNavigation(Item);
+    }
     auto Export = [Object](const FProperty* Property, const void* Value)
     {
         FString Text;
@@ -347,7 +355,7 @@ FString WidgetPropertyOperation(const FString& Asset, const FString& Widget, con
             if (IsEditableWidgetValue(*It))
                 Lines.Add(FString::Printf(TEXT("%s [%s] = %s"), *It->GetName(), *It->GetCPPType(), *Export(*It, It->ContainerPtrToValuePtr<void>(Object))));
         Lines.Sort();
-        return TEXT("read: Supported editable value properties.\n") + Identity + TEXT("\n") + FString::Join(Lines, TEXT("\n")) + TEXT("\nValues use Unreal property text, not JSON. Objects, containers, delegates and localized text are omitted; this is not a full object export.");
+        return TEXT("read: Supported editable value properties.\n") + Identity + TEXT("\n") + FString::Join(Lines, TEXT("\n")) + TEXT("\nRead-only special case: Property=Navigation with Target=widget reads stored Designer rules; it cannot be previewed or edited here.\nValues use Unreal property text, not JSON. Objects, containers, delegates and localized text are omitted; this is not a full object export.");
     }
     FProperty* Property = FindFProperty<FProperty>(Object->GetClass(), FName(*Requested));
     if (!IsEditableWidgetValue(Property))

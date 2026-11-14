@@ -527,7 +527,7 @@ public:
      * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu.
      * @param Widget Required designer object name from ReadTurboMCPWidgetTree, not display text or a runtime instance path.
      * @param Target Required widget or slot. Slot means the named widget's parent slot; a root without a slot refuses.
-     * @param Property Exact supported property name, or empty to list supported names, types and current values.
+     * @param Property Exact supported editable value name, or empty to list names, types and values. Navigation is a read-only special case for Target=widget: it reports six stored Designer rules and explicit target/custom function names. Preview/Edit cannot change Navigation. This does not observe runtime focus.
      */
     UFUNCTION(meta = (AICallable))
     static FString ReadTurboMCPWidgetProperty(const FString& Asset, const FString& Widget, const FString& Target, const FString& Property);

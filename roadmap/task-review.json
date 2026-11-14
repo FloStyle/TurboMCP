@@ -4165,6 +4165,27 @@
           "sha256": "63ff0ce864751f1c49bef50af6bf64fc2a556d4ecc528ac576f66a45ad5f1a7e"
         }
       ]
+    },
+    {
+      "id": "NOV09-17",
+      "path": "todo/nov09-widget-navigation-read.md",
+      "owners": ["R04"],
+      "verification_commands": [
+        "python Tools/validate-repo.py",
+        "python Tools/execute-tests.py --profile build --execute",
+        "python Tools/execute-tests.py --profile engine --suites test-widget-navigation-read --execute"
+      ],
+      "title": "Read Designer navigation and layout context",
+      "decision": "completed",
+      "finding": "The reviewed implementation now exposes the stored Designer directions and selected non-default context without changing edit eligibility; the focused fixture passed, but runtime focus remains unobserved.",
+      "action": "Keep the read-only contract and compact output; use a separate runtime or workplace check before claiming observed navigation behavior.",
+      "source_refs": [
+        {
+          "path": "todo/nov09-widget-navigation-read.md",
+          "line": 1,
+          "sha256": "f396c4c1c4abb4e1fefb46572d04c62bdf400070f98d92b69f6fc821cc72ba92"
+        }
+      ]
     }
   ]
 }
