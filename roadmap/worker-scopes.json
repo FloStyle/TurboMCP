@@ -4197,6 +4197,17 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCP.Build.cs"
           ],
           "new_files": []
+        },
+        "nov14-append-explicit-placement": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacement.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacementTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
