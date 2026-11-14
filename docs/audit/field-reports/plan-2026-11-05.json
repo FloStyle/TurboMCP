@@ -787,10 +787,10 @@
       "title": "Support object and class widget-property paths",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "build_pass_native_assertion_untested",
       "source_ids": [
         "WT-18"
       ],
@@ -798,8 +798,8 @@
         "2026-11-04_S3/WT-18"
       ],
       "dependencies": [],
-      "next_step": "Implement the exact path and reference-type boundary in nov14-widget-reference-property-contract.md under the approved R04 assignment. Keep field-project validation separate.",
-      "evidence": ["docs/audit/field-reports/nov14-widget-reference-property-contract.md"]
+      "next_step": "Implemented on private main b23a3e16; stock 5.8.4 build passed. Run the focused WidgetReferenceProperty native fixture after an approved catalog wrapper is added. Field-project validation remains separate.",
+      "evidence": ["docs/audit/field-reports/nov14-widget-reference-property-contract.md", "private main b23a3e1667b5bc2d8d3b90cff59f7d8886e6d297", "local supervised build a2d5cb07c9534e8eb8dd85435a6b1ebf (passed)"]
     },
     {
       "id": "NOV05-18",
