@@ -205,6 +205,12 @@
           "run": "08f9c589519c4669925d8907831febd8",
           "result": "focused_native_spline_clearance_passed",
           "scope": "Stock Unreal 5.8.4 build and TidyFeedback passed: native spline bulge obstacle requires a changed usable route; denser curve sampling clears the node and logical link is preserved. Scope gate passed. Offline 155c8e3320734d59a38010374e911095 failed only stale capability inventory; regenerated separately. Full cascade and repaired native detail capture remain pending; no complete visual acceptance."
+        },
+        {
+          "commit": "9a1a1818d2461ee93413f12e1d68219e0ffab8bf",
+          "run": "cfce525c70f84cfbaa65a3d87999a18b",
+          "result": "focused_cascade_passed_visual_partial",
+          "scope": "336-call routing-only fixture passed connectivity, fan-out order, preview/apply and exact undo. Native L3B detail inspected: repaired white execution spline clears the lower node, but a retained cyan data wire still crosses a node. Nine routes skipped; 38 reroutes planned. Execution crossings 6 to 0, data crossings 100 to 24, Body drift 2252 to 0, Completed-above-body 3 to 0; these segment metrics are not full spline-clearance proof. NOV05-02 remains open. Earlier runs 843d980aa8a1469db7b0fa6816461f25 and 46e0aacb9d6146f1837a9943b5d1f2ac failed on stale harness append schema arguments; both retained."
         }
       ],
       "design_notes": [
