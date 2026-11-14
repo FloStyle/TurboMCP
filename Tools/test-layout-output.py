@@ -17,7 +17,7 @@ ranked = [float(value) for value in re.findall(r"^  ([0-9.]+) units:", report, r
 assert summary and ranked and len(ranked) == int(counts[1]) <= 10, report
 assert abs(float(summary[2]) - max(ranked)) <= 0.6, report
 assert abs(float(summary[1]) - sum(ranked)) <= 0.5 + 0.05 * len(ranked), report
-positions = session.call(LOOK_TOOLSET, "LookTurboMCPGraphPositions", args)
+positions = session.call(LOOK_TOOLSET, "LookTurboMCPGraphPositions", dict(args, nodeIds=""))
 assert "node positions" in positions and "width=" in positions, positions
 for value in (-1, 1025):
     result = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport", dict(report_args, alignmentTolerance=value))
