@@ -32,3 +32,9 @@ Still outstanding: positive shared-pure-producer geometry, preview/apply coordin
 Candidate 5a033bc6 passed focused execution 79e6ae0b40de45b6b3388970d929af4f. The shared pure producer remains one form left of both consumers; applied public consumer coordinates appear in the preview. Inspected the final LegacyGraph region capture ending A83DD5A9414548BE2EE1C1959D6B9693: two separate event/consumer pairs remain near their own sources with no visible overlap. The overview is zoomed out and is not fine typography or pin-alignment acceptance.
 
 Remaining capability gap: connected components with multiple execution sources are conservatively refused regardless of compatibility. Do not equate this refusal with support for all compatible anchors. NOV09-03 remains partial on that specific gap; the previously missing focused workflow evidence is now available. Full append-suite acceptance remains separate.
+
+## Multi-source completion
+
+Candidate 9a792e33 passed supervised build and focused placement execution b93d32bdfcad4a7e95995866dc21e529. Multiple fixed execution sources now receive deterministic candidate trials, and every incoming execution attachment is checked. Nearby compatible sources pass; moving one source to a remote lane refuses and returns no partial positions. Existing nodes never move.
+
+The implemented local policy requires forward execution connections and limits each source-to-consumer displacement to two footprint-plus-gap strides. This is a bounded local placement policy, not a general graph optimizer; infeasible local requests must use an explicit alternative. Shared producers, independent groups, nearby collision reservations, public preview/apply coordinates and final overview capture have focused evidence above. NOV09-03 implementation is complete under this policy. Historical full-suite failures remain open; NOV09-02 tail movement is not included.

@@ -47,10 +47,10 @@
       "title": "Place disconnected append groups beside their own anchors",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "done",
+      "readiness": "implemented",
+      "owner": "integrator",
+      "validation": "focused_native_pass",
       "source_keys": [
         "2026-11-09_S1/GC-50",
         "2026-11-09_S1/FT-158"
@@ -59,7 +59,7 @@
         "NOV09-02"
       ],
       "complexity_estimate": 6,
-      "next_step": "Focused public workflow, nearby collision, shared producer and preview-coordinate checks passed in 79e6ae0b40de45b6b3388970d929af4f; final capture inspected. Remaining: distinguish compatible multiple execution anchors from genuine conflicts instead of refusing all. Full suite acceptance remains separate.",
+      "next_step": "Implemented bounded per-anchor placement; build and focused native workflow passed b93d32bdfcad4a7e95995866dc21e529. See nov14-per-anchor-integration.md for full evidence and local-distance policy. Full-suite acceptance remains separate; explicit tail movement belongs to NOV09-02.",
       "acceptance": "Plan each independent group from its own anchor, keep pure dependencies left/below their consumer, retain collision refusal and exact preview/edit placement."
     },
     {
