@@ -5,6 +5,8 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPGraphTidy.h"
+#include "Editor.h"
 #include "TurboMCPLayoutReport.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
@@ -109,6 +111,57 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Data cycle preview refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(BP->GetPathName(),Scoped->GetName(),true,DataSelection).StartsWith(TEXT("error:")));
     TestTrue(TEXT("Data cycle edit refuses"),UTurboMCPEditToolset::EditTurboMCPGraphTidy(BP->GetPathName(),Scoped->GetName(),true,DataSelection).StartsWith(TEXT("error:")));
     TestTrue(TEXT("Data refusal preserves positions and links"),DataA->NodePosX==0 && DataB->NodePosX==300 && DataA->NodePosY==2000 && DataB->NodePosY==2000 && DataA->GetOutputPin()->LinkedTo.Contains(DataB->GetInputPin()) && DataB->GetOutputPin()->LinkedTo.Contains(DataA->GetInputPin()));
+    // TD-76: each bypass and optional action enter the next repeat together.
+    UEdGraph* WrapGraph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("OptionalRepeats"), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+    BP->UbergraphPages.Add(WrapGraph);
+    TArray<UK2Node_IfThenElse*> Branches;
+    TArray<UK2Node_CallFunction*> Actions;
+    auto InitWrap = [&](UEdGraphNode* Node, int32 X)
+    { WrapGraph->AddNode(Node, false, false); Node->CreateNewGuid(); Node->AllocateDefaultPins(); Node->NodePosX = X; Node->NodePosY = 0; };
+    for (int32 Index = 0; Index < 3; ++Index)
+    {
+        auto* Branch = NewObject<UK2Node_IfThenElse>(WrapGraph); InitWrap(Branch, Index * 800); Branches.Add(Branch);
+        auto* Action = NewObject<UK2Node_CallFunction>(WrapGraph);
+        Action->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+        InitWrap(Action, Index * 800 + 350); Actions.Add(Action);
+    }
+    auto ConnectWrap = [&](UEdGraphPin* From, UEdGraphPin* To)
+    { if (!From || !To) { AddError(TEXT("Optional-repeat fixture pin missing.")); return false; } From->MakeLinkTo(To); return true; };
+    for (int32 Index = 0; Index < 3; ++Index)
+    {
+        if (!ConnectWrap(Branches[Index]->GetThenPin(), Actions[Index]->FindPin(UEdGraphSchema_K2::PN_Execute))) return false;
+        if (Index < 2 && (!ConnectWrap(Branches[Index]->GetElsePin(), Branches[Index + 1]->GetExecPin())
+            || !ConnectWrap(Actions[Index]->FindPin(UEdGraphSchema_K2::PN_Then), Branches[Index + 1]->GetExecPin()))) return false;
+    }
+    TMap<UEdGraphPin*, TArray<UEdGraphPin*>> WrapLinks;
+    TMap<UEdGraphNode*, FIntPoint> WrapPositions;
+    for (UEdGraphNode* Node : WrapGraph->Nodes)
+    {
+        WrapPositions.Add(Node, FIntPoint(Node->NodePosX, Node->NodePosY));
+        for (UEdGraphPin* Pin : Node->Pins) if (Pin) WrapLinks.Add(Pin, Pin->LinkedTo);
+    }
+    const FString WrapIds = TurboMCPNodeId::MakeForNode(Actions[0]) + TEXT(",") + TurboMCPNodeId::MakeForNode(Actions[1]);
+    FTurboMCPGraphTidy::FPlan WrapPlan; FString WrapError;
+    const bool Planned = FTurboMCPGraphTidy::Plan(BP->GetPathName(), WrapGraph->GetName(), true, false, {}, WrapPlan, WrapError,
+        FString(), 120.0, 100.0, 280.0, WrapIds);
+    if (!TestTrue(TEXT("Optional repeats plan two wraps: ") + WrapError, Planned)) return false;
+    TestEqual(TEXT("Two actions and two bypasses form four boundaries"), WrapPlan.WrapBoundaryEdges.Num(), 4);
+    const FString WrapEdit = FTurboMCPGraphTidy::Apply(WrapPlan);
+    if (!TestTrue(TEXT("Optional repeat edit: ") + WrapEdit, WrapEdit.StartsWith(TEXT("changed:")))) return false;
+    for (int32 Index = 0; Index < 2; ++Index)
+        TestTrue(TEXT("Next repeat is below both incoming paths"), Branches[Index + 1]->NodePosY > Actions[Index]->NodePosY
+            && Branches[Index + 1]->NodePosY > Branches[Index]->NodePosY);
+    for (const auto& Node : WrapPlan.Nodes)
+        if (Node.Node && !Node.bIsComment) TestTrue(TEXT("Applied coordinates match plan"),
+            Node.Node->NodePosX == Node.PlannedX && Node.Node->NodePosY == Node.PlannedY);
+    for (const auto& Pair : WrapLinks) TestTrue(TEXT("All optional action links preserved"), Pair.Key->LinkedTo == Pair.Value);
+    if (!TestTrue(TEXT("Optional wrap undo"), GEditor->UndoTransaction(false))) return false;
+    for (const auto& Pair : WrapPositions) TestTrue(TEXT("Optional wrap undo restores geometry"),
+        Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
+    TArray<FString> Partial{TurboMCPNodeId::MakeForNode(Actions[0]), TurboMCPNodeId::MakeForNode(Branches[1])};
+    FTurboMCPGraphTidy::FPlan PartialPlan;
+    TestFalse(TEXT("Missing bypass source refuses"), FTurboMCPGraphTidy::Plan(BP->GetPathName(), WrapGraph->GetName(), true, false,
+        Partial, PartialPlan, WrapError, FString(), 120.0, 100.0, 280.0, TurboMCPNodeId::MakeForNode(Actions[0])));
     return !HasAnyErrors();
 }
 

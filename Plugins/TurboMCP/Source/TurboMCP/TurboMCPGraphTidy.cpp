@@ -442,7 +442,7 @@ namespace
             if(!S.Node || !T.Node) continue;
             const FVector2D Start=FTurboMCPGraphTidy::AlignmentPinPosition(W.OutputPin)+Position(S)-FVector2D(S.Node->NodePosX,S.Node->NodePosY);
             const FVector2D End=FTurboMCPGraphTidy::AlignmentPinPosition(W.InputPin)+Position(T)-FVector2D(T.Node->NodePosX,T.Node->NodePosY);
-            if(Plan.WrapAfterNodes.Contains(W.SourceNodeIndex))
+            if(Plan.IsWrapBoundary(W.SourceNodeIndex, W.TargetNodeIndex))
             {
                 if(Position(T).Y<=Position(S).Y+S.Height) ++Q.UnwrappedBreaks;
                 continue; // A requested return wire is neither a straight lane nor a backward-flow defect.
@@ -1416,6 +1416,72 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         if(!HasContinuation) {OutError=TEXT("WrapAfter node has no execution continuation");return false;}
         OutPlan.WrapAfterNodes.Add(Found);
     }
+    // A bypass into the next repeat must cross the same row boundary as the
+    // optional action. Never cut every branch output: its action stays on this row.
+    TSet<int32> WrapTargets;
+    for (const FWire& W : OutPlan.Wires)
+        if (OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex) && W.OutputPin
+            && W.OutputPin->PinType.PinCategory == TEXT("exec") && !W.bControlFeedback)
+        {
+            OutPlan.WrapBoundaryEdges.Add(FPlan::WrapEdgeKey(W.SourceNodeIndex, W.TargetNodeIndex));
+            WrapTargets.Add(W.TargetNodeIndex);
+        }
+    for (int32 Source : OutPlan.WrapAfterNodes)
+    {
+        TSet<int32> Targets;
+        for (const FWire& W : OutPlan.Wires)
+            if (W.SourceNodeIndex == Source && W.OutputPin
+                && W.OutputPin->PinType.PinCategory == TEXT("exec") && !W.bControlFeedback)
+                Targets.Add(W.TargetNodeIndex);
+        if (Targets.Num() != 1) continue; // Preserve existing explicit fan-out wrap behavior.
+        const int32 Join = *Targets.CreateConstIterator();
+        TSet<int32> Incoming;
+        for (const FWire& W : OutPlan.Wires)
+            if (W.TargetNodeIndex == Join && W.OutputPin && W.OutputPin->PinType.PinCategory == TEXT("exec")
+                && !W.bControlFeedback) Incoming.Add(W.SourceNodeIndex);
+        if (Incoming.Num() < 2) continue;
+        TSet<int32> Region; Region.Add(Source);
+        TArray<int32> Pending{Source};
+        for (int32 Cursor = 0; Cursor < Pending.Num(); ++Cursor)
+        {
+            const int32 Current = Pending[Cursor];
+            // A previous requested continuation starts this repeat; do not absorb
+            // the previous repeat across its already requested boundary.
+            if (WrapTargets.Contains(Current)) continue;
+            for (const FWire& W : OutPlan.Wires)
+            {
+                if (W.TargetNodeIndex != Current || !W.OutputPin || W.bControlFeedback
+                    || W.OutputPin->PinType.PinCategory != TEXT("exec") || W.SourceNodeIndex == Join) continue;
+                const FNode& Previous = OutPlan.Nodes[W.SourceNodeIndex];
+                if (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(Previous.Key)) continue;
+                if (!Region.Contains(W.SourceNodeIndex)) { Region.Add(W.SourceNodeIndex); Pending.Add(W.SourceNodeIndex); }
+            }
+        }
+        for (int32 Parent : Incoming) if (!Region.Contains(Parent))
+        { OutError = TEXT("WrapAfter merge has an unrelated or unselected incoming path. Include the complete optional-action region. Unchanged."); return false; }
+        TMap<int32, int32> InDegree;
+        for (int32 Node : Region) InDegree.Add(Node, 0);
+        for (const FWire& W : OutPlan.Wires)
+        {
+            if (!Region.Contains(W.SourceNodeIndex) || !W.OutputPin || W.OutputPin->PinType.PinCategory != TEXT("exec")) continue;
+            if (W.bControlFeedback || (!Region.Contains(W.TargetNodeIndex) && W.TargetNodeIndex != Join))
+            { OutError = TEXT("WrapAfter optional-action region has feedback or a conflicting exit. All exits must reach one continuation. Unchanged."); return false; }
+            if (Region.Contains(W.TargetNodeIndex)) ++InDegree[W.TargetNodeIndex];
+        }
+        TArray<int32> Ready;
+        for (const auto& Entry : InDegree) if (Entry.Value == 0) Ready.Add(Entry.Key);
+        int32 Visited = 0;
+        for (int32 Cursor = 0; Cursor < Ready.Num(); ++Cursor)
+        {
+            ++Visited;
+            for (const FWire& W : OutPlan.Wires)
+                if (W.SourceNodeIndex == Ready[Cursor] && W.OutputPin && W.OutputPin->PinType.PinCategory == TEXT("exec")
+                    && Region.Contains(W.TargetNodeIndex) && --InDegree[W.TargetNodeIndex] == 0) Ready.Add(W.TargetNodeIndex);
+        }
+        if (Visited != Region.Num())
+        { OutError = TEXT("WrapAfter optional-action region contains a cycle. Unchanged."); return false; }
+        for (int32 Parent : Incoming) OutPlan.WrapBoundaryEdges.Add(FPlan::WrapEdgeKey(Parent, Join));
+    }
     TArray<FString> MainIds; MainPath.ParseIntoArray(MainIds,TEXT(","),true);
     const bool bAutoMainPath = MainPath.TrimStartAndEnd().Equals(TEXT("auto"),ESearchCase::IgnoreCase);
     if(bAutoMainPath)
@@ -1700,7 +1766,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				for (const FWire& W : OutPlan.Wires)
 				{
 					if (W.bControlFeedback || !W.OutputPin || W.OutputPin->PinType.PinCategory != TEXT("exec")
-						|| OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex)
+						|| OutPlan.IsWrapBoundary(W.SourceNodeIndex, W.TargetNodeIndex)
                         || !RowOf.Contains(W.SourceNodeIndex) || !RowOf.Contains(W.TargetNodeIndex)) continue;
 					const int32 R = FMath::Min(RowOf[W.SourceNodeIndex], RowOf[W.TargetNodeIndex]);
 					Changed |= RowOf[W.SourceNodeIndex] != R || RowOf[W.TargetNodeIndex] != R;
@@ -1737,7 +1803,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     {
                         bool HasEarlierRow=false;
                         for(const FWire& W:OutPlan.Wires)
-                            if(OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex)
+                            if(OutPlan.IsWrapBoundary(W.SourceNodeIndex, W.TargetNodeIndex)
                                 && RowOf.Contains(W.SourceNodeIndex) && RowOf.Contains(W.TargetNodeIndex)
                                 && RowOf[W.TargetNodeIndex]==CandidateRow && RowOf[W.SourceNodeIndex]!=CandidateRow
                                 && PendingRows.Contains(RowOf[W.SourceNodeIndex])) {HasEarlierRow=true;break;}
@@ -3698,7 +3764,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         if (!Route.bSkipped && !Route.KnotPositions.IsEmpty()) OutPlan.bAlreadyTidy=false;
 
     for(const FWire& W:OutPlan.Wires)
-        if(OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex) && W.OutputPin && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec"))
+        if(OutPlan.IsWrapBoundary(W.SourceNodeIndex, W.TargetNodeIndex) && W.OutputPin && !W.bControlFeedback && W.OutputPin->PinType.PinCategory==TEXT("exec"))
         {
             const FNode& WrapSource=OutPlan.Nodes[W.SourceNodeIndex];
             const FNode& WrapTarget=OutPlan.Nodes[W.TargetNodeIndex];
@@ -4198,6 +4264,10 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan, int32 GeometryOff
     const FStructuralQuality QualityBefore=StructuralQuality(InPlan,0), QualityAfter=StructuralQuality(InPlan,1);
     for(int32 I:InPlan.WrapAfterNodes)
         Lines.Add(FString::Printf(TEXT("row break after %s (execution links preserved)"),*InPlan.Nodes[I].Key));
+    for (const FWire& Wire : InPlan.Wires)
+        if (InPlan.IsWrapBoundary(Wire.SourceNodeIndex, Wire.TargetNodeIndex))
+            Lines.Add(FString::Printf(TEXT("row boundary %s -> %s (connection preserved)"),
+                *InPlan.Nodes[Wire.SourceNodeIndex].Key, *InPlan.Nodes[Wire.TargetNodeIndex].Key));
     if (InPlan.bCompactBlocks)
     {
         Lines.Add(CompactMeasureSummary(QualityBefore, QualityAfter));

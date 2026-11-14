@@ -204,6 +204,12 @@ public:
 	{
         /** Explicit row breaks after these execution node indices. */
         TSet<int32> WrapAfterNodes;
+        /** Resolved execution edges, including bypasses entering the same continuation. */
+        TSet<uint64> WrapBoundaryEdges;
+        static uint64 WrapEdgeKey(int32 Source, int32 Target)
+        { return (uint64(uint32(Source)) << 32) | uint32(Target); }
+        bool IsWrapBoundary(int32 Source, int32 Target) const
+        { return WrapBoundaryEdges.Contains(WrapEdgeKey(Source, Target)); }
 		FString Asset;
 		FString GraphName;
 		bool bForce = false;
