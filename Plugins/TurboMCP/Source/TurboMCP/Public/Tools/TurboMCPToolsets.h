@@ -1075,6 +1075,7 @@ public:
 	 * Searches include member getter/setter terms, arithmetic words such as plus/minus, and reflected dispatcher names.
 	 * Check the declaring class before binding an event; similarly named dispatchers can belong to different classes.
 	 * Discovery does not prove that a target-object pin connection is compatible. Use the returned exact creation ID.
+	 * In function graphs, Function|Result creates another Return using the existing function output signature.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
 	 * @param GraphName Exact graph name, e.g. EventGraph. Empty selects the Blueprint event graph; missing or ambiguous graphs are refused.
 	 * @param Words Search text or candidate type ID, e.g. PrintString. Empty is allowed only with an explicit Limit for bounded browsing.
@@ -1093,6 +1094,7 @@ public:
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
 	 * @param GraphName Exact graph name, e.g. EventGraph. Empty selects the Blueprint event graph; missing or ambiguous graphs are refused.
 	 * @param TypeId Required exact, case-sensitive ID returned by PreviewTurboMCPNodeType. Copy the complete ID; empty or approximate names are refused.
+	 * For Function|Result, the temporary probe mirrors the function's existing Return output pins; it leaves the live graph unchanged.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPNodePins(
@@ -1213,6 +1215,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
      * To feed an existing node, copy its reader form header with its node ID, then add that input link.
      * Do not write a reverse link on a source output pin. Discover creation IDs with PreviewTurboMCPNodeType;
      * use PreviewTurboMCPNodePins for exact pin names. Native engine search IDs are not interchangeable.
+     * In a function graph, use Function|Result for another Return; link execute from a reachable branch and set or link its result inputs.
      * Reader branch headings (:then/:else) are read-only and are refused. They do not create wires.
      * Instead, label the Branch Choice and write `execute (-> Choice:then)` inside the destination
      * node form (or Choice:else for the false output). Use the exact pin names from discovery.
@@ -2185,6 +2188,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
      * To feed an existing node, copy its reader form header with its node ID, then add that input link.
      * Do not write a reverse link on a source output pin. Discover creation IDs with PreviewTurboMCPNodeType;
      * use PreviewTurboMCPNodePins for exact pin names. Native engine search IDs are not interchangeable.
+     * In a function graph, use Function|Result for another Return; link execute from a reachable branch and set or link its result inputs.
      * Reader branch headings (:then/:else) are read-only and are refused. They do not create wires.
      * Instead, label the Branch Choice and write `execute (-> Choice:then)` inside the destination
      * node form (or Choice:else for the false output). Use the exact pin names from discovery.

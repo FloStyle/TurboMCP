@@ -33,6 +33,7 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
+#include "K2Node_IfThenElse.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -97,6 +98,7 @@ namespace
 		UEdGraph* Forward = nullptr;
 		UEdGraph* Reverse = nullptr;
 		UEdGraph* Unique = nullptr;
+		UEdGraph* Returns = nullptr;
 		UEdGraphNode_Comment* ForwardComment = nullptr;
 		UK2Node_CallFunction* ForwardA = nullptr;
 		UK2Node_CallFunction* ForwardB = nullptr;
@@ -149,6 +151,7 @@ namespace
 			RetireGraph(Fixture.Forward);
 			RetireGraph(Fixture.Reverse);
 			RetireGraph(Fixture.Unique);
+			RetireGraph(Fixture.Returns);
 			if (Fixture.Package != nullptr)
 			{
 				Fixture.Package->SetDirtyFlag(false);
@@ -373,7 +376,10 @@ namespace
 			GuidEntryReverse, GuidResultReverse);
 		OutFixture.Unique = AddFunctionGraph(OutFixture.Blueprint, TEXT("UniqueAlias"),
 			GuidEntryUnique, GuidResultUnique);
-		if (OutFixture.Forward == nullptr || OutFixture.Reverse == nullptr || OutFixture.Unique == nullptr)
+		OutFixture.Returns = AddFunctionGraph(OutFixture.Blueprint, TEXT("MultipleReturns"),
+			0x11110004, 0x22220004);
+		if (OutFixture.Forward == nullptr || OutFixture.Reverse == nullptr
+			|| OutFixture.Unique == nullptr || OutFixture.Returns == nullptr)
 		{
 			OutError = TEXT("could not create the fixture function graphs");
 			return false;
@@ -1074,6 +1080,93 @@ bool FTurboMCPGraphAppendAliasTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a text with no link is planned in a graph with a collision"), NoLinkPlan.bPlanned);
 	TestEqual(TEXT("a text with no link produces no refusal"), NoLinkPlan.Plan.Refusals.Num(), 0);
 	TestTrue(TEXT("a text with no link is acceptable"), NoLinkPlan.Plan.bAcceptable());
+
+	// NOV05-13: a second Return uses the same reader ID and output signature as the
+	// existing Return. The branch keeps both exits reachable without rewiring the
+	// existing result node during the append.
+	UK2Node_FunctionEntry* ReturnEntry = nullptr;
+	UK2Node_FunctionResult* OriginalReturn = nullptr;
+	for (UEdGraphNode* Node : Fixture.Returns->Nodes)
+	{
+		if (auto* Entry = Cast<UK2Node_FunctionEntry>(Node)) ReturnEntry = Entry;
+		if (auto* Result = Cast<UK2Node_FunctionResult>(Node)) OriginalReturn = Result;
+	}
+	if (!TestNotNull(TEXT("return fixture entry"), ReturnEntry)) return false;
+	// Stock AddFunctionGraph leaves a void function without a Return node.
+	// Create the first result before giving the function a value output.
+	if (OriginalReturn == nullptr)
+		OriginalReturn = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(ReturnEntry);
+	if (!TestNotNull(TEXT("return fixture original result"), OriginalReturn)) return false;
+	FEdGraphPinType ReturnType;
+	ReturnType.PinCategory = UEdGraphSchema_K2::PC_Boolean;
+	UEdGraphPin* OriginalValue = OriginalReturn->CreateUserDefinedPin(
+		TEXT("Accepted"), ReturnType, EGPD_Input, false);
+	if (!TestNotNull(TEXT("return fixture output value"), OriginalValue)) return false;
+	OriginalValue->DefaultValue = TEXT("false");
+	UK2Node_IfThenElse* Branch = NewObject<UK2Node_IfThenElse>(Fixture.Returns);
+	Branch->CreateNewGuid();
+	Fixture.Returns->AddNode(Branch, false, false);
+	Branch->AllocateDefaultPins();
+	const UEdGraphSchema* ReturnSchema = Fixture.Returns->GetSchema();
+	UEdGraphPin* EntryThen = ReturnEntry->FindPin(TEXT("then"), EGPD_Output);
+	UEdGraphPin* BranchExec = Branch->FindPin(TEXT("execute"), EGPD_Input);
+	UEdGraphPin* BranchThen = Branch->FindPin(TEXT("then"), EGPD_Output);
+	UEdGraphPin* BranchElse = Branch->GetElsePin();
+	UEdGraphPin* OriginalExec = OriginalReturn->FindPin(TEXT("execute"), EGPD_Input);
+	if (!TestTrue(TEXT("return fixture execution pins exist"), ReturnSchema && EntryThen
+		&& BranchExec && BranchThen && BranchElse && OriginalExec)) return false;
+	TestTrue(TEXT("entry reaches branch"), ReturnSchema->TryCreateConnection(EntryThen, BranchExec));
+	TestTrue(TEXT("original result remains on then branch"),
+		ReturnSchema->TryCreateConnection(BranchThen, OriginalExec));
+	TestTrue(TEXT("Return creation ID is available in its function"),
+		FTurboMCPNodeType::AvailableTypeIds(Fixture.Blueprint, Fixture.Returns)
+			.Contains(TEXT("Function|Result")));
+	FString ReturnProbeNote;
+	UEdGraphNode* ReturnProbe = FTurboMCPNodeType::BuildProbeNode(
+		Fixture.Blueprint, Fixture.Returns, TEXT("Function|Result"), ReturnProbeNote);
+	if (!TestNotNull(FString::Printf(TEXT("Return probe: %s"), *ReturnProbeNote), ReturnProbe)) return false;
+	TestNotNull(TEXT("Return preview mirrors existing output"),
+		ReturnProbe->FindPin(TEXT("Accepted"), EGPD_Input));
+	const FString ReturnRequest = FString::Printf(
+		TEXT("(Function|Result\n    execute (-> %s:else)\n    Accepted true)"),
+		*TurboMCPNodeId::MakeForNode(Branch, true));
+	Fixture.Package->SetDirtyFlag(false);
+	const FString BeforeReturnPreview = SerializeGraph(Fixture.Returns);
+	const FString ReturnPreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
+		Fixture.AssetPath, Fixture.Returns->GetName(), ReturnRequest);
+	TestTrue(FString::Printf(TEXT("second Return preview: %s"), *ReturnPreview),
+		ReturnPreview.StartsWith(TEXT("preview:")));
+	TestEqual(TEXT("second Return preview preserves graph"),
+		SerializeGraph(Fixture.Returns), BeforeReturnPreview);
+	TestFalse(TEXT("second Return preview leaves package clean"), Fixture.Package->IsDirty());
+	const FString ReturnEdit = UTurboMCPEditToolset::EditTurboMCPGraphAppend(
+		Fixture.AssetPath, Fixture.Returns->GetName(), ReturnRequest);
+	TestTrue(FString::Printf(TEXT("second Return edit: %s"), *ReturnEdit),
+		ReturnEdit.StartsWith(TEXT("changed:")));
+	int32 ReturnCount = 0;
+	UK2Node_FunctionResult* AddedReturn = nullptr;
+	for (UEdGraphNode* Node : Fixture.Returns->Nodes)
+		if (auto* Result = Cast<UK2Node_FunctionResult>(Node))
+		{
+			++ReturnCount;
+			if (Result != OriginalReturn) AddedReturn = Result;
+		}
+	TestEqual(TEXT("function has exactly two Return nodes"), ReturnCount, 2);
+	if (!TestNotNull(TEXT("second Return survives readback"), AddedReturn)) return false;
+	UEdGraphPin* AddedValue = AddedReturn->FindPin(TEXT("Accepted"), EGPD_Input);
+	UEdGraphPin* AddedExec = AddedReturn->FindPin(TEXT("execute"), EGPD_Input);
+	TestTrue(TEXT("new Return keeps output signature and default"),
+		AddedValue && AddedValue->DefaultValue == TEXT("true"));
+	TestTrue(TEXT("new Return is linked from the else branch"),
+		AddedExec && AddedExec->LinkedTo.Contains(BranchElse));
+	TestTrue(TEXT("original Return remains linked from the then branch"),
+		OriginalExec->LinkedTo.Contains(BranchThen));
+	TestEqual(TEXT("original Return value remains unchanged"), OriginalValue->DefaultValue,
+		FString(TEXT("false")));
+	if (!Fixture.Blueprint->UbergraphPages.IsEmpty())
+		TestFalse(TEXT("event graph does not offer Return creation"),
+			FTurboMCPNodeType::AvailableTypeIds(Fixture.Blueprint,
+				Fixture.Blueprint->UbergraphPages[0]).Contains(TEXT("Function|Result")));
 
 	// THE FIXTURE IS IN MEMORY ONLY. The scoped cleanup above clears its dirty flag and retires its own
 	// objects after this return, including every early return; nothing is saved or registered as an asset.

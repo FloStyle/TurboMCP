@@ -23,6 +23,7 @@
 #include "Blueprint/WidgetTree.h"
 #include "Components/Widget.h"
 #include "K2Node_FunctionEntry.h"
+#include "K2Node_FunctionResult.h"
 #include "K2Node_VariableSet.h"
 #include "Internationalization/Text.h"
 #include "EdGraph/EdGraph.h"
@@ -282,6 +283,14 @@ namespace
 				Entry.TypeId = TypeId;
                 Entry.LegacyTypeId = TypeId;
 				Entry.SearchKeywords = UiSpec.Keywords.ToString();
+                if (ActionInfo.GetNodeClass() == UK2Node_FunctionResult::StaticClass())
+                {
+                    // The reader uses this stable identity for every Return node. Keep the
+                    // stock menu spelling as an alias for clients that discovered it earlier.
+                    Entry.TypeId = TEXT("Function|Result");
+                    Entry.Aliases.AddUnique(TypeId);
+                    Entry.SearchKeywords += TEXT(" return function result early exit");
+                }
                 if (ActionInfo.GetNodeClass() == UK2Node_PromotableOperator::StaticClass())
                 {
                     // Discovery synonyms never become creation IDs. The same
@@ -528,6 +537,12 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 			continue;
 		}
 
+		// A Return node asks its graph for the existing function signature when the
+		// stock spawner places it. Keep this scratch graph owned by the Blueprint,
+		// as GraphAppend's ownership guard requires, and seed only the existing
+		// Return signature in that isolated graph. The stock action was already
+		// filtered against the real function graph before Invoke.
+		const bool bReturn = Entry.Spawner && Entry.Spawner->NodeClass == UK2Node_FunctionResult::StaticClass();
 		UEdGraph* ProbeGraph = NewObject<UEdGraph>(InBlueprint, NAME_None, RF_Transient);
 		if (ProbeGraph == nullptr)
 		{
@@ -535,6 +550,23 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 			return nullptr;
 		}
 		ProbeGraph->Schema = InGraph->Schema;
+        if (bReturn)
+        {
+            for (UEdGraphNode* Original : InGraph->Nodes)
+                if (const UK2Node_FunctionResult* Existing = Cast<UK2Node_FunctionResult>(Original))
+                {
+                    // The new stock Return node copies the first existing result's
+                    // user-defined pins in PostPlacedNewNode. Mirror only that signature
+                    // on an isolated seed; copying live pins or links is unnecessary.
+                    UK2Node_FunctionResult* Seed = NewObject<UK2Node_FunctionResult>(ProbeGraph);
+                    Seed->FunctionReference = Existing->FunctionReference;
+                    Seed->bIsEditable = Existing->bIsEditable;
+                    for (const TSharedPtr<FUserPinInfo>& Pin : Existing->UserDefinedPins)
+                        if (Pin.IsValid()) Seed->UserDefinedPins.Add(MakeShared<FUserPinInfo>(*Pin));
+                    ProbeGraph->AddNode(Seed, false, false);
+                    break;
+                }
+        }
         if(Entry.bDesignerGetter || !Entry.InputScope.IsEmpty()) return CreateInputGetter(Entry,ProbeGraph);
 		FBlueprintActionInfo ActionInfo(Entry.Owner, Entry.Spawner);
 		UEdGraphNode* Spawned = Entry.Spawner->Invoke(ProbeGraph, ActionInfo.GetBindings(),
