@@ -4,26 +4,37 @@ from tmcp import Session, LOOK_TOOLSET
 session = Session()
 session.connect()
 args = {"asset": "/Game/Tests/BP_NodeTest", "graphName": "EventGraph"}
-report = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport", args)
+report_args = dict(args, scope="")
+report = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport", report_args)
 assert report.startswith("look:"), report
-assert "not the rendered wire curve" in report and "not a visual-quality score" in report, report
+assert "not rendered curves" in report and "not automatic repair instructions" in report, report
 # This fixture has eight links and no boxes; all ranked wires fit in the top ten.
-counts = re.search(r"counts: \d+ non-comment node\(s\).*?, (\d+) pin-link wire\(s\), (\d+) comment box", report)
+counts = re.search(r"whole-graph context: \d+ nodes?, (\d+) wires?, (\d+) comment box", report)
 assert counts and int(counts[2]) == 0, report
 assert "cross-box-wires:" not in report, report
-summary = re.search(r"total wire length: ([0-9.]+)  \(longest single wire: ([0-9.]+)\)", report)
-ranked = [float(value) for value in re.findall(r"^  \d+\. ([0-9.]+) units:", report, re.M)]
+summary = re.search(r"total wire length ([0-9.]+), longest ([0-9.]+) graph units", report)
+ranked = [float(value) for value in re.findall(r"^  ([0-9.]+) units:", report, re.M)]
 assert summary and ranked and len(ranked) == int(counts[1]) <= 10, report
 assert abs(float(summary[2]) - max(ranked)) <= 0.6, report
 assert abs(float(summary[1]) - sum(ranked)) <= 0.5 + 0.05 * len(ranked), report
-positions = session.call(LOOK_TOOLSET, "LookTurboMCPGraphPositions", args)
+positions = session.call(LOOK_TOOLSET, "LookTurboMCPGraphPositions", dict(args, nodeIds=""))
 assert "node positions" in positions and "width=" in positions, positions
 for value in (-1, 1025):
-    result = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport", dict(args, alignmentTolerance=value))
+    result = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport", dict(report_args, alignmentTolerance=value))
     assert result.startswith("error:") and "0 and 1024" in result, result
 # Invalid input must stop DoneCheck before capture is attempted.
-refused = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutDoneCheck", dict(args, alignmentTolerance=-1))
+refused = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutDoneCheck", dict(report_args, alignmentTolerance=-1))
 assert refused.startswith("error:") and "full-graph capture" not in refused, refused
+refused = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutDoneCheck", dict(report_args, scope="box:missing"))
+assert refused.startswith("error:") and "capture (review aid" not in refused, refused
+scoped = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutDoneCheck", dict(report_args, scope="region:0,0,400,300"))
+assert scoped.startswith("look:") and "scoped capture (review aid" in scoped, scoped
+assert "explicit graph-coordinate region" in scoped, scoped
+node = re.search(r"^([^\s]+) x=-?\d+ y=-?\d+ width=", positions, re.M)
+assert node, positions
+scoped_node = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutDoneCheck", dict(report_args, scope="node:" + node[1]))
+assert scoped_node.startswith("look:") and "scoped capture (review aid" in scoped_node, scoped_node
+assert "error:" not in scoped_node, scoped_node
 # Numeric refusals happen before asset resolution or opening an editor.
 for size in ("1.5x900", "+1600x900", "-1x900", "0x900", "4097x900", "9" * 80 + "x900", "1600x0"):
     result = session.call(LOOK_TOOLSET, "LookTurboMCPCapture", dict(args, mode="graph", target="", size=size))

@@ -144,7 +144,8 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
             for (const UEdGraphPin* Input : Pin->LinkedTo) if (Input && Input->GetOwningNodeUnchecked()
                 && (Selection.Includes(Node) || Selection.Includes(Input->GetOwningNodeUnchecked())))
             {
-                const double Length = FVector2D::Distance(FTurboMCPGraphTidy::AlignmentPinPosition(Pin), FTurboMCPGraphTidy::AlignmentPinPosition(Input));
+                // Match the summary's pin geometry so listed wires add up to its total.
+                const double Length = FVector2D::Distance(FTurboMCPLayoutReport::PinPosition(Pin), FTurboMCPLayoutReport::PinPosition(Input));
                 Wires.Add({Length, FString::Printf(TEXT("\n  %.1f units: %s:%s -> %s:%s"), Length,
                     *TurboMCPNodeId::MakeForNode(Node), *Pin->PinName.ToString(),
                     *TurboMCPNodeId::MakeForNode(Input->GetOwningNodeUnchecked()), *Input->PinName.ToString())});
@@ -243,10 +244,26 @@ FString UTurboMCPLookToolset::LookTurboMCPGraphPositions(const FString& Asset, c
     return Result;
 }
 
-FString UTurboMCPLookToolset::LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName,double AlignmentTolerance)
+FString UTurboMCPLookToolset::LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName,double AlignmentTolerance,const FString& Scope)
 {
-    const FString Report = LookTurboMCPLayoutReport(Asset,GraphName,AlignmentTolerance);
+    const FString Report = LookTurboMCPLayoutReport(Asset,GraphName,AlignmentTolerance,Scope);
     if (!Report.StartsWith(TEXT("look:"))) return Report;
-    const FString Capture = LookTurboMCPCapture(Asset,GraphName,TEXT("graph"),TEXT(""),TEXT(""));
-    return Report + TEXT("\n\nfull-graph capture (review aid; not automatic layout approval):\n") + Capture;
+
+    // The report has already validated the scope. Resolve its target again so
+    // the image frames the same node or graph-space rectangle, including boxes
+    // identified by reader ID rather than the capture tool's numeric box index.
+    FTurboMCPAssetResolver::FResolved Resolved;
+    const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+    if (!ResolveError.IsEmpty()) return Report + TEXT("\n\ncapture error: ") + ResolveError;
+    UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+    if (!Blueprint) return Report + TEXT("\n\ncapture error: The Blueprint became unavailable after measurement. No image captured.");
+    UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(Blueprint, GraphName);
+    if (!Graph) return Report + TEXT("\n\ncapture error: The graph became unavailable after measurement. No image captured.");
+    TurboMCPReportScope::FSelection Selection;
+    FString ScopeError;
+    if (!TurboMCPReportScope::Resolve(Graph, Scope, Selection, ScopeError))
+        return Report + TEXT("\n\ncapture error: ") + ScopeError;
+    const FString Capture = LookTurboMCPCapture(Asset,GraphName,Selection.CaptureMode,Selection.CaptureTarget,TEXT(""));
+    return Report + FString::Printf(TEXT("\n\n%s capture (review aid; not automatic layout approval):\n"),
+        Selection.bAll ? TEXT("full-graph") : TEXT("scoped")) + Capture;
 }
