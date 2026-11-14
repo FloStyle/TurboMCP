@@ -119,7 +119,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Whole-graph compact placement and nested continuations implemented. J5 retains fixed outside nodes: Body drift 3513 to 3696 and Completed-above-body 3 to 3. Assess this scoped boundary limitation separately; no full visual acceptance claim.",
+      "next_step": "Whole-graph compact placement and nested continuations are implemented, and the user accepted the reference overview and detail for now. Scoped J5 keeps fixed outside nodes and still has Body drift 3513 to 3696 and Completed-above-body 3 to 3. Retain that boundary limitation; do not claim full layout acceptance.",
       "evidence": [
         {
           "run": "b04c38d19d264d37b7aa9613ed09eacd",
@@ -222,7 +222,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Complete planned-coordinate paging and the independent seven-score oracle now pass the disposable cascade workflow. Inspect R3/R6 classification and cross-box screenshots against the accepted visual reference before claiming full layout acceptance. The production Tidy issue remains open.",
+      "next_step": "Bounded planned-coordinate pages, the independent seven-score oracle, read-back and undo pass on the disposable cascade. Inspect R3/R6 intended-handoff classification and cross-box screenshots against the accepted reference before claiming production Tidy acceptance.",
       "evidence": [
         {
           "commit": "fb6c2228",
@@ -288,8 +288,8 @@
         "Candidate BodyRowDrift and CompletedAboveBody are partial diagnostics, not Appendix H scoring. Still required: unrelated box crossings, exec segment crossings, diagonal exec length, block row breaks, data crossings, total length, area, 5-percent tie handling and every greater-than-10-percent regression warning."
       ],
       "readiness_review": "Appendix H defines the seven measures and thresholds. Straight-segment scoring is integrated; independent geometry checks and intended handoff classification remain specified work.",
-      "remaining": "Paged geometry now passes the independent score oracle, but the preview response cap omits most planned route-knot coordinates in the combined comments/routing case. Add a bounded plan-detail read or pagination before asserting exact preview/edit knot coordinates. Then inspect R3/R6 and cross-box visuals. Production layout acceptance remains open.",
-      "latest_evidence": "Integrated a scoped cascade-checker repair. Stock Unreal 5.8.4 build passed; the disposable run reached 669 tool calls and restored its fixture. Paged geometry and the independent seven-score oracle passed the compact cases. The combined comments/routing case added 42 non-box nodes, while the bounded preview exposed only 11 planned knot/reader coordinates; those 11 matched and the remaining comparison was blocked by omitted detail. This is incomplete acceptance, not proof of a production layout defect or success."
+      "remaining": "R3/R6 intended-handoff classification and cross-box visual comparison remain open. Bounded plan-coordinate paging already passes the focused workflow; the old preview-cap blocker has been superseded.",
+      "latest_evidence": "Commit a85c10fbde192ea4644915074573cae9a303deda: focused stock-5.8.4 cascade run 1400dc7bcf324bbb859108b8343d9239 passed with 846 calls. Paged planned coordinates, eight generated-box rectangles and nested membership, routed knots, read-back and undo were checked. Production visual acceptance remains open."
     },
     {
       "id": "NOV05-04",
