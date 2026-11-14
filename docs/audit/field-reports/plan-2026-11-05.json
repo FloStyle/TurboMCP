@@ -103,7 +103,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "focused_scoped_apply_and_undo_passed_remaining_layout_limitation",
+      "validation": "full_loop_mechanics_passed_visual_routing_pending",
       "source_ids": [
         "TD-62",
         "TD-70",
@@ -119,7 +119,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Scoped J5 now applies without Force and improves Body drift 3513 to 3113, preserving external geometry and semantics with exact undo. Review/integrate the candidate. Keep this record open: Completed-above-body remains 3 to 3 and broader cascade/reference comparison remains pending.",
+      "next_step": "Complete-loop evidence 1400dc7bcf324bbb859108b8343d9239 already clears Body drift 3513 -> 0 and Completed-above-body 3 -> 0 with preview/apply and undo verified. J5 leaves controllers/continuations fixed by scope; its 3 -> 3 count is not an isolated placement defect. Remaining: visual routing/readability, including the Completed spline through the lower expression area in L3B capture 9A3154B14ED5BC6E7EC74988D19E0F25. Compare the routed variant and accepted reference before approving any repair; do not repeat the full suite merely to rediscover these facts.",
       "evidence": [
         {
           "run": "b04c38d19d264d37b7aa9613ed09eacd",

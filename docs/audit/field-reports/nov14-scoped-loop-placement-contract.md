@@ -89,3 +89,18 @@ NOV05-02. The next acceptance case must include complete loop controllers,
 bodies and continuations, and compare the accepted cascade reference. Preserve
 J5's outside-geometry assertions; do not widen its scope or relabel its passing
 boundary evidence as full loop-layout acceptance.
+
+## Complete-loop evidence reconciled
+
+Located execution 1400dc7bcf324bbb859108b8343d9239 in the nov09-graph-reader
+worktree, evidence e2df6704e2d64467b51b5704d2d85170. Its compact/cascade
+case records Body drift 3513 -> 0, Completed-above-body 3 -> 0, no score
+regressions and restored undo. Acceptance remains false in that evidence.
+The L3B detail 9A3154B14ED5BC6E7EC74988D19E0F25 was inspected: nodes are
+separated and the body runs horizontally, but the curved Completed wire runs
+through the lower expression area. The routing overview
+17AA998A4E325BE2325866B2AF428C85 is too reduced to prove local wire clearance.
+Do not treat that overview or numeric success as complete visual acceptance.
+Next inspect the corresponding routed detail and accepted reference; improve
+only confirmed remaining routing behavior. The previous next-step text about
+Completed-above-body remaining unresolved was stale for complete-loop scope.
