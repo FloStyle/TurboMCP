@@ -6937,8 +6937,8 @@
       "kind": "bug",
       "state": "open",
       "priority": "P1",
-      "validation": "reported_not_reproduced",
-      "remaining": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
+      "validation": "source_refusal_identified_field_not_reproduced",
+      "remaining": "Source review found both tools count all transitive package referencers toward a 256 cap before inspecting actual function callers. Repair needs bounded complete caller discovery, then focused native evidence; no fix is implemented yet.",
       "source_keys": [
         "2026-11-04_S3/FA-18",
         "2026-11-04_S3/FA-19"

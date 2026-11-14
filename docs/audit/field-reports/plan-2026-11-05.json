@@ -613,7 +613,7 @@
       "state": "open",
       "readiness": "needs_reconciliation",
       "owner": "codex",
-      "validation": "reported_not_reproduced",
+      "validation": "source_refusal_identified_field_not_reproduced",
       "source_ids": [
         "FA-18",
         "FA-19"
@@ -623,8 +623,10 @@
         "2026-11-04_S3/FA-19"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and help, then reproduce before implementing a bounded repair.",
-      "evidence": []
+      "next_step": "Review the bounded caller-discovery contract in nov14-function-dependency-review.md, then approve an exact repair scope and focused fixture. Do not remove the 256 cap without proving complete caller discovery.",
+      "evidence": [
+        "docs/audit/field-reports/nov14-function-dependency-review.md"
+      ]
     },
     {
       "id": "NOV05-11",
