@@ -640,6 +640,27 @@ static bool CheckPerAnchorPlacement(FAutomationTestBase& Test)
             Test.TestTrue(TEXT("Independent components do not overlap"),
                 Repeat[I].X + 200 <= Repeat[J].X || Repeat[J].X + 200 <= Repeat[I].X
                 || Repeat[I].Y + 100 <= Repeat[J].Y || Repeat[J].Y + 100 <= Repeat[I].Y);
+    {
+        TArray<FTurboMCPGraphAppend::FNewNode> SharedForms;
+        SharedForms.Add(Forms[0]); SharedForms.Add(Forms[0]); SharedForms.Add(Forms[0]);
+        SharedForms[2].ProbeExecInputs.Reset();
+        TArray<FTurboMCPGraphAppend::FNewLink> SharedLinks;
+        SharedLinks.Add(Links[0]);
+        FTurboMCPGraphAppend::FNewLink Chain;
+        Chain.FromFormIndex = 0; Chain.ToFormIndex = 1; Chain.FromPin = TEXT("then"); Chain.ToPin = TEXT("execute");
+        SharedForms[0].ProbeExecOutputs.Add(TEXT("then")); SharedLinks.Add(Chain);
+        for (int32 Consumer = 0; Consumer < 2; ++Consumer)
+        {
+            FTurboMCPGraphAppend::FNewLink Data;
+            Data.FromFormIndex = 2; Data.ToFormIndex = Consumer;
+            Data.FromPin = TEXT("Value"); Data.ToPin = TEXT("Value"); SharedLinks.Add(Data);
+        }
+        TArray<FTurboMCPGraphAppend::FPlannedPosition> SharedPositions;
+        Test.TestTrue(TEXT("Shared pure producer plans as one component"), FTurboMCPGraphAppend::PlanPlacement(Graph, SharedForms, SharedPositions, Estimated, Error, &SharedLinks, false, true));
+        Test.TestEqual(TEXT("Shared producer is not duplicated"), SharedPositions.Num(), 3);
+        if (SharedPositions.Num() == 3)
+            Test.TestTrue(TEXT("Shared producer stays left of both consumers"), SharedPositions[2].X < SharedPositions[0].X && SharedPositions[2].X < SharedPositions[1].X);
+    }
     // One shared new dependency joins the groups; two execution sources must not
     // be silently resolved using whichever link happens to appear first.
     FTurboMCPGraphAppend::FNewLink Shared;
@@ -1295,9 +1316,14 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
             {
                 UEdGraphNode* Consumer = Output->LinkedTo[0]->GetOwningNode();
                 TestFalse(TEXT("Consumer is newly created"), Existing.Contains(Consumer));
+                const FString Coordinates = FString::Printf(TEXT("at (%d,%d), footprint="), Consumer->NodePosX, Consumer->NodePosY);
+                TestTrue(TEXT("Applied coordinates appear in public preview"), Preview.Contains(Coordinates));
                 TestTrue(TEXT("Consumer stays near its source"), FMath::Abs(Consumer->NodePosY - Source->NodePosY) < 1000);
             }
         }
+        const FString Capture = UTurboMCPLookToolset::LookTurboMCPCapture(Fixture.AssetPath, Graph->GetName(), TEXT("region"), TEXT("11800,-300,2400,3000"), TEXT("1600x900"));
+        AddInfo(TEXT("Per-anchor final capture: ") + Capture);
+        TestTrue(TEXT("Per-anchor capture generated"), Capture.Contains(TEXT("image:")));
     }
 
 
