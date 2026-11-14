@@ -492,6 +492,30 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 				*TurboMCPNodeId::MakeForNode(InPin->LinkedTo[0]->GetOwningNodeUnchecked()));
 		}
 
+		// Unreal permits several scalar targets for certain impure calls. This
+		// is inspection evidence, not single-value append syntax or an inline value.
+		const UK2Node* Owner = Cast<UK2Node>(InPin->GetOwningNodeUnchecked());
+		if (InPin->LinkedTo.Num() > 1 && UEdGraphSchema_K2::IsSelfPin(*InPin)
+			&& Owner && Owner->AllowMultipleSelfs(false) && !InPin->PinType.IsContainer())
+		{
+			TSet<const UEdGraphPin*> Seen;
+			TArray<FString> Targets;
+			bool bValid = true;
+			for (const UEdGraphPin* Target : InPin->LinkedTo)
+			{
+				if (!IsWire(Target, InPin) || Seen.Contains(Target) || Target->PinType.IsContainer())
+				{ bValid = false; break; }
+				Seen.Add(Target);
+				Targets.Add(EndpointLabel(Target));
+			}
+			if (bValid)
+			{
+				OutEvidence = EFormEvidence::Partial;
+				return TEXT("; multiple call targets (inspection only; connection order): ")
+					+ FString::Join(Targets, TEXT(", "));
+			}
+		}
+
 		if (InPin->LinkedTo.Num() != 1 || !IsWire(InPin->LinkedTo[0], InPin))
 		{
 			const FString Note = FString::Printf(

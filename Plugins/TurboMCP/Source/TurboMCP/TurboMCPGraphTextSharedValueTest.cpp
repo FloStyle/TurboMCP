@@ -27,6 +27,7 @@
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
 #include "K2Node_Knot.h"
+#include "K2Node_Self.h"
 #include "K2Node_VariableGet.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetStringLibrary.h"
@@ -889,6 +890,36 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("ordinary single-use text exactly matches the reflected identity shape"), First, Expected);
 		TestEqual(TEXT("ordinary single-use text is repeatable"), First, Second);
 		TestFalse(TEXT("ordinary single-use text emits no $id"), First.Contains(TEXT("$")));
+	}
+
+	// Supported multi-target calls must not be diagnosed as broken value links.
+	{
+		UEdGraph* Graph = AddFunctionGraph(Fixture, TEXT("MultipleTargets"));
+		UK2Node_CallFunction* Call = AddCall(Graph, AActor::StaticClass()->FindFunctionByName(TEXT("SetActorHiddenInGame")));
+		if (!Graph || !Call) { AddError(TEXT("multi-target fixture creation failed")); return false; }
+		UEdGraphPin* SelfPin = PinOf(Call, TEXT("self"), EGPD_Input);
+		if (!SelfPin) { AddError(TEXT("multi-target call has no self pin")); return false; }
+		for (int32 Index = 0; Index < 2; ++Index)
+		{
+			UK2Node_Self* Target = NewObject<UK2Node_Self>(Graph);
+			Graph->AddNode(Target, false, false);
+			Target->CreateNewGuid(); Target->AllocateDefaultPins();
+			if (!Link(Graph, PinOf(Target, TEXT("self"), EGPD_Output), SelfPin))
+			{ AddError(TEXT("engine schema refused the multi-target fixture")); return false; }
+		}
+		Call->CreateNewGuid();
+		if (SelfPin->LinkedTo.Num() != 2)
+		{ AddError(TEXT("engine schema did not preserve both targets")); return false; }
+		const auto Links = SelfPin->LinkedTo;
+		const bool bDirty = Fixture.Package->IsDirty();
+		TArray<FString> Notes;
+		const FString Text = RenderFull(Graph, AssetPath, Notes);
+		TestTrue(TEXT("multiple targets are identified as inspection evidence"), Text.Contains(TEXT("multiple call targets (inspection only")));
+		TestFalse(TEXT("valid multi-target self is not malformed"), Text.Contains(TEXT("malformed link")));
+		for (const UEdGraphPin* Target : Links)
+			TestTrue(TEXT("each exact target is reported"), Text.Contains(TurboMCPNodeId::MakeForNode(Target->GetOwningNodeUnchecked(), true)));
+		TestTrue(TEXT("reader preserves target links"), SelfPin->LinkedTo == Links);
+		TestEqual(TEXT("reader preserves package dirty state"), Fixture.Package->IsDirty(), bDirty);
 	}
 
 	return true;
