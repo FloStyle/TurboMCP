@@ -121,7 +121,8 @@ bool FTurboMCPDataAssetCreateTest::RunTest(const FString& Parameters)
         // disk reload reports that it has become visible again.
         AddExpectedError(TEXT("package was marked as deleted in editor, but has been modified on disk"), EAutomationExpectedErrorFlags::Contains, 1);
         UInputAction* Reloaded = LoadObject<UInputAction>(nullptr, *SavedObject);
-        if (TestNotNull(TEXT("saved fixture reloads"), Reloaded))
+        TestNotNull(TEXT("saved fixture reloads"), Reloaded);
+        if (Reloaded != nullptr)
         {
             TestFalse(TEXT("initial value survives fresh disk reload"), Reloaded->bConsumeInput);
             ResetLoaders(Reloaded->GetPackage());
