@@ -7250,7 +7250,8 @@
         "docs/audit/field-reports/nov09-donecheck-scope-contract.md",
         "Private main 8fc854e1 (scoped DoneCheck and consistent wire-length output)",
         "Focused supervised build and test-layout-output PASS: .local/executions/91286b79fe834a0da4b914276a0cbf47/report.json"
-      ]
+      ],
+      "implementation": "DoneCheck now captures the requested node or graph-space region instead of always framing the entire graph. Invalid scopes refuse before capture, and image failures remain visible beside the layout report. The focused stock UE 5.8.4 fixture passed; the original 421-node graph and comment-box capture remain unverified."
     },
     {
       "id": "NOV09-07",
