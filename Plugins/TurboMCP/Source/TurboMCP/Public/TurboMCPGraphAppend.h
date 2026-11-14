@@ -116,6 +116,14 @@ public:
 		int64 X = 0, Y = 0, Width = 0, Height = 0;
 	};
 
+	/** Explicit geometry changes for existing nodes; no implicit traversal authorization. */
+	struct FExistingPosition
+	{
+		FString NodeId;
+		int32 OldX = 0, OldY = 0;
+		int32 NewX = 0, NewY = 0;
+	};
+
 	/** What the plan decided, so `Apply` can act without deciding anything. */
 	struct FPlan
 	{
@@ -186,6 +194,16 @@ public:
 		TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal,
         const TArray<FNewLink>* InLinks = nullptr, bool bPlaceOutside = false,
         bool bPerAnchor = false, const TArray<FPlacementObstacle>* Reserved = nullptr);
+
+	/**
+	 * Plan a rightward translation of an explicitly supplied execution tail to clear
+	 * proposed new rectangles. This geometry stage writes nothing. Its output is not
+	 * an executable append plan until the caller validates comment containment,
+	 * continuation, measurement and preview authorization.
+	 */
+	static bool PlanTailTranslation(const UEdGraph* Graph, const TArray<FString>& MovableNodeIds,
+		const TArray<FPlacementObstacle>& NewBounds, TArray<FExistingPosition>& OutMoves,
+		FString& OutError);
 
 	/**
 	 * Applies an accepted plan: one transaction, create, link, lay out, then read back and compare. Compile is separate.

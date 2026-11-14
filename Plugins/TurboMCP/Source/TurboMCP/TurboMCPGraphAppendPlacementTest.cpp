@@ -673,6 +673,45 @@ static bool CheckPerAnchorPlacement(FAutomationTestBase& Test)
     return !Test.HasAnyErrors();
 }
 
+static bool CheckExplicitTailTranslation(FAutomationTestBase& Test)
+{
+    UEdGraph* Graph = NewObject<UEdGraph>(GetTransientPackage());
+    TArray<UEdGraphNode*> Nodes;
+    TArray<FString> Allowed;
+    for (int32 I = 0; I < 3; ++I)
+    {
+        UEdGraphNode* Node = NewObject<UEdGraphNode>(Graph);
+        Node->CreateNewGuid(); Node->NodePosX = 400 + I * 400;
+        Node->NodePosY = I == 2 ? 1000 : 0;
+        Node->NodeWidth = 200; Node->NodeHeight = 100;
+        Graph->AddNode(Node, false, false);
+        Nodes.Add(Node); Allowed.Add(TurboMCPNodeId::MakeForNode(Node, true));
+    }
+    TArray<FTurboMCPGraphAppend::FPlacementObstacle> NewBounds;
+    NewBounds.Add({350, 0, 400, 100});
+    TArray<FTurboMCPGraphAppend::FExistingPosition> Moves;
+    FString Error;
+    if (!Test.TestTrue(TEXT("Explicit tail translation plans"),
+        FTurboMCPGraphAppend::PlanTailTranslation(Graph, Allowed, NewBounds, Moves, Error)))
+    { Test.AddError(Error); return false; }
+    Test.TestEqual(TEXT("Only the obstructing tail moves, not the unrelated allowed lane"), Moves.Num(), 2);
+    for (const auto& Move : Moves)
+    {
+        Test.TestEqual(TEXT("Tail keeps its relative horizontal positions"), Move.NewX - Move.OldX, 510);
+        Test.TestEqual(TEXT("Tail keeps its vertical positions"), Move.NewY, Move.OldY);
+    }
+    Test.TestEqual(TEXT("Translation planning does not mutate the graph"), Nodes[0]->NodePosX, 400);
+    Allowed.RemoveAt(1);
+    Test.TestFalse(TEXT("Fixed downstream obstruction refuses"),
+        FTurboMCPGraphAppend::PlanTailTranslation(Graph, Allowed, NewBounds, Moves, Error));
+    Test.TestTrue(TEXT("Refusal names the fixed node"), Error.Contains(TurboMCPNodeId::MakeForNode(Nodes[1], true)));
+    Test.TestTrue(TEXT("Refusal leaves no partial movement plan"), Moves.IsEmpty());
+    Allowed.Reset();
+    Test.TestFalse(TEXT("Empty movement scope does not authorize the graph"),
+        FTurboMCPGraphAppend::PlanTailTranslation(Graph, Allowed, NewBounds, Moves, Error));
+    return !Test.HasAnyErrors();
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FTurboMCPGraphAppendPlacementTest,
 	"TurboMCP.GraphAppend.Placement",
@@ -681,6 +720,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 {
     if (!CheckPerAnchorPlacement(*this)) return false;
+    if (!CheckExplicitTailTranslation(*this)) return false;
 
 	FFixture Fixture;
 	FScopedFixtureCleanup Cleanup(Fixture);

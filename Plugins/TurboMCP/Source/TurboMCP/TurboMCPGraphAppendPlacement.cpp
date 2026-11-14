@@ -10,6 +10,8 @@
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
+#include "EdGraphNode_Comment.h"
+#include "EdGraphSchema_K2.h"
 #include "Math/NumericLimits.h"
 #include "TurboMCPNodeId.h"
 
@@ -44,6 +46,109 @@ namespace
 	{
 		return InValue >= static_cast<int64>(MIN_int32) && InValue <= static_cast<int64>(MAX_int32);
 	}
+}
+
+bool FTurboMCPGraphAppend::PlanTailTranslation(const UEdGraph* Graph,
+    const TArray<FString>& MovableNodeIds, const TArray<FPlacementObstacle>& NewBounds,
+    TArray<FExistingPosition>& OutMoves, FString& OutError)
+{
+    OutMoves.Reset(); OutError.Empty();
+    if (!Graph || MovableNodeIds.IsEmpty() || NewBounds.IsEmpty())
+    { OutError = TEXT("insertion requires a graph, explicit movable node IDs and new node bounds"); return false; }
+
+    TMap<FString, const UEdGraphNode*> ById;
+    for (const UEdGraphNode* Node : Graph->Nodes)
+        if (Node) ById.Add(TurboMCPNodeId::MakeForNode(Node, true), Node);
+    TSet<const UEdGraphNode*> Allowed;
+    for (const FString& Id : MovableNodeIds)
+    {
+        const UEdGraphNode* const* Found = ById.Find(Id);
+        if (!Found || Allowed.Contains(*Found))
+        { OutError = TEXT("insertion has an unknown or duplicate movable node ID: ") + Id; return false; }
+        // Nested comment movement needs explicit member closure in the enclosing planner.
+        if ((*Found)->IsA<UEdGraphNode_Comment>())
+        { OutError = TEXT("insertion tail geometry must contain nodes, not comment containers: ") + Id; return false; }
+        Allowed.Add(*Found);
+    }
+    auto Bounds = [](const UEdGraphNode* Node, int64 Shift)
+    {
+        return FPlacementObstacle{int64(Node->NodePosX) + Shift, Node->NodePosY,
+            Node->NodeWidth > 0 ? Node->NodeWidth : PlacementWidth,
+            Node->NodeHeight > 0 ? Node->NodeHeight : PlacementHeight};
+    };
+    auto Overlaps = [](const FPlacementObstacle& A, const FPlacementObstacle& B)
+    {
+        return A.X < B.X + B.Width && B.X < A.X + A.Width
+            && A.Y < B.Y + B.Height && B.Y < A.Y + A.Height;
+    };
+    for (const FPlacementObstacle& Rect : NewBounds)
+        if (Rect.Width <= 0 || Rect.Height <= 0 || !FitsCoordinate(Rect.X)
+            || !FitsCoordinate(Rect.Y) || Rect.Width > MAX_int32 || Rect.Height > MAX_int32
+            || !FitsCoordinate(Rect.X + Rect.Width) || !FitsCoordinate(Rect.Y + Rect.Height))
+        { OutError = TEXT("insertion contains invalid or overflowing new node bounds"); return false; }
+
+    TSet<const UEdGraphNode*> Moving;
+    for (const UEdGraphNode* Node : Graph->Nodes)
+        if (Node && !Node->IsA<UEdGraphNode_Comment>())
+            for (const FPlacementObstacle& Rect : NewBounds)
+                if (Overlaps(Bounds(Node, 0), Rect))
+                {
+                    if (!Allowed.Contains(Node))
+                    { OutError = TEXT("insertion is blocked by fixed node: ") + TurboMCPNodeId::MakeForNode(Node, true); return false; }
+                    Moving.Add(Node);
+                }
+    if (Moving.IsEmpty()) return true;
+
+    // Grow only the necessary subset of the caller's upper bound. A uniform shift
+    // preserves all relative positions within the tail. Each iteration either
+    // adds a node or stabilizes, so graph cycles cannot cause an endless walk.
+    int64 Shift = 0;
+    for (int32 Iteration = 0; Iteration <= Allowed.Num(); ++Iteration)
+    {
+        for (const UEdGraphNode* Node : Moving)
+        {
+            const FPlacementObstacle Original = Bounds(Node, 0);
+            for (const FPlacementObstacle& Rect : NewBounds)
+                if (Original.Y < Rect.Y + Rect.Height && Rect.Y < Original.Y + Original.Height
+                    && Original.X < Rect.X + Rect.Width)
+                    Shift = FMath::Max(Shift, Rect.X + Rect.Width + PlacementHorizontalGap - Original.X);
+        }
+        TSet<const UEdGraphNode*> Additions;
+        for (const UEdGraphNode* Node : Moving)
+        {
+            const FPlacementObstacle Moved = Bounds(Node, Shift);
+            if (!FitsCoordinate(Moved.X) || !FitsCoordinate(Moved.X + Moved.Width))
+            { OutError = TEXT("insertion would overflow coordinates for: ") + TurboMCPNodeId::MakeForNode(Node, true); return false; }
+            for (const UEdGraphNode* Other : Graph->Nodes)
+                if (Other && !Moving.Contains(Other) && !Other->IsA<UEdGraphNode_Comment>()
+                    && Overlaps(Moved, Bounds(Other, 0))) Additions.Add(Other);
+            for (const UEdGraphPin* Pin : Node->Pins)
+                if (Pin && Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                    for (const UEdGraphPin* Target : Pin->LinkedTo)
+                        if (Target && Target->GetOwningNode() && !Moving.Contains(Target->GetOwningNode())
+                            && Moved.X + Moved.Width + PlacementHorizontalGap > Target->GetOwningNode()->NodePosX)
+                            Additions.Add(Target->GetOwningNode());
+        }
+        if (Additions.IsEmpty()) break;
+        for (const UEdGraphNode* Node : Additions)
+        {
+            if (!Allowed.Contains(Node))
+            { OutError = TEXT("insertion would move or cross a fixed downstream node: ") + TurboMCPNodeId::MakeForNode(Node, true); return false; }
+            Moving.Add(Node);
+        }
+    }
+    TArray<FExistingPosition> Candidate;
+    for (const UEdGraphNode* Node : Moving)
+    {
+        FExistingPosition Move;
+        Move.NodeId = TurboMCPNodeId::MakeForNode(Node, true);
+        Move.OldX = Node->NodePosX; Move.OldY = Node->NodePosY;
+        Move.NewX = int32(int64(Node->NodePosX) + Shift); Move.NewY = Node->NodePosY;
+        Candidate.Add(Move);
+    }
+    Candidate.Sort([](const FExistingPosition& A, const FExistingPosition& B) { return A.NodeId < B.NodeId; });
+    OutMoves = MoveTemp(Candidate);
+    return true;
 }
 
 bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<FNewNode>& InNodes,

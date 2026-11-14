@@ -50,3 +50,9 @@ Takeover goal: finish NOV09-02 explicitly scoped tail insertion with preview/app
 ## Follow-up in progress
 
 Source review found that the retained-plan snapshot omitted pin types: a type or qualifier could change without invalidating the plan. The follow-up serializes the reflected pin type and adds a qualifier-change refusal assertion. This follow-up is implemented but untested, and is not integrated into main yet; include it in the next focused placement build/check rather than claim the earlier evidence covers it.
+
+## Explicit tail translation stage (in progress)
+
+Added a non-mutating translation planner for NOV09-02. Canonical explicit IDs form an upper bound: new-rectangle collisions seed the required tail, and only obstructing downstream nodes from that scope are added. The subset receives one horizontal offset; unrelated allowed nodes stay fixed. Fixed obstructions and coordinate overflow refuse with no partial result. A focused synthetic case covers the necessary subset, relative positions, non-mutation and fixed-node refusal.
+
+This stage is not exposed by the public append tools. Comment membership/growth, measured insertion positions, preview confirmation, transaction application and undo verification remain outstanding. Comments are excluded from ordinary collision handling because the enclosing insertion planner must validate their containment separately. Do not count this geometry stage as completed insertion capability.
