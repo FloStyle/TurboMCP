@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "387f1943a2fcb9f2f2f69a5c918e09eb1dff963e",
+  "plugin_tree": "51da7ea8452b593b43df2abc5ce0e134aa72ee6c",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 190,
@@ -536,7 +536,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlags.cpp",
-          "line": 285
+          "line": 254
         }
       ],
       "test_references": [],
@@ -602,7 +602,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionRenameTools.cpp",
-          "line": 131
+          "line": 106
         }
       ],
       "test_references": [],
@@ -2467,7 +2467,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlags.cpp",
-          "line": 283
+          "line": 252
         }
       ],
       "test_references": [],
@@ -2509,7 +2509,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionRenameTools.cpp",
-          "line": 129
+          "line": 104
         }
       ],
       "test_references": [],

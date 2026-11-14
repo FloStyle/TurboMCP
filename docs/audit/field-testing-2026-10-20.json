@@ -6935,10 +6935,10 @@
       "report": "2026-11-05 intake",
       "title": "Avoid excessive dependent-package refusals for rename and pure flags",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
-      "validation": "source_refusal_identified_field_not_reproduced",
-      "remaining": "Source review found both tools count all transitive package referencers toward a 256 cap before inspecting actual function callers. Repair needs bounded complete caller discovery, then focused native evidence; no fix is implemented yet.",
+      "validation": "focused_pass_field_unverified",
+      "remaining": "Implemented on private main b8f0d4b0 with direct owner and derived-class referencer discovery. Stock 5.8.4 build and focused FunctionFlags case passed; native Vision rename case passed but broader CommonPlay wrapper failed. Original field-project calls remain unverified.",
       "source_keys": [
         "2026-11-04_S3/FA-18",
         "2026-11-04_S3/FA-19"

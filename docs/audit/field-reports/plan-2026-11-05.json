@@ -610,10 +610,10 @@
       "title": "Avoid excessive dependent-package refusals for rename and pure flags",
       "kind": "bug",
       "priority": "P1",
-      "state": "open",
+      "state": "done",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "source_refusal_identified_field_not_reproduced",
+      "validation": "focused_pass_field_unverified",
       "source_ids": [
         "FA-18",
         "FA-19"
@@ -623,10 +623,12 @@
         "2026-11-04_S3/FA-19"
       ],
       "dependencies": [],
-      "next_step": "Implement the approved nov05-function-dependency-scan assignment. Prove complete bounded caller discovery and refusal before mutation; do not merely remove the 256 cap. The original field-project calls remain unverified.",
+      "next_step": "Implemented on private main at b8f0d4b0. The original five rename and three flag calls in the field project remain unverified; rerun them during field acceptance.",
       "evidence": [
-        "docs/audit/field-reports/nov14-function-dependency-review.md"
-      ]
+        "docs/audit/field-reports/nov14-function-dependency-review.md",
+        "private main b8f0d4b0: scoped integration; stock UE 5.8.4 build 633db49facfd49c4a0cc3203d2b010f6; focused FunctionFlags f79f28cd547d42f4aa857ebd55403b0f passed; Vision native rename case passed inside d430fb17a93945edb301b48baac1ddd6, but its CommonPlay wrapper failed later"
+      ],
+      "remaining": "Field-project rename and flag calls are not rerun. The unrelated CommonPlay and lookup-guard failures remain separate validation debt."
     },
     {
       "id": "NOV05-11",
