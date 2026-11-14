@@ -249,6 +249,71 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
             && RightObstacle->NodeWidth == 2000 && RightObstacle->NodeHeight == 700);
         TestEqual(TEXT("Blocked section preserves dirty state"), Package->IsDirty(), DirtyBeforeRefusal);
     }
+    // A single connected event with two terminal branches must also use the
+    // available width. Independent-event coverage alone cannot prove this path.
+    {
+        UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("BranchSectionGrowth"),
+            UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+        BP->UbergraphPages.Add(Graph);
+        Graph->SetFlags(RF_Transactional);
+        auto Add = [&](UEdGraphNode* Node, int32 X, int32 Y)
+        {
+            Graph->AddNode(Node, false, false);
+            Node->SetFlags(RF_Transactional);
+            Node->CreateNewGuid();
+            Node->AllocateDefaultPins();
+            Node->NodePosX = X; Node->NodePosY = Y;
+        };
+        auto* Box = NewObject<UEdGraphNode_Comment>(Graph);
+        Add(Box, 0, 0); Box->NodeWidth = 1200; Box->NodeHeight = 450;
+        Box->NodeComment = TEXT("Selected connected branches");
+        auto* Neighbor = NewObject<UEdGraphNode_Comment>(Graph);
+        Add(Neighbor, 0, 470); Neighbor->NodeWidth = 1200; Neighbor->NodeHeight = 200;
+        Neighbor->NodeComment = TEXT("Fixed section below");
+        auto* Entry = NewObject<UK2Node_CustomEvent>(Graph);
+        Entry->CustomFunctionName = TEXT("BranchSectionEntry");
+        Add(Entry, 60, 90);
+        auto* Branch = NewObject<UK2Node_IfThenElse>(Graph);
+        Add(Branch, 330, 90);
+        Entry->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Branch->GetExecPin());
+        TArray<FString> Selection = { TurboMCPNodeId::MakeForNode(Entry), TurboMCPNodeId::MakeForNode(Branch) };
+        for (int32 Index = 0; Index < 2; ++Index)
+        {
+            auto* Call = NewObject<UK2Node_CallFunction>(Graph);
+            Call->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+            Add(Call, 650, 90 + Index * 160);
+            (Index == 0 ? Branch->GetThenPin() : Branch->GetElsePin())->MakeLinkTo(Call->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+            Selection.Add(TurboMCPNodeId::MakeForNode(Call));
+        }
+        TMap<UEdGraphNode*, FIntPoint> Positions;
+        TMap<UEdGraphPin*, TArray<UEdGraphPin*>> Links;
+        for (UEdGraphNode* Node : Graph->Nodes)
+        {
+            Positions.Add(Node, FIntPoint(Node->NodePosX, Node->NodePosY));
+            for (UEdGraphPin* Pin : Node->Pins) if (Pin) Links.Add(Pin, Pin->LinkedTo);
+        }
+        FTurboMCPGraphTidy::FPlan Plan;
+        FString Error;
+        const bool Planned = FTurboMCPGraphTidy::Plan(BP->GetPathName(), Graph->GetName(), true, false, Selection, Plan, Error);
+        if (!TestTrue(TEXT("Connected section plans: ") + Error, Planned)) return false;
+        for (const auto& Pair : Positions)
+            TestTrue(TEXT("Connected preview preserves positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
+        const FString Applied = FTurboMCPGraphTidy::Apply(Plan);
+        if (!TestTrue(TEXT("Connected section applies: ") + Applied, Applied.StartsWith(TEXT("changed:")))) return false;
+        TestTrue(TEXT("Connected section grows right, not into its neighbor"), Box->NodeWidth > 1200 && Box->NodeHeight <= 470);
+        TestTrue(TEXT("Connected section keeps fixed neighbor"), Neighbor->NodePosX == 0 && Neighbor->NodePosY == 470
+            && Neighbor->NodeWidth == 1200 && Neighbor->NodeHeight == 200);
+        for (const auto& Node : Plan.Nodes) if (Node.Node && !Node.bIsComment)
+            TestTrue(TEXT("Connected apply matches preview"), Node.Node->NodePosX == Node.PlannedX && Node.Node->NodePosY == Node.PlannedY);
+        for (const auto& Pair : Links) TestTrue(TEXT("Connected links unchanged"), Pair.Key->LinkedTo == Pair.Value);
+        const FString Capture = UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(), Graph->GetName(), TEXT("graph"), TEXT(""), TEXT("1600x900"));
+        AddInfo(Capture);
+        TestTrue(TEXT("Connected native capture produced"), Capture.Contains(TEXT("image:")));
+        if (!TestTrue(TEXT("Connected undo succeeds"), GEditor->UndoTransaction(false))) return false;
+        for (const auto& Pair : Positions)
+            TestTrue(TEXT("Connected undo restores positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
+        TestTrue(TEXT("Connected undo restores box"), Box->NodeWidth == 1200 && Box->NodeHeight == 450);
+    }
     for (const FName MacroName : {FName(TEXT("ForLoopWithBreak")),FName(TEXT("DoOnce"))})
     {
         UEdGraph* Definition=nullptr;
