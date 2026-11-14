@@ -144,7 +144,8 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
             for (const UEdGraphPin* Input : Pin->LinkedTo) if (Input && Input->GetOwningNodeUnchecked()
                 && (Selection.Includes(Node) || Selection.Includes(Input->GetOwningNodeUnchecked())))
             {
-                const double Length = FVector2D::Distance(FTurboMCPGraphTidy::AlignmentPinPosition(Pin), FTurboMCPGraphTidy::AlignmentPinPosition(Input));
+                // Match the summary's pin geometry so listed wires add up to its total.
+                const double Length = FVector2D::Distance(FTurboMCPLayoutReport::PinPosition(Pin), FTurboMCPLayoutReport::PinPosition(Input));
                 Wires.Add({Length, FString::Printf(TEXT("\n  %.1f units: %s:%s -> %s:%s"), Length,
                     *TurboMCPNodeId::MakeForNode(Node), *Pin->PinName.ToString(),
                     *TurboMCPNodeId::MakeForNode(Input->GetOwningNodeUnchecked()), *Input->PinName.ToString())});

@@ -7,13 +7,13 @@ args = {"asset": "/Game/Tests/BP_NodeTest", "graphName": "EventGraph"}
 report_args = dict(args, scope="")
 report = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport", report_args)
 assert report.startswith("look:"), report
-assert "not the rendered wire curve" in report and "not a visual-quality score" in report, report
+assert "not rendered curves" in report and "not automatic repair instructions" in report, report
 # This fixture has eight links and no boxes; all ranked wires fit in the top ten.
-counts = re.search(r"counts: \d+ non-comment node\(s\).*?, (\d+) pin-link wire\(s\), (\d+) comment box", report)
+counts = re.search(r"whole-graph context: \d+ nodes?, (\d+) wires?, (\d+) comment box", report)
 assert counts and int(counts[2]) == 0, report
 assert "cross-box-wires:" not in report, report
-summary = re.search(r"total wire length: ([0-9.]+)  \(longest single wire: ([0-9.]+)\)", report)
-ranked = [float(value) for value in re.findall(r"^  \d+\. ([0-9.]+) units:", report, re.M)]
+summary = re.search(r"total wire length ([0-9.]+), longest ([0-9.]+) graph units", report)
+ranked = [float(value) for value in re.findall(r"^  ([0-9.]+) units:", report, re.M)]
 assert summary and ranked and len(ranked) == int(counts[1]) <= 10, report
 assert abs(float(summary[2]) - max(ranked)) <= 0.6, report
 assert abs(float(summary[1]) - sum(ranked)) <= 0.5 + 0.05 * len(ranked), report
