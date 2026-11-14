@@ -7079,6 +7079,7 @@
       "canonical_issue": "NOV09-01",
       "report": "2026-11-09 intake",
       "task_plan": "docs/audit/field-reports/plan-2026-11-09.json",
+      "implementation": "Tidy preview now starts with its verdict and compact scores. Full measured geometry is opt-in and paginated; default output is bounded. Edit keeps compact scores without dumping geometry.",
       "remaining": "Implementation built; editor acceptance and the original 450-node field case remain untested.",
       "evidence": [
         "docs/audit/nov09-tidy-output-repair.md",
