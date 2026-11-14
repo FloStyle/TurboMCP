@@ -1,4 +1,4 @@
-# Append per-anchor integration review — 2026-11-14
+# Append per-anchor integration review - 2026-11-14
 
 Reviewed candidate: 96a26b439ae126c1ed39473e813c6d5ba4d030b8. Combined source reviewed against 6c8bfac4; latest scope gate against c89d17cf passed.
 
@@ -64,3 +64,59 @@ Focused execution c52d652dc1bc4ed092453f9f192a1f16 at 6a21552d passed the stock-
 Candidate 4f48e0f0 passed stock-engine build and focused native execution 69fec17f2d294d6f87efc8fa256bd017. The internal comment planner uses the shared membership rule on a scratch copy. It preserves live geometry, allows only named rightward growth, preserves existing membership, and refuses blocked neighboring/ancestor growth. The focused case checks positive growth, non-mutation, unnamed-box membership refusal and a neighboring-box refusal. A source guard also rejects moving an output past a fixed data consumer; dedicated runtime coverage for that guard is still pending.
 
 Public insertion is still unavailable. Remaining NOV09-02 work: connect measured new-node layout, scoped movements and comment growth to a retained preview authorization and one live transaction; validate rollback/undo; support explicitly authorized nested-comment movement; inspect the final visual case. Per-anchor help now explicitly describes the already implemented mode. No task is closed by this internal stage.
+
+
+## Pending insertion integration - focused evidence update
+
+Insertion remains uncommitted and NOV09-02 remains open. Execution
+`987be1e0cc994acba00dab05fe74881a` built successfully and passed the focused
+placement suite, including public preview-token issuance, apply, replay refusal,
+stale geometry refusal and one-step undo in an unboxed execution chain.
+
+The expanded boxed-chain run `3a6d574978b0416c9a527ac2d4650fc9` built but failed:
+preview could not determine the moved comment member width. Scratch nodes lack
+the live Slate size cache. The pending fix uses the same stored-width/320 fallback
+as tail collision planning; this correction is not yet verified. The same run
+reported no failures for the newly added empty nested-frame containment and
+neighbor-conflict assertions. This does not certify the complete insertion path.
+
+Remaining integration gates: rerun the boxed public workflow after the width fix,
+inspect its capture, verify failed-apply restoration, and finish source/help review.
+No full Append-suite pass or task completion is claimed.
+
+
+Execution `224cb958c35f4c6098df94c8f9ff09e3` built and reached boxed apply;
+its final capture was inspected (chain connected and separated inside the grown
+box). Forced spawn failure restored the graph and dirty state. The suite still
+failed its boxed one-step undo assertion. Existing synthetic comments were not
+transactional, and insertion did not enroll them before Modify. Pending repair:
+set RF_Transactional on every moved existing node and resized comment before
+recording its transaction. This change requires the same focused verification;
+the failed run is retained and NOV09-02 remains open.
+
+
+## Integrated insertion - NOV09-02
+
+Implementation `aef47a99` completes the bounded insertion contract. The public
+append tools accept `insert`, an explicit movable-node JSON list, an optional
+containing comment, and a ten-minute single-use preview token for Apply. Existing
+local/outside/per-anchor modes retain fixed existing nodes. No compile or save is
+performed. Preview reports old/new movement and comment width changes; stale
+requests refuse before mutation. Nested frame relationships and existing comment
+members are preserved; only the named outer frame can grow rightward.
+
+Execution `3a9027ad15ac427fa377594056bf3921` passed the stock 5.8.4 build and
+focused native placement test (one test, zero errors/warnings). It covers the
+boxed chain, unrelated fixed event lane, token replay, stale geometry, one-step
+undo including comment width, and forced creation failure after tail movement.
+Restoration compares geometry, pin/default/link state and package dirtiness.
+The final native insertion capture was inspected: connected separated nodes
+inside the right-expanded frame. No additional full-suite rerun was performed.
+
+Earlier failures above remain evidence: the missing scratch measurement and
+nontransactional comment undo issues were corrected, not concealed by a rerun.
+The original private field graph was not replayed. This is bounded workflow
+acceptance, not whole-plugin or release certification. NOV09-02 is implemented;
+field and broad regression coverage remain separate flags.
+
+Offline aggregate `687d7c7e918c4f499d6f3097b57b6bde` exited 1: repository and language checks caught an audit-note encoding error. Both checks passed individually after the UTF-8 correction; all other aggregate checks passed. The original failed aggregate is retained, not reported as a clean aggregate pass.

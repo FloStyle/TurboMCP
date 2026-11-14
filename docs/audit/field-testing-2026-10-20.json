@@ -7185,10 +7185,10 @@
       "title": "Insert a chain into its existing lane with an explicit tail-movement scope",
       "kind": "feature",
       "priority": "P1",
-      "state": "in_progress",
-      "readiness": "ready",
+      "state": "done",
+      "readiness": "implemented",
       "owner": "integrator",
-      "validation": "partial_focused_native_pass",
+      "validation": "focused_native_pass_field_unverified",
       "source_keys": [
         "2026-11-09_S1/GC-49",
         "2026-11-09_S1/TD-75",
@@ -7198,13 +7198,16 @@
         "NOV09-01"
       ],
       "complexity_estimate": 8,
-      "next_step": "Tail geometry and retained-plan pin-type freshness passed focused build/native execution c52d652dc1bc4ed092453f9f192a1f16 at 6a21552d. Finish comment membership/growth, measured insertion placement, preview confirmation, transactional apply and undo. Internal geometry stage is not a public insertion capability. See nov14-per-anchor-integration.md.",
+      "next_step": "Implemented in aef47a99. Stock UE 5.8.4 build and focused placement suite passed 3a9027ad15ac427fa377594056bf3921. Boxed insertion, token replay/stale refusal, nested frames, fixed lane, one-step undo and forced-failure restoration covered; final native capture inspected. Original field graph and whole Append suite remain unverified. See nov14-per-anchor-integration.md.",
       "acceptance": "Build the clean-room boxed-section case. Preview every shifted tail node; preserve unrelated lanes, links and undo. Never silently move nodes outside the approved scope.",
       "key": "NOV09-02",
       "canonical_issue": "NOV09-02",
       "report": "2026-11-09 intake",
       "task_plan": "docs/audit/field-reports/plan-2026-11-09.json",
-      "remaining": "Build the clean-room boxed-section case. Preview every shifted tail node; preserve unrelated lanes, links and undo. Never silently move nodes outside the approved scope."
+      "remaining": "No remaining implementation in this bounded insertion contract. Exact field graph and broader regression remain verification flags.",
+      "evidence": [
+        "docs/audit/field-reports/nov14-per-anchor-integration.md"
+      ]
     },
     {
       "id": "NOV09-03",
