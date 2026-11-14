@@ -596,7 +596,7 @@ def read_compact_preview(call, args, context):
                                                        PlanLimit=20))
         if stable_header(page) != stable_header(preview):
             raise RuntimeError(context + ': preview plan changed between coordinate pages')
-        match = re.search(r'^plan detail: rows (\d+)\.(-?\d+) of (\d+) for this plan\.$',
+        match = re.search(r'^plan detail: rows (\d+)\.\.(-?\d+) of (\d+) for this plan\.$',
                           page, re.M)
         if not match:
             raise RuntimeError(context + ': missing numbered plan-detail page')
