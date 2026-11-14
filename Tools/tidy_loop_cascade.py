@@ -51,7 +51,7 @@ def build_graph(call, evidence, persist):
                 lines.append('  ' + json.dumps(pin) + ' ' + str(value))
             forms.append('\n'.join(lines) + '\n)')
         text = '\n'.join(forms)
-        args = dict(asset=asset, graphName=graph, text=text, continuation='auto', placement='local')
+        args = dict(asset=asset, graphName=graph, text=text, continuation='auto', placement='local', containingCommentId='')
         preview = call('PreviewTurboMCPGraphAppend', **args)
         if not preview.startswith('preview:'):
             raise RuntimeError('Append preview did not approve construction: ' + preview)
@@ -408,7 +408,7 @@ def record_break_regression(call, evidence, persist):
             + loop_type + ' ; label Loop\n "Exec" (-> ' + entry
             + ':"then")\n "Array" (-> ItemsRead:"Items")\n)\n'
             '(Utilities|FlowControl|Branch ; label Stop\n "execute" (-> Loop:"LoopBody")\n "Condition" true\n)')
-    args = dict(asset=asset,graphName=graph,text=text,continuation='auto',placement='local')
+    args = dict(asset=asset,graphName=graph,text=text,continuation='auto',placement='local', containingCommentId='')
     row['append_preview'] = call('PreviewTurboMCPGraphAppend', **args)
     if not row['append_preview'].startswith('preview:'):
         raise RuntimeError('J3 construction preview refused: ' + row['append_preview'])
@@ -460,7 +460,7 @@ def record_event_regressions(call, evidence, persist, only_case=None):
         getter = discover('Message',lambda line: line.startswith('Variable|' + asset + '.') and line.endswith('|Get|Message'))
         printer = discover('PrintString',lambda line: line.startswith('Function|/Script/Engine.') and line.endswith(':PrintString'))
         def append(forms, expected):
-            args=dict(asset=asset,graphName=graph,text='\n'.join(forms),continuation='auto',placement='local')
+            args=dict(asset=asset,graphName=graph,text='\n'.join(forms),continuation='auto',placement='local', containingCommentId='')
             preview=call('PreviewTurboMCPGraphAppend',**args)
             if not preview.startswith('preview:'):
                 raise RuntimeError(case + ': append preview refused: ' + preview)
