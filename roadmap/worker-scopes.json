@@ -4084,6 +4084,19 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "nov05-function-dependency-scan": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionRenameTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlags.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionFlagsTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPFunctionDependencyScan.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionDependencyScan.cpp"
+          ]
         }
       },
       "preserve_rows": []

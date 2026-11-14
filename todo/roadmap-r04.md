@@ -13,6 +13,10 @@ Review: source-reviewed
 
 Use assignment `nov05-return-node` for the exact source and fixture files in the schema-2 manifest. [The bounded task](nov05-return-node.md) records the field report, stock-engine constraints, preview and apply invariants, and focused verification. This does not close R04 or certify GraphAppend generally.
 
+## Approved NOV05-10 function dependency scan (2026-11-14)
+
+Readiness: ready. Assignment `nov05-function-dependency-scan`. The [source review and repair contract](../docs/audit/field-reports/nov14-function-dependency-review.md) identifies a 256-package cap on transitive referencers, which can refuse a function with few actual callers. Replace that broad traversal in function rename and function flag changes with a shared, bounded caller-candidate scan. Inspect direct owner referencers and relevant derived Blueprint classes, including registered callers of derived classes; do not traverse unrelated package consumers. Refuse before mutation if any candidate cannot be classified, loaded, or fully inspected, and never load a map implicitly. Preview and edit must use the same rules; edit repeats the scan and preflight. Preserve the existing delegate, override, connected-execution, and partial-postcondition safety guards. Give clear counts and limits without claiming dynamic or native references are covered. Use the exact schema-2 file scope, inspect source before executing candidate code, and run one focused synthetic native case after implementation; the original field-project calls remain unverified.
+
 ## NOV09-17 widget navigation read integration (2026-11-14)
 
 Assignment `nov09-widget-navigation-read` has exact schema-2 scope. [The bounded task](nov09-widget-navigation-read.md) is implemented with a focused native pass on stock 5.8.4. It reports stored Designer navigation and selected layout context; runtime focus and workplace behavior remain unobserved.

@@ -611,7 +611,7 @@
       "kind": "bug",
       "priority": "P1",
       "state": "open",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "source_refusal_identified_field_not_reproduced",
       "source_ids": [
@@ -623,7 +623,7 @@
         "2026-11-04_S3/FA-19"
       ],
       "dependencies": [],
-      "next_step": "Review the bounded caller-discovery contract in nov14-function-dependency-review.md, then approve an exact repair scope and focused fixture. Do not remove the 256 cap without proving complete caller discovery.",
+      "next_step": "Implement the approved nov05-function-dependency-scan assignment. Prove complete bounded caller discovery and refusal before mutation; do not merely remove the 256 cap. The original field-project calls remain unverified.",
       "evidence": [
         "docs/audit/field-reports/nov14-function-dependency-review.md"
       ]
