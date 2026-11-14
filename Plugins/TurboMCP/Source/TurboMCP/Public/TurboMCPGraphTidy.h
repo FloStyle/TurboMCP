@@ -79,6 +79,8 @@ public:
 
 		/** Compact execution/input band identity; fixed or unassigned nodes use INDEX_NONE. */
         int32 BlockIndex = INDEX_NONE;
+        /** Row-layout lane and its inputs, retained for scoped rightward packing. */
+        int32 PackingLane = INDEX_NONE;
 		bool bIsComment = false;
 		bool bIsKnot = false;
 		bool bIsPure = false;

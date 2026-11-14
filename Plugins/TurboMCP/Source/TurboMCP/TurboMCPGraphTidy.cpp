@@ -2228,6 +2228,11 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         BandMax=FMath::Max(BandMax,OutPlan.Nodes[I].PlannedY+OutPlan.Nodes[I].Height);
                     }
                     if(BandMembers.IsEmpty()) continue;
+                    // The smallest node index gives this band a plan-wide identity.
+                    // Retain it so scoped fitting can translate a complete branch lane.
+                    int32 PackingLane = BandMembers[0];
+                    for (int32 Member : BandMembers) PackingLane = FMath::Min(PackingLane, Member);
+                    for (int32 Member : BandMembers) OutPlan.Nodes[Member].PackingLane = PackingLane;
                     const double BandShift=PackedBandTop-BandMin;
                     for(int32 I:BandMembers) OutPlan.Nodes[I].PlannedY+=BandShift;
                     PackedBandTop+=FMath::Max(InLanePitch,BandMax-BandMin+BlockBandGap);
@@ -4912,14 +4917,22 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
         if ((SourceMoves && IsChildMember(InPlan.Nodes[Wire.TargetNodeIndex]))
             || (TargetMoves && IsChildMember(InPlan.Nodes[Wire.SourceNodeIndex]))) return false;
     }
-    // Include data links, feedback and wrap boundaries: no connected expression
-    // or explicitly ordered continuation may be split by this alternative.
+    // Data expressions, feedback and explicit wraps stay together. Ordinary
+    // execution links may connect independently packed lanes; their dependency
+    // order is checked below before any candidate is accepted.
     for (int32 Pass = 0; Pass < Members.Num(); ++Pass)
     {
         bool Changed = false;
         for (const FWire& Wire : InPlan.Wires)
         {
             if (!Group.Contains(Wire.SourceNodeIndex) || !Group.Contains(Wire.TargetNodeIndex)) continue;
+            const FNode& Source = InPlan.Nodes[Wire.SourceNodeIndex];
+            const FNode& Target = InPlan.Nodes[Wire.TargetNodeIndex];
+            const bool SeparateLanes = Source.PackingLane != INDEX_NONE && Target.PackingLane != INDEX_NONE
+                && Source.PackingLane != Target.PackingLane;
+            const bool ForwardExecution = Wire.OutputPin && Wire.OutputPin->PinType.PinCategory == TEXT("exec")
+                && !Wire.bControlFeedback && !InPlan.IsWrapBoundary(Wire.SourceNodeIndex, Wire.TargetNodeIndex);
+            if (SeparateLanes && ForwardExecution) continue;
             const int32 Root = FMath::Min(Group[Wire.SourceNodeIndex], Group[Wire.TargetNodeIndex]);
             Changed |= Group[Wire.SourceNodeIndex] != Root || Group[Wire.TargetNodeIndex] != Root;
             Group[Wire.SourceNodeIndex] = Group[Wire.TargetNodeIndex] = Root;
@@ -4929,6 +4942,28 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
     TArray<int32> Groups;
     for (const int32 Member : Members) Groups.AddUnique(Group[Member]);
     if (Groups.IsEmpty() || (Groups.Num() < 2 && Box.ChildBoxIndices.IsEmpty())) return false;
+    // A branch must precede its child lanes. A merge that returns to an earlier
+    // group cannot be flattened this way: keep the original candidate instead.
+    TArray<int32> Pending = Groups;
+    Groups.Reset();
+    while (!Pending.IsEmpty())
+    {
+        int32 Ready = INDEX_NONE;
+        for (int32 Root : Pending)
+        {
+            bool HasPredecessor = false;
+            for (const FWire& Wire : InPlan.Wires)
+            {
+                if (!Group.Contains(Wire.SourceNodeIndex) || !Group.Contains(Wire.TargetNodeIndex)) continue;
+                const int32 Source = Group[Wire.SourceNodeIndex], Target = Group[Wire.TargetNodeIndex];
+                if (Target == Root && Source != Root && Pending.Contains(Source)) { HasPredecessor = true; break; }
+            }
+            if (!HasPredecessor) { Ready = Root; break; }
+        }
+        if (Ready == INDEX_NONE) return false;
+        Groups.Add(Ready);
+        Pending.RemoveSingle(Ready);
+    }
     // Graph order is stable; translate each complete component without changing
     // its internal geometry, pin alignment or links.
     FPlan Candidate = InPlan;

@@ -89,6 +89,31 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Second component is placed to the right"), Growth.Nodes[2].PlannedX > Growth.Nodes[1].PlannedX + 50);
         TestEqual(TEXT("Packing preserves execution/data edge count"), Growth.Wires.Num(), 1);
         TestEqual(TEXT("Packing preserves neighboring box position"), Growth.Boxes[1].PlannedY, 300.0);
+        // Connected branch lanes may use columns, but an explicit row break
+        // must never be flattened merely to avoid the fixed section below.
+        auto* LaneEvent = NewObject<UK2Node_CustomEvent>();
+        LaneEvent->AllocateDefaultPins();
+        FTurboMCPGraphTidy::FWire BranchEdge;
+        BranchEdge.SourceNodeIndex = 1;
+        BranchEdge.TargetNodeIndex = 2;
+        BranchEdge.OutputPin = LaneEvent->FindPinChecked(UEdGraphSchema_K2::PN_Then);
+        Growth.Wires.Add(BranchEdge);
+        Growth.Nodes[0].PackingLane = Growth.Nodes[1].PackingLane = 0;
+        Growth.Nodes[2].PackingLane = 2;
+        Growth.Nodes[2].PlannedY = 350;
+        Growth.Boxes[0].PlannedHeight = 500;
+        Growth.Boxes[0].bWouldFit = true;
+        TestTrue(TEXT("Connected forward lanes can pack rightward"), FTurboMCPGraphTidy::TryPackScopedSection(Growth, 0, 120));
+        TestTrue(TEXT("Child lane remains after its predecessor"), Growth.Nodes[2].PlannedX > Growth.Nodes[1].PlannedX + Growth.Nodes[1].Width);
+        Growth.WrapBoundaryEdges.Add(FTurboMCPGraphTidy::FPlan::WrapEdgeKey(1, 2));
+        Growth.Nodes[2].PlannedY = 350;
+        Growth.Boxes[0].PlannedHeight = 500;
+        Growth.Boxes[0].bWouldFit = true;
+        TestFalse(TEXT("Explicit wrap cannot be flattened into a column"), FTurboMCPGraphTidy::TryPackScopedSection(Growth, 0, 120));
+        TestEqual(TEXT("Refused wrap keeps its lower row"), Growth.Nodes[2].PlannedY, 350.0);
+        Growth.WrapBoundaryEdges.Reset();
+        Growth.Wires.Pop();
+        for (auto& Node : Growth.Nodes) Node.PackingLane = INDEX_NONE;
         // A parent may use space beside a child without translating that child.
         Growth.Boxes[1].ParentIndex = 0;
         Growth.Boxes[1].X = Growth.Boxes[1].PlannedX = 40;
