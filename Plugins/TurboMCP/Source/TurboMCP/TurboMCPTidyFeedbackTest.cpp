@@ -8,6 +8,7 @@
 #include "TurboMCPGraphTidy.h"
 #include "TurboMCPComment.h"
 #include "Editor.h"
+#include "GraphEditorSettings.h"
 #include "TurboMCPLayoutReport.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
@@ -154,6 +155,94 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
     ON_SCOPE_EXIT { Package->SetDirtyFlag(false); };
     UBlueprint* BP=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("BP_Feedback"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
     if (!TestNotNull(TEXT("Fixture Blueprint"),BP)) return false;
+    // A vertical route can have a clear chord while its native spline bends
+    // through a neighboring node. Construct that obstacle from the baseline
+    // curve, then require a usable alternate route without touching live links.
+    {
+        UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("SplineClearance"),
+            UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+        BP->UbergraphPages.Add(Graph);
+        auto AddBranch = [&](int32 X, int32 Y)
+        {
+            auto* Node = NewObject<UK2Node_IfThenElse>(Graph);
+            Graph->AddNode(Node, false, false);
+            Node->CreateNewGuid(); Node->AllocateDefaultPins();
+            Node->NodePosX = X; Node->NodePosY = Y;
+            return Node;
+        };
+        auto* Source = AddBranch(0, 0);
+        auto* Target = AddBranch(1000, 1600);
+        Source->GetThenPin()->MakeLinkTo(Target->GetExecPin());
+        FTurboMCPGraphTidy::FPlan RoutePlan;
+        for (auto* Node : {Source, Target})
+        {
+            FTurboMCPGraphTidy::FNode Item;
+            Item.Node = Node; Item.Key = TurboMCPNodeId::MakeForNode(Node);
+            Item.X = Item.PlannedX = Node->NodePosX;
+            Item.Y = Item.PlannedY = Node->NodePosY;
+            Item.Width = 200; Item.Height = 100;
+            RoutePlan.Nodes.Add(Item);
+        }
+        FTurboMCPGraphTidy::FWire Wire;
+        Wire.SourceNodeIndex = 0; Wire.TargetNodeIndex = 1;
+        Wire.OutputPin = Source->GetThenPin(); Wire.InputPin = Target->GetExecPin();
+        RoutePlan.Wires.Add(Wire);
+        const FVector2D KnotSize(16, 16), InputOffset(0, 8), OutputOffset(15, 8);
+        FString RouteError;
+        if (!TestTrue(TEXT("Baseline spline routing succeeds"), FTurboMCPGraphTidy::PlanOrthogonalRoutes(
+            RoutePlan, KnotSize, InputOffset, OutputOffset, 120, RouteError))) return false;
+        if (!TestTrue(TEXT("Baseline has a usable route"), RoutePlan.WireRoutes.Num() == 1
+            && !RoutePlan.WireRoutes[0].bSkipped)) return false;
+        const auto OriginalRoute = RoutePlan.WireRoutes[0];
+        auto CurvePoint = [](const FVector2D& A, const FVector2D& B, double T)
+        {
+            const FVector2D Tangent(GetDefault<UGraphEditorSettings>()->ComputeSplineTangent(A, B));
+            const double T2 = T*T, T3 = T2*T;
+            return A*(2*T3-3*T2+1) + Tangent*(T3-2*T2+T)
+                + B*(-2*T3+3*T2) + Tangent*(T3-T2);
+        };
+        FVector2D ObstacleCenter = FVector2D::ZeroVector;
+        bool FoundBulge = false;
+        for (int32 I = 1; I < OriginalRoute.KnotPositions.Num(); ++I)
+        {
+            const FVector2D A = OriginalRoute.KnotPositions[I-1] + OutputOffset;
+            const FVector2D B = OriginalRoute.KnotPositions[I] + InputOffset;
+            const FVector2D Sample = CurvePoint(A, B, 0.25);
+            if (FMath::Abs(A.X-B.X) <= 1 && FMath::Abs(Sample.X-A.X) > 32)
+            { ObstacleCenter = Sample; FoundBulge = true; break; }
+        }
+        if (!TestTrue(TEXT("Fixture isolates native bulge away from vertical chord"), FoundBulge)) return false;
+        FTurboMCPGraphTidy::FNode Obstacle;
+        Obstacle.Key = TEXT("spline-obstacle");
+        Obstacle.X = Obstacle.PlannedX = ObstacleCenter.X - 12;
+        Obstacle.Y = Obstacle.PlannedY = ObstacleCenter.Y - 12;
+        Obstacle.Width = Obstacle.Height = 24;
+        RoutePlan.Nodes.Add(Obstacle);
+        if (!TestTrue(TEXT("Obstacle routing succeeds"), FTurboMCPGraphTidy::PlanOrthogonalRoutes(
+            RoutePlan, KnotSize, InputOffset, OutputOffset, 120, RouteError))) return false;
+        if (!TestTrue(TEXT("Obstacle gets an alternate route, not only refusal"), RoutePlan.WireRoutes.Num() == 1
+            && !RoutePlan.WireRoutes[0].bSkipped)) return false;
+        const auto& Repaired = RoutePlan.WireRoutes[0];
+        TestTrue(TEXT("Spline obstacle changes the chosen channel"), Repaired.KnotPositions != OriginalRoute.KnotPositions);
+        FVector2D Previous = FTurboMCPGraphTidy::AlignmentPinPosition(Wire.OutputPin);
+        bool Intersects = false;
+        for (int32 I = 0; I <= Repaired.KnotPositions.Num(); ++I)
+        {
+            const FVector2D Next = I < Repaired.KnotPositions.Num()
+                ? Repaired.KnotPositions[I] + InputOffset : FTurboMCPGraphTidy::AlignmentPinPosition(Wire.InputPin);
+            // Denser sampling than production, against the actual node bounds.
+            for (int32 Step = 0; Step <= 256; ++Step)
+            {
+                const FVector2D Point = CurvePoint(Previous, Next, Step/256.0);
+                Intersects |= Point.X > Obstacle.X && Point.X < Obstacle.X + Obstacle.Width
+                    && Point.Y > Obstacle.Y && Point.Y < Obstacle.Y + Obstacle.Height;
+            }
+            if (I < Repaired.KnotPositions.Num()) Previous = Repaired.KnotPositions[I] + OutputOffset;
+        }
+        TestFalse(TEXT("Native alternate spline clears the obstacle"), Intersects);
+        TestTrue(TEXT("Routing preview preserves the original logical link"),
+            Wire.OutputPin->LinkedTo.Num() == 1 && Wire.OutputPin->LinkedTo[0] == Wire.InputPin);
+    }
     // Exercise both flat and nested sections through native planning and undo.
     for (int32 SectionCase = 0; SectionCase < 3; ++SectionCase)
     {
