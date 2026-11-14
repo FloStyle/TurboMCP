@@ -293,8 +293,15 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         if (!TestTrue(TEXT("Connected baseline plans: ") + BaselineError, BaselineReady)) return false;
         int32 NeighborY = INDEX_NONE;
         for (const auto& PlannedBox : Baseline.Boxes) if (PlannedBox.Comment == Box)
-            NeighborY = FMath::FloorToInt(PlannedBox.PlannedY + PlannedBox.PlannedHeight) - 8;
+            NeighborY = FMath::FloorToInt((Box->NodeHeight + PlannedBox.PlannedY + PlannedBox.PlannedHeight) * 0.5);
         if (!TestTrue(TEXT("Native baseline requires downward growth"), NeighborY > Box->NodeHeight)) return false;
+        FTurboMCPGraphTidy::FPlan RepeatedBaseline;
+        if (!TestTrue(TEXT("Repeated native baseline plans"), FTurboMCPGraphTidy::Plan(
+            BP->GetPathName(), Graph->GetName(), true, false, Selection, RepeatedBaseline, BaselineError))) return false;
+        bool RepeatedGrowthBlocked = false;
+        for (const auto& PlannedBox : RepeatedBaseline.Boxes) if (PlannedBox.Comment == Box)
+            RepeatedGrowthBlocked = PlannedBox.PlannedY + PlannedBox.PlannedHeight > NeighborY;
+        if (!TestTrue(TEXT("Obstacle blocks the measured layout after native measurement settles"), RepeatedGrowthBlocked)) return false;
         Neighbor->NodePosY = NeighborY;
         TMap<UEdGraphNode*, FIntPoint> Positions;
         TMap<UEdGraphPin*, TArray<UEdGraphPin*>> Links;
