@@ -4134,6 +4134,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "nov14-local-variable-rename": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemove.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableRemoveTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
