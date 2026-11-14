@@ -127,6 +127,19 @@ namespace
 		const bool bRouted = Output->GetOwningNodeUnchecked()->IsA<UK2Node_Knot>()
 			|| InputNode->IsA<UK2Node_Knot>();
 		if ((bCompleted || bFalse) && !bRouted) return FString();
+		// A knot is not evidence that a diagonal has become a deliberate lane
+		// handoff. The reader estimates pin centres, so use a small allowance,
+		// but require this particular segment to run on one axis. Other segments
+		// in the chain are checked when they become findings in their own right.
+		if (bCompleted || bFalse)
+		{
+			const FVector2D Start = FTurboMCPLayoutReport::PinPosition(Output);
+			const FVector2D End = FTurboMCPLayoutReport::PinPosition(Input);
+			constexpr double AxisAllowance = 12.0;
+			if (FMath::Abs(Start.X - End.X) > AxisAllowance
+				&& FMath::Abs(Start.Y - End.Y) > AxisAllowance)
+				return FString();
+		}
 		FName PeerName = bCompleted ? FName(TEXT("LoopBody")) : FName(TEXT("then"));
 		bool bLaterSequenceLane = false;
 		if (Control->IsA<UK2Node_ExecutionSequence>())

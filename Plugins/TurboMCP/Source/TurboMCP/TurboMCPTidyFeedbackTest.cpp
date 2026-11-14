@@ -5,6 +5,7 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPLayoutReport.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "GameFramework/Actor.h"
@@ -14,6 +15,7 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_MacroInstance.h"
+#include "K2Node_IfThenElse.h"
 #include "K2Node_Knot.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
@@ -107,6 +109,112 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Data cycle preview refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(BP->GetPathName(),Scoped->GetName(),true,DataSelection).StartsWith(TEXT("error:")));
     TestTrue(TEXT("Data cycle edit refuses"),UTurboMCPEditToolset::EditTurboMCPGraphTidy(BP->GetPathName(),Scoped->GetName(),true,DataSelection).StartsWith(TEXT("error:")));
     TestTrue(TEXT("Data refusal preserves positions and links"),DataA->NodePosX==0 && DataB->NodePosX==300 && DataA->NodePosY==2000 && DataB->NodePosY==2000 && DataA->GetOutputPin()->LinkedTo.Contains(DataB->GetInputPin()) && DataB->GetOutputPin()->LinkedTo.Contains(DataA->GetInputPin()));
+    return !HasAnyErrors();
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPTidyHandoffAxisTest,
+    "TurboMCP.Layout.HandoffAxis", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPTidyHandoffAxisTest::RunTest(const FString& Parameters)
+{
+    UBlueprint* Macros = LoadObject<UBlueprint>(nullptr,
+        TEXT("/Engine/EditorBlueprintResources/StandardMacros.StandardMacros"));
+    if (!TestNotNull(TEXT("Stock macro library"), Macros)) return false;
+    UEdGraph* LoopDefinition = nullptr;
+    for (UEdGraph* Candidate : Macros->MacroGraphs)
+        if (Candidate && Candidate->GetFName() == TEXT("ForLoopWithBreak")) LoopDefinition = Candidate;
+    if (!TestNotNull(TEXT("Stock loop definition"), LoopDefinition)) return false;
+
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/TidyHandoffAxis_")
+        + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    ON_SCOPE_EXIT { Package->SetDirtyFlag(false); };
+    UBlueprint* BP = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package,
+        TEXT("BP_HandoffAxis"), BPTYPE_Normal, UBlueprint::StaticClass(),
+        UBlueprintGeneratedClass::StaticClass());
+    if (!TestNotNull(TEXT("Fixture Blueprint"), BP)) return false;
+
+    for (const bool bLoop : {false, true})
+    {
+        const FString CaseName = bLoop ? TEXT("Completed") : TEXT("False");
+        UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(BP, FName(*CaseName),
+            UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+        BP->UbergraphPages.Add(Graph);
+        auto Init = [Graph](UEdGraphNode* Node, int32 X, int32 Y)
+        {
+            Graph->AddNode(Node, false, false);
+            Node->CreateNewGuid();
+            Node->AllocateDefaultPins();
+            Node->NodePosX = X;
+            Node->NodePosY = Y;
+        };
+        UEdGraphNode* Control = nullptr;
+        UEdGraphPin* MainPin = nullptr;
+        UEdGraphPin* LowerPin = nullptr;
+        if (bLoop)
+        {
+            auto* Loop = NewObject<UK2Node_MacroInstance>(Graph);
+            Loop->SetMacroGraph(LoopDefinition);
+            Init(Loop, 0, 0);
+            Control = Loop;
+            MainPin = Loop->FindPin(TEXT("LoopBody"));
+            LowerPin = Loop->FindPin(TEXT("Completed"));
+        }
+        else
+        {
+            auto* Branch = NewObject<UK2Node_IfThenElse>(Graph);
+            Init(Branch, 0, 0);
+            Control = Branch;
+            MainPin = Branch->FindPin(TEXT("then"));
+            LowerPin = Branch->FindPin(TEXT("else"));
+        }
+        if (!TestTrue(CaseName + TEXT(" control outputs exist"), MainPin && LowerPin)) return false;
+
+        auto MakeCall = [Graph, &Init](int32 X, int32 Y)
+        {
+            auto* Node = NewObject<UK2Node_CallFunction>(Graph);
+            Node->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+            Init(Node, X, Y);
+            return Node;
+        };
+        UK2Node_CallFunction* Main = MakeCall(550, 0);
+        UK2Node_CallFunction* Lower = MakeCall(550, 500);
+        auto* Knot = NewObject<UK2Node_Knot>(Graph);
+        Init(Knot, 300, 500);
+        if (!TestTrue(CaseName + TEXT(" reroute pins exist"), Knot->GetInputPin() && Knot->GetOutputPin())) return false;
+        MainPin->MakeLinkTo(Main->FindPin(UEdGraphSchema_K2::PN_Execute));
+        LowerPin->MakeLinkTo(Knot->GetInputPin());
+        Knot->GetOutputPin()->MakeLinkTo(Lower->FindPin(UEdGraphSchema_K2::PN_Execute));
+
+        // Match the reader's estimated pin X exactly. Moving only this knot
+        // sideways then creates a deliberately diagonal control-to-knot edge.
+        const double DeltaX = FTurboMCPLayoutReport::PinPosition(LowerPin).X
+            - FTurboMCPLayoutReport::PinPosition(Knot->GetInputPin()).X;
+        Knot->NodePosX += FMath::RoundToInt(DeltaX);
+        const FString ControlId = TurboMCPNodeId::MakeForNode(Control);
+        const FString KnotId = TurboMCPNodeId::MakeForNode(Knot);
+        auto FindControlEdge = [&](const FTurboMCPLayoutReport::FReport& Report)
+            -> const FTurboMCPLayoutReport::FFinding*
+        {
+            for (const auto& Finding : Report.Findings)
+                if (Finding.Kind == TEXT("exec-not-straight")
+                    && Finding.NodeIds.Contains(ControlId) && Finding.NodeIds.Contains(KnotId))
+                    return &Finding;
+            return nullptr;
+        };
+        const auto Aligned = FTurboMCPLayoutReport::Measure(Graph, BP->GetPathName());
+        const auto* AlignedEdge = FindControlEdge(Aligned);
+        if (!TestNotNull(CaseName + TEXT(" aligned edge reported"), AlignedEdge)) return false;
+        TestEqual(CaseName + TEXT(" aligned handoff classification"), AlignedEdge->Classification, FString(TEXT("intended")));
+        TestEqual(CaseName + TEXT(" aligned handoff rule"), AlignedEdge->Rule,
+            FString(bLoop ? TEXT("R3") : TEXT("R6")));
+
+        Knot->NodePosX += 240;
+        const auto Diagonal = FTurboMCPLayoutReport::Measure(Graph, BP->GetPathName());
+        const auto* DiagonalEdge = FindControlEdge(Diagonal);
+        if (!TestNotNull(CaseName + TEXT(" diagonal edge reported"), DiagonalEdge)) return false;
+        TestEqual(CaseName + TEXT(" diagonal remains a defect candidate"),
+            DiagonalEdge->Classification, FString(TEXT("defect")));
+        TestTrue(CaseName + TEXT(" diagonal has no intended rule"), DiagonalEdge->Rule.IsEmpty());
+    }
     return !HasAnyErrors();
 }
 #endif

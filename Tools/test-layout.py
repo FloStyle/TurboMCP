@@ -24,7 +24,9 @@ that the macro is broken.
 
 import os
 import re
+import runpy
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -50,9 +52,32 @@ def layout(session, args):
     return session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport", dict(args, scope=""))
 
 
+def run_handoff_axis(session):
+    """Run only the native R3/R6 routed-versus-diagonal classification case."""
+    parse_report = runpy.run_path(str(Path(__file__).with_name("test-graph-append.py")))["parse_run_tests_report"]
+    name = "TurboMCP.Layout.HandoffAxis"
+    toolset = "AutomationTestToolset.AutomationTestToolset"
+    session.call(toolset, "DiscoverTests", {})
+    listed = str(session.call(toolset, "ListTests", {"nameFilter": name, "tagFilter": ""}))
+    if name not in listed:
+        print("RESULT: FAIL (focused native test not registered)")
+        return 1
+    raw = session.call(toolset, "RunTests", {"testNames": [name]})
+    print(raw)
+    try:
+        parse_report(raw, name)
+    except ValueError as exc:
+        print("RESULT: FAIL (%s)" % exc)
+        return 1
+    print("RESULT: PASS (focused handoff classification)")
+    return 0
+
+
 def main():
     session = Session()
     session.connect()
+    if os.environ.get("TMCP_LAYOUT_HANDOFF_ONLY") == "1":
+        return run_handoff_axis(session)
 
     print("=== stock macro without a recognized handoff ===")
     clean = layout(session,
