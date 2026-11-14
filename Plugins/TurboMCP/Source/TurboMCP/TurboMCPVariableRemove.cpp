@@ -25,6 +25,7 @@
 #include "TurboMCPRollback.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Misc/SecureHash.h"
+#include "Misc/PackageName.h"
 #include "UObject/Package.h"
 
 namespace TurboMCPVariableRemoval
@@ -462,3 +463,298 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPLocalVariableRename(const FStrin
 { return TurboMCPVariableRemoval::RenameLocal(Asset, Function, Name, NewName, TEXT(""), false); }
 FString UTurboMCPEditToolset::EditTurboMCPLocalVariableRename(const FString& Asset, const FString& Function, const FString& Name, const FString& NewName, const FString& Confirm)
 { return TurboMCPVariableRemoval::RenameLocal(Asset, Function, Name, NewName, Confirm, true); }
+
+namespace TurboMCPVariableRemoval
+{
+namespace MemberRename
+{
+// Snapshot the identity as well as the graph: equal pin text alone does not prove
+// that a reference still resolves to the same owning class or declaration.
+FString State(UBlueprint* Blueprint)
+{
+    FString Result = Blueprint->GetPathName() + TEXT("\n") + RenameState(Blueprint);
+    TArray<UEdGraph*> Graphs; Blueprint->GetAllGraphs(Graphs);
+    TArray<FString> Rows;
+    for (UEdGraph* Graph : Graphs) if (Graph) for (UEdGraphNode* Node : Graph->Nodes)
+        if (const auto* VariableNode = Cast<UK2Node_Variable>(Node))
+            Rows.Add(Node->GetPathName() + TEXT(":") + GetPathNameSafe(VariableNode->VariableReference.GetMemberParentClass()));
+    Rows.Sort();
+    return Result + FString::Join(Rows, TEXT("\n"));
+}
+
+bool Ready(const UBlueprint* Blueprint)
+{
+    return IsValid(Blueprint) && !Blueprint->HasAnyFlags(RF_NeedLoad | RF_NeedPostLoad | RF_NeedPostLoadSubobjects)
+        && !Blueprint->bBeingCompiled && !Blueprint->bQueuedForCompilation
+        && !Blueprint->bSuppressStructurallyModified && Blueprint->Status != BS_Error
+        && Blueprint->Status != BS_BeingCreated && Blueprint->SkeletonGeneratedClass && Blueprint->GeneratedClass;
+}
+
+bool DefaultValue(UBlueprint* Blueprint, FName Name, FString& Out)
+{
+    UObject* CDO = Blueprint->GeneratedClass ? Blueprint->GeneratedClass->GetDefaultObject(false) : nullptr;
+    const FProperty* Property = CDO ? FindFProperty<FProperty>(CDO->GetClass(), Name) : nullptr;
+    return Property && FBlueprintEditorUtils::PropertyValueToString(Property, reinterpret_cast<const uint8*>(CDO), Out);
+}
+
+// Registry discovery is bounded and checked before any mutation. Inspect all
+// resident Blueprints too, since unsaved references need not be in the registry.
+FString Discover(UBlueprint* Owner, TArray<UBlueprint*>& Blueprints, FString& Coverage)
+{
+    IAssetRegistry& Registry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+    if (Registry.IsLoadingAssets()) return TEXT("Asset discovery is still running. Retry after it finishes.");
+    TArray<FName> Packages{Owner->GetOutermost()->GetFName()};
+    TSet<FName> Seen; Seen.Add(Packages[0]);
+    TArray<FAssetData> OwnerAssets;
+    // In-memory registry entries exist for newly created assets too. Only disk
+    // metadata can distinguish a missing saved dependency node from a new asset.
+    Registry.GetAssetsByPackageName(Packages[0], OwnerAssets, true, false);
+    const bool UnsavedOwner = OwnerAssets.IsEmpty() && Owner->GetOutermost()->GetLoadedPath().IsEmpty()
+        && !FPackageName::DoesPackageExist(Packages[0].ToString());
+    for (int32 I = 0; I < Packages.Num(); ++I)
+    {
+        TArray<FName> Referencers;
+        if (!Registry.GetReferencers(Packages[I], Referencers)
+            && !(I == 0 && UnsavedOwner))
+            return TEXT("Referencer metadata is unavailable for ") + Packages[I].ToString();
+        for (FName Package : Referencers) if (!Seen.Contains(Package))
+        {
+            if (Packages.Num() >= 256) return TEXT("More than 256 dependent packages require inspection. Use the editor for this rename.");
+            Seen.Add(Package); Packages.Add(Package);
+        }
+    }
+    Packages.Sort(FNameLexicalLess());
+    for (FName Package : Packages)
+    {
+        Coverage += Package.ToString() + TEXT("\n");
+        TArray<FAssetData> Assets; Registry.GetAssetsByPackageName(Package, Assets);
+        if (Assets.IsEmpty() && Package != Owner->GetOutermost()->GetFName())
+            return TEXT("Dependent package metadata is unavailable: ") + Package.ToString();
+        for (const FAssetData& Data : Assets)
+        {
+            if (Data.HasAnyPackageFlags(PKG_ContainsMap) || Data.IsRedirector())
+                return TEXT("A map or redirector needs manual inspection: ") + Data.GetObjectPathString();
+            UClass* Class = Data.GetClass();
+            if (!Class || !Class->IsChildOf(UBlueprint::StaticClass()))
+                return TEXT("A dependent asset has unsupported serialized references: ") + Data.GetObjectPathString();
+            UBlueprint* Blueprint = FindObject<UBlueprint>(nullptr, *Data.GetObjectPathString());
+            if (!Blueprint)
+            {
+                const FString Blocker = ReferenceLoadBlocker(Registry, Package);
+                if (!Blocker.IsEmpty()) return Data.GetObjectPathString() + TEXT(": ") + Blocker;
+                Blueprint = Cast<UBlueprint>(Data.GetAsset());
+            }
+            if (!Ready(Blueprint)) return TEXT("Dependent Blueprint is not ready: ") + Data.GetObjectPathString();
+            Blueprints.AddUnique(Blueprint);
+        }
+    }
+    for (TObjectIterator<UBlueprint> It; It; ++It)
+        if (IsValid(*It) && !It->HasAnyFlags(RF_ClassDefaultObject | RF_Transient)) Blueprints.AddUnique(*It);
+    Blueprints.AddUnique(Owner);
+    Blueprints.Sort([](const UBlueprint& A, const UBlueprint& B) { return A.GetPathName() < B.GetPathName(); });
+    return FString();
+}
+
+FString Rename(const FString& Asset, const FString& Name, const FString& NewName, const FString& Confirm, bool Apply)
+{
+    auto Refuse = [](const FString& Reason) { return TEXT("error: ") + Reason + TEXT(" Nothing renamed."); };
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+        return Refuse(TEXT("Requires an idle editor outside PIE and active transactions."));
+    FTurboMCPAssetResolver::FResolved Resolved;
+    const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+    if (!ResolveError.IsEmpty()) return ResolveError;
+    UBlueprint* Owner = FindObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+    if (!Owner)
+    {
+        IAssetRegistry& Registry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+        const FString Blocker = ReferenceLoadBlocker(Registry, FName(*FPackageName::ObjectPathToPackageName(Resolved.ObjectPath)));
+        if (!Blocker.IsEmpty()) return Refuse(Blocker);
+        Owner = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+    }
+    if (!Owner || !Ready(Owner)) return Refuse(TEXT("Blueprint is not ready. Compile successfully before previewing."));
+    const int32 Index = Owner->NewVariables.IndexOfByPredicate([&](const FBPVariableDescription& V) { return V.VarName.ToString().Equals(Name, ESearchCase::CaseSensitive); });
+    if (Index == INDEX_NONE) return Refuse(TEXT("Exact owned member not found. Inherited, local and generated variables are not supported."));
+    const FBPVariableDescription Variable = Owner->NewVariables[Index];
+    const FName NewVariableName(*NewName);
+    if (Name.Equals(NewName, ESearchCase::CaseSensitive)) return TEXT("unchanged: The member variable already has that name.");
+    if (Variable.VarName == NewVariableName) return Refuse(TEXT("Case-only renames are not supported."));
+    FKismetNameValidator Validator(Owner, Variable.VarName);
+    if (NewName.IsEmpty() || NewName.Len() > 100 || NewVariableName.IsNone() || Validator.IsValid(NewName) != EValidatorResult::Ok)
+        return Refuse(TEXT("NewName must be a valid, unused member identifier of 1 to 100 characters."));
+    if (!Variable.VarGuid.IsValid() || Variable.VarType.PinCategory == FName(TEXT("mcdelegate")) || Variable.VarType.PinCategory == FName(TEXT("delegate")))
+        return Refuse(TEXT("The declaration has no stable identity or is a delegate; use the editor for this rename."));
+    for (int32 I = 0; I < Owner->NewVariables.Num(); ++I)
+        if (I != Index && (Owner->NewVariables[I].VarName == Variable.VarName || Owner->NewVariables[I].VarGuid == Variable.VarGuid))
+            return Refuse(TEXT("Member declaration identity is ambiguous."));
+    if (Owner->ParentClass && FindFProperty<FProperty>(Owner->ParentClass, Variable.VarName))
+        return Refuse(TEXT("The declaration conflicts with an inherited property."));
+    FString EffectiveDefault;
+    if (!DefaultValue(Owner, Variable.VarName, EffectiveDefault)) return Refuse(TEXT("The compiled default cannot be read."));
+
+    TArray<UBlueprint*> Blueprints;
+    FString Coverage;
+    const FString DiscoveryError = Discover(Owner, Blueprints, Coverage);
+    if (!DiscoveryError.IsEmpty()) return Refuse(DiscoveryError);
+    TArray<UBlueprint*> Affected{Owner};
+    TArray<UK2Node_Variable*> References;
+    TMap<UEdGraphPin*, FName> RenamedPins;
+    TArray<FString> Paths;
+    FString Baseline = Coverage + EffectiveDefault;
+    for (UBlueprint* Blueprint : Blueprints)
+    {
+        // An incomplete resident graph could conceal a reference; do not infer
+        // absence from a partially loaded or compiling object.
+        if (Blueprint->HasAnyFlags(RF_NeedLoad | RF_NeedPostLoad | RF_NeedPostLoadSubobjects)
+            || Blueprint->bBeingCompiled || Blueprint->bQueuedForCompilation)
+            return Refuse(TEXT("Resident Blueprint cannot be inspected yet: ") + Blueprint->GetPathName());
+        const bool Inherits = Blueprint == Owner || DerivesFrom(Blueprint->ParentClass, Owner);
+        if (Inherits)
+        {
+            for (const FBPVariableDescription& V : Blueprint->NewVariables)
+            {
+                if (V.HasMetaData(TEXT("FieldNotify"))) return Refuse(TEXT("Field-notify dependencies need manual inspection: ") + Blueprint->GetPathName());
+                if (Blueprint != Owner && (V.VarName == NewVariableName || V.VarName == Variable.VarName))
+                    return Refuse(TEXT("Child member-name collision in ") + Blueprint->GetPathName());
+            }
+            if (Blueprint != Owner)
+            {
+                FKismetNameValidator ChildValidator(Blueprint, Variable.VarName);
+                if (ChildValidator.IsValid(NewName) != EValidatorResult::Ok)
+                    return Refuse(TEXT("Child name collision in ") + Blueprint->GetPathName());
+                FString ChildDefault;
+                if (!DefaultValue(Blueprint, Variable.VarName, ChildDefault) || ChildDefault != EffectiveDefault)
+                    return Refuse(TEXT("Child default override requires explicit migration: ") + Blueprint->GetPathName());
+                Baseline += ChildDefault;
+                Affected.AddUnique(Blueprint);
+            }
+        }
+        if (const auto* Widget = Cast<UWidgetBlueprint>(Blueprint))
+            for (const FDelegateEditorBinding& Binding : Widget->Bindings)
+            {
+                bool Uses = Binding.MemberGuid == Variable.VarGuid || (Inherits && Binding.SourceProperty == Variable.VarName);
+                for (const FEditorPropertyPathSegment& Segment : Binding.SourcePath.Segments)
+                    Uses |= Segment.GetMemberGuid() == Variable.VarGuid
+                        || (Segment.GetMemberName() == Variable.VarName && DerivesFrom(Cast<UClass>(Segment.GetStruct()), Owner));
+                if (Uses) return Refuse(TEXT("Widget binding requires explicit migration: ") + Blueprint->GetPathName());
+            }
+        TArray<UEdGraph*> Graphs; Blueprint->GetAllGraphs(Graphs);
+        for (UEdGraph* Graph : Graphs) if (Graph) for (UEdGraphNode* Node : Graph->Nodes) if (Node)
+        {
+            if (auto* VariableNode = Cast<UK2Node_Variable>(Node))
+            {
+                const FMemberReference& Ref = VariableNode->VariableReference;
+                if (Ref.IsLocalScope()) continue;
+                const bool SameGuid = Ref.GetMemberGuid() == Variable.VarGuid;
+                const bool SameOwner = Ref.IsSelfContext() ? Inherits : DerivesFrom(Ref.GetMemberParentClass(), Owner);
+                const bool SameName = Ref.GetMemberName() == Variable.VarName;
+                if (SameName && !Ref.IsSelfContext() && !Ref.GetMemberParentClass())
+                    return Refuse(TEXT("Member owner is unresolved at ") + Node->GetPathName());
+                if (!SameGuid && !(SameOwner && SameName)) continue;
+                if (!SameOwner || !SameName || (Ref.GetMemberGuid().IsValid() && !SameGuid))
+                    return Refuse(TEXT("Inconsistent member identity at ") + Node->GetPathName());
+                if (Node->GetClass() != UK2Node_VariableGet::StaticClass() && Node->GetClass() != UK2Node_VariableSet::StaticClass())
+                    return Refuse(TEXT("Unsupported member-reference node: ") + Node->GetPathName());
+                if (Node->FindPin(NewVariableName)) return Refuse(TEXT("New name conflicts with a node pin: ") + Node->GetPathName());
+                // Split pins encode their root member name in their internal
+                // name. Rename the whole subtree in place so reconstruction
+                // can still match it without losing connections or defaults.
+                for (UEdGraphPin* Pin : Node->Pins) if (Pin)
+                {
+                    const UEdGraphPin* Root = Pin;
+                    TSet<const UEdGraphPin*> Parents;
+                    while (Root->ParentPin)
+                    {
+                        if (Parents.Contains(Root)) return Refuse(TEXT("Cyclic split-pin hierarchy at ") + Node->GetPathName());
+                        Parents.Add(Root); Root = Root->ParentPin;
+                    }
+                    if (Root->PinName != Variable.VarName) continue;
+                    FString Suffix;
+                    if (Pin != Root)
+                    {
+                        const FString Prefix = Variable.VarName.ToString() + TEXT("_");
+                        if (!Pin->PinName.ToString().StartsWith(Prefix, ESearchCase::CaseSensitive))
+                            return Refuse(TEXT("Split-pin identity is inconsistent at ") + Node->GetPathName());
+                        Suffix = Pin->PinName.ToString().Mid(Variable.VarName.ToString().Len());
+                    }
+                    const FName Target(*(NewName + Suffix));
+                    for (const UEdGraphPin* Other : Node->Pins)
+                        if (Other && Other != Pin && Other->Direction == Pin->Direction && Other->PinName == Target)
+                            return Refuse(TEXT("Renamed split pin conflicts with an existing pin at ") + Node->GetPathName());
+                    RenamedPins.Add(Pin, Target);
+                }
+                References.Add(VariableNode); Affected.AddUnique(Blueprint); Paths.Add(Node->GetPathName());
+            }
+            else
+            {
+                const auto* Defaults = Cast<UK2Node_GetClassDefaults>(Node);
+                const auto* K2 = Cast<UK2Node>(Node);
+                if ((Defaults && DerivesFrom(Defaults->GetInputClass(), Owner) && Defaults->FindPin(Variable.VarName))
+                    || (K2 && K2->ReferencesVariable(Variable.VarName, Owner->SkeletonGeneratedClass)))
+                    return Refuse(TEXT("Unsupported member-reference node: ") + Node->GetPathName());
+            }
+        }
+        if (Affected.Contains(Blueprint) && !Ready(Blueprint))
+            return Refuse(TEXT("Affected Blueprint is not ready. Compile it before previewing: ") + Blueprint->GetPathName());
+        Baseline += State(Blueprint);
+    }
+    // Instance overrides are serialized by property name. This tool cannot
+    // migrate them through a later reinstance, so it must not rename beneath them.
+    for (TObjectIterator<UObject> It; It; ++It)
+        if (IsValid(*It) && !It->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject)
+            && DerivesFrom(It->GetClass(), Owner))
+            return Refuse(TEXT("A live instance requires manual migration: ") + It->GetPathName());
+    Paths.Sort();
+    Affected.Sort([](const UBlueprint& A, const UBlueprint& B) { return A.GetPathName() < B.GetPathName(); });
+    TArray<FString> AssetPaths;
+    for (UBlueprint* Blueprint : Affected) AssetPaths.Add(Blueprint->GetPathName());
+    const FString Token = FMD5::HashAnsiString(*(Owner->GetPathName() + Name + NewName + Baseline));
+    const FString Limits = TEXT("\nCoverage: registered dependencies and resident Blueprint graphs/bindings. Dynamic strings and native code are not verified. Inspection may load assets and run load callbacks. No save or checkout. Edit refreshes skeletons; compile affected assets separately before saving. Undo is not guaranteed across compilation.");
+    const FString Summary = FString::Printf(TEXT("\nmember: %s -> %s\naffected assets (%d):\n"), *Name, *NewName, Affected.Num())
+        + FString::Join(AssetPaths, TEXT("\n")) + FString::Printf(TEXT("\nreference nodes (%d):\n"), References.Num()) + FString::Join(Paths, TEXT("\n"));
+    if (!Apply) return TEXT("preview: Rename one owned member and its supported references. No edits performed.") + Summary + TEXT("\nconfirm: ") + Token + Limits;
+    if (Confirm != Token) return Refuse(TEXT("Confirmation is missing or stale. Preview again and copy its confirm token."));
+
+    TMap<UBlueprint*, FString> Before;
+    TMap<UPackage*, bool> Dirty;
+    for (UBlueprint* Blueprint : Affected)
+    { Before.Add(Blueprint, State(Blueprint)); Dirty.FindOrAdd(Blueprint->GetOutermost()) = Blueprint->GetOutermost()->IsDirty(); }
+    FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP rename member variable")));
+    for (UBlueprint* Blueprint : Affected) Blueprint->Modify();
+    FBPVariableDescription& Declaration = Owner->NewVariables[Index];
+    Declaration.VarName = NewVariableName;
+    Declaration.FriendlyName = FName::NameToDisplayString(NewName, Declaration.VarType.PinCategory == FName(TEXT("bool")));
+    // The serialized declaration may lag behind edits to the generated CDO.
+    // Preserve the effective default just as the stock rename helper does.
+    Declaration.DefaultValue = EffectiveDefault;
+    for (UK2Node_Variable* Node : References)
+    {
+        Node->Modify();
+        const FMemberReference Previous = Node->VariableReference;
+        Node->VariableReference.SetDirect(NewVariableName, Variable.VarGuid, Previous.GetMemberParentClass(), Previous.IsSelfContext());
+        for (UEdGraphPin* Pin : Node->Pins)
+            if (const FName* Target = RenamedPins.Find(Pin)) Pin->PinName = *Target;
+    }
+    TMap<UBlueprint*, FString> Expected;
+    for (UBlueprint* Blueprint : Affected) Expected.Add(Blueprint, State(Blueprint));
+    // Do not invoke RenameMemberVariable: it can detach OnRep and rename child
+    // declarations implicitly. Only the approved declaration/references change.
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Owner);
+    for (UBlueprint* Blueprint : Affected) if (Blueprint != Owner) FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+    bool Verified = true;
+    for (UBlueprint* Blueprint : Affected) Verified &= State(Blueprint) == Expected[Blueprint];
+    if (!Verified)
+    {
+        bool Restored = FTurboMCPRollback::EndAndUndoActiveTransaction();
+        for (UBlueprint* Blueprint : Affected) Restored &= State(Blueprint) == Before[Blueprint];
+        if (Restored) for (const auto& Pair : Dirty) Pair.Key->SetDirtyFlag(Pair.Value);
+        return Restored ? TEXT("error: Rename verification failed; declarations and graph baseline restored. Nothing saved.")
+            : TEXT("error: Rename verification failed and rollback is unverified. Changes may remain; inspect all affected assets before saving.") + Summary;
+    }
+    return TEXT("edited: Renamed the member and supported references; declaration and graph state verified.") + Summary + Limits;
+}
+}
+}
+FString UTurboMCPPreviewToolset::PreviewTurboMCPVariableRename(const FString& Asset, const FString& Name, const FString& NewName)
+{ return TurboMCPVariableRemoval::MemberRename::Rename(Asset, Name, NewName, TEXT(""), false); }
+FString UTurboMCPEditToolset::EditTurboMCPVariableRename(const FString& Asset, const FString& Name, const FString& NewName, const FString& Confirm)
+{ return TurboMCPVariableRemoval::MemberRename::Rename(Asset, Name, NewName, Confirm, true); }

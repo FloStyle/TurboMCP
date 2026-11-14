@@ -180,3 +180,175 @@ bool FTurboMCPVariableRemoveTest::RunTest(const FString& Parameters)
     return !HasAnyErrors();
 }
 #endif
+
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Engine/BlueprintGeneratedClass.h"
+#include "GameFramework/Actor.h"
+#include "K2Node_GetClassDefaults.h"
+#include "UObject/UnrealType.h"
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPMemberRenameTest,
+    "TurboMCP.Variables.MemberRename", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTurboMCPMemberRenameTest::RunTest(const FString& Parameters)
+{
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/MemberRename_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    ON_SCOPE_EXIT { Package->SetDirtyFlag(false); };
+    UBlueprint* Owner = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("BP_Owner"), BPTYPE_Normal,
+        UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    if (!Owner) { AddError(TEXT("Owner fixture creation failed.")); return false; }
+    FEdGraphPinType Type; Type.PinCategory = UEdGraphSchema_K2::PC_Int;
+    FBlueprintEditorUtils::AddMemberVariable(Owner, TEXT("Value"), Type, TEXT("7"));
+    UEdGraph* NotifyGraph = UBlueprintEditorLibrary::AddFunctionGraph(Owner, TEXT("OnRep_Value"));
+    if (!NotifyGraph) { AddError(TEXT("RepNotify fixture graph is missing.")); return false; }
+    Owner->NewVariables[0].PropertyFlags |= CPF_Net | CPF_RepNotify;
+    Owner->NewVariables[0].RepNotifyFunc = TEXT("OnRep_Value");
+    Owner->NewVariables[0].SetMetaData(TEXT("Tooltip"), TEXT("Preserve this member description."));
+    FKismetEditorUtilities::CompileBlueprint(Owner);
+    auto SetDefault = [](UBlueprint* BP, FName Name, int32 Value)
+    {
+        UObject* CDO = BP->GeneratedClass ? BP->GeneratedClass->GetDefaultObject(false) : nullptr;
+        FIntProperty* Property = CDO ? FindFProperty<FIntProperty>(CDO->GetClass(), Name) : nullptr;
+        if (!Property) return false;
+        Property->SetPropertyValue_InContainer(CDO, Value); return true;
+    };
+    // Simulate a default edited in the Details panel after the last declaration
+    // export. The writer must preserve 42, not the stale declaration text "7".
+    if (!SetDefault(Owner, TEXT("Value"), 42)) { AddError(TEXT("Compiled owner default is missing.")); return false; }
+    UBlueprint* Child = FKismetEditorUtilities::CreateBlueprint(Owner->GeneratedClass, Package, TEXT("BP_Child"), BPTYPE_Normal,
+        UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    UBlueprint* Caller = FKismetEditorUtilities::CreateBlueprint(UObject::StaticClass(), Package, TEXT("BP_Caller"), BPTYPE_Normal,
+        UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    if (!Child || !Caller) { AddError(TEXT("Dependent fixtures are missing.")); return false; }
+    FBlueprintEditorUtils::AddMemberVariable(Caller, TEXT("Value"), Type, TEXT("19"));
+    FKismetEditorUtilities::CompileBlueprint(Child); FKismetEditorUtilities::CompileBlueprint(Caller);
+    const FGuid Guid = Owner->NewVariables[0].VarGuid;
+    const auto Flags = Owner->NewVariables[0].PropertyFlags;
+    auto Graph = [](UBlueprint* BP, const TCHAR* Name)
+    {
+        UEdGraph* Result = FBlueprintEditorUtils::CreateNewGraph(BP, Name, UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+        BP->UbergraphPages.Add(Result); return Result;
+    };
+    UEdGraph* OwnerGraph = Graph(Owner, TEXT("References"));
+    UEdGraph* ChildGraph = Graph(Child, TEXT("References"));
+    UEdGraph* CallerGraph = Graph(Caller, TEXT("References"));
+    auto Get = [](UEdGraph* InGraph, UClass* External, FGuid Identity)
+    {
+        auto* Node = NewObject<UK2Node_VariableGet>(InGraph);
+        if (External) Node->VariableReference.SetExternalMember(TEXT("Value"), External, Identity);
+        else Node->VariableReference.SetSelfMember(TEXT("Value"), Identity);
+        Node->CreateNewGuid(); InGraph->AddNode(Node, false, false); Node->AllocateDefaultPins(); return Node;
+    };
+    UK2Node_VariableGet* OwnerGet = Get(OwnerGraph, nullptr, Guid);
+    UK2Node_VariableGet* ChildGet = Get(ChildGraph, nullptr, Guid);
+    UK2Node_VariableGet* CallerGet = Get(CallerGraph, Owner->GeneratedClass, Guid);
+    UK2Node_VariableGet* UnrelatedGet = Get(CallerGraph, nullptr, Caller->NewVariables[0].VarGuid);
+    auto* Setter = NewObject<UK2Node_VariableSet>(OwnerGraph);
+    Setter->VariableReference.SetSelfMember(TEXT("Value"), Guid);
+    Setter->CreateNewGuid(); OwnerGraph->AddNode(Setter, false, false); Setter->AllocateDefaultPins();
+    UEdGraphPin* Out = OwnerGet->FindPin(TEXT("Value"), EGPD_Output);
+    UEdGraphPin* In = Setter->FindPin(TEXT("Value"), EGPD_Input);
+    if (!Out || !In) { AddError(TEXT("Member pins are missing.")); return false; }
+    Out->MakeLinkTo(In); In->DefaultValue = TEXT("23");
+    const FGuid OutId = Out->PinId, InId = In->PinId;
+    OwnerGet->NodePosX = 144; Setter->NodePosX = 448;
+    UEdGraph* LocalGraph = UBlueprintEditorLibrary::AddFunctionGraph(Owner, TEXT("LocalScope"));
+    if (!LocalGraph) { AddError(TEXT("Local scope creation failed.")); return false; }
+    TArray<UK2Node_FunctionEntry*> Entries; LocalGraph->GetNodesOfClass(Entries);
+    if (Entries.Num() != 1) { AddError(TEXT("Local entry is missing.")); return false; }
+    FBPVariableDescription Local; Local.VarName = TEXT("Value"); Local.VarGuid = FGuid::NewGuid(); Local.VarType = Type;
+    Entries[0]->LocalVariables.Add(Local);
+    auto* LocalGet = NewObject<UK2Node_VariableGet>(LocalGraph);
+    LocalGet->VariableReference.SetLocalMember(Local.VarName, LocalGraph->GetName(), Local.VarGuid);
+    LocalGet->CreateNewGuid(); LocalGraph->AddNode(LocalGet, false, false); LocalGet->AllocateDefaultPins();
+    auto Token = [](const FString& Text)
+    { FString Before, After, Result; Text.Split(TEXT("\nconfirm: "), &Before, &After); After.Split(TEXT("\n"), &Result, nullptr); return Result; };
+    auto Preview = [&]() { return UTurboMCPPreviewToolset::PreviewTurboMCPVariableRename(Owner->GetPathName(), TEXT("Value"), TEXT("RenamedValue")); };
+    auto Edit = [&](const FString& Confirm)
+    { return UTurboMCPEditToolset::EditTurboMCPVariableRename(Owner->GetPathName(), TEXT("Value"), TEXT("RenamedValue"), Confirm); };
+    Package->SetDirtyFlag(false);
+    const FString First = Preview(); AddInfo(First);
+    TestTrue(TEXT("Member preview succeeds"), First.StartsWith(TEXT("preview:")));
+    TestTrue(TEXT("Preview lists owner, child and external caller"), First.Contains(Owner->GetPathName()) && First.Contains(Child->GetPathName()) && First.Contains(Caller->GetPathName()));
+    TestFalse(TEXT("Preview leaves package clean"), Package->IsDirty());
+    TestEqual(TEXT("Preview leaves declaration unchanged"), Owner->NewVariables[0].VarName, FName(TEXT("Value")));
+    SetDefault(Owner, TEXT("Value"), 43); SetDefault(Child, TEXT("Value"), 43);
+    TestTrue(TEXT("Changed CDO invalidates token"), Edit(Token(First)).Contains(TEXT("stale")));
+    SetDefault(Owner, TEXT("Value"), 42); SetDefault(Child, TEXT("Value"), 42);
+    FBPVariableDescription Collision; Collision.VarName = TEXT("RenamedValue"); Collision.VarGuid = FGuid::NewGuid(); Collision.VarType = Type;
+    Child->NewVariables.Add(Collision);
+    TestTrue(TEXT("Child collision refuses without renaming child"), Preview().Contains(TEXT("collision")));
+    TestEqual(TEXT("Conflicting child declaration retained"), Child->NewVariables.Last().VarName, Collision.VarName);
+    Child->NewVariables.Pop();
+    SetDefault(Child, TEXT("Value"), 99);
+    TestTrue(TEXT("Child override refuses explicit migration gap"), Preview().Contains(TEXT("Child default override")));
+    SetDefault(Child, TEXT("Value"), 42);
+    TestTrue(TEXT("Case-only rename refuses"), UTurboMCPPreviewToolset::PreviewTurboMCPVariableRename(Owner->GetPathName(), TEXT("Value"), TEXT("value")).Contains(TEXT("Case-only")));
+    auto* Defaults = NewObject<UK2Node_GetClassDefaults>(CallerGraph);
+    Defaults->CreateNewGuid(); CallerGraph->AddNode(Defaults, false, false); Defaults->AllocateDefaultPins();
+    UEdGraphPin* ClassPin = Defaults->FindPin(TEXT("Class"));
+    if (!ClassPin) { AddError(TEXT("Class-defaults input is missing.")); return false; }
+    ClassPin->DefaultObject = Owner->GeneratedClass; Defaults->PinDefaultValueChanged(ClassPin);
+    TestTrue(TEXT("Class-defaults reference refuses"), Preview().Contains(TEXT("Unsupported member-reference")));
+    CallerGraph->RemoveNode(Defaults);
+    const FString Fresh = Preview(); AddInfo(Fresh);
+    const FString Result = Edit(Token(Fresh)); AddInfo(Result);
+    TestTrue(TEXT("Confirmed member rename succeeds"), Result.StartsWith(TEXT("edited:")));
+    TestEqual(TEXT("GUID preserved"), Owner->NewVariables[0].VarGuid, Guid);
+    TestEqual(TEXT("Flags preserved"), Owner->NewVariables[0].PropertyFlags, Flags);
+    TestEqual(TEXT("RepNotify association preserved"), Owner->NewVariables[0].RepNotifyFunc, FName(TEXT("OnRep_Value")));
+    TestEqual(TEXT("Metadata preserved"), Owner->NewVariables[0].GetMetaData(TEXT("Tooltip")), FString(TEXT("Preserve this member description.")));
+    TestEqual(TEXT("Effective default captured"), Owner->NewVariables[0].DefaultValue, FString(TEXT("42")));
+    for (UK2Node_VariableGet* Node : {OwnerGet, ChildGet, CallerGet})
+    { TestEqual(TEXT("Member reference renamed"), Node->VariableReference.GetMemberName(), FName(TEXT("RenamedValue"))); TestEqual(TEXT("Reference identity preserved"), Node->VariableReference.GetMemberGuid(), Guid); }
+    TestEqual(TEXT("Unrelated member untouched"), UnrelatedGet->VariableReference.GetMemberName(), FName(TEXT("Value")));
+    TestEqual(TEXT("Local untouched"), LocalGet->VariableReference.GetMemberName(), FName(TEXT("Value")));
+    TestEqual(TEXT("Node position preserved"), OwnerGet->NodePosX, 144);
+    UEdGraphPin* RenamedOut = OwnerGet->FindPin(TEXT("RenamedValue"), EGPD_Output);
+    UEdGraphPin* RenamedIn = Setter->FindPin(TEXT("RenamedValue"), EGPD_Input);
+    TestTrue(TEXT("Pin identities, links and literal preserved"), RenamedOut && RenamedIn && RenamedOut->PinId == OutId
+        && RenamedIn->PinId == InId && RenamedOut->LinkedTo.Contains(RenamedIn) && RenamedIn->DefaultValue == TEXT("23"));
+    // Only compile after checking the edit delta. Never let a compile normalize
+    // an incorrect edit and turn that into a passing preservation assertion.
+    FKismetEditorUtilities::CompileBlueprint(Owner);
+    FKismetEditorUtilities::CompileBlueprint(Child);
+    FKismetEditorUtilities::CompileBlueprint(Caller);
+    TestTrue(TEXT("Owner and dependents compile"), Owner->Status != BS_Error && Child->Status != BS_Error && Caller->Status != BS_Error);
+    UObject* CDO = Owner->GeneratedClass ? Owner->GeneratedClass->GetDefaultObject(false) : nullptr;
+    FIntProperty* Property = CDO ? FindFProperty<FIntProperty>(CDO->GetClass(), TEXT("RenamedValue")) : nullptr;
+    TestTrue(TEXT("Compiled renamed default survives"), Property && Property->GetPropertyValue_InContainer(CDO) == 42);
+    UBlueprint* VectorOwner = FKismetEditorUtilities::CreateBlueprint(UObject::StaticClass(), Package, TEXT("BP_Vector"), BPTYPE_Normal,
+        UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+    if (!VectorOwner) { AddError(TEXT("Split-pin fixture creation failed.")); return false; }
+    FEdGraphPinType VectorType; VectorType.PinCategory = UEdGraphSchema_K2::PC_Struct;
+    VectorType.PinSubCategoryObject = TBaseStructure<FVector>::Get();
+    FBlueprintEditorUtils::AddMemberVariable(VectorOwner, TEXT("Value"), VectorType);
+    FKismetEditorUtilities::CompileBlueprint(VectorOwner);
+    UEdGraph* VectorGraph = Graph(VectorOwner, TEXT("VectorReferences"));
+    auto* VectorGet = Get(VectorGraph, nullptr, VectorOwner->NewVariables[0].VarGuid);
+    auto* VectorSet = NewObject<UK2Node_VariableSet>(VectorGraph);
+    VectorSet->VariableReference.SetSelfMember(TEXT("Value"), VectorOwner->NewVariables[0].VarGuid);
+    VectorSet->CreateNewGuid(); VectorGraph->AddNode(VectorSet, false, false); VectorSet->AllocateDefaultPins();
+    UEdGraphPin* VectorOut = VectorGet->FindPin(TEXT("Value"), EGPD_Output);
+    UEdGraphPin* VectorIn = VectorSet->FindPin(TEXT("Value"), EGPD_Input);
+    if (!VectorOut || !VectorIn) { AddError(TEXT("Vector pins are missing.")); return false; }
+    GetDefault<UEdGraphSchema_K2>()->SplitPin(VectorOut, false);
+    GetDefault<UEdGraphSchema_K2>()->SplitPin(VectorIn, false);
+    if (VectorOut->SubPins.Num() != 3 || VectorIn->SubPins.Num() != 3)
+    { AddError(TEXT("Vector pins did not split.")); return false; }
+    UEdGraphPin* XOut = VectorOut->SubPins[0]; UEdGraphPin* XIn = VectorIn->SubPins[0];
+    XOut->MakeLinkTo(XIn); VectorIn->SubPins[1]->DefaultValue = TEXT("17.0");
+    const FGuid XIdentity = XIn->PinId;
+    const FString VectorPreview = UTurboMCPPreviewToolset::PreviewTurboMCPVariableRename(VectorOwner->GetPathName(), TEXT("Value"), TEXT("Offset"));
+    const FString VectorEdit = UTurboMCPEditToolset::EditTurboMCPVariableRename(VectorOwner->GetPathName(), TEXT("Value"), TEXT("Offset"), Token(VectorPreview));
+    AddInfo(VectorEdit);
+    TestTrue(TEXT("Split member rename succeeds"), VectorEdit.StartsWith(TEXT("edited:")));
+    TestTrue(TEXT("Split identities and links preserved before compile"), XIn->PinId == XIdentity && XIn->LinkedTo.Contains(XOut)
+        && XIn->PinName == TEXT("Offset_X") && XOut->PinName == TEXT("Offset_X")
+        && VectorIn->SubPins[1]->DefaultValue == TEXT("17.0"));
+    FKismetEditorUtilities::CompileBlueprint(VectorOwner);
+    TestTrue(TEXT("Split member compiles"), VectorOwner->Status != BS_Error);
+    const FString Help = UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCPEditToolset"), TEXT("EditTurboMCPVariableRename"));
+    AddInfo(Help);
+    TestTrue(TEXT("Help explains confirmation and compilation"), Help.Contains(TEXT("Confirm")) && Help.Contains(TEXT("compile")));
+    return !HasAnyErrors();
+}
+#endif

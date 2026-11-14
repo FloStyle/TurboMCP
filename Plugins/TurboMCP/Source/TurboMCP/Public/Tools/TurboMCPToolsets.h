@@ -1006,6 +1006,14 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPVariableRemove(const FString& Asset, const FString& Name);
 
+    /** Preview an owned member-variable rename and list affected Blueprint assets and getter/setter references. Preserves identity, effective default and replication association. May load dependent Blueprints, but never maps; preview does not edit or compile. Incomplete discovery, child-name collisions, unsupported bindings/reference nodes and child default overrides refuse. Dynamic/native references are outside inspection. No save or checkout.
+     * @param Asset Blueprint asset path or unique name; prefer a full object path.
+     * @param Name Exact case-sensitive owned member name. Inherited, local, component and widget-generated variables are not supported.
+     * @param NewName New valid member identifier. Case-only renames are refused. Copy the returned confirmation token to EditTurboMCPVariableRename.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPVariableRename(const FString& Asset, const FString& Name, const FString& NewName);
+
     /** Remove one unused local declaration from an exact owned function. Referenced locals refuse; no graph nodes are deleted. Preview loads the asset but does not edit it. Edit requires a fresh preview token. No save or checkout; structural refresh can compile and affect undo.
      * @param Asset Blueprint path or unique name; prefer the full path.
      * @param Function Exact owned function graph name. Event graphs and ambiguous names refuse.
@@ -1919,6 +1927,15 @@ public:
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPVariableRemove(const FString& Asset, const FString& Name, const FString& Confirm);
+
+    /** Rename a member and supported getter/setter references using fresh confirmation; refreshes skeletons, so compile affected assets separately before saving. Preserves links, pin defaults, positions and OnRep association. Rechecks dependencies and defaults before editing. No save or checkout and no guaranteed undo across compilation. Unsupported cases refuse before mutation; see PreviewTurboMCPVariableRename.
+     * @param Asset Same Blueprint asset used for preview.
+     * @param Name Same exact current member name used for preview.
+     * @param NewName Same new identifier used for preview.
+     * @param Confirm Exact token from a fresh PreviewTurboMCPVariableRename result. Changed declarations, defaults, references or dependency coverage invalidate it.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPVariableRename(const FString& Asset, const FString& Name, const FString& NewName, const FString& Confirm);
 
     /** Remove one unused local declaration from an exact owned function. Referenced locals refuse; no graph nodes are deleted. Preview loads the asset but does not edit it. Edit requires a fresh preview token. No save or checkout; structural refresh can compile and affect undo.
      * @param Asset Blueprint path or unique name; prefer the full path.
