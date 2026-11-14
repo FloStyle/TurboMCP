@@ -228,7 +228,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Bounded planned-coordinate pages, the independent seven-score oracle, read-back and undo pass on the disposable cascade. Inspect R3/R6 intended-handoff classification and cross-box screenshots against the accepted reference before claiming production Tidy acceptance.",
+      "next_step": "R3/R6 aligned-versus-diagonal synthetic classification passes. Compare cross-box findings and screenshots against the accepted cascade reference; do not infer full visual Tidy acceptance from the focused native case.",
       "evidence": [
         {
           "commit": "fb6c2228",
@@ -288,14 +288,20 @@
           "run": "1400dc7bcf324bbb859108b8343d9239",
           "result": "integrated_focused_workflow_passed_visual_pending",
           "scope": "Integrated bounded plan-coordinate pages for large Tidy previews. Stock Unreal 5.8.4 build passed; focused cascade suite passed with 846 tool calls and restored its disposable fixture. Paged planned coordinates, eight generated-box rectangles and nested membership, routed knots, read-back and undo were checked. The workflow itself records visual acceptance pending; no full layout or release claim."
+        },
+        {
+          "commit": "596f62fb457acfd6fbff08c2187e7d94f047f468",
+          "run": "7d1d2bc4926e457fbe9714fd06f7e6a8",
+          "result": "integrated_partial_focused_handoff_pass",
+          "scope": "A reroute no longer makes a diagonal Completed or False segment an intended handoff. Stock Unreal 5.8.4 build and one focused native R3/R6 test passed for aligned and sideways-shifted reroutes; the scope gate passed. First editor run e2c1ea46ae19463aaf8c8e3bbdb022fb failed in the Python wrapper before the native test because of an invalid module import; corrected wrapper run passed. Offline validate.py passed 25/26; pre-existing test-lookup-guards remains failing. Accepted cascade and cross-box visual comparison were not rerun."
         }
       ],
       "design_notes": [
         "Candidate BodyRowDrift and CompletedAboveBody are partial diagnostics, not Appendix H scoring. Still required: unrelated box crossings, exec segment crossings, diagonal exec length, block row breaks, data crossings, total length, area, 5-percent tie handling and every greater-than-10-percent regression warning."
       ],
-      "readiness_review": "Appendix H defines the seven measures and thresholds. Straight-segment scoring is integrated; independent geometry checks and intended handoff classification remain specified work.",
-      "remaining": "R3/R6 intended-handoff classification and cross-box visual comparison remain open. Bounded plan-coordinate paging already passes the focused workflow; the old preview-cap blocker has been superseded.",
-      "latest_evidence": "Commit a85c10fbde192ea4644915074573cae9a303deda: focused stock-5.8.4 cascade run 1400dc7bcf324bbb859108b8343d9239 passed with 846 calls. Paged planned coordinates, eight generated-box rectangles and nested membership, routed knots, read-back and undo were checked. Production visual acceptance remains open."
+      "readiness_review": "Appendix H defines seven measures and thresholds. Straight-segment scoring and focused R3/R6 handoff classification pass; accepted cascade visuals and cross-box interpretation remain open.",
+      "remaining": "Cross-box visual comparison on the accepted cascade remains open. R3/R6 have focused synthetic evidence, not full cascade visual acceptance.",
+      "latest_evidence": "Commit 596f62fb457acfd6fbff08c2187e7d94f047f468: stock-5.8.4 build and focused R3/R6 native case 7d1d2bc4926e457fbe9714fd06f7e6a8 passed. The prior 846-call cascade pass remains valid for its checked mechanics; visual acceptance remains open."
     },
     {
       "id": "NOV05-04",
