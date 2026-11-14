@@ -9,3 +9,7 @@ Supervised execution 4cb0955a1271404a8e75d7d1f86e1135: stock 5.8.4 build passed.
 NOV13-03 remains open/in progress. Unloaded map/redirector-dependent assets remain skipped. The field assets and exact revision are unavailable; two successful standalone reads do not prove absence of map-loading side effects. Do not remove the guard or treat deferred dependency flags as full graph-load safety. Large-project performance and formerly skipped unloaded assets are not validated.
 
 Dashboard HTTP root and /api/state both returned 200 through direct loopback access after the previous request timeout.
+
+## November 14 assertion reconciliation
+
+The historical full-wrapper failure above is retained. Its literal-count assertion was subsequently repaired in `f0eb3b8855d5191a19f610c77007d4c64741a955`, which is already on main. Current source checks accepted assignments equal changed plus already-matching defaults, requires at least one changed default for the unique marker, and independently reads that marker back through the graph reader. Its expected wording matches `TurboMCPGraphAppend.cpp`. Do not schedule another implementation of this same assertion repair. This source comparison is not a passing full-wrapper rerun; full-suite acceptance remains unverified until a scoped execution supplies that evidence.
