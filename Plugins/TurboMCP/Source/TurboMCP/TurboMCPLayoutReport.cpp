@@ -119,6 +119,14 @@ namespace
 		const bool bCompleted = Origin->PinName == TEXT("Completed");
 		const bool bFalse = Control->IsA<UK2Node_IfThenElse>()
 			&& Origin->PinName == TEXT("else");
+		// A lower target alone does not make a Completed or False handoff
+		// intentional. Those lanes require a routed turn; otherwise this
+		// classification would hide the long diagonal wire under review.
+		const UEdGraphNode* InputNode = Input->GetOwningNodeUnchecked();
+		if (!InputNode) return FString();
+		const bool bRouted = Output->GetOwningNodeUnchecked()->IsA<UK2Node_Knot>()
+			|| InputNode->IsA<UK2Node_Knot>();
+		if ((bCompleted || bFalse) && !bRouted) return FString();
 		FName PeerName = bCompleted ? FName(TEXT("LoopBody")) : FName(TEXT("then"));
 		bool bLaterSequenceLane = false;
 		if (Control->IsA<UK2Node_ExecutionSequence>())
@@ -139,8 +147,31 @@ namespace
 				&& Peer->LinkedTo.Num() == 1 && Peer->LinkedTo[0]
 				&& Peer->LinkedTo[0]->GetOwningNodeUnchecked())
 			{
+				// The body/True lane can itself start with reroutes. Compare with
+				// its first real node rather than the tiny knot rectangle.
+				const UEdGraphPin* PeerTarget = Peer->LinkedTo[0];
+				TSet<const UEdGraphNode*> PeerSeen;
+				for (int32 Hop = 0; Hop < 16; ++Hop)
+				{
+					const UEdGraphNode* PeerNode = PeerTarget->GetOwningNodeUnchecked();
+					if (!PeerNode || PeerSeen.Contains(PeerNode)) return FString();
+					PeerSeen.Add(PeerNode);
+					if (!PeerNode->IsA<UK2Node_Knot>()) break;
+					const UEdGraphPin* Next = nullptr;
+					for (const UEdGraphPin* Candidate : PeerNode->Pins)
+						if (Candidate && Candidate->Direction == EGPD_Output
+							&& Candidate->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+						{
+							if (Candidate->LinkedTo.Num() != 1) return FString();
+							Next = Candidate->LinkedTo[0];
+							break;
+						}
+					if (!Next || !Next->GetOwningNodeUnchecked()) return FString();
+					PeerTarget = Next;
+				}
+				if (PeerTarget->GetOwningNodeUnchecked()->IsA<UK2Node_Knot>()) return FString();
 				const FTurboMCPLayoutReport::FRect OtherLane =
-					FTurboMCPLayoutReport::RectOf(Peer->LinkedTo[0]->GetOwningNodeUnchecked());
+					FTurboMCPLayoutReport::RectOf(PeerTarget->GetOwningNodeUnchecked());
 				return FTurboMCPLayoutReport::PinPosition(Input).Y > OtherLane.MaxY
 					? (bCompleted ? TEXT("R3") : bFalse ? TEXT("R6") : TEXT("R4")) : FString();
 			}
