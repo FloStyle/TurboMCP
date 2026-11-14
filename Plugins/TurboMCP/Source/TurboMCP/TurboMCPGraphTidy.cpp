@@ -2928,6 +2928,16 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             if (Clear) Reader.PlannedX=X;
         }
 
+    // Keep connected components intact. If vertical growth is blocked, try a
+    // rightward packing before planning reader copies from the resulting geometry.
+    if (!OutPlan.SelectedNodeKeys.IsEmpty())
+    {
+        FString GrowthError;
+        if (!ValidateScopedBoxGrowth(OutPlan, GrowthError))
+            for (const int32 BoxIndex : BoxOrder)
+                TryPackScopedSection(OutPlan, BoxIndex, SpacingX);
+    }
+
 	// -----------------------------------------------------------------------------------------
 	// STEP 7: split variable getters that feed several consumers, BEFORE the measure, because a copy
 	// changes the graph's node set and therefore its wire set.
@@ -4854,6 +4864,86 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 }
 
 // Reject newly planned intersections without changing the live graph or plan.
+bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, double Gap)
+{
+    if (InPlan.SelectedNodeKeys.IsEmpty() || !InPlan.Boxes.IsValidIndex(BoxIndex)
+        || !FMath::IsFinite(Gap) || Gap < 0.0) return false;
+    const FBox& Box = InPlan.Boxes[BoxIndex];
+    // Nested sections retain their anchors. Their joint packing needs a separate
+    // candidate rather than moving only the parent's directly owned nodes.
+    if (!Box.bWouldFit || Box.bGenerated || Box.ParentIndex != INDEX_NONE
+        || !Box.ChildBoxIndices.IsEmpty()) return false;
+    TArray<int32> Members;
+    TMap<int32, int32> Group;
+    for (int32 Index = 0; Index < InPlan.Nodes.Num(); ++Index)
+    {
+        const FNode& Node = InPlan.Nodes[Index];
+        if (Node.bIsComment || !Box.MemberKeys.Contains(Node.Key)) continue;
+        if (Node.bUnreachable || !InPlan.SelectedNodeKeys.Contains(Node.Key)) return false;
+        Members.Add(Index);
+        Group.Add(Index, Index);
+    }
+    // Include data links, feedback and wrap boundaries: no connected expression
+    // or explicitly ordered continuation may be split by this alternative.
+    for (int32 Pass = 0; Pass < Members.Num(); ++Pass)
+    {
+        bool Changed = false;
+        for (const FWire& Wire : InPlan.Wires)
+        {
+            if (!Group.Contains(Wire.SourceNodeIndex) || !Group.Contains(Wire.TargetNodeIndex)) continue;
+            const int32 Root = FMath::Min(Group[Wire.SourceNodeIndex], Group[Wire.TargetNodeIndex]);
+            Changed |= Group[Wire.SourceNodeIndex] != Root || Group[Wire.TargetNodeIndex] != Root;
+            Group[Wire.SourceNodeIndex] = Group[Wire.TargetNodeIndex] = Root;
+        }
+        if (!Changed) break;
+    }
+    TArray<int32> Groups;
+    for (const int32 Member : Members) Groups.AddUnique(Group[Member]);
+    if (Groups.Num() < 2) return false;
+    // Graph order is stable; translate each complete component without changing
+    // its internal geometry, pin alignment or links.
+    FPlan Candidate = InPlan;
+    FBox& CandidateBox = Candidate.Boxes[BoxIndex];
+    double CursorX = Box.X + FitPadding;
+    double Bottom = Box.Y + Box.Height;
+    for (const int32 Root : Groups)
+    {
+        double Left = TNumericLimits<double>::Max(), Top = Left;
+        double Right = -Left, ComponentBottom = -Left;
+        for (const int32 Member : Members)
+        {
+            if (Group[Member] != Root) continue;
+            const FNode& Node = InPlan.Nodes[Member];
+            Left = FMath::Min(Left, Node.PlannedX);
+            Top = FMath::Min(Top, Node.PlannedY);
+            Right = FMath::Max(Right, Node.PlannedX + Node.Width);
+            ComponentBottom = FMath::Max(ComponentBottom, Node.PlannedY + Node.Height);
+        }
+        const double DX = CursorX - Left;
+        const double DY = Box.Y + TitleBarHeight + FitPadding - Top;
+        for (const int32 Member : Members)
+            if (Group[Member] == Root)
+            {
+                Candidate.Nodes[Member].PlannedX += DX;
+                Candidate.Nodes[Member].PlannedY += DY;
+            }
+        Bottom = FMath::Max(Bottom, ComponentBottom + DY + FitPadding + TitleBarHeight);
+        CursorX += Right - Left + Gap;
+    }
+    CandidateBox.PlannedWidth = FMath::Max(Box.Width, CursorX - Gap + FitPadding - Box.X);
+    CandidateBox.PlannedHeight = Bottom - Box.Y;
+    CandidateBox.bWouldFit = CandidateBox.PlannedWidth != Box.Width || CandidateBox.PlannedHeight != Box.Height;
+    FString Error;
+    if (!ValidateScopedBoxGrowth(Candidate, Error) || !ValidatePlannedNodeOverlaps(Candidate, Error)) return false;
+    for (const int32 Member : Members)
+    {
+        InPlan.Nodes[Member].PlannedX = Candidate.Nodes[Member].PlannedX;
+        InPlan.Nodes[Member].PlannedY = Candidate.Nodes[Member].PlannedY;
+    }
+    InPlan.Boxes[BoxIndex] = CandidateBox;
+    return true;
+}
+
 bool FTurboMCPGraphTidy::ValidateScopedBoxGrowth(const FPlan& InPlan, FString& OutError)
 {
     if (InPlan.SelectedNodeKeys.IsEmpty()) return true;

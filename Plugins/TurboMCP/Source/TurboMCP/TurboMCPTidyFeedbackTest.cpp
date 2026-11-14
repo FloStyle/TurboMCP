@@ -63,6 +63,32 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         Growth.Boxes[0].PlannedHeight = 450;
         TestTrue(TEXT("A known nested section is not an unrelated obstacle"), FTurboMCPGraphTidy::ValidateScopedBoxGrowth(Growth, GrowthError));
         TestEqual(TEXT("Validation does not move the fixed section"), Growth.Boxes[1].PlannedY, 300.0);
+        Growth.Boxes[1].ParentIndex = INDEX_NONE;
+        Growth.Boxes[0].PlannedWidth = 300;
+        Growth.Boxes[0].PlannedHeight = 500;
+        Growth.Boxes[0].MemberKeys.Reset();
+        for (int32 Index = 0; Index < 3; ++Index)
+        {
+            FTurboMCPGraphTidy::FNode Member;
+            Member.Key = FString::Printf(TEXT("member%d"), Index);
+            Member.X = Member.PlannedX = 40 + (Index == 1 ? 100 : 0);
+            Member.Y = Member.PlannedY = Index < 2 ? 82 : 350;
+            Member.Width = Member.Height = 50;
+            Growth.Nodes.Add(Member);
+            Growth.Boxes[0].MemberKeys.Add(Member.Key);
+            Growth.SelectedNodeKeys.Add(Member.Key);
+        }
+        FTurboMCPGraphTidy::FWire InternalWire;
+        InternalWire.SourceNodeIndex = 0;
+        InternalWire.TargetNodeIndex = 1;
+        Growth.Wires.Add(InternalWire);
+        TestTrue(TEXT("Independent components can use free rightward space"), FTurboMCPGraphTidy::TryPackScopedSection(Growth, 0, 120));
+        TestEqual(TEXT("Connected component retains internal spacing"), Growth.Nodes[1].PlannedX - Growth.Nodes[0].PlannedX, 100.0);
+        TestEqual(TEXT("Second component is lifted into the section"), Growth.Nodes[2].PlannedY, 82.0);
+        TestTrue(TEXT("Second component is placed to the right"), Growth.Nodes[2].PlannedX > Growth.Nodes[1].PlannedX + 50);
+        TestEqual(TEXT("Packing preserves execution/data edge count"), Growth.Wires.Num(), 1);
+        TestEqual(TEXT("Packing preserves neighboring box position"), Growth.Boxes[1].PlannedY, 300.0);
+
     }
     UBlueprint* Macros=LoadObject<UBlueprint>(nullptr,TEXT("/Engine/EditorBlueprintResources/StandardMacros.StandardMacros"));
     if (Macros == nullptr)
