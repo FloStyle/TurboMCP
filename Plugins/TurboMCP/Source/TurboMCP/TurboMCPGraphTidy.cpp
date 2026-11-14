@@ -5423,6 +5423,10 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
             for(int32 I=0;I<=Candidate.Num() && bClear;++I)
             {
                 const FVector2D Next=I<Candidate.Num()?Candidate[I]+InputOffset:B;
+                // Unreal draws a spline, not the chord used by compact scoring.
+                // A vertical chord can clear a node while its horizontal tangent
+                // bends through it. Reuse these samples for clearance and ranking.
+                const auto CandidateSpline = SplineSegments(Previous, Next);
                 // Rounding can introduce at most one unit of pin-axis drift.
                 if ((I==0 && Next.X<A.X-1) || (I==Candidate.Num() && Previous.X>B.X+1)) bClear=false;
                 if(FMath::Abs(Next.X-Previous.X)>1 && FMath::Abs(Next.Y-Previous.Y)>1)
@@ -5431,12 +5435,18 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
                 {
                     if(Other==I || Other==I-1) continue;
                     const FVector2D P=Candidate[Other];
-                    if(Crosses(Previous,Next,{P.X-8,P.Y-8,P.X+KnotSize.X+8,P.Y+KnotSize.Y+8,INDEX_NONE})) bClear=false;
+                    const FObstacle KnotObstacle{P.X-8,P.Y-8,P.X+KnotSize.X+8,P.Y+KnotSize.Y+8,INDEX_NONE};
+                    if(Crosses(Previous,Next,KnotObstacle)) bClear=false;
+                    for (const auto& Curve : CandidateSpline)
+                        if (Crosses(Curve.Key, Curve.Value, KnotObstacle)) { bClear=false; break; }
                 }
                 for(const FObstacle& Obstacle:Obstacles)
                 {
                     if((I==0 && Obstacle.NodeIndex==SourceObstacleIndex) || (I==Candidate.Num() && Obstacle.NodeIndex==Wire.TargetNodeIndex)) continue;
                     if(Crosses(Previous,Next,Obstacle)) { bClear=false; break; }
+                    for (const auto& Curve : CandidateSpline)
+                        if (Crosses(Curve.Key, Curve.Value, Obstacle)) { bClear=false; break; }
+                    if (!bClear) break;
                 }
                 // Prefer channels that do not cross other execution paths.
                 // Previously shortest-path selection could introduce a crossing
@@ -5457,7 +5467,7 @@ bool FTurboMCPGraphTidy::PlanOrthogonalRoutes(FPlan& Plan, const FVector2D& Knot
                 // Native reroute splines retain horizontal tangents on a vertical
                 // drop. Break straight-score ties using their sampled curves so
                 // adjacent clear channels do not still cross in the screenshot.
-                if (!OtherSplines.IsEmpty()) for (const auto& Curve:SplineSegments(Previous,Next))
+                if (!OtherSplines.IsEmpty()) for (const auto& Curve:CandidateSpline)
                     for (const auto& Other:OtherSplines) if (ProperCrossing(Curve.Key,Curve.Value,Other.Key,Other.Value)) ++SplineCrossings;
                 Length+=FVector2D::Distance(Previous,Next);
                 if(I<Candidate.Num())
