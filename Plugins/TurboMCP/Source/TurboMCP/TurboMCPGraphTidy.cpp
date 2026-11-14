@@ -4893,6 +4893,17 @@ bool FTurboMCPGraphTidy::TryPackScopedSection(FPlan& InPlan, int32 BoxIndex, dou
         Members.Add(Index);
         Group.Add(Index, Index);
     }
+    // A direct member connected to an anchored child is not an independent
+    // component. Translating only one end would break the preserved layout.
+    for (const FWire& Wire : InPlan.Wires)
+    {
+        if (!InPlan.Nodes.IsValidIndex(Wire.SourceNodeIndex)
+            || !InPlan.Nodes.IsValidIndex(Wire.TargetNodeIndex)) return false;
+        const bool SourceMoves = Group.Contains(Wire.SourceNodeIndex);
+        const bool TargetMoves = Group.Contains(Wire.TargetNodeIndex);
+        if ((SourceMoves && ChildMembers.Contains(InPlan.Nodes[Wire.TargetNodeIndex].Key))
+            || (TargetMoves && ChildMembers.Contains(InPlan.Nodes[Wire.SourceNodeIndex].Key))) return false;
+    }
     // Include data links, feedback and wrap boundaries: no connected expression
     // or explicitly ordered continuation may be split by this alternative.
     for (int32 Pass = 0; Pass < Members.Num(); ++Pass)

@@ -20,6 +20,7 @@
 #include "K2Node_IfThenElse.h"
 #include "K2Node_Knot.h"
 #include "EdGraph/EdGraph.h"
+#include "EdGraphNode_Comment.h"
 #include "EdGraphSchema_K2.h"
 #include "UObject/Package.h"
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPTidyFeedbackTest,
@@ -105,6 +106,15 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Child box retains its anchor"), Growth.Boxes[1].PlannedX, 40.0);
         TestTrue(TEXT("Direct member clears the child rectangle"), Growth.Nodes[2].PlannedX >= 360.0);
         TestEqual(TEXT("Parent no longer needs downward growth"), Growth.Boxes[0].PlannedHeight, 240.0);
+        Growth.Boxes[0].bWouldFit = true;
+        FTurboMCPGraphTidy::FWire ChildBoundary;
+        ChildBoundary.SourceNodeIndex = 1;
+        ChildBoundary.TargetNodeIndex = 2;
+        Growth.Wires.Add(ChildBoundary);
+        const double BeforeBoundaryX = Growth.Nodes[2].PlannedX;
+        TestFalse(TEXT("Packing does not split a component across an anchored child"),
+            FTurboMCPGraphTidy::TryPackScopedSection(Growth, 0, 120));
+        TestEqual(TEXT("Child-boundary refusal preserves the candidate"), Growth.Nodes[2].PlannedX, BeforeBoundaryX);
 
 
     }
@@ -118,6 +128,77 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
     ON_SCOPE_EXIT { Package->SetDirtyFlag(false); };
     UBlueprint* BP=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("BP_Feedback"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
     if (!TestNotNull(TEXT("Fixture Blueprint"),BP)) return false;
+    // Exercise the public planning/application path, not only synthetic rectangles.
+    {
+        UEdGraph* SectionGraph = FBlueprintEditorUtils::CreateNewGraph(BP, TEXT("SectionGrowth"),
+            UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+        BP->UbergraphPages.Add(SectionGraph);
+        SectionGraph->SetFlags(RF_Transactional);
+        auto AddSectionNode = [&](UEdGraphNode* Node, int32 X, int32 Y)
+        {
+            SectionGraph->AddNode(Node, false, false);
+            Node->SetFlags(RF_Transactional);
+            Node->CreateNewGuid();
+            Node->AllocateDefaultPins();
+            Node->NodePosX = X;
+            Node->NodePosY = Y;
+        };
+        auto* Section = NewObject<UEdGraphNode_Comment>(SectionGraph);
+        AddSectionNode(Section, 0, 0);
+        Section->NodeComment = TEXT("Selected independent flows");
+        Section->NodeWidth = 1000;
+        Section->NodeHeight = 700;
+        auto* Fixed = NewObject<UEdGraphNode_Comment>(SectionGraph);
+        AddSectionNode(Fixed, 0, 720);
+        Fixed->NodeComment = TEXT("Fixed neighboring section");
+        Fixed->NodeWidth = 1000;
+        Fixed->NodeHeight = 200;
+        TArray<FString> Selected;
+        for (int32 Index = 0; Index < 3; ++Index)
+        {
+            auto* Event = NewObject<UK2Node_CustomEvent>(SectionGraph);
+            Event->CustomFunctionName = FName(*FString::Printf(TEXT("SectionEntry%d"), Index));
+            AddSectionNode(Event, 60, 90 + Index * 190);
+            auto* Call = NewObject<UK2Node_CallFunction>(SectionGraph);
+            Call->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+            AddSectionNode(Call, 430, 90 + Index * 190);
+            Event->FindPin(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Call->FindPin(UEdGraphSchema_K2::PN_Execute));
+            Selected.Add(TurboMCPNodeId::MakeForNode(Event));
+            Selected.Add(TurboMCPNodeId::MakeForNode(Call));
+        }
+        TMap<UEdGraphNode*, FIntPoint> OriginalPositions;
+        TMap<UEdGraphPin*, TArray<UEdGraphPin*>> OriginalLinks;
+        for (UEdGraphNode* Node : SectionGraph->Nodes)
+        {
+            OriginalPositions.Add(Node, FIntPoint(Node->NodePosX, Node->NodePosY));
+            for (UEdGraphPin* Pin : Node->Pins) if (Pin) OriginalLinks.Add(Pin, Pin->LinkedTo);
+        }
+        FTurboMCPGraphTidy::FPlan SectionPlan;
+        FString SectionError;
+        if (!TestTrue(TEXT("Blocked section plans rightward: ") + SectionError,
+            FTurboMCPGraphTidy::Plan(BP->GetPathName(), SectionGraph->GetName(), true, false,
+                Selected, SectionPlan, SectionError))) return false;
+        for (const auto& Pair : OriginalPositions)
+            TestTrue(TEXT("Section preview does not move nodes"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
+        const FString SectionEdit = FTurboMCPGraphTidy::Apply(SectionPlan);
+        if (!TestTrue(TEXT("Section edit: ") + SectionEdit, SectionEdit.StartsWith(TEXT("changed:")))) return false;
+        TestTrue(TEXT("Section uses rightward space"), Section->NodeWidth > 1000);
+        TestTrue(TEXT("Section clears the fixed box below"), Section->NodeHeight <= Fixed->NodePosY);
+        TestTrue(TEXT("Fixed box geometry is unchanged"), Fixed->NodePosX == 0 && Fixed->NodePosY == 720
+            && Fixed->NodeWidth == 1000 && Fixed->NodeHeight == 200);
+        for (const auto& Node : SectionPlan.Nodes)
+            if (Node.Node && !Node.bIsComment)
+                TestTrue(TEXT("Section apply matches preview"), Node.Node->NodePosX == Node.PlannedX && Node.Node->NodePosY == Node.PlannedY);
+        for (const auto& Pair : OriginalLinks) TestTrue(TEXT("Section links unchanged"), Pair.Key->LinkedTo == Pair.Value);
+        const FString Capture = UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(), SectionGraph->GetName(),
+            TEXT("graph"), TEXT(""), TEXT("1600x900"));
+        AddInfo(Capture);
+        TestTrue(TEXT("Section native capture produced"), Capture.Contains(TEXT("image:")));
+        if (!TestTrue(TEXT("Section undo succeeds"), GEditor->UndoTransaction(false))) return false;
+        for (const auto& Pair : OriginalPositions)
+            TestTrue(TEXT("Section undo restores positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
+        TestTrue(TEXT("Section undo restores size"), Section->NodeWidth == 1000 && Section->NodeHeight == 700);
+    }
     for (const FName MacroName : {FName(TEXT("ForLoopWithBreak")),FName(TEXT("DoOnce"))})
     {
         UEdGraph* Definition=nullptr;
