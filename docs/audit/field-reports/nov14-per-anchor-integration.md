@@ -58,3 +58,9 @@ Added a non-mutating translation planner for NOV09-02. Canonical explicit IDs fo
 This stage is not exposed by the public append tools. Comment membership/growth, measured insertion positions, preview confirmation, transaction application and undo verification remain outstanding. Comments are excluded from ordinary collision handling because the enclosing insertion planner must validate their containment separately. Do not count this geometry stage as completed insertion capability.
 
 Focused execution c52d652dc1bc4ed092453f9f192a1f16 at 6a21552d passed the stock-engine build and selected native placement regression. This includes the pin-type freshness refusal and explicit tail-translation geometry checks. It does not establish public tail insertion, comment growth, transaction rollback or full append-suite acceptance. NOV09-02 is in progress, owned by the integrator; the done count is unchanged.
+
+## Comment containment stage
+
+Candidate 4f48e0f0 passed stock-engine build and focused native execution 69fec17f2d294d6f87efc8fa256bd017. The internal comment planner uses the shared membership rule on a scratch copy. It preserves live geometry, allows only named rightward growth, preserves existing membership, and refuses blocked neighboring/ancestor growth. The focused case checks positive growth, non-mutation, unnamed-box membership refusal and a neighboring-box refusal. A source guard also rejects moving an output past a fixed data consumer; dedicated runtime coverage for that guard is still pending.
+
+Public insertion is still unavailable. Remaining NOV09-02 work: connect measured new-node layout, scoped movements and comment growth to a retained preview authorization and one live transaction; validate rollback/undo; support explicitly authorized nested-comment movement; inspect the final visual case. Per-anchor help now explicitly describes the already implemented mode. No task is closed by this internal stage.
