@@ -817,7 +817,7 @@
       "kind": "feature",
       "priority": "P1",
       "state": "in_progress",
-      "readiness": "needs_reconciliation",
+      "readiness": "ready",
       "owner": "codex",
       "validation": "removal_local_rename_and_timer_alias_native_pass_member_rename_pending",
       "source_ids": [
@@ -829,9 +829,10 @@
         "2026-11-04_S3/FT-144"
       ],
       "dependencies": [],
-      "next_step": "Review member rename dependency and binding handling before implementation; do not invoke broad engine rename helpers blindly.",
+      "next_step": "Implement the reviewed member rename contract: exact identity, dependent references, CDO defaults, child collisions and replication associations; then focused native validation.",
       "evidence": [
-        "docs/audit/field-reports/nov14-timer-alias-review.md"
+        "docs/audit/field-reports/nov14-timer-alias-review.md",
+        "docs/audit/field-reports/nov14-member-rename-contract.md"
       ],
       "remaining": "Member rename remains unimplemented. Member/local removal, local rename and TimerHandle alias have synthetic native acceptance. No additional specific short struct-name failure is identified."
     }
