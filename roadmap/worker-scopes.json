@@ -4193,7 +4193,8 @@
           "files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCP.Build.cs"
           ],
           "new_files": []
         }

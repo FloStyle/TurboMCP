@@ -35,3 +35,5 @@ console-target behavior has also been reconciled and implemented where supported
 Exact implementation scope: TurboMCPPlayInput.cpp, Public/Tools/TurboMCPToolsets.h,
 and TurboMCPCommonPlayWorkflowTest.cpp under Plugins/TurboMCP/Source/TurboMCP.
 Catalog and tracking are integrator-owned.
+
+Integrator scope amendment: include TurboMCP.Build.cs to declare the ApplicationCore dependency required by the stock input-device mapper. Build ad07a0bce22d40148038fcd695c76497 reached linking and failed with an unresolved IPlatformInputDeviceMapper::Get symbol; no runtime success is claimed.
