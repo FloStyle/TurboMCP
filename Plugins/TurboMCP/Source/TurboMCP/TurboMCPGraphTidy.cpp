@@ -340,6 +340,30 @@ namespace
         return Text;
     }
 
+    FString GeometryEvidencePage(const FTurboMCPGraphTidy::FPlan& Plan, int32 Offset, int32 Limit)
+    {
+        if (!Plan.bCompactBlocks) return TEXT("geometry evidence: available only in blocks mode.");
+        if (Limit == 0) return TEXT("geometry evidence: omitted by default. Request GeometryOffset=0 and GeometryLimit=40 for the first measured page.");
+
+        TArray<FString> Rows;
+        CompactGeometryEvidence(Plan, 0, Plan.GetterCopies).ParseIntoArray(Rows, TEXT("\n"), true);
+        TArray<FString> AfterRows;
+        CompactGeometryEvidence(Plan, 1, Plan.GetterCopies).ParseIntoArray(AfterRows, TEXT("\n"), true);
+        Rows.Append(AfterRows);
+
+        const int32 Total = Rows.Num();
+        if (Offset >= Total)
+            return FString::Printf(TEXT("geometry evidence: offset %d is outside %d measured row(s); no rows returned."), Offset, Total);
+        const int32 End = Offset + FMath::Min(Limit, Total - Offset);
+        TArray<FString> Page;
+        Page.Reserve(End - Offset + 2);
+        Page.Add(FString::Printf(TEXT("geometry evidence: rows %d..%d of %d for this plan."), Offset, End - 1, Total));
+        for (int32 Index = Offset; Index < End; ++Index) Page.Add(Rows[Index]);
+        if (End < Total)
+            Page.Add(FString::Printf(TEXT("geometry evidence next: GeometryOffset=%d GeometryLimit=%d. Replan the current graph; pages from different graph states cannot be combined."), End, Limit));
+        return FString::Join(Page, TEXT("\n"));
+    }
+
     // Mode: original, planned, or actual post-edit coordinates. Pin offsets remain native.
     FStructuralQuality StructuralQuality(const FTurboMCPGraphTidy::FPlan& Plan,int32 Mode,
         const TArray<FTurboMCPGraphTidy::FGetterCopy>* ActualCopies = nullptr)
@@ -4093,19 +4117,48 @@ static FString TidyRecoveryGuidance(bool bSelectedScope)
     return Advice;
 }
 
-FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
+static FString JoinBoundedTidyLines(const TArray<FString>& Lines)
+{
+    constexpr int32 MaxCharacters = 32000;
+    FString Output;
+    for (int32 Index = 0; Index < Lines.Num(); ++Index)
+    {
+        const int32 Added = Lines[Index].Len() + (Output.IsEmpty() ? 0 : 1);
+        if (Output.Len() + Added > MaxCharacters)
+        {
+            Output += FString::Printf(TEXT("\nAdditional Tidy detail omitted after %d of %d sections. Select a smaller graph region or use LookTurboMCPGraphPositions and LookTurboMCPLayoutReport for exact geometry."), Index, Lines.Num());
+            break;
+        }
+        if (!Output.IsEmpty()) Output += TEXT("\n");
+        Output += Lines[Index];
+    }
+    return Output;
+}
+
+FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan, int32 GeometryOffset, int32 GeometryLimit)
 {
 	TArray<FString> Lines;
+	if (InPlan.bAlreadyTidy)
+		Lines.Add(TEXT("ALREADY TIDY: no node would move, no box would change size, and no getter would be split."));
+	else if (InPlan.bWouldApply)
+		Lines.Add(FString::Printf(TEXT("WOULD APPLY: %d node(s) would move, %d box(es) would be fitted, %d getter(s) would be split."), InPlan.NodesToMove, InPlan.BoxesToFit, InPlan.GetterCopies.Num()));
+	else
+	{
+		Lines.Add(FString::Printf(TEXT("WOULD ROLL BACK: %s"), *InPlan.RollbackReason));
+		Lines.Add(TidyRecoveryGuidance(InPlan.SelectedNodeKeys.Num() > 0));
+	}
 
 
-	// THE NUMBERS GO ON THE FIRST LINE, as the spec requires, AND THEY ARE LABELLED AS THE THING THAT
-	// WAS MEASURED. `D-LAY-4` settles that tidy is judged on TOTAL WIRE LENGTH and knots on WIRES
-	// CROSSING NODES, so a reader comparing the two tools' numbers is comparing two quantities - and
-	// the label is what stops that.
+    // The decision precedes all measurements. Label total wire length separately
+    // from structural and compact scores so callers do not compare unlike values.
     const FStructuralQuality QualityBefore=StructuralQuality(InPlan,0), QualityAfter=StructuralQuality(InPlan,1);
     for(int32 I:InPlan.WrapAfterNodes)
         Lines.Add(FString::Printf(TEXT("row break after %s (execution links preserved)"),*InPlan.Nodes[I].Key));
-    if (InPlan.bCompactBlocks) { Lines.Add(CompactMeasureSummary(QualityBefore, QualityAfter)); Lines.Add(CompactGeometryEvidence(InPlan,0,InPlan.GetterCopies)); Lines.Add(CompactGeometryEvidence(InPlan,1,InPlan.GetterCopies)); }
+    if (InPlan.bCompactBlocks)
+    {
+        Lines.Add(CompactMeasureSummary(QualityBefore, QualityAfter));
+        Lines.Add(GeometryEvidencePage(InPlan, GeometryOffset, GeometryLimit));
+    }
     if (InPlan.bCompactBlocks) Lines.Add(FString::Printf(TEXT("compact diagnostics: Body row drift %.1f -> %.1f; Completed above body bottom %d -> %d. These diagnostics supplement the seven-measure ranking."), QualityBefore.BodyRowDrift, QualityAfter.BodyRowDrift, QualityBefore.CompletedAboveBody, QualityAfter.CompletedAboveBody));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift,QualityBefore.FanOutRowConflicts,QualityAfter.FanOutRowConflicts,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.BackwardData,QualityAfter.BackwardData,QualityBefore.PureInputRowConflicts,QualityAfter.PureInputRowConflicts,QualityBefore.InputPinDrift,QualityAfter.InputPinDrift));
     if (InPlan.bCompactBlocks)
@@ -4134,7 +4187,8 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
             && Wire.OutputPin && Wire.OutputPin->PinType.PinCategory==TEXT("exec"))
             Lines.Add(FString::Printf(TEXT("handoff class=intended rule=R6 source=%s target=%s; fallback returns to the primary merge row; crossings remain defects."),
                 *InPlan.Nodes[Wire.SourceNodeIndex].Key,*InPlan.Nodes[Wire.TargetNodeIndex].Key));
-    for (int32 Block=0;Block<InPlan.Blocks.Num();++Block)
+    const int32 ShownBlocks = FMath::Min(InPlan.Blocks.Num(), 32);
+    for (int32 Block=0;Block<ShownBlocks;++Block)
     {
         double L=TNumericLimits<double>::Max(),T=L,R=-L,B=-L; int32 Count=0;
         for (const FNode& Node:InPlan.Nodes) if (Node.BlockIndex==Block && !Node.bIsComment)
@@ -4143,6 +4197,7 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
         Lines.Add(FString::Printf(TEXT("block %d kind=%s parent=%d nodes=%d x=%.0f y=%.0f width=%.0f height=%.0f handoff=%s"),
             Block,*Entry.Kind,Entry.ParentIndex,Count,L,T,R-L,B-T,*Entry.Handoff));
     }
+    if (ShownBlocks < InPlan.Blocks.Num()) Lines.Add(FString::Printf(TEXT("block detail: %d of %d shown; inspect a smaller selected scope for the rest."), ShownBlocks, InPlan.Blocks.Num()));
     for (int32 I=0;I<InPlan.GetterCopies.Num();++I)
     { const FGetterCopy& Copy=InPlan.GetterCopies[I]; Lines.Add(FString::Printf(TEXT("planned reader copy index=%d x=%.0f y=%.0f width=%.0f height=%.0f"),I,Copy.PlannedX,Copy.PlannedY,Copy.Width,Copy.Height)); }
     for (const FBox& Box:InPlan.Boxes) if (Box.bGenerated)
@@ -4183,23 +4238,8 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
             Lines.Add(FString::Printf(TEXT("empty note %s \"%s\": stays fixed; no non-comment node is available as an anchor."), *Note.Key, *NoteText));
     }
 
-	if (InPlan.bAlreadyTidy)
-	{
-		Lines.Add(TEXT("the graph is ALREADY TIDY: no node would move, no box would change size, and no getter would be split. The edit would answer unchanged:"));
-	}
-	else if (InPlan.bWouldApply)
-	{
-		Lines.Add(FString::Printf(TEXT("the edit WOULD APPLY: %d node(s) would move, %d box(es) would be fitted, %d getter(s) would be split."), InPlan.NodesToMove, InPlan.BoxesToFit, InPlan.GetterCopies.Num()));
-		if (InPlan.SelectedNodeKeys.Num() > 0)
-		{
-			Lines.Add(FString::Printf(TEXT("scope moves only: %s"), *FString::Join(InPlan.NodesToMoveKeys, TEXT(", "))));
-		}
-	}
-	else
-	{
-		Lines.Add(FString::Printf(TEXT("the edit WOULD ROLL BACK: %s"), *InPlan.RollbackReason));
-        Lines.Add(TidyRecoveryGuidance(InPlan.SelectedNodeKeys.Num() > 0));
-	}
+	if (InPlan.bWouldApply && InPlan.SelectedNodeKeys.Num() > 0)
+		Lines.Add(FString::Printf(TEXT("scope moves only: %s"), *FString::Join(InPlan.NodesToMoveKeys, TEXT(", "))));
 
 	if (InPlan.bForce && InPlan.WireLengthAfter >= InPlan.WireLengthBefore && !InPlan.bAlreadyTidy)
 	{
@@ -4251,11 +4291,10 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
                 Route.KnotPositions[Index].X,Route.KnotPositions[Index].Y));
     }
     if (PlannedKnots>0) Lines.Add(FString::Printf(TEXT("routing: %d planned reroute node(s); edit uses one transaction with movement and comment fitting. No compile or save."),PlannedKnots));
-
     FString Images;
-    if (!RenderNativePreview(InPlan, Images)) Lines.Add(TEXT("preview images unavailable: ") + Images);
-    else Lines.Add(Images);
-	return FString::Join(Lines, TEXT("\n"));
+    if (!RenderNativePreview(InPlan, Images)) Images = TEXT("preview images unavailable: ") + Images;
+    Lines.Insert(Images, FMath::Min(5, Lines.Num()));
+	return JoinBoundedTidyLines(Lines);
 }
 
 FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
@@ -4621,7 +4660,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
     if (FeedbackCount > 0)
         Lines.Add(FString::Printf(TEXT("control feedback: %d stock Break/Reset wire(s) preserved; excluded from forward ordering and alignment penalties, included in total wire length."), FeedbackCount));
 	Lines.Add(FString::Printf(TEXT("wire length: current plan predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("matches the current plan") : TEXT("differs from the current plan")));
-    if (InPlan.bCompactBlocks) { Lines.Add(CompactMeasureSummary(OriginalQuality, ActualQuality)); Lines.Add(CompactGeometryEvidence(InPlan,0,Created)); Lines.Add(CompactGeometryEvidence(ActualPlan,2,Created)); }
+    if (InPlan.bCompactBlocks) Lines.Add(CompactMeasureSummary(OriginalQuality, ActualQuality));
     if (InPlan.bCompactBlocks) Lines.Add(FString::Printf(TEXT("compact diagnostics: Body row drift %.1f -> %.1f; Completed above body bottom %d -> %d. These diagnostics supplement the seven-measure ranking."), OriginalQuality.BodyRowDrift, ActualQuality.BodyRowDrift, OriginalQuality.CompletedAboveBody, ActualQuality.CompletedAboveBody));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),OriginalQuality.Overlaps,ActualQuality.Overlaps,OriginalQuality.LinearExecDrift,ActualQuality.LinearExecDrift,OriginalQuality.FanOutRowConflicts,ActualQuality.FanOutRowConflicts,OriginalQuality.BackwardExec,ActualQuality.BackwardExec,OriginalQuality.BackwardData,ActualQuality.BackwardData,OriginalQuality.PureInputRowConflicts,ActualQuality.PureInputRowConflicts,OriginalQuality.InputPinDrift,ActualQuality.InputPinDrift));
     if (InPlan.bCompactBlocks)
