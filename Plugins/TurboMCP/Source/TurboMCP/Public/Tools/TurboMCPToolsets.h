@@ -74,8 +74,8 @@ public:
     static FString ReadTurboMCPDataAssetProperty(const FString& Asset, const FString& Property,
         const FString& Mode = TEXT("legacy"), const FString& Source = TEXT("asset"), int64 Offset = 0, int32 PageSize = 32);
 
-    /** Inspect the single PIE player's focus, held synthetic input and Enhanced Input context priorities; no input or asset mutation. Reports optional CommonInput device type and unordered active CommonUI widgets when loaded; unavailable is not zero. Does not determine the routing owner.
-     * @param Target Required exact pie:0. Refuses absent/multiple PIE worlds or multiple local players.
+    /** Inspect the selected PIE player's focus, held synthetic input and Enhanced Input context priorities; no input or asset mutation. Reports optional CommonInput device type and unordered active CommonUI widgets when loaded; unavailable is not zero. Does not determine the routing owner.
+     * @param Target Use list to discover in-process local PIE players, then copy an exact session-bound target token. Tokens expire when their world/player ends. The pie:0 alias requires exactly one PIE world and local player. External-process clients are not supported.
      * @param ButtonFilter Optional case-insensitive runtime object path substring; empty matches all candidates. Local widget visibility does not prove ancestor/screen visibility or input eligibility.
      * @param ButtonLimit Optional maximum button paths, 0..64, default 16. Use 0 for diagnostics only. Counts report matching and omitted candidates; narrow ButtonFilter to find a specific menu. Diagnostics precede the list.
      */
@@ -1715,7 +1715,7 @@ public:
      * automatic release. Does not invoke click delegates directly. This executes
      * game/UI logic; there is no asset transaction, save or undo.
      *
-     * @param Target Required exact string pie:0. Standalone, multiplayer and other targets refuse.
+     * @param Target Exact session-bound token from ReadTurboMCPPlayInputState(Target=list), or pie:0 for a single PIE world/player. The button must belong to that player. Expired tokens and external-process clients refuse.
      * @param Widget Required exact runtime object path or unique object name from ReadTurboMCPPlayInputState. Not a designer name, display label, asset path or Slate ref. Prefer the complete runtime path when names repeat.
      *
      * Workflow: read current state, select its runtime button path, call once, allow
@@ -1860,7 +1860,7 @@ public:
 
     /** Route bounded keyboard/gamepad input through Slate in PIE; executes game/UI code. Delivery is not gameplay success.
      * No Enhanced Input action injection, asset edits, save or undo. Use native Slate tools for mouse/text.
-     * @param Target Exact pie:0; one in-process PIE world and local player.
+     * @param Target Exact session-bound token from ReadTurboMCPPlayInputState(Target=list), or pie:0 for a single PIE world/player. Tokens expire with the world/player. External-process clients are unsupported. Input scheduling is global: release the owning target before sending input to another target.
      * @param Action activate, activate_gameplay, focus, hold, sequence or release. Activate requests OS foreground while preserving menu focus (may refuse; unattended guard refuses). activate_gameplay also moves Slate focus to the gameplay viewport in the same call and displaces menu focus; OS activation is still not guaranteed. Activation actions require empty Key, Value and Seconds. Focus moves Slate focus to the viewport, displacing menus. Hold/sequence preserve current PIE menu focus. Release cancels all owned inputs and pending events. Existing active input refuses.
      * @param Key Hold: keyboard/gamepad button or 1D axis. Sequence: JSON array, 1..32 events, sorted by at; fields at, key, duration, analog-only value. Example: [{"at":0,"key":"Gamepad_RightX","value":0.5,"duration":2},{"at":0.3,"key":"Gamepad_FaceButton_Bottom","duration":0.1},{"at":0.8,"key":"Gamepad_FaceButton_Bottom","duration":0.1}]. Distinct keys may overlap; same-key overlap and editor shortcuts refuse. Empty for other actions.
      * @param Value Hold axis: finite -1..1; empty otherwise. Stock Slate Gamepad_LeftY=-1 Down, +1 Up; magnitude >0.5. UI routing may differ. Example: hold Gamepad_LeftY, Value=-1, Seconds=0.3. Inspect actual focus; delivery is not success.

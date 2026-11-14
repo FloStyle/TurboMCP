@@ -11,6 +11,9 @@
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
+#include "Settings/LevelEditorPlaySettings.h"
+#include "UObject/StrongObjectPtr.h"
+#include "HAL/PlatformMisc.h"
 #include "TurboMCPPlayInvokeFixture.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
@@ -133,6 +136,22 @@ public:
             Test->TestEqual(TEXT("Replay caused no call"),Receiver->Calls,1);
             const FString InvokeHelp=UTurboMCPReadToolset::ReadTurboMCPToolHelp(TEXT("TurboMCP.TurboMCPEditToolset"),TEXT("EditTurboMCPPlayInvoke"));Record(InvokeHelp);
             Test->TestTrue(TEXT("Live help describes confirmation and arguments"),InvokeHelp.Contains(TEXT("Confirmation")) && InvokeHelp.Contains(TEXT("Arguments")) && InvokeHelp.Contains(TEXT("120 seconds")));
+            // Discover exact identity without changing focus or sending input.
+            const FString Targets=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("list"));
+            Record(Targets);
+            Test->TestTrue(TEXT("Single-client discovery is explicit"),Targets.Contains(TEXT("total: 1.")));
+            FString TargetPrefix,TargetTail,ExactTarget,TargetRest;
+            if (Targets.Split(TEXT("\ntarget: "),&TargetPrefix,&TargetTail)
+                && TargetTail.Split(TEXT("; world: "),&ExactTarget,&TargetRest))
+            {
+                const FString ExactState=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(ExactTarget,TEXT(""),0);
+                Test->TestFalse(TEXT("Discovered identity resolves"),ExactState.StartsWith(TEXT("error:")));
+                Test->TestTrue(TEXT("Discovered identity addresses fixture world"),ExactState.Contains(WorldPath));
+                Test->TestTrue(TEXT("Repeated discovery preserves live token"),UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("list")).Contains(ExactTarget));
+            }
+            else Test->AddError(TEXT("Discovery did not return a target token."));
+            Test->TestTrue(TEXT("Unknown target cannot release another client's input"),
+                UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:unknown"),TEXT("release"),TEXT(""),TEXT(""),TEXT("")).Contains(TEXT("Unknown or expired")));
             // Request actual window foreground; do not disable the input tool's
             // inactive-application refusal to make the test pass.
             RestoreFocusGuard = FTurboMCPFocusGuard::IsActive();
@@ -416,9 +435,94 @@ public:
         Record(Result);Test->TestTrue(TEXT("No runtime warnings/errors"),Result.Contains(TEXT("0 warning(s) and 0 error(s)")));return true;
     }
 };
+
+// Focused two-client probe, selected explicitly by the supervisor. It owns only
+// the PIE session it starts and never saves editor preferences or project assets.
+class FPlayTargetProbe : public IAutomationLatentCommand
+{
+    FAutomationTestBase* Test;
+    TStrongObjectPtr<ULevelEditorPlaySettings> Settings;
+    TArray<FString> Tokens;
+    TArray<TWeakObjectPtr<UWorld>> Worlds;
+    int32 Stage=0;
+    double Deadline=FPlatformTime::Seconds()+45;
+    double Next=0;
+    FString Evidence=TEXT("Focused PIE target isolation; not the full CommonPlay suite.\n");
+    bool WasActive=false;
+    bool OwnsPlay=false;
+    void Record(const FString& Text)
+    {
+        Evidence+=Text+TEXT("\n");
+        FFileHelper::SaveStringToFile(Evidence,*FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("TurboMCP/Workflow/common-play.txt")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+    }
+public:
+    explicit FPlayTargetProbe(FAutomationTestBase* InTest):Test(InTest) {}
+    ~FPlayTargetProbe()
+    {
+        if (OwnsPlay && GEditor) GEditor->RequestEndPlayMap();
+        if (Stage>1 && FSlateApplication::IsInitialized()) FSlateApplication::Get().OnApplicationActivationChanged(WasActive);
+    }
+    bool Update() override
+    {
+        if (FPlatformTime::Seconds()>Deadline) {Test->AddError(TEXT("PIE target probe timed out."));return true;}
+        if (FPlatformTime::Seconds()<Next) return false;
+        if (Stage==0)
+        {
+            if (GEditor->IsPlaySessionInProgress()) {Test->AddError(TEXT("Target probe requires an idle editor."));return true;}
+            Settings.Reset(DuplicateObject<ULevelEditorPlaySettings>(GetDefault<ULevelEditorPlaySettings>(),GetTransientPackage()));
+            Settings->SetRunUnderOneProcess(true); Settings->SetPlayNumberOfClients(2); Settings->SetPlayNetMode(PIE_ListenServer);
+            FRequestPlaySessionParams Params;
+            Params.WorldType=EPlaySessionWorldType::PlayInEditor;
+            Params.SessionDestination=EPlaySessionDestinationType::InProcess;
+            Params.EditorPlaySettings=Settings.Get();
+            GEditor->RequestPlaySession(Params); OwnsPlay=true; Stage=1; return false;
+        }
+        if (Stage==1)
+        {
+            Worlds.Reset();
+            for (const FWorldContext& Context:GEditor->GetWorldContexts())
+                if (Context.WorldType==EWorldType::PIE && Context.World() && Context.World()->GetFirstPlayerController()
+                    && Context.World()->GetGameInstance() && Context.World()->GetGameInstance()->GetLocalPlayers().Num()==1
+                    && Context.World()->GetGameViewport() && Context.World()->GetGameViewport()->GetGameViewportWidget().IsValid()) Worlds.Add(Context.World());
+            if (Worlds.Num()!=2) return false;
+            const FString List=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("list"));Record(List);
+            TArray<FString> Lines;List.ParseIntoArrayLines(Lines);
+            for (const FString& Line:Lines)
+                if (Line.StartsWith(TEXT("target: "))) {FString Token,Tail;Line.Mid(8).Split(TEXT(";"),&Token,&Tail);Tokens.Add(Token);}
+            if (!Test->TestEqual(TEXT("Two local targets discovered"),Tokens.Num(),2)) return true;
+            Test->TestTrue(TEXT("Legacy alias refuses ambiguity"),UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0")).Contains(TEXT("exactly one live PIE world")));
+            // Match tokens by reported world identity, not context ordering.
+            if (!UTurboMCPReadToolset::ReadTurboMCPPlayInputState(Tokens[0]).Contains(Worlds[0]->GetPathName())) Swap(Tokens[0],Tokens[1]);
+            for (int32 Index=0;Index<2;++Index)
+                Test->TestTrue(TEXT("Token resolves exact world"),UTurboMCPReadToolset::ReadTurboMCPPlayInputState(Tokens[Index]).Contains(Worlds[Index]->GetPathName()));
+            WasActive=FSlateApplication::Get().IsActive();FSlateApplication::Get().OnApplicationActivationChanged(true);
+            Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(Tokens[0],TEXT("focus"),TEXT(""),TEXT(""),TEXT("")));
+            const FString Hold=UTurboMCPEditToolset::EditTurboMCPPlayInput(Tokens[0],TEXT("hold"),TEXT("K"),TEXT(""),TEXT("1"));Record(Hold);
+            Test->TestFalse(TEXT("Selected-client hold admitted"),Hold.StartsWith(TEXT("error:")));
+            const FString WrongRelease=UTurboMCPEditToolset::EditTurboMCPPlayInput(Tokens[1],TEXT("release"),TEXT(""),TEXT(""),TEXT(""));Record(WrongRelease);
+            Test->TestTrue(TEXT("Other client cannot release owned input"),WrongRelease.Contains(TEXT("another")));
+            Stage=2;Next=FPlatformTime::Seconds()+0.15;return false;
+        }
+        if (Stage==2)
+        {
+            Test->TestTrue(TEXT("Selected player received key"),Worlds[0]->GetFirstPlayerController()->IsInputKeyDown(EKeys::K));
+            Test->TestFalse(TEXT("Other player did not receive key"),Worlds[1]->GetFirstPlayerController()->IsInputKeyDown(EKeys::K));
+            Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(Tokens[0],TEXT("release"),TEXT(""),TEXT(""),TEXT("")));
+            GEditor->RequestEndPlayMap();Stage=3;return false;
+        }
+        if (GEditor->IsPlaySessionInProgress()) return false;
+        OwnsPlay=false;
+        for (const FString& Token:Tokens)
+            Test->TestTrue(TEXT("Ended-session token refuses"),UTurboMCPReadToolset::ReadTurboMCPPlayInputState(Token).StartsWith(TEXT("error:")));
+        Record(TEXT("Two-client probe finished; assertions determine result. No full-suite claim."));return true;
+    }
+};
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPCommonPlayTest,"TurboMCP.Workflow.CommonPlay",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPCommonPlayTest::RunTest(const FString&)
 {
+    if (FPlatformMisc::GetEnvironmentVariable(TEXT("TMCP_PIE_TARGET_ONLY"))==TEXT("1"))
+    { ADD_LATENT_AUTOMATION_COMMAND(FPlayTargetProbe(this)); return true; }
     TestTrue(TEXT("Invocation without PIE refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPPlayInvoke(TEXT("/Missing"),TEXT("/Missing"),TEXT("RecordEvent"),TEXT("{}")).Contains(TEXT("live in-process PIE")));
     FString Start=UTurboMCPReadToolset::ReadTurboMCPPlayCheck(TEXT("55"),TEXT(""));
     if (Start.StartsWith(TEXT("error:")) || Start.Contains(TEXT("already playing"))) {AddError(Start);return false;}

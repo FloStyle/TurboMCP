@@ -8,8 +8,11 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Editor.h"
+#include "Settings/LevelEditorPlaySettings.h"
 #include "Engine/World.h"
 #include "Engine/LocalPlayer.h"
+#include "GenericPlatform/GenericPlatformInputDeviceMapper.h"
+#include "Misc/Guid.h"
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
 #include "GameFramework/PlayerController.h"
@@ -43,12 +46,15 @@ struct FPlayInputTarget
     APlayerController* Controller=nullptr;
     TSharedPtr<SViewport> Viewport;
     uint32 User=0;
+    FInputDeviceId Device=INPUTDEVICEID_NONE;
+    int32 PlayerIndex=0;
 };
 struct FHeldPlayInput
 {
     FKey Key;
     float Value=0;
     uint32 User=0;
+    FInputDeviceId Device=INPUTDEVICEID_NONE;
     double Deadline=0;
     TWeakObjectPtr<UWorld> World;
     TWeakObjectPtr<UPlayerInput> PlayerInput;
@@ -73,37 +79,122 @@ FDelegateHandle EndHandle;
 FString LastInput=TEXT("none");
 FString LastReleaseReason=TEXT("none");
 
+// Opaque tokens bind object identity, so a restarted PIE instance cannot reuse
+// an old target accidentally. Discovery does not start PIE or load a world.
+struct FDiscoveredPlayTarget
+{
+    TWeakObjectPtr<UWorld> World;
+    TWeakObjectPtr<ULocalPlayer> Player;
+    FString Token;
+};
+TArray<FDiscoveredPlayTarget> DiscoveredTargets;
+FString DiscoverPlayTargets()
+{
+    if (!GEditor) return TEXT("error: An editor is required to list local PIE clients.");
+    DiscoveredTargets.RemoveAll([](const FDiscoveredPlayTarget& Entry)
+        { return !Entry.World.IsValid() || !Entry.Player.IsValid(); });
+    FString Result=TEXT("local PIE targets (session-bound; external processes are not listed)");
+    int32 Count=0;
+    for (const FWorldContext& Context:GEditor->GetWorldContexts())
+    {
+        UWorld* World=Context.World();
+        if (Context.WorldType!=EWorldType::PIE || !World) continue;
+        UGameInstance* Instance=World->GetGameInstance();
+        if (!Instance) continue;
+        for (int32 Index=0;Index<Instance->GetLocalPlayers().Num();++Index)
+        {
+            ULocalPlayer* Player=Instance->GetLocalPlayers()[Index];
+            if (!Player) continue;
+            FDiscoveredPlayTarget* Entry=DiscoveredTargets.FindByPredicate([&](const FDiscoveredPlayTarget& Item)
+                { return Item.World.Get()==World && Item.Player.Get()==Player; });
+            if (!Entry)
+            {
+                FDiscoveredPlayTarget NewEntry;
+                NewEntry.World=World; NewEntry.Player=Player;
+                NewEntry.Token=TEXT("pie:")+FGuid::NewGuid().ToString(EGuidFormats::Digits);
+                Entry=&DiscoveredTargets.Add_GetRef(MoveTemp(NewEntry));
+            }
+            UGameViewportClient* Client=World->GetGameViewport();
+            Result+=FString::Printf(TEXT("\ntarget: %s; world: %s; PIE instance: %d; player: %d; viewport: %s"),
+                *Entry->Token,*World->GetPathName(),Context.PIEInstance,Index,
+                Client && Client->GetGameViewportWidget().IsValid()?TEXT("ready"):TEXT("not ready"));
+            ++Count;
+        }
+    }
+    return Result+FString::Printf(TEXT("\ntotal: %d. Copy an exact target into input/state calls. Tokens expire with their world/player."),Count);
+}
 FString ResolvePlayInput(const FString& Target, FPlayInputTarget& Out)
 {
-    if (Target!=TEXT("pie:0")) return TEXT("error: Target must be pie:0. This version supports one local player in one in-process PIE world.");
     if (!GEditor || !FSlateApplication::IsInitialized()) return TEXT("error: A rendering editor and live PIE session are required.");
-    int32 Worlds=0;
-    for (const FWorldContext& Context:GEditor->GetWorldContexts())
-        if (Context.WorldType==EWorldType::PIE && Context.World()) {Out.World=Context.World();++Worlds;}
-    if (Worlds!=1) return TEXT("error: Exactly one live PIE world is required; no input was sent.");
-    UGameInstance* Instance=Out.World->GetGameInstance();
-    if (!Instance || Instance->GetLocalPlayers().Num()!=1) return TEXT("error: Exactly one local player is required; no input was sent.");
-    ULocalPlayer* Player=Instance->GetLocalPlayers()[0];
+    ULocalPlayer* Player=nullptr;
+    if (Target==TEXT("pie:0"))
+    {
+        int32 Worlds=0;
+        for (const FWorldContext& Context:GEditor->GetWorldContexts())
+            if (Context.WorldType==EWorldType::PIE && Context.World()) {Out.World=Context.World();++Worlds;}
+        if (Worlds!=1) return TEXT("error: pie:0 requires exactly one live PIE world; no input was sent. ReadTurboMCPPlayInputState with Target=list lists explicit clients.");
+        UGameInstance* Instance=Out.World->GetGameInstance();
+        if (!Instance || Instance->GetLocalPlayers().Num()!=1) return TEXT("error: pie:0 requires exactly one local player; no input was sent. Use Target=list to discover explicit clients.");
+        Player=Instance->GetLocalPlayers()[0];
+    }
+    else
+    {
+        const FDiscoveredPlayTarget* Entry=DiscoveredTargets.FindByPredicate([&](const FDiscoveredPlayTarget& Item){return Item.Token==Target;});
+        if (!Entry || !Entry->World.IsValid() || !Entry->Player.IsValid())
+            return TEXT("error: Unknown or expired PIE target. Use ReadTurboMCPPlayInputState with Target=list; no input was sent.");
+        Out.World=Entry->World.Get(); Player=Entry->Player.Get();
+        bool Live=false;
+        for (const FWorldContext& Context:GEditor->GetWorldContexts())
+            if (Context.WorldType==EWorldType::PIE && Context.World()==Out.World) Live=true;
+        UGameInstance* Instance=Out.World->GetGameInstance();
+        Out.PlayerIndex=Instance?Instance->GetLocalPlayers().IndexOfByKey(Player):INDEX_NONE;
+        if (!Live || Out.PlayerIndex==INDEX_NONE)
+            return TEXT("error: PIE target is no longer a live local client; no input was sent. Discover targets again.");
+    }
     Out.Controller=Player ? Player->GetPlayerController(Out.World):nullptr;
     const TSharedPtr<FSlateUser> User=Player ? Player->GetSlateUser():nullptr;
     UGameViewportClient* Client=Out.World->GetGameViewport();
     Out.Viewport=Client ? Client->GetGameViewportWidget():nullptr;
     if (!Out.Controller || !User.IsValid() || !Out.Viewport.IsValid()) return TEXT("error: Player, Slate user or game viewport is not ready; retry after normal editor ticks.");
     Out.User=User->GetUserIndex();
+    Out.Device=IPlatformInputDeviceMapper::Get().GetPrimaryInputDeviceForUser(Player->GetPlatformUserId());
     return FString();
 }
+
 bool HasPlayFocus(const FPlayInputTarget& Target)
 {
     for (TSharedPtr<SWidget> Widget=FSlateApplication::Get().GetUserFocusedWidget(Target.User);Widget.IsValid();Widget=Widget->GetParentWidget())
         if (Widget.Get()==Target.Viewport.Get()) return true;
     return false;
 }
+// Stock PIE may forward gamepad input to a different window after Slate focus
+// routing. Refuse that configuration rather than changing the user's preferences.
+bool WouldForwardPlayInput(UWorld* World, const FKey& Key)
+{
+    if (!World || !Key.IsGamepadKey() || !GEngine) return false;
+    const ULevelEditorPlaySettings* Settings=GetDefault<ULevelEditorPlaySettings>();
+    bool Forward=false, SingleProcess=false;
+    Settings->GetRouteGamepadToSecondWindow(Forward);
+    Settings->GetRunUnderOneProcess(SingleProcess);
+    UGameViewportClient* Client=World->GetGameViewport();
+    return Forward && SingleProcess && Client && GEngine->GetNextPIEViewport(Client)!=nullptr;
+}
+FString PlayRoutingRefusal(const FPlayInputTarget& Target, const FKey& Key)
+{
+    if (!Target.Device.IsValid())
+        return TEXT("error: The selected player has no mapped input device. No input was sent.");
+    if (WouldForwardPlayInput(Target.World,Key))
+        return TEXT("error: Unreal's Route Gamepad to Second Window setting would redirect this input to another client. Disable that setting explicitly before targeting this player. No settings were changed and no input was sent.");
+    if (GEngine->GetLocalPlayerFromInputDevice(Target.World->GetGameViewport(),Target.Device)!=Target.Controller->GetLocalPlayer())
+        return TEXT("error: The mapped input device does not resolve to the selected local player. No input was sent.");
+    return FString();
+}
 bool SendPlayEvent(const FHeldPlayInput& Input, bool Release)
 {
-    if (!FSlateApplication::IsInitialized()) return false;
+    if (!FSlateApplication::IsInitialized() || WouldForwardPlayInput(Input.World.Get(),Input.Key)) return false;
     auto& App=FSlateApplication::Get();
-    if (Input.Key.IsAnalog()) return App.ProcessAnalogInputEvent(FAnalogInputEvent(Input.Key,FModifierKeysState(),Input.User,false,0,0,Release?0.f:Input.Value));
-    const FKeyEvent Event(Input.Key,FModifierKeysState(),Input.User,false,0,0);
+    if (Input.Key.IsAnalog()) return App.ProcessAnalogInputEvent(FAnalogInputEvent(Input.Key,FModifierKeysState(),Input.Device,false,0,0,Release?0.f:Input.Value,static_cast<int32>(Input.User)));
+    const FKeyEvent Event(Input.Key,FModifierKeysState(),Input.Device,false,0,0,static_cast<int32>(Input.User));
     return Release ? App.ProcessKeyUpEvent(Event):App.ProcessKeyDownEvent(Event);
 }
 // Call only a named native getter on its loaded base class. Never resolve a
@@ -144,7 +235,7 @@ FString CommonInputState(const FPlayInputTarget& Target)
 }
 bool InputTargetHasFocus(const FHeldPlayInput& Input)
 {
-    if (!FSlateApplication::IsInitialized() || !FSlateApplication::Get().IsActive()) return false;
+    if (!FSlateApplication::IsInitialized() || !FSlateApplication::Get().IsActive() || WouldForwardPlayInput(Input.World.Get(),Input.Key)) return false;
     const TSharedPtr<SViewport> Viewport=Input.Viewport.Pin();
     if (!Viewport.IsValid()) return false;
     for (TSharedPtr<SWidget> Widget=FSlateApplication::Get().GetUserFocusedWidget(Input.User);Widget.IsValid();Widget=Widget->GetParentWidget())
@@ -307,6 +398,8 @@ FString StartSequence(const FPlayInputTarget& Target,const FString& Json)
         PreviousAt=Event.At;
         Event.Input.Key=FKey(*Key);
         const FKey InputKey=Event.Input.Key;
+        const FString RoutingError=PlayRoutingRefusal(Target,InputKey);
+        if (!RoutingError.IsEmpty()) return RoutingError;
         if (!InputKey.IsValid() || InputKey.IsMouseButton() || (InputKey.IsAnalog() && (!InputKey.IsGamepadKey() || !InputKey.IsAxis1D()))
             || FInputBindingManager::Get().GetCommandInfoFromInputChord(TEXT("PlayWorld"),FInputChord(InputKey),false).IsValid())
             return TEXT("error: Invalid or editor-command sequence key. Use keyboard/gamepad buttons or 1D gamepad axes. No input was sent.");
@@ -323,7 +416,7 @@ FString StartSequence(const FPlayInputTarget& Target,const FString& Json)
         if ((InputKey.IsDigital() && Target.Controller->IsInputKeyDown(InputKey)) || !FMath::IsNearlyZero(Target.Controller->GetInputAnalogKeyState(InputKey)))
             return TEXT("error: A sequence key already has player input. No input was sent.");
         Event.Input.Value=static_cast<float>(Amount);
-        Event.Input.User=Target.User; Event.Input.World=Target.World;
+        Event.Input.User=Target.User; Event.Input.Device=Target.Device; Event.Input.World=Target.World;
         Event.Input.PlayerInput=Target.Controller->PlayerInput; Event.Input.Viewport=Target.Viewport;
         Events.Add(Event);
     }
@@ -347,7 +440,16 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
 {
     if (Action==TEXT("release"))
     {
-        if (Target!=TEXT("pie:0") || !Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: release requires Target pie:0 and empty Key, Value and Seconds.");
+        if (!Key.IsEmpty() || !Value.IsEmpty() || !Seconds.IsEmpty()) return TEXT("error: release requires an exact target and empty Key, Value and Seconds.");
+        FPlayInputTarget ReleaseTarget;
+        const FString ReleaseError=ResolvePlayInput(Target,ReleaseTarget);
+        if (!ReleaseError.IsEmpty()) return ReleaseError;
+        const auto Matches=[&](const FHeldPlayInput& Input)
+            {return Input.World.Get()==ReleaseTarget.World && Input.PlayerInput.Get()==ReleaseTarget.Controller->PlayerInput;};
+        if ((Held.Key.IsValid() && !Matches(Held))
+            || SequenceInputs.ContainsByPredicate([&](const FHeldPlayInput& Input){return !Matches(Input);})
+            || PendingInputs.ContainsByPredicate([&](const FTimedPlayEvent& Event){return !Matches(Event.Input);}))
+            return TEXT("error: Tool-owned input belongs to another PIE target; nothing was released.");
         const bool HadInput=Held.Key.IsValid() || SequenceActive; CancelPlayHold();
         return HadInput?TEXT("play input: released the tool's held input and cancelled pending events. Inspect the resulting game/UI state."):TEXT("play input: no tool-held input; nothing changed.");
     }
@@ -413,6 +515,8 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
     }
     if (Action!=TEXT("hold")) return TEXT("error: Action must be activate, activate_gameplay, focus, hold, sequence or release. A short bounded hold is a tap; no indefinite key-down is supported.");
     const FKey InputKey(*Key);
+    const FString RoutingError=PlayRoutingRefusal(Resolved,InputKey);
+    if (!RoutingError.IsEmpty()) return RoutingError;
     if (!InputKey.IsValid() || InputKey.IsMouseButton() || (InputKey.IsAnalog() && (!InputKey.IsGamepadKey() || !InputKey.IsAxis1D())))
         return TEXT("error: Key must be a keyboard/gamepad button or a one-dimensional gamepad axis. Use native Slate tools for mouse clicks and text entry.");
     // PIE handles editor shortcuts before normal game/UI routing. Never report
@@ -435,11 +539,11 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
     if ((InputKey.IsDigital() && Resolved.Controller->IsInputKeyDown(InputKey)) || !FMath::IsNearlyZero(Resolved.Controller->GetInputAnalogKeyState(InputKey))) return TEXT("error: This key already has player input. Release it before starting a synthetic hold; the tool will not take ownership of existing input.");
     if (!HasPlayFocus(Resolved)) return TEXT("error: This player's focus is outside the PIE viewport. Inspect the UI; explicitly use focus for gameplay or a Slate control ref for menu input. No key was sent.");
     if (!EndHandle.IsValid()) EndHandle=FEditorDelegates::EndPIE.AddLambda([](bool){CancelPlayHold(TEXT("PIE ended"));});
-    Held.Key=InputKey;Held.Value=Amount;Held.User=Resolved.User;Held.World=Resolved.World;Held.PlayerInput=Resolved.Controller->PlayerInput;Held.Viewport=Resolved.Viewport;Held.Deadline=FPlatformTime::Seconds()+Duration;
+    Held.Key=InputKey;Held.Value=Amount;Held.User=Resolved.User;Held.Device=Resolved.Device;Held.World=Resolved.World;Held.PlayerInput=Resolved.Controller->PlayerInput;Held.Viewport=Resolved.Viewport;Held.Deadline=FPlatformTime::Seconds()+Duration;
     const bool Handled=SendPlayEvent(Held,false);
     LastInput=Key;
     TickHandle=FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateStatic(&TickPlayHold));
-    return FString::Printf(TEXT("play input: routed %s through Slate for player 0, Slate user %u\nvalue: %.3f; automatic release after %.3f wall-clock seconds\nSlate handled initial event: %s\nThis is synthetic key/axis input, not Enhanced Input action injection or physical-device emulation. Normal frames are required. Delivery does not prove the action fired; inspect PlayInputState, the menu and the next capture. No asset edit, save or undo was performed."),*Key,Resolved.User,Amount,Duration,Handled?TEXT("yes"):TEXT("no"));
+    return FString::Printf(TEXT("play input: routed %s through Slate for player %d, Slate user %u\nvalue: %.3f; automatic release after %.3f wall-clock seconds\nSlate handled initial event: %s\nThis is synthetic key/axis input, not Enhanced Input action injection or physical-device emulation. Normal frames are required. Delivery does not prove the action fired; inspect PlayInputState, the menu and the next capture. No asset edit, save or undo was performed."),*Key,Resolved.PlayerIndex,Resolved.User,Amount,Duration,Handled?TEXT("yes"):TEXT("no"));
 }
 
 // A visible child can still be hidden or disabled by an ancestor. Runtime
@@ -466,7 +570,7 @@ FString UTurboMCPEditToolset::EditTurboMCPMenuActivate(const FString& Target,con
     UWidget* Match=nullptr;
     for(TObjectIterator<UWidget> It;It;++It)
     {
-        if(It->GetWorld()!=Resolved.World || (!It->IsA<UButton>() && (!CommonButton || !It->IsA(CommonButton))))continue;
+        if(It->GetWorld()!=Resolved.World || It->GetOwningPlayer()!=Resolved.Controller || (!It->IsA<UButton>() && (!CommonButton || !It->IsA(CommonButton))))continue;
         if(It->GetPathName()!=Widget && It->GetName()!=Widget)continue;
         if(Match)return TEXT("error: More than one runtime button matches. Use its full path from ReadTurboMCPPlayInputState. No input was sent.");
         Match=*It;
@@ -488,12 +592,15 @@ FString UTurboMCPEditToolset::EditTurboMCPMenuActivate(const FString& Target,con
 FString UTurboMCPReadToolset::ReadTurboMCPPlayInputState(const FString& Target,const FString& ButtonFilter,int32 ButtonLimit)
 {
     if (ButtonLimit<0 || ButtonLimit>64) return TEXT("error: ButtonLimit must be 0..64. Use 0 for diagnostics without button paths. No input was sent.");
+    if (Target==TEXT("list")) return DiscoverPlayTargets();
     FPlayInputTarget Resolved;
     const FString Error=ResolvePlayInput(Target,Resolved);
     if (!Error.IsEmpty()) return Error;
     const TSharedPtr<SWidget> Focus=FSlateApplication::Get().GetUserFocusedWidget(Resolved.User);
-    FString Out=FString::Printf(TEXT("play input state\nworld: %s\nplayer: 0; Slate user: %u\ngame paused: %s\nfocus widget type: %s\nfocus inside PIE viewport: %s\ntool-held input: %s\nlast synthetic key: %s"),*Resolved.World->GetPathName(),Resolved.User,Resolved.World->IsPaused()?TEXT("yes"):TEXT("no"),Focus.IsValid()?*Focus->GetTypeAsString():TEXT("none"),HasPlayFocus(Resolved)?TEXT("yes"):TEXT("no"),Held.Key.IsValid()?*Held.Key.GetFName().ToString():TEXT("none"),*LastInput);
+    FString Out=FString::Printf(TEXT("play input state\nworld: %s\nplayer: %d; Slate user: %u\ngame paused: %s\nfocus widget type: %s\nfocus inside PIE viewport: %s\ntool-held input: %s\nlast synthetic key: %s"),*Resolved.World->GetPathName(),Resolved.PlayerIndex,Resolved.User,Resolved.World->IsPaused()?TEXT("yes"):TEXT("no"),Focus.IsValid()?*Focus->GetTypeAsString():TEXT("none"),HasPlayFocus(Resolved)?TEXT("yes"):TEXT("no"),(Held.Key.IsValid() && Held.World.Get()==Resolved.World && Held.PlayerInput.Get()==Resolved.Controller->PlayerInput)?*Held.Key.GetFName().ToString():TEXT("none"),*LastInput);
+    Out+=TEXT("\ntarget: ")+Target;
     Out+=TEXT("\ninput sequence: ")+SequenceStatus;
+    Out+=TEXT("\nInput scheduling is shared across targets; held and pending counts describe global tool ownership.");
     Out+=FString::Printf(TEXT("\nsequence held: %d; pending: %d"),SequenceInputs.Num(),PendingInputs.Num());
     Out+=TEXT("\nlast release reason: ")+LastReleaseReason;
     Out+=FSlateApplication::Get().IsActive()?TEXT("\napplication active: yes"):TEXT("\napplication active: no");
@@ -531,7 +638,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPPlayInputState(const FString& Target,c
     int32 Candidates=0;
     for (TObjectIterator<UWidget> It;It;++It)
     {
-        if (It->GetWorld()!=Resolved.World || !(It->IsA<UButton>() || (ButtonClass && It->IsA(ButtonClass))) || !It->IsVisible() || !It->GetCachedWidget().IsValid()) continue;
+        if (It->GetWorld()!=Resolved.World || It->GetOwningPlayer()!=Resolved.Controller || !(It->IsA<UButton>() || (ButtonClass && It->IsA(ButtonClass))) || !It->IsVisible() || !It->GetCachedWidget().IsValid()) continue;
         ++Candidates;
         const FString Path=It->GetPathName();
         if (!ButtonFilter.IsEmpty() && !Path.Contains(ButtonFilter,ESearchCase::IgnoreCase)) continue;
