@@ -7185,10 +7185,10 @@
       "title": "Insert a chain into its existing lane with an explicit tail-movement scope",
       "kind": "feature",
       "priority": "P1",
-      "state": "open",
-      "readiness": "needs_reconciliation",
-      "owner": "unassigned",
-      "validation": "reported_not_reproduced",
+      "state": "in_progress",
+      "readiness": "ready",
+      "owner": "integrator",
+      "validation": "partial_focused_native_pass",
       "source_keys": [
         "2026-11-09_S1/GC-49",
         "2026-11-09_S1/TD-75",
@@ -7198,7 +7198,7 @@
         "NOV09-01"
       ],
       "complexity_estimate": 8,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Tail geometry and retained-plan pin-type freshness passed focused build/native execution c52d652dc1bc4ed092453f9f192a1f16 at 6a21552d. Finish comment membership/growth, measured insertion placement, preview confirmation, transactional apply and undo. Internal geometry stage is not a public insertion capability. See nov14-per-anchor-integration.md.",
       "acceptance": "Build the clean-room boxed-section case. Preview every shifted tail node; preserve unrelated lanes, links and undo. Never silently move nodes outside the approved scope.",
       "key": "NOV09-02",
       "canonical_issue": "NOV09-02",
