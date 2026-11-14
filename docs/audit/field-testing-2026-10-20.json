@@ -7223,13 +7223,13 @@
         "NOV09-02"
       ],
       "complexity_estimate": 6,
-      "next_step": "Reconcile current source and existing evidence, then define an exact worker scope before implementation.",
+      "next_step": "Per-anchor slice implemented and focused native placement passed; see docs/audit/field-reports/nov14-per-anchor-integration.md. Remains partial pending public per-anchor apply, shared-producer and close-component collision evidence.",
       "acceptance": "Plan each independent group from its own anchor, keep pure dependencies left/below their consumer, retain collision refusal and exact preview/edit placement.",
       "key": "NOV09-03",
       "canonical_issue": "NOV09-03",
       "report": "2026-11-09 intake",
       "task_plan": "docs/audit/field-reports/plan-2026-11-09.json",
-      "remaining": "Plan each independent group from its own anchor, keep pure dependencies left/below their consumer, retain collision refusal and exact preview/edit placement."
+      "remaining": "Finish public per-anchor workflow evidence and geometry cases; no full acceptance claimed."
     },
     {
       "id": "NOV09-04",
