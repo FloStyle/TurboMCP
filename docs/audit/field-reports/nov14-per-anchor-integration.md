@@ -18,3 +18,11 @@ Opt-in Placement=per-anchor groups connected new nodes, including data dependenc
 ## Takeover
 
 Finish per-anchor public workflow and geometry coverage in one batch, then implement explicitly scoped tail movement under the approved placement contract. Reuse valid evidence; run only focused checks for changed behavior. Continue remaining backlog by safety and impact, preserving unknown causes and partial capabilities. Keep DSH paused, stock Unreal, private main and dashboard current. Testing remains separate from implementation status.
+
+## Public workflow follow-up
+
+Candidate 8670c0c3 passed the focused placement workflow in execution 620a66e019264986918a22fabac21321. Added coverage proves public per-anchor preview is non-mutating and clean, apply creates exactly two connected consumers near their independent sources, and existing coordinates remain unchanged. A separate nearby-anchor planner case checks that reserved component rectangles do not overlap.
+
+Execution 98a4dd9f2eb441ab97ecfc1d0989da07 failed because the new fixture ran before an older crowded-space/capture case and changed its graph. Moving the new case after the older case corrected test interference; both failures remain recorded. This focused pass does not supersede historical full-suite failures.
+
+Still outstanding: positive shared-pure-producer geometry, preview/apply coordinate equality and visual evidence for per-anchor mode. Explicit insertion and stale-preview authorization remain separate unfinished work. NOV09-03 stays open.

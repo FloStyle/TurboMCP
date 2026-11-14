@@ -59,7 +59,7 @@
         "NOV09-02"
       ],
       "complexity_estimate": 6,
-      "next_step": "Partial per-anchor implementation reviewed: docs/audit/field-reports/nov14-per-anchor-integration.md. Focused native placement passed; public per-anchor apply, shared producers and close-component collision evidence remain. Explicit tail movement is separate NOV09-02 work.",
+      "next_step": "Public per-anchor preview/apply and nearby-component reservations passed focused native execution 620a66e019264986918a22fabac21321. Finish shared-pure-producer geometry, exact preview/apply coordinates and visual evidence. See nov14-per-anchor-integration.md; remains partial.",
       "acceptance": "Plan each independent group from its own anchor, keep pure dependencies left/below their consumer, retain collision refusal and exact preview/edit placement."
     },
     {
