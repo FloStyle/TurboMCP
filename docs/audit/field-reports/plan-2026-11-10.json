@@ -32,7 +32,7 @@
         "2026-11-10_S1/X-133"
       ],
       "dependencies": [],
-      "next_step": "Reconcile current source and prior fixes, approve exact scope before implementation.",
+      "next_step": "Source review in nov14-placement-and-search-reconciliation.md found no plugin error with the reported phrase. At the next occurrence capture one exact request/response, both clients' registered toolsets, status/policy output and matching editor/MCP logs before approving a bounded repair. Do not infer a concurrency cause.",
       "acceptance": "Compare exact calls and registered toolsets across clients; do not infer concurrency cause or claim NOV09-18 fixes unknown-version evidence."
     },
     {
