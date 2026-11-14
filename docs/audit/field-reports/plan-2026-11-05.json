@@ -202,7 +202,7 @@
       "state": "in_progress",
       "readiness": "ready",
       "owner": "codex",
-      "validation": "r4_passed_cascade_checker_failed",
+      "validation": "geometry_oracle_passed_plan_details_truncated",
       "source_ids": [
         "TD-63",
         "TD-64",
@@ -222,7 +222,7 @@
       "dependencies": [
         "NOV05-01"
       ],
-      "next_step": "Update the cascade evidence checker for paged preview geometry and compare edit measures against independently checked preview geometry without weakening assertions. Then run the focused cascade once and inspect R3/R6 plus cross-box visuals. Keep the production layout result open until that evidence exists.",
+      "next_step": "Paged geometry now passes the independent score oracle, but the preview response cap omits most planned route-knot coordinates in the combined comments/routing case. Add a bounded plan-detail read or pagination before asserting exact preview/edit knot coordinates. Then inspect R3/R6 and cross-box visuals. Production layout acceptance remains open.",
       "evidence": [
         {
           "commit": "fb6c2228",
@@ -270,14 +270,20 @@
           "run": "9f703a9bea6844e8a22da6d44c3aacae",
           "result": "failed_cascade_evidence_checker",
           "scope": "The isolated worktree had TurboMCP enabled. Stock 5.8.4 build passed; the cascade reached 275 calls and restored its disposable fixture. The preview returned seven compact measures, but the checker failed at missing auditable before geometry because per-row geometry is now omitted by default and paged through GeometryOffset/GeometryLimit. The edit response also omits geometry. R3/R6 and cross-box visual acceptance were not reached."
+        },
+        {
+          "commit": "e8000fba",
+          "run": "ad06c87b79a040dfae120aae1435280a",
+          "result": "integrated_checker_partial_acceptance_blocked",
+          "scope": "Integrated a scoped cascade-checker repair. Stock Unreal 5.8.4 build passed; the disposable run reached 669 tool calls and restored its fixture. Paged geometry and the independent seven-score oracle passed the compact cases. The combined comments/routing case added 42 non-box nodes, while the bounded preview exposed only 11 planned knot/reader coordinates; those 11 matched and the remaining comparison was blocked by omitted detail. This is incomplete acceptance, not proof of a production layout defect or success."
         }
       ],
       "design_notes": [
         "Candidate BodyRowDrift and CompletedAboveBody are partial diagnostics, not Appendix H scoring. Still required: unrelated box crossings, exec segment crossings, diagonal exec length, block row breaks, data crossings, total length, area, 5-percent tie handling and every greater-than-10-percent regression warning."
       ],
       "readiness_review": "Appendix H defines the seven measures and thresholds. Straight-segment scoring is integrated; independent geometry checks and intended handoff classification remain specified work.",
-      "remaining": "Check R3/R6 against the accepted loop-cascade fixture and inspect cross-box findings. Do not mark the full Tidy layout or diagnostic task done from the stock-macro check.",
-      "latest_evidence": "Direct, unrouted Completed and False edges now remain defect candidates. The Body or True lane can start with reroutes; classification follows it to its first real node. Stock Unreal 5.8.4 build and focused test-layout passed on the exact commit. R3/R6 on the accepted loop-cascade fixture and cross-box visuals are not yet accepted."
+      "remaining": "Paged geometry now passes the independent score oracle, but the preview response cap omits most planned route-knot coordinates in the combined comments/routing case. Add a bounded plan-detail read or pagination before asserting exact preview/edit knot coordinates. Then inspect R3/R6 and cross-box visuals. Production layout acceptance remains open.",
+      "latest_evidence": "Integrated a scoped cascade-checker repair. Stock Unreal 5.8.4 build passed; the disposable run reached 669 tool calls and restored its fixture. Paged geometry and the independent seven-score oracle passed the compact cases. The combined comments/routing case added 42 non-box nodes, while the bounded preview exposed only 11 planned knot/reader coordinates; those 11 matched and the remaining comparison was blocked by omitted detail. This is incomplete acceptance, not proof of a production layout defect or success."
     },
     {
       "id": "NOV05-04",
