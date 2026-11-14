@@ -610,13 +610,13 @@ public:
 
 	/**
 	 * Inspect graph geometry and layout findings; loads the Blueprint and measures Slate geometry without requesting graph edits, compile or save.
-	 * Requires editor rendering. Wire lengths use estimated pin positions, not rendered wire curves. Findings are heuristic review aids, not proof of correctness; some lists and output are capped.
+	 * Requires editor rendering. Wire lengths use estimated pin positions, not rendered wire curves. Each finding is an intended control-flow handoff with rule R3/R4/R6, or a defect candidate needing visual review. An intended edge does not approve the whole layout. Cross-box wires remain candidates because a valid handoff may still cross unrelated boxes. Output is paged and some source lists are capped.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
 	 * @param GraphName Required exact graph name, e.g. EventGraph. Empty or unresolved names are refused; use the Blueprint reader to list graphs.
 	 * @param AlignmentTolerance Optional finite vertical pin-offset tolerance in graph units, 0..1024; default 64. Use 8 for stricter alignment review. Does not suppress overlaps or backward-wire findings. Values outside the range are refused.
-     * @param Scope Optional empty for whole graph, node:<reader ID or unique hex key>, box:<comment ID>, or region:x,y,width,height in graph units. Box/region scopes include intersecting node rectangles, excluding edge-only contact. A finding is included if any involved node is selected, including links to outside nodes. Measurement still covers the graph.
+     * @param Scope Required string: pass an empty string for the whole graph, or node:<reader ID or unique hex key>, box:<comment ID>, or region:x,y,width,height in graph units. The tool schema requires this field even for the whole graph. Box/region scopes include intersecting node rectangles, excluding edge-only contact. A finding is included if any involved node is selected, including links to outside nodes. Measurement still covers the graph.
      * @param Offset Optional zero-based matched-finding offset, default 0. Use nextOffset from the response; -1 means complete. Pages are live; restart at 0 after edits.
-     * @param Limit Optional maximum whole findings per page, 1..120, default 120. Overlaps are listed first. Text-budget limits never split a finding. Use targeted capture separately for visual review.
+     * @param Limit Optional maximum whole findings per page, 1..120, default 120. Defect candidates appear before intended handoffs; overlaps lead the defect candidates. Text-budget limits never split a finding. Use targeted capture separately for visual review.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPLayoutReport(const FString& Asset, const FString& GraphName, double AlignmentTolerance = 64.0, const FString& Scope = TEXT(""), int32 Offset = 0, int32 Limit = 120);

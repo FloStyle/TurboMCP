@@ -16,6 +16,7 @@
 #include "EdGraphSchema_K2.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_Event.h"
+#include "K2Node_IfThenElse.h"
 #include "K2Node_Knot.h"
 #include "K2Node_Variable.h"
 #include "K2Node_VariableGet.h"
@@ -56,6 +57,26 @@ namespace
 			&& A.MinY < B.MaxY && B.MinY < A.MaxY;
 	}
 
+	// Approximate a wire segment against a comment rectangle. The report uses
+	// computed pin positions, so this is a review aid rather than a pixel test.
+	bool SegmentIntersectsRect(const FVector2D& A, const FVector2D& B,
+		const FTurboMCPLayoutReport::FRect& R)
+	{
+		double Enter = 0.0, Exit = 1.0;
+		const FVector2D D = B - A;
+		const double P[4] = {-D.X, D.X, -D.Y, D.Y};
+		const double Q[4] = {A.X - R.MinX, R.MaxX - A.X, A.Y - R.MinY, R.MaxY - A.Y};
+		for (int32 I = 0; I < 4; ++I)
+		{
+			if (FMath::IsNearlyZero(P[I])) { if (Q[I] < 0.0) return false; continue; }
+			const double T = Q[I] / P[I];
+			if (P[I] < 0.0) Enter = FMath::Max(Enter, T);
+			else Exit = FMath::Min(Exit, T);
+			if (Enter > Exit) return false;
+		}
+		return Enter < Exit;
+	}
+
 	/** True for a node the layout checks should ignore. */
 	bool IsIgnored(const UEdGraphNode* InNode)
 	{
@@ -64,6 +85,66 @@ namespace
 		return InNode == nullptr
 			|| InNode->IsA<UEdGraphNode_Comment>()
 			|| InNode->IsA<UK2Node_Knot>();
+	}
+
+	// A vertical edge is intentional only when its control output and the other
+	// branch establish the lane. A mere difference in Y is not enough: it could
+	// be the very layout defect the report is meant to expose. Follow a short,
+	// unambiguous knot chain so the first routed segment retains its origin.
+	FString HandoffRule(const UEdGraphPin* Output, const UEdGraphPin* Input)
+	{
+		if (!Output || !Input || Output->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec)
+			return FString();
+		const UEdGraphPin* Origin = Output;
+		TSet<const UEdGraphNode*> Seen;
+		for (int32 Hop = 0; Hop < 16; ++Hop)
+		{
+			const UEdGraphNode* Node = Origin->GetOwningNodeUnchecked();
+			if (!Node || Seen.Contains(Node)) return FString();
+			Seen.Add(Node);
+			if (!Node->IsA<UK2Node_Knot>()) break;
+			const UEdGraphPin* Previous = nullptr;
+			for (const UEdGraphPin* Pin : Node->Pins)
+				if (Pin && Pin->Direction == EGPD_Input && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+				{
+					if (Pin->LinkedTo.Num() != 1) return FString();
+					Previous = Pin->LinkedTo[0];
+					break;
+				}
+			if (!Previous) return FString();
+			Origin = Previous;
+		}
+		const UEdGraphNode* Control = Origin->GetOwningNodeUnchecked();
+		if (!Control || Control->IsA<UK2Node_Knot>()) return FString();
+		const bool bCompleted = Origin->PinName == TEXT("Completed");
+		const bool bFalse = Control->IsA<UK2Node_IfThenElse>()
+			&& Origin->PinName == TEXT("else");
+		FName PeerName = bCompleted ? FName(TEXT("LoopBody")) : FName(TEXT("then"));
+		bool bLaterSequenceLane = false;
+		if (Control->IsA<UK2Node_ExecutionSequence>())
+		{
+			int32 OutputIndex = 0;
+			for (const UEdGraphPin* Candidate : Control->Pins)
+				if (Candidate && Candidate->Direction == EGPD_Output
+					&& Candidate->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+				{
+					if (OutputIndex == 0) PeerName = Candidate->PinName;
+					if (Candidate == Origin) bLaterSequenceLane = OutputIndex > 0;
+					++OutputIndex;
+				}
+		}
+		if (!bCompleted && !bFalse && !bLaterSequenceLane) return FString();
+		for (const UEdGraphPin* Peer : Control->Pins)
+			if (Peer && Peer->Direction == EGPD_Output && Peer->PinName == PeerName
+				&& Peer->LinkedTo.Num() == 1 && Peer->LinkedTo[0]
+				&& Peer->LinkedTo[0]->GetOwningNodeUnchecked())
+			{
+				const FTurboMCPLayoutReport::FRect OtherLane =
+					FTurboMCPLayoutReport::RectOf(Peer->LinkedTo[0]->GetOwningNodeUnchecked());
+				return FTurboMCPLayoutReport::PinPosition(Input).Y > OtherLane.MaxY
+					? (bCompleted ? TEXT("R3") : bFalse ? TEXT("R6") : TEXT("R4")) : FString();
+			}
+		return FString();
 	}
 
 	/** The signature of a node's logic, for the "repeats logic" check. */
@@ -280,21 +361,12 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 					continue;
 				}
 
-                bool IntentionalSequenceLane=false;
-                if(bIsExec && Source->IsA<UK2Node_ExecutionSequence>())
-                {
-                    int32 OutputIndex=0;
-                    for(const UEdGraphPin* Candidate:Source->Pins)
-                        if(Candidate && Candidate->Direction==EGPD_Output && Candidate->PinType.PinCategory==TEXT("exec"))
-                        {
-                            if(Candidate==Pin) { IntentionalSequenceLane=OutputIndex>0 && FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y>FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y; break; }
-                            ++OutputIndex;
-                        }
-                }
-                if (!IntentionalSequenceLane && FMath::Abs(FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y - FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y) > AlignmentTolerance && Report.Findings.Num() < 128)
+                if (FMath::Abs(FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y - FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y) > AlignmentTolerance && Report.Findings.Num() < 128)
                 {
                     FFinding Finding;
                     Finding.Kind = bIsExec ? TEXT("exec-not-straight") : TEXT("pin-not-level");
+                    Finding.Rule = HandoffRule(Pin, Other);
+                    if (!Finding.Rule.IsEmpty()) Finding.Classification = TEXT("intended");
                     Finding.Detail = FString::Printf(TEXT("%s.%s -> %s.%s: vertical offset %+.1f graph units (target Y minus source Y; positive means target is lower; branch lanes may intentionally differ)"), *TurboMCPNodeId::MakeForNode(Source), *Pin->PinName.ToString(), *TurboMCPNodeId::MakeForNode(Target), *Other->PinName.ToString(), FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y-FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y);
                     Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(Source));
                     Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(Target));
@@ -604,17 +676,41 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
     for(const UEdGraphNode* BoxNode:InGraph->Nodes) if(BoxNode && BoxNode->IsA<UEdGraphNode_Comment>())
     {
         const FRect Bounds=RectOf(BoxNode); double OccupiedArea=0; int32 Members=0;
+        TArray<FRect> ChildBoxes;
+        for (const UEdGraphNode* Child : InGraph->Nodes) if (Child && Child != BoxNode && Child->IsA<UEdGraphNode_Comment>())
+        {
+            const FRect R = RectOf(Child);
+            if (R.MinX < Bounds.MinX || R.MinY < Bounds.MinY || R.MaxX > Bounds.MaxX || R.MaxY > Bounds.MaxY
+                || (R.MinX == Bounds.MinX && R.MinY == Bounds.MinY && R.MaxX == Bounds.MaxX && R.MaxY == Bounds.MaxY)) continue;
+            bool bInsideAnotherChild = false;
+            for (const UEdGraphNode* Other : InGraph->Nodes) if (Other && Other != Child && Other != BoxNode && Other->IsA<UEdGraphNode_Comment>())
+            {
+                const FRect O = RectOf(Other);
+                if (O.MinX >= Bounds.MinX && O.MinY >= Bounds.MinY && O.MaxX <= Bounds.MaxX && O.MaxY <= Bounds.MaxY
+                    && O.MinX <= R.MinX && O.MinY <= R.MinY && O.MaxX >= R.MaxX && O.MaxY >= R.MaxY
+                    && (O.MinX < R.MinX || O.MinY < R.MinY || O.MaxX > R.MaxX || O.MaxY > R.MaxY))
+                { bInsideAnotherChild = true; break; }
+            }
+            if (!bInsideAnotherChild) ChildBoxes.Add(R);
+        }
+        for (const FRect& Child : ChildBoxes) OccupiedArea += Child.Width() * Child.Height();
         for(const UEdGraphNode* Node:InGraph->Nodes) if(Node && !Node->IsA<UEdGraphNode_Comment>())
         {
             const FRect R=RectOf(Node);
             if(R.MinX>=Bounds.MinX && R.MinY>=Bounds.MinY && R.MaxX<=Bounds.MaxX && R.MaxY<=Bounds.MaxY)
-            { OccupiedArea+=(R.MaxX-R.MinX)*(R.MaxY-R.MinY); ++Members; }
+            {
+                ++Members;
+                const bool bInChild = ChildBoxes.ContainsByPredicate([&](const FRect& Child) {
+                    return R.MinX >= Child.MinX && R.MinY >= Child.MinY && R.MaxX <= Child.MaxX && R.MaxY <= Child.MaxY;
+                });
+                if (!bInChild) OccupiedArea += R.Width() * R.Height();
+            }
         }
         const double BoxArea=(Bounds.MaxX-Bounds.MinX)*(Bounds.MaxY-Bounds.MinY);
-        if(Members>0 && BoxArea>0 && OccupiedArea/BoxArea<0.20)
+        if((Members>0 || !ChildBoxes.IsEmpty()) && BoxArea>0 && OccupiedArea/BoxArea<0.20)
         {
             FFinding Finding; Finding.Kind=TEXT("sparse-comment-box"); Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(BoxNode));
-            Finding.Detail=FString::Printf(TEXT("%d contained nodes occupy approximately %.0f%% of box area (summed node rectangles). Review whitespace; fit to explicit member IDs with the comment tool if unwanted."),Members,100.0*OccupiedArea/BoxArea);
+            Finding.Detail=FString::Printf(TEXT("%d contained nodes and %d direct child boxes occupy approximately %.0f%% of box area (estimated rectangles). Review whitespace; fit to explicit member IDs with the comment tool if unwanted."),Members,ChildBoxes.Num(),100.0*OccupiedArea/BoxArea);
             Report.Findings.Add(MoveTemp(Finding));
         }
     }
@@ -640,9 +736,8 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
         }
         BoxOwners.Add(Node, Owner);
     }
-    struct FCrossBoxWire { double Length; FString Text; FString SourceId; FString TargetId; };
+    struct FCrossBoxWire { double Length; FString Text; FString SourceId; FString TargetId; FString Rule; };
     TArray<FCrossBoxWire> CrossBoxWires;
-    double CrossBoxTotal = 0.0;
     for (const UEdGraphNode* Node : InGraph->Nodes)
     {
         if (!Node || Node->IsA<UEdGraphNode_Comment>()) continue;
@@ -664,26 +759,39 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
                 const FString TargetId = TurboMCPNodeId::MakeForNode(Target);
                 const FString SourceOwner = SourceBox ? TurboMCPNodeId::MakeForNode(SourceBox) : TEXT("unboxed");
                 const FString TargetOwner = TargetBox ? TurboMCPNodeId::MakeForNode(TargetBox) : TEXT("unboxed");
+                FString Rule = HandoffRule(Pin, Other);
+                if (!Rule.IsEmpty())
+                {
+                    const FRect SourceRect = RectOf(Node), TargetRect = RectOf(Target);
+                    for (const UEdGraphNode* Box : InGraph->Nodes) if (Box && Box->IsA<UEdGraphNode_Comment>())
+                    {
+                        const FRect B = RectOf(Box);
+                        const bool bContainsEndpoint =
+                            (SourceRect.MinX >= B.MinX && SourceRect.MinY >= B.MinY && SourceRect.MaxX <= B.MaxX && SourceRect.MaxY <= B.MaxY)
+                            || (TargetRect.MinX >= B.MinX && TargetRect.MinY >= B.MinY && TargetRect.MaxX <= B.MaxX && TargetRect.MaxY <= B.MaxY);
+                        if (!bContainsEndpoint && SegmentIntersectsRect(PinPosition(Pin), PinPosition(Other), B))
+                        { Rule.Empty(); break; }
+                    }
+                }
                 CrossBoxWires.Add({Length, FString::Printf(TEXT("%.1f units: %s.%s [%s] -> %s.%s [%s]"),
                     Length, *SourceId, *Pin->PinName.ToString(), *SourceOwner,
-                    *TargetId, *Other->PinName.ToString(), *TargetOwner), SourceId, TargetId});
-                CrossBoxTotal += Length;
+                    *TargetId, *Other->PinName.ToString(), *TargetOwner), SourceId, TargetId, Rule});
             }
         }
     }
     CrossBoxWires.Sort([](const FCrossBoxWire& A, const FCrossBoxWire& B)
     { return A.Length == B.Length ? A.Text < B.Text : A.Length > B.Length; });
-    FFinding CrossBoxFinding;
-    CrossBoxFinding.Kind = TEXT("cross-box-wires");
-    CrossBoxFinding.Detail = FString::Printf(TEXT("%d cross-box connections; total %.1f graph units (estimated straight-line pin distances). Smallest fully enclosing comment owns each endpoint; unboxed-to-unboxed excluded. Longest first:"), CrossBoxWires.Num(), CrossBoxTotal);
     for (const FCrossBoxWire& Wire : CrossBoxWires)
     {
-        CrossBoxFinding.Detail += TEXT("\n      ") + Wire.Text;
-        CrossBoxFinding.NodeIds.AddUnique(Wire.SourceId);
-        CrossBoxFinding.NodeIds.AddUnique(Wire.TargetId);
+        FFinding Finding;
+        Finding.Kind = TEXT("cross-box-wires");
+        Finding.Detail = Wire.Text + TEXT("; different smallest enclosing boxes. Check the route for unrelated box crossings.");
+        Finding.Rule = Wire.Rule;
+        if (!Finding.Rule.IsEmpty()) Finding.Classification = TEXT("intended");
+        Finding.NodeIds.Add(Wire.SourceId);
+        Finding.NodeIds.Add(Wire.TargetId);
+        Report.Findings.Add(MoveTemp(Finding));
     }
-    // An empty diagnostic summary is not a layout finding.
-    if (!CrossBoxWires.IsEmpty()) Report.Findings.Add(MoveTemp(CrossBoxFinding));
 
 	if (Report.bHasNoWires)
 	{

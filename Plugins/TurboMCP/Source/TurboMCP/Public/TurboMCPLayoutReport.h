@@ -57,6 +57,12 @@ public:
 		/** `backward-exec`, `backward-data`, `overlap`, `getter-place`, `stray`, `disconnected` */
 		FString Kind;
 
+		/** A review candidate is a defect unless a specific layout rule proves an intended handoff. */
+		FString Classification = TEXT("defect");
+
+		/** R2..R6 when Classification is intended; empty for defect candidates. */
+		FString Rule;
+
 		/** One line, ready to print. */
 		FString Detail;
 

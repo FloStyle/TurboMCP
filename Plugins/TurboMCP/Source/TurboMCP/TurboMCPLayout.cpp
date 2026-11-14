@@ -102,18 +102,31 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
         return true;
     });
     Report.Findings.StableSort([](const auto& A, const auto& B) {
+        if (A.Classification != B.Classification) return A.Classification == TEXT("defect");
         if ((A.Kind == TEXT("overlap")) != (B.Kind == TEXT("overlap"))) return A.Kind == TEXT("overlap");
         if (A.Kind != B.Kind) return A.Kind < B.Kind;
         return A.Detail < B.Detail;
     });
     if (Offset > Report.Findings.Num()) return TEXT("error: Offset exceeds the matched findings; restart with Offset=0 after graph changes");
-    FString Out = FString::Printf(TEXT("look: layout of %s graph %s\nscope: %s\nInclusion: any involved node intersects the scope; outside endpoints remain in findings. Box/region inclusion uses strict rectangle intersection, excluding edge-only contact.\n"),
-        *Resolved.ObjectPath, *Graph->GetName(), Scope.IsEmpty() ? TEXT("whole graph") : *Scope);
+    int32 DefectCandidates = 0;
+    int32 Intended = 0;
+    for (const auto& Finding : Report.Findings)
+        if (Finding.Classification == TEXT("intended")) ++Intended; else ++DefectCandidates;
+    FString Out = FString::Printf(TEXT("look: layout of %s graph %s\nscope: %s\nInclusion: any involved node intersects the scope; outside endpoints remain in findings. Box/region inclusion uses strict rectangle intersection, excluding edge-only contact.\nclassification: %d defect candidates, %d intended handoffs. R3: loop Completed below Body; R4: later sequence lane below the first; R6: branch False fallback below True. Intended explains this edge only, not nearby geometry. Defect candidates require visual review.\n"),
+        *Resolved.ObjectPath, *Graph->GetName(), Scope.IsEmpty() ? TEXT("whole graph") : *Scope, DefectCandidates, Intended);
+    Out += FString::Printf(TEXT("whole-graph context: %d node%s, %d wire%s, %d comment box%s; total wire length %.0f, longest %.0f graph units. Extent: x %.0f to %.0f, y %.0f to %.0f. Wire lengths use computed pin positions and straight-line estimates, not rendered curves. Alignment tolerance %.1f graph units.\n"),
+        Report.NodeCount, Report.NodeCount == 1 ? TEXT("") : TEXT("s"),
+        Report.WireCount, Report.WireCount == 1 ? TEXT("") : TEXT("s"),
+        Report.CommentBoxCount, Report.CommentBoxCount == 1 ? TEXT("") : TEXT("es"), Report.TotalWireLength,
+        Report.LongestWire, Report.Extent.MinX, Report.Extent.MaxX, Report.Extent.MinY,
+        Report.Extent.MaxY, AlignmentTolerance);
     int32 Shown = 0;
     for (int32 I = Offset; I < Report.Findings.Num() && Shown < Limit; ++I)
     {
         const auto& Finding = Report.Findings[I];
-        const FString Row = FString::Printf(TEXT("\n%s: %s"), *Finding.Kind, *Finding.Detail);
+        const FString RuleText = Finding.Rule.IsEmpty() ? FString() : FString::Printf(TEXT(" rule=%s"), *Finding.Rule);
+        const FString Row = FString::Printf(TEXT("\n%s: class=%s%s %s"), *Finding.Kind,
+            *Finding.Classification, *RuleText, *Finding.Detail);
         if (Out.Len() + Row.Len() > MaxResultChars - 3000) break;
         Out += Row; ++Shown;
     }
@@ -124,8 +137,6 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
         Report.Findings.Num(), AllFindings, Offset, Shown, Report.Findings.Num() - Next, !bOversizedRecord && Next < Report.Findings.Num() ? Next : -1);
     if (bOversizedRecord) Out += FString::Printf(TEXT("\npageBlocked: finding at Offset=%d exceeds the output budget (%d characters). No partial finding was printed. Narrow Scope to inspect relevant nodes. To explicitly skip this unprinted finding and inspect later findings, use Offset=%d. nextOffset=-1 means automatic paging stopped, not that all findings were returned."),
         Next, Report.Findings[Next].Detail.Len(), Next + 1);
-    Out += FString::Printf(TEXT("\nwhole-graph context: %d nodes, %d wires, %d comment boxes; total wire length %.0f, longest %.0f graph units. Wire lengths are straight-line estimates, not rendered curves. Alignment tolerance %.1f graph units."),
-        Report.NodeCount, Report.WireCount, Report.CommentBoxCount, Report.TotalWireLength, Report.LongestWire, AlignmentTolerance);
     struct FWireDetail { double Length; FString Text; };
     TArray<FWireDetail> Wires;
     for (const UEdGraphNode* Node : Graph->Nodes) if (Node)
