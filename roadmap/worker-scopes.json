@@ -4164,6 +4164,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextSharedValueTest.cpp"
           ],
           "new_files": []
+        },
+        "nov14-section-growth": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTidyFeedbackTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphTidy.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
