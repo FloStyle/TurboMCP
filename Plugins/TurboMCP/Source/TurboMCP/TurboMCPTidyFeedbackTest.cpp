@@ -198,6 +198,31 @@ bool FTurboMCPTidyFeedbackTest::RunTest(const FString& Parameters)
         for (const auto& Pair : OriginalPositions)
             TestTrue(TEXT("Section undo restores positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
         TestTrue(TEXT("Section undo restores size"), Section->NodeWidth == 1000 && Section->NodeHeight == 700);
+        // Both available growth directions are blocked. A refusal must preserve
+        // the live graph rather than moving an unselected neighboring section.
+        auto* RightObstacle = NewObject<UEdGraphNode_Comment>(SectionGraph);
+        AddSectionNode(RightObstacle, 1020, 0);
+        RightObstacle->NodeComment = TEXT("Fixed right obstacle");
+        RightObstacle->NodeWidth = 2000;
+        RightObstacle->NodeHeight = 700;
+        const bool DirtyBeforeRefusal = Package->IsDirty();
+        FTurboMCPGraphTidy::FPlan BlockedPlan;
+        const bool BlockedResult = FTurboMCPGraphTidy::Plan(BP->GetPathName(), SectionGraph->GetName(),
+            true, false, Selected, BlockedPlan, SectionError);
+        TestFalse(TEXT("No space below or right refuses section growth"), BlockedResult);
+        TestTrue(TEXT("Blocked section names the collision"), SectionError.Contains(TEXT("unrelated comment")));
+        const FString BlockedEdit = UTurboMCPEditToolset::EditTurboMCPGraphTidy(
+            BP->GetPathName(), SectionGraph->GetName(), true, Selected);
+        TestTrue(TEXT("Blocked section edit refuses"), BlockedEdit.StartsWith(TEXT("error:")));
+        for (const auto& Pair : OriginalPositions)
+            TestTrue(TEXT("Blocked section preserves all positions"), Pair.Value == FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY));
+        for (const auto& Pair : OriginalLinks)
+            TestTrue(TEXT("Blocked section preserves all links"), Pair.Key->LinkedTo == Pair.Value);
+        TestTrue(TEXT("Blocked section preserves box sizes"), Section->NodeWidth == 1000 && Section->NodeHeight == 700
+            && Fixed->NodeWidth == 1000 && Fixed->NodeHeight == 200);
+        TestTrue(TEXT("Right obstacle remains unchanged"), RightObstacle->NodePosX == 1020 && RightObstacle->NodePosY == 0
+            && RightObstacle->NodeWidth == 2000 && RightObstacle->NodeHeight == 700);
+        TestEqual(TEXT("Blocked section preserves dirty state"), Package->IsDirty(), DirtyBeforeRefusal);
     }
     for (const FName MacroName : {FName(TEXT("ForLoopWithBreak")),FName(TEXT("DoOnce"))})
     {
