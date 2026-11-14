@@ -7,6 +7,17 @@ Readiness: ready
 Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
+
+## Approved Tidy fixture lookup guard (2026-11-14)
+
+Readiness: ready. Assignment `nov14-tidy-fixture-lookup-guard` is limited to
+`TurboMCPTidyFeedbackTest.cpp`. The focused lookup audit reports the new
+HandoffAxis fixture's `LoadObject` result as unguarded because its
+`TestNotNull` condition is not an explicit null check. Make the null return
+explicit before dereferencing `Macros`, with a clear fixture error. Preserve
+the existing test's layout assertions and production behavior. Verify with
+`python Tools/test-lookup-guards.py`; no editor rerun is required for this
+guard-only change.
 Review: source-reviewed
 
 ## Approved NOV05-13 Return-node repair (2026-11-14)

@@ -4120,6 +4120,12 @@
             "Tools/test-layout.py"
           ],
           "new_files": []
+        },
+        "nov14-tidy-fixture-lookup-guard": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTidyFeedbackTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
