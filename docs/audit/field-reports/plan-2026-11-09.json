@@ -78,7 +78,7 @@
       ],
       "dependencies": [],
       "complexity_estimate": 8,
-      "next_step": "Partial candidate 29854783: scoped growth collision guards and independent-component rightward packing pass native plan/apply/undo and screenshot checks (230b06132e3842b49b9282dcd9525856). Reviewed partial batch for integration. Finish connected branching layouts, explicit-wrap and nested native acceptance, and right-obstacle refusal. Preserve failed run 26758cd43278415a819ea3539f14c81a (native membership names were not recognized). Do not close on the independent-flow fixture.",
+      "next_step": "Partial candidate 80ddb082 passes build and registered append workflow fdb15cd0153a41ae83db097eefe7377d. Native connected and populated nested section growth now preserve stored top-left anchors, links, outside geometry and undo; screenshots inspected. Both-direction obstacle refusal passes. Keep open: explicit-wrap native acceptance and connected branch wire-crossing refinement. The private field graph was not replayed. Earlier failures and the empty-child fixture false confidence remain documented in nov14-placement-and-search-reconciliation.md.",
       "acceptance": "Prefer rightward growth into free space. Moving neighboring boxes is a separately explicit scope, never implied by selecting the section. Preserve working regression guards."
     },
     {

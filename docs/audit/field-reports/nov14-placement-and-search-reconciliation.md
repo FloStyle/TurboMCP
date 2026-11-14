@@ -99,3 +99,10 @@ Execution a93fa84a163f478c8ee28474b56bd968 built successfully but retained the g
 
 
 Execution 1853e04a7f7c46b1ba2f3bafbfe63e8b at b002306d passed build and the registered append workflow, including TidyFeedback. Visual review prevents treating this as full acceptance: the nested fixture's comment was empty because its title strip excluded the intended nodes (node Y=90, child content started at Y=112). The next fixture moves the child title above the nodes and explicitly checks two original members and unchanged membership after apply. Connected packing now exercises the obstructed baseline and passes width/height, links, preview and undo assertions; its screenshot still warrants inspection of the neighboring comment's rendered boundary and crossed branch wires. Do not close NOV09-04 or integrate this pending batch based on this passing rerun alone.
+
+
+### Native anchor and nested-content repair
+
+Candidate 80ddb082 corrects BoxRect to use stored outer coordinates. Previously it offset Y by the title height and subtracted that height from the size, although Apply wrote those values as stored coordinates. This shifted selected comments and let the geometry check overlook the rendered boundary. The fixture now explicitly checks selected and child anchors, original nested membership, actual bottom clearance, links and undo.
+
+Build and registered test-graph-append passed in fdb15cd0153a41ae83db097eefe7377d. Native BranchSectionGrowth and SectionGrowthNested captures were inspected: the neighboring section is separated; the populated child retains its event/call. The connected branch wires cross each other but do not cross node rectangles. This is accepted partial progress, not closure: retain native explicit-wrap acceptance, routing refinement and unavailable private-field equivalence. The passing run does not erase earlier failed runs or the previous empty-child fixture gap. The integrated source delta is reviewed against private main 7358c3f1; the original worker scope failure on the mixed integrator branch remains recorded, not represented as a pass.
