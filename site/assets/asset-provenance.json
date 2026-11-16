@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "source": "Retained TurboMCP native Unreal capture test evidence",
+  "fixture": "Synthetic VisionEvents_0 Blueprint test graph",
+  "scope": "Original native captures. No company project assets. These illustrate a recorded run, not a current benchmark or release-acceptance result.",
+  "images": [
+    {
+      "file": "graph-overview.png",
+      "sha256": "95f743bdd936f0e847b2e9731d499af6a8e3be56c4090bb47944f42b1fe018e4",
+      "mode": "graph",
+      "dimensions": [1600, 900],
+      "description": "Whole graph; 69 nodes. Readable structure, not readable text at every node."
+    },
+    {
+      "file": "graph-focus.png",
+      "sha256": "2624bdfc74c8e377e8f6004e561ba9688596217b56419ddffbace8b7d63f0653",
+      "mode": "node",
+      "dimensions": [1200, 800],
+      "description": "Exact-node detail view; native capture at requested resolution."
+    },
+    {
+      "file": "graph-neighbours.png",
+      "sha256": "19272b8b72d776068c90e79f4f945e53166254a629aa7b218ab5e481334ba8cc",
+      "mode": "neighbours",
+      "sizeArgument": "1",
+      "dimensions": [1038, 1058],
+      "description": "Sequence node and one-hop neighbours; six nodes. Size is hop count in this mode."
+    }
+  ]
+}
