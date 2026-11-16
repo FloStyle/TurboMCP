@@ -221,6 +221,9 @@ class Reader:
             raise InventoryError("reader_refused")
         require(body and not body.startswith("partial:")
                 and not (answer.result and answer.suggest_exit_code() != 0), "reader_incomplete")
+        if name in {"MaterialLoad", "MaterialTrace"}:
+            require(not re.search(r"(?m)^; partial: expression expansion limit reached", body),
+                    "material_expansion_incomplete")
         return body
 
 
@@ -406,10 +409,14 @@ def main():
                         except Exception as error:
                             row["status"] = "incomplete"
                             row["issues"].append(issue(error))
-                            raise
+                            # Keep this package incomplete; collect other independently proven identities.
+                            # No content reader runs for a package whose identity was not established.
+                            continue
                     # Reserve the per-package after checks and global DirtyList from the call cap.
                     reader.limit = MAX_CALLS - len(manifest) - 1
                     for row in report["packages"]:
+                        if "object" not in row:
+                            continue
                         row["status"] = "collecting"
                         checkpoint(summary, report)
                         try:
