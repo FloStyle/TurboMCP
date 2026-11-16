@@ -34,11 +34,7 @@ Only set `Readiness: ready` after this review. The integration owner approves ne
 
 ## Work independently
 
-Give each implementation agent one task and one worktree:
-
-```powershell
-git worktree add -b task/<id>-<slug> ../worktrees/<id> main
-```
+The integration owner supplies one reviewed assignment, approved base and clean isolated worktree per implementation worker. Claim the assignment before editing and limit the changes to its authorized paths. Use the [external agent workflow](external-agent-workflow.md) for the claim command, setup and read-only alternative in any harness.
 
 Do not switch another agent's branch or edit its checkout. Queue overlapping file or fixture changes through the integration owner. Binary fixture conflicts require manual review.
 
@@ -46,10 +42,10 @@ Engine builds and editor tests need a shared schedule. Do not share an editor, p
 
 ## Verify and integrate
 
-Commit coherent changes and include the task ID in commit messages. Before integration, fetch private main, rebase the task branch or merge main, resolve conflicts, and rerun affected checks. Never weaken a failing check to obtain a pass.
+Commit coherent changes and include the task ID in commit messages. Submit the candidate against the approved base and retain the claim for review. Never weaken a failing check to obtain a pass.
 
 Record commands, exit codes, logs, source commit, artifact hash and engine identity as applicable. Identify tests that could not run. Static checks do not replace runtime acceptance.
 
-Update the selected task and regenerate TODO.md. An integrator reviews the combined changes before they enter private main, through a reviewed private PR or an explicitly authorized local merge. Use ordinary pushes; never force-push main.
+The integration owner applies the [worker submission gate](worker-boundaries.md), reconciles and verifies the change against current private main, and records task evidence and status before regenerating TODO.md. Changes enter private main through a reviewed private PR or an explicitly authorized local merge. Never force-push main.
 
 Public publication is a separate, approved export with fresh history. Follow the [release guide](release.md).
