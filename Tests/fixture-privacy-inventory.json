@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "source_commit": "0df188fc56156e8b1bdcdb2d48885f4ff60cc573",
+  "packages": [
+    {
+      "path": "TestProject/Content/Tests/BP_NodeTest.uasset",
+      "git_blob": "c2ebf533a32cf9990ecc0e88237e2d3751147fdc",
+      "sha256": "27b84057a2c50cc11b351fd32c0d1680b86acc315c115ab39d9b32d4b5e6d238",
+      "class": "Blueprint"
+    },
+    {
+      "path": "TestProject/Content/Tests/BP_TurboMCPTestLog.uasset",
+      "git_blob": "4193f267e2441eee73e6b1bb7f3f9377a4cc0fd7",
+      "sha256": "05e43f425600fbbca82ed199df483b7f4b061a23fdff61a24b32840814ecbc1f",
+      "class": "Blueprint"
+    },
+    {
+      "path": "TestProject/Content/Tests/Kit/BP_TestAlpha.uasset",
+      "git_blob": "d50acb9b5453a629b1da650428fdf8c9408e0e5d",
+      "sha256": "1d494bf263b553014ed98fb3495eed52ea16a43d834911e7c076bfd9e49909d6",
+      "class": "Blueprint"
+    },
+    {
+      "path": "TestProject/Content/Tests/Kit/BP_TowerArray.uasset",
+      "git_blob": "e3cd8e4bdc1a0b7c6eadd1902dbd7886c12970f7",
+      "sha256": "6c0ddea92984b36c3d3688d0156174d6d6ea3f1276a38f677c1842a59ae9f581",
+      "class": "Blueprint"
+    },
+    {
+      "path": "TestProject/Content/Tests/Kit/TA01_HandLaid.uasset",
+      "git_blob": "d1449e0e1010442acc9efa393105842f68683675",
+      "sha256": "fd396900e3d6b5900c0c2b3ba786d985ce1218c90580dd233566a7dd41ad258b",
+      "class": "Blueprint"
+    },
+    {
+      "path": "TestProject/Content/Tests/Kit/TA07_Card.uasset",
+      "git_blob": "7d6770dbcda5344a3f420bdc9c5d00aba9fd2d78",
+      "sha256": "e2a063bf9adf961fbe7c2c83e7d60363a84642ca1d2d5d332a5eff76547a2f03",
+      "class": "WidgetBlueprint"
+    },
+    {
+      "path": "TestProject/Content/Tests/Kit/TA11_KitEnum.uasset",
+      "git_blob": "6455080962bd727917db6e0ad650eb74a626bd8f",
+      "sha256": "f4bcd3a2e596becbdb40d38acc39e16281052ca92a182b1aa195a58f1a2d8ef4",
+      "class": "UserDefinedEnum"
+    },
+    {
+      "path": "TestProject/Content/Tests/Kit/TA13_KitPath/TA13_KitPath.uasset",
+      "git_blob": "1811acbdce6e8c727b4d5c94ea14adcfd0f76f79",
+      "sha256": "bcd147710396b0b6c0ea557c2384135a3dbb42ef95dcc278128309c259990210",
+      "class": "Blueprint"
+    },
+    {
+      "path": "TestProject/Content/Tests/TA11_TestEnum.uasset",
+      "git_blob": "c8a125f6640b2d2f04cbfedcbdda93b34c6c51e7",
+      "sha256": "ce68a688fd1e79daa7988bbe644eb888388a97146809c616ec22c8f846e62220",
+      "class": "UserDefinedEnum"
+    },
+    {
+      "path": "TestProject/Content/Tests/TA18_ColourSuite.uasset",
+      "git_blob": "f4962dce3b28e93102507c882044be49ee1218a6",
+      "sha256": "68353b1444b1a309f2ce70dd776d8a714b3dd3a5a106962e90755c494e28d585",
+      "class": "UserDefinedEnum"
+    },
+    {
+      "path": "TestProject/Content/Tests/TurboMCPAcceptance.uasset",
+      "git_blob": "7ab0447b4909ea8a3152dc5e1da394e552004bca",
+      "sha256": "186a3aa6a4263b1810a53f59fa43259b2fde8f1742e5a41ea99c05a528b0b054",
+      "class": "Blueprint"
+    },
+    {
+      "path": "TestProject/Content/Tests/TurboMCPGraphReaderChild.uasset",
+      "git_blob": "aacf64e106a6a3c561d40c4d5983af6e1587448c",
+      "sha256": "76cfc4926bfc4b4a5bbcfbe394a333a42c4c02e9637dbfaa3fde4ea613d917ae",
+      "class": "Blueprint"
+    },
+    {
+      "path": "TestProject/Content/Tests/TurboMCPMaterialFixture.uasset",
+      "git_blob": "87cc1700a2f3763e1b9ea64a61168c2a60bd4627",
+      "sha256": "538beb2b9acc4aba825381979ede83a3c1d056990843529af3598cdea5ec15e3",
+      "class": "Material"
+    },
+    {
+      "path": "TestProject/Content/Tests/TurboMCPTestMap.umap",
+      "git_blob": "39e490a0e54da95acafadbe90ab4b7c18c56f0f8",
+      "sha256": "cc55638465aaba072c564aa9972c012f0779c25cf54f0cbb94c7c3f9288dbb6d",
+      "class": "World"
+    },
+    {
+      "path": "TestProject/Content/Tests/WBP_NodeTest.uasset",
+      "git_blob": "8cfd575c796f26beabc7bb32ea32a67591e20b1f",
+      "sha256": "e0fe601a250a4971bb7e46a015093812f755223f19bed9bf1074698b99d84cb0",
+      "class": "WidgetBlueprint"
+    }
+  ]
+}
