@@ -8,6 +8,34 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## V1 review and next bounded repair (2026-11-16)
+
+Assignment `v1-claim-setup` is implemented and reviewed in ba201318 (worker
+4414f4aa). Exact four-file scope passed. The integrator independently reviewed
+production and test code and ran all 17 focused claim checks successfully.
+The worker's clean offline gate passed 28/28 at 4414f4aa. No engine behavior
+changed. GitHub #18 is ready for hosted integration. A separate coordination
+defect remains: active scopes are checked against the inspector's checkout,
+so a concurrent assignment with new parent directories can block inspection.
+That observation is not resolved by this initialization/output repair.
+
+Readiness: ready. Assignment `v1-exact-object` addresses GitHub #13. After the
+exact loaded-object check, resolve an explicit object path through exact
+Asset Registry identity without loading it. Never fall back to a different
+object in the same package when the explicit name is wrong. Keep package-only
+ambiguity refusal and existing generated-class path support. A local helper
+in the resolver implementation is sufficient; no header/API expansion.
+
+Extend the existing metadata scenario before any Blueprint load. Describe the
+exact material and map fixture object paths twice and require matching object,
+class, loaded:no, and identical replies. Refuse package-only ambiguity for both
+multi-asset fixtures and wrong explicit names in them and a single-asset
+Blueprint package. Preserve generated-class success; cover wrong suffixes if
+touched. No LoadObject, save, fixture generation, engine edits or broadened
+search. Worker runs focused offline checks only. The integrator reviews source
+and schedules one serialized build and native scenario. Missing native evidence
+remains pending. Only the two exact scope files may change.
+
 ## Current integrator dispatch: V1 delivery and public examples (2026-11-16)
 
 Readiness: ready. The owner requests urgent V1 repairs, one package per

@@ -4334,6 +4334,13 @@
             "site/assets/asset-provenance.json",
             "Tools/build-site-catalog.py"
           ]
+        },
+        "v1-exact-object": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetResolver.cpp",
+            "Tools/test-asset-describe-metadata.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
