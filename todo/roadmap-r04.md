@@ -12,8 +12,10 @@ Kind: investigation
 
 Readiness: ready. Assignment `nov16-retained-history-policy` implements the
 owner's already-selected cleaned-history publication route, preserving useful
-commits and one active development repository. Apply only the reviewed exact
-17-file documentation/checklist patch. Distinguish an approved development-source
+commits and one active development repository. Apply only the 14 worker-owned files in the reviewed policy patch.
+The integrator separately owns AGENTS.md, docs/worker-boundaries.md and
+todo/public-cutover.md; the claim guard correctly refuses them as worker scope.
+No worker modifies those protected files. Distinguish an approved development-source
 preview from stable 1.0 and installation acceptance. Require complete-tree
 export verification, full retained-history audit, exact source and destination
 identities, owner publication instruction and destination security checks.

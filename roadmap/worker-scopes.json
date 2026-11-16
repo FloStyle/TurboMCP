@@ -4251,7 +4251,6 @@
         "nov16-retained-history-policy": {
           "files": [
             "docs/public-preparation.md",
-            "AGENTS.md",
             "SECURITY.md",
             "README.md",
             "docs/architecture.md",
@@ -4264,9 +4263,7 @@
             "docs/repository-design.md",
             "docs/release.md",
             "docs/release-manager.md",
-            "docs/worker-boundaries.md",
-            "release/public-preparation.json",
-            "todo/public-cutover.md"
+            "release/public-preparation.json"
           ],
           "new_files": []
         }
