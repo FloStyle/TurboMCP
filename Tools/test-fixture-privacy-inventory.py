@@ -225,8 +225,12 @@ class Reader:
 
 
 def asset_identity(reader, locator, package, expected_class):
-    result = reader.read(locator, "AssetDescribe", assets=package)
-    object_path = package + "." + package.rsplit("/", 1)[-1]
+    # This generator stores M_TurboMCPFixture inside a differently named package.
+    # Other exports in that package remain outside the primary-material read scope.
+    object_name = ("M_TurboMCPFixture" if package == "/Game/Tests/TurboMCPMaterialFixture"
+                   else package.rsplit("/", 1)[-1])
+    object_path = package + "." + object_name
+    result = reader.read(locator, "AssetDescribe", assets=object_path)
     require(result.startswith("read: describing 1 asset(s), all 1 described\n")
             and re.findall(r"(?m)^package: (.+)$", result) == [package]
             and re.findall(r"(?m)^  object: (.+)$", result) == [object_path]
@@ -338,7 +342,7 @@ def inspect_package(reader, row):
                                              "read: " + target + ", output " + output}, "material_trace_unproved")
             row["readers"]["MaterialTrace"]["traced_outputs"] += 1
         row["readers"]["MaterialTrace"]["status"] = "collected"
-        row["gaps"].append("unused_material_expressions_and_import_metadata_need_review")
+        row["gaps"].append("unused_material_expressions_nested_function_instance_and_import_metadata_need_review")
     if kind == "World":
         row["gaps"].append("world_actors_components_exports_and_map_dirty_coverage_unknown")
     if kind == "UserDefinedEnum":
