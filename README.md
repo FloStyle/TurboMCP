@@ -80,6 +80,8 @@ Use the [session-report skill](docs/agent-skills.md) to prepare a local, sanitiz
 
 ## Develop TurboMCP
 
+Use main for reviewed development. The stable branch tracks the latest approved release when one exists, and its version tag identifies the exact released source. The Unreal 5.9 candidate uses codex/ue59-preparation, a separate worktree and a separate engine checkout. See the [Git workflow](docs/git-workflow.md) for branch roles and release evidence.
+
 Use Python 3.13, Git and PowerShell for repository tooling. Keep Unreal Engine in a separate checkout. From the TurboMCP repository root:
 
 ```powershell

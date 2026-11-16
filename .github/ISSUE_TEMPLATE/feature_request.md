@@ -1,21 +1,20 @@
 ---
-name: Workflow improvement
-about: Describe a concrete missing workflow and its value
+name: Feature or workflow request
+about: Propose a missing workflow or a concrete improvement
 ---
 
-Please write in English. Remove credentials and private project data. For vulnerabilities, follow SECURITY.md instead of opening a public issue.
+Use English and a synthetic example. Remove credentials, private paths and project data. Report vulnerabilities privately using SECURITY.md.
 
-## Workflow and benefit
-What user task is difficult today, and what measurable improvement would help?
+## User task
 
-## Current alternatives
-Which existing TurboMCP or native Unreal tools have you tried? Include the engine version.
+Describe the workflow, the current workaround and what improvement would help. Include your exact Unreal version.
 
-## Proposed scope
-Inputs, observable result, side effects and refusal cases. Explain the smallest useful change.
+## Proposed behavior
 
-## Native overlap
-Is this already supported or planned in the relevant Unreal version? Link evidence; unknown is acceptable.
+Describe the smallest useful change, its input and observable result. Mention whether it reads, previews, edits or executes project code, and when it should refuse.
 
-## Acceptance
-What reproducible example would show that this solves the problem? What behavior must remain unchanged?
+## Native alternatives and acceptance
+
+List relevant TurboMCP or Unreal capabilities you tried. Give a small synthetic example that would show the improvement works. State which existing behavior the example should preserve.
+
+This issue is a proposal. A maintainer reviews and dispatches implementation through the contributor workflow.

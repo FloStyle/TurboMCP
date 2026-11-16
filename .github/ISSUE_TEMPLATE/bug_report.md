@@ -3,19 +3,20 @@ name: Bug report
 about: Report incorrect behavior with a minimal reproduction
 ---
 
-Please write in English. Remove credentials and private project data. For vulnerabilities, follow SECURITY.md instead of opening a public issue.
+Use English and a clean, synthetic project. Remove credentials, private paths, raw project data and personal information. Report vulnerabilities privately using SECURITY.md.
 
-## Environment
-TurboMCP commit/version, exact Unreal version/build, source or installed distribution, OS and client/harness:
+## Version and setup
 
-## Reproduction
-Tool name, arguments, starting asset state and smallest reproducible steps:
+Give the TurboMCP commit or version, exact Unreal build, OS, and MCP client or harness. Indicate source or installed engine.
 
-## Expected and actual behavior
-Include the actual result and explain which state or output is incorrect:
+## Steps to reproduce
 
-## Evidence
-Relevant test/log excerpt, resulting asset state, and whether the issue reproduces in a clean fixture:
+Give the tool name, a synthetic starting asset, minimal safe tool arguments or a short prompt, and the fewest steps that cause the problem.
 
-## Existing reports
-Related task or issue IDs, if known:
+## Expected and observed behavior
+
+Describe the expected result and the actual tool or editor state. Include a short sanitized excerpt if it helps.
+
+## Evidence and limits
+
+Say whether this reproduces in a clean fixture, which checks you ran, and whether anything could not be verified. Add related issues or task IDs if known.

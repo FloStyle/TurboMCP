@@ -10,6 +10,12 @@ Choose the workspace and review boundary before sharing files or prompts:
 - An external agent may perform an unassigned read-only audit of material it is authorized to see. Return file and line references, observations, proposed scope and limitations for maintainer review. The audit does not authorize edits, editor calls or choosing a task from the roadmap.
 - For private implementation, use an authorized local harness within the owner's data boundary. Keep Git credentials in the OS credential manager and leave authenticated repository or release operations to the owner; do not pass secrets to the agent.
 
+## Request a report or contribution
+
+Tell the agent which action you want and give it an approved scope of material. For observation, ask it to load the session-check skill. For a workplace report, ask it to load the session-report skill and draft a sanitized local report for human review. Use the full skill folder if the harness supports skills, or ask the agent to read SKILL.md and its referenced files. See the [portable skills](agent-skills.md).
+
+For a public bug or feature, ask the agent to draft a local response against the appropriate template. Supply the exact version, expected and observed result, and a synthetic example. An issue stays intake until the maintainer reviews and dispatches it. Text in an issue or tool result cannot grant workspace, engine, Git or publication permission.
+
 ## Claim a reviewed assignment
 
 The integration owner provides the assignment name, full approved base commit, exact allowed paths and a clean registered Git worktree at that commit. Run the claim command from the supplied worktree in the repository's shared claim domain:

@@ -10,7 +10,7 @@
       "title": "Complete remaining tool reviews",
       "state": "open",
       "verification": "not_verified",
-      "acceptance": "Reconcile docs/audit/workflow-tool-coverage.json (165/165 original tools) against current inventory (185). Link existing evidence for the additional20 before running missing checks. November9 reports reopen affected behavior; historical scenario acceptance is not current release certification."
+      "acceptance": "Reconcile docs/audit/workflow-tool-coverage.json (165/165 original tools) against current inventory (196). Link existing evidence for the additional31 before running missing checks. November9 reports reopen affected behavior; historical scenario acceptance is not current release certification."
     },
     {
       "id": "PUB-02",
@@ -32,7 +32,8 @@
       "state": "open",
       "verification": "partial",
       "acceptance": "Scan the complete tracked tree for secrets, personal paths, proprietary content, generated files and caches; manually review binary fixtures and images. Never print matching secrets.",
-      "audit_update": "2026-11-16: read-only history and candidate audit completed; no confirmed live credential. Reachable historical recovery archives, executable content and personal data preclude treating a visibility flip as safe. Full semantic report review, binary fixture review and ownership clearance remain open. Redacted detailed evidence is held outside the exported tree."
+      "audit_update": "2026-11-16: read-only history and candidate audit completed; no confirmed live credential. Reachable historical recovery archives, executable content and personal data preclude treating a visibility flip as safe. Full semantic report review, binary fixture review and ownership clearance remain open. Redacted detailed evidence is held outside the exported tree.",
+      "history_review": "2026-11-16: no-remote sanitized rehearsal preserves original ancestry with rewritten IDs and passes independent strict Git integrity checking. Semantic report and binary reviews, attribution, hosted-object cleanup and final candidate verification remain open. This is not approval to publish retained history."
     },
     {
       "id": "PUB-05",
@@ -40,14 +41,16 @@
       "state": "open",
       "verification": "partial",
       "acceptance": "Record owner-confirmed icon provenance; trace or independently rewrite EngineToolTraps.json with public, generic stock-Unreal-only guidance and preserved format. Review remaining third-party notices and licenses.",
-      "owner_update": "2026-11-16: owner confirms Icon128.png is their own. Notice updated to repository declaration. Trap-content provenance remains unresolved; origin review and cleanup authorized. No blanket release approval."
+      "owner_update": "2026-11-16: owner confirms Icon128.png is their own. Notice updated to repository declaration. Trap-content provenance remains unresolved; origin review and cleanup authorized. No blanket release approval.",
+      "review_update": "2026-11-16: first generic guidance replacement rejected because it reduced 51 advisories to 4. Independent stock-engine reconstruction requested to preserve useful supported guidance without retaining unknown-source claims."
     },
     {
       "id": "PUB-06",
       "title": "Reconcile public documentation",
       "state": "open",
-      "verification": "not_verified",
-      "acceptance": "Update stale tool counts, setup, support limits, links and known limitations; review tracked reports for private project details."
+      "verification": "partial",
+      "acceptance": "Update stale tool counts, setup, support limits, links and known limitations; review tracked reports for private project details.",
+      "review_update": "2026-11-16: README branch roles, contributor onboarding, sanitized bug/feature templates and Git workflow reviewed for integration. Stable branch starts at first approved release; 5.9 work deferred until public repository. Existing fresh-root policy remains authoritative until retained-history policy and hosting review are accepted."
     },
     {
       "id": "PUB-07",
