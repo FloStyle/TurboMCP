@@ -44,6 +44,62 @@ function Get-PackageFiles([string] $Root) {
     }
 }
 
+function Copy-GitBlob([string] $Root, [string] $ObjectId, [string] $Destination) {
+    # Read the blob without checkout or archive filters. The stream stays binary.
+    $start = [Diagnostics.ProcessStartInfo]::new('git')
+    $start.WorkingDirectory = $Root
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardOutput = $true
+    foreach ($argument in @('cat-file', 'blob', $ObjectId)) { $start.ArgumentList.Add($argument) }
+    $output = [IO.File]::Open($Destination, [IO.FileMode]::CreateNew)
+    try {
+        $process = [Diagnostics.Process]::Start($start)
+        try {
+            $process.StandardOutput.BaseStream.CopyTo($output)
+            $process.WaitForExit()
+            if ($process.ExitCode -ne 0) { throw "Git could not read plugin blob $ObjectId" }
+        } finally { $process.Dispose() }
+    } finally { $output.Dispose() }
+}
+
+function Export-TrackedPluginInputs([string] $Root, [string] $PluginTree, [string] $Destination) {
+    New-StageDirectory $Destination
+    $tracked = @{}
+    foreach ($line in @(Read-Git $Root @('-c', 'core.quotePath=false', 'ls-tree', '-r', $PluginTree))) {
+        if ($line -notmatch '^(100644|100755) blob ([a-f0-9]{40})\t(.+)$') {
+            throw 'The plugin contains a non-ordinary or unrecognized Git entry'
+        }
+        $objectId = $Matches[2]
+        $relative = $Matches[3]
+        $parts = $relative.Split('/')
+        $parent = $Destination
+        foreach ($part in $parts) {
+            if (-not $part -or $part.EndsWith('.') -or $part.EndsWith(' ') -or
+                $part.IndexOfAny([IO.Path]::GetInvalidFileNameChars()) -ge 0 -or
+                $part -match '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\.|$)') {
+                throw 'The plugin contains an unsafe Windows path'
+            }
+        }
+        $tracked.Add($relative, $objectId)
+        for ($index = 0; $index -lt $parts.Length - 1; $index++) {
+            $parent = Join-Path $parent $parts[$index]
+            if (-not (Test-Path -LiteralPath $parent)) { New-StageDirectory $parent }
+            $directory = Assert-OrdinaryItem $parent
+            if (-not $directory.PSIsContainer) { throw 'Plugin path has a non-directory parent' }
+        }
+        Copy-GitBlob $Root $objectId (Join-Path $parent $parts[-1])
+    }
+    $inputFiles = @(Get-PackageFiles $Destination)
+    if ($inputFiles.Count -ne $tracked.Count) { throw 'Staged plugin file count differs from Git' }
+    foreach ($file in $inputFiles) {
+        $relative = [IO.Path]::GetRelativePath($Destination, $file.FullName).Replace('\', '/')
+        $blob = Read-Git $Root @('hash-object', '--no-filters', '--', $file.FullName)
+        if ($tracked[$relative] -ne $blob) { throw "Staged plugin bytes differ from Git: $relative" }
+    }
+    return $tracked
+}
+
 function Assert-SourceIdentity([string] $Commit) {
     if ((Read-Git $repo @('rev-parse', 'HEAD')) -ne $Commit -or
         @(Read-Git $repo @('status', '--porcelain=v1')).Count) {
@@ -89,33 +145,17 @@ $uatFile = Assert-OrdinaryItem $uat
 if ($uatFile.PSIsContainer) { throw 'RunUAT.bat is not a file' }
 $artifactRoot = Join-Path $repo 'release/artifacts'
 $stage = Join-Path $artifactRoot ".staging-$runId"
-& git -C $repo check-ignore --quiet --no-index -- "$stage/source.zip"
+& git -C $repo check-ignore --quiet --no-index -- "$stage/source/TurboMCP/TurboMCP.uplugin"
 if ($LASTEXITCODE -ne 0) { throw 'Packaging staging must be ignored by Git' }
 [void](Assert-OrdinaryItem (Join-Path $repo 'release'))
 if (-not (Test-Path -LiteralPath $artifactRoot)) { New-StageDirectory $artifactRoot }
 [void](Assert-OrdinaryItem $artifactRoot)
 New-StageDirectory $stage
 
-$archive = Join-Path $stage 'source.zip'
 $inputRoot = Join-Path $stage 'source'
-Read-Git $repo @('archive', '--format=zip', "--output=$archive", $commit, '--', 'Plugins/TurboMCP')
-Expand-Archive -LiteralPath $archive -DestinationPath $inputRoot
-$inputPlugin = Join-Path $inputRoot 'Plugins/TurboMCP'
-$tracked = @{}
-foreach ($line in @(Read-Git $repo @('-c', 'core.quotePath=false', 'ls-tree', '-r', $pluginTree))) {
-    if ($line -match '^(100644|100755) blob ([a-f0-9]{40})\t(.+)$') {
-        $tracked.Add($Matches[3], $Matches[2])
-    } else {
-        throw 'The staged plugin contains a non-ordinary or unrecognized Git entry'
-    }
-}
-$inputFiles = @(Get-PackageFiles $inputPlugin)
-if ($inputFiles.Count -ne $tracked.Count) { throw 'Staged plugin file count differs from Git' }
-foreach ($file in $inputFiles) {
-    $relative = [IO.Path]::GetRelativePath($inputPlugin, $file.FullName).Replace('\', '/')
-    $blob = Read-Git $repo @('hash-object', '--no-filters', '--', $file.FullName)
-    if ($tracked[$relative] -ne $blob) { throw "Staged plugin bytes differ from Git: $relative" }
-}
+New-StageDirectory $inputRoot
+$inputPlugin = Join-Path $inputRoot 'TurboMCP'
+$tracked = Export-TrackedPluginInputs $repo $pluginTree $inputPlugin
 $descriptorPath = Join-Path $inputPlugin 'TurboMCP.uplugin'
 $sourceDescriptor = Read-Json $descriptorPath
 $pluginVersion = $sourceDescriptor.VersionName
@@ -137,7 +177,7 @@ Write-Output ('BuildPlugin command: ' + (ConvertTo-Json -InputObject (@($uat) + 
 if ($LASTEXITCODE -ne 0) { throw "Win64 BuildPlugin failed with exit $LASTEXITCODE" }
 Assert-SourceIdentity $commit
 Assert-EngineIdentity $lock.commit
-foreach ($path in @($artifactRoot, $stage, $inputRoot, (Join-Path $inputRoot 'Plugins'), $inputPlugin, $buildRoot)) {
+foreach ($path in @($artifactRoot, $stage, $inputRoot, $inputPlugin, $buildRoot)) {
     [void](Assert-OrdinaryItem $path)
 }
 [void]@(Get-PackageFiles $builtPlugin)

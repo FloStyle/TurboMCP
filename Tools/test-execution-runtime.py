@@ -130,6 +130,50 @@ class ExecutionTests(unittest.TestCase):
         self.assertIn(b'Owned execution context required', result.stdout+result.stderr)
         self.assertFalse((self.root/'release').exists())
 
+    def test_package_stage_preserves_git_blobs_under_crlf_config(self):
+        repository = self.root / 'repo'
+        plugin = repository / 'Plugin'
+        plugin.mkdir(parents=True)
+        (repository/'.gitattributes').write_bytes(b'*.txt text eol=crlf\n')
+        (plugin/'NOTICE.txt').write_bytes(b'first\r\nsecond\r\n')
+        binary = b'\x00\xff\r\n\xfe\n'
+        (plugin/'opaque.bin').write_bytes(binary)
+
+        def git(*args):
+            return subprocess.check_output(['git', '-C', str(repository), *args])
+
+        git('init', '-q')
+        git('config', 'core.autocrlf', 'true')
+        git('add', '.')
+        git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+            '-c', 'commit.gpgsign=false', 'commit', '-qm', 'raw plugin inputs')
+        tree = git('rev-parse', 'HEAD:Plugin').decode('ascii').strip()
+        destination = self.root / 'stage'
+        driver = self.root / 'stage.ps1'
+        # Execute only the production staging functions. No execution context or engine is used.
+        driver.write_text("""
+param([string] $Helper, [string] $Repository, [string] $Tree, [string] $Destination)
+$ErrorActionPreference = 'Stop'
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile($Helper,[ref]$tokens,[ref]$errors)
+if ($errors.Count) { throw 'Package helper parse failed' }
+foreach ($definition in $ast.FindAll({
+    param($node)
+    $node -is [System.Management.Automation.Language.FunctionDefinitionAst]
+}, $false)) {
+    . ([ScriptBlock]::Create($definition.Extent.Text))
+}
+[void](Export-TrackedPluginInputs $Repository $Tree $Destination)
+""", encoding='utf8')
+        result = subprocess.run(['pwsh', '-NoProfile', '-File', str(driver),
+                                 str(TOOLS/'package-plugin.ps1'), str(repository), tree, str(destination)],
+                                capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        self.assertEqual(git('cat-file', 'blob', 'HEAD:Plugin/NOTICE.txt'), b'first\nsecond\n')
+        self.assertEqual((destination/'NOTICE.txt').read_bytes(), b'first\nsecond\n')
+        self.assertEqual((destination/'opaque.bin').read_bytes(), binary)
+
 
 if __name__=='__main__':
     unittest.main()
