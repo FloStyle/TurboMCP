@@ -8,6 +8,19 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Approved public CI activation (2026-11-16)
+
+Readiness: ready. The integration owner prioritizes the owner-requested public
+repository preparation. Assignment `nov16-public-ci-activation` activates only
+the existing offline validation and source-preview template. Exact targets:
+Tools/ci/validate.yml and .github/workflows/validate.yml. Use pinned actions,
+read-only contents permission, no persisted credentials, no secrets, no native
+engine runner and no publication step. Run on pull requests, main/stable pushes
+and manual dispatch. Limit concurrency and duration. Preserve all validation
+failures. Verify the two files match and observe the hosted run before claiming
+CI works. This slice does not complete R15, release acceptance or protection
+configuration, and does not authorize publication or bypass R11.
+
 ## Approved public fixture inventory (2026-11-16)
 
 Readiness: ready. Assignment `nov16-public-fixture-inventory` follows

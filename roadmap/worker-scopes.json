@@ -4227,6 +4227,14 @@
             "Tools/test-public-source-safety.py",
             "docs/external-agent-workflow.md"
           ]
+        },
+        "nov16-public-ci-activation": {
+          "files": [
+            "Tools/ci/validate.yml"
+          ],
+          "new_files": [
+            ".github/workflows/validate.yml"
+          ]
         }
       },
       "preserve_rows": []
