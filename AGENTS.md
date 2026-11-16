@@ -43,9 +43,9 @@ Use English for all working text. Follow [the language policy](docs/language.md)
 
 - Credentials stay in the OS credential manager. Never store tokens in Git URLs, tracked files, prompts, or scripts. Do not replace Git Credential Manager with a custom credential reader.
 
-- Private development uses the TurboMCP-Development remote. Public artifacts are created only by Tools/export-public.py. Never push a private branch or merge private history into the public repository. Public publication requires the owner's instruction and passing release gates.
+- Follow the [public source preparation policy](docs/public-preparation.md) for the owner-approved development-source preview and separate stable releases. Use the designated integration repository in the [Git workflow](docs/git-workflow.md). Keep unsanitized private ancestry and transfer evidence outside the public repository.
 
-- Every tracked file is intended for the future public source tree. Keep private recovery material outside Git. Publication copies the entire tracked tree with fresh history; never create private-only tracked directories.
+- Verify the complete reviewed candidate tree with Tools/export-public.py. Keep private recovery material outside Git. Put reusable source and contributor material in the tracked tree.
 
 ## Worker submission boundary
 

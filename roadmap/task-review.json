@@ -2505,7 +2505,7 @@
         "R15"
       ],
       "finding": "The public source artifact is the entire tracked tree, not a hand-selected plugin-only export. release/status remains not_ready. Historical allowlist wording is superseded by the tracked-tree policy.",
-      "action": "Require R11 acceptance, R15 dry-run controls, English/privacy review including binary assets, exact export manifest and explicit owner publication instruction. Preserve private history and do not force-push it to public.",
+      "action": "This task tracks the stable release and fresh-root route. Require R11 acceptance, R15 dry-run controls, English and privacy review including binary assets, the exact export manifest and explicit owner instruction. The optional development-source cutover has its own [publication procedure](../docs/public-preparation.md). Keep unsanitized private history out of public refs.",
       "id": "public-cutover",
       "path": "todo/public-cutover.md",
       "source_refs": [
@@ -4169,7 +4169,9 @@
     {
       "id": "NOV09-17",
       "path": "todo/nov09-widget-navigation-read.md",
-      "owners": ["R04"],
+      "owners": [
+        "R04"
+      ],
       "verification_commands": [
         "python Tools/validate-repo.py",
         "python Tools/execute-tests.py --profile build --execute",

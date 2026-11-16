@@ -16,7 +16,7 @@ The public source artifact is the entire tracked tree, not a hand-selected plugi
 
 ### Next action and acceptance
 
-Require R11 acceptance, R15 dry-run controls, English/privacy review including binary assets, exact export manifest and explicit owner publication instruction. Preserve private history and do not force-push it to public.
+This task tracks the stable release and fresh-root route. Require R11 acceptance, R15 dry-run controls, English and privacy review including binary assets, the exact export manifest and explicit owner instruction. The optional development-source cutover has its own [publication procedure](../docs/public-preparation.md). Keep unsanitized private history out of public refs.
 
 ### Current source and verification
 

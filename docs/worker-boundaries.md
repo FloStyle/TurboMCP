@@ -21,7 +21,7 @@ Commit only scoped files. Return full candidate/base SHA, claim ID, commands and
 
 From the trusted integration checkout, run `python Tools/check-worker-scope.py --task R04 --assignment <name> --base <approved-sha> --candidate <candidate-sha>`. Policy comes from the approved base, never from the submission. Inspect source before executing candidate tests. Passing scope is not semantic acceptance. Run the offline gate and the task-specific evidence checks; missing native evidence remains pending.
 
-Only the integration owner records acceptance, updates shared catalog/task evidence, integrates private main and releases the exact claim. Publication remains a separately approved clean-history export. No automatic stale-claim recovery exists. Migration requires an empty validated legacy store and exact backup; rollback is forbidden after any schema-2 mutation.
+Only the integration owner records acceptance, updates shared catalog/task evidence, integrates main on the designated integration host and releases the exact claim. Follow the separate [publication policy](public-preparation.md). No automatic stale-claim recovery exists. Migration requires an empty validated legacy store and exact backup; rollback is forbidden after any schema-2 mutation.
 
 ## Execution and privacy
 
