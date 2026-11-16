@@ -8,6 +8,22 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current review: interactive documentation and preview packaging (2026-11-17)
+
+Readiness: ready. The integration owner approves two disjoint assignments from
+public main ee8fac88 after PR #22 passed hosted validation and merged. Read the
+repair contract in [V1 guide and package delivery](../docs/design/v1-guide-and-package.md)
+before historical evidence. The exact schema-2 scopes are recorded in
+roadmap/worker-scopes.json; the integrator supplies the full committed base.
+
+`v1-interactive-guide` replaces further cloud-deck authoring with an accessible,
+colourful, repository-maintained technical guide and presentation mode on the
+existing GitHub Pages site. Public content uses generic/synthetic examples only.
+
+`v1-supervised-package` adds a bounded Win64 development-preview package profile
+to the existing execution supervisor. Worker implementation and focused offline
+checks precede integrator-owned native execution. Stable acceptance stays open.
+
 ## Reviewed website and exact identity candidates (2026-11-16)
 
 The integrator accepted the exact scope and reviewed code for the website
