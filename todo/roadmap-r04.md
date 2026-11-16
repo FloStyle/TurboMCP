@@ -8,6 +8,22 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Approved fixture object identity repair (2026-11-16)
+
+Readiness: ready. Assignment `nov16-fixture-object-identity` changes only
+Tools/test-fixture-privacy-inventory.py. Native run 69b818458f754e33b6c113adf4962fd1
+proved the material package has no registry asset matching its package basename.
+Its generator and existing readers identify M_TurboMCPFixture as the primary
+material object inside TurboMCPMaterialFixture. Use that exact source-backed
+object path for this allowlisted package; retain exact package, class and object
+response validation. All other fixtures retain their exact expected object.
+Do not create or load arbitrary dependencies, expand allowlists, change assets
+or claim nested material function/instance coverage. Record those known gaps.
+Verify expected identity and wrong-object refusal with captured/synthetic text,
+then rerun the bounded supervised inventory. Source-backed reader-schema or
+wrapper mismatches exposed by this run may be corrected in this same file only;
+preserve completeness/refusal checks and record the exact contract evidence.
+
 ## Approved fixture inventory startup repair (2026-11-16)
 
 Readiness: ready. Assignment `nov16-fixture-inventory-startup` changes only

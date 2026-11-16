@@ -4241,6 +4241,12 @@
             "Tools/test-fixture-privacy-inventory.py"
           ],
           "new_files": []
+        },
+        "nov16-fixture-object-identity": {
+          "files": [
+            "Tools/test-fixture-privacy-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
