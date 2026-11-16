@@ -10,6 +10,14 @@ Kind: investigation
 
 ## Approved repository and 1.0.0 planning update (2026-11-16)
 
+Owner follow-up adds GitHub Pages and daily source prereleases after successful
+main-push validation. Daily snapshots may update within the same calendar day;
+stable version tags remain immutable and manually approved. Extend only the
+listed workflow, documentation, static page and focused publisher-check files.
+The integrator registers the focused check in the shared catalog after review.
+No binaries, engine changes, automatic stable publication or repository
+visibility change. Keep Pages deployment gated until hosting is available.
+
 Readiness: ready. The owner requests simple technical English in README,
 Contributing, conduct and security pages; explicit development, stable and
 Unreal 5.9 branch roles; GitHub tracking for current open findings; and a

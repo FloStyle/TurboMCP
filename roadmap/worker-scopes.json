@@ -4277,11 +4277,20 @@
             "docs/release.md",
             "docs/status.md",
             ".github/ISSUE_TEMPLATE/bug_report.md",
-            ".github/ISSUE_TEMPLATE/feature_request.md"
+            ".github/ISSUE_TEMPLATE/feature_request.md",
+            "docs/public-preparation.md",
+            "docs/release-manager.md",
+            "docs/governance.md",
+            "docs/architecture.md"
           ],
           "new_files": [
             "docs/release-1.0.0.md",
-            "docs/github-issues.md"
+            "docs/github-issues.md",
+            ".github/workflows/daily-source.yml",
+            ".github/workflows/pages.yml",
+            "Tools/daily_release.py",
+            "Tools/test-daily-release.py",
+            "site/index.html"
           ]
         }
       },
