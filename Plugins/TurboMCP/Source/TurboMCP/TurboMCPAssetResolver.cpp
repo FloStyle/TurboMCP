@@ -11,8 +11,10 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
 #include "Misc/PackageName.h"
+#include "UObject/Class.h"
 #include "UObject/Object.h"
 #include "UObject/Package.h"
+#include "UObject/SoftObjectPath.h"
 #include "UObject/UObjectGlobals.h"
 
 namespace
@@ -31,6 +33,22 @@ namespace
 
 	/** The `_C` suffix a generated class path carries. */
 	const TCHAR ClassSuffix[] = TEXT("_C");
+
+	FAssetData FindExactSavedAsset(const IAssetRegistry& Registry, const FSoftObjectPath& Path)
+	{
+		const FAssetData Asset = Registry.GetAssetByObjectPath(Path, /*bIncludeOnlyOnDiskAssets=*/true);
+		return Asset.IsValid() && Asset.GetSoftObjectPath() == Path && !Asset.AssetClassPath.IsNull()
+			? Asset : FAssetData();
+	}
+
+	void CompleteFromAssetData(const FAssetData& Asset, FTurboMCPAssetResolver::FResolved& OutResolved)
+	{
+		OutResolved.ObjectPath = Asset.GetObjectPathString();
+		OutResolved.PackagePath = Asset.PackageName.ToString();
+		OutResolved.AssetName = Asset.AssetName.ToString();
+		OutResolved.AssetClass = Asset.AssetClassPath.ToString();
+		OutResolved.ClassPath.Reset();
+	}
 }
 
 FString FTurboMCPAssetResolver::Resolve(const FString& InInput, FResolved& OutResolved)
@@ -207,63 +225,76 @@ TArray<FString> FTurboMCPAssetResolver::SplitList(const FString& InRaw)
 
 bool FTurboMCPAssetResolver::TryDirectForms(const FString& InInput, FResolved& OutResolved)
 {
-	FString ObjectPath = InInput;
-
-	// A generated class path names the class, not the asset, so drop the `_C`
-	// suffix and keep looking. `04_FORMATS.md` section 4 lists that form and P5
-	// requires it to work.
-	const int32 DotBeforeSuffix = ObjectPath.Len() - (UE_ARRAY_COUNT(ClassSuffix) - 1) - 1;
-	const bool bHadClassSuffix =
-		ObjectPath.EndsWith(ClassSuffix)
-		&& DotBeforeSuffix >= 0
-		&& ObjectPath[DotBeforeSuffix] == TEXT('.');
-
-	if (bHadClassSuffix)
-	{
-		ObjectPath.LeftChopInline(UE_ARRAY_COUNT(ClassSuffix) - 1);
-	}
-
 	FString PackageName;
 	FString ObjectName;
+	FString SubObjectName;
 	if (!FPackageName::TryConvertToMountedPath(
-			ObjectPath,
-			nullptr,
-			&PackageName,
-			&ObjectName,
-			nullptr,
-			nullptr)
+			InInput, nullptr, &PackageName, &ObjectName, &SubObjectName, nullptr)
 		|| PackageName.IsEmpty())
 	{
 		return false;
 	}
 
-	// A path names an object when it carries an object name that is not just the
-	// package: either `/Mount/Folder/Package.Object`, or `...Package.Object_C`
-	// before the suffix was dropped. Without this check the package path form
-	// `/Game/Tests/TA11_TestEnum` resolves to the UPackage, and the asset is then
-	// reported as class `Package` with the package as its object path. That is
-	// the wrong answer to "which asset is this", and it made the path forms
-	// disagree, which `T-ASSET-2` forbids.
-	const bool bLooksLikeObjectPath =
-		!ObjectName.IsEmpty()
-		&& (ObjectPath.Contains(TEXT(".") + ObjectName) || bHadClassSuffix);
-
-	if (!bLooksLikeObjectPath)
+	if (ObjectName.IsEmpty())
 	{
-		// The input named a package. P5 requires this form to work, so it is
-		// resolved through the registry, which finds the asset inside it.
 		return CompleteFromPackagePath(PackageName, OutResolved);
 	}
 
-	// An asset with unsaved changes exists only in memory. Completing from the
-	// package path alone would answer "not found" for the very asset the agent
-	// just made, so prefer the loaded object (P5).
-	if (UObject* Loaded = FindObject<UObject>(nullptr, *ObjectPath))
+	const bool bMayNameGeneratedClass = SubObjectName.IsEmpty()
+		&& ObjectName.Len() > UE_ARRAY_COUNT(ClassSuffix) - 1
+		&& ObjectName.EndsWith(ClassSuffix);
+	if (UObject* Loaded = FindObject<UObject>(nullptr, *InInput))
 	{
-		return CompleteFromObject(Loaded, OutResolved, /*bWasClassPath=*/bHadClassSuffix);
+		if (bMayNameGeneratedClass)
+		{
+			const UClass* Class = Cast<UClass>(Loaded);
+			const UObject* Generator = Class && Class->ClassGeneratedBy.IsResolved()
+				? Class->ClassGeneratedBy.Get() : nullptr;
+			if (Generator && Generator->GetOutermost() == Loaded->GetOutermost()
+				&& CompleteFromObject(Generator, OutResolved))
+			{
+				OutResolved.ClassPath = Loaded->GetPathName();
+				return true;
+			}
+		}
+		return CompleteFromObject(Loaded, OutResolved);
 	}
 
-	return CompleteFromPackagePath(PackageName, OutResolved);
+	const IAssetRegistry* Registry = IAssetRegistry::Get();
+	if (Registry == nullptr)
+	{
+		return false;
+	}
+
+	const FSoftObjectPath RequestedPath(InInput);
+	const FAssetData Asset = FindExactSavedAsset(*Registry, RequestedPath);
+	if (Asset.IsValid())
+	{
+		CompleteFromAssetData(Asset, OutResolved);
+		return true;
+	}
+
+	if (!bMayNameGeneratedClass)
+	{
+		return false;
+	}
+
+	// Generated classes are registry tags on their source assets, not separate saved assets.
+	// Prove the alias against the tag before resolving it to the source asset.
+	const FSoftObjectPath SourcePath(PackageName + TEXT(".")
+		+ ObjectName.LeftChop(UE_ARRAY_COUNT(ClassSuffix) - 1));
+	const FAssetData Source = FindExactSavedAsset(*Registry, SourcePath);
+	FString GeneratedClassTag;
+	if (!Source.IsValid()
+		|| !Source.GetTagValue(FName(TEXT("GeneratedClass")), GeneratedClassTag)
+		|| FSoftObjectPath(FPackageName::ExportTextPathToObjectPath(GeneratedClassTag)) != RequestedPath)
+	{
+		return false;
+	}
+
+	CompleteFromAssetData(Source, OutResolved);
+	OutResolved.ClassPath = RequestedPath.ToString();
+	return true;
 }
 
 bool FTurboMCPAssetResolver::CompleteFromObject(
@@ -337,20 +368,7 @@ bool FTurboMCPAssetResolver::CompleteFromPackagePath(
 		return false;
 	}
 
-	const FAssetData& Asset = Found[0];
-	OutResolved.ObjectPath = Asset.GetObjectPathString();
-	OutResolved.PackagePath = Asset.PackageName.ToString();
-	OutResolved.AssetName = Asset.AssetName.ToString();
-
-	// The asset's own class, taken from the registry so this route and the
-	// loaded-object route cannot disagree. `T-ASSET-2` requires every path form
-	// of one asset to produce the same line.
-	OutResolved.AssetClass = Asset.AssetClassPath.ToString();
-
-	// ClassPath stays empty on this route. It is only meaningful when the caller
-	// actually named a generated class, and `R-ASSET-DESCRIBE` prints the
-	// generated class under its own label by asking the registry for it.
-
+	CompleteFromAssetData(Found[0], OutResolved);
 	return true;
 }
 
