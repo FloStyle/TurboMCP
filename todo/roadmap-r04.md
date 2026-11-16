@@ -8,6 +8,40 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current integrator dispatch: V1 delivery and public examples (2026-11-16)
+
+Readiness: ready. The owner requests urgent V1 repairs, one package per
+application, clearer public examples, and canonical local work under C:/Dev.
+This dispatch supersedes the historical cutover pause below: cleaned public
+FloStyle/TurboMCP main is active at ead9b2cb. Old private ancestry is recovery
+material only and must not be merged or pushed into the public repository.
+
+Assignment `v1-claim-setup` addresses GitHub #18. Add an explicit integrator
+initialization command for a missing empty schema-2 claim store. Refuse every
+existing store, including malformed or active state; do not overwrite, migrate
+or recover it implicitly. Preserve legacy migration and locking. Make claim
+CLI output and Git metadata decoding reliable in UTF-8 on Windows, including
+captured output, so an acquired claim always reports its ID. Focused tests
+cover missing/init, duplicate initialization, malformed/existing and active
+stores, and a real narrow-encoding subprocess. No scope/ownership bypass.
+
+Assignment `v1-site-examples` expands the existing static Pages site with a
+complete deterministic catalogue generated from AICallable declarations and
+parameter documentation, concrete example prompts, real synthetic graph
+captures with provenance, search/filter/details and copy affordances. Use
+simple technical English, clear preview/edit effects and responsive keyboard
+access. Keep the stock Unreal addon positioning and current preview limits.
+Do not publish company/CCXI content or private local evidence paths. The Pages
+workflow may check catalogue freshness and copy the complete site tree; retain
+all existing successful-main validation and publication guards. Verify one
+focused browser workflow and generated catalogue coverage. No runtime edits.
+
+The integrator owns task evidence, relocation, shared tracking and review.
+Workers claim the exact assignment/base and submit scoped commits without
+publishing. Engine runs remain serialized; neither assignment requires Unreal.
+The next resolver/package slice will receive its own reviewed scope. Do not
+claim stable release acceptance from these changes.
+
 ## Unified feedback integration review (2026-11-16)
 
 The integrator reviewed the shared feedback form, contribution guidance and
