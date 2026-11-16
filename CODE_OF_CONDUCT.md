@@ -1,9 +1,7 @@
 # Community conduct
 
-Treat contributors and users with respect. Discuss technical decisions using evidence; criticize the work without attacking its author. Harassment, threats, discrimination, deliberate disruption and sharing another person's private information are not acceptable.
+Be respectful. Keep discussions useful and focused on the work.
 
-These expectations apply to issues, pull requests, reviews and other project spaces. AI-assisted contributions remain the responsibility of the person submitting them.
+No harassment, threats, spam or sharing private information. You are responsible for what you submit, including AI-assisted work.
 
-Report concerns to repository owner **@FloStyle** through an existing private channel. If none is available, request contact without publishing sensitive details or identifying the affected person. Security vulnerabilities follow [SECURITY.md](SECURITY.md).
-
-The owner may edit or remove inappropriate content, close discussions, or restrict participation. Responses should consider the severity, context and repeated behavior. Participants may request reconsideration privately with relevant evidence.
+The maintainer may remove harmful content or restrict participation. Contact @FloStyle through an existing private channel for sensitive concerns. Report security issues using [SECURITY.md](SECURITY.md).

@@ -8,6 +8,44 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Repository release-planning review (2026-11-16)
+
+The integrator reviewed the scoped documentation, static Pages site and daily
+source publisher at `5729c1f5`. Scope validation passed against approved base
+`75c7f53944922a553ff3982434803537d79607de`. Six focused offline decision tests
+passed. The integrator registered that test in the shared catalog. All 28
+offline checks passed in run `c31eea425a764e2e9e4dc95cffb07cab`. Hosted
+validation and the first deployment/publication remain integration checks.
+Integration is paused: the public destination currently has the original
+`ede31073` ancestry, not the reviewed cleaned `c89b95a0` history. Do not merge
+the two histories or publish from the unreviewed destination.
+No engine code or native acceptance changed; R04 remains incomplete.
+GitHub issues #2-19 track the current findings, release gates and separate 5.9
+work. Milestone 1 records the planned 1.0.0 scope. The owner made the cleaned
+repository public; main protection, version-tag rules, secret scanning, push
+protection and private vulnerability reporting are enabled.
+
+## Approved repository and 1.0.0 planning update (2026-11-16)
+
+Owner follow-up adds GitHub Pages and daily source prereleases after successful
+main-push validation. Daily snapshots may update within the same calendar day;
+stable version tags remain immutable and manually approved. Extend only the
+listed workflow, documentation, static page and focused publisher-check files.
+The integrator registers the focused check in the shared catalog after review.
+No binaries, engine changes, automatic stable publication or repository
+visibility change. Keep Pages deployment gated until hosting is available.
+
+Readiness: ready. The owner requests simple technical English in README,
+Contributing, conduct and security pages; explicit development, stable and
+Unreal 5.9 branch roles; GitHub tracking for current open findings; and a
+planned 1.0.0 release. Assignment `release-1.0-docs` changes only its
+listed documentation and issue templates. Preserve safety behavior, report
+privacy rules, runtime acceptance and historical evidence. Link the session
+report skill and its format directly. Publish no stable tag or support claim.
+The integrator owns GitHub issues, milestone, draft release and shared scope
+evidence. Validate structure, English, links and the existing offline gate.
+Repository visibility remains under the owner's control.
+
 ## Approved retained-history publication policy (2026-11-16)
 
 Readiness: ready. Assignment `nov16-retained-history-policy` implements the

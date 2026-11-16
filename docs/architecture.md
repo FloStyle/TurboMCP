@@ -467,3 +467,12 @@ that would have decided the outcome.
 The first run narrowed ARC04 to diagnostics whose text named the edited graph, and reported `compile=passed` while
 six diagnostics in the same asset were excluded. The cause was a discarded baseline in the same block. Both are
 repaired; the rule is restored to package-wide identity and multiplicity.
+
+## Owner-authorized daily source publication (2026-11-16)
+
+The owner authorizes daily source prereleases after successful main-push
+validation in the cleaned FloStyle/TurboMCP repository. This supersedes earlier
+manual-only wording for that development channel. The exact guards, rolling
+daily tag rule and source-only limits are in [the release process](release.md).
+Stable version tags, installation packages and stable acceptance remain
+manual and unchanged. This automation does not change repository visibility.

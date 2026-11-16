@@ -13,3 +13,12 @@ After acceptance, verify the complete export and review its source and artifact 
 The checked-in GitHub workflow and local validation run the offline gate. Verify it on the active integration host. Hosted offline results do not satisfy native installation or release acceptance.
 
 Before public publication, complete the [GitHub controls checklist](governance.md#github-controls-and-publication-checklist), test private vulnerability reporting and review binary assets under the [language policy](language.md). Versioned policies alone do not enable GitHub protections.
+
+## Owner-authorized daily source publication (2026-11-16)
+
+The owner authorizes daily source prereleases after successful main-push
+validation in the cleaned FloStyle/TurboMCP repository. This supersedes earlier
+manual-only wording for that development channel. The exact guards, rolling
+daily tag rule and source-only limits are in [the release process](release.md).
+Stable version tags, installation packages and stable acceptance remain
+manual and unchanged. This automation does not change repository visibility.

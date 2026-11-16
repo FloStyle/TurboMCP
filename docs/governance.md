@@ -36,3 +36,12 @@ Private-host checks previously encountered plan restrictions. The checked-in val
 Follow the [community conduct policy](../CODE_OF_CONDUCT.md). Repository-authored prose, comments, task descriptions, filenames and public contribution text must be English. See the [language policy](language.md) for automated coverage and its limits.
 
 GitHub setup references: [code-owner review](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) and [private vulnerability reporting](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository).
+
+## Owner-authorized daily source publication (2026-11-16)
+
+The owner authorizes daily source prereleases after successful main-push
+validation in the cleaned FloStyle/TurboMCP repository. This supersedes earlier
+manual-only wording for that development channel. The exact guards, rolling
+daily tag rule and source-only limits are in [the release process](release.md).
+Stable version tags, installation packages and stable acceptance remain
+manual and unchanged. This automation does not change repository visibility.
