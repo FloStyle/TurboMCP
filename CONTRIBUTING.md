@@ -1,37 +1,40 @@
-# Contributing
+# Reports and contributions
 
-[Repository home](README.md) · [Documentation](docs/README.md)
+[Open issues](https://github.com/FloStyle/TurboMCP/issues) | [1.0.0 plan](docs/release-1.0.0.md)
 
-## Propose a contribution
+Start with an issue. Search existing reports and add new evidence to a matching issue before creating another one. Use English and keep examples small.
 
-Bug reports, tests, documentation corrections and focused fixes are welcome. Use an issue to describe the problem and a minimal reproduction; discuss new features before implementing them. Maintainers turn accepted work into repository tasks. See [governance](docs/governance.md) for review responsibilities and [community conduct](CODE_OF_CONDUCT.md).
+## Report a bug
 
-Use the bug or feature issue template and include only synthetic or approved public examples. Report vulnerabilities privately through [SECURITY.md](SECURITY.md). You remain responsible for reviewing and verifying AI-assisted contributions.
+Use the [bug report form](https://github.com/FloStyle/TurboMCP/issues/new?template=bug_report.md). Include:
 
-## Choose work
+- TurboMCP version or commit, Unreal version and source/installed build, OS and MCP client.
+- Tool name and the shortest synthetic reproduction.
+- Expected result, observed result and impact.
+- Whether it happens once or repeatedly, any workaround, and what remains unknown.
 
-Follow the [roadmap](ROADMAP.md). To find the next approved task:
+Describe memory changes, compilation and saving separately. A successful call or compile does not prove the asset was saved. Do not guess the cause.
+
+## Report a work session with an agent
+
+Use the [session-report skill](skills/turbomcp-session-report/SKILL.md) and its [report format](skills/turbomcp-session-report/references/report-format.md). The format covers bugs, limitations, workarounds, useful behavior and feature ideas. Keep existing report and item IDs.
+
+Ask your agent to read the skill, write a local report and run its checker:
 
 ```powershell
-python Tools/next-task.py
+python skills/turbomcp-session-report/scripts/check_report.py <report-file>
 ```
 
-Read the returned task and its linked design. Stop if the selector reports a blocker. Historical findings in [TODO.md](TODO.md) need reconciliation before implementation. An issue or a selector preview does not assign work. Get the reviewed assignment, exact scope, approved base and durable claim before editing. See the [external agent workflow](docs/external-agent-workflow.md) for the contributor CLI and portable skill entry points.
+The skill does not submit issues. Review the exact report and remove private project data before you or an explicitly authorized maintainer submit it. A checker pass is not privacy approval. See [skill setup](docs/agent-skills.md) for installation and the reporting boundary.
 
-## Make and verify a change
+## Propose a feature
 
-1. Follow [AGENTS.md](AGENTS.md), which defines the shared workflow for humans and agents.
-2. Configure the [workspace](docs/workspace.md) and use the assigned branch and worktree. Follow the [Git workflow](docs/git-workflow.md) for the development, release and compatibility branches.
-3. Keep code, regression tests and affected documentation together.
-4. Run `python Tools/validate.py` and the task's focused checks. Record unavailable engine tests as blocked.
-5. Submit the candidate commit, exact base, changed files, checks and limitations. The integrator reviews the submission and records shared task evidence, status and index updates.
+Use the [feature request form](https://github.com/FloStyle/TurboMCP/issues/new?template=feature_request.md). Explain the user task, current workaround and smallest useful improvement. List the native Unreal or TurboMCP tools you tried. Describe an observable success case and any behavior that must stay unchanged.
 
-See the [contributor workflow](docs/contributing.md) for ownership, specification review and completion requirements.
+A proposal is not an approved implementation task. The maintainer reviews scope, duplicates and priority before assigning work.
 
-## Write useful documentation
+## Submit a fix
 
-Write in English, with a clear purpose and short, direct sentences. Explain what a reader needs to do before describing implementation details. Use working examples and descriptive links. Keep requirements, observed behavior and unresolved questions distinct.
+Discuss the issue first. Follow [AGENTS.md](AGENTS.md) and the [contributor workflow](docs/contributing.md) for an approved scope, base commit and task claim. Keep the change focused. Include checks run, results and missing evidence in the pull request. Humans remain responsible for AI-assisted changes.
 
-Maintain one source of truth for each topic. Link to it rather than repeating its rules. Preserve stable task and contract IDs. Update a generator when changing generated documentation, then regenerate its output. Historical evidence may be collapsed for readability but must remain available.
-
-Every tracked file is intended for the future public source repository. Keep credentials, machine configuration and private recovery material outside Git.
+Use synthetic or approved public examples. Keep credentials, workplace code, raw project logs and personal data out of issues and commits. Report vulnerabilities privately through [SECURITY.md](SECURITY.md).

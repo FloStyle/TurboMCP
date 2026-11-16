@@ -20,3 +20,5 @@ Describe the expected result and the actual tool or editor state. Include a shor
 ## Evidence and limits
 
 Say whether this reproduces in a clean fixture, which checks you ran, and whether anything could not be verified. Add related issues or task IDs if known.
+
+For session feedback, use the [reporting skill](https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/SKILL.md) and [report format](https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/references/report-format.md). Review the report before submitting it.

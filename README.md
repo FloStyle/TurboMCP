@@ -1,137 +1,77 @@
 # TurboMCP
 
-TurboMCP connects Unreal Editor workflows to MCP clients, including AI coding assistants. It extends Unreal's MCP tooling with ways to inspect Blueprints, edit graphs, work with materials and widgets, and examine editor diagnostics.
+More context and more tools for Unreal Editor MCP workflows.
 
-You work through your MCP client while Unreal Editor hosts the plugin and the project. TurboMCP supplies editor tools; your client supplies the conversation and decides which tools to request.
+TurboMCP is an addon to stock Unreal MCP. It helps an AI assistant inspect complex Blueprints, understand project data, make focused edits and investigate failures. It keeps Unreal's native toolset structure and uses the editor's APIs.
 
-**Development preview:** Windows with the pinned Unreal Engine 5.8.4 source build is the development baseline. There is no approved stable release yet. Installed-engine and Unreal 5.9 support are still being evaluated. See [project status](docs/status.md) for the current limits.
+**Development preview:** Windows with the pinned Unreal Engine 5.8.4 source build. Stable 1.0.0 is planned. Launcher packages and Unreal 5.9 are not certified.
 
-[Get started](#get-started) · [First use](#first-use) · [Troubleshooting](#troubleshooting) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
+[Releases](https://github.com/FloStyle/TurboMCP/releases) | [Open issues](https://github.com/FloStyle/TurboMCP/issues) | [1.0.0 plan](docs/release-1.0.0.md) | [Documentation](docs/README.md)
 
-## What can I use it for?
+## What it adds
 
-The plugin declares tools for these workflows. Individual behaviors are still being audited; this overview describes the available tool families, not completed release acceptance.
-
-| Workflow | Examples |
+| Area | Examples |
 | --- | --- |
-| Understand a project | Find assets, inspect Blueprints and graphs, examine references and types |
-| Work on graphs | Inspect nodes and connections, plan edits, apply graph changes and adjust layout |
-| Inspect materials | Read material outputs, parameters, named reroutes and instance overrides |
-| Work with widgets | Inspect widget trees and request previews |
-| Investigate behavior | Inspect diagnostics, run play checks and examine trace information |
-| Inspect editor state | Check tool registration, unsaved assets, source-control state and graph captures |
+| Read and understand | Blueprint graphs, nodes, pins, references, asset search and diagnostics |
+| View | Graph captures, widget previews and editor state |
+| Edit | Targeted graph changes, layout, supported batch edits and cleanup |
+| Data | Data Assets, class defaults, DataTables and row editing |
+| UI and materials | Widget trees, material parameters and related asset information |
+| Debug and guide | Tool help, call logs, contextual errors and bounded play-input checks |
 
-Browse the [tool reference](docs/user/tools.md) for exact function names. Ask the connected client to discover the current schemas before making calls. Some operations execute project code or modify assets; a toolset name alone does not establish its effects.
+Read, view and edit are workflow groups, not permission levels. Some calls execute project code or change editor state. Discover the current schemas and read the tool's effects before using it. The [tool reference](docs/user/tools.md) describes the available tools; registration does not mean every behavior has release acceptance.
 
-## Get started
+## Install and connect
 
-### What you need
+1. Use Windows, the C++ toolchain and a source engine matching [engine.lock.json](engine.lock.json).
+2. Copy `Plugins/TurboMCP` into your project's `Plugins` directory. Enable the plugin and build your editor target.
+3. Open **Edit > Editor Preferences > Plugins > TurboMCP**, enable **TurboMCP**, then restart the editor. This per-user preference defaults to off.
+4. Enable Unreal's local MCP server and use its generated connection settings in your client.
+5. Ask the client to discover the toolsets and inspect a known asset before making edits.
 
-- Windows and a source build matching [engine.lock.json](engine.lock.json).
-- A working Unreal project and the C++ toolchain required to build its editor target.
-- An MCP client able to connect to Unreal's MCP server.
-- A version-controlled project in which to try experimental editor operations.
+The plugin requires Unreal's `ModelContextProtocol` and `ToolsetRegistry` plugins. See [installation](docs/user/installation.md), [troubleshooting](docs/user/troubleshooting.md) and [security](SECURITY.md). Launcher installation is a separate, unfinished compatibility check.
 
-TurboMCP requires engine plugins including `ModelContextProtocol` and `ToolsetRegistry`; the full dependency list is in [TurboMCP.uplugin](Plugins/TurboMCP/TurboMCP.uplugin). A Launcher installation is not currently a validated replacement for the pinned source build. See [installed-engine support](docs/installed-engine.md).
+Example first request:
 
-### Install and connect
+> Discover the TurboMCP tools and read the Blueprint at `/Game/MyProject/BP_Example`. Summarize its graphs and missing information. Do not edit, compile, save or start play mode.
 
-1. Obtain this source checkout. Copy `Plugins/TurboMCP` into your project's `Plugins` directory.
-2. Enable the TurboMCP project plugin and build the project's editor target with the matching engine and toolchain.
-3. Open the project. In **Edit > Editor Preferences > Plugins > TurboMCP**, select **Enable TurboMCP**, then restart the editor. This per-user preference defaults to **OFF**; enabling the project plugin alone does not activate its tools. Existing saved preferences are preserved.
-4. Enable Unreal's local MCP server and configure your client using the engine-generated connection settings.
-5. Have the client discover the available toolsets and schemas. If TurboMCP is disabled, its status tool is absent too; check Editor Preferences and the `LogTurboMCP` startup message.
+Use version control. Check the reported operation outcome and read the result back after edits. Treat compilation, saving and rollback as separate outcomes.
 
-Follow [Installation and connection](docs/user/installation.md) for the detailed guide and Epic's engine connection instructions. Keep the MCP listener local. TurboMCP runs inside the editor with its permissions; see the [security policy](SECURITY.md).
+## Branches and releases
 
-If you want to modify TurboMCP itself, use the [development setup](#develop-turbomcp) below. The repository's test project discovers the plugin directly from the checkout.
-
-## First use
-
-Start by checking the connection and inspecting one known asset. For example, give your connected assistant this request, replacing the asset path with one from your project:
-
-> Discover the TurboMCP tools and their schemas. Check the plugin's registration status, then inspect the Blueprint at `/Game/MyProject/BP_Example`. Summarize its graphs and any missing information. Do not edit, compile, save, start play mode or execute project code.
-
-This is an example request, not a recorded test result. The client should use discovered schemas rather than guessing argument names. The reference includes `ReadTurboMCPStatus`, `ReadTurboMCPAssetSearch` and `ReadTurboMCPToolHelp` as starting points for discovery and inspection.
-
-Before requesting an edit:
-
-- Identify the exact asset and graph, and state the intended change.
-- Ask for a plan and check the tool's effects and refusal conditions.
-- Run one mutation at a time and inspect the reported outcome and resulting editor state.
-- Treat saving to disk as a separate decision. An HTTP success response does not prove that an edit, compile, rollback or save succeeded.
-
-For the required result and mutation behavior, see [protocol design](docs/design/protocol.md) and [mutation design](docs/design/mutations.md). These define the contracts being verified for release.
-
-## Troubleshooting
-
-| Symptom | Start here |
+| Branch | Role |
 | --- | --- |
-| The client cannot connect or find TurboMCP tools | Check the running project, enabled plugin, local MCP connection settings and tool discovery. See [connection troubleshooting](docs/user/troubleshooting.md#connection-and-discovery). |
-| The plugin does not build or load | Check the exact engine revision, required engine plugins and which plugin copy the project discovers. See [build troubleshooting](docs/user/troubleshooting.md#build-and-plugin-loading). |
-| A call returns success but the asset looks unchanged | Inspect the operation outcome and target, not only the transport response. See [results and edits](docs/user/troubleshooting.md#results-and-edits). |
-| A newer engine or Launcher build behaves differently | Consult [engine compatibility](docs/engine-compatibility.md) and [installed-engine support](docs/installed-engine.md). |
+| `main` | Active development and reviewed fixes. Successful pushes can produce daily source prereleases. |
+| `stable` | Accepted stable releases only. It starts at the first approved stable release; it is not created from an unaccepted preview. |
+| `codex/ue59-preparation` | Unreal 5.9 compatibility candidate. Separate engine and tests; no support claim yet. |
 
-For a bug report, include the plugin commit, engine version and revision, client, tool arguments, expected result and a minimal reproduction. Remove credentials and private project data. Use the repository's bug-report template; report vulnerabilities through [SECURITY.md](SECURITY.md).
+Temporary work branches are merged and removed. The [Git workflow](docs/git-workflow.md) explains the three long-lived roles.
 
-## Report field-test feedback
+Daily prereleases use `daily-YYYY-MM-DD`, based on the Europe/Paris date. Successful `main` pushes update that day's snapshot after validation. Stable `v1.0.0` remains a manual release with its own acceptance gates. See [release process](docs/release.md).
 
-Use the [session-report skill](docs/agent-skills.md) to prepare a local, sanitized report from a work session. It records reproduction steps, observed results and limitations without proprietary code or project identifiers. Reports require human review before transfer; the field tester does not contribute code or submit issues automatically.
+## Report a problem or request a feature
 
-## Develop TurboMCP
+Use [GitHub Issues](https://github.com/FloStyle/TurboMCP/issues). Include versions, a small synthetic reproduction, expected and observed behavior, and any missing evidence.
 
-Use main for reviewed development. The stable branch tracks the latest approved release when one exists, and its version tag identifies the exact released source. The Unreal 5.9 candidate uses codex/ue59-preparation, a separate worktree and a separate engine checkout. See the [Git workflow](docs/git-workflow.md) for branch roles and release evidence.
+For agent-assisted session feedback, use the [reporting skill](skills/turbomcp-session-report/SKILL.md) and [report format](skills/turbomcp-session-report/references/report-format.md). Reports stay local until human review. See [Contributing](CONTRIBUTING.md) for the report and feature proposal process.
 
-Use Python 3.13, Git and PowerShell for repository tooling. Keep Unreal Engine in a separate checkout. From the TurboMCP repository root:
+## Development
+
+Use Python 3.13, Git and PowerShell. Start with [AGENTS.md](AGENTS.md), the [contributor workflow](docs/contributing.md) and an approved task. Keep Unreal in a separate checkout.
 
 ```powershell
 python Tools/validate.py
 python Tools/next-task.py
 ```
 
-The first command runs offline validation. The second prints the next approved task; it does not execute or claim it.
+For engine work, configure ignored `workspace.local.json`, then follow the [workspace guide](docs/workspace.md) and [test guide](Tests/README.md). Offline checks do not replace native acceptance.
 
-For engine work, copy `workspace.example.json` to ignored `workspace.local.json` and set `engineRoot` to your source-engine checkout. Then run:
-
-```powershell
-python Tools/doctor.py
-python Tools/execute-tests.py --profile build --execute
-```
-
-Replace `<engine-root>` with your actual engine path. Follow [workspace setup](docs/workspace.md) for harness access and build ownership, and the [test guide](Tests/README.md) for engine checks. Offline checks alone do not establish runtime correctness.
-
-Contributors and implementation agents should read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md), then work from the selected task and linked design. The [roadmap](ROADMAP.md) defines execution order; the [task index](TODO.md) also preserves historical findings that need reconciliation.
-
-## Find the right documentation
-
-| Question | Guide |
-| --- | --- |
-| Where is the complete documentation index? | [Documentation home](docs/README.md) |
-| How does TurboMCP compare with Epic tools? | [Three-way comparison](docs/tool-comparison.md) |
-| What tools are declared? | [Tool reference](docs/user/tools.md) |
-| What is supported and what remains unfinished? | [Project status](docs/status.md) and [roadmap](ROADMAP.md) |
-| What is the intended product scope? | [Product requirements](docs/product.md) |
-| How should tools behave internally? | [Architecture contracts](docs/architecture.md) and [design index](docs/design/README.md) |
-| How are changes verified? | [Test guide](Tests/README.md) and [acceptance requirements](docs/acceptance.md) |
-| Which scripts should I use? | [Tooling guide](Tools/README.md) |
-| How will source and plugin packages be released? | [Release guide](docs/release.md) |
+[Current issue map](docs/github-issues.md) | [Project status](docs/status.md) | [Roadmap](ROADMAP.md) | [Architecture](docs/architecture.md) | [Native tool comparison](docs/tool-comparison.md)
 
 ## Repository layout
 
-| Directory | Contents |
-| --- | --- |
-| `Plugins/TurboMCP` | Plugin source, content and resources |
-| `TestProject` | Integration project and fixtures |
-| `Tools` | Build, test and release commands |
-| `Tests` | Test catalog and acceptance requirements |
-| `docs` | Guides, specifications, designs and audit results |
-| `todo` | Implementation tasks and historical findings |
-| `release` | Release readiness and export policy |
+`Plugins/TurboMCP` contains the plugin. `TestProject` contains synthetic fixtures. `Tools` and `Tests` contain validation tools and acceptance data. `docs`, `todo` and `release` record design, work and release evidence. `site` contains the GitHub Pages landing page.
 
-The public source repository carries the complete reviewed tracked tree. Installable plugin packages are separate release assets. See [public source preparation](docs/public-preparation.md).
+GitHub Pages deployment is enabled separately in repository settings. Its workflow publishes the reviewed landing page, not private audit files or project assets.
 
-## Community and license
-
-Contributions and project discussions use English. See [Contributing](CONTRIBUTING.md), [Governance](docs/governance.md), [Security](SECURITY.md) and [Community conduct](CODE_OF_CONDUCT.md).
-
-TurboMCP is licensed under [MPL-2.0](LICENSE).
+Licensed under [MPL-2.0](LICENSE). See [community conduct](CODE_OF_CONDUCT.md).

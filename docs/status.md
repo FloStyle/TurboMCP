@@ -1,24 +1,18 @@
 # Project status
 
-[Documentation](README.md)
+[Documentation](README.md) | [Issues](github-issues.md) | [1.0.0 plan](release-1.0.0.md)
 
-TurboMCP is a development preview. The failed `v1.0.0` release and tag were withdrawn on 17 October 2026. No stable release is currently approved.
-
-## Compatibility
+TurboMCP is a development preview. No stable release is currently approved.
 
 | Target | Status |
 | --- | --- |
 | Windows, Unreal Engine 5.8.4 source | Development baseline; exact revision in [engine.lock.json](../engine.lock.json) |
-| Installed / Launcher engine | Packaging and runtime validation pending |
-| Unreal Engine 5.9 | Historical development API comparison recorded; 5.8.4 comparison refresh, adapter and runtime validation pending ([plan](engine-compatibility.md)) |
-| Other platforms | Outside the initial release scope |
+| Installed / Launcher engine | Packaging and clean-consumer validation pending |
+| Unreal Engine 5.9 | Separate preparation branch; adapter and runtime validation pending |
+| Other platforms | Outside the first release scope |
 
-## Release work remaining
+Hosted offline CI is active. Daily source prereleases follow successful main pushes. These checks do not certify native behavior or installation packages.
 
-The inventory accounts for 101 declared tools. Static test references do not establish runtime correctness. All 97 required acceptance cases still need release evidence; consult [acceptance data](../Tests/acceptance.json) and [release readiness](../release/status.json) for the maintained records.
+The source-preview fixture audit collected 13 of 15 fixtures. Exact object resolution in unloaded multi-asset packages remains open. All 97 required release acceptance cases need exact-candidate evidence; see [acceptance data](../Tests/acceptance.json) and [release readiness](../release/status.json). Earlier evidence and version pins must be reconciled before stable approval.
 
-The [roadmap](../ROADMAP.md) orders test infrastructure repairs, tool and safety audits, documentation verification, acceptance, and release automation. The first task is selected by `python Tools/next-task.py`.
-
-GitHub CI is not active yet. Its template is in `Tools/ci/validate.yml`; installing the workflow requires an appropriately authorized GitHub credential. Local validation remains available through `python Tools/validate.py`.
-
-Update this page when support or release status changes. Keep detailed evidence in the corresponding task and acceptance records.
+The [GitHub issue map](github-issues.md) links current findings and release gates. Historical reports remain evidence; they are not new implementation assignments. The [roadmap](../ROADMAP.md) still defines execution order.

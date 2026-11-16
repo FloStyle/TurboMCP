@@ -1,33 +1,33 @@
 # Git workflow
 
-[Contributor workflow](contributing.md) · [External agents](external-agent-workflow.md) · [Release manager](release-manager.md)
+[Contributing](../CONTRIBUTING.md) | [Release process](release.md)
 
-| Ref | Purpose | Update rule |
+## Three long-lived branches
+
+| Name | Purpose | Update rule |
 | --- | --- | --- |
-| main | Development integration | Integrate reviewed changes and rerun affected checks. |
-| stable | Latest released source | The release owner advances it to the exact accepted source commit as part of each approved release. It starts with the first approved release. |
-| vX.Y.Z | Immutable stable release tag | The release owner creates the tag at the accepted source commit after reviewing its exact source and artifact identity. Keep each published tag fixed. |
-| vX.Y.Z-dev.YYYYMMDD | Optional immutable development prerelease tag | The owner can authorize a source-only prerelease at the exact reviewed public commit after the source and hosting gates. |
-| codex/ue59-preparation | Unreal 5.9 compatibility candidate | Use a separately approved assignment, worktree and actual 5.9 engine checkout. Review 5.9 support independently from the baseline. |
+| `main` | Development | Review focused changes and require passing validation. Daily source snapshots come from this branch. |
+| `stable` | Accepted stable releases | Create it at the first approved stable release. Advance it only to later accepted version tags. No daily snapshot or unaccepted preview belongs here. |
+| `codex/ue59-preparation` | Unreal 5.9 candidate | Keep a separate worktree, engine checkout and evidence. Do not change the supported baseline or claim 5.9 support from this branch alone. |
 
-Branches organize work. Anyone who can read a public repository can read its published branch history. Keep credentials, private evidence, proprietary projects and recovery material outside Git. Review the complete retained history and every ref intended for publication.
+Short-lived `codex/*` task branches are not extra release channels. Remove them after integration.
 
-## Development and compatibility
+## Tags
 
-Unreal 5.9 implementation is deferred until the repository is public. The reserved candidate branch is dormant; its existence does not dispatch work or establish compatibility.
+- `vX.Y.Z`: accepted stable release. Keep the tag fixed.
+- `vX.Y.Z-dev.YYYYMMDD`: manually approved development preview. Keep the tag fixed.
+- `daily-YYYY-MM-DD`: rolling development snapshot for that Europe/Paris date. Later validated pushes on the same day may move this tag. Always record the exact commit when reporting a daily build.
 
-The integrator dispatches exact file scope and an approved full base SHA. Create or provide one clean isolated worktree at that SHA. A new compatibility worktree can use the following command when the branch and destination are unused.
+Daily publication is owner-authorized for this repository. It follows successful `main` push validation and never publishes `stable`, a `v*` tag or installation binaries. See [release process](release.md).
 
-~~~powershell
-git worktree add -b codex/ue59-preparation '<isolated-worktree-path>' '<approved-full-base-sha>'
-~~~
+## Work and integration
 
-Use the already designated worktree if the branch exists. Claim each reviewed task through the [contributor CLI](external-agent-workflow.md#claim-a-reviewed-assignment). Keep Unreal in a separate checkout, configure the actual engine paths for the assignment, and run builds or editor suites through the supervisor. The candidate does not change the supported engine baseline by itself. Review and integrate any change to the pin explicitly. The stable branch advances only through release acceptance.
+Use FloStyle/TurboMCP for new cleaned-history work. Never merge or push unsanitized ancestry from the old recovery repository. The owner controls the public visibility change; retire the recovery host after verified cutover.
 
-## Integration host and release
+Each implementation assignment needs an approved base, exact file scope and task claim. Keep engine runs serialized through the existing supervisor. Follow [AGENTS.md](../AGENTS.md) and the [contributor workflow](contributing.md).
 
-Before cutover, integrate in private main. After the [approved source cutover](public-preparation.md), use FloStyle/TurboMCP as the sole writable development repository and keep the original host private and read-only.
+Unreal 5.9 implementation remains deferred until public cutover and an approved assignment. The branch may exist before work starts.
 
-For a stable release, the release owner confirms that the target commit and plugin tree match the accepted evidence, checks the engine and package hashes, and verifies licensing and privacy. Follow the [release manager](release-manager.md) and record separate release approval.
+## Protection
 
-At release time, check that stable and the version tag resolve to the accepted source commit. Protect main and stable against ordinary direct pushes and force pushes. Restrict release tag creation to the release role and keep published tags immutable. Verify which controls the actual hosting plan enforces. Run pull request checks without secrets, and keep untrusted changes away from privileged engine runners.
+Require PR validation on `main`. Protect `stable` and immutable version tags before using them. Restrict publication credentials and do not run untrusted PR code on privileged engine runners. The hosting plan may require public visibility before these controls are available; verify the actual settings.

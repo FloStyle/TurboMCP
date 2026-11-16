@@ -36,3 +36,12 @@ Follow the [release manager checklist](release-manager.md). Use the complete-tre
 ## Tracking
 
 [The tracked checklist](../release/public-preparation.json) records task and verification state. Its publication_authorized field records stable release approval. Record any authorized development-source cutover separately in private evidence that identifies the exact candidate. Tool review remains in `docs/audit/workflow-tool-coverage.json` and release acceptance remains in `Tests/acceptance.json`.
+
+## Owner-authorized daily source publication (2026-11-16)
+
+The owner authorizes daily source prereleases after successful main-push
+validation in the cleaned FloStyle/TurboMCP repository. This supersedes earlier
+manual-only wording for that development channel. The exact guards, rolling
+daily tag rule and source-only limits are in [the release process](release.md).
+Stable version tags, installation packages and stable acceptance remain
+manual and unchanged. This automation does not change repository visibility.
