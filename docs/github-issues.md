@@ -24,8 +24,9 @@ GitHub holds discussion and new evidence. The linked source plans preserve repor
 | `REL-HOST` | [#17 Finish repository protections and release publication controls](https://github.com/FloStyle/TurboMCP/issues/17) |
 | `DEV-CLAIM` | [#18 Make fresh-checkout task claim setup and output reliable](https://github.com/FloStyle/TurboMCP/issues/18) |
 | `UE59-PREP` | [#19 Prepare and verify Unreal 5.9 compatibility separately](https://github.com/FloStyle/TurboMCP/issues/19) |
+| `DOC-GUIDE` | [#23 Add interactive technical guide and presentation mode](https://github.com/FloStyle/TurboMCP/issues/23) |
 
-The eleven November field records are open investigations or partial work. They are not eleven newly confirmed defects. The multi-asset resolver and fresh-checkout claim problems have their own records. Release checks and Unreal 5.9 preparation are separate.
+The eleven November field records are open investigations or partial work. They are not eleven newly confirmed defects. The multi-asset resolver and fresh-checkout claim fixes merged in PR #22 and their issues are closed with focused verification evidence. Release checks and Unreal 5.9 preparation are separate.
 
 Older FIELD-03 through FIELD-10 and the remaining roadmap records are linked from REL-SCOPE for reconciliation. Keep duplicate findings under one owner rather than copying every historical row into a new issue.
 

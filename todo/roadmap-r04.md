@@ -8,6 +8,49 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current review: interactive documentation and preview packaging (2026-11-17)
+
+Readiness: ready. The integration owner approves two disjoint assignments from
+public main ee8fac88 after PR #22 passed hosted validation and merged. Read the
+repair contract in [V1 guide and package delivery](../docs/design/v1-guide-and-package.md)
+before historical evidence. The exact schema-2 scopes are recorded in
+roadmap/worker-scopes.json; the integrator supplies the full committed base.
+
+`v1-interactive-guide` replaces further cloud-deck authoring with an accessible,
+colourful, repository-maintained technical guide and presentation mode on the
+existing GitHub Pages site. Public content uses generic/synthetic examples only.
+
+`v1-supervised-package` adds a bounded Win64 development-preview package profile
+to the existing execution supervisor. Worker implementation and focused offline
+checks precede integrator-owned native execution. Stable acceptance stays open.
+
+## Guide and packaging submission review (2026-11-17)
+
+The integrator reviewed and accepted guide candidate f6afcb78 (integrated
+as a7bbdb8f) and package candidate 75bbff6d (integrated as 9254962e) against
+approved base 972a74e3. Both exact scope gates passed. The guide has 33
+chapters, reading/presentation views, chapter links, search and feedback drafts.
+The worker offline gate passed and its complete-tree export copied 1,059 files
+unchanged. Integrator browser review checked all 33 desktop presentation states,
+all 33 narrow-width overflow states, three native images, search, deep links,
+mode switching and keyboard navigation. Print and reduced-motion rules were
+source-reviewed; printed-output acceptance remains pending.
+
+The package profile implementation is done. Eight focused supervisor checks,
+PowerShell syntax, structure and language checks passed. Source review confirmed
+tracked-byte staging, existing ownership/resource locks, fresh output paths,
+license preservation and ZIP/hash verification. Native BuildPlugin execution
+and clean-consumer acceptance remain pending under GitHub #16. No stable release
+or Launcher compatibility is approved. R04 remains incomplete.
+
+The first supervised package attempt, e1297ebf8ee74383a90cce7559bb2a48,
+refused staging before UAT because Git archive converted the LICENSE blob's
+373 LF line endings to CRLF. No compiler or editor ran; 16 fixture boundary
+files were restored. Follow-up 68939fb0 replaces archive filtering with raw
+binary Git-blob streaming and keeps the per-file hash guard. The targeted
+CRLF-configuration and opaque-binary staging regression passed. Native retry
+is pending; retain the initial failure as evidence.
+
 ## Reviewed website and exact identity candidates (2026-11-16)
 
 The integrator accepted the exact scope and reviewed code for the website

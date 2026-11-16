@@ -4341,6 +4341,29 @@
             "Tools/test-asset-describe-metadata.py"
           ],
           "new_files": []
+        },
+        "v1-interactive-guide": {
+          "files": [
+            "site/index.html",
+            "site/styles.css",
+            "site/app.js",
+            "site/assets/asset-provenance.json"
+          ],
+          "new_files": [
+            "site/guide.html",
+            "site/guide.css",
+            "site/guide.js",
+            "site/guide-content.json"
+          ]
+        },
+        "v1-supervised-package": {
+          "files": [
+            "Tools/execute-tests.py",
+            "Tools/test-execution-runtime.py"
+          ],
+          "new_files": [
+            "Tools/package-plugin.ps1"
+          ]
         }
       },
       "preserve_rows": []
