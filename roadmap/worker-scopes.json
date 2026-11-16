@@ -4309,6 +4309,38 @@
             ".github/ISSUE_TEMPLATE/feedback.md",
             ".github/ISSUE_TEMPLATE/config.yml"
           ]
+        },
+        "v1-claim-setup": {
+          "files": [
+            "Tools/task_claim.py",
+            "Tools/next-task.py",
+            "Tools/test-task-claims.py",
+            "docs/external-agent-workflow.md"
+          ],
+          "new_files": []
+        },
+        "v1-site-examples": {
+          "files": [
+            "site/index.html",
+            ".github/workflows/pages.yml"
+          ],
+          "new_files": [
+            "site/styles.css",
+            "site/app.js",
+            "site/tools.json",
+            "site/assets/graph-overview.png",
+            "site/assets/graph-neighbours.png",
+            "site/assets/graph-focus.png",
+            "site/assets/asset-provenance.json",
+            "Tools/build-site-catalog.py"
+          ]
+        },
+        "v1-exact-object": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetResolver.cpp",
+            "Tools/test-asset-describe-metadata.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

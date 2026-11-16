@@ -51,10 +51,11 @@ def select_task(root,task,track='v1'):
         return row,text
     return None,'STOP: task '+task+' is not in the selected queue'
 def main():
+    from task_claim import active_claims, claim, claim_assignment, configure_cli_output, location
+    configure_cli_output()
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--check',action='store_true');parser.add_argument('--track',choices=['v1','compatibility'],default='v1');parser.add_argument('--claim',metavar='OWNER');parser.add_argument('--assignment');parser.add_argument('--base');args=parser.parse_args()
     load_queue(ROOT,args.track)
     if args.check:print('PASS: roadmap IDs, ordered dependencies, task contracts and completion evidence');return 0
-    from task_claim import active_claims,claim,claim_assignment,location
     active=active_claims(ROOT)
     if active:
         for item in active:
@@ -74,18 +75,33 @@ def main():
     else:
         row,text=select(ROOT,args.track)
         if not row:print(text);return 2
+    claim_id = None
     if args.claim:
+        store = location(ROOT)
         if args.assignment:
             if not args.base:raise ValueError('--base is required with --assignment')
             assigned=claim_assignment(ROOT,row['id'],args.assignment,args.claim,args.base)
-            print('CLAIM: '+assigned['claim_id']+'; assignment '+assigned['assignment']+'; owner '+assigned['owner'])
+            claim_id = assigned['claim_id']
+            receipt = 'CLAIM: '+claim_id+'; assignment '+assigned['assignment']+'; owner '+assigned['owner']
         else:
             assigned=claim(ROOT,row['id'],args.claim)
-            print('CLAIM: '+assigned['id']+'; owner '+assigned['owner'])
-        print('CLAIM STORE: '+str(location(ROOT)))
-    print('NEXT: '+row['id']+' | '+row['path'])
-    print('Read AGENTS.md and this task. Claim its ownership before work. A task claim does not grant engine ownership or execute commands.\n')
-    print(text);return 0
+            claim_id = assigned['id']
+            receipt = 'CLAIM: '+claim_id+'; owner '+assigned['owner']
+    try:
+        if claim_id is not None:
+            print(receipt, flush=True)
+            print('CLAIM STORE: '+str(store), flush=True)
+        print('NEXT: '+row['id']+' | '+row['path'])
+        print('Read AGENTS.md and this task. Claim its ownership before work. A task claim does not grant engine ownership or execute commands.\n')
+        print(text, flush=True)
+    except (OSError, UnicodeError):
+        if claim_id is None:
+            raise
+        print(f'FAIL: Task output interrupted after acquiring claim {claim_id}. '
+              'The claim remains active. Verify it with python Tools/task_claim.py --inspect before retrying.',
+              file=sys.stderr, flush=True)
+        return 1
+    return 0
 if __name__=='__main__':
     try:sys.exit(main())
     except (ValueError,KeyError,OSError,RuntimeError) as exc:sys.exit('FAIL: '+str(exc))

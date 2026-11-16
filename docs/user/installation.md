@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-Use Windows and the Unreal Engine 5.8.3 source revision pinned in [engine.lock.json](../../engine.lock.json). The plugin requires the engine's ModelContextProtocol, ToolsetRegistry and the other dependencies listed in [TurboMCP.uplugin](../../Plugins/TurboMCP/TurboMCP.uplugin).
+Use Windows and the Unreal Engine 5.8.4 source revision pinned in [engine.lock.json](../../engine.lock.json). The plugin requires the engine's ModelContextProtocol, ToolsetRegistry and the other dependencies listed in [TurboMCP.uplugin](../../Plugins/TurboMCP/TurboMCP.uplugin).
 
 Installed-engine packages and Unreal 5.9 are not validated yet. See [project status](../status.md).
 

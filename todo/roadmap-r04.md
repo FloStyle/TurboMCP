@@ -8,6 +8,88 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Reviewed website and exact identity candidates (2026-11-16)
+
+The integrator accepted the exact scope and reviewed code for the website
+(worker e9c17382, integrated 7b0ef891) and unloaded exact-object resolver
+(worker 079ef89a, integrated 3ab22dd1). The website exposes all 196 documented
+AICallable declarations and real synthetic captures; catalogue freshness,
+public export and focused desktop/mobile browser checks passed. The resolver
+uses exact saved registry identity and verified generated-class aliases, with
+no asset load or same-package fallback for a wrong explicit name. Its focused
+native scenario and build passed on 6996d636 against the pinned stock 5.8.4
+engine in supervised run 05aced3a3c394985bd35573fe382408e. Doctor, build and
+`test-asset-describe-metadata` each exited 0; fixture restoration completed.
+This focused result does not certify the full plugin. Claims were released
+after review.
+
+The canonical local integration copy is now under C:/Dev. Legacy private
+ancestry is retired recovery material with its push destination disabled.
+Historical evidence paths remain historical; no private ancestry was merged.
+Installation documentation now follows the pinned 5.8.4 baseline.
+
+## V1 review and next bounded repair (2026-11-16)
+
+Assignment `v1-claim-setup` is implemented and reviewed in ba201318 (worker
+4414f4aa). Exact four-file scope passed. The integrator independently reviewed
+production and test code and ran all 17 focused claim checks successfully.
+The worker's clean offline gate passed 28/28 at 4414f4aa. No engine behavior
+changed. GitHub #18 is ready for hosted integration. A separate coordination
+defect remains: active scopes are checked against the inspector's checkout,
+so a concurrent assignment with new parent directories can block inspection.
+That observation is not resolved by this initialization/output repair.
+
+Readiness: ready. Assignment `v1-exact-object` addresses GitHub #13. After the
+exact loaded-object check, resolve an explicit object path through exact
+Asset Registry identity without loading it. Never fall back to a different
+object in the same package when the explicit name is wrong. Keep package-only
+ambiguity refusal and existing generated-class path support. A local helper
+in the resolver implementation is sufficient; no header/API expansion.
+
+Extend the existing metadata scenario before any Blueprint load. Describe the
+exact material and map fixture object paths twice and require matching object,
+class, loaded:no, and identical replies. Refuse package-only ambiguity for both
+multi-asset fixtures and wrong explicit names in them and a single-asset
+Blueprint package. Preserve generated-class success; cover wrong suffixes if
+touched. No LoadObject, save, fixture generation, engine edits or broadened
+search. Worker runs focused offline checks only. The integrator reviews source
+and schedules one serialized build and native scenario. Missing native evidence
+remains pending. Only the two exact scope files may change.
+
+## Current integrator dispatch: V1 delivery and public examples (2026-11-16)
+
+Readiness: ready. The owner requests urgent V1 repairs, one package per
+application, clearer public examples, and canonical local work under C:/Dev.
+This dispatch supersedes the historical cutover pause below: cleaned public
+FloStyle/TurboMCP main is active at ead9b2cb. Old private ancestry is recovery
+material only and must not be merged or pushed into the public repository.
+
+Assignment `v1-claim-setup` addresses GitHub #18. Add an explicit integrator
+initialization command for a missing empty schema-2 claim store. Refuse every
+existing store, including malformed or active state; do not overwrite, migrate
+or recover it implicitly. Preserve legacy migration and locking. Make claim
+CLI output and Git metadata decoding reliable in UTF-8 on Windows, including
+captured output, so an acquired claim always reports its ID. Focused tests
+cover missing/init, duplicate initialization, malformed/existing and active
+stores, and a real narrow-encoding subprocess. No scope/ownership bypass.
+
+Assignment `v1-site-examples` expands the existing static Pages site with a
+complete deterministic catalogue generated from AICallable declarations and
+parameter documentation, concrete example prompts, real synthetic graph
+captures with provenance, search/filter/details and copy affordances. Use
+simple technical English, clear preview/edit effects and responsive keyboard
+access. Keep the stock Unreal addon positioning and current preview limits.
+Do not publish company/CCXI content or private local evidence paths. The Pages
+workflow may check catalogue freshness and copy the complete site tree; retain
+all existing successful-main validation and publication guards. Verify one
+focused browser workflow and generated catalogue coverage. No runtime edits.
+
+The integrator owns task evidence, relocation, shared tracking and review.
+Workers claim the exact assignment/base and submit scoped commits without
+publishing. Engine runs remain serialized; neither assignment requires Unreal.
+The next resolver/package slice will receive its own reviewed scope. Do not
+claim stable release acceptance from these changes.
+
 ## Unified feedback integration review (2026-11-16)
 
 The integrator reviewed the shared feedback form, contribution guidance and
