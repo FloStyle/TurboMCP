@@ -29,3 +29,7 @@ Review scope: the 16 normative ARC contracts and repository execution/publicatio
 Every new technical choice beyond these boundaries belongs in its bounded task: alternative considered, observable benefit, engine assumption, failure behavior, test and maintenance cost. Do not create architecture prose solely to justify a speculative feature.
 
 The TurboMCP module sets `bUseUnity = false`: measured unity builds combined private helpers with duplicate names and failed. Non-unity compilation passed on the pinned engine and keeps results independent of adaptive-unity file selection. This increases the module's cold compile work; it does not disable unity for the engine.
+
+## ARC15 publication route update
+
+The original decision above records the 2026-10-17 fresh-root policy. With owner authorization for the exact clean-host cutover, the [public source preparation policy](../public-preparation.md) allows a reviewed rewritten history for the initial development-source preview. The complete tracked tree, ordered task queue and evidence requirements continue. Stable releases retain their separate acceptance and approval process.

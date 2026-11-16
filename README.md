@@ -128,7 +128,7 @@ Contributors and implementation agents should read [CONTRIBUTING.md](CONTRIBUTIN
 | `todo` | Implementation tasks and historical findings |
 | `release` | Release readiness and export policy |
 
-The future public repository will contain this complete tracked tree with fresh Git history. Installable plugin packages are separate release assets. See [repository design](docs/repository-design.md).
+The public source repository carries the complete reviewed tracked tree. Installable plugin packages are separate release assets. See [public source preparation](docs/public-preparation.md).
 
 ## Community and license
 

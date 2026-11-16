@@ -436,7 +436,7 @@ Do not claim logs prove an edit's final state.
 AGENTS.md defines the workspace workflow. TODO.md links to repository-owned tasks.
 No external task board is required. Evidence establishes correctness; status text does not.
 Private commits and migration pushes are authorized for this restructuring. Public publication is a separate operation.
-Use the complete tracked-tree exporter; never merge private history into the public repository.
+Verify the complete tracked tree with the exporter. An owner-approved [retained-history cutover](public-preparation.md) may publish only the reviewed rewritten refs in the independent destination. Keep original unsanitized ancestry private.
 
 ## ARC16 — Decisions taken after the first run
 

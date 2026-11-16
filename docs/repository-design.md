@@ -10,4 +10,4 @@ The current editor module contains production code and development commandlets. 
 
 Current technical contracts live in architecture.md. Designs explain how those contracts should be implemented and name unresolved decisions. Tasks reference those contracts and provide narrow acceptance criteria. Historical quotations cannot override current contracts. A requirement document is not evidence that a feature is implemented or tested.
 
-The publication tool refuses unsafe tracked files rather than silently omitting them. Its verification manifest lives outside the exported tree. A normal Git clone retains private history; use a fresh Git root for the first public publication. Private history is retained solely in the private repository and must never be pushed to the public remote.
+The publication tool refuses unsafe tracked files rather than silently omitting them. Its verification manifest lives outside the exported tree. The [public preparation policy](public-preparation.md) governs ancestry, approved sanitization and destination verification. Keep unsanitized private history in the private archive.

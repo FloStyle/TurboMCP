@@ -18,7 +18,7 @@ Required behavior:
 4. A tool that can execute project code says so. Preview does not imply sandboxed execution.
 5. Results are bounded and diagnosable. Truncation or unsupported cases are explicit; compact output cannot discard information required for a destructive edit.
 6. Tests restore owned fixtures, reject blocked/missing cases as success, and identify the tested source, engine and binary.
-7. Source publication preserves the complete contributor tree with fresh history; installation packages are independently tested artifacts.
+7. Source publication preserves the complete reviewed contributor tree. Installation packages are independently tested artifacts.
 
 ## Out of scope until separately designed
 

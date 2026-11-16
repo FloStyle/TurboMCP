@@ -16,4 +16,4 @@ This is a deterministic character and encoding check, not a language classifier.
 
 Recognized binary assets are listed in the check output rather than silently treated as validated text. Unreal assets can contain serialized display names, comments and text; images can contain visible writing. Their contents require editor export or visual review before an English-only release claim. Do not rewrite binary assets using byte replacement.
 
-Git history, ignored recovery archives and GitHub-hosted issues or release bodies are outside this working-tree check. The public repository starts with fresh history. Private history is retained for recovery and must not be described as language-certified.
+Git history, ignored recovery archives and GitHub-hosted issues or release bodies are outside this working-tree check. Follow the [source publication policy](public-preparation.md) for retained-history review. The working-tree result applies to the checked snapshot. Keep the unsanitized recovery history private.

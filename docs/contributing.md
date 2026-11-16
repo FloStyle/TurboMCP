@@ -46,6 +46,6 @@ Commit coherent changes and include the task ID in commit messages. Submit the c
 
 Record commands, exit codes, logs, source commit, artifact hash and engine identity as applicable. Identify tests that could not run. Static checks do not replace runtime acceptance.
 
-The integration owner applies the [worker submission gate](worker-boundaries.md), reconciles and verifies the change against current private main, and records task evidence and status before regenerating TODO.md. Changes enter private main through a reviewed private PR or an explicitly authorized local merge. Never force-push main.
+The integration owner applies the [worker submission gate](worker-boundaries.md), reconciles and verifies the change against the current integration main, and records task evidence and status before regenerating TODO.md. Changes enter main through a reviewed PR or an explicitly authorized local merge. Never force-push main.
 
-Public publication is a separate, approved export with fresh history. Follow the [release guide](release.md).
+Follow [public source preparation](public-preparation.md) for the initial publication and the [release guide](release.md) for stable releases.

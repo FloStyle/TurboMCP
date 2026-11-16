@@ -59,7 +59,7 @@
       "title": "Harden and rehearse export pipeline",
       "state": "open",
       "verification": "partial",
-      "acceptance": "Verify fail-closed controls, manifest equality, case/path safety and fresh-root history. Record source commit and tree alongside the manifest. Audit scanner coverage; pattern scans alone are insufficient.",
+      "acceptance": "Verify fail-closed controls, complete manifest equality and case/path safety. Record source and candidate commits, trees and exact refs. Use the history and privacy checks for the owner-approved route.",
       "audit_update": "2026-11-16: preview exported all 1031 tracked files with identical staged bytes; every path/hash verified and no .git copied. Includes four pending documentation edits. Fresh-root initialization, independent validation and final committed-candidate gates remain pending. Existing private ancestry must not be merged into public history.",
       "integration_update": "2026-11-16: reviewed b049f3b6 scope and behavior; fixed-tree export and path/sidecar controls implemented. New offline test registered; independent offline gate 1bdbcc54564847d58e571937a481d241 passed 27/27. Fresh-root rehearsal and complete release acceptance remain open."
     },
@@ -83,7 +83,7 @@
       "title": "Approve and publish reviewed snapshot",
       "state": "open",
       "verification": "not_verified",
-      "acceptance": "Require release gates and explicit owner publication authorization. Publish a fresh root with no private ancestors; record artifact hashes and private-to-public version mapping."
+      "acceptance": "Require exact owner approval, complete source and verified history and hosting evidence for a development-source cutover. Require the separate release gates and artifact identities for a stable release."
     }
   ]
 }

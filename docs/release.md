@@ -6,7 +6,7 @@
 
 | Artifact | Contents |
 | --- | --- |
-| Public source repository | Every tracked file, with identical paths and bytes, in fresh Git history |
+| Public source repository | Every tracked file of the reviewed candidate, including contributor and test material |
 | Plugin installation package | Installable plugin and validated binaries for an exact engine distribution |
 
 Tasks, specifications, tests and contributor tools belong in the public source tree. Unreal source, credentials, personal configuration and private recovery archives do not belong in either artifact.
@@ -23,13 +23,13 @@ Choose a new output directory for each preview. The exporter reads staged Git bl
 
 The manifest is written beside the export as `source-preview.manifest.json`. Verify it against the staged tree. Initialize a temporary Git repository in the export and run offline validation there. Review binary fixtures and third-party ownership separately: text scanning cannot establish their privacy or licensing status.
 
-A preview is a review artifact. It does not approve or publish a release.
+The exporter preview is a local review artifact. The owner may separately authorize the initial [development-source publication](public-preparation.md) after its own review gates. The owner may separately approve a source-only development prerelease page and exact tag. A source publication carries no stable 1.0 or installation certification.
 
-## Approve and publish
+## Approve a stable release
 
 Follow the [release manager checklist](release-manager.md). Release requires a clean committed tree, complete acceptance evidence, validated plugin identity, readiness approval and the owner's explicit publication instruction.
 
-Create a new Git repository from the approved complete export. Check that its root commit has no private ancestors and that its manifest matches the reviewed candidate. Never mirror the private repository or merge its history into the public one.
+Verify the complete accepted source export and bind the version tag to its exact accepted source commit. Follow [public source preparation](public-preparation.md) if the hosting repository still needs its initial cutover.
 
 Keep implementation credentials separate from publication rights. A development push must not publish a release automatically.
 

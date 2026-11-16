@@ -26,10 +26,10 @@ These settings are separate from versioned policy files. Verify them on the actu
 - Activate the validation workflow with minimal token permissions. Keep fork checks isolated from secrets and self-hosted engine runners.
 - Enable and test private vulnerability reporting. Provide a verified private contact if that feature is unavailable.
 - Enable available secret scanning and push protection; verify coverage instead of assuming availability from the plan name.
-- Keep release credentials separate and require owner approval for publishing. Verify fresh public history, source export identity and package checksums.
+- Keep publication and release access separate from routine development. Follow the [source and history checks](public-preparation.md) and verify package checksums for stable releases.
 - Check issue templates, CODEOWNERS, policy links and repository visibility after copying the source tree.
 
-As checked on 17 October 2026, the private repository's branch-protection API returns a plan restriction (HTTP 403). Protection is not verified or claimed. GitHub returned no security-feature status, so secret scanning and push protection are also unverified. CI remains inactive pending an authorized workflow credential. Local validation and manual owner review are required in the meantime.
+Private-host checks previously encountered plan restrictions. The checked-in validation workflow has run on private main. Verify permissions, CI and protection independently on the destination. After a visibility change, recheck controls that the host applies according to visibility.
 
 ## Community and language
 

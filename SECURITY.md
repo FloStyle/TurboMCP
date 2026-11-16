@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-TurboMCP is a development preview. Security fixes currently target private `main`; there is no supported stable release or backport commitment. Engine and platform limits are listed in [project status](docs/status.md).
+TurboMCP is a development preview. Security fixes target development `main`; there is no supported stable release or backport commitment. Engine and platform limits are listed in [project status](docs/status.md).
 
 ## Report a vulnerability privately
 
