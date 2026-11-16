@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from pathlib import Path
 import re
 import subprocess
+import sys
 import time
 import uuid
 from execution_runtime import ResourceLocks,canonical
@@ -24,8 +25,16 @@ PROTECTED_FILES={
 PROTECTED_PREFIXES=('todo/',)
 
 
+def configure_cli_output():
+    """Keep claim diagnostics and task text readable in captured Windows output."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, 'reconfigure', None)
+        if reconfigure is not None:
+            reconfigure(encoding='utf-8', errors='backslashreplace')
+
+
 def location(repo,state_root=None):
-    common=subprocess.check_output(['git','-C',str(repo),'rev-parse','--path-format=absolute','--git-common-dir'],text=True).strip()
+    common=_git(repo,'rev-parse','--path-format=absolute','--git-common-dir')
     # Keep default state beside shared Git metadata, not in a harness-specific
     # user profile. Git worktrees share this directory even with different envs.
     if state_root is None:
@@ -341,7 +350,10 @@ def claim_assignment(repo,task,assignment,owner,base,state_root=None):
     path=location(repo,state_root)
     with _locked(path):
         data=_read_store(path,repo)
-        if data is None or data.get('schema')!=SCHEMA:
+        if data is None:
+            raise ValueError('Schema 2 is required before assignment claims. No claim store exists. '
+                             'The integration owner can run python Tools/task_claim.py --init')
+        if data.get('schema')!=SCHEMA:
             raise ValueError('Schema 2 is required before assignment claims; migrate explicitly')
         claims=data['active']
         if any(item.get('legacy') for item in claims):
@@ -377,6 +389,16 @@ def release(repo,claim_id,state_root=None):
                 raise ValueError('Claim ID mismatch; nothing released')
             data['history'].append(found[0]);data['active'].remove(found[0]);data['schema2_mutated']=True
         _write_store(path,data)
+
+
+def initialize(repo, state_root=None):
+    """Create a schema-2 ledger only when no ledger exists."""
+    path = location(repo, state_root)
+    with _locked(path):
+        if os.path.lexists(path):
+            raise ValueError('Claim store already exists. Initialization leaves it unchanged')
+        _write_store(path, {'schema': SCHEMA, 'active': [], 'history': [], 'schema2_mutated': False})
+    return {'store': str(path), 'schema': SCHEMA}
 
 
 def migrate(repo,state_root=None):
@@ -420,15 +442,23 @@ def rollback(repo,state_root=None):
 
 if __name__=='__main__':
     import argparse
+    configure_cli_output()
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--inspect',action='store_true',help='Show the actual store path, digest and active claims')
-    parser.add_argument('--release',help='Integrator only: release the exact claim ID')
-    parser.add_argument('--migrate',action='store_true',help='Migrate an empty schema-1 store; never active')
-    parser.add_argument('--rollback',action='store_true',help='Restore the schema-1 backup before any schema-2 mutation')
-    parser.add_argument('--claim-assignment',metavar='ASSIGNMENT')
+    commands=parser.add_mutually_exclusive_group()
+    commands.add_argument('--inspect',action='store_true',help='Show the actual store path, digest and active claims')
+    commands.add_argument('--release',help='Integrator only: release the exact claim ID')
+    commands.add_argument('--init',action='store_true',help='Integrator only: initialize an absent schema-2 store')
+    commands.add_argument('--migrate',action='store_true',help='Migrate an empty schema-1 store; never active')
+    commands.add_argument('--rollback',action='store_true',help='Restore the schema-1 backup before any schema-2 mutation')
+    commands.add_argument('--claim-assignment',metavar='ASSIGNMENT')
     parser.add_argument('--task');parser.add_argument('--owner');parser.add_argument('--base')
     args=parser.parse_args();repo=Path(__file__).resolve().parents[1]
     if args.release:release(repo,args.release)
+    elif args.init:
+        try:
+            print(json.dumps(initialize(repo)))
+        except (ValueError, OSError, RuntimeError) as error:
+            parser.exit(1, 'FAIL: '+str(error)+'\n')
     elif args.migrate:print(json.dumps(migrate(repo)))
     elif args.rollback:print(json.dumps(rollback(repo)))
     elif args.claim_assignment:

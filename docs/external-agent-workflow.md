@@ -18,15 +18,22 @@ For a public bug or feature, ask the agent to draft a local response against the
 
 ## Claim a reviewed assignment
 
+For an independent repository with no claim store, the integration owner runs
+`python Tools/task_claim.py --init` once. The command creates an empty schema-2
+store and refuses to replace any existing ledger. For an empty schema-1
+store, the integration owner uses `python Tools/task_claim.py --migrate`,
+which keeps a backup. Workers stop on a missing store and coordinate setup
+with the integration owner.
+
 The integration owner provides the assignment name, full approved base commit, exact allowed paths and a clean registered Git worktree at that commit. Run the claim command from the supplied worktree in the repository's shared claim domain:
 
 ```powershell
 git status --short
 git rev-parse HEAD
-python -X utf8 Tools/next-task.py --claim '<worker-id>' --assignment '<approved-name>' --base '<full-approved-sha>'
+python Tools/next-task.py --claim '<worker-id>' --assignment '<approved-name>' --base '<full-approved-sha>'
 ```
 
-Replace the quoted placeholders. Confirm the worktree is clean and HEAD matches the approved base. Retain the claim ID and read the selected task, its Current review, the linked repair contract and the affected architecture sections. Make changes only for the reviewed ready assignment and within its exact worker scope. Stop if the selector refuses. If claim output is interrupted after displaying an ID, ask the integration owner to verify the stored claim before proceeding; do not retry blindly.
+Replace the quoted placeholders. Confirm the worktree is clean and HEAD matches the approved base. Retain the claim ID and read the selected task, its Current review, the linked repair contract and the affected architecture sections. Make changes only for the reviewed ready assignment and within its exact worker scope. Stop if the selector refuses. If output is interrupted, the claim may still be active. Give the integration owner the reported claim ID and verify the store with `python Tools/task_claim.py --inspect` before retrying.
 
 An independent clone has a different claim store. If the harness cannot access the authorized worktree or claim store, or can only take text inputs, use the read-only workflow. If the owner approves a patch proposal, prepare it outside the shared checkout against the named base and allowed paths, from authorized inputs. The integrator must independently claim the work, review and apply the proposal, and run the checks. A cloned, local-only, or text-declared claim does not authorize edits to the shared work.
 

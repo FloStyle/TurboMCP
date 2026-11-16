@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from task_claim import _locked,_overlaps,active_claims,claim,claim_assignment,current,location,migrate,release,rollback
+from task_claim import _locked,_overlaps,active_claims,claim,claim_assignment,current,initialize,location,migrate,release,rollback
 
 # Exact Tools/task_claim.py from approved base
 # 682ebe1f13ce0256003bce74c5ac8e5d33af13fa. The digest is asserted before the
@@ -287,6 +287,90 @@ class ClaimTests(unittest.TestCase):
             result=subprocess.run([sys.executable,str(root/'Tools/next-task.py'),'--claim','worker','--assignment','a','--base',base],
                                   cwd=root,env=child_env(),capture_output=True,text=True,timeout=20)
             self.assertNotEqual(result.returncode,0)
+
+    def test_initialize_refuses_existing_store_without_changes(self):
+        with tempfile.TemporaryDirectory(prefix='tmcp-claim-init-') as temp:
+            root = Path(temp) / 'repo'
+            state = Path(temp) / 'state'
+            make_repo(root)
+            path = location(root, state)
+            path.parent.mkdir(parents=True)
+            for existing in (b'{malformed', b'{"schema":1,"active":null,"history":[]}'):
+                with self.subTest(existing=existing):
+                    path.write_bytes(existing)
+                    with self.assertRaisesRegex(ValueError, 'already exists'):
+                        initialize(root, state)
+                    self.assertEqual(path.read_bytes(), existing)
+
+    def test_fresh_checkout_init_and_utf8_claim_output(self):
+        with tempfile.TemporaryDirectory(prefix='tmcp-claim-init-cli-') as temp:
+            root = Path(temp) / 'r\u00e9po'
+            make_cli_repo(root)
+            task = root / 'todo/r04.md'
+            write(task, task.read_text(encoding='utf8').replace('Synthetic task.', 'Synthetic task \u2192 review.'))
+            base = commit(root)
+            env = {**child_env(), 'PYTHONIOENCODING': 'cp1252'}
+            claim_args = ('--claim', 'worker', '--assignment', 'a', '--base', base)
+
+            def run(tool, *args):
+                return subprocess.run([sys.executable, str(root/'Tools'/tool), *args],
+                                      cwd=root, env=env, capture_output=True, timeout=20)
+
+            path = location(root)
+            missing = run('next-task.py', *claim_args)
+            self.assertNotEqual(missing.returncode, 0)
+            self.assertIn(b'Schema 2 is required', missing.stderr)
+            self.assertIn(b'python Tools/task_claim.py --init', missing.stderr)
+            self.assertFalse(path.exists())
+
+            initialized = run('task_claim.py', '--init')
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            self.assertEqual(Path(json.loads(initialized.stdout)['store']), path)
+            empty = path.read_bytes()
+            self.assertEqual(json.loads(empty),
+                             {'schema': 2, 'active': [], 'history': [], 'schema2_mutated': False})
+            self.assertNotEqual(run('task_claim.py', '--init').returncode, 0)
+            self.assertEqual(path.read_bytes(), empty)
+
+            acquired = run('next-task.py', *claim_args)
+            self.assertEqual(acquired.returncode, 0, acquired.stderr)
+            self.assertIn('Synthetic task \u2192 review.', acquired.stdout.decode('utf8'))
+            record, = active_claims(root)
+            self.assertIn('CLAIM: '+record['claim_id'], acquired.stdout.decode('utf8'))
+            claimed = path.read_bytes()
+            self.assertNotEqual(run('task_claim.py', '--init').returncode, 0)
+            self.assertEqual(path.read_bytes(), claimed)
+
+    def test_interrupted_task_output_reports_the_acquired_claim(self):
+        with tempfile.TemporaryDirectory(prefix='tmcp-claim-output-') as temp:
+            root = Path(temp) / 'repo'
+            base = make_cli_repo(root)
+            initialize(root)
+            interrupt = '''
+import runpy
+import sys
+
+class InterruptedOutput:
+    def write(self, text):
+        if text.startswith('ID: R04'):
+            raise OSError('synthetic task output failure')
+        return sys.__stdout__.write(text)
+
+    def flush(self):
+        sys.__stdout__.flush()
+
+sys.stdout = InterruptedOutput()
+sys.argv = sys.argv[1:]
+runpy.run_path(sys.argv[0], run_name='__main__')
+'''
+            result = subprocess.run([sys.executable, '-c', interrupt, str(root/'Tools/next-task.py'),
+                                     '--claim', 'worker', '--assignment', 'a', '--base', base],
+                                    cwd=root, env=child_env(), capture_output=True, timeout=20)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            record, = active_claims(root)
+            claim_id = record['claim_id'].encode('ascii')
+            self.assertIn(b'CLAIM: '+claim_id, result.stdout)
+            self.assertIn(b'after acquiring claim '+claim_id, result.stderr)
 
     def test_schema1_claim_migrate_and_rollback(self):
         with tempfile.TemporaryDirectory(prefix='tmcp-claim-v1-') as temp:
