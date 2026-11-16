@@ -2478,3 +2478,7 @@ Readiness: ready. Assignment nov14-converging-wrap implements NOV09-05 following
 ## Approved public source and external-agent readiness (2026-11-16)
 
 Readiness: ready. Assignment `nov16-public-agent-readiness` is a bounded public-preparation repair slice. Exact file scope is recorded in worker-scopes.json. Follow [the repair contract](../docs/design/public-agent-readiness.md). The integrator owns release status, notices/provenance decisions, task evidence and publication. This assignment cannot certify missing runtime or ownership evidence.
+
+### Public-readiness submission review — 2026-11-16
+
+Candidate b049f3b6051af63468a86ef4f03f3c622e3aa4b1 reviewed against approved base f5de69cf8386ca614ffe18f9a1fbe76358f9d4e0; scope gate passed. Exporter now freezes one Git tree, records source/tree identity, rejects unsafe paths and protects output sidecars. External-agent instructions preserve existing claims and verification rules. Integrator registered test-public-source-safety in the offline catalog. Independent offline run 1bdbcc54564847d58e571937a481d241 passed 27/27 checks; run includes the catalog registration, with only equivalent engine-row ordering subsequently restored to avoid unrelated diff. No engine execution or public-release certification. R04 remains incomplete. Provenance, manual privacy/binary review and final release acceptance remain open.

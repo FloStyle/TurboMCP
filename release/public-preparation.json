@@ -54,7 +54,8 @@
       "state": "open",
       "verification": "partial",
       "acceptance": "Verify fail-closed controls, manifest equality, case/path safety and fresh-root history. Record source commit and tree alongside the manifest. Audit scanner coverage; pattern scans alone are insufficient.",
-      "audit_update": "2026-11-16: preview exported all 1031 tracked files with identical staged bytes; every path/hash verified and no .git copied. Includes four pending documentation edits. Fresh-root initialization, independent validation and final committed-candidate gates remain pending. Existing private ancestry must not be merged into public history."
+      "audit_update": "2026-11-16: preview exported all 1031 tracked files with identical staged bytes; every path/hash verified and no .git copied. Includes four pending documentation edits. Fresh-root initialization, independent validation and final committed-candidate gates remain pending. Existing private ancestry must not be merged into public history.",
+      "integration_update": "2026-11-16: reviewed b049f3b6 scope and behavior; fixed-tree export and path/sidecar controls implemented. New offline test registered; independent offline gate 1bdbcc54564847d58e571937a481d241 passed 27/27. Fresh-root rehearsal and complete release acceptance remain open."
     },
     {
       "id": "PUB-08",
