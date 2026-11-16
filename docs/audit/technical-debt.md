@@ -132,3 +132,19 @@ default, long-help and malformed-schema probes need approved synthetic fixture
 scope; status enablement queries, normalization and cap policy require design
 decisions. All proposals remain unapproved; no broad helper refactor or schema
 change follows from this source audit.
+
+## Exact object resolution in multi-asset packages
+
+Public-fixture inventory on 2026-11-16 exposed an R04 reader-resolution gap.
+An unloaded explicit object path reaches TryDirectForms in
+TurboMCPAssetResolver.cpp, then CompleteFromPackagePath requires exactly one
+registry row. The material fixture has three saved rows and the map has two;
+full-path AssetDescribe calls refuse although the exact objects exist in the
+saved registry and export tables. Native evidence: run
+64f8613b95c74c3a8423fae76a0d4de4, source 5f6a41ee, stock 5.8.4.
+
+Proposed owner: R04. A bounded repair must resolve the exact supplied object
+path, prove its package/class identity and preserve refusal for an ambiguous
+package-only query. Include an unloaded multi-asset fixture and wrong-object
+negative control. Do not load maps implicitly. No resolver repair is included
+in the inventory changes; native material and map-content review remain partial.

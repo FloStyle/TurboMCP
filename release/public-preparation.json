@@ -33,7 +33,8 @@
       "verification": "partial",
       "acceptance": "Scan the complete tracked tree for secrets, personal paths, proprietary content, generated files and caches; manually review binary fixtures and images. Never print matching secrets.",
       "audit_update": "2026-11-16: read-only history and candidate audit completed; no confirmed live credential. Reachable historical recovery archives, executable content and personal data preclude treating a visibility flip as safe. Full semantic report review, binary fixture review and ownership clearance remain open. Redacted detailed evidence is held outside the exported tree.",
-      "history_review": "2026-11-16: no-remote sanitized rehearsal preserves original ancestry with rewritten IDs and passes independent strict Git integrity checking. Semantic report and binary reviews, attribution, hosted-object cleanup and final candidate verification remain open. This is not approval to publish retained history."
+      "history_review": "2026-11-16: no-remote sanitized rehearsal preserves original ancestry with rewritten IDs and passes independent strict Git integrity checking. Semantic report and binary reviews, attribution, hosted-object cleanup and final candidate verification remain open. This is not approval to publish retained history.",
+      "native_review": "2026-11-16: supervised stock 5.8.4 inventory at 5f6a41ee collected 13 of 15 packages in 121 calls; overall FAIL/incomplete. All 15 hashes were unchanged; dirty count stayed zero. Two multi-asset resolver refusals remain. Offline saved registry/export review confirms expected material/map objects; neither is natively content-certified. Historical review retained 86 Unreal blobs and classified 9 non-UTF-8 text versions. Final semantic review and selected publication route remain separate."
     },
     {
       "id": "PUB-05",
@@ -42,7 +43,8 @@
       "verification": "partial",
       "acceptance": "Record owner-confirmed icon provenance; trace or independently rewrite EngineToolTraps.json with public, generic stock-Unreal-only guidance and preserved format. Review remaining third-party notices and licenses.",
       "owner_update": "2026-11-16: owner confirms Icon128.png is their own. Notice updated to repository declaration. Trap-content provenance remains unresolved; origin review and cleanup authorized. No blanket release approval.",
-      "review_update": "2026-11-16: rejected narrow proposal superseded by reviewed original guidance: 52 advisories across 23 keys, all 21 legacy help keys preserved conditionally. Unsupported provider-specific claims deferred. Source matrix recorded; notice applies to replacement text only. Historical content cleanup and remaining third-party/fixture review are separate publication gates."
+      "review_update": "2026-11-16: rejected narrow proposal superseded by reviewed original guidance: 52 advisories across 23 keys, all 21 legacy help keys preserved conditionally. Unsupported provider-specific claims deferred. Source matrix recorded; notice applies to replacement text only. Historical content cleanup and remaining third-party/fixture review are separate publication gates.",
+      "fixture_owner_update": "2026-11-16: owner states TurboMCP was built from scratch against core Unreal and has never seen proprietary code; fixtures expected synthetic. This is provenance evidence alongside the bounded audit, not a blanket native acceptance claim."
     },
     {
       "id": "PUB-06",
@@ -72,8 +74,9 @@
       "id": "PUB-09",
       "title": "Verify GitHub controls",
       "state": "open",
-      "verification": "not_verified",
-      "acceptance": "Enable and verify CI, branch protections, publication permissions and private vulnerability reporting; do not infer settings from policy files."
+      "verification": "partial",
+      "acceptance": "Enable and verify CI, branch protections, publication permissions and private vulnerability reporting; do not infer settings from policy files.",
+      "ci_update": "2026-11-16: reviewed read-only offline/source-preview workflow active. Hosted runs 43938561842, 43939701167 and 43941434641 passed. Final destination protections/security settings and hosted old-history removal remain unverified."
     },
     {
       "id": "PUB-10",

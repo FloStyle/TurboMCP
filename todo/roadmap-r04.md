@@ -8,6 +8,35 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Public preparation evidence update (2026-11-16)
+
+CI activation was reviewed and integrated at e5bfa0df. Hosted runs 43938561842
+and 43939701167 passed offline validation and the complete-tree export preview;
+43941434641 passed on the startup repair a398eb16. The workflow has read-only
+contents permission, pinned actions and no engine runner or publication step.
+Destination protections and stable release acceptance remain open.
+
+The bounded inventory is implemented through 5f6a41ee. Exact scope gates passed.
+Focused checks covered evidence-directory creation/reuse and foreign/junction
+refusal, exact material identity and wrong-object/class refusal, material
+expansion-limit refusal and the measured 28-page graph with a 32-page ceiling.
+The independent 200-call budget and revision/offset checks remain enforced.
+Offline gate 23f0e4792a9d4fdf8472518d6ea2b08e passed 27/27 at 747a2179.
+A later gate d00df481c2824da4893ddc81a57c56fa passed 26/27; runner timeout/log
+assertions failed. The unchanged runner test passed on a focused rerun after
+the native job ended. Cause is unresolved; this is not a whole-suite pass.
+
+Supervised run 64f8613b95c74c3a8423fae76a0d4de4 used stock 5.8.4 at
+5f6a41ee. Build passed. Native inventory remains FAIL/incomplete: 13/15 packages
+collected with known reader gaps in 121 calls. All 15 package hashes were
+unchanged and content dirty count stayed zero. Material and map identity reads
+were refused because their unloaded packages have multiple asset rows; the
+resolver uses a single-row package fallback even for an explicit object path.
+Offline saved registry/export evidence confirms the expected synthetic objects.
+No native material trace or map-property coverage is claimed. The large graph
+was fully paged. No fixture was regenerated or saved. Raw evidence stays local.
+R04, the resolver defect, public approval and full release acceptance remain open.
+
 ## Approved fixture object identity repair (2026-11-16)
 
 Readiness: ready. Assignment `nov16-fixture-object-identity` changes only
