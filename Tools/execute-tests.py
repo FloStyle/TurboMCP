@@ -16,6 +16,7 @@ from execution_recovery import atomic_json, snapshot, restore, pending, collect_
 from engine_execution import preflight, finish_lease
 
 ROOT=Path(__file__).resolve().parents[1]
+ENGINE_PROFILES=('engine','fixture','build','package')
 
 
 def identity(root):
@@ -33,7 +34,7 @@ def identity(root):
 def validate_request(request, root=ROOT):
     required={'schema','commit','tree_digest','profile','suites','max_seconds'}
     if set(request)!=required or request['schema']!=1:raise ValueError('Unknown or missing request fields')
-    if request['profile'] not in ('fast','offline','engine','fixture','build','persistence-native'):raise ValueError('Unknown profile')
+    if request['profile'] not in ('fast','offline','persistence-native',*ENGINE_PROFILES):raise ValueError('Unknown profile')
     if type(request['max_seconds']) is not int or not 1<=request['max_seconds']<=7200:raise ValueError('Run deadline must be 1..7200 seconds')
     if not isinstance(request['suites'],list) or any(not isinstance(x,str) for x in request['suites']):raise ValueError('Suites must be a list of names')
     if len(request['suites'])!=len(set(request['suites'])):raise ValueError('Duplicate suite')
@@ -52,8 +53,10 @@ def commands(request, engine):
     if request['profile']=='persistence-native':return [[sys.executable,'Tools/persistence-job-acceptance.py']]
     pwsh=shutil.which('pwsh')
     if not pwsh:raise ValueError('PowerShell 7 is required')
-    steps=[[sys.executable,'Tools/doctor.py'],
-           [pwsh,'-NoProfile','-File','Tools/build.ps1','-Engine',engine]]
+    doctor = [sys.executable, 'Tools/doctor.py']
+    if request['profile']=='package':
+        return [doctor, [pwsh,'-NoProfile','-File','Tools/package-plugin.ps1','-Engine',engine]]
+    steps=[doctor, [pwsh,'-NoProfile','-File','Tools/build.ps1','-Engine',engine]]
     if request['profile']=='build':return steps
     suite=[pwsh,'-NoProfile','-File','Tools/run-suites.ps1','-Suites',','.join(request['suites'])]
     if request['profile']=='fixture':
@@ -65,7 +68,7 @@ def commands(request, engine):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--profile',choices=['fast','offline','engine','fixture','build','persistence-native'],default='fast')
+    parser.add_argument('--profile',choices=['fast','offline','persistence-native',*ENGINE_PROFILES],default='fast')
     parser.add_argument('--suites',default='')
     parser.add_argument('--max-seconds',type=int,default=1800)
     parser.add_argument('--request',type=Path)
@@ -80,7 +83,7 @@ def main():
     if not args.execute:
         print(json.dumps(request,indent=2));return 0
     if os.name!='nt':raise ValueError('Owned execution currently requires Windows')
-    engine=canonical(find_engine()) if request['profile'] in ('engine','fixture','build') else ''
+    engine=canonical(find_engine()) if request['profile'] in ENGINE_PROFILES else ''
     run=ROOT/'.local/executions'/uuid.uuid4().hex;run.mkdir(parents=True)
     # Remove inherited automation overrides and common credential variables from children.
     env={k:v for k,v in os.environ.items() if not k.startswith('TURBOMCP_') and not any(w in k.upper() for w in ('TOKEN','SECRET','PASSWORD','API_KEY','AUTHORIZATION'))}

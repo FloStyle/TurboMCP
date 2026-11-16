@@ -3,11 +3,13 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 from execution_runtime import ResourceLocks, run_owned
 
 TOOLS=Path(__file__).resolve().parent
@@ -90,6 +92,43 @@ class ExecutionTests(unittest.TestCase):
         with self.assertRaises(ValueError):module.validate_request(plan)
         plan.pop('unexpected_command');plan['tree_digest']='stale'
         with self.assertRaises(ValueError):module.validate_request(plan)
+
+    def test_package_plan_has_fixed_owned_engine_commands(self):
+        command = [sys.executable, str(TOOLS/'execute-tests.py'), '--profile', 'package']
+        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        plan = json.loads(result.stdout)
+        self.assertEqual(plan['profile'], 'package')
+        self.assertEqual(plan['suites'], [])
+        spec = importlib.util.spec_from_file_location('executor', TOOLS/'execute-tests.py')
+        executor = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(executor)
+        self.assertIn('package', executor.ENGINE_PROFILES)
+        with patch.object(executor.shutil, 'which', return_value='pwsh'):
+            self.assertEqual(executor.commands(plan, 'owned-engine'), [
+                [sys.executable, 'Tools/doctor.py'],
+                ['pwsh', '-NoProfile', '-File', 'Tools/package-plugin.ps1', '-Engine', 'owned-engine'],
+            ])
+        for override in ({'suites': ['test-asset-describe-metadata']}, {'output': 'elsewhere'}):
+            with self.subTest(override=override), self.assertRaises(ValueError):
+                executor.validate_request({**plan, **override})
+
+    def test_package_helper_refuses_direct_call_before_staging(self):
+        tools = self.root / 'Tools'
+        tools.mkdir()
+        for name in ('package-plugin.ps1', 'execution_runtime.py'):
+            shutil.copy2(TOOLS/name, tools/name)
+        environment = dict(self.env)
+        for name in ('TURBOMCP_EXECUTION_CONTEXT', 'TURBOMCP_EXECUTION_TOKEN'):
+            environment.pop(name, None)
+        result = subprocess.run(
+            ['pwsh', '-NoProfile', '-File', str(tools/'package-plugin.ps1'),
+             '-Engine', str(self.root/'unused-engine')],
+            cwd=self.root, env=environment, capture_output=True, timeout=20,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b'Owned execution context required', result.stdout+result.stderr)
+        self.assertFalse((self.root/'release').exists())
 
 
 if __name__=='__main__':
