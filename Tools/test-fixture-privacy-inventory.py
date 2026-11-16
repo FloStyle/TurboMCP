@@ -131,7 +131,11 @@ def evidence_directory():
             and os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1"
             and re.fullmatch(r"[0-9]{2}-suites", out.name), "foreign_evidence_directory")
     require_components(context, ROOT)
+    # The runner may create its suite log directory only after the first child.
+    # Its parent was checked above; create only this exact owned child, not parents.
+    out.mkdir(exist_ok=True)
     require_components(out, ROOT)
+    require(out.is_dir(), "evidence_not_directory")
     return out
 
 
