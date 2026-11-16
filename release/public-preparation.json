@@ -42,7 +42,7 @@
       "verification": "partial",
       "acceptance": "Record owner-confirmed icon provenance; trace or independently rewrite EngineToolTraps.json with public, generic stock-Unreal-only guidance and preserved format. Review remaining third-party notices and licenses.",
       "owner_update": "2026-11-16: owner confirms Icon128.png is their own. Notice updated to repository declaration. Trap-content provenance remains unresolved; origin review and cleanup authorized. No blanket release approval.",
-      "review_update": "2026-11-16: first generic guidance replacement rejected because it reduced 51 advisories to 4. Independent stock-engine reconstruction requested to preserve useful supported guidance without retaining unknown-source claims."
+      "review_update": "2026-11-16: rejected narrow proposal superseded by reviewed original guidance: 52 advisories across 23 keys, all 21 legacy help keys preserved conditionally. Unsupported provider-specific claims deferred. Source matrix recorded; notice applies to replacement text only. Historical content cleanup and remaining third-party/fixture review are separate publication gates."
     },
     {
       "id": "PUB-06",

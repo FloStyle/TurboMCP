@@ -5,7 +5,5 @@
   "engine_commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
   "reason": "Product acceptance and engine compatibility validation remain incomplete.",
   "public_export_approved": false,
-  "notice_provenance_blockers": [
-    "Plugins/TurboMCP/Content/Traps/EngineToolTraps.json: original content ownership/permission unverified"
-  ]
+  "notice_provenance_blockers": []
 }

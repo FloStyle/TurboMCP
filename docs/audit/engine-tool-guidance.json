@@ -1,0 +1,289 @@
+{
+  "schema": 1,
+  "reviewed": "2026-11-16",
+  "engine_commit": "f45729c0b6f097038e72b52d366a62baeca3275b",
+  "scope": "Tool Search, reflected stock registrations, legacy extension classes and toolset content examined in the pinned Git tree. No claim about external providers or runtime/plugin availability.",
+  "status": "Source-reviewed original guidance; runtime contextual-help behavior not revalidated in this change.",
+  "rules": [
+    "This document contains API locators and original explanatory text, not Unreal source.",
+    "Conditional entries retain help keys for compatibility; they do not establish registration in stock Unreal.",
+    "Discover the exact connected provider and schema before a call.",
+    "Historical provider-specific claims without independent support are deferred, not represented as fixed engine bugs."
+  ],
+  "coverage": {
+    "legacy_keys_preserved": 21,
+    "keys": 23,
+    "advisories": 52,
+    "legacy_advisory_dispositions": {
+      "replaced": 21,
+      "deferred": 23,
+      "retained-fact": 6,
+      "corrected": 1
+    },
+    "legacy_parameter_dispositions": {
+      "reconstructed-from-stock-schema": 3,
+      "corrected-to-object-from-stock-schema": 1,
+      "deferred-provider-schema": 31
+    }
+  },
+  "entries": [
+    {
+      "key": "list_toolsets",
+      "binding": "stock-mcp",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "Tool Search registration and empty object schema",
+      "engine_source_locators": [
+        "Engine/Plugins/Experimental/ModelContextProtocol/Source/ModelContextProtocolEditor/Private/ModelContextProtocolToolSearch.cpp:11-146",
+        "Engine/Plugins/Experimental/ModelContextProtocol/Source/ModelContextProtocolEditor/Private/ModelContextProtocolToolsetRegistryAdapter.cpp:190-295"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/unreal-mcp-in-unreal-editor?application_version=5.8"
+    },
+    {
+      "key": "describe_toolset",
+      "binding": "stock-mcp",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "Tool Search describe schema and adapter lookup",
+      "engine_source_locators": [
+        "Engine/Plugins/Experimental/ModelContextProtocol/Source/ModelContextProtocolEditor/Private/ModelContextProtocolToolSearch.cpp:11-146",
+        "Engine/Plugins/Experimental/ModelContextProtocol/Source/ModelContextProtocolEditor/Private/ModelContextProtocolToolsetRegistryAdapter.cpp:190-295"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/unreal-mcp-in-unreal-editor?application_version=5.8"
+    },
+    {
+      "key": "call_tool",
+      "binding": "stock-mcp",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "Tool Search call schema and toolset/top-level dispatch",
+      "engine_source_locators": [
+        "Engine/Plugins/Experimental/ModelContextProtocol/Source/ModelContextProtocolEditor/Private/ModelContextProtocolToolSearch.cpp:11-146",
+        "Engine/Plugins/Experimental/ModelContextProtocol/Source/ModelContextProtocolEditor/Private/ModelContextProtocolToolsetRegistryAdapter.cpp:190-295"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/unreal-mcp-in-unreal-editor?application_version=5.8"
+    },
+    {
+      "key": "write_graph_dsl",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "Blueprint graph storage and schema; no stock DSL contract found",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraph.h",
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraphNode.h"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Engine/UEdGraphSchema?application_version=5.8"
+    },
+    {
+      "key": "find_nodes",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "UEdGraph nodes and UEdGraphNode identity",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraph.h",
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraphNode.h"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Engine/UEdGraphSchema?application_version=5.8"
+    },
+    {
+      "key": "find_node_types",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "K2 action filtering, graph schema and pin context",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraphSchema.h (FEdGraphSchemaAction)",
+        "Engine/Source/Editor/BlueprintGraph/Private/K2Node_PromotableOperator.cpp:614"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Editor/BlueprintGraph/UEdGraphSchema_K2?application_version=5.8"
+    },
+    {
+      "key": "create_node",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "FEdGraphSchemaAction::PerformAction and graph node positions",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraphSchema.h (FEdGraphSchemaAction)",
+        "Engine/Source/Editor/BlueprintGraph/Private/K2Node_PromotableOperator.cpp:614"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Editor/BlueprintGraph/UEdGraphSchema_K2?application_version=5.8"
+    },
+    {
+      "key": "connect_pins",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "K2 CanCreateConnection and TryCreateConnection; FPinConnectionResponse",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraphSchema.h:828,930,1057",
+        "Engine/Source/Editor/BlueprintGraph/Private/EdGraphSchema_K2.cpp (CanCreateConnection, TryCreateConnection)",
+        "Engine/Source/Editor/BlueprintGraph/Private/K2Node_Knot.cpp:31"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Engine/UEdGraphSchema?application_version=5.8"
+    },
+    {
+      "key": "break_pins",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "UEdGraphSchema single-link and all-pin-link operations",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraphSchema.h:828,930,1057",
+        "Engine/Source/Editor/BlueprintGraph/Private/EdGraphSchema_K2.cpp (CanCreateConnection, TryCreateConnection)",
+        "Engine/Source/Editor/BlueprintGraph/Private/K2Node_Knot.cpp:31"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Engine/UEdGraphSchema?application_version=5.8"
+    },
+    {
+      "key": "set_pin_value",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "K2 default setters for string/value, object and text inputs",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraphSchema.h:828,930,1057",
+        "Engine/Source/Editor/BlueprintGraph/Private/EdGraphSchema_K2.cpp (CanCreateConnection, TryCreateConnection)",
+        "Engine/Source/Editor/BlueprintGraph/Private/K2Node_Knot.cpp:31"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Engine/UEdGraphSchema?application_version=5.8"
+    },
+    {
+      "key": "find_assets",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "Asset Registry FARFilter and FAssetData identity",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/AssetRegistry/Public/AssetRegistry/IAssetRegistry.h:363 (FARFilter)",
+        "Engine/Source/Runtime/CoreUObject/Public/AssetRegistry/AssetData.h"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/asset-registry-in-unreal-engine"
+    },
+    {
+      "key": "save_assets",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "EditorAssetSubsystem SaveAsset/SaveLoadedAssets package save",
+      "engine_source_locators": [
+        "Engine/Source/Editor/UnrealEd/Public/Subsystems/EditorAssetSubsystem.h:296 (SaveAsset, SaveLoadedAssets)"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Editor/UnrealEd/UEditorAssetSubsystem"
+    },
+    {
+      "key": "get_properties",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "FProperty reflection and UObject editor-property API",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/CoreUObject/Public/UObject/Field.h:1090",
+        "Engine/Plugins/Experimental/PythonScriptPlugin/Source/PythonScriptPlugin/Private/PyWrapperObject.cpp (reflected property operations)"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/scripting-the-unreal-editor-using-python?lang=en-US"
+    },
+    {
+      "key": "set_properties",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "FProperty reflection, editable-property setters and editor notifications",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/CoreUObject/Public/UObject/Field.h:1090",
+        "Engine/Plugins/Experimental/PythonScriptPlugin/Source/PythonScriptPlugin/Private/PyWrapperObject.cpp (reflected property operations)"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/scripting-the-unreal-editor-using-python?lang=en-US"
+    },
+    {
+      "key": "is_dirty",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "UPackage::IsDirty and editor dirty flag semantics",
+      "engine_source_locators": [
+        "Engine/Source/Runtime/CoreUObject/Public/UObject/Package.h:656"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/CoreUObject/UPackage?application_version=5.8"
+    },
+    {
+      "key": "compile_blueprint",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "BlueprintEditorLibrary CompileBlueprint and Kismet compiler entry point",
+      "engine_source_locators": [
+        "Engine/Source/Editor/UnrealEd/Public/Kismet2/BlueprintEditorUtils.h:399,858",
+        "Engine/Source/Editor/UnrealEd/Public/Kismet2/KismetEditorUtilities.h:169"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Editor/UnrealEd/FBlueprintEditorUtils"
+    },
+    {
+      "key": "add_function_graph",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "FBlueprintEditorUtils CreateNewGraph and AddFunctionGraph",
+      "engine_source_locators": [
+        "Engine/Source/Editor/UnrealEd/Public/Kismet2/BlueprintEditorUtils.h:399,858",
+        "Engine/Source/Editor/UnrealEd/Public/Kismet2/KismetEditorUtilities.h:169"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Editor/UnrealEd/FBlueprintEditorUtils"
+    },
+    {
+      "key": "add_function_param",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "UK2Node_EditablePinBase and function entry/result pin types",
+      "engine_source_locators": [
+        "Engine/Source/Editor/BlueprintGraph/Classes/K2Node_EditablePinBase.h:169-178",
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraphPin.h (FEdGraphPinType)"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Editor/BlueprintGraph/UK2Node_EditablePinBase?application_version=5.8"
+    },
+    {
+      "key": "add_object_function_param",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "UK2Node_EditablePinBase and FEdGraphPinType type object",
+      "engine_source_locators": [
+        "Engine/Source/Editor/BlueprintGraph/Classes/K2Node_EditablePinBase.h:169-178",
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraphPin.h (FEdGraphPinType)"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Editor/BlueprintGraph/UK2Node_EditablePinBase?application_version=5.8"
+    },
+    {
+      "key": "add_variable",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "FBlueprintEditorUtils AddMemberVariable and AddLocalVariable",
+      "engine_source_locators": [
+        "Engine/Source/Editor/UnrealEd/Public/Kismet2/BlueprintEditorUtils.h:399,858",
+        "Engine/Source/Editor/UnrealEd/Public/Kismet2/KismetEditorUtilities.h:169"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/API/Editor/UnrealEd/FBlueprintEditorUtils"
+    },
+    {
+      "key": "arrange",
+      "binding": "conditional-stock-workflow",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "Graph editor layout commands and EdGraphNode position fields",
+      "engine_source_locators": [
+        "Engine/Source/Editor/GraphEditor/Public/GraphEditorActions.h:92",
+        "Engine/Source/Runtime/Engine/Classes/EdGraph/EdGraphNode.h:301-305"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/EdGraph/UEdGraphNode?application_version=5.8"
+    },
+    {
+      "key": "capture_asset_image",
+      "binding": "conditional-legacy-key",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "Stock EditorApp thumbnail implementation is reflected as CaptureAssetImage",
+      "engine_source_locators": [
+        "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/EditorAppToolset.h:206-216",
+        "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/EditorAppToolset.cpp:269-296",
+        "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/Tests/EditorAppToolsetTest.cpp:170-230",
+        "Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Private/ToolsetRegistry/FunctionLibraryToolset.cpp:61-121"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/unreal-mcp-in-unreal-editor?application_version=5.8"
+    },
+    {
+      "key": "CaptureAssetImage",
+      "binding": "stock-registry",
+      "verification": "pinned source only; not observed in editor",
+      "evidence_detail": "EditorAppToolset reflected function, implementation and focused engine tests",
+      "engine_source_locators": [
+        "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/EditorAppToolset.h:206-216",
+        "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/EditorAppToolset.cpp:269-296",
+        "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/Tests/EditorAppToolsetTest.cpp:170-230",
+        "Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Private/ToolsetRegistry/FunctionLibraryToolset.cpp:61-121"
+      ],
+      "epic_public_documentation": "https://dev.epicgames.com/documentation/unreal-engine/unreal-mcp-in-unreal-editor?application_version=5.8"
+    }
+  ]
+}
