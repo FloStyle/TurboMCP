@@ -8,6 +8,22 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Reviewed website and exact identity candidates (2026-11-16)
+
+The integrator accepted the exact scope and reviewed code for the website
+(worker e9c17382, integrated 7b0ef891) and unloaded exact-object resolver
+(worker 079ef89a, integrated 3ab22dd1). The website exposes all 196 documented
+AICallable declarations and real synthetic captures; catalogue freshness,
+public export and focused desktop/mobile browser checks passed. The resolver
+uses exact saved registry identity and verified generated-class aliases, with
+no asset load or same-package fallback for a wrong explicit name. Its focused
+native scenario and build remain pending. Claims were released after review.
+
+The canonical local integration copy is now under C:/Dev. Legacy private
+ancestry is retired recovery material with its push destination disabled.
+Historical evidence paths remain historical; no private ancestry was merged.
+Installation documentation now follows the pinned 5.8.4 baseline.
+
 ## V1 review and next bounded repair (2026-11-16)
 
 Assignment `v1-claim-setup` is implemented and reviewed in ba201318 (worker
