@@ -8,6 +8,22 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Approved retained-history publication policy (2026-11-16)
+
+Readiness: ready. Assignment `nov16-retained-history-policy` implements the
+owner's already-selected cleaned-history publication route, preserving useful
+commits and one active development repository. Apply only the reviewed exact
+17-file documentation/checklist patch. Distinguish an approved development-source
+preview from stable 1.0 and installation acceptance. Require complete-tree
+export verification, full retained-history audit, exact source and destination
+identities, owner publication instruction and destination security checks.
+Keep the original unsanitized host private as recovery; no dual development or
+history synchronization. No source exporter, acceptance test, release status,
+native plugin or credential changes. Historical decisions remain visible with
+a dated superseding publication-policy note. Verify structure, English text,
+links, policy consistency and the offline gate; public hosting actions require
+the separate reviewed cutover evidence, not this documentation assignment.
+
 ## Public preparation evidence update (2026-11-16)
 
 CI activation was reviewed and integrated at e5bfa0df. Hosted runs 43938561842

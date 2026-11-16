@@ -4247,6 +4247,28 @@
             "Tools/test-fixture-privacy-inventory.py"
           ],
           "new_files": []
+        },
+        "nov16-retained-history-policy": {
+          "files": [
+            "docs/public-preparation.md",
+            "AGENTS.md",
+            "SECURITY.md",
+            "README.md",
+            "docs/architecture.md",
+            "docs/audit/technical-decisions.md",
+            "docs/contributing.md",
+            "docs/git-workflow.md",
+            "docs/governance.md",
+            "docs/language.md",
+            "docs/product.md",
+            "docs/repository-design.md",
+            "docs/release.md",
+            "docs/release-manager.md",
+            "docs/worker-boundaries.md",
+            "release/public-preparation.json",
+            "todo/public-cutover.md"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
