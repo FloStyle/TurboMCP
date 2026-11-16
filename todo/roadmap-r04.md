@@ -24,6 +24,25 @@ existing GitHub Pages site. Public content uses generic/synthetic examples only.
 to the existing execution supervisor. Worker implementation and focused offline
 checks precede integrator-owned native execution. Stable acceptance stays open.
 
+## Guide and packaging submission review (2026-11-17)
+
+The integrator reviewed and accepted guide candidate f6afcb78 (integrated
+as a7bbdb8f) and package candidate 75bbff6d (integrated as 9254962e) against
+approved base 972a74e3. Both exact scope gates passed. The guide has 33
+chapters, reading/presentation views, chapter links, search and feedback drafts.
+The worker offline gate passed and its complete-tree export copied 1,059 files
+unchanged. Integrator browser review checked all 33 desktop presentation states,
+all 33 narrow-width overflow states, three native images, search, deep links,
+mode switching and keyboard navigation. Print and reduced-motion rules were
+source-reviewed; printed-output acceptance remains pending.
+
+The package profile implementation is done. Eight focused supervisor checks,
+PowerShell syntax, structure and language checks passed. Source review confirmed
+tracked-byte staging, existing ownership/resource locks, fresh output paths,
+license preservation and ZIP/hash verification. Native BuildPlugin execution
+and clean-consumer acceptance remain pending under GitHub #16. No stable release
+or Launcher compatibility is approved. R04 remains incomplete.
+
 ## Reviewed website and exact identity candidates (2026-11-16)
 
 The integrator accepted the exact scope and reviewed code for the website
