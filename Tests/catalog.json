@@ -1135,6 +1135,13 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-fixture-privacy-inventory",
+      "path": "Tools/test-fixture-privacy-inventory.py",
+      "tier": "engine",
+      "timeout_seconds": 900,
+      "acceptance": "not_mapped"
     }
   ]
 }

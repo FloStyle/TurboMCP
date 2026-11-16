@@ -17,6 +17,13 @@ read-only investigation supports public content review; it does not mark
 R04 complete or certify current or historical assets for redistribution.
 The integrator owns catalog registration and supervised engine execution.
 
+Source review accepted worker candidate `0553fe81` against `e4e0a4d6`.
+The exact two-file scope gate passed. The reader refuses foreign ownership,
+fixes the 15-package byte identities, limits calls, records coverage gaps and
+keeps raw output local. The engine-tier suite is registered; supervised native
+collection and semantic content review remain pending. No assets or historical
+versions are cleared by offline checks.
+
 ## Approved NOV05-18 local-variable rename (2026-11-14)
 
 Readiness: ready. Assignment `nov14-local-variable-rename` uses the exact three existing source/header/fixture files in worker-scopes.json. Follow the rename contract in [the variable review](../docs/audit/field-reports/nov14-timer-alias-review.md). Only exact local references may change; same-named members, other functions and loaded children must survive unchanged. Preview reports affected nodes and requires fresh confirmation for edit. Preserve links, values, identities and positions. Do not invoke broad engine rename/child-validation helpers. Verify one focused fixture, compile and source checks. Member rename remains separate.
