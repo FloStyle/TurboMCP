@@ -8,6 +8,23 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Repository release-planning review (2026-11-16)
+
+The integrator reviewed the scoped documentation, static Pages site and daily
+source publisher at `5729c1f5`. Scope validation passed against approved base
+`75c7f53944922a553ff3982434803537d79607de`. Six focused offline decision tests
+passed. The integrator registered that test in the shared catalog. All 28
+offline checks passed in run `c31eea425a764e2e9e4dc95cffb07cab`. Hosted
+validation and the first deployment/publication remain integration checks.
+Integration is paused: the public destination currently has the original
+`ede31073` ancestry, not the reviewed cleaned `c89b95a0` history. Do not merge
+the two histories or publish from the unreviewed destination.
+No engine code or native acceptance changed; R04 remains incomplete.
+GitHub issues #2-19 track the current findings, release gates and separate 5.9
+work. Milestone 1 records the planned 1.0.0 scope. The owner made the cleaned
+repository public; main protection, version-tag rules, secret scanning, push
+protection and private vulnerability reporting are enabled.
+
 ## Approved repository and 1.0.0 planning update (2026-11-16)
 
 Owner follow-up adds GitHub Pages and daily source prereleases after successful
