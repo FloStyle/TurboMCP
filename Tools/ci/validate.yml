@@ -1,10 +1,14 @@
 name: Repository validation
 on:
   push:
-    branches: [main, 'migration/**']
+    branches: [main, stable]
   pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: repository-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   offline-checks:
     runs-on: windows-latest
@@ -22,4 +26,7 @@ jobs:
           python Tools/validate.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Public boundary preview (never publishes)
-        run: python Tools/export-public.py --preview --output .local/public-preview
+        shell: pwsh
+        run: |
+          python Tools/export-public.py --preview --output .local/public-preview
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
