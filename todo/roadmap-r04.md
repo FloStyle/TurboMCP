@@ -8,6 +8,15 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Approved public fixture inventory (2026-11-16)
+
+Readiness: ready. Assignment `nov16-public-fixture-inventory` follows
+[the bounded inventory contract](../docs/design/public-fixture-review.md).
+Only the two new targets in worker-scopes.json are worker-owned. This
+read-only investigation supports public content review; it does not mark
+R04 complete or certify current or historical assets for redistribution.
+The integrator owns catalog registration and supervised engine execution.
+
 ## Approved NOV05-18 local-variable rename (2026-11-14)
 
 Readiness: ready. Assignment `nov14-local-variable-rename` uses the exact three existing source/header/fixture files in worker-scopes.json. Follow the rename contract in [the variable review](../docs/audit/field-reports/nov14-timer-alias-review.md). Only exact local references may change; same-named members, other functions and loaded children must survive unchanged. Preview reports affected nodes and requires fresh confirmation for edit. Preserve links, values, identities and positions. Do not invoke broad engine rename/child-validation helpers. Verify one focused fixture, compile and source checks. Member rename remains separate.

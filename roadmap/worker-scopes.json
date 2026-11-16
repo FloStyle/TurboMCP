@@ -4210,6 +4210,13 @@
           ],
           "new_files": []
         },
+        "nov16-public-fixture-inventory": {
+          "files": [],
+          "new_files": [
+            "Tools/test-fixture-privacy-inventory.py",
+            "Tests/fixture-privacy-inventory.json"
+          ]
+        },
         "nov16-public-agent-readiness": {
           "files": [
             "Tools/export-public.py",
