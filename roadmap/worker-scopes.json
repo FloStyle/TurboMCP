@@ -4266,6 +4266,23 @@
             "release/public-preparation.json"
           ],
           "new_files": []
+        },
+        "release-1.0-docs": {
+          "files": [
+            "README.md",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            "SECURITY.md",
+            "docs/git-workflow.md",
+            "docs/release.md",
+            "docs/status.md",
+            ".github/ISSUE_TEMPLATE/bug_report.md",
+            ".github/ISSUE_TEMPLATE/feature_request.md"
+          ],
+          "new_files": [
+            "docs/release-1.0.0.md",
+            "docs/github-issues.md"
+          ]
         }
       },
       "preserve_rows": []

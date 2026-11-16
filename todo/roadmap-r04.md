@@ -8,6 +8,19 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Approved repository and 1.0.0 planning update (2026-11-16)
+
+Readiness: ready. The owner requests simple technical English in README,
+Contributing, conduct and security pages; explicit development, stable and
+Unreal 5.9 branch roles; GitHub tracking for current open findings; and a
+planned 1.0.0 release. Assignment `release-1.0-docs` changes only its
+listed documentation and issue templates. Preserve safety behavior, report
+privacy rules, runtime acceptance and historical evidence. Link the session
+report skill and its format directly. Publish no stable tag or support claim.
+The integrator owns GitHub issues, milestone, draft release and shared scope
+evidence. Validate structure, English, links and the existing offline gate.
+Repository visibility remains under the owner's control.
+
 ## Approved retained-history publication policy (2026-11-16)
 
 Readiness: ready. Assignment `nov16-retained-history-policy` implements the
