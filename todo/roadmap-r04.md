@@ -8,6 +8,21 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Approved unified feedback workflow (2026-11-16)
+
+Readiness: ready. The owner requests removal of the separate Code of Conduct,
+one issue workflow for defects, tool improvements and new features, and a
+prominent link to the static website. Assignment `unified-feedback` removes
+obsolete conduct links and the two old issue templates, adds one shared feedback
+template, and aligns contribution guidance and the site with that workflow.
+Keep the existing session-report skill as the local drafting and privacy-check
+step; submission remains human-reviewed. Preserve report/item IDs and do not
+create duplicate issues for a session report and its findings. Positive session
+observations are evidence, not requests for implementation. Update only the
+validator's required-document list for the owner's removal of the conduct page;
+retain its other checks. No native behavior or reporting-skill format changes.
+The integrator owns scope, evidence and hosted PR/deployment verification.
+
 ## Repository release-planning review (2026-11-16)
 
 The integrator reviewed the scoped documentation, static Pages site and daily
