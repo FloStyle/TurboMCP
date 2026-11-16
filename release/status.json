@@ -6,7 +6,6 @@
   "reason": "Product acceptance and engine compatibility validation remain incomplete.",
   "public_export_approved": false,
   "notice_provenance_blockers": [
-    "Plugins/TurboMCP/Resources/Icon128.png: original creator/license unverified",
     "Plugins/TurboMCP/Content/Traps/EngineToolTraps.json: original content ownership/permission unverified"
   ]
 }

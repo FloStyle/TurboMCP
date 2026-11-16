@@ -38,8 +38,9 @@
       "id": "PUB-05",
       "title": "Resolve asset ownership notices",
       "state": "open",
-      "verification": "not_verified",
-      "acceptance": "Resolve or replace Icon128.png and EngineToolTraps.json provenance; review third-party notices and licenses."
+      "verification": "partial",
+      "acceptance": "Record owner-confirmed icon provenance; trace or independently rewrite EngineToolTraps.json with public, generic stock-Unreal-only guidance and preserved format. Review remaining third-party notices and licenses.",
+      "owner_update": "2026-11-16: owner confirms Icon128.png is their own. Notice updated to repository declaration. Trap-content provenance remains unresolved; origin review and cleanup authorized. No blanket release approval."
     },
     {
       "id": "PUB-06",

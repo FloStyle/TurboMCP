@@ -27,16 +27,16 @@
       "provenance": "Canonical repository license adopted in commit 57c6424204e4a715fb9f75c34349fa2ce27db32b; reproduced unchanged."
     },
     "Resources/Icon128.png": {
-      "license": "NOASSERTION",
-      "copyright": "NOASSERTION",
-      "status": "unverified",
-      "provenance": "Introduced by eec301f496b13dbde94667109473d1758b6a960b. Commit authorship does not establish image creator or permission. Release blocked until confirmed or replaced."
-    },
-    "Content/Traps/EngineToolTraps.json": {
       "license": "MPL-2.0",
       "copyright": "Copyright (c) 2026 FloStyle",
       "status": "repository_notice",
-      "provenance": "Original TurboMCP guidance independently reconstructed and source-reviewed on 2026-11-16 against the pinned stock Unreal interfaces and public Epic API documentation. No engine source is reproduced. See docs/audit/engine-tool-guidance.json in the source repository for bindings, sources and deferred claims. Historical versions require separate publication cleanup; this notice applies to the replacement text."
+      "provenance": "Repository owner confirmed on 2026-11-16 that this icon is their own, in preparation for public distribution under the repository license. This records the owner declaration; it is not an independent provenance audit."
+    },
+    "Content/Traps/EngineToolTraps.json": {
+      "license": "NOASSERTION",
+      "copyright": "NOASSERTION",
+      "status": "unverified",
+      "provenance": "Introduced by bd189bf; file identifies Spec/07_ENGINE_NOTES.md section 3 as its source. Original content ownership/permission has not been independently established. Release blocked until confirmed."
     }
   }
 }
