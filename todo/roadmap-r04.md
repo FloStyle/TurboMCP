@@ -17,7 +17,11 @@ AICallable declarations and real synthetic captures; catalogue freshness,
 public export and focused desktop/mobile browser checks passed. The resolver
 uses exact saved registry identity and verified generated-class aliases, with
 no asset load or same-package fallback for a wrong explicit name. Its focused
-native scenario and build remain pending. Claims were released after review.
+native scenario and build passed on 6996d636 against the pinned stock 5.8.4
+engine in supervised run 05aced3a3c394985bd35573fe382408e. Doctor, build and
+`test-asset-describe-metadata` each exited 0; fixture restoration completed.
+This focused result does not certify the full plugin. Claims were released
+after review.
 
 The canonical local integration copy is now under C:/Dev. Legacy private
 ancestry is retired recovery material with its push destination disabled.
