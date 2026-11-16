@@ -196,6 +196,11 @@ fetch("tools.json").then((response) => {
 }).then((data) => {
   if (data.schema !== 1 || !Array.isArray(data.tools) || data.tools.length !== data.count) throw new Error("Invalid catalogue");
   catalogue = data;
+  const linkedTool = new URL(location.href).searchParams.get("tool");
+  if (linkedTool && catalogue.tools.some((tool) => tool.name === linkedTool)) {
+    showTool(linkedTool);
+    return;
+  }
   renderTools();
 }).catch(() => {
   $("#tool-count").textContent = "The catalogue could not load. Open the JSON download or source header below.";

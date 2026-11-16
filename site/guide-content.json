@@ -1,0 +1,519 @@
+{
+  "schema": 1,
+  "canonicalContent": "guide.html",
+  "purpose": "Machine-readable chapter index. Reading and presentation use the same static HTML content.",
+  "statusDate": "2026-11-17",
+  "chapters": [
+    {
+      "id": "why",
+      "number": 1,
+      "group": "Foundation",
+      "status": "Development preview",
+      "href": "guide.html#why",
+      "title": "Context is the hard part.",
+      "tools": [
+        "ReadTurboMCPBlueprintLoad",
+        "ReadTurboMCPNodeContext"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/README.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "stock-unreal",
+      "number": 2,
+      "group": "Foundation",
+      "status": "Current integration",
+      "href": "guide.html#stock-unreal",
+      "title": "Keep Unreal MCP. Extend its tools.",
+      "tools": [
+        "ReadTurboMCPToolIndex",
+        "ReadTurboMCPStatus"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/tool-comparison.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "tool-roles",
+      "number": 3,
+      "group": "Foundation",
+      "status": "Source catalogue",
+      "href": "guide.html#tool-roles",
+      "title": "Four roles. Read the effects.",
+      "tools": [
+        "ReadTurboMCPToolSchema",
+        "ReadTurboMCPBulkExport",
+        "ReadTurboMCPPlayCheck"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "discovery",
+      "number": 4,
+      "group": "Foundation",
+      "status": "Current workflow",
+      "href": "guide.html#discovery",
+      "title": "Discover before calling.",
+      "tools": [
+        "ReadTurboMCPToolIndex",
+        "ReadTurboMCPToolSchema",
+        "ReadTurboMCPToolHelp"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "context-steering",
+      "number": 5,
+      "group": "Foundation",
+      "status": "Implemented guidance",
+      "href": "guide.html#context-steering",
+      "title": "A useful failure gives a next step.",
+      "tools": [
+        "ReadTurboMCPToolHelp",
+        "ReadTurboMCPCallLog",
+        "ReadTurboMCPEditorLog"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/audit/vision-workflow-review.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "results",
+      "number": 6,
+      "group": "Foundation",
+      "status": "Acceptance boundary",
+      "href": "guide.html#results",
+      "title": "A reply is not proof of success.",
+      "tools": [
+        "ReadTurboMCPDirtyList",
+        "EditTurboMCPCompile"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "blueprint-reading",
+      "number": 7,
+      "group": "Blueprints",
+      "status": "Current tools",
+      "href": "guide.html#blueprint-reading",
+      "title": "Find the nodes that matter.",
+      "tools": [
+        "ReadTurboMCPBlueprintLoad",
+        "ReadTurboMCPNodeFind",
+        "ReadTurboMCPNodeContext",
+        "ReadTurboMCPNodeResolve"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "vision",
+      "number": 8,
+      "group": "Blueprints",
+      "status": "Recorded synthetic evidence",
+      "href": "guide.html#vision",
+      "title": "Structure first. Readable detail next.",
+      "tools": [
+        "LookTurboMCPCapture",
+        "ReadTurboMCPNodeFind"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/audit/vision-workflow-review.md"
+      ],
+      "evidence": [
+        "assets/asset-provenance.json"
+      ]
+    },
+    {
+      "id": "graph-edits",
+      "number": 9,
+      "group": "Blueprints",
+      "status": "Supported operations",
+      "href": "guide.html#graph-edits",
+      "title": "Change one thing. Preserve the rest.",
+      "tools": [
+        "PreviewTurboMCPGraphConnect",
+        "EditTurboMCPGraphConnect",
+        "PreviewTurboMCPGraphAppend",
+        "PreviewTurboMCPGraphReplace"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/audit/event-connect-workflow-review.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "graph-tidy",
+      "number": 10,
+      "group": "Blueprints",
+      "status": "Current tools · visual review needed",
+      "href": "guide.html#graph-tidy",
+      "title": "Readable graphs support human review.",
+      "tools": [
+        "LookTurboMCPLayoutReport",
+        "PreviewTurboMCPGraphTidy",
+        "EditTurboMCPGraphTidy",
+        "LookTurboMCPCapture"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "batching",
+      "number": 11,
+      "group": "Blueprints",
+      "status": "Bounded implementation",
+      "href": "guide.html#batching",
+      "title": "Batch related work, not arbitrary scripts.",
+      "tools": [
+        "PreviewTurboMCPBatchEdit",
+        "EditTurboMCPBatchEdit"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "inventory",
+      "number": 12,
+      "group": "Data and assets",
+      "status": "Current tools",
+      "href": "guide.html#inventory",
+      "title": "Find owners before changing shared data.",
+      "tools": [
+        "ReadTurboMCPRefsBatch",
+        "ReadTurboMCPWidgetInventory",
+        "ReadTurboMCPNodeFind",
+        "ReadTurboMCPBulkExport"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "data-read",
+      "number": 13,
+      "group": "Data and assets",
+      "status": "Current tools",
+      "href": "guide.html#data-read",
+      "title": "Read typed values, not screenshots of data.",
+      "tools": [
+        "ReadTurboMCPDataAssetProperty"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/data-asset-edits.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "data-edit",
+      "number": 14,
+      "group": "Data and assets",
+      "status": "Revisioned property workflow",
+      "href": "guide.html#data-edit",
+      "title": "Apply a delta against known state.",
+      "tools": [
+        "ReadTurboMCPDataAssetProperty",
+        "PreviewTurboMCPDataAssetProperty",
+        "EditTurboMCPDataAssetProperty"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/data-asset-edits.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "data-create",
+      "number": 15,
+      "group": "Data and assets",
+      "status": "Current tools",
+      "href": "guide.html#data-create",
+      "title": "Create the requested Data Asset class.",
+      "tools": [
+        "PreviewTurboMCPDataAssetCreate",
+        "EditTurboMCPDataAssetCreate"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "data-tables",
+      "number": 16,
+      "group": "Data and assets",
+      "status": "Current tools",
+      "href": "guide.html#data-tables",
+      "title": "Edit a table as a list of row changes.",
+      "tools": [
+        "ReadTurboMCPDataTable",
+        "PreviewTurboMCPDataTableRows",
+        "EditTurboMCPDataTableRows"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "widgets-materials",
+      "number": 17,
+      "group": "Data and assets",
+      "status": "Supported readers and editors",
+      "href": "guide.html#widgets-materials",
+      "title": "Appearance and structure answer different questions.",
+      "tools": [
+        "ReadTurboMCPWidgetTree",
+        "ReadTurboMCPWidgetProperty",
+        "LookTurboMCPWidgetPreview",
+        "ReadTurboMCPMaterialInstance",
+        "ReadTurboMCPMaterialTrace"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "play-input",
+      "number": 18,
+      "group": "Runtime and safety",
+      "status": "Bounded PIE support",
+      "href": "guide.html#play-input",
+      "title": "Input delivery is not gameplay success.",
+      "tools": [
+        "ReadTurboMCPPlayInputState",
+        "EditTurboMCPPlayInput",
+        "ReadTurboMCPPlayFunction"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "safeguards",
+      "number": 19,
+      "group": "Runtime and safety",
+      "status": "Local trust boundary",
+      "href": "guide.html#safeguards",
+      "title": "Treat the editor as a trusted local tool.",
+      "tools": [
+        "ReadTurboMCPEditQueue",
+        "ReadTurboMCPStatus"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/SECURITY.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "feedback",
+      "number": 20,
+      "group": "Delivery",
+      "status": "Current contribution workflow",
+      "href": "guide.html#feedback",
+      "title": "A field failure becomes a focused repair.",
+      "tools": [
+        "ReadTurboMCPCallLog",
+        "ReadTurboMCPEditorLog"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/CONTRIBUTING.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/SKILL.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/references/report-format.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "development-process",
+      "number": 21,
+      "group": "Delivery",
+      "status": "Repository workflow",
+      "href": "guide.html#development-process",
+      "title": "Parallel source work. One owned editor.",
+      "tools": [],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/AGENTS.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/contributing.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/worker-boundaries.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "installation",
+      "number": 22,
+      "group": "Delivery",
+      "status": "Pinned source preview",
+      "href": "guide.html#installation",
+      "title": "Connect with the supported baseline.",
+      "tools": [
+        "ReadTurboMCPStatus"
+      ],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/engine.lock.json",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/user/troubleshooting.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "release",
+      "number": 23,
+      "group": "Delivery",
+      "status": "Stable acceptance pending",
+      "href": "guide.html#release",
+      "title": "Daily source is not a stable package.",
+      "tools": [],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/release.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/git-workflow.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "turboux",
+      "number": 24,
+      "group": "TurboUX",
+      "status": "Early software prototype",
+      "href": "guide.html#turboux",
+      "title": "Prototype UX as something you can use.",
+      "tools": [],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/v1-guide-and-package.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "project-model",
+      "number": 25,
+      "group": "TurboUX",
+      "status": "Implemented local model",
+      "href": "guide.html#project-model",
+      "title": "JSON stores the behavior.",
+      "tools": [],
+      "contracts": [],
+      "evidence": []
+    },
+    {
+      "id": "authoring-loop",
+      "number": 26,
+      "group": "TurboUX",
+      "status": "Focused working-loop evidence",
+      "href": "guide.html#authoring-loop",
+      "title": "Canvas → Edit → Play → revise.",
+      "tools": [],
+      "contracts": [],
+      "evidence": []
+    },
+    {
+      "id": "workspaces",
+      "number": 27,
+      "group": "TurboUX",
+      "status": "Prototype workspaces",
+      "href": "guide.html#workspaces",
+      "title": "Reusable intent has a place to live.",
+      "tools": [],
+      "contracts": [],
+      "evidence": []
+    },
+    {
+      "id": "ux-inputs",
+      "number": 28,
+      "group": "TurboUX",
+      "status": "Static prototype analysis",
+      "href": "guide.html#ux-inputs",
+      "title": "The same key can mean different things.",
+      "tools": [],
+      "contracts": [],
+      "evidence": []
+    },
+    {
+      "id": "command-parity",
+      "number": 29,
+      "group": "TurboUX",
+      "status": "Shared boundary · parity in progress",
+      "href": "guide.html#command-parity",
+      "title": "Human and agent work on the same model.",
+      "tools": [],
+      "contracts": [],
+      "evidence": []
+    },
+    {
+      "id": "portable-projects",
+      "number": 30,
+      "group": "TurboUX",
+      "status": "Implemented portable format · focused checks",
+      "href": "guide.html#portable-projects",
+      "title": "One app. Separate portable projects.",
+      "tools": [],
+      "contracts": [],
+      "evidence": []
+    },
+    {
+      "id": "svg-figma",
+      "number": 31,
+      "group": "TurboUX",
+      "status": "Experimental interchange",
+      "href": "guide.html#svg-figma",
+      "title": "Exchange visuals. Keep behavior in the project.",
+      "tools": [],
+      "contracts": [],
+      "evidence": []
+    },
+    {
+      "id": "native-handoff",
+      "number": 32,
+      "group": "TurboUX",
+      "status": "Staged bridge · automatic sync planned",
+      "href": "guide.html#native-handoff",
+      "title": "Turn UX intent into a native verification plan.",
+      "tools": [],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/v1-guide-and-package.md"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "next",
+      "number": 33,
+      "group": "Next steps",
+      "status": "Evidence-led development",
+      "href": "guide.html#next",
+      "title": "Review what works. Keep the gaps visible.",
+      "tools": [],
+      "contracts": [
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/status.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/github-issues.md"
+      ],
+      "evidence": []
+    }
+  ]
+}

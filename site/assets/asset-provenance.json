@@ -3,6 +3,8 @@
   "source": "Retained TurboMCP native Unreal capture test evidence",
   "fixture": "Synthetic VisionEvents_0 Blueprint test graph",
   "scope": "Original native captures. No company project assets. These illustrate a recorded run, not a current benchmark or release-acceptance result.",
+  "usage": ["Homepage native graph explorer", "Interactive technical guide, vision chapter; unchanged full images with native-size links"],
+  "diagrams": "Guide diagrams are labelled conceptual or illustrative HTML/CSS, not Unreal or TurboUX screenshots.",
   "images": [
     {
       "file": "graph-overview.png",
