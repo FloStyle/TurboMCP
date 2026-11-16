@@ -10,7 +10,7 @@ Kind: implementation
 Review: source-reviewed
 
 ## Problem
-Replace the removed GetToolsetClass dependency through a supported identity mechanism. Locate SemanticSearchToolset replacement/move before changing the test descriptor. Verify native images/structured content and JSON null. Preserve 5.8.3 behavior.
+Replace the removed GetToolsetClass dependency through a supported identity mechanism. Locate SemanticSearchToolset replacement/move before changing the test descriptor. Verify native images/structured content and JSON null. Preserve the current pinned 5.8.4 behavior.
 
 ## Scope
 CallRecorder registry identity, dependency discovery, client media/null handling and focused compatibility tests. Separate engine checkout and artifacts.
@@ -24,7 +24,7 @@ R13, R11
 - Do not widen supported versions until full matrix acceptance exists.
 
 ## Verification
-- `Build and test pinned 5.8.3`
+- `Build and test pinned 5.8.4`
 - `Build and test the selected pinned 5.9 target`
 - `Run recorder lifecycle, discovery, media and null-reference fixtures`
 
@@ -66,3 +66,7 @@ Starting checks for the assigned follow-up:
 These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
 
 See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+## Preparation update — 2026-11-14
+
+Follow the ordered [5.9 preparation queue](../docs/engine-compatibility.md#preparation-queue--2026-11-14). Refresh R13's historical 5.8.3 comparison against the current 5.8.4 pin before selecting replacement APIs. The recorded 5.9 development snapshot remains unsupported and has not been refreshed in this update. No implementation assignment or runtime acceptance is implied; readiness remains needs_reconciliation. Keep current fixes and build outputs separate from the compatibility target.

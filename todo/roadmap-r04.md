@@ -2474,3 +2474,7 @@ Readiness: ready. Assignment nov14-variable-reference-load-guard follows the loa
 ## Optional-action wrap boundary (2026-11-14)
 
 Readiness: ready. Assignment nov14-converging-wrap implements NOV09-05 following the common-continuation contract in docs/audit/field-reports/nov14-placement-and-search-reconciliation.md. Only row boundaries, their reporting and scoped native coverage; no tail shifting or graph rewiring.
+
+## Approved public source and external-agent readiness (2026-11-16)
+
+Readiness: ready. Assignment `nov16-public-agent-readiness` is a bounded public-preparation repair slice. Exact file scope is recorded in worker-scopes.json. Follow [the repair contract](../docs/design/public-agent-readiness.md). The integrator owns release status, notices/provenance decisions, task evidence and publication. This assignment cannot certify missing runtime or ownership evidence.

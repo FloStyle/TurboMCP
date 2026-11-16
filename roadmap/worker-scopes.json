@@ -4209,6 +4209,17 @@
             "Tools/test-graph-append.py"
           ],
           "new_files": []
+        },
+        "nov16-public-agent-readiness": {
+          "files": [
+            "Tools/export-public.py",
+            "docs/public-preparation.md",
+            "docs/contributing.md"
+          ],
+          "new_files": [
+            "Tools/test-public-source-safety.py",
+            "docs/external-agent-workflow.md"
+          ]
         }
       },
       "preserve_rows": []

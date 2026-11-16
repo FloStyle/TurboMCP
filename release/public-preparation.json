@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "status": "open",
-  "updated": "2026-11-09",
+  "updated": "2026-11-16",
   "publication_authorized": false,
   "workflow": "docs/public-preparation.md",
   "tasks": [
@@ -30,8 +30,9 @@
       "id": "PUB-04",
       "title": "Audit all exported files for safety",
       "state": "open",
-      "verification": "not_verified",
-      "acceptance": "Scan the complete tracked tree for secrets, personal paths, proprietary content, generated files and caches; manually review binary fixtures and images. Never print matching secrets."
+      "verification": "partial",
+      "acceptance": "Scan the complete tracked tree for secrets, personal paths, proprietary content, generated files and caches; manually review binary fixtures and images. Never print matching secrets.",
+      "audit_update": "2026-11-16: read-only history and candidate audit completed; no confirmed live credential. Reachable historical recovery archives, executable content and personal data preclude treating a visibility flip as safe. Full semantic report review, binary fixture review and ownership clearance remain open. Redacted detailed evidence is held outside the exported tree."
     },
     {
       "id": "PUB-05",
@@ -51,8 +52,9 @@
       "id": "PUB-07",
       "title": "Harden and rehearse export pipeline",
       "state": "open",
-      "verification": "not_verified",
-      "acceptance": "Verify fail-closed controls, manifest equality, case/path safety and fresh-root history. Record source commit and tree alongside the manifest. Audit scanner coverage; pattern scans alone are insufficient."
+      "verification": "partial",
+      "acceptance": "Verify fail-closed controls, manifest equality, case/path safety and fresh-root history. Record source commit and tree alongside the manifest. Audit scanner coverage; pattern scans alone are insufficient.",
+      "audit_update": "2026-11-16: preview exported all 1031 tracked files with identical staged bytes; every path/hash verified and no .git copied. Includes four pending documentation edits. Fresh-root initialization, independent validation and final committed-candidate gates remain pending. Existing private ancestry must not be merged into public history."
     },
     {
       "id": "PUB-08",

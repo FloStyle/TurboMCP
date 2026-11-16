@@ -14,7 +14,7 @@ The selector reads the approved sequence and refuses blocked, unready, already-o
 
 ## Investment decisions
 
-Fix false success, data-loss risk, misleading observations and unusable tests before adding features. Keep 5.8.3 pinned. Compare 5.9 native tools before expanding enum/struct/source-control/widget-animation or building a proxy. Do not remove existing useful workflows merely because native names overlap. General multi-asset batching and broad new authoring stay deferred until the native comparison and a concrete missing workflow justify their maintenance cost.
+Fix false success, data-loss risk, misleading observations and unusable tests before adding features. Keep 5.8.4 pinned. Compare 5.9 native tools before expanding enum/struct/source-control/widget-animation or building a proxy. Do not remove existing useful workflows merely because native names overlap. General multi-asset batching and broad new authoring stay deferred until the native comparison and a concrete missing workflow justify their maintenance cost.
 
 ## Baseline execution order
 
@@ -70,7 +70,7 @@ Status: classified and planned; no new editor execution or visual acceptance in 
 
 ## Optional compatibility track
 
-R16 investigates integration constraints early; R12 proves installed-engine packaging. R14 implements and verifies the 5.9 adapter. Run `python Tools/next-task.py --track compatibility` when the baseline prerequisites and target engine are available. Missing optional engine distributions do not block baseline safety fixes and do not become support claims.
+R16 investigates integration constraints early; R12 proves installed-engine packaging. R14 implements and verifies the 5.9 adapter after the [preparation queue](docs/engine-compatibility.md#preparation-queue--2026-11-14) resolves API and target boundaries. Run `python Tools/next-task.py --track compatibility` when the baseline prerequisites and target engine are available. Missing optional engine distributions do not block baseline safety fixes and do not become support claims.
 
 ## Cost and drift controls
 
