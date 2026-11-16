@@ -8,7 +8,7 @@ def main():
     plugin_license = ROOT/'Plugins/TurboMCP/LICENSE'
     if not plugin_license.is_file() or plugin_license.read_text(encoding='utf-8') != (ROOT/'LICENSE').read_text(encoding='utf-8'):
         raise ValueError('Installable plugin must contain the complete canonical LICENSE')
-    for p in ['AGENTS.md','SECURITY.md','CODE_OF_CONDUCT.md','.github/CODEOWNERS','README.md','TODO.md','engine.lock.json','Plugins/TurboMCP/TurboMCP.uplugin','TestProject/TurboMCPTest.uproject','docs/architecture.md','docs/workspace.md','release/export-policy.json']:
+    for p in ['AGENTS.md','SECURITY.md','CONTRIBUTING.md','.github/CODEOWNERS','README.md','TODO.md','engine.lock.json','Plugins/TurboMCP/TurboMCP.uplugin','TestProject/TurboMCPTest.uproject','docs/architecture.md','docs/workspace.md','release/export-policy.json']:
         if not (ROOT/p).is_file():raise ValueError(f'Missing {p}')
     root_names={p.name for p in ROOT.iterdir()}
     for p in ['Spec','Release','Tasks','HANDOVER.md','STATUS.md','PLAN.md','RELEASE_AGENT.md','Source','TurboMCP.uplugin','provenance']:
@@ -54,7 +54,7 @@ def main():
     for task in imported['tasks']:
         if f'ID: {task["id"]}' not in (ROOT/task['path']).read_text():raise ValueError('Imported task lost or ID changed')
     # Canonical navigation must resolve. Task quotations and source comments are explicitly historical evidence.
-    docs=[ROOT/'SECURITY.md',ROOT/'CODE_OF_CONDUCT.md',ROOT/'ROADMAP.md',ROOT/'CONTRIBUTING.md',ROOT/'README.md',ROOT/'AGENTS.md',ROOT/'TODO.md',ROOT/'Tools/README.md',ROOT/'TestProject/README.md',*list((ROOT/'docs').rglob('*.md')),*list((ROOT/'skills').rglob('*.md')),*list((ROOT/'todo').glob('*.md'))]
+    docs=[ROOT/'SECURITY.md',ROOT/'ROADMAP.md',ROOT/'CONTRIBUTING.md',ROOT/'README.md',ROOT/'AGENTS.md',ROOT/'TODO.md',ROOT/'Tools/README.md',ROOT/'TestProject/README.md',*list((ROOT/'docs').rglob('*.md')),*list((ROOT/'skills').rglob('*.md')),*list((ROOT/'todo').glob('*.md'))]
     for p in docs:
         for target in re.findall(r'\]\(<?([^\s)>]+)>?\)',p.read_text(encoding='utf8')):
             if re.match(r'^[a-zA-Z]+:|^#',target):continue

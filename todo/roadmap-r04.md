@@ -8,6 +8,35 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Unified feedback integration review (2026-11-16)
+
+The integrator reviewed the shared feedback form, contribution guidance and
+website link. Structure, canonical links, Python syntax and English checks
+passed. The worker gate correctly refused the initial submission because it
+included deletions, which are outside its add/modify contract. The unpublished
+submission was split: the add/modify candidate passed the unchanged exact-file
+gate; the integrator separately reviewed and applied the owner's requested
+removal of CODE_OF_CONDUCT.md and the two obsolete issue templates. No guard
+was relaxed. The validator now requires CONTRIBUTING.md instead of the removed
+conduct page and retains all other checks. The reporting skill and its checker
+are unchanged. Hosted CI and Pages verify the integrated revision. R04 remains
+open; this documentation change adds no native-tool acceptance.
+
+## Approved unified feedback workflow (2026-11-16)
+
+Readiness: ready. The owner requests removal of the separate Code of Conduct,
+one issue workflow for defects, tool improvements and new features, and a
+prominent link to the static website. Assignment `unified-feedback` removes
+obsolete conduct links and the two old issue templates, adds one shared feedback
+template, and aligns contribution guidance and the site with that workflow.
+Keep the existing session-report skill as the local drafting and privacy-check
+step; submission remains human-reviewed. Preserve report/item IDs and do not
+create duplicate issues for a session report and its findings. Positive session
+observations are evidence, not requests for implementation. Update only the
+validator's required-document list for the owner's removal of the conduct page;
+retain its other checks. No native behavior or reporting-skill format changes.
+The integrator owns scope, evidence and hosted PR/deployment verification.
+
 ## Repository release-planning review (2026-11-16)
 
 The integrator reviewed the scoped documentation, static Pages site and daily

@@ -20,7 +20,7 @@ Start with [Contributing](../CONTRIBUTING.md), then [workspace setup](workspace.
 - [Test guide](../Tests/README.md): test layers and commands.
 - [Tooling guide](../Tools/README.md): repository scripts.
 
-- [Governance](governance.md), [security policy](../SECURITY.md) and [community conduct](../CODE_OF_CONDUCT.md).
+- [Governance](governance.md), [security policy](../SECURITY.md) and [feedback workflow](../CONTRIBUTING.md).
 - [English-language policy](language.md): rules, automated checks and review limits.
 
 - [Reusable agent skills](agent-skills.md): field reporting, session checks and maintainer triage.

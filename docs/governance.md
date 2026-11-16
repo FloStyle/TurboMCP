@@ -33,7 +33,7 @@ Private-host checks previously encountered plan restrictions. The checked-in val
 
 ## Community and language
 
-Follow the [community conduct policy](../CODE_OF_CONDUCT.md). Repository-authored prose, comments, task descriptions, filenames and public contribution text must be English. See the [language policy](language.md) for automated coverage and its limits.
+Keep discussions useful and respectful. Follow the [feedback and contribution workflow](../CONTRIBUTING.md). Repository-authored prose, comments, task descriptions, filenames and public contribution text must be English. See the [language policy](language.md) for automated coverage and its limits.
 
 GitHub setup references: [code-owner review](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) and [private vulnerability reporting](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository).
 

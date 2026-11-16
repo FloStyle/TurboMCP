@@ -4292,6 +4292,23 @@
             "Tools/test-daily-release.py",
             "site/index.html"
           ]
+        },
+        "unified-feedback": {
+          "files": [
+            "README.md",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            "docs/README.md",
+            "docs/governance.md",
+            "Tools/validate-repo.py",
+            "site/index.html",
+            ".github/ISSUE_TEMPLATE/bug_report.md",
+            ".github/ISSUE_TEMPLATE/feature_request.md"
+          ],
+          "new_files": [
+            ".github/ISSUE_TEMPLATE/feedback.md",
+            ".github/ISSUE_TEMPLATE/config.yml"
+          ]
         }
       },
       "preserve_rows": []
