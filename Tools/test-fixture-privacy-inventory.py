@@ -30,7 +30,9 @@ READERS = {name: "ReadTurboMCP" + name for name in (
 MAX_CALLS = 200
 MAX_REPLY_BYTES = 1_000_000
 PAGE_CHARS = 24000
-MAX_PAGES = 8
+# The allowlisted LargeGraphProbe needs 28 pages (649351 UTF-16 units).
+# Keep the independent 200-call ceiling and revision/offset checks unchanged.
+MAX_PAGES = 32
 
 
 class InventoryError(Exception):
