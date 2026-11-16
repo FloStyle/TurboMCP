@@ -8,6 +8,19 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Approved fixture inventory startup repair (2026-11-16)
+
+Readiness: ready. Assignment `nov16-fixture-inventory-startup` changes only
+Tools/test-fixture-privacy-inventory.py. The supervised runner creates its
+suite evidence directory after the first child returns; the inventory reader
+requires that directory before its first read. Create only the exact validated
+child directory beneath the existing supervisor-owned run, then revalidate its
+ordinary-directory identity. Preserve execution-context, ancestry, path,
+fixture and reader guards. No general runner changes or native tool mutations.
+Verify missing-directory creation, existing-directory reuse and linked/foreign
+path refusal with focused filesystem checks; rerun the supervised inventory.
+This repairs evidence collection startup, not asset privacy or release acceptance.
+
 ## Approved public CI activation (2026-11-16)
 
 Readiness: ready. The integration owner prioritizes the owner-requested public
