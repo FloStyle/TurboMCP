@@ -24,7 +24,18 @@ jobs:
         shell: pwsh
         run: |
           python Tools/validate.py
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $validationExit = $LASTEXITCODE
+          if ($validationExit -ne 0) {
+            $report = Get-ChildItem .local/validation/*/report.json | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if ($report) {
+              $results = (Get-Content -LiteralPath $report.FullName -Raw | ConvertFrom-Json).results
+              foreach ($failed in ($results | Where-Object exit_code -ne 0)) {
+                Write-Output "Failed check: $($failed.id)"
+                Get-Content -LiteralPath $failed.log
+              }
+            }
+            exit $validationExit
+          }
       - name: Public boundary preview (never publishes)
         shell: pwsh
         run: |
