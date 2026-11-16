@@ -43,6 +43,14 @@ license preservation and ZIP/hash verification. Native BuildPlugin execution
 and clean-consumer acceptance remain pending under GitHub #16. No stable release
 or Launcher compatibility is approved. R04 remains incomplete.
 
+The first supervised package attempt, e1297ebf8ee74383a90cce7559bb2a48,
+refused staging before UAT because Git archive converted the LICENSE blob's
+373 LF line endings to CRLF. No compiler or editor ran; 16 fixture boundary
+files were restored. Follow-up 68939fb0 replaces archive filtering with raw
+binary Git-blob streaming and keeps the per-file hash guard. The targeted
+CRLF-configuration and opaque-binary staging regression passed. Native retry
+is pending; retain the initial failure as evidence.
+
 ## Reviewed website and exact identity candidates (2026-11-16)
 
 The integrator accepted the exact scope and reviewed code for the website
