@@ -1,40 +1,38 @@
-# Reports and contributions
+# Feedback and contributions
 
-[Open issues](https://github.com/FloStyle/TurboMCP/issues) | [1.0.0 plan](docs/release-1.0.0.md)
+[Report feedback](https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md) | [Open issues](https://github.com/FloStyle/TurboMCP/issues) | [Website](https://flostyle.github.io/TurboMCP/)
 
-Start with an issue. Search existing reports and add new evidence to a matching issue before creating another one. Use English and keep examples small.
+Use one workflow for feedback from a single tool call or a complete work session. Each actionable finding belongs to one of these types:
 
-## Report a bug
+| Type | What to describe |
+| --- | --- |
+| Bug | Existing behavior is wrong, fails or reports a misleading result. |
+| Tool improvement | An existing tool needs better coverage, output, speed or usability. |
+| New feature | A capability or workflow is missing. |
 
-Use the [bug report form](https://github.com/FloStyle/TurboMCP/issues/new?template=bug_report.md). Include:
+## From observation to issue
 
-- TurboMCP version or commit, Unreal version and source/installed build, OS and MCP client.
-- Tool name and the shortest synthetic reproduction.
-- Expected result, observed result and impact.
-- Whether it happens once or repeatedly, any workaround, and what remains unknown.
+1. **Search existing issues.** Add evidence to a matching issue instead of opening a duplicate.
+2. **Prepare the finding.** Describe the user task, tool names, versions, observed behavior, desired result and impact. Keep unknown causes and untested proposals explicit.
+3. **Review the content.** Remove credentials, private project data, identifiers and raw logs. Use English and generic or synthetic examples. Report vulnerabilities privately through [SECURITY.md](SECURITY.md).
+4. **Submit the [shared feedback form](https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md).** Use one issue per distinct actionable finding. Related observations that need the same change can stay together. Preserve any existing report and item IDs.
 
-Describe memory changes, compilation and saving separately. A successful call or compile does not prove the asset was saved. Do not guess the cause.
+A session report supplies evidence for this same workflow. Do not open an extra issue just to duplicate the report. Positive observations can support a finding; they do not need their own implementation issue.
 
-## Report a work session with an agent
+## Let an agent help
 
-Use the [session-report skill](skills/turbomcp-session-report/SKILL.md) and its [report format](skills/turbomcp-session-report/references/report-format.md). The format covers bugs, limitations, workarounds, useful behavior and feature ideas. Keep existing report and item IDs.
+Use the [session-report skill](skills/turbomcp-session-report/SKILL.md) and its [report format](skills/turbomcp-session-report/references/report-format.md) to turn an observed session into a sanitized local report. The skill covers failures, tool limitations and missing capabilities. It does not submit issues or change the plugin.
 
-Ask your agent to read the skill, write a local report and run its checker:
+Ask the agent to read the skill, use the configured local feedback folder, preserve report IDs and run its checker:
 
 ```powershell
 python skills/turbomcp-session-report/scripts/check_report.py <report-file>
 ```
 
-The skill does not submit issues. Review the exact report and remove private project data before you or an explicitly authorized maintainer submit it. A checker pass is not privacy approval. See [skill setup](docs/agent-skills.md) for installation and the reporting boundary.
+Review the exact content before submitting the relevant findings through the shared form. A checker pass is not privacy approval. You can also fill in the form directly without an agent or session report. See [skill setup](docs/agent-skills.md).
 
-## Propose a feature
+## From issue to change
 
-Use the [feature request form](https://github.com/FloStyle/TurboMCP/issues/new?template=feature_request.md). Explain the user task, current workaround and smallest useful improvement. List the native Unreal or TurboMCP tools you tried. Describe an observable success case and any behavior that must stay unchanged.
+The maintainer reviews evidence, duplicates, scope and priority. An issue is not implementation approval. For code changes, follow [AGENTS.md](AGENTS.md) and the [contributor workflow](docs/contributing.md) for an approved scope, base commit and task claim. Include checks run, results and missing evidence in the pull request.
 
-A proposal is not an approved implementation task. The maintainer reviews scope, duplicates and priority before assigning work.
-
-## Submit a fix
-
-Discuss the issue first. Follow [AGENTS.md](AGENTS.md) and the [contributor workflow](docs/contributing.md) for an approved scope, base commit and task claim. Keep the change focused. Include checks run, results and missing evidence in the pull request. Humans remain responsible for AI-assisted changes.
-
-Use synthetic or approved public examples. Keep credentials, workplace code, raw project logs and personal data out of issues and commits. Report vulnerabilities privately through [SECURITY.md](SECURITY.md).
+Keep discussions useful and respectful. You are responsible for submitted content, including AI-assisted work.

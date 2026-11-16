@@ -6,7 +6,7 @@ TurboMCP is an addon to stock Unreal MCP. It helps an AI assistant inspect compl
 
 **Development preview:** Windows with the pinned Unreal Engine 5.8.4 source build. Stable 1.0.0 is planned. Launcher packages and Unreal 5.9 are not certified.
 
-[Releases](https://github.com/FloStyle/TurboMCP/releases) | [Open issues](https://github.com/FloStyle/TurboMCP/issues) | [1.0.0 plan](docs/release-1.0.0.md) | [Documentation](docs/README.md)
+**[Website and getting started](https://flostyle.github.io/TurboMCP/)** | [Releases](https://github.com/FloStyle/TurboMCP/releases) | [Open issues](https://github.com/FloStyle/TurboMCP/issues) | [1.0.0 plan](docs/release-1.0.0.md) | [Documentation](docs/README.md)
 
 ## What it adds
 
@@ -49,11 +49,11 @@ Temporary work branches are merged and removed. The [Git workflow](docs/git-work
 
 Daily prereleases use `daily-YYYY-MM-DD`, based on the Europe/Paris date. Successful `main` pushes update that day's snapshot after validation. Stable `v1.0.0` remains a manual release with its own acceptance gates. See [release process](docs/release.md).
 
-## Report a problem or request a feature
+## Feedback
 
-Use [GitHub Issues](https://github.com/FloStyle/TurboMCP/issues). Include versions, a small synthetic reproduction, expected and observed behavior, and any missing evidence.
+Use the [shared feedback form](https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md) for a **bug**, **tool improvement** or **new feature**. Feedback from a tool call and a work session follows the same process: search, describe, review and submit. Add evidence to an existing issue when it matches.
 
-For agent-assisted session feedback, use the [reporting skill](skills/turbomcp-session-report/SKILL.md) and [report format](skills/turbomcp-session-report/references/report-format.md). Reports stay local until human review. See [Contributing](CONTRIBUTING.md) for the report and feature proposal process.
+The [reporting skill](skills/turbomcp-session-report/SKILL.md) and [report format](skills/turbomcp-session-report/references/report-format.md) help prepare a sanitized local draft. Review it before posting. See [Contributing](CONTRIBUTING.md) for the complete workflow.
 
 ## Development
 
@@ -72,6 +72,6 @@ For engine work, configure ignored `workspace.local.json`, then follow the [work
 
 `Plugins/TurboMCP` contains the plugin. `TestProject` contains synthetic fixtures. `Tools` and `Tests` contain validation tools and acceptance data. `docs`, `todo` and `release` record design, work and release evidence. `site` contains the GitHub Pages landing page.
 
-GitHub Pages deployment is enabled separately in repository settings. Its workflow publishes the reviewed landing page, not private audit files or project assets.
+The [static website](https://flostyle.github.io/TurboMCP/) provides a human-readable introduction, installation links and release information. It is linked in the repository About panel and updated after successful main validation.
 
-Licensed under [MPL-2.0](LICENSE). See [community conduct](CODE_OF_CONDUCT.md).
+Licensed under [MPL-2.0](LICENSE).
