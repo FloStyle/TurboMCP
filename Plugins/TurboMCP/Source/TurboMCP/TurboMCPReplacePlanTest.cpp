@@ -15,6 +15,7 @@
 #include "Kismet/KismetTextLibrary.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphPin.h"
@@ -53,6 +54,7 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
         Package->SetDirtyFlag(false); // Disposable, unsaved fixture only.
         Package->MarkAsGarbage();
     };
+    const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>();
     UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
     if (!TestNotNull(TEXT("Editor transaction buffer"), Buffer)) return false;
 
@@ -92,7 +94,7 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     const FTextId InitialTextId = FTextInspector::GetTextId(TextDefault->DefaultTextValue);
     TestEqual(TEXT("Fixture text namespace is installed on the pin"), InitialTextId.GetNamespace().ToString(), TextNamespace);
     TestEqual(TEXT("Fixture text key is installed on the pin"), InitialTextId.GetKey().ToString(), FString(TEXT("ExactKey")));
-    TestTrue(TEXT("Literal text feeds the conversion input"), GetDefault<UEdGraphSchema_K2>()->TryCreateConnection(
+    TestTrue(TEXT("Literal text feeds the conversion input"), Schema->TryCreateConnection(
         TextLiteral->FindPinChecked(TEXT("ReturnValue")), TextSource->FindPinChecked(TEXT("InText"))));
     ObjectSource->FindPinChecked(TEXT("Object"))->DefaultObject = GetMutableDefault<UKismetTextLibrary>();
     TextSource->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Source->FindPinChecked(TEXT("InString")));
@@ -113,6 +115,31 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     Comment->CreateNewGuid();
     Comment->NodeComment = TEXT("protected fixture documentation");
     Comment->NodePosX = -300;
+
+    UEdGraph* ValidMacro = NewObject<UEdGraph>(Blueprint, TEXT("ReplaceFixtureValidMacro"), RF_Transactional);
+    ValidMacro->Schema = UEdGraphSchema_K2::StaticClass();
+    Blueprint->MacroGraphs.Add(ValidMacro);
+    Schema->CreateMacroGraphTerminators(*ValidMacro, nullptr);
+    auto* ValidMetadata = UK2Node_MacroInstance::GetAssociatedGraphMetadata(ValidMacro);
+    if (!TestNotNull(TEXT("Stock macro terminators provide entry metadata"), ValidMetadata)) return false;
+    ValidMetadata->Category = FText::FromString(TEXT("ReplaceFixture"));
+
+    // Normal editor placement of a custom event registers its skeleton function.
+    // Without this step the first stock undo fills a delegate reference that was
+    // missing from the initial graph, so the old fingerprint correctly refuses.
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+    auto ReadEventDelegate = [&]()
+    {
+        return Event->FindPinChecked(UK2Node_Event::DelegateOutputName)->PinType.PinSubCategoryMemberReference;
+    };
+    const FSimpleMemberReference EventDelegate = ReadEventDelegate();
+    const FString DelegateOwner = GetPathNameSafe(EventDelegate.MemberParent.Get());
+    if (!TestTrue(TEXT("Fixture event delegate is bound before taking its baseline"),
+        Blueprint->SkeletonGeneratedClass
+        && Blueprint->SkeletonGeneratedClass->FindFunctionByName(Event->CustomFunctionName)
+        && EventDelegate.MemberName == Event->CustomFunctionName
+        && EventDelegate.MemberParent.Get() == Blueprint->GeneratedClass.Get()))
+        return false;
     Package->SetDirtyFlag(false); // Establish a clean, unsaved baseline for refusal/no-op checks.
 
     const FGuid TargetGuid = Target->NodeGuid;
@@ -379,7 +406,8 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
         if (!TestTrue(TEXT("Explicit one-node removal and addition plan before editing"), Plan(NewBody, LivePlan) && LivePlan.bAcceptable()))
         { AddError(Error + FTurboMCPGraphReplace::RenderPreview(LivePlan)); return false; }
         const TArray<FString> TypeIds = FTurboMCPNodeType::AvailableTypeIds(Blueprint, Graph);
-        TestTrue(TEXT("Valid stock macro keeps its exact discovery ID"), TypeIds.Contains(TEXT("Math|Integer|IncrementInt")));
+        TestTrue(TEXT("Valid local stock macro keeps its exact discovery ID"),
+            TypeIds.Contains(TEXT("ReplaceFixture|ReplaceFixtureValidMacro")));
         TestFalse(TEXT("Malformed macro is absent from discovery"), TypeIds.ContainsByPredicate([](const FString& TypeId)
             { return TypeId.EndsWith(TEXT("|ProtectedMacro"), ESearchCase::CaseSensitive); }));
         ExpectHistoryUnchanged();
@@ -445,7 +473,25 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Failure never reports a changed result"), Report.IsEmpty());
     TestEqual(TEXT("Owned rollback restores graph nodes, positions, exact edges and defaults"), Inspect(), Original);
     TestEqual(TEXT("Failed live edit leaves no applied undo record"), AppliedUndoCount(), BeforeSuccess);
+    const FSimpleMemberReference RestoredDelegate = ReadEventDelegate();
+    TestEqual(TEXT("Owned rollback preserves the delegate member reference"),
+        GetPathNameSafe(RestoredDelegate.MemberParent.Get()) + TEXT(".") + RestoredDelegate.MemberName.ToString()
+            + TEXT(":") + RestoredDelegate.MemberGuid.ToString(),
+        DelegateOwner + TEXT(".") + EventDelegate.MemberName.ToString() + TEXT(":") + EventDelegate.MemberGuid.ToString());
+    const FString RestoredExport = Load();
+    if (!TestTrue(TEXT("Owned rollback restores the exact edit export including its fingerprint"),
+        RestoredExport.Equals(Export, ESearchCase::CaseSensitive)))
+    {
+        FString BeforeHeader, AfterHeader;
+        Export.Split(TEXT("\n"), &BeforeHeader, nullptr);
+        RestoredExport.Split(TEXT("\n"), &AfterHeader, nullptr);
+        AddError(TEXT("Edit header before owned rollback: ") + BeforeHeader);
+        AddError(TEXT("Edit header after owned rollback: ") + AfterHeader);
+    }
 
+    // Stock undo marks the package dirty. Start the independent successful
+    // edit with a clean package after checking the state restored above.
+    Package->SetDirtyFlag(false);
     if (!TestTrue(TEXT("Explicit one-node replacement applies"), FTurboMCPGraphReplace::Apply(LivePlan, Report, Error)))
     { AddError(Error); return false; }
     TestTrue(TEXT("Success reports one explicit deletion"), Report.Contains(TEXT("1 node(s) removed")) && Report.Contains(TargetGuid.ToString(EGuidFormats::DigitsLower)));
