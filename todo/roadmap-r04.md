@@ -8,6 +8,19 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Factual website review evidence (2026-11-17)
+
+Worker candidate a6f998cad2a8f9a4b5aec0059d8534247498cea5 passed exact
+schema-2 scope review and was integrated as 4b3675ca. Four site files changed;
+all 33 chapter URLs and the 196-tool catalogue remain. Request templates and
+result descriptions cite current tool contracts. Root inspected the homepage,
+release chapter, presentation navigation and DataTable search/reset in the
+embedded browser; no console errors were observed. Focused source/encoding/link
+checks and the full 28-check offline gate passed. Worker exact public export
+matched 1,060 files. No native test was needed for these copy changes. The root
+retained local browser evidence and released the exact completed worker claim.
+Publication validation remains separate from stable product acceptance.
+
 ## Current review: explicit replacement safety (2026-11-17)
 
 Readiness: ready. The integration owner approves v1-explicit-graph-replace in

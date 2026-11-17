@@ -11,11 +11,11 @@ Windows and the exact reviewed stock Unreal 5.8.4 source build. Check [engine.lo
 ## Required work
 
 - [ ] [#14 Review open findings and agree the 1.0.0 release scope](https://github.com/FloStyle/TurboMCP/issues/14)
-- [ ] [#13 Resolve unloaded exact object paths in multi-asset packages](https://github.com/FloStyle/TurboMCP/issues/13)
-- [ ] [#18 Make fresh-checkout task claim setup and output reliable](https://github.com/FloStyle/TurboMCP/issues/18)
+- [x] [#13 Resolve unloaded exact object paths in multi-asset packages](https://github.com/FloStyle/TurboMCP/issues/13)
+- [x] [#18 Make fresh-checkout task claim setup and output reliable](https://github.com/FloStyle/TurboMCP/issues/18)
 - [ ] [#15 Complete exact-candidate 1.0.0 acceptance](https://github.com/FloStyle/TurboMCP/issues/15)
 - [ ] [#16 Verify clean installation and versioned release packages](https://github.com/FloStyle/TurboMCP/issues/16)
-- [ ] [#17 Finish repository protections and release publication controls](https://github.com/FloStyle/TurboMCP/issues/17)
+- [x] [#17 Finish repository protections and release publication controls](https://github.com/FloStyle/TurboMCP/issues/17)
 
 ## Acceptance
 
@@ -29,6 +29,25 @@ The draft in Releases is planning material. It must remain a draft until these g
 
 ## Current evidence
 
-The cleaned source preview at `c89b95a` preserved 3,606 commits. Its 27 offline checks and hosted validation passed; all 1,040 source files matched the export. Native fixture coverage was 13/15, with unresolved exact-object resolution in multi-asset packages. These are bounded preview results, not 1.0.0 acceptance.
+As of 17 November, issues #13 (exact object resolution), #17 (repository controls)
+and #18 (fresh-checkout claims) are integrated and closed. Their completion does
+not close the remaining scope, acceptance or clean-install gates.
+
+The supervised Win64 BuildPlugin run `802cee64cd5640019a27c45c9b81ad4d`
+passed at source `9c97d01af2c094fb1f022fccf903f377a2f78fdc` on the pinned
+5.8.4 engine. Its 371-file ZIP and module build ID were verified. Fresh BP-only
+and C++ consumer installation, load/discovery/read/edit/refusal checks and
+Launcher compatibility remain unverified. The daily prerelease is source only.
+
+The original source-preview fixture collection was 13/15. A later focused native
+metadata check verified the exact-object repair; the full original fixture audit
+has not been rerun. All 97 required acceptance specifications still need reviewed
+mapping and exact-candidate evidence. Known append-suite failures remain open.
+
+A source review confirmed that graph replacement still deletes omitted eligible
+nodes, contrary to ARC07's explicit-delete requirement. The approved bounded
+repair includes a complete edit export, fresh fingerprint, refusal cases and
+caller/help migration. It must be reviewed and tested before release acceptance.
+
 
 See the [release manager](release-manager.md) for the exact evidence format and final release gate.
