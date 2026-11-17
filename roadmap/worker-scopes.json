@@ -4453,6 +4453,20 @@
           "new_files": [
             "Tools/package_consumer.py"
           ]
+        },
+        "v1-site-human-guide": {
+          "files": [
+            "site/index.html",
+            "site/guide.html",
+            "site/guide-content.json",
+            "site/guide.js",
+            "site/guide.css",
+            "site/styles.css",
+            "site/app.js"
+          ],
+          "new_files": [
+            "site/tool-notes.json"
+          ]
         }
       },
       "preserve_rows": []

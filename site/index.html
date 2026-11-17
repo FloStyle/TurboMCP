@@ -3,26 +3,97 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TurboMCP - Blueprint, data and debugging tools for Unreal MCP</title>
-<meta name="description" content="Extend stock Unreal MCP with Blueprint, data, capture and editing tools. Real examples and the complete searchable tool catalogue.">
+<meta name="description" content="Extend stock Unreal MCP with Blueprint, data, capture and editing tools. Blueprint capture and edit examples with the searchable tool catalogue.">
 <link rel="icon" href="icon.png"><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script>
 </head><body>
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header"><a class="brand" href="#top"><img src="icon.png" width="38" height="38" alt=""><span>TurboMCP</span></a><nav aria-label="Main navigation"><a href="guide.html">Interactive guide</a><a href="#examples">Examples</a><a href="#catalogue">Tool list</a><a href="#start">Install</a><a href="https://github.com/FloStyle/TurboMCP">GitHub ↗</a></nav></header>
+<header class="site-header"><a class="brand" href="#top"><img src="icon.png" width="38" height="38" alt=""><span>TurboMCP</span></a><nav aria-label="Main navigation"><a href="guide.html">Field guide</a><a href="https://github.com/FloStyle/TurboMCP/wiki">Wiki</a><a href="#examples">Examples</a><a href="#catalogue">Tool list</a><a href="#start">Install</a><a href="https://github.com/FloStyle/TurboMCP">GitHub ↗</a></nav></header>
 <main id="main">
-<section class="hero wrap" id="top" aria-labelledby="hero-title"><div><p class="eyebrow">An addon to stock Unreal MCP</p><h1 id="hero-title">More tools.<br><em>Better context.</em></h1><p class="lead">Find nodes and pin connections, trace asset references, edit Data Assets and table rows, and capture Blueprint graphs through Unreal's MCP server.</p><div class="actions"><a class="button primary" href="#examples">View capture example</a><a class="button" href="https://github.com/FloStyle/TurboMCP/releases">Source releases</a></div><p class="preview"><span class="status-dot" aria-hidden="true"></span><strong>Development preview</strong><br>Windows · pinned Unreal 5.8.4 source build<br><a href="https://github.com/FloStyle/TurboMCP/milestone/1">Stable 1.0.0 acceptance is pending.</a></p></div><div class="hero-image"><img src="assets/graph-focus.png" width="1200" height="800" alt="Native Unreal capture of a synthetic Blueprint showing an event, Sequence, delegate binding and Branch nodes."><span class="image-label">REAL UNREAL CAPTURE / SYNTHETIC TEST GRAPH</span></div></section>
-<div class="value-strip wrap" aria-label="Core capabilities"><div><span class="small-label">READ</span><strong>Graphs and data</strong></div><div><span class="small-label">VIEW</span><strong>Native captures</strong></div><div><span class="small-label">EDIT</span><strong>Scoped changes</strong></div><div><span class="small-label">CHECK</span><strong>Logs and play input</strong></div></div>
-<section class="guide-invitation wrap" aria-labelledby="guide-invitation-title"><div><p class="eyebrow">THE FULL WORKFLOW / TURBOMCP + TURBOUX</p><h2 id="guide-invitation-title">Tool reference and workflow guide</h2><p>33 chapters covering graph inspection and editing, typed data, runtime input checks and the TurboUX prototype. Each chapter links to its tools or source contracts.</p></div><div class="actions"><a class="button primary" href="guide.html">Open the interactive guide</a><a class="button" href="guide.html?view=present#why">Presentation mode ↗</a></div></section>
+<section class="hero wrap" id="top" aria-labelledby="hero-title">
+<div>
+<p class="eyebrow">An addon to stock Unreal MCP</p>
+<h1 id="hero-title">More tools.<br><em>Better context.</em></h1>
+<p class="lead">Give your agent the Blueprint, widget, and input information it needs to build a feature and check it in Unreal.</p>
+<div class="actions"><a class="button primary" href="guide.html#why">Build and test a menu feature</a><a class="button" href="#catalogue">Explore the tools</a></div>
+<p class="preview"><strong>Development preview</strong><br>Windows · pinned Unreal 5.8.4 source build</p>
+</div>
+<aside class="hero-paths" aria-labelledby="first-request-title">
+<h2 id="first-request-title">List the registered tools</h2>
+<p>After connecting, check which TurboMCP toolsets Unreal exposes in this session.</p>
+<figure class="capture-request"><figcaption>Request template</figcaption>
+<pre id="first-request" data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPToolIndex&quot;,
+  &quot;arguments&quot;: {}
+}</code></pre>
+<button type="button" class="copy" data-copy-target="#first-request" hidden>Copy request</button>
+</figure>
+<p class="fine-print"><a href="guide.html#discovery">Check a tool schema</a> · <a href="guide.html?view=present#why">Presentation mode</a></p>
+</aside>
+</section>
 
-<section class="wrap section" id="examples" aria-labelledby="example-title"><div class="section-heading"><p class="eyebrow">01 / A concrete workflow</p><h2 id="example-title">Capture a graph, node or neighbours</h2><p>The recorded fixture has 69 nodes. Switch between its whole-graph capture, a 1200 × 800 node capture and a six-node, one-hop neighbourhood.</p></div>
-<div class="capture-tabs" role="group" aria-label="Choose a graph capture"><button type="button" data-capture="overview" aria-pressed="false">1. Whole graph</button><button type="button" data-capture="focus" aria-pressed="true">2. Exact node</button><button type="button" data-capture="neighbours" aria-pressed="false">3. Connected nodes</button></div>
-<div class="example-layout"><figure class="capture-view"><a id="capture-link" href="assets/graph-focus.png" target="_blank" rel="noopener" aria-label="Open the current graph capture at full size"><img id="capture-image" src="assets/graph-focus.png" width="1200" height="800" loading="lazy" alt="Exact-node capture of the synthetic VisionEvents_0 graph at native scale."></a><figcaption id="capture-caption">Exact-node view: make the selected area readable. Open the image for full size.</figcaption></figure><div class="example-detail"><p class="small-label">LookTurboMCPCapture</p><h3 id="capture-title">Node capture: 1200 × 800</h3><p id="capture-description">Pass the exact node ID returned by NodeFind as Target, with Mode=node and Size=1200x800. The image shows the captured region of the synthetic graph.</p><dl class="call-settings" id="capture-settings"><dt>Mode</dt><dd><code>node</code></dd><dt>Size</dt><dd><code>1200x800</code></dd><dt>Target</dt><dd>Exact node ID from NodeFind</dd></dl><p class="small-label">GUIDANCE RETURNED BY THE TOOL</p><blockquote><code>next: use ReadTurboMCPNodeFind for an exact node ID, then Mode=node with Size=1200x800 or Mode=neighbours with Size=1.</code></blockquote><p class="fine-print">Recorded synthetic fixture. <a href="assets/asset-provenance.json">Image provenance</a></p></div></div></section>
+<section class="wrap section feature-workflow" id="workflow" aria-labelledby="workflow-title">
+<div class="section-heading"><p class="eyebrow">From specification to an observed result</p><h2 id="workflow-title">Build and test a Settings button</h2><p>Start with an existing Pause and Settings menu. Describe the result before the agent changes the project.</p></div>
+<blockquote>Add Settings below Resume. Selecting Settings must open the existing Settings screen. Back must return to Pause with Settings focused. Keep Resume working.</blockquote>
+<ol class="workflow-cards">
+<li><h3>Inspect</h3><p>Read the widgets, menu graphs, and input setup. Find the assets and existing navigation code.</p></li>
+<li><h3>Implement</h3><p>Add the button and connect it to the screen-change logic. Check the new widget and graph connections.</p></li>
+<li><h3>Compile</h3><p>Compile the changed Blueprints. Check each asset’s compiler result before starting play.</p></li>
+<li><h3>Test</h3><p>Send short inputs in Play In Editor. Check that Settings opens, Back returns to Pause, and focus returns to Settings.</p></li>
+</ol>
+<p class="workflow-result">The agent checks the screen, focus, and relevant log messages after each input. If input arrives but the screen does not change, the test fails.</p>
+<p class="fine-print"><strong>Illustrative workflow.</strong> These steps combine supported tools. They are not a recorded passing test of this complete feature.</p>
+<a class="button" href="guide.html#why">Follow the complete workflow</a>
+</section>
 
-<section class="wrap section" aria-labelledby="recipes-title"><div class="section-heading"><p class="eyebrow">02 / Tasks you can give an agent</p><h2 id="recipes-title">Example requests and expected results</h2><p>Replace example asset paths with your own. Ask the agent to discover the live schema first.</p></div><div class="recipes" id="recipes"></div><noscript><p>Example workflows: read a Blueprint and follow its inputs; audit folder references; inspect DataTable rows before editing; preview graph layout; inspect local PIE focus; investigate a failed call. <a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/README.md">Read the documentation</a>.</p></noscript></section>
+<section class="wrap section capture-example" id="examples" aria-labelledby="example-title">
+<div class="section-heading">
+<h2 id="example-title">Which wire binds On Destroyed?</h2>
+<p>Trace <code>Request_0_0</code> through <code>Sequence</code> in this recorded Unreal fixture. Use each view to answer a different question about the same graph.</p>
+</div>
+<div class="capture-tabs" role="group" aria-label="Choose a recorded capture" hidden>
+<button type="button" data-capture="overview" aria-pressed="false" aria-controls="capture-content">Whole graph</button>
+<button type="button" data-capture="focus" aria-pressed="true" aria-controls="capture-content">Exact node</button>
+<button type="button" data-capture="neighbours" aria-pressed="false" aria-controls="capture-content">One hop</button>
+</div>
+<div class="example-layout" id="capture-content">
+<figure class="capture-view"><a id="capture-link" href="assets/graph-focus.png" target="_blank" rel="noopener" aria-label="Open the current graph capture at full size"><img id="capture-image" src="assets/graph-focus.png" width="1200" height="800" alt="A Sequence node connects Then 0 to Bind Event to On Destroyed and Then 1 to a Branch."></a>
+<figcaption id="capture-caption">The white wire from Then 0 reaches the bind node. The red wire identifies Destroyed_0_0 as its handler.</figcaption></figure>
+<div class="example-detail">
+<h3 id="capture-title">Follow Then 0</h3>
+<p id="capture-description">Find the Sequence’s exact node ID with NodeFind. Pass that ID to Capture in node mode to read the pin labels.</p>
+<figure class="capture-request"><figcaption>Request template</figcaption>
+<pre id="capture-request"><code>{
+  "toolset_name": "TurboMCP.TurboMCPLookToolset",
+  "tool_name": "LookTurboMCPCapture",
+  "arguments": {
+    "Asset": "&lt;blueprint-object-path&gt;",
+    "GraphName": "VisionEvents_0",
+    "Mode": "node",
+    "Target": "&lt;sequence-node-id&gt;",
+    "Size": "1200x800"
+  }
+}</code></pre>
+<button class="copy" type="button" id="copy-capture" hidden>Copy request</button>
+</figure>
+<p id="capture-limit" class="fine-print">The crop shows nearby pins. Some downstream nodes extend beyond the frame.</p>
+<p class="fine-print"><a href="assets/asset-provenance.json">Image source</a> · <a href="guide.html#vision">Walkthrough</a></p>
+</div></div>
+</section>
 
-<section class="catalogue-section section" id="catalogue" aria-labelledby="catalogue-title"><div class="wrap"><div class="section-heading"><p class="eyebrow">03 / Complete source catalogue</p><h2 id="catalogue-title">196 tools: parameters and contracts</h2><p>Every documented AICallable declaration, including Preview/Edit pairs. Expand a tool for its parameters and usage. Discover the live schema before calling it.</p></div><p class="catalogue-note">Toolset names describe purpose, not permissions. Some reads and previews execute project code or change editor state. Read each tool's contract.</p><form id="tool-filters" role="search" class="filters"><label>Search tools<input id="tool-search" type="search" placeholder="Try DataTable, input, widget or graph" autocomplete="off"></label><label>Toolset<select id="tool-group"><option value="all">All toolsets</option><option>Read</option><option>Look</option><option>Preview</option><option>Edit</option></select></label><button class="button" type="reset">Reset</button></form><div class="catalogue-meta"><p id="tool-count" role="status" aria-live="polite">Loading the catalogue…</p><a href="tools.json">Download catalogue JSON</a></div><div id="tool-list" class="tool-list"></div><noscript><p>The interactive list needs JavaScript. <a href="tools.json">Read the complete catalogue as JSON</a>, including descriptions and parameters.</p></noscript><p class="fine-print">Source declarations are not a live registration test or a release-acceptance result. <a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">View the source header</a>.</p></div></section>
+<section class="wrap section" id="recipes" aria-labelledby="recipes-title">
+<div class="section-heading"><h2 id="recipes-title">Three more requests to try</h2></div>
+<div class="task-examples">
+<article><h3><a href="guide.html#graph-edits">Check one execution wire</a></h3><p>Preview <code>then</code> → <code>execute</code> using the two reader IDs. Check whether the preview lists a destination the source would replace.</p></article>
+<article><h3><a href="guide.html#data-tables">Change one field in a row</a></h3><p>Read the row struct, then preview <code>Potion = Health=100</code>. Check whether Potion already exists and which other fields stay as they are.</p></article>
+<article><h3><a href="guide.html#play-input">Find which menu has focus</a></h3><p>Find which control has focus in your running menu. Send a short input, then check the screen and focus again.</p></article>
+</div>
+</section>
 
-<section class="wrap section bottom-grid" id="start" aria-labelledby="start-title"><div><p class="eyebrow">04 / Get started</p><h2 id="start-title">Install the source plugin</h2><p>TurboMCP registers its toolsets with Unreal's MCP server. The source installation uses the pinned engine and your project's editor build.</p><ol class="install-steps"><li>Use the Windows source engine pinned in <a href="https://github.com/FloStyle/TurboMCP/blob/main/engine.lock.json">engine.lock.json</a>.</li><li>Copy <code>Plugins/TurboMCP</code> into your project. Enable it and build the editor target.</li><li>Enable TurboMCP in <strong>Editor Preferences &gt; Plugins &gt; TurboMCP</strong>, then restart the editor.</li><li>Connect your client to Unreal's local MCP server and discover its toolsets.</li></ol><div class="actions"><a class="button primary" href="https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md">Installation guide</a><a class="button" href="https://github.com/FloStyle/TurboMCP/blob/main/SECURITY.md">Security</a></div></div><aside class="release-panel"><h3>Branches and package status</h3><p><strong>Win64 package check passed</strong><br>BuildPlugin and verification of a 371-file ZIP passed on the pinned 5.8.4 source engine. Fresh-project installation and Launcher compatibility remain unverified. The daily release contains source only. <a href="guide.html#release">Package evidence and limits</a>.</p><p><strong>main</strong><br>Reviewed development. Successful validation can publish a daily source snapshot.</p><p><strong>stable</strong><br>Starts at the first accepted stable release. No stable 1.0.0 claim yet.</p><p><strong>codex/ue59-preparation</strong><br>Separate compatibility candidate. Unreal 5.9 and Launcher packages are not certified.</p><p><a href="https://github.com/FloStyle/TurboMCP/releases">Release downloads</a> · <a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md">1.0.0 checklist</a></p></aside></section>
+<section class="catalogue-section section" id="catalogue" aria-labelledby="catalogue-title"><div class="wrap"><div class="section-heading"><h2 id="catalogue-title">Search the 196-tool catalogue</h2><p>Open a tool to read its parameters and effects. Check your editor’s registered schema before calling it.</p></div><p class="catalogue-note">Some reads and previews execute project code or change editor state. Check the tool’s effects before invoking it.</p><form id="tool-filters" role="search" class="filters"><label>Search tools<input id="tool-search" type="search" placeholder="Try DataTable, input, widget or graph" autocomplete="off"></label><label>Toolset<select id="tool-group"><option value="all">All toolsets</option><option>Read</option><option>Look</option><option>Preview</option><option>Edit</option></select></label><button class="button" type="reset">Reset</button></form><div class="catalogue-meta"><p id="tool-count" role="status" aria-live="polite">Loading the catalogue…</p><a href="tools.json">Download catalogue JSON</a></div><div id="tool-list" class="tool-list"></div><noscript><p>The interactive list needs JavaScript. <a href="tools.json">Read the complete catalogue as JSON</a>, including descriptions and parameters.</p></noscript><p class="fine-print">Source declarations are not a live registration test or a release-acceptance result. <a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">View the source header</a>.</p></div></section>
 
-<section class="wrap feedback section" id="report" aria-labelledby="report-title"><div><p class="eyebrow">05 / Help improve it</p><h2 id="report-title">Report a bug or tool request</h2><p>Report a bug, improve a tool or propose a feature. Search existing issues, describe the task and result, then review your evidence before posting.</p><p>Use the <a href="https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/SKILL.md">reporting skill</a> and <a href="https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/references/report-format.md">report format</a> to prepare a sanitized local draft.</p></div><div class="actions"><a class="button primary" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md">Report feedback</a><a class="button" href="https://github.com/FloStyle/TurboMCP/issues">Open issues</a></div></section>
+<section class="wrap section bottom-grid" id="start" aria-labelledby="start-title"><div><h2 id="start-title">Install the source plugin</h2><p>TurboMCP registers its toolsets with Unreal's MCP server. The source installation uses the pinned engine and your project's editor build.</p><ol class="install-steps"><li>Use the Windows source engine pinned in <a href="https://github.com/FloStyle/TurboMCP/blob/main/engine.lock.json">engine.lock.json</a>.</li><li>Copy <code>Plugins/TurboMCP</code> into your project. Enable it and build the editor target.</li><li>Enable TurboMCP in <strong>Editor Preferences &gt; Plugins &gt; TurboMCP</strong>, then restart the editor.</li><li>Connect your client to Unreal's local MCP server and discover its toolsets.</li></ol><div class="actions"><a class="button primary" href="https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md">Installation guide</a><a class="button" href="https://github.com/FloStyle/TurboMCP/blob/main/SECURITY.md">Security</a></div></div><aside class="release-panel"><h3>Development releases</h3><p>Daily releases contain source. The Win64 preview package passed BuildPlugin on the pinned Unreal 5.8.4 source engine. Clean-project installation and Launcher compatibility remain open.</p><p><a href="https://github.com/FloStyle/TurboMCP/releases">Release downloads</a> · <a href="guide.html#release">Package evidence</a></p></aside></section>
+
+<section class="wrap feedback section" id="report" aria-labelledby="report-title"><div><h2 id="report-title">Report a bug or tool request</h2><p>Report a bug, improve a tool or propose a feature. Search existing issues, describe the task and result, then review your evidence before posting.</p><p>Use the <a href="https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/SKILL.md">reporting skill</a> and <a href="https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/references/report-format.md">report format</a> to prepare a sanitized local draft.</p></div><div class="actions"><a class="button primary" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md">Report feedback</a><a class="button" href="https://github.com/FloStyle/TurboMCP/issues">Open issues</a></div></section>
 </main><footer class="wrap"><span>TurboMCP · MPL-2.0</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/CONTRIBUTING.md">Contribute</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/README.md">Documentation</a></footer><div id="copy-status" class="copy-status" role="status" aria-live="polite"></div>
 </body></html>
