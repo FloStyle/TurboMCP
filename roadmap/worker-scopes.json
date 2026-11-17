@@ -4449,6 +4449,17 @@
           "new_files": [
             "site/tool-notes.json"
           ]
+        },
+        "v1-clean-consumer": {
+          "files": [
+            "Tools/execute-tests.py",
+            "Tools/plugin_identity.py",
+            "Tools/test-execution-runtime.py",
+            "Tools/test-plugin-identity.py"
+          ],
+          "new_files": [
+            "Tools/package_consumer.py"
+          ]
         }
       },
       "preserve_rows": []
