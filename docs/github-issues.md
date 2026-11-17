@@ -40,5 +40,8 @@ links current issues, older FIELD records and proposed repairs. The separate
 [acceptance mapping proposal](audit/v1-acceptance-mapping-2026-11-17.json) covers
 97 required cases: 20 existing-equivalent candidates, 59 partial checks and
 18 missing checks. These are coverage classifications, not test results.
-Graph replacement (#27) and call-log disk handling (#28) are confirmed source
-mismatches with approved disjoint repairs in progress. Neither is complete.
+Graph replacement (#27) remains in review after independent source findings.
+The call-log disk repair (#28) passed a supervised build and focused native
+fixture on 30937018; its source integration is ready for main. The CI runtime
+maintenance (#20) is merged and closed after validation, Pages and daily
+source release passed. These results do not complete the V1 release gates.
