@@ -542,6 +542,29 @@ def write_stock_project_receipt(ubt, project, engine, build_id, env, evidence):
     report.update(build_id=build_id, receipt_sha256=digest(receipt), module_manifest_sha256=digest(manifest))
 
 
+def ubt_environment(engine, env):
+    """Point a direct UnrealBuildTool call at the engine's bundled .NET runtime.
+
+    UnrealBuildTool targets a .NET version that is not installed machine-wide on
+    this host. RunUAT sets the runtime up for itself; a direct UBT call does not,
+    and the host then fails with a framework-not-found exit before UBT writes
+    any log. Use the runtime the engine already ships.
+    """
+    root = engine / 'Engine/Binaries/ThirdParty/DotNet'
+    candidates = []
+    for path in root.glob('*/win-x64') if root.is_dir() else []:
+        parts = path.parent.name.split('.')
+        if all(part.isdigit() for part in parts):
+            candidates.append((tuple(int(part) for part in parts), path))
+    if not candidates:
+        raise ValueError('The engine ships no bundled win-x64 dotnet runtime for UnrealBuildTool')
+    bundled = max(candidates)[1]
+    updated = dict(env)
+    updated['DOTNET_ROOT'] = str(bundled)
+    updated['PATH'] = str(bundled) + os.pathsep + updated.get('PATH', '')
+    return updated
+
+
 def build_consumer(project, engine, build_id, env, evidence):
     name = project.stem
     owned = project.parent
@@ -843,6 +866,7 @@ def execute_phase(repo, engine, run, request, phase, evidence):
     env['UE-LOCALDATACACHEPATH'] = str(owned / 'DerivedDataCache')
     modules = {plugin / DLL: data['dll_sha256']}
     if phase == 'cpp':
+        env = ubt_environment(engine, env)
         binary, sha256 = build_consumer(project, engine, identity['build_id'], env, evidence)
         if check_engine(repo, engine) != identity:
             raise ValueError('Engine identity changed during the consumer build')

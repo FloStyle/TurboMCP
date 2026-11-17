@@ -254,6 +254,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-consumer-env",
+      "path": "Tools/test-consumer-env.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
+    },
+    {
       "id": "test-consumer-reply",
       "path": "Tools/test-consumer-reply.py",
       "tier": "offline",
