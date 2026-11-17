@@ -8,6 +8,21 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current review: concrete website demonstrations (2026-11-17)
+
+Readiness: ready. The integration owner approves v1-site-demonstrations in the
+exact seven-file schema-2 scope, under docs/design/v1-guide-and-package.md and
+ARC13. Retain the user-approved headline "More tools. Better context.".
+Replace vague examples and repetitive interactive-guide prose with concise
+technical demonstrations: problem, exact supported tool request, result and
+interpretation, a relevant existing capture where available, and actual limits.
+Read production schemas and existing evidence before claiming behavior. Label
+request templates and illustrative results; never invent measurements or call
+an old capture current acceptance. Preserve existing chapter anchors and useful
+search/presentation controls. No new assets, production changes, package/status
+claims or generic sales copy. Root owns live screenshot verification and release
+publication. Worker returns a clean candidate and focused static checks only.
+
 ## Current review: clean package consumer contract (2026-11-17)
 
 Readiness: ready for source investigation only. The integration owner approves

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "35da0a82aaf32c7113326582cdbc02c04362c6b5",
+  "plugin_tree": "6aeb67122a84a6bad93cbda53f11dd9210fb341a",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 196,
@@ -188,7 +188,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
-          "line": 166
+          "line": 167
         }
       ],
       "test_references": [
@@ -214,7 +214,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
-          "line": 210
+          "line": 211
         }
       ],
       "test_references": [

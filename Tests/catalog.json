@@ -114,6 +114,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-bulk-export",
+      "path": "Tools/test-bulk-export.py",
+      "tier": "engine",
+      "timeout_seconds": 180,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-c09-success",
       "path": "Tools/test-c09-success.py",
       "tier": "engine",
@@ -137,6 +144,13 @@
     {
       "id": "test-call-log-file",
       "path": "Tools/test-call-log-file.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-call-log-sink",
+      "path": "Tools/test-call-log-sink.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -251,6 +265,13 @@
       "path": "Tools/test-custom-event.py",
       "tier": "engine",
       "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-daily-release",
+      "path": "Tools/test-daily-release.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
       "acceptance": "not_mapped"
     },
     {
@@ -370,6 +391,13 @@
       "path": "Tools/test-field-open-diagnostic.py",
       "tier": "engine",
       "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-fixture-privacy-inventory",
+      "path": "Tools/test-fixture-privacy-inventory.py",
+      "tier": "engine",
+      "timeout_seconds": 900,
       "acceptance": "not_mapped"
     },
     {
@@ -641,6 +669,13 @@
     {
       "id": "test-material-tidy",
       "path": "Tools/test-material-tidy.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-member-rename",
+      "path": "Tools/test-member-rename.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -1038,6 +1073,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-widget-navigation-read",
+      "path": "Tools/test-widget-navigation-read.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-widget-persistence",
       "path": "Tools/test-widget-persistence.py",
       "tier": "engine",
@@ -1062,13 +1104,6 @@
     {
       "id": "test-widget-retarget",
       "path": "Tools/test-widget-retarget.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-widget-navigation-read",
-      "path": "Tools/test-widget-navigation-read.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -1120,34 +1155,6 @@
       "path": "Tools/test-worker-scope.py",
       "tier": "offline",
       "timeout_seconds": 120,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-bulk-export",
-      "path": "Tools/test-bulk-export.py",
-      "tier": "engine",
-      "timeout_seconds": 180,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-member-rename",
-      "path": "Tools/test-member-rename.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-fixture-privacy-inventory",
-      "path": "Tools/test-fixture-privacy-inventory.py",
-      "tier": "engine",
-      "timeout_seconds": 900,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-daily-release",
-      "path": "Tools/test-daily-release.py",
-      "tier": "offline",
-      "timeout_seconds": 60,
       "acceptance": "not_mapped"
     }
   ]

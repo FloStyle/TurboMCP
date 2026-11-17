@@ -4423,6 +4423,18 @@
           "new_files": [
             "docs/audit/v1-clean-consumer-contract-2026-11-17.md"
           ]
+        },
+        "v1-site-demonstrations": {
+          "files": [
+            "site/index.html",
+            "site/guide.html",
+            "site/guide-content.json",
+            "site/guide.js",
+            "site/guide.css",
+            "site/styles.css",
+            "site/app.js"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
