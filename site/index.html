@@ -17,19 +17,10 @@
 <div class="actions"><a class="button primary" href="guide.html#why">Build and test a menu feature</a><a class="button" href="#catalogue">Explore the tools</a></div>
 <p class="preview"><strong>Development preview</strong><br>Windows · pinned Unreal 5.8.4 source build</p>
 </div>
-<aside class="hero-paths" aria-labelledby="first-request-title">
-<h2 id="first-request-title">List the registered tools</h2>
-<p>After connecting, check which TurboMCP toolsets Unreal exposes in this session.</p>
-<figure class="capture-request"><figcaption>Request template</figcaption>
-<pre id="first-request" data-request><code>{
-  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
-  &quot;tool_name&quot;: &quot;ReadTurboMCPToolIndex&quot;,
-  &quot;arguments&quot;: {}
-}</code></pre>
-<button type="button" class="copy" data-copy-target="#first-request" hidden>Copy request</button>
+<figure class="hero-monitor">
+<a href="assets/turbomcp-call-log.png" target="_blank" rel="noopener" aria-label="Open the TurboMCP call log capture at full size"><img src="assets/turbomcp-call-log.png" alt="TurboMCP call log window in Unreal Editor with synthetic test calls." decoding="async"></a>
+<figcaption>TurboMCP call log in Unreal Editor. Synthetic test calls.</figcaption>
 </figure>
-<p class="fine-print"><a href="guide.html#discovery">Check a tool schema</a> · <a href="guide.html?view=present#why">Presentation mode</a></p>
-</aside>
 </section>
 
 <section class="wrap section feature-workflow" id="workflow" aria-labelledby="workflow-title">
@@ -92,7 +83,20 @@
 
 <section class="catalogue-section section" id="catalogue" aria-labelledby="catalogue-title"><div class="wrap"><div class="section-heading"><h2 id="catalogue-title">Search the 196-tool catalogue</h2><p>Open a tool to read its parameters and effects. Check your editor’s registered schema before calling it.</p></div><p class="catalogue-note">Some reads and previews execute project code or change editor state. Check the tool’s effects before invoking it.</p><form id="tool-filters" role="search" class="filters"><label>Search tools<input id="tool-search" type="search" placeholder="Try DataTable, input, widget or graph" autocomplete="off"></label><label>Toolset<select id="tool-group"><option value="all">All toolsets</option><option>Read</option><option>Look</option><option>Preview</option><option>Edit</option></select></label><button class="button" type="reset">Reset</button></form><div class="catalogue-meta"><p id="tool-count" role="status" aria-live="polite">Loading the catalogue…</p><a href="tools.json">Download catalogue JSON</a></div><div id="tool-list" class="tool-list"></div><noscript><p>The interactive list needs JavaScript. <a href="tools.json">Read the complete catalogue as JSON</a>, including descriptions and parameters.</p></noscript><p class="fine-print">Source declarations are not a live registration test or a release-acceptance result. <a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">View the source header</a>.</p></div></section>
 
-<section class="wrap section bottom-grid" id="start" aria-labelledby="start-title"><div><h2 id="start-title">Install the source plugin</h2><p>TurboMCP registers its toolsets with Unreal's MCP server. The source installation uses the pinned engine and your project's editor build.</p><ol class="install-steps"><li>Use the Windows source engine pinned in <a href="https://github.com/FloStyle/TurboMCP/blob/main/engine.lock.json">engine.lock.json</a>.</li><li>Copy <code>Plugins/TurboMCP</code> into your project. Enable it and build the editor target.</li><li>Enable TurboMCP in <strong>Editor Preferences &gt; Plugins &gt; TurboMCP</strong>, then restart the editor.</li><li>Connect your client to Unreal's local MCP server and discover its toolsets.</li></ol><div class="actions"><a class="button primary" href="https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md">Installation guide</a><a class="button" href="https://github.com/FloStyle/TurboMCP/blob/main/SECURITY.md">Security</a></div></div><aside class="release-panel"><h3>Development releases</h3><p>Daily releases contain source. The Win64 preview package passed BuildPlugin on the pinned Unreal 5.8.4 source engine. Clean-project installation and Launcher compatibility remain open.</p><p><a href="https://github.com/FloStyle/TurboMCP/releases">Release downloads</a> · <a href="guide.html#release">Package evidence</a></p></aside></section>
+<section class="wrap section bottom-grid" id="start" aria-labelledby="start-title"><div><h2 id="start-title">Install the source plugin</h2><p>TurboMCP registers its toolsets with Unreal's MCP server. The source installation uses the pinned engine and your project's editor build.</p><ol class="install-steps"><li>Use the Windows source engine pinned in <a href="https://github.com/FloStyle/TurboMCP/blob/main/engine.lock.json">engine.lock.json</a>.</li><li>Copy <code>Plugins/TurboMCP</code> into your project. Enable it and build the editor target.</li><li>Enable TurboMCP in <strong>Editor Preferences &gt; Plugins &gt; TurboMCP</strong>, then restart the editor.</li><li>Connect your client to Unreal's local MCP server and discover its toolsets.</li></ol><details class="connection-example"><summary>Check the connection with a first request</summary>
+
+<p>After connecting, check which TurboMCP toolsets Unreal exposes in this session.</p>
+<figure class="capture-request"><figcaption>Request template</figcaption>
+<pre id="first-request" data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPToolIndex&quot;,
+  &quot;arguments&quot;: {}
+}</code></pre>
+<button type="button" class="copy" data-copy-target="#first-request" hidden>Copy request</button>
+</figure>
+<p class="fine-print"><a href="guide.html#discovery">Check a tool schema</a> · <a href="guide.html?view=present#why">Presentation mode</a></p>
+</details>
+<div class="actions"><a class="button primary" href="https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md">Installation guide</a><a class="button" href="https://github.com/FloStyle/TurboMCP/blob/main/SECURITY.md">Security</a></div></div><aside class="release-panel"><h3>Development releases</h3><p>Daily releases contain source. The Win64 preview package passed BuildPlugin on the pinned Unreal 5.8.4 source engine. Clean-project installation and Launcher compatibility remain open.</p><p><a href="https://github.com/FloStyle/TurboMCP/releases">Release downloads</a> · <a href="guide.html#release">Package evidence</a></p></aside></section>
 
 <section class="wrap feedback section" id="report" aria-labelledby="report-title"><div><h2 id="report-title">Report a bug or tool request</h2><p>Report a bug, improve a tool or propose a feature. Search existing issues, describe the task and result, then review your evidence before posting.</p><p>Use the <a href="https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/SKILL.md">reporting skill</a> and <a href="https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/references/report-format.md">report format</a> to prepare a sanitized local draft.</p></div><div class="actions"><a class="button primary" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md">Report feedback</a><a class="button" href="https://github.com/FloStyle/TurboMCP/issues">Open issues</a></div></section>
 </main><footer class="wrap"><span>TurboMCP · MPL-2.0</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/CONTRIBUTING.md">Contribute</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/README.md">Documentation</a></footer><div id="copy-status" class="copy-status" role="status" aria-live="polite"></div>

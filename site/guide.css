@@ -1,6 +1,6 @@
 .guide-page {
-  --guide-border: #35424f;
-  background: #151b21;
+  --guide-border: #424242;
+  background: #1b1b1b;
 }
 .guide-page [hidden] { display: none !important; }
 .guide-header {
@@ -8,25 +8,28 @@
   top: 0;
   z-index: 3;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 14px max(24px, calc((100vw - 1460px) / 2));
   min-height: 68px;
   border-bottom: 1px solid var(--guide-border);
-  background: #10161d;
+  background: #171717;
 }
-.guide-actions { align-items: center; gap: 10px; }
-.guide-actions a { padding: 5px 8px; }
+.guide-actions { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 10px; }
+.guide-actions a { display: inline-flex; align-items: center; min-height: 36px; padding: 5px 8px; white-space: nowrap; }
+.guide-header .brand { flex-shrink: 0; }
+.guide-header button { white-space: nowrap; }
 .guide-header button, .presentation-controls button {
   padding: 7px 13px;
-  border: 1px solid #5a6d7e;
+  border: 1px solid #666666;
   border-radius: 5px;
-  background: #1d2731;
+  background: #292929;
   color: var(--text);
 }
-.guide-header button:hover, .presentation-controls button:not(:disabled):hover { background: #2b3a48; }
-.guide-header button[aria-pressed=true] { border-color: var(--cyan); color: var(--cyan); }
+.guide-header button:hover, .presentation-controls button:not(:disabled):hover { background: #363636; }
+.guide-header button[aria-pressed=true] { border-color: var(--accent); color: var(--accent); }
 .guide-shell { display: grid; grid-template-columns: 254px minmax(0, 1fr); max-width: 1440px; margin: auto; }
 .chapter-nav {
   position: sticky;
@@ -38,6 +41,7 @@
   padding: 24px 18px;
   scrollbar-width: thin;
 }
+.chapter-nav nav { display: block; }
 .chapter-search { display: block; font-size: 13px; }
 .chapter-search input {
   display: block;
@@ -45,43 +49,43 @@
   padding: 8px 10px;
   width: 100%;
   min-width: 0;
-  border: 1px solid #64798b;
+  border: 1px solid #777777;
   border-radius: 5px;
-  background: #0e151b;
+  background: #171717;
   color: var(--text);
 }
 #search-status { font-size: 12px; color: var(--muted); margin: 7px 0; }
 #chapter-links { list-style: none; margin: 0; padding: 0; width: 100%; }
-.chapter-group { margin: 17px 0 5px; font-size: 12px; color: #a5b8c8; font-weight: 700; }
+.chapter-group { margin: 17px 0 5px; font-size: 12px; color: #b8b8b8; font-weight: 700; }
 #chapter-links a {
   display: block;
   padding: 6px 9px;
   border-left: 2px solid transparent;
-  color: #d4dce4;
+  color: #dddddd;
   font-size: 13px;
   line-height: 1.35;
 }
 #chapter-links a:hover, #chapter-links a[aria-current] {
-  border-left-color: var(--cyan);
-  background: #22343f;
+  border-left-color: var(--accent);
+  background: #333333;
   color: #fff;
 }
 #guide-main { min-width: 0; padding: 44px clamp(24px, 5vw, 80px) 80px; }
 .guide-intro, .chapter, #no-chapters { max-width: 850px; margin-inline: auto; }
 .guide-intro { padding: 16px 0 30px; border-bottom: 1px solid var(--guide-border); }
 .guide-intro h1 { font-size: clamp(36px, 5vw, 58px); }
-.guide-intro > p, .chapter-lead { color: #d1dce5; font-size: 17px; }
+.guide-intro > p, .chapter-lead { color: #dddddd; font-size: 17px; }
 .guide-start, .chapter-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; }
 .guide-start a { font-size: 14px; font-weight: 600; }
 .guide-intro .guide-request-note { color: var(--muted); font-size: 14px; margin-top: 22px; }
 .chapter {
-  --chapter-accent: var(--cyan);
+  scroll-margin-top: 16px;
+  --chapter-accent: var(--accent);
   padding: 34px 0 29px;
   border-bottom: 1px solid var(--guide-border);
 }
-.chapter[data-group="Blueprint graphs"] { --chapter-accent: #ffc56d; }
-.chapter[data-group="Data, widgets and materials"] { --chapter-accent: #8fe3c1; }
-.chapter[data-group="Experimental design notes"] { --chapter-accent: #cdb7ff; }
+.chapter[data-group="Blueprint graphs"] { --chapter-accent: #f4cb63; }
+.chapter[data-group="Data, widgets and materials"] { --chapter-accent: #f4cb63; }
 .chapter h2 { font-size: clamp(26px, 4vw, 38px); text-wrap: balance; }
 .chapter h3 { margin-top: 30px; margin-bottom: 12px; font-size: 21px; line-height: 1.4; }
 .chapter > p, .chapter > blockquote, .workflow-steps { max-width: 75ch; line-height: 1.75; }
@@ -92,23 +96,15 @@
 .table-scroll { overflow-x: auto; margin-block: 24px; }
 .table-scroll table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; line-height: 1.65; }
 .table-scroll th, .table-scroll td { padding: 12px 14px; border-bottom: 1px solid var(--guide-border); vertical-align: top; }
-.table-scroll th { color: var(--cyan); }
-.table-scroll td { color: #d1dce5; }
+.table-scroll th { color: var(--accent); }
+.table-scroll td { color: #dddddd; }
 .table-scroll th:first-child { width: 33%; }
-.experimental-notes { max-width: 850px; margin: 36px auto 0; padding: 20px; border: 1px solid var(--guide-border); border-radius: 6px; }
-.experimental-notes > summary { color: #cdb7ff; font-size: 19px; font-weight: 600; cursor: pointer; }
-.experimental-notes > p { color: var(--muted); max-width: 75ch; line-height: 1.7; }
-.experimental-notes .chapter:last-child { border-bottom: 0; padding-bottom: 0; }
-.experimental-notes .chapter h2 { font-size: 25px; }
-.appendix-nav { margin-top: 20px; }
-.appendix-nav summary { color: #cdb7ff; font-size: 12px; font-weight: 600; cursor: pointer; padding: 7px 0; }
-.appendix-nav ul { list-style: none; padding: 0; margin: 6px 0 0; }
 .chapter-lead { margin-top: 12px; }
 .chapter .interpretation { max-width: 75ch; }
-.chapter .constraint { color: #aebfcc; font-size: 14px; padding-left: 12px; border-left: 2px solid var(--guide-border); }
+.chapter .constraint { color: #b8b8b8; font-size: 14px; padding-left: 12px; border-left: 2px solid var(--guide-border); }
 .request, .example-result, .guide-capture { margin: 18px 0 0; min-width: 0; }
-.request, .example-result, .prototype-flow {
-  background: #0f161d;
+.request, .example-result {
+  background: #171717;
   border: 1px solid var(--guide-border);
   border-radius: 6px;
 }
@@ -133,15 +129,12 @@
 .chapter pre code { font-size: inherit; }
 .request .copy-prompt { margin: 0 12px 10px; }
 .follow-up { margin-top: 12px; }
-.follow-up summary { color: var(--cyan); cursor: pointer; font-size: 14px; }
+.follow-up summary { color: var(--accent); cursor: pointer; font-size: 14px; }
 .follow-up .request { margin-top: 9px; }
-.guide-capture img { width: 100%; height: auto; display: block; max-height: 480px; object-fit: contain; background: #1b2127; border-radius: 6px; }
+.guide-capture img { width: 100%; height: auto; display: block; max-height: 480px; object-fit: contain; background: #222222; border-radius: 6px; }
 .guide-capture figcaption { margin-top: 6px; color: var(--muted); font-size: 13px; }
-.prototype-flow { padding: 12px 15px; margin-top: 14px; }
-.prototype-flow small { color: var(--chapter-accent); }
-.prototype-flow p { margin: 3px 0 0; }
 .chapter-footer { display: flex; flex-wrap: wrap; gap: 7px 17px; border: 0; margin-top: 17px; padding: 0; font-size: 12px; }
-.chapter-footer a { color: #aec8d9; }
+.chapter-footer a { color: #cccccc; }
 #guide-notice:not(:empty) {
   position: fixed;
   z-index: 4;
@@ -165,7 +158,7 @@
   gap: 16px;
   padding: 10px 16px;
   border-top: 1px solid var(--guide-border);
-  background: #10161d;
+  background: #171717;
   font-size: 13px;
 }
 .presentation-controls span { min-width: 0; text-align: center; }
@@ -178,27 +171,26 @@
   .guide-header { min-height: 58px; padding: 9px 16px; gap: 8px; }
   .guide-header .brand { font-size: 16px; gap: 6px; }
   .guide-header .brand img { width: 24px; height: 24px; }
-  .guide-actions { gap: 5px; justify-content: flex-end; }
+  .guide-actions { flex-basis: 100%; gap: 6px 10px; justify-content: flex-start; }
   .guide-actions a, .guide-header button { font-size: 12px; padding: 6px 7px; }
+  .guide-actions a, .guide-actions button { min-height: 36px; }
   .guide-shell { display: block; }
   .chapter-nav { position: static; max-height: none; overflow: visible; padding: 16px 18px; border: 0; border-bottom: 1px solid var(--guide-border); }
   .chapter-nav nav { display: block; max-height: 172px; overflow: auto; scrollbar-width: thin; }
   #guide-main { padding: 20px 18px 60px; }
   .chapter { padding-block: 26px; }
   .chapter-lead, .guide-intro > p { font-size: 16px; }
-  .experimental-notes { padding: 16px; }
   .table-scroll th, .table-scroll td { padding: 10px 8px; }
 }
 @media print {
   .guide-page { color: #111; background: #fff; }
   .guide-header, .chapter-nav, .presentation-controls, #guide-notice, .copy-prompt, #no-chapters, .chapter-footer { display: none !important; }
-  .guide-shell, .printing .guide-intro, .printing .chapter[hidden], .printing .experimental-notes[hidden] { display: block !important; }
+  .guide-shell, .printing .guide-intro, .printing .chapter[hidden] { display: block !important; }
   #guide-main { padding: 0; }
   .guide-intro, .chapter { color: #111; max-width: none; padding: 12px 0; }
   .chapter h2 { break-after: avoid; }
   .guide-page p, .guide-page a, .guide-page figcaption { color: #222; }
-  .request, .example-result, .prototype-flow { background: #fff; color: #111; }
+  .request, .example-result { background: #fff; color: #111; }
   .request, .example-result, .guide-capture { break-inside: avoid; }
-  .experimental-notes { max-width: none; border: 0; padding: 0; }
   .table-scroll td, .table-scroll th { color: #222; }
 }
