@@ -8,6 +8,26 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## V1 integration checkpoint (2026-11-17)
+
+The owner approved the current documented tool set after critical fixes and
+focused acceptance. Ten V1-* gates replace the extended 97-case release
+requirement; all original specifications/statuses remain in Tests/acceptance.json
+and GitHub #33. No implementation guard is removed.
+
+Graph correction 6d1bdcf6 integrated as 36cf3bef. Supervised run
+b1a2376442d34477862c1035c27794a8 passed build and Replace.LinkedRetention
+(1/1, 6.164 seconds, zero warnings), restoring all 16 files. Run
+d339cb942a1b4f24a7744105455b5871 remains failed: stock undo normalized an
+incorrectly placed PrintString node. The fixture now uses stock placement and
+independently checks enabled state. Stale-plan guards remain unchanged.
+
+Consumer e2f21c41 passed scope and independent source review after stock
+receipt, interrupted-edit and plugin-discovery corrections. Native final ZIP
+checks remain pending. Website a90ba228/ec16b09d passed scope/static review;
+the follow-up removes TurboUX and purple accents. Real monitor capture and
+final visual review remain pending.
+
 ## Current review: malformed macro discovery guard (2026-11-17)
 
 Readiness: ready. The integration owner approves `v1-macro-discovery-guard`

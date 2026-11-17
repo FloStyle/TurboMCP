@@ -45,3 +45,7 @@ The call-log disk repair (#28) passed a supervised build and focused native
 fixture on 30937018; PR #30 merged it into main at 5e77f6f8 and #28 is closed. The CI runtime
 maintenance (#20) is merged and closed after validation, Pages and daily
 source release passed. These results do not complete the V1 release gates.
+
+## Approved V1 scope (17 November)
+
+The owner approved the current documented tool set after critical fixes and focused acceptance. [#33](https://github.com/FloStyle/TurboMCP/issues/33) tracks linked-pin Patch, mixed row ordering, production compile-baseline work and extended acceptance. The historical 97-case mapping above is not the active release gate and is not a pass count. The ten V1-* gates in Tests/acceptance.json and the release plan are authoritative. #2-12 and #19 remain open with their stated limits. #28 is merged and closed; #27 now has a focused native pass pending public integration.
