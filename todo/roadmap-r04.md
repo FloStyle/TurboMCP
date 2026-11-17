@@ -8,6 +8,32 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current review: malformed macro discovery guard (2026-11-17)
+
+Readiness: ready. The integration owner approves `v1-macro-discovery-guard`
+in exactly TurboMCPNodeType.cpp and TurboMCPReplacePlanTest.cpp. This follows
+an observed editor crash during the focused ReplacePlan run at d34ee547.
+Run 802801f0deba4d378cb3305d6785837c retained the crash and restored all 16
+fixture files. The failed RPC was not repeated. Its captured editor stack
+reaches stock UK2Node_MacroInstance::GetKeywords through CollectEntries while
+resolving an unrelated valid replacement node. The deliberately malformed
+fixture macro has no output-capable entry tunnel, so its metadata is null.
+
+Before filtering or obtaining UI metadata, validate stock macro spawner
+metadata and skip malformed actions. Preserve valid stock macro discovery,
+normal filtering, exact IDs and creation. Do not change Unreal source or clear
+the global action database to hide the fault. Retain the malformed fixture and
+verify a valid macro remains available in the same focused native fixture.
+Any fixture cleanup must be limited to its owned synthetic action and must not
+suppress the failing operation. Keep checks minimal; root owns the single
+focused native rerun after review. Independent engine deferred priming is an
+external limit and must not be claimed fixed by this addon guard.
+
+The previous graph candidate passed build c7c5168864a14f5eb07ecdb07a38f8e2.
+A preceding integration build 4805185710b9446883c77994d5d2784c was started with
+unresolved cherry-pick markers and failed; it is not product-test evidence.
+Graph replacement remains pending integration and acceptance, not complete.
+
 ## Integrated call-log sink evidence (2026-11-17)
 
 Candidate 6cf797b2c090484eeb0f8fd1b2a50fae43e211b7 passed the immutable
