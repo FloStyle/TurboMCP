@@ -18,3 +18,8 @@ The source-preview fixture audit collected 13 of 15 fixtures. The unloaded exact
 The [GitHub issue map](github-issues.md) links current findings and release gates. Historical reports remain evidence; they are not new implementation assignments. The [roadmap](../ROADMAP.md) still defines execution order.
 
 The [interactive field guide](https://flostyle.github.io/TurboMCP/guide.html) now contains 33 technical chapters with reading and presentation views. Desktop and narrow-width browser checks passed. The supervised Win64 development-preview package passed BuildPlugin and archive verification on the pinned stock 5.8.4 source engine. Its module build ID matches that engine. Clean-consumer BP-only/C++ installation and Launcher compatibility remain unverified; GitHub #16 stays open.
+
+The call-log disk sink now checks file-operation failures and bounds UTF-8
+records. Its focused native regression passed on 30937018. Graph replacement
+is under safety review; full release acceptance and clean-consumer installation
+remain pending.

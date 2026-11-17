@@ -8,6 +8,21 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Integrated call-log sink evidence (2026-11-17)
+
+Candidate 6cf797b2c090484eeb0f8fd1b2a50fae43e211b7 passed the immutable
+five-file scope gate and source review; integrated as 8d2b52d2. Registered
+`test-call-log-sink` without assigning release acceptance from its name.
+At clean candidate 30937018c4e2cc1d5eb9583f60d431906f336417, supervised build
+24c78c0cf429443c9637210065c95750 passed (43.315 seconds) and engine run
+b4207a883d2742e88d07ef053d50afd6 passed (64.593 seconds), restoring all
+16 fixture-boundary files. The native fixture checks denied directory/open/size/
+write/flush/rotation operations, active-byte preservation after failed move,
+previous-backup loss diagnostics, serialized threshold crossings, complete
+UTF-8 JSON, omission counts and unchanged in-memory operation results. The
+engine remains the pinned stock 5.8.4 source build. This closes the implemented
+disk-sink slice after integration; it is not full logging or V1 acceptance.
+
 ## Current review: concrete website demonstrations (2026-11-17)
 
 Readiness: ready. The integration owner approves v1-site-demonstrations in the
@@ -46,7 +61,8 @@ immutable scope gate and was integrated as ae09ab33. Root verified both action
 pins against the official repository release-tag commit identities. The four
 workflow/template diffs only change those pins; permissions and exact triggering
 commit checks remain. Focused structure, language, repository-boundary and six
-daily-source controls passed. Hosted verification is pending for these new pins.
+daily-source controls passed. Hosted validation 43994379699, Pages 43994805211 and daily source release
+43994805230 passed on af5bef51; GitHub #20 is closed.
 
 The two audit JSON files are explicitly proposals: 15 assigned issues, older
 FIELD records and 97 acceptance cases are reconciled without marking a case
