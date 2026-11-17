@@ -10,7 +10,7 @@
       "group": "Foundation",
       "status": "Development preview",
       "href": "guide.html#why",
-      "title": "Context is the hard part.",
+      "title": "Inspect graph structure, nodes and pins",
       "tools": [
         "ReadTurboMCPBlueprintLoad",
         "ReadTurboMCPNodeContext"
@@ -26,7 +26,7 @@
       "group": "Foundation",
       "status": "Current integration",
       "href": "guide.html#stock-unreal",
-      "title": "Keep Unreal MCP. Extend its tools.",
+      "title": "Connect through Unreal's MCP server",
       "tools": [
         "ReadTurboMCPToolIndex",
         "ReadTurboMCPStatus"
@@ -43,7 +43,7 @@
       "group": "Foundation",
       "status": "Source catalogue",
       "href": "guide.html#tool-roles",
-      "title": "Four roles. Read the effects.",
+      "title": "Read, Look, Preview and Edit toolsets",
       "tools": [
         "ReadTurboMCPToolSchema",
         "ReadTurboMCPBulkExport",
@@ -60,7 +60,7 @@
       "group": "Foundation",
       "status": "Current workflow",
       "href": "guide.html#discovery",
-      "title": "Discover before calling.",
+      "title": "Discover tool schemas and parameters",
       "tools": [
         "ReadTurboMCPToolIndex",
         "ReadTurboMCPToolSchema",
@@ -78,7 +78,7 @@
       "group": "Foundation",
       "status": "Implemented guidance",
       "href": "guide.html#context-steering",
-      "title": "A useful failure gives a next step.",
+      "title": "Use diagnostics to correct a failed call",
       "tools": [
         "ReadTurboMCPToolHelp",
         "ReadTurboMCPCallLog",
@@ -96,7 +96,7 @@
       "group": "Foundation",
       "status": "Acceptance boundary",
       "href": "guide.html#results",
-      "title": "A reply is not proof of success.",
+      "title": "Verify edits, compilation and saving",
       "tools": [
         "ReadTurboMCPDirtyList",
         "EditTurboMCPCompile"
@@ -113,7 +113,7 @@
       "group": "Blueprints",
       "status": "Current tools",
       "href": "guide.html#blueprint-reading",
-      "title": "Find the nodes that matter.",
+      "title": "Search Blueprint nodes and their context",
       "tools": [
         "ReadTurboMCPBlueprintLoad",
         "ReadTurboMCPNodeFind",
@@ -131,7 +131,7 @@
       "group": "Blueprints",
       "status": "Recorded synthetic evidence",
       "href": "guide.html#vision",
-      "title": "Structure first. Readable detail next.",
+      "title": "Graph, node and neighbour captures",
       "tools": [
         "LookTurboMCPCapture",
         "ReadTurboMCPNodeFind"
@@ -149,7 +149,7 @@
       "group": "Blueprints",
       "status": "Supported operations",
       "href": "guide.html#graph-edits",
-      "title": "Change one thing. Preserve the rest.",
+      "title": "Connect, repoint, append and remove nodes",
       "tools": [
         "PreviewTurboMCPGraphConnect",
         "EditTurboMCPGraphConnect",
@@ -166,9 +166,9 @@
       "id": "graph-tidy",
       "number": 10,
       "group": "Blueprints",
-      "status": "Current tools · visual review needed",
+      "status": "Current tools \u00b7 visual review needed",
       "href": "guide.html#graph-tidy",
-      "title": "Readable graphs support human review.",
+      "title": "Preview layout changes and inspect the result",
       "tools": [
         "LookTurboMCPLayoutReport",
         "PreviewTurboMCPGraphTidy",
@@ -186,7 +186,7 @@
       "group": "Blueprints",
       "status": "Bounded implementation",
       "href": "guide.html#batching",
-      "title": "Batch related work, not arbitrary scripts.",
+      "title": "Batch repoint operations within one graph",
       "tools": [
         "PreviewTurboMCPBatchEdit",
         "EditTurboMCPBatchEdit"
@@ -202,7 +202,7 @@
       "group": "Data and assets",
       "status": "Current tools",
       "href": "guide.html#inventory",
-      "title": "Find owners before changing shared data.",
+      "title": "Query asset references and widget instances",
       "tools": [
         "ReadTurboMCPRefsBatch",
         "ReadTurboMCPWidgetInventory",
@@ -220,7 +220,7 @@
       "group": "Data and assets",
       "status": "Current tools",
       "href": "guide.html#data-read",
-      "title": "Read typed values, not screenshots of data.",
+      "title": "Read Data Asset fields and class defaults",
       "tools": [
         "ReadTurboMCPDataAssetProperty"
       ],
@@ -235,7 +235,7 @@
       "group": "Data and assets",
       "status": "Revisioned property workflow",
       "href": "guide.html#data-edit",
-      "title": "Apply a delta against known state.",
+      "title": "Edit properties with a state revision",
       "tools": [
         "ReadTurboMCPDataAssetProperty",
         "PreviewTurboMCPDataAssetProperty",
@@ -252,7 +252,7 @@
       "group": "Data and assets",
       "status": "Current tools",
       "href": "guide.html#data-create",
-      "title": "Create the requested Data Asset class.",
+      "title": "Create a typed Data Asset",
       "tools": [
         "PreviewTurboMCPDataAssetCreate",
         "EditTurboMCPDataAssetCreate"
@@ -268,7 +268,7 @@
       "group": "Data and assets",
       "status": "Current tools",
       "href": "guide.html#data-tables",
-      "title": "Edit a table as a list of row changes.",
+      "title": "Set and remove DataTable rows",
       "tools": [
         "ReadTurboMCPDataTable",
         "PreviewTurboMCPDataTableRows",
@@ -285,7 +285,7 @@
       "group": "Data and assets",
       "status": "Supported readers and editors",
       "href": "guide.html#widgets-materials",
-      "title": "Appearance and structure answer different questions.",
+      "title": "Inspect widget and material structure",
       "tools": [
         "ReadTurboMCPWidgetTree",
         "ReadTurboMCPWidgetProperty",
@@ -304,7 +304,7 @@
       "group": "Runtime and safety",
       "status": "Bounded PIE support",
       "href": "guide.html#play-input",
-      "title": "Input delivery is not gameplay success.",
+      "title": "Inspect PIE focus and send bounded input",
       "tools": [
         "ReadTurboMCPPlayInputState",
         "EditTurboMCPPlayInput",
@@ -321,7 +321,7 @@
       "group": "Runtime and safety",
       "status": "Local trust boundary",
       "href": "guide.html#safeguards",
-      "title": "Treat the editor as a trusted local tool.",
+      "title": "Target checks, edit guards and local access",
       "tools": [
         "ReadTurboMCPEditQueue",
         "ReadTurboMCPStatus"
@@ -338,7 +338,7 @@
       "group": "Delivery",
       "status": "Current contribution workflow",
       "href": "guide.html#feedback",
-      "title": "A field failure becomes a focused repair.",
+      "title": "Report tool failures and feature requests",
       "tools": [
         "ReadTurboMCPCallLog",
         "ReadTurboMCPEditorLog"
@@ -356,7 +356,7 @@
       "group": "Delivery",
       "status": "Repository workflow",
       "href": "guide.html#development-process",
-      "title": "Parallel source work. One owned editor.",
+      "title": "Assign, test and integrate a scoped change",
       "tools": [],
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/AGENTS.md",
@@ -371,7 +371,7 @@
       "group": "Delivery",
       "status": "Pinned source preview",
       "href": "guide.html#installation",
-      "title": "Connect with the supported baseline.",
+      "title": "Install and enable the source plugin",
       "tools": [
         "ReadTurboMCPStatus"
       ],
@@ -386,14 +386,16 @@
       "id": "release",
       "number": 23,
       "group": "Delivery",
-      "status": "Stable acceptance pending",
+      "status": "Win64 package verified \u00b7 consumer checks pending",
       "href": "guide.html#release",
-      "title": "Daily source is not a stable package.",
+      "title": "Package evidence and release requirements",
       "tools": [],
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/release.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md",
-        "https://github.com/FloStyle/TurboMCP/blob/main/docs/git-workflow.md"
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/git-workflow.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/docs/status.md",
+        "https://github.com/FloStyle/TurboMCP/blob/main/todo/roadmap-r04.md"
       ],
       "evidence": []
     },
@@ -403,7 +405,7 @@
       "group": "TurboUX",
       "status": "Early software prototype",
       "href": "guide.html#turboux",
-      "title": "Prototype UX as something you can use.",
+      "title": "Build interactive HTML/JSON UX prototypes",
       "tools": [],
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/v1-guide-and-package.md"
@@ -416,7 +418,7 @@
       "group": "TurboUX",
       "status": "Implemented local model",
       "href": "guide.html#project-model",
-      "title": "JSON stores the behavior.",
+      "title": "Store screens, routes and inputs in JSON",
       "tools": [],
       "contracts": [],
       "evidence": []
@@ -427,7 +429,7 @@
       "group": "TurboUX",
       "status": "Focused working-loop evidence",
       "href": "guide.html#authoring-loop",
-      "title": "Canvas → Edit → Play → revise.",
+      "title": "Arrange screens, edit controls and test routes",
       "tools": [],
       "contracts": [],
       "evidence": []
@@ -438,7 +440,7 @@
       "group": "TurboUX",
       "status": "Prototype workspaces",
       "href": "guide.html#workspaces",
-      "title": "Reusable intent has a place to live.",
+      "title": "Manage elements, styles, skills and assets",
       "tools": [],
       "contracts": [],
       "evidence": []
@@ -449,7 +451,7 @@
       "group": "TurboUX",
       "status": "Static prototype analysis",
       "href": "guide.html#ux-inputs",
-      "title": "The same key can mean different things.",
+      "title": "Model input mappings and active contexts",
       "tools": [],
       "contracts": [],
       "evidence": []
@@ -458,9 +460,9 @@
       "id": "command-parity",
       "number": 29,
       "group": "TurboUX",
-      "status": "Shared boundary · parity in progress",
+      "status": "Shared boundary \u00b7 parity in progress",
       "href": "guide.html#command-parity",
-      "title": "Human and agent work on the same model.",
+      "title": "Share revisioned commands between UI and MCP",
       "tools": [],
       "contracts": [],
       "evidence": []
@@ -469,9 +471,9 @@
       "id": "portable-projects",
       "number": 30,
       "group": "TurboUX",
-      "status": "Implemented portable format · focused checks",
+      "status": "Implemented portable format \u00b7 focused checks",
       "href": "guide.html#portable-projects",
-      "title": "One app. Separate portable projects.",
+      "title": "Save locally and export project bundles",
       "tools": [],
       "contracts": [],
       "evidence": []
@@ -482,7 +484,7 @@
       "group": "TurboUX",
       "status": "Experimental interchange",
       "href": "guide.html#svg-figma",
-      "title": "Exchange visuals. Keep behavior in the project.",
+      "title": "Export scene data and review import losses",
       "tools": [],
       "contracts": [],
       "evidence": []
@@ -491,9 +493,9 @@
       "id": "native-handoff",
       "number": 32,
       "group": "TurboUX",
-      "status": "Staged bridge · automatic sync planned",
+      "status": "Staged bridge \u00b7 automatic sync planned",
       "href": "guide.html#native-handoff",
-      "title": "Turn UX intent into a native verification plan.",
+      "title": "Map prototype behavior to Unreal owners",
       "tools": [],
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/v1-guide-and-package.md"
@@ -506,7 +508,7 @@
       "group": "Next steps",
       "status": "Evidence-led development",
       "href": "guide.html#next",
-      "title": "Review what works. Keep the gaps visible.",
+      "title": "Remaining release and interoperability checks",
       "tools": [],
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md",
