@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TurboMCP - Blueprint, data and debugging tools for Unreal MCP</title>
 <meta name="description" content="Extend stock Unreal MCP with Blueprint, data, capture and editing tools. Blueprint capture and edit examples with the searchable tool catalogue.">
-<link rel="icon" href="icon.png"><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script>
+<link rel="icon" href="icon.png"><link rel="stylesheet" href="styles.css?v=20261117-spacing1"><script src="app.js?v=20261117-spacing1" defer></script>
 </head><body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header"><a class="brand" href="#top"><img src="icon.png" width="38" height="38" alt=""><span>TurboMCP</span></a><nav aria-label="Main navigation"><a href="guide.html">Field guide</a><a href="https://github.com/FloStyle/TurboMCP/wiki">Wiki</a><a href="#examples">Examples</a><a href="#catalogue">Tool list</a><a href="#start">Install</a><a href="https://github.com/FloStyle/TurboMCP">GitHub ↗</a></nav></header>
@@ -82,11 +82,14 @@
 </section>
 
 <section class="wrap section" id="recipes" aria-labelledby="recipes-title">
-<div class="section-heading"><h2 id="recipes-title">Three more requests to try</h2></div>
+<div class="section-heading"><h2 id="recipes-title">Six requests to try</h2></div>
 <div class="task-examples">
-<article><h3><a href="guide.html#graph-edits">Check one execution wire</a></h3><p>Preview <code>then</code> → <code>execute</code> using the two reader IDs. Check whether the preview lists a destination the source would replace.</p></article>
-<article><h3><a href="guide.html#data-tables">Change one field in a row</a></h3><p>Read the row struct, then preview <code>Potion = Health=100</code>. Check whether Potion already exists and which other fields stay as they are.</p></article>
-<article><h3><a href="guide.html#play-input">Find which menu has focus</a></h3><p>Find which control has focus in your running menu. Send a short input, then check the screen and focus again.</p></article>
+<article><span class="small-label">01</span><h3><a href="guide.html#blueprint-reading">Understand a complex Blueprint</a></h3><p>Find a node, read its connected pins, and follow the execution path.</p></article>
+<article><span class="small-label">02</span><h3><a href="guide.html#inventory">Find asset and widget references</a></h3><p>List referring assets and inspect matching widget instances.</p></article>
+<article><span class="small-label">03</span><h3><a href="guide.html#data-tables">Inspect data before an edit</a></h3><p>Read the row structure and preview the fields that will change.</p></article>
+<article><span class="small-label">04</span><h3><a href="guide.html#graph-tidy">Make a graph easier to read</a></h3><p>Capture the graph and preview a new node arrangement.</p></article>
+<article><span class="small-label">05</span><h3><a href="guide.html#play-input">Test menu input in PIE</a></h3><p>Check focus, send a short input, then inspect the result.</p></article>
+<article><span class="small-label">06</span><h3><a href="guide.html#context-steering">Understand a failed call</a></h3><p>Read the error and tool schema before correcting the request.</p></article>
 </div>
 </section>
 

@@ -194,3 +194,12 @@
   .request, .example-result, .guide-capture { break-inside: avoid; }
   .table-scroll td, .table-scroll th { color: #222; }
 }
+
+/* Keep the workflow readable; open a step for its full implementation details. */
+.workflow-step { margin-block: 36px; padding-top: 28px; border-top: 1px solid var(--guide-border); }
+.workflow-step h3 { margin: 0 0 16px; }
+.workflow-step p { max-width: 72ch; margin-block: 16px; line-height: 1.8; }
+.step-details { margin-top: 20px; }
+.step-details > summary { cursor: pointer; color: var(--accent); padding-block: 8px; font-size: 14px; }
+.step-details[open] > summary { margin-bottom: 18px; }
+.step-details .request { margin-block: 24px; }
