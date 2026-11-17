@@ -54,7 +54,52 @@ silently counted as completed or added back to the agreed V1 scope.
 ## Website
 
 Cleanup pushed to PR #31 at 0addd329: guide is TurboMCP-only, grey/yellow,
-and navigation is corrected. CI, merge and Pages deployment remain separate
-steps. The missing monitor screenshot is deferred; the existing request
+and navigation is corrected. PR validation passed and PR #31 merged as 4df99d7a.
+Main validation and Pages deployment still need confirmation. The missing monitor screenshot is deferred; the existing request
 example remains visible, with no broken image or simulated capture claim.
 A real monitor capture with synthetic calls remains a follow-up.
+
+## Takeover entry point
+
+Canonical integration checkout: `C:/Dev/TurboMCP-Public`, branch
+`codex/v1-graph-acceptance`. This branch contains reviewed local integration
+work and is not yet pushed to main. Do not reset it to remote main. The
+pre-handoff source/assignment commit is 7235054ee34bdb80040c321a45360304e92d0d4d.
+The tested source candidate is ec76157f (full SHA above). Later changes here
+are the repair assignment and this handoff, not a claimed new native pass.
+
+Active worker: Sol High, `/root/sol_v1_schema_callers`.
+Checkout: `C:/Users/flost/.codex/worktrees/v1-site-examples/validate-main`.
+Branch: `codex/v1-schema-callers`; approved base:
+7235054ee34bdb80040c321a45360304e92d0d4d.
+Assignment: `v1-schema-callers`. Claim: 04f41e2c28ad48d4977b1d4169db332a.
+Do not dispatch an overlapping worker or release its claim while it works.
+If chat access is lost, inspect the branch and claim store before resuming.
+Root released the completed macro assignment before this dispatch.
+
+When Sol submits: fetch its candidate locally, inspect the two-file diff,
+run Tools/check-worker-scope.py against the approved base and assignment,
+and integrate only reviewed changes. Schedule the two failed suites through
+Tools/execute-tests.py. Never run a second editor/build concurrently. No broad
+suite repeat without new evidence. Keep the historical failures recorded.
+
+Local implementation includes the graph repair and consumer harness, accepted
+in source but not all publicly integrated. Consumer worker final e2f21c41
+was integrated as 1547b88c; graph fixture final 6d1bdcf6 as 36cf3bef.
+Scope/release decision is committed at ec76157f. Preserve those commits.
+
+Owner explicitly approved a PRIVATE final-version 1.0.0 candidate for clean
+consumer checks; publish only after it passes. Metadata/version changes and
+final archive build have not been performed. An old preview ZIP is not valid
+substitute evidence: its engine BuildId differs. Use the same final archive
+for both consumer profiles and record its source identity and hashes.
+Read docs/audit/v1-clean-consumer-contract-2026-11-17.md,
+docs/release-1.0.0.md, Tests/acceptance.json, and docs/release-manager.md.
+Do not claim stable readiness from passing source tests alone.
+
+GitHub issue #15 has the current checkpoint comment:
+https://github.com/FloStyle/TurboMCP/issues/15#issuecomment-6942676103
+This local handoff and issue together are the takeover record. Website PR #31
+is merged; check main CI/Pages before claiming the live site has changed.
+TurboUX work must not be renewed. Figma testing is deferred. No new automatic
+goal is active: the user cleared it. Continue only the authorized release work.
