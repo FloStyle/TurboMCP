@@ -394,6 +394,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-engine-distribution",
+      "path": "Tools/test-engine-distribution.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
+    },
+    {
       "id": "test-engine-prereq",
       "path": "Tools/test-engine-prereq.py",
       "tier": "offline",
