@@ -236,6 +236,22 @@ def asset_fingerprint():
     return (stat.st_size, stat.st_mtime_ns, digest)
 
 
+def append_request(text, asset, graph):
+    return {"asset": asset, "graphName": graph, "text": text,
+            "continuation": "auto", "placement": "local", "movableNodeIdsJson": "[]",
+            "containingCommentId": ""}
+
+
+def preview_append(session, text, asset=ASSET, graph=GRAPH):
+    return session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend", append_request(text, asset, graph))
+
+
+def edit_append(session, text, asset=ASSET, graph=GRAPH):
+    request = append_request(text, asset, graph)
+    request["previewToken"] = ""
+    return session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend", request)
+
+
 def refusal_pair(session, label, asset, graph, text, expected_prefix="unchanged:"):
     """Send one input to Preview and Edit, require the same answer, prove no mutation.
 
@@ -250,9 +266,8 @@ def refusal_pair(session, label, asset, graph, text, expected_prefix="unchanged:
     before_count, _ = node_count(session)
     before_ids, _ = node_ids(session)
     before_fp = asset_fingerprint()
-    request = {"asset": asset, "graphName": graph, "text": text}
-    preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend", request)
-    edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend", request)
+    preview = preview_append(session, text, asset, graph)
+    edit = edit_append(session, text, asset, graph)
     print("    %s preview: %s" % (label, preview.split("\n", 1)[0][:140]))
     check(label + ": the preview refuses", preview.startswith(expected_prefix), preview[:220])
     # The edit recorder adds an observation that preview does not carry. Accept
@@ -480,8 +495,7 @@ def main():
 
     print()
     print("=== 1. the PREVIEW resolves a type id and writes nothing ===")
-    preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
-                           {"asset": ASSET, "graphName": GRAPH, "text": linked_text_for("PROBE-PREVIEW", initial_target)})
+    preview = preview_append(session, linked_text_for("PROBE-PREVIEW", initial_target))
     print(preview[:600])
     print()
     check("the preview answers rather than erroring", not preview.startswith("error:"), preview[:160])
@@ -500,8 +514,7 @@ def main():
     print()
     print("=== 2. the EDIT writes, and the write is proved from OUTSIDE ===")
     marker = "PROBE-APPEND-REAL"
-    edited = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend",
-                          {"asset": ASSET, "graphName": GRAPH, "text": linked_text_for(marker, initial_target)})
+    edited = edit_append(session, linked_text_for(marker, initial_target))
     print(edited[:600])
     print()
     check("the edit answers rather than erroring", not edited.startswith("error:"), edited[:160])
@@ -548,11 +561,9 @@ def main():
     print("=== 4. a REFUSAL writes nothing, and the preview and edit agree ===")
     # A type id that cannot exist. Both tools must refuse it, in the same words, and neither may write.
     bad = "(NoSuchCategory|NoSuchFunction\n    InString \"nope\")"
-    bad_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
-                               {"asset": ASSET, "graphName": GRAPH, "text": bad})
+    bad_preview = preview_append(session, bad)
     print(bad_preview[:400])
-    bad_edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend",
-                            {"asset": ASSET, "graphName": GRAPH, "text": bad})
+    bad_edit = edit_append(session, bad)
     print(bad_edit[:400])
     print()
     check("the preview REFUSES an unresolvable type id", bad_preview.startswith("unchanged:") and "refusal(s)" in bad_preview, bad_preview[:240])
@@ -576,9 +587,7 @@ def main():
           target_key is not None, target_text[-200:] if target_key is None else target_key)
 
     if target_key is not None:
-        link_out = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
-                                {"asset": ASSET, "graphName": GRAPH,
-                                 "text": linked_text_for("PROBE-LINK-PREVIEW", target_key)})
+        link_out = preview_append(session, linked_text_for("PROBE-LINK-PREVIEW", target_key))
         print(link_out[:500])
         check("the preview PLANS the wire rather than refusing it",
               "wire  line" in link_out, link_out[:300])
@@ -586,9 +595,7 @@ def main():
               target_key in link_out and "execute" in link_out, link_out[:300])
 
         before_link_count, _ = node_count(session)
-        link_edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend",
-                                 {"asset": ASSET, "graphName": GRAPH,
-                                  "text": linked_text_for("PROBE-LINK-REAL", target_key)})
+        link_edit = edit_append(session, linked_text_for("PROBE-LINK-REAL", target_key))
         print(link_edit[:500])
         check("the edit reports a WIRE was made", "wire(s) made" in link_edit, link_edit[:300])
         # PARSED, NOT MATCHED. "1 wire(s) made, of 1 the text described" is read as two numbers, because a
@@ -616,14 +623,12 @@ def main():
         print()
         print("=== 5b. a local label links two new nodes in the same block ===")
         label_target, _ = link_target_id(session)
-        labelled_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend", {
-            "asset": ASSET, "graphName": GRAPH, "text": local_label_text("PROBE-LOCAL-LABEL", label_target)})
+        labelled_preview = preview_append(session, local_label_text("PROBE-LOCAL-LABEL", label_target))
         print(labelled_preview[:500])
         check("the preview accepts the local-label link", "wire  line" in labelled_preview,
               labelled_preview[:300])
         before_label_count, _ = node_count(session)
-        labelled_edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend", {
-            "asset": ASSET, "graphName": GRAPH, "text": local_label_text("PROBE-LOCAL-LABEL", label_target)})
+        labelled_edit = edit_append(session, local_label_text("PROBE-LOCAL-LABEL", label_target))
         print(labelled_edit[:500])
         check("the edit makes the local-label wire", "2 wire(s) made, of 2" in labelled_edit,
               labelled_edit[:300])
@@ -634,8 +639,7 @@ def main():
         print()
         print("=== 5c. a link to a node that does NOT exist is still refused by name ===")
         ghost = ("(Development|PrintString\n    execute (-> %s:%s:ffffff:then))" % (ASSET, GRAPH))
-        ghost_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
-                                     {"asset": ASSET, "graphName": GRAPH, "text": ghost})
+        ghost_preview = preview_append(session, ghost)
         print(ghost_preview[:400])
         check("a link whose SOURCE is not in the graph is refused", ghost_preview.startswith("unchanged:") and "refusal(s)" in ghost_preview,
               ghost_preview[:300])
@@ -646,8 +650,7 @@ def main():
         print("=== 5d. a link to a PIN that does not exist names the real pins ===")
         bad_pin = linked_text_for("PROBE-LINK-BADPIN", target_key).replace(
             ":%s))" % LINK_TARGET_PIN, ":noSuchPin))")
-        pin_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
-                                   {"asset": ASSET, "graphName": GRAPH, "text": bad_pin})
+        pin_preview = preview_append(session, bad_pin)
         print(pin_preview[:500])
         check("a link to a pin that does not exist is refused", pin_preview.startswith("unchanged:") and "refusal(s)" in pin_preview,
               pin_preview[:300])
@@ -658,8 +661,7 @@ def main():
 
     print()
     print("=== 6. an empty text is nothing to do, not a change ===")
-    empty = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend",
-                         {"asset": ASSET, "graphName": GRAPH, "text": ""})
+    empty = edit_append(session, "")
     print(empty[:300])
     # AN EMPTY TEXT IS AN ERROR RATHER THAN AN `unchanged`, AND THAT IS RIGHT: the checker runs FIRST - it is
     # the gate every writer depends on - and the gate refuses text with nothing in it, so the writer never

@@ -2,7 +2,7 @@
 
 `python Tools/validate.py` runs the explicit offline tier from catalog.json, serially, with deadlines, logs and exit codes. It does not discover an engine or start an editor. PowerShell and Git are required by infrastructure tests. Tests still have stable Tools/test-* entry points to preserve existing runner imports and task references.
 
-Use `python Tools/execute-tests.py --profile engine --suites <name> --execute` for the engine tier; the supervisor builds first and owns the editor and fixtures. A catalog entry is inventory, not evidence that a test passes. Tests/acceptance.json defines product release cases; its unmapped cases block a release. Source guards, mocked tests, a compile, and native smoke each prove different things.
+Use `python Tools/execute-tests.py --profile engine --suites <name> --execute` for the engine tier; the supervisor builds first and owns the editor and fixtures. A catalog entry is inventory, not evidence that a test passes. Tests/acceptance.json defines product release cases; its required, unmapped cases block a release. The owner-approved V1-* gates cover the current tool set. The original 97 extended specifications remain tracked under #33; they are not declared passed. Source guards, mocked tests, a compile, and native smoke each prove different things.
 
 The legacy `test-ownership.py --with-engine-build` path is not a supported standalone agent command: direct builds now require supervisor context. No routine offline test may conditionally start an engine.
 

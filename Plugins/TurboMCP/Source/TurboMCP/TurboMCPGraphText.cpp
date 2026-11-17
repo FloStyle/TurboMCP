@@ -21,6 +21,22 @@
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
 #include "K2Node_FunctionEntry.h"
+#include "K2Node_FunctionResult.h"
+#include "K2Node_IfThenElse.h"
+#include "K2Node_Variable.h"
+#include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
+#include "Policies/CondensedJsonPrintPolicy.h"
+#include "UObject/UnrealType.h"
+
+#if PLATFORM_WINDOWS
+#include "Windows/WindowsHWrapper.h"
+#include <bcrypt.h>
+#pragma comment(lib, "bcrypt.lib")
+#endif
 #include "K2Node_Knot.h"
 #include "K2Node_Self.h"
 #include "K2Node_SwitchEnum.h"
@@ -1336,4 +1352,457 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 	}
 
 	return Out;
+}
+
+
+namespace
+{
+	// Length framing prevents names/defaults containing delimiters from aliasing other fields.
+	void EditField(FString& Record, const FString& Value)
+	{
+		Record += FString::FromInt(Value.Len()) + TEXT(":") + Value;
+	}
+
+	FString EditGuid(const FGuid& Id)
+	{
+		return Id.ToString(EGuidFormats::DigitsLower);
+	}
+
+	FString EditPath(const UObject* Object)
+	{
+		return Object ? Object->GetPathName() : FString();
+	}
+
+	FString EditText(const FText& Text)
+	{
+		FString Value;
+		FTextStringHelper::WriteToBuffer(Value, Text, true, false);
+		return Value;
+	}
+
+	FString Sha256EditState(const FString& State)
+	{
+#if PLATFORM_WINDOWS
+		// The generic Core SHA-256 API has no implementation on the supported Win64 editor.
+		FTCHARToUTF8 Data(*State, State.Len());
+		BCRYPT_ALG_HANDLE Algorithm = nullptr;
+		if (BCryptOpenAlgorithmProvider(&Algorithm, BCRYPT_SHA256_ALGORITHM, nullptr, 0) < 0)
+			return FString();
+		uint8 Digest[32];
+		const NTSTATUS Status = BCryptHash(Algorithm, nullptr, 0,
+			reinterpret_cast<PUCHAR>(const_cast<ANSICHAR*>(Data.Get())), static_cast<ULONG>(Data.Length()), Digest, sizeof(Digest));
+		BCryptCloseAlgorithmProvider(Algorithm, 0);
+		if (Status >= 0)
+			return BytesToHex(Digest, UE_ARRAY_COUNT(Digest)).ToLower();
+#endif
+		return FString();
+	}
+
+	void EditPinTypeFields(FString& Record, const FEdGraphPinType& Type)
+	{
+		EditField(Record, Type.PinCategory.ToString());
+		EditField(Record, Type.PinSubCategory.ToString());
+		EditField(Record, EditPath(Type.PinSubCategoryObject.Get()));
+		EditField(Record, EditPath(Type.PinSubCategoryMemberReference.MemberParent));
+		EditField(Record, Type.PinSubCategoryMemberReference.MemberName.ToString());
+		EditField(Record, EditGuid(Type.PinSubCategoryMemberReference.MemberGuid));
+		EditField(Record, Type.PinValueType.TerminalCategory.ToString());
+		EditField(Record, Type.PinValueType.TerminalSubCategory.ToString());
+		EditField(Record, EditPath(Type.PinValueType.TerminalSubCategoryObject.Get()));
+		EditField(Record, FString::Printf(TEXT("%d,%d,%d,%d,%d,%d,%d,%d,%d"), int32(Type.ContainerType),
+			Type.bIsReference, Type.bIsConst, Type.bIsWeakPointer, Type.bIsUObjectWrapper,
+			Type.bSerializeAsSinglePrecisionFloat, Type.PinValueType.bTerminalIsConst,
+			Type.PinValueType.bTerminalIsWeakPointer, Type.PinValueType.bTerminalIsUObjectWrapper));
+	}
+
+	void EditFunctionFields(FString& Record, const UFunction* Function)
+	{
+		EditField(Record, EditPath(Function));
+		if (!Function) return;
+		EditField(Record, LexToString(uint32(Function->FunctionFlags)));
+		// Order is semantic here: this is the declared parameter/return order.
+		for (TFieldIterator<FProperty> It(Function, EFieldIteratorFlags::ExcludeSuper); It; ++It)
+		{
+			if (!It->HasAnyPropertyFlags(CPF_Parm)) continue;
+			EditField(Record, It->GetName());
+			EditField(Record, It->GetCPPType());
+			EditField(Record, LexToString(uint64(It->GetPropertyFlags())));
+			EditField(Record, Function->GetMetaData(*(TEXT("CPP_Default_") + It->GetName())));
+		}
+	}
+
+	bool EditCanQuote(const FString& Value)
+	{
+		for (const TCHAR Ch : Value)
+			if (Ch < 0x20 && Ch != TEXT('\t') && Ch != TEXT('\r') && Ch != TEXT('\n'))
+				return false;
+		return true;
+	}
+
+	bool EditCanNamePin(const UEdGraphPin& Pin)
+	{
+		const FString Name = Pin.PinName.ToString();
+		// The shared wire parser splits at the last colon, even inside a quoted output name.
+		return !Pin.PinName.IsNone() && EditCanQuote(Name)
+			&& (Pin.Direction != EGPD_Output || !Name.Contains(TEXT(":")));
+	}
+
+	bool EditCanWriteLiteral(const UEdGraphPin& Pin)
+	{
+		const FName Category = Pin.PinType.PinCategory;
+		if (Pin.DefaultObject && (Category != UEdGraphSchema_K2::PC_Object
+			&& Category != UEdGraphSchema_K2::PC_Class && Category != UEdGraphSchema_K2::PC_Interface))
+			return false;
+		if ((!Pin.DefaultTextValue.IsEmpty() && Category != UEdGraphSchema_K2::PC_Text)
+			|| (Pin.DefaultObject && !Pin.DefaultValue.IsEmpty())
+			|| (Category == UEdGraphSchema_K2::PC_Text && !Pin.DefaultValue.IsEmpty()))
+			return false;
+		return EditCanQuote(FTurboMCPGraphText::EditLiteral(Pin));
+	}
+}
+
+FString FTurboMCPGraphText::EditType(const UEdGraphNode& Node)
+{
+	const UClass* Class = Node.GetClass();
+	if (Class == UK2Node_FunctionEntry::StaticClass()) return TEXT("Function|Entry");
+	if (Class == UK2Node_FunctionResult::StaticClass()) return TEXT("Function|Result");
+	if (Class == UK2Node_Event::StaticClass())
+		return TEXT("Event|") + CastChecked<UK2Node_Event>(&Node)->GetFunctionName().ToString();
+	if (Class == UK2Node_CallFunction::StaticClass())
+		return CastChecked<UK2Node_CallFunction>(&Node)->GetTargetFunction()
+			? TurboMCPNodeId::GetNodeTypeId(&Node) : FString();
+	if (Class == UK2Node_CustomEvent::StaticClass() || Class == UK2Node_IfThenElse::StaticClass())
+		return TurboMCPNodeId::GetNodeTypeId(&Node);
+	if (Class == UK2Node_VariableGet::StaticClass() || Class == UK2Node_VariableSet::StaticClass())
+	{
+		const auto& Variable = *CastChecked<UK2Node_Variable>(&Node);
+		if (Variable.VariableReference.IsLocalScope()) return FString();
+		if (Variable.GetPropertyForVariableFromSkeleton() || Variable.GetPropertyForVariable())
+			return TurboMCPNodeId::GetNodeTypeId(&Node);
+		const UBlueprint* Blueprint = Node.GetGraph() ? Node.GetGraph()->GetTypedOuter<UBlueprint>() : nullptr;
+		if (Blueprint && Variable.VariableReference.IsSelfContext())
+			for (const FBPVariableDescription& Declaration : Blueprint->NewVariables)
+				if (Declaration.VarName == Variable.GetVarName() && Declaration.VarGuid.IsValid()
+					&& Variable.VariableReference.GetMemberGuid() == Declaration.VarGuid)
+					return TurboMCPNodeId::GetNodeTypeId(&Node);
+	}
+	return FString();
+}
+
+bool FTurboMCPGraphText::IsEditRemovalProtected(const UEdGraphNode& Node)
+{
+	return Node.IsA<UEdGraphNode_Comment>() || Node.IsA<UK2Node_FunctionEntry>()
+		|| Node.IsA<UK2Node_FunctionResult>() || Node.IsA<UK2Node_Event>() || !Node.CanUserDeleteNode();
+}
+
+bool FTurboMCPGraphText::IsEditInput(const UEdGraphPin& Pin)
+{
+	return Pin.Direction == EGPD_Input && (!Pin.LinkedTo.IsEmpty()
+		|| (!Pin.bHidden && !Pin.bDefaultValueIsIgnored && !Pin.bDefaultValueIsReadOnly
+			&& Pin.PinType.PinCategory != UEdGraphSchema_K2::PC_Exec
+			&& Pin.PinType.PinCategory != UEdGraphSchema_K2::PC_Wildcard));
+}
+
+FString FTurboMCPGraphText::EditLiteral(const UEdGraphPin& Pin)
+{
+	if (Pin.DefaultObject) return EditPath(Pin.DefaultObject);
+	if (Pin.PinType.PinCategory == UEdGraphSchema_K2::PC_Text) return EditText(Pin.DefaultTextValue);
+	return Pin.DefaultValue;
+}
+
+FString FTurboMCPGraphText::EditDefaultState(const UEdGraphPin& Pin)
+{
+	FString Record;
+	EditField(Record, Pin.DefaultValue);
+	EditField(Record, EditPath(Pin.DefaultObject));
+	EditField(Record, EditText(Pin.DefaultTextValue));
+	return Record;
+}
+
+FString FTurboMCPGraphText::EditPinShape(const UEdGraphPin& Pin)
+{
+	FString Record;
+	EditField(Record, Pin.PinName.ToString());
+	EditField(Record, EditGuid(Pin.PinId));
+	EditField(Record, EditGuid(Pin.PersistentGuid));
+	EditField(Record, FString::Printf(TEXT("%d,%d,%d,%d,%d,%d,%d"), int32(Pin.Direction.GetValue()),
+		Pin.bHidden, Pin.bNotConnectable, Pin.bDefaultValueIsReadOnly, Pin.bDefaultValueIsIgnored,
+		Pin.bOrphanedPin, Pin.bAdvancedView));
+	EditField(Record, Pin.AutogeneratedDefaultValue);
+	EditPinTypeFields(Record, Pin.PinType);
+	return Record;
+}
+
+FString FTurboMCPGraphText::EditNodeState(const UEdGraphNode& Node)
+{
+	FString Record;
+	EditField(Record, Node.GetClass()->GetPathName());
+	EditField(Record, Node.GetName());
+	EditField(Record, EditGuid(Node.NodeGuid));
+	EditField(Record, Node.NodeComment);
+	EditField(Record, FString::Printf(TEXT("%d,%d,%d,%d,%d,%d,%d,%d"), Node.NodePosX, Node.NodePosY,
+		Node.NodeWidth, Node.NodeHeight, int32(Node.GetDesiredEnabledState()), int32(Node.CanUserDeleteNode()),
+		Node.bCommentBubblePinned, Node.bCommentBubbleVisible));
+
+	// Supported node classes' authored properties (member references, event flags,
+	// function metadata, comment settings, etc.). Ignore editor caches and UI state.
+	TArray<const FProperty*> Fields;
+	for (TFieldIterator<FProperty> It(Node.GetClass()); It; ++It)
+	{
+		if (It->GetOwnerStruct() == UEdGraphNode::StaticClass()
+			|| It->HasAnyPropertyFlags(CPF_Transient | CPF_Deprecated | CPF_SkipSerialization))
+			continue;
+		// Function locals have separate semantics and are refused by EditSnapshot.
+		if ((It->GetFName() == TEXT("LocalVariables") || It->GetFName() == TEXT("MetaData"))
+			&& It->GetOwnerStruct() == UK2Node_FunctionEntry::StaticClass()) continue;
+		Fields.Add(*It);
+	}
+	Fields.Sort([](const FProperty& A, const FProperty& B) { return A.GetPathName() < B.GetPathName(); });
+	for (const FProperty* Field : Fields)
+	{
+		FString Value;
+		Field->ExportText_InContainer(0, Value, &Node, nullptr, const_cast<UEdGraphNode*>(&Node), PPF_Delimited);
+		EditField(Record, Field->GetName());
+		EditField(Record, Value);
+	}
+	if (const UK2Node_EditablePinBase* Editable = Cast<UK2Node_EditablePinBase>(&Node))
+		for (const TSharedPtr<FUserPinInfo>& Pin : Editable->UserDefinedPins)
+		{
+			EditField(Record, Pin ? Pin->PinName.ToString() : FString());
+			if (!Pin) continue;
+			EditField(Record, FString::FromInt(int32(Pin->DesiredPinDirection.GetValue())));
+			EditField(Record, Pin->PinDefaultValue);
+			EditPinTypeFields(Record, Pin->PinType);
+		}
+	if (const UK2Node_FunctionEntry* Entry = Cast<UK2Node_FunctionEntry>(&Node))
+	{
+		const auto& Metadata = Entry->MetaData;
+		EditField(Record, EditText(Metadata.ToolTip));
+		EditField(Record, EditText(Metadata.Category));
+		EditField(Record, EditText(Metadata.Keywords));
+		EditField(Record, EditText(Metadata.CompactNodeTitle));
+		EditField(Record, Metadata.InstanceTitleColor.ToString());
+		EditField(Record, Metadata.DeprecationMessage);
+		EditField(Record, FString::Printf(TEXT("%d,%d,%d,%d"), Metadata.bIsDeprecated, Metadata.bCallInEditor,
+			Metadata.bThreadSafe, Metadata.bIsUnsafeDuringActorConstruction));
+		TArray<FName> Keys;
+		Metadata.GetMetaDataMap().GetKeys(Keys);
+		Keys.Sort(FNameLexicalLess());
+		for (const FName Key : Keys)
+		{
+			EditField(Record, Key.ToString());
+			EditField(Record, Metadata.GetMetaData(Key));
+		}
+	}
+	if (const UK2Node_FunctionTerminator* Terminator = Cast<UK2Node_FunctionTerminator>(&Node))
+		EditFunctionFields(Record, Terminator->FindSignatureFunction());
+	if (const auto* Variable = Cast<UK2Node_Variable>(&Node))
+	{
+		const FProperty* Property = Variable->GetPropertyForVariableFromSkeleton();
+		if (!Property) Property = Variable->GetPropertyForVariable();
+		if (Property)
+		{
+			EditField(Record, Property->GetPathName());
+			EditField(Record, Property->GetCPPType());
+			EditField(Record, LexToString(uint64(Property->GetPropertyFlags())));
+		}
+	}
+	if (const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(&Node))
+		EditFunctionFields(Record, Call->GetTargetFunction());
+	if (const UK2Node_Event* Event = Cast<UK2Node_Event>(&Node))
+		EditFunctionFields(Record, Event->EventReference.ResolveMember<UFunction>(nullptr));
+	return Record;
+}
+
+FString FTurboMCPGraphText::EditSnapshot(const UBlueprint& Blueprint, const UEdGraph& Graph,
+	FString& OutBody, TArray<FString>& OutIssues)
+{
+	using namespace TurboMCPGraphTextLex;
+	OutBody.Reset();
+	OutIssues.Reset();
+	if (Graph.Nodes.Num() > 4096)
+	{
+		OutIssues.Add(TEXT("graph exceeds the edit snapshot node limit (4096); no complete export was produced"));
+		return FString();
+	}
+	TArray<UEdGraph*> AllGraphs;
+	Blueprint.GetAllGraphs(AllGraphs);
+	for (UEdGraph* EventGraph : Blueprint.EventGraphs)
+		if (EventGraph)
+		{
+			AllGraphs.AddUnique(EventGraph);
+			EventGraph->GetAllChildrenGraphs(AllGraphs);
+		}
+	TSet<const UEdGraph*> GuidMatches;
+	if (Graph.GraphGuid.IsValid())
+		for (const UEdGraph* Candidate : AllGraphs)
+			if (Candidate && Candidate->GraphGuid == Graph.GraphGuid)
+				GuidMatches.Add(Candidate);
+	if (Graph.GetOuter() != &Blueprint || Graph.HasAnyFlags(RF_Transient)
+		|| GuidMatches.Num() != 1 || !GuidMatches.Contains(&Graph) || !Graph.bEditable
+		|| !Graph.GetSchema() || Graph.GetSchema()->GetClass() != UEdGraphSchema_K2::StaticClass())
+		OutIssues.Add(TEXT("graph is not a uniquely identified editable authored K2 graph owned directly by this Blueprint"));
+
+	FString State;
+	EditField(State, TEXT("tmcp-edit-v1"));
+	EditField(State, Blueprint.GetPathName());
+	EditField(State, EditGuid(Graph.GraphGuid));
+	EditField(State, EditPath(Blueprint.ParentClass));
+	EditField(State, EditPath(Graph.GetSchema() ? Graph.GetSchema()->GetClass() : nullptr));
+
+	TMap<FString, const UEdGraphNode*> Nodes;
+	TSet<const UEdGraphPin*> OwnedPins;
+	for (const UEdGraphNode* Node : Graph.Nodes)
+	{
+		if (!Node || Node->GetOuter() != &Graph || !Node->NodeGuid.IsValid()
+			|| Nodes.Contains(EditGuid(Node->NodeGuid)))
+		{
+			OutIssues.Add(TEXT("null, foreign, missing or duplicate node identity: ") + EditPath(Node));
+			continue;
+		}
+		Nodes.Add(EditGuid(Node->NodeGuid), Node);
+		for (const UEdGraphPin* Pin : Node->Pins)
+			if (Pin && Pin->GetOwningNodeUnchecked() == Node)
+				OwnedPins.Add(Pin);
+	}
+
+	TArray<FString> NodeIds;
+	Nodes.GetKeys(NodeIds);
+	NodeIds.Sort();
+	for (const FString& Id : NodeIds)
+	{
+		const UEdGraphNode& Node = *Nodes.FindChecked(Id);
+		const bool bComment = Node.GetClass() == UEdGraphNode_Comment::StaticClass();
+		const FString Type = EditType(Node);
+		const auto* Entry = Cast<UK2Node_FunctionEntry>(&Node);
+		const bool bRepresentableNode = !Type.IsEmpty() && EditCanQuote(Type) && (!Entry || Entry->LocalVariables.IsEmpty());
+		if (!bRepresentableNode && !bComment)
+			OutIssues.Add(FString::Printf(TEXT("node %s (%s): unsupported node semantics%s"), *Id, *Node.GetClass()->GetName(),
+				Entry && !Entry->LocalVariables.IsEmpty() ? TEXT(" (function locals)") : TEXT("")));
+		EditField(State, bRepresentableNode || bComment ? EditNodeState(Node) : Node.GetClass()->GetPathName());
+
+		if (bRepresentableNode) OutBody += TEXT("(") + QuoteLiteral(Type) + TEXT(" ; ") + Id + TEXT("\n");
+
+		TSet<FGuid> PinIds;
+		TSet<FString> PinNames;
+		TArray<FString> PinRecords;
+		TArray<FString> InputLines;
+		for (const UEdGraphPin* Pin : Node.Pins)
+		{
+			if (!Pin || !OwnedPins.Contains(Pin) || Pin->GetOwningNodeUnchecked() != &Node
+				|| !Pin->PinId.IsValid() || PinIds.Contains(Pin->PinId))
+			{
+				OutIssues.Add(TEXT("node ") + Id + TEXT(": missing, foreign or duplicate pin identity"));
+				continue;
+			}
+			PinIds.Add(Pin->PinId);
+			const FString Name = Pin->PinName.ToString();
+			const FString PinKey = FString::FromInt(int32(Pin->Direction.GetValue())) + TEXT(":") + Name.ToLower();
+			const FString Address = Id + TEXT(":") + Name;
+			if (bComment || PinNames.Contains(PinKey) || !EditCanNamePin(*Pin)
+				|| Pin->ParentPin || !Pin->SubPins.IsEmpty() || Pin->bOrphanedPin
+				|| (Pin->Direction != EGPD_Input && Pin->Direction != EGPD_Output))
+				OutIssues.Add(TEXT("pin ") + Address + TEXT(": unsupported, split, orphaned or ambiguous pin identity"));
+			PinNames.Add(PinKey);
+			FString PinRecord = EditPinShape(*Pin);
+			EditField(PinRecord, EditDefaultState(*Pin));
+
+			TArray<FString> LinkRecords;
+			TSet<const UEdGraphPin*> SeenLinks;
+			for (const UEdGraphPin* Linked : Pin->LinkedTo)
+			{
+				if (!OwnedPins.Contains(Linked) || SeenLinks.Contains(Linked) || Pin->bNotConnectable || Linked->bNotConnectable
+					|| !IsWire(Pin->Direction == EGPD_Output ? Pin : Linked, Pin->Direction == EGPD_Input ? Pin : Linked))
+				{
+					OutIssues.Add(TEXT("pin ") + Address + TEXT(": incomplete, foreign, duplicate or incompatible wire endpoint"));
+					continue;
+				}
+				SeenLinks.Add(Linked);
+				const FString SourceId = EditGuid(Linked->GetOwningNodeUnchecked()->NodeGuid);
+				FString LinkRecord;
+				EditField(LinkRecord, SourceId);
+				EditField(LinkRecord, EditGuid(Linked->PinId));
+				LinkRecords.Add(MoveTemp(LinkRecord));
+				if (bRepresentableNode && Pin->Direction == EGPD_Input && EditCanNamePin(*Linked))
+					InputLines.Add(TEXT(" ") + QuoteLiteral(Name) + TEXT(" (-> ") + SourceId + TEXT(":")
+						+ QuoteLiteral(Linked->PinName.ToString()) + TEXT(")\n"));
+			}
+			LinkRecords.Sort();
+			for (const FString& Link : LinkRecords) EditField(PinRecord, Link);
+			PinRecords.Add(MoveTemp(PinRecord));
+
+			if (Pin->LinkedTo.Num() > 1)
+			{
+				const bool bExec = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec;
+				if (Pin->Direction == EGPD_Output && bExec)
+					OutIssues.Add(TEXT("pin ") + Address + TEXT(": execution output fan-out is inspection only"));
+				else if (Pin->Direction == EGPD_Input && !bExec)
+					OutIssues.Add(TEXT("pin ") + Address + TEXT(": multiple data sources are not supported"));
+			}
+			if (bRepresentableNode && Pin->LinkedTo.IsEmpty() && IsEditInput(*Pin))
+			{
+				if (!EditCanWriteLiteral(*Pin))
+					OutIssues.Add(TEXT("pin ") + Address + TEXT(": default cannot be represented without loss"));
+				else
+					InputLines.Add(TEXT(" ") + QuoteLiteral(Name) + TEXT(" ") + QuoteLiteral(EditLiteral(*Pin)) + TEXT("\n"));
+			}
+		}
+		PinRecords.Sort();
+		for (const FString& Record : PinRecords) EditField(State, Record);
+		EditField(State, FString()); // End of this node's pin list.
+		if (bRepresentableNode)
+		{
+			InputLines.Sort();
+			OutBody += FString::Join(InputLines, TEXT("")) + TEXT(")\n");
+		}
+	}
+	OutIssues.Sort();
+	const FString Fingerprint = Sha256EditState(State);
+	if (Fingerprint.IsEmpty()) OutIssues.Add(TEXT("SHA-256 semantic fingerprint is unavailable"));
+	return Fingerprint;
+}
+
+FString FTurboMCPGraphText::RenderEdit(const UBlueprint& Blueprint, const UEdGraph& Graph, int32 MaxChars,
+	const FString& WholeGraphIssue)
+{
+	FString Body;
+	TArray<FString> Issues;
+	const FString Fingerprint = EditSnapshot(Blueprint, Graph, Body, Issues);
+	if (!WholeGraphIssue.IsEmpty()) Issues.Add(WholeGraphIssue);
+	auto Header = [&]()
+	{
+		TSharedRef<FJsonObject> Json = MakeShared<FJsonObject>();
+		Json->SetStringField(TEXT("asset"), Blueprint.GetPathName());
+		Json->SetStringField(TEXT("graph"), Graph.GetName());
+		Json->SetStringField(TEXT("graphGuid"), EditGuid(Graph.GraphGuid));
+		Json->SetStringField(TEXT("baseFingerprint"), Fingerprint);
+		Json->SetBoolField(TEXT("complete"), Issues.IsEmpty());
+		FString Encoded;
+		FJsonSerializer::Serialize(Json, TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Encoded));
+		return TEXT("; tmcp-edit-v1: ") + Encoded + TEXT("\n");
+	};
+	auto RenderIssues = [&]()
+	{
+		FString Notes;
+		for (const FString& Issue : Issues)
+			Notes += TEXT("; error: ") + TurboMCPGraphTextLex::QuoteLiteral(Issue) + TEXT("\n");
+		return Notes;
+	};
+	if (Header().Len() + Body.Len() + RenderIssues().Len() > MaxChars)
+	{
+		Issues.Insert(TEXT("edit export exceeds MaxChars; no partial node forms are returned"), 0);
+		Body.Reset();
+	}
+	FString Result = Header();
+	for (const FString& Issue : Issues)
+	{
+		const FString Line = TEXT("; error: ") + TurboMCPGraphTextLex::QuoteLiteral(Issue) + TEXT("\n");
+		if (Result.Len() + Line.Len() > MaxChars)
+		{
+			Result += TEXT("; error: further edit limitations omitted by MaxChars\n");
+			break;
+		}
+		Result += Line;
+	}
+	return Result + Body;
 }

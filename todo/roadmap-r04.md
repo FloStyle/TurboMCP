@@ -8,6 +8,61 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current review: V1 schema callers (2026-11-17)
+
+Readiness: ready. The integrator approves `v1-schema-callers` in exactly
+Tools/test-graph-append.py and Tools/test-datatable-rows.py.
+Follow [the repair contract and remaining checklist](../docs/audit/v1-failure-handoff-2026-11-17.md).
+The existing macro fix is integrated and passed focused native checks.
+This assignment repairs callers and prerequisite failure reporting only.
+Production edits, weaker assertions and broad test runs are not authorized.
+
+## V1 integration checkpoint (2026-11-17)
+
+The owner approved the current documented tool set after critical fixes and
+focused acceptance. Ten V1-* gates replace the extended 97-case release
+requirement; all original specifications/statuses remain in Tests/acceptance.json
+and GitHub #33. No implementation guard is removed.
+
+Graph correction 6d1bdcf6 integrated as 36cf3bef. Supervised run
+b1a2376442d34477862c1035c27794a8 passed build and Replace.LinkedRetention
+(1/1, 6.164 seconds, zero warnings), restoring all 16 files. Run
+d339cb942a1b4f24a7744105455b5871 remains failed: stock undo normalized an
+incorrectly placed PrintString node. The fixture now uses stock placement and
+independently checks enabled state. Stale-plan guards remain unchanged.
+
+Consumer e2f21c41 passed scope and independent source review after stock
+receipt, interrupted-edit and plugin-discovery corrections. Native final ZIP
+checks remain pending. Website a90ba228/ec16b09d passed scope/static review;
+the follow-up removes TurboUX and purple accents. Real monitor capture and
+final visual review remain pending.
+
+## Current review: malformed macro discovery guard (2026-11-17)
+
+Readiness: ready. The integration owner approves `v1-macro-discovery-guard`
+in exactly TurboMCPNodeType.cpp and TurboMCPReplacePlanTest.cpp. This follows
+an observed editor crash during the focused ReplacePlan run at d34ee547.
+Run 802801f0deba4d378cb3305d6785837c retained the crash and restored all 16
+fixture files. The failed RPC was not repeated. Its captured editor stack
+reaches stock UK2Node_MacroInstance::GetKeywords through CollectEntries while
+resolving an unrelated valid replacement node. The deliberately malformed
+fixture macro has no output-capable entry tunnel, so its metadata is null.
+
+Before filtering or obtaining UI metadata, validate stock macro spawner
+metadata and skip malformed actions. Preserve valid stock macro discovery,
+normal filtering, exact IDs and creation. Do not change Unreal source or clear
+the global action database to hide the fault. Retain the malformed fixture and
+verify a valid macro remains available in the same focused native fixture.
+Any fixture cleanup must be limited to its owned synthetic action and must not
+suppress the failing operation. Keep checks minimal; root owns the single
+focused native rerun after review. Independent engine deferred priming is an
+external limit and must not be claimed fixed by this addon guard.
+
+The previous graph candidate passed build c7c5168864a14f5eb07ecdb07a38f8e2.
+A preceding integration build 4805185710b9446883c77994d5d2784c was started with
+unresolved cherry-pick markers and failed; it is not product-test evidence.
+Graph replacement remains pending integration and acceptance, not complete.
+
 ## Current review: minimal V1 package consumer (2026-11-17)
 
 Readiness: ready. The integration owner accepts the source-only consumer

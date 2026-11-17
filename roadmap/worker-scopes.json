@@ -4436,6 +4436,24 @@
           ],
           "new_files": []
         },
+        "v1-macro-discovery-guard": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPReplacePlanTest.cpp"
+          ],
+          "new_files": []
+        },
+        "v1-clean-consumer": {
+          "files": [
+            "Tools/execute-tests.py",
+            "Tools/plugin_identity.py",
+            "Tools/test-execution-runtime.py",
+            "Tools/test-plugin-identity.py"
+          ],
+          "new_files": [
+            "Tools/package_consumer.py"
+          ]
+        },
         "v1-site-human-guide": {
           "files": [
             "site/index.html",
@@ -4450,16 +4468,12 @@
             "site/tool-notes.json"
           ]
         },
-        "v1-clean-consumer": {
+        "v1-schema-callers": {
           "files": [
-            "Tools/execute-tests.py",
-            "Tools/plugin_identity.py",
-            "Tools/test-execution-runtime.py",
-            "Tools/test-plugin-identity.py"
+            "Tools/test-graph-append.py",
+            "Tools/test-datatable-rows.py"
           ],
-          "new_files": [
-            "Tools/package_consumer.py"
-          ]
+          "new_files": []
         }
       },
       "preserve_rows": []

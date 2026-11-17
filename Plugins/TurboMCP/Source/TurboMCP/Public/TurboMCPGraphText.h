@@ -13,6 +13,7 @@
 #include "Containers/UnrealString.h"
 #include "CoreTypes.h"
 
+class UBlueprint;
 class UEdGraph;
 class UEdGraphNode;
 class UEdGraphPin;
@@ -67,6 +68,21 @@ public:
 	FString Render(const UEdGraph* InGraph, EDetail InDetail,
 		const FString& InAssetPath, TArray<FString>& OutNotes, const FString& EntryFilter = FString(),
 		const UEdGraphNode* InEntry = nullptr) const;
+
+	/** ARC07 state and export. The fingerprint is independent of the display text. */
+	static FString EditSnapshot(const UBlueprint& Blueprint, const UEdGraph& Graph,
+		FString& OutBody, TArray<FString>& OutIssues);
+	static FString RenderEdit(const UBlueprint& Blueprint, const UEdGraph& Graph, int32 MaxChars,
+		const FString& WholeGraphIssue = FString());
+
+	/** Exact identities and state also used to verify Replace on scratch and live graphs. */
+	static FString EditType(const UEdGraphNode& Node);
+	static bool IsEditRemovalProtected(const UEdGraphNode& Node);
+	static bool IsEditInput(const UEdGraphPin& Pin);
+	static FString EditLiteral(const UEdGraphPin& Pin);
+	static FString EditDefaultState(const UEdGraphPin& Pin);
+	static FString EditPinShape(const UEdGraphPin& Pin);
+	static FString EditNodeState(const UEdGraphNode& Node);
 
 private:
 	/**

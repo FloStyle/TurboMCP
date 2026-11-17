@@ -1,53 +1,55 @@
 # 1.0.0 release plan
 
-Status: planned. No date or stable support claim is promised.
+Status: candidate preparation. No stable package is published yet.
 
-[Milestone](https://github.com/FloStyle/TurboMCP/milestone/1) | [Release drafts](https://github.com/FloStyle/TurboMCP/releases) | [Open issue map](github-issues.md)
+[Milestone](https://github.com/FloStyle/TurboMCP/milestone/1) | [Releases](https://github.com/FloStyle/TurboMCP/releases) | [Issue map](github-issues.md)
 
-## Target
+## Approved scope: 17 November 2026
 
-Windows and the exact reviewed stock Unreal 5.8.4 source build. Check [engine.lock.json](../engine.lock.json) when selecting the final candidate. Installed distributions need their own package evidence. Unreal 5.9 stays on its separate candidate branch.
+The owner chose: release the current documented tool set after critical fixes and focused acceptance. Track unfinished features for later. Support is limited to Windows and the stock Unreal 5.8.4 source build in engine.lock.json. No Launcher or 5.9 claim.
+
+Keep the existing tool contracts and safety guards. Compilation and saving remain explicit. GraphPatch does not gain linked-pin edits. DataTable operations do not gain ordered mixed set/remove on one row. Production compile-baseline coordination is separate work. These features and the extended acceptance backlog remain open in [#33](https://github.com/FloStyle/TurboMCP/issues/33).
+
+The original 97 acceptance specifications remain in Tests/acceptance.json with their previous statuses and evidence. They are not 97 completed tests. The ten V1-* records are the release gates for this approved scope. A failed focused check must be repaired or explicitly resolved; it cannot be removed to obtain a pass.
 
 ## Required work
 
-- [ ] [#14 Review open findings and agree the 1.0.0 release scope](https://github.com/FloStyle/TurboMCP/issues/14)
-- [x] [#13 Resolve unloaded exact object paths in multi-asset packages](https://github.com/FloStyle/TurboMCP/issues/13)
-- [x] [#18 Make fresh-checkout task claim setup and output reliable](https://github.com/FloStyle/TurboMCP/issues/18)
-- [ ] [#15 Complete exact-candidate 1.0.0 acceptance](https://github.com/FloStyle/TurboMCP/issues/15)
-- [ ] [#16 Verify clean installation and versioned release packages](https://github.com/FloStyle/TurboMCP/issues/16)
-- [x] [#17 Finish repository protections and release publication controls](https://github.com/FloStyle/TurboMCP/issues/17)
+- [x] Owner agreed scope (#14); source and issue reconciliation is recorded below.
+- [x] Exact unloaded-object resolution (#13), repository controls (#17), fresh-checkout claims (#18), and call-log repair (#28) integrated.
+- [ ] Explicit graph deletion repair (#27) integrated into public main after review and focused native acceptance.
+- [ ] Frozen-candidate focused acceptance (#15).
+- [ ] Exact versioned package and both clean consumers (#16).
+- [ ] Publish stable and v1.0.0 with the tested ZIP, manifest and SHA-256; update website, wiki and README to V1.
 
-## Acceptance
+## Minimal acceptance
 
-- Review each open finding and record whether it blocks 1.0.0. A new feature or an unknown cause must not silently become a completed fix.
-- Map all 97 required acceptance cases to exact tests and evidence. Retain failed, blocked and missing results.
-- Verify tool behavior, installed package identity and clean-consumer checks for each supported distribution.
-- Review source, documentation, licenses and repository protections at the final commit.
-- Obtain the owner's stable-release approval. Then create `stable` and `v1.0.0` at the accepted commit and publish the tested artifacts with hashes.
+Run the existing offline gate once. Use one supervised native request for the eight fixtures named by the V1-* mappings: replacement, existing graph-edit workflow, append, append failure, call-log sink, typed Data Asset creation, DataTable rows, and widget roundtrip. Reuse that request for all matching assertions. Do not run the old 27-suite extended proposal for this release. Do not count one passing fixture as a whole-suite pass. Preserve the two known append failures until the current append driver establishes its actual result.
 
-The draft in Releases is planning material. It must remain a draft until these gates pass. Daily source snapshots are a separate prerelease channel and cannot satisfy stable acceptance by themselves.
+Then build the final versioned ZIP once and exercise it in fresh Blueprint-only and C++ projects. Both phases use the same archive and editor BuildId. The C++ consumer may build its own module and use Unreal's stock metadata writer for its own receipts. It must not rebuild or rewrite the packaged plugin. The original ZIP and manifest remain immutable; attach acceptance evidence separately.
 
-## Current evidence
+Development-editor fixture evidence proves source behavior on the frozen commit. Clean-consumer evidence separately proves the packaged DLL identity, load, discovery and small read/edit/refusal workflow. Do not describe the development editor's DLL as the installed package DLL. The release artifact in the evidence record is the exact ZIP used by both consumers.
 
-As of 17 November, issues #13 (exact object resolution), #17 (repository controls)
-and #18 (fresh-checkout claims) are integrated and closed. Their completion does
-not close the remaining scope, acceptance or clean-install gates.
+Review the complete tracked source export and release dispositions. The existing release-check gate still requires every required V1 record to pass with exact source/engine identity and hashed logs/artifact. The owner's release instruction authorizes publication once these gates pass. A daily prerelease or an old preview ZIP does not satisfy them.
 
-The supervised Win64 BuildPlugin run `802cee64cd5640019a27c45c9b81ad4d`
-passed at source `9c97d01af2c094fb1f022fccf903f377a2f78fdc` on the pinned
-5.8.4 engine. Its 371-file ZIP and module build ID were verified. Fresh BP-only
-and C++ consumer installation, load/discovery/read/edit/refusal checks and
-Launcher compatibility remain unverified. The daily prerelease is source only.
+## Open issue dispositions
 
-The original source-preview fixture collection was 13/15. A later focused native
-metadata check verified the exact-object repair; the full original fixture audit
-has not been rerun. All 97 required acceptance specifications still need reviewed
-mapping and exact-candidate evidence. Known append-suite failures remain open.
+| Issues | V1 disposition |
+| --- | --- |
+| #2, #4, #5 | Stock-engine reports remain open. No addon fix claimed. After a StopPIE error, inspect actual play state before editing. |
+| #3, #10, #11 | Exact field/client evidence is missing. Preserve the investigations and current typed/default guards. |
+| #6, #7 | Partial layout work remains open; the supported append path gets one focused check. No general layout guarantee. |
+| #8 | Current local-player input has scoped behavior. General process-wide console isolation is not promised. |
+| #9, #12 | Placed-widget class replacement and broader unloaded scan coverage are later capabilities. |
+| #19 | Unreal 5.9 remains a separate compatibility branch and acceptance task. |
+| #27 | Blocking addon safety fix: explicit deletion, complete exports and freshness checks. |
+| #33 | Deferred features and extended acceptance; not completed work. |
 
-A source review confirmed that graph replacement still deletes omitted eligible
-nodes, contrary to ARC07's explicit-delete requirement. The approved bounded
-repair includes a complete edit export, fresh fingerprint, refusal cases and
-caller/help migration. It must be reviewed and tested before release acceptance.
+These dispositions use the [source reconciliation](audit/v1-remaining-reconciliation-2026-11-17.json). Unknown causes remain unknown. A new reproduced defect in a supported V1 operation still blocks release if it breaks its safety or core workflow.
 
+## Recorded evidence so far
 
-See the [release manager](release-manager.md) for the exact evidence format and final release gate.
+Graph candidate 36cf3bef passed supervised run b1a2376442d34477862c1035c27794a8: Replace.LinkedRetention 1/1, 6.164 seconds, zero warnings; all 16 fixture files restored. Earlier failures are retained. The macro-discovery crash is guarded; the last two failures were fixture setup that skipped stock event registration and node placement. Production freshness checks were not weakened.
+
+The older preview package from 9c97d01a passed BuildPlugin, but its BuildId differs from the current editor. It is not the V1 package. Clean consumer implementation has source review and focused offline checks; native final-package acceptance remains pending.
+
+See [release manager](release-manager.md) for the evidence format and final gate.

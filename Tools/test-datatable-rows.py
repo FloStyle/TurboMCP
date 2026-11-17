@@ -35,13 +35,6 @@ from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, READ_TOOLSET, Session  # noqa: E
 
 TABLE = "/DatasmithContent/Datasmith/AreaLightsTable"
 
-# *** THE FIELD NAME IS READ FROM THE READER, NOT WRITTEN HERE, AND THAT IS A MEASURED CORRECTION. *** This suite
-# first hard-coded `Mesh`, WHICH IS WRONG: the reader prints the engine's real property name, and for this struct it
-# is `Mesh_6_F25026594EAB378BF6D9C1A028E878EC` - a name carrying a GUID, because the struct came from an import. A
-# GUESSED FIELD NAME MADE THREE CHECKS FAIL ON A TOOL THAT WAS WORKING, which is the same shape as the regex that
-# assumed a format and the anchored pattern that never matched: **THE SUITE MUST READ THE FORMAT, NOT ASSUME IT.**
-FIELD = None
-
 # A NAME NO REAL ROW HAS, so this suite can only ever touch its own row. IT IS THE WHOLE RESTORE STRATEGY: the
 # suite never edits a row it did not create, so restoring means removing one row it named itself.
 SCRATCH = "TURBOMCP_SuiteScratchRow"
@@ -60,10 +53,8 @@ def check(name, ok, detail=""):
 def row_lines(reader_text):
     """The row names the reader printed, as a set.
 
-    THE ROWS COME AFTER THE `rows: N` LINE AND BEFORE ANY `;` COMMENT. THEY MUST NOT BE FOUND BY A RULE ABOUT
-    COLONS: the first version excluded any line containing one, and EVERY ROW NAME HERE CONTAINS `::` because this
-    table's rows are named after enum values - so the parser returned an empty set and the suite could not see a row
-    it had just created. **A PARSER WHOSE RULE EXCLUDES THE DATA IS INDISTINGUISHABLE FROM DATA THAT IS ABSENT.**
+    The rows come after the count and before the page metadata. Enum row names
+    can contain double colons.
     """
     out = set()
     started = False
@@ -74,9 +65,9 @@ def row_lines(reader_text):
             continue
         if not started:
             continue
-        if stripped.startswith(";"):
+        if stripped.startswith(("page:", ";")):
             break
-        if stripped:
+        if stripped and stripped != "(the table has no rows)":
             out.add(stripped)
     return out
 
@@ -101,6 +92,20 @@ def first_field(reader_text):
                     return stripped.split(" : ", 1)[0].strip()
             return None
     return None
+
+
+def read_table_schema(session):
+    # Names-only output retains the field schema and keeps cell values out of the row list.
+    response = session.call(READ_TOOLSET, "ReadTurboMCPDataTable",
+                            {"asset": TABLE, "include": "schema", "columns": "none",
+                             "textMode": "lossless", "offset": 0, "limit": 60,
+                             "rowFilter": "", "revision": ""})
+    count = row_count(response)
+    rows = row_lines(response)
+    if count is None or count != len(rows):
+        raise SystemExit("RESULT: FAIL (the DataTable reader did not return a complete row list)\n"
+                         + (response or "(empty reply)"))
+    return response, count, rows
 
 
 def restore_on_the_way_in(session):
@@ -169,7 +174,7 @@ def run_parser_checks(session):
         check(name, predicate(answer or ""), (answer or "")[:200].replace("\n", " | "))
 
 
-def run_rules_checks(session):
+def run_rules_checks(session, field):
     """The rules that need a real table: refusals, the preview writing nothing, and both tools reachable.
 
     *** ORDER MATTERS AND IT IS A MEASURED CORRECTION. *** This function first captured its baseline and THEN called
@@ -184,34 +189,36 @@ def run_rules_checks(session):
     # EVERY RULE CHECK BELOW STARTS FROM A TABLE WITH NO SCRATCH ROW, so it cannot depend on what a killed run left.
     restore_on_the_way_in(session)
 
-    before = session.call(READ_TOOLSET, "ReadTurboMCPDataTable", {"asset": TABLE, "include": "schema"})
-    count_before = row_count(before)
+    _, count_before, _ = read_table_schema(session)
 
     # BOTH TOOLS MUST ANSWER, WHICH IS ALSO THE STRONGEST STALE-BINARY GUARD AVAILABLE: neither existed before this
     # work, so a stale DLL would answer "no such tool" - and that trap has fired five times in this project.
     preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPDataTableRows",
-                           {"asset": TABLE, "rows": ["%s = %s=None" % (SCRATCH, FIELD)]})
+                           {"asset": TABLE, "rows": ["%s = %s=None" % (SCRATCH, field)]})
     check("PreviewTurboMCPDataTableRows answers, so the loaded DLL is new",
           bool(preview) and "no such tool" not in (preview or "").lower(), (preview or "")[:180])
 
     # THE PREVIEW MUST NOT WRITE. Read back through the READER, a different tool from the writer.
-    after_preview = session.call(READ_TOOLSET, "ReadTurboMCPDataTable", {"asset": TABLE, "include": "schema"})
-    check("the PREVIEW wrote nothing",
-          row_count(after_preview) == count_before,
-          "before %s, after %s" % (count_before, row_count(after_preview)))
+    _, count_after_preview, _ = read_table_schema(session)
+    check("the PREVIEW wrote nothing", count_after_preview == count_before,
+          "before %s, after %s" % (count_before, count_after_preview))
 
     # A FIELD THE STRUCT DOES NOT DECLARE IS REFUSED, AND THE REFUSAL NAMES THE REAL FIELDS - the spec's rule.
     bad_field = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPDataTableRows",
                              {"asset": TABLE, "rows": ["%s = NotARealField=1" % SCRATCH]})
-    check("an undeclared field is refused", "does not declare" in (bad_field or ""), (bad_field or "")[:220])
+    refusal_prefix = "error: Row edit refused; nothing was written."
+    field_reason = "error: field 'NotARealField' is unknown or has an ambiguous display label."
+    preview_refusal = next((line for line in (bad_field or "").splitlines() if line.startswith(field_reason)), "")
+    check("an undeclared field is refused",
+          (bad_field or "").startswith(refusal_prefix) and bool(preview_refusal), bad_field or "")
     check("the refusal names the fields the struct really has",
-          FIELD.lower() in (bad_field or "").lower(), (bad_field or "")[:220])
+          ("[internal: %s]" % field) in preview_refusal, bad_field or "")
 
     # A NON-DATATABLE IS REFUSED AND THE REFUSAL SAYS WHAT IT FOUND INSTEAD. THE OPERATION MUST PARSE, or the
     # refusal being tested would be the parser's and the asset path would never be reached - which is exactly what
     # happened when this passed `A = 1`: the parser correctly refused `1` for having no `=`.
     not_a_table = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPDataTableRows",
-                               {"asset": "/Game/Tests/BP_NodeTest", "rows": ["%s = %s=None" % (SCRATCH, FIELD)]})
+                               {"asset": "/Game/Tests/BP_NodeTest", "rows": ["%s = %s=None" % (SCRATCH, field)]})
     check("a non-DataTable is refused, and the refusal says what it found",
           "not a DataTable" in (not_a_table or ""), (not_a_table or "")[:220])
 
@@ -220,7 +227,8 @@ def run_rules_checks(session):
     edit_bad = session.call(EDIT_TOOLSET, "EditTurboMCPDataTableRows",
                             {"asset": TABLE, "rows": ["%s = NotARealField=1" % SCRATCH]})
     check("the EDIT refuses exactly what the preview refused",
-          "does not declare" in (edit_bad or ""), (edit_bad or "")[:220])
+          (edit_bad or "").startswith(refusal_prefix) and bool(preview_refusal)
+          and preview_refusal in edit_bad.splitlines(), edit_bad or "")
 
     # A REMOVAL OF A ROW THAT DOES NOT EXIST IS REFUSED, and the refusal lists the rows that do.
     bad_remove = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPDataTableRows",
@@ -229,8 +237,8 @@ def run_rules_checks(session):
           "does not have" in (bad_remove or ""), (bad_remove or "")[:220])
 
 
-def run_one_call_checks(session):
-    """ADD, CHANGE AND REMOVE IN ONE CALL, which is the whole of `T-DATA-1`'s sentence."""
+def run_one_call_checks(session, field):
+    """Set the same scratch row twice in one call, then remove it by name."""
     print()
     print("=== add, change and remove in ONE call, proved through the READER ===")
 
@@ -238,25 +246,22 @@ def run_one_call_checks(session):
     # must not include a row a previous run left behind.
     restore_on_the_way_in(session)
 
-    before = session.call(READ_TOOLSET, "ReadTurboMCPDataTable", {"asset": TABLE, "include": "schema"})
-    count_before = row_count(before)
-    rows_before = row_lines(before)
+    _, count_before, rows_before = read_table_schema(session)
 
-    # ONE CALL, THREE OPERATIONS, AND EACH IS ASSERTED SEPARATELY. The added row is changed later IN THE SAME CALL,
-    # which is the case a plan storing positions instead of names would get wrong.
-    one_call = session.call(EDIT_TOOLSET, "EditTurboMCPDataTableRows",
-                            {"asset": TABLE, "rows": [
-                                "%s = %s=None" % (SCRATCH, FIELD),
-                                "%s = %s=None" % (SCRATCH, FIELD),
-                            ]})
+    # The second set must address the row created by the first without duplicating it.
+    try:
+        one_call = session.call(EDIT_TOOLSET, "EditTurboMCPDataTableRows",
+                                {"asset": TABLE, "rows": [
+                                    "%s = %s=None" % (SCRATCH, field),
+                                    "%s = %s=None" % (SCRATCH, field),
+                                ]})
+        _, count_after, rows_after = read_table_schema(session)
+    finally:
+        # Clean up even when the reader cannot verify the edit.
+        removed = session.call(EDIT_TOOLSET, "EditTurboMCPDataTableRows",
+                               {"asset": TABLE, "rows": ["- %s" % SCRATCH]})
 
-    # THE REPLAY IS SAFE BECAUSE THE ROW IS NAMED: the second operation changes the row the first one added, so the
-    # call must not fail and must not create a second row.
-    after = session.call(READ_TOOLSET, "ReadTurboMCPDataTable", {"asset": TABLE, "include": "schema"})
-    count_after = row_count(after)
-    rows_after = row_lines(after)
-
-    check("the call added exactly one row", count_after == (count_before or 0) + 1,
+    check("the call added exactly one row", count_after == count_before + 1,
           "before %s, after %s" % (count_before, count_after))
     check("the added row is there, read back through the READER",
           SCRATCH in rows_after, "rows: %s" % ", ".join(sorted(rows_after))[:200])
@@ -267,20 +272,17 @@ def run_one_call_checks(session):
 
     # A REMOVAL, IN ITS OWN CALL, AND THE ROW COUNT MUST COME BACK DOWN BY EXACTLY ONE. Removing by NAME is what
     # makes this safe: nothing else addresses a position that shifted.
-    removed = session.call(EDIT_TOOLSET, "EditTurboMCPDataTableRows",
-                           {"asset": TABLE, "rows": ["- %s" % SCRATCH]})
-    final = session.call(READ_TOOLSET, "ReadTurboMCPDataTable", {"asset": TABLE, "include": "schema"})
-    check("removing the row brought the count back to what it was",
-          row_count(final) == count_before,
-          "was %s, is now %s" % (count_before, row_count(final)))
-    check("the scratch row is gone", SCRATCH not in row_lines(final),
-          "rows: %s" % ", ".join(sorted(row_lines(final)))[:200])
+    _, final_count, final_rows = read_table_schema(session)
+    check("removing the row brought the count back to what it was", final_count == count_before,
+          "was %s, is now %s" % (count_before, final_count))
+    check("the scratch row is gone", SCRATCH not in final_rows,
+          "rows: %s" % ", ".join(sorted(final_rows))[:200])
 
     # *** THE RESTORE IS ASSERTED, NOT ASSUMED. *** A suite that mutates a SHARED ENGINE ASSET and does not give it
     # back makes the next suite read something it does not expect - the defect recorded four times here.
     check("the shared table was GIVEN BACK, so the next suite reads what it expects",
-          row_lines(final) == rows_before,
-          "expected the original rows, got %s" % ", ".join(sorted(row_lines(final)))[:200])
+          final_rows == rows_before,
+          "expected the original rows, got %s" % ", ".join(sorted(final_rows))[:200])
 
     # AND THE PLAN LISTED THE REMOVAL BY NAME, which `D-45` requires - never a count.
     check("the plan listed the removal BY NAME rather than counting it",
@@ -291,23 +293,20 @@ if __name__ == "__main__":
     session = Session()
     session.connect()
 
-    # THE FIELD NAME IS READ FROM THE READER BEFORE ANYTHING USES IT, AND IT IS A MEASURED CORRECTION RATHER THAN
-    # TIDINESS: this suite first hard-coded the field as `Mesh`, WHICH IS NOT ITS NAME. The reader prints the
-    # engine's real property name and for this struct it is
-    # `Mesh_6_F25026594EAB378BF6D9C1A028E878EC` - carrying a GUID, because the struct came from an import. THE
-    # GUESS MADE THREE CHECKS FAIL ON A TOOL THAT WAS WORKING, the same shape as the regex that assumed a format
-    # and the anchored pattern that never matched a real row. SO THE FORMAT IS READ, NOT ASSUMED.
-    schema = session.call(READ_TOOLSET, "ReadTurboMCPDataTable", {"asset": TABLE, "include": "schema"})
-    FIELD = first_field(schema)
-    check("the reader named the struct first field, which every other check depends on",
-          bool(FIELD), (schema or "")[:220])
-
     # ON THE WAY IN, BEFORE ANY ASSERTION - so this suite is re-runnable from a state a killed run left behind.
     restore_on_the_way_in(session)
 
+    # Imported structs can have generated field names. Use the actual internal name.
+    schema, _, _ = read_table_schema(session)
+    field = first_field(schema)
+    check("the reader named the struct first field, which every other check depends on",
+          bool(field), schema)
+    if not field:
+        sys.exit("RESULT: FAIL (the DataTable reader did not name the first field)")
+
     run_parser_checks(session)
-    run_rules_checks(session)
-    run_one_call_checks(session)
+    run_rules_checks(session, field)
+    run_one_call_checks(session, field)
 
     print()
     if failures:

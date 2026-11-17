@@ -291,9 +291,9 @@ public:
 	 * Omit EntryFilter or supply * or an empty string for all entries. A non-empty EntryFilter matches event/function names by case-insensitive substring. Empty reads all entries. Filtered views are inspection-only. Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty is refused.
-	 * @param GraphName Exact graph or authored event function name, e.g. EventGraph or ReceiveBeginPlay. Empty is refused.
-	 * @param Format read (default, including empty) or json. JSON returns a standalone object per page with body text, body_notes, revision, offset/count/total and nextOffset (-1 at end). Event-backed reads also identify body_graph and event_node. Concatenate body strings; this is inspection data, not write-back input. MaxChars bounds unescaped UTF-16 body units, not JSON envelope or escaping. write is refused.
-	 * @param Detail manifest, signatures, bodies or full; default or empty means bodies. Each level adds detail.
+	 * @param GraphName Exact graph name, e.g. EventGraph. Inspection may also accept an authored event function name such as ReceiveBeginPlay. Empty is refused.
+	 * @param Format read (default, including empty), json, or edit. Read and JSON are inspection formats; JSON returns body, body_notes, revision, offset/count/total and nextOffset (-1 at end) in a standalone object per page and may identify an authored event body. MaxChars counts UTF-16 body units before JSON escaping. Edit exports a versioned document for the exact authored graph only: use Offset=0, first Revision and no EntryFilter. Unsupported, filtered or oversized edit exports are incomplete and cannot be replaced. The write format is unsupported.
+	 * @param Detail manifest, signatures, bodies or full; default or empty means bodies. Each level adds inspection detail. Edit always exports the whole supported graph.
 	 * @param Offset Zero-based character offset. Start at 0; for later pages use the returned nextOffset and Revision together. Negative values are refused.
 	 * @param MaxChars Maximum page characters, 256..24000 inclusive; default 24000. Partial pages are inspection-only, not standalone write-back input.
 	 * @param Revision Omit or supply first or an empty string for page zero. Later pages require the revision token from page zero with unchanged arguments; stale tokens are refused.
@@ -1269,11 +1269,11 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
         const FString& ContainingCommentId = TEXT(""));
 
 	/**
-     * Plan graph replacement and list deletions; loads the Blueprint without applying the replacement, compiling or saving.
-     * Removal considers the named graph, not just one execution branch. Entry/result/event nodes and comments are protected. Inspect the removal list before editing; successful preview does not guarantee a later edit.
+     * Plan graph replacement and list additions, updates and explicit deletions; loads the Blueprint without applying the replacement, compiling or saving.
+     * The complete export must still match the named graph. Entry, result, event and comment nodes and nodes with breakpoints or pin watches are protected. Review the preview before editing.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
      * @param GraphName Required target graph name, e.g. EventGraph. Use the reader's exact graph name; missing or ambiguous targets are refused.
-     * @param Text Required nonempty graph text using the append grammar. Existing reader IDs identify nodes to retain; eligible nodes omitted from the text are deleted. Preserve exact type IDs and pin names. Use a complete ReadTurboMCPGraphLoad result as reference, not as an automatically writable payload. Convert the intended graph to append node forms: exact type ID, input pin lines, and explicit (-> NodeId:OutputPin) links. Keep existing node ID comments to retain those nodes. Reader branch headings such as :then/:else do not create execution links; express each destination execute input explicitly. Never use a truncated page as the replacement; preview and inspect every removal first.
+     * @param Text Required complete ReadTurboMCPGraphLoad Format=edit document with its current tmcp-edit-v1 header. Retain unmodified forms, full lowercase node GUIDs and explicit incoming links. To delete an eligible node remove its form and add one ; tmcp-delete-v1: {"nodeId":"32 lowercase hex digits"} directive. Omission, unsupported state and stale or incomplete exports are refused. Use unique local labels on new forms when referring to their outputs.
      */
     UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphReplace(
@@ -2275,11 +2275,11 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
         const FString& PreviewToken = TEXT(""));
 
 	/**
-     * Replace graph content and delete omitted eligible nodes in one undo transaction; loads the Blueprint, but does not compile or save.
-     * Removal considers the named graph, not just one execution branch. Entry/result/event nodes and comments are protected. Inspect the removal list before editing; successful preview does not guarantee a later edit.
+     * Replace supported graph content and delete only explicitly named eligible nodes in one undo transaction; loads the Blueprint without compiling or saving.
+     * The complete export must still match the named graph. Entry, result, event and comment nodes and nodes with breakpoints or pin watches are protected. Review the preview before editing.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
      * @param GraphName Required target graph name, e.g. EventGraph. Use the reader's exact graph name; missing or ambiguous targets are refused.
-     * @param Text Required nonempty graph text using the append grammar. Existing reader IDs identify nodes to retain; eligible nodes omitted from the text are deleted. Preserve exact type IDs and pin names. Use a complete ReadTurboMCPGraphLoad result as reference, not as an automatically writable payload. Convert the intended graph to append node forms: exact type ID, input pin lines, and explicit (-> NodeId:OutputPin) links. Keep existing node ID comments to retain those nodes. Reader branch headings such as :then/:else do not create execution links; express each destination execute input explicitly. Never use a truncated page as the replacement; preview and inspect every removal first.
+     * @param Text Required complete ReadTurboMCPGraphLoad Format=edit document with its current tmcp-edit-v1 header. Retain unmodified forms, full lowercase node GUIDs and explicit incoming links. To delete an eligible node remove its form and add one ; tmcp-delete-v1: {"nodeId":"32 lowercase hex digits"} directive. Omission, unsupported state and stale or incomplete exports are refused. Use unique local labels on new forms when referring to their outputs.
      */
     UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphReplace(
