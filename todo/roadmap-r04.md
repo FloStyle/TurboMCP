@@ -8,6 +8,31 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## V1 reconciliation review (2026-11-17)
+
+Candidate 62bca63ddc3b50f974eef9c6b1f63747de5d8c65 passed its six-file
+immutable scope gate and was integrated as ae09ab33. Root verified both action
+pins against the official repository release-tag commit identities. The four
+workflow/template diffs only change those pins; permissions and exact triggering
+commit checks remain. Focused structure, language, repository-boundary and six
+daily-source controls passed. Hosted verification is pending for these new pins.
+
+The two audit JSON files are explicitly proposals: 15 assigned issues, older
+FIELD records and 97 acceptance cases are reconciled without marking a case
+passed or a stable release approved. The existing-equivalent/partial/missing
+counts are 20/59/18. Root confirmed the destructive omission and unchecked disk
+sink source paths and approved separate repairs tracked by GitHub #27 and #28.
+The completed reconciliation claim was released; native checks remain serialized.
+
+## Current review: call-log disk truthfulness (2026-11-17)
+
+Readiness: ready. The integration owner approves v1-call-log-sink under the
+exact schema-2 scope. Follow [the repair contract](../docs/design/v1-call-log-sink.md)
+and ARC14. This repairs observed unchecked sink operations and unbounded record
+writes, without changing actual tool outcomes. Worker returns source and focused
+evidence; root owns native execution and shared acceptance. No other logging or
+panel redesign is authorized.
+
 ## Factual website review evidence (2026-11-17)
 
 Worker candidate a6f998cad2a8f9a4b5aec0059d8534247498cea5 passed exact

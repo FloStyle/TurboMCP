@@ -1,0 +1,756 @@
+{
+  "schema": 1,
+  "kind": "V1 remaining work reconciliation proposal",
+  "reviewDate": "2026-11-17",
+  "base": "ead44fd2bc563a2fec6b0b8a858618a1f0fe55e8",
+  "claim": "afe22e0662d34cdaae2c4d921f25cd13",
+  "engine": {
+    "version": "5.8.4",
+    "commit": "f45729c0b6f097038e72b52d366a62baeca3275b",
+    "platform": "Windows source engine",
+    "source": "engine.lock.json"
+  },
+  "limits": [
+    "No production or stable release status is approved by this report.",
+    "Issue links and plan evidence represent separate layers. New proposed scopes require exact integrator dispatch; no deferrals are approved here.",
+    "R12 Launcher and R14/#19 Unreal 5.9 carry separate compatibility evidence; this does not resolve either.",
+    "Previous runtime observations are not passes on this candidate. Canonical release/status.json still names the historical 5.8.3 and remains not_ready; the owner must reconcile it only at the release gate."
+  ],
+  "issues": [
+    {
+      "issue": 2,
+      "id": "NOV04-01",
+      "sourceIds": [
+        "X-123"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/2",
+      "owner": "R09 / integrator and stock engine upstream",
+      "status": "field_evidence_missing",
+      "current": "Original stock asset deletion access violation remains unreproduced. Stock convenience delete routes through forced deletion; without an exact tool, stack and revision, that is only a possible path. TurboMCP has a different checked deletion with confirmation and reference/package safeguards.",
+      "v1Impact": "Open P0 field safety investigation. Do not report a crash fix or rerun destructive operations on user data. It does not establish an addon defect.",
+      "references": [
+        "docs/audit/field-reports/plan-2026-11-04.json",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetDelete.cpp",
+        "NOV04-39 checked lifecycle is related containment only"
+      ],
+      "missingEvidence": "Exact tool and sanitized args, engine/addon revision, crash stack, whether referenced/open. Then synthesize two owned packages (one referenced/open, one safe) and repeat only the attributed call under supervisor; assert refusal leaves both untouched. No production file approved before cause is reproduced.",
+      "nextScope": null
+    },
+    {
+      "issue": 3,
+      "id": "NOV04-14",
+      "sourceIds": [
+        "GC-89"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/3",
+      "owner": "R06 / GraphAppend; FIELD-09 related typed values",
+      "status": "generic_controls_passed_field_evidence_missing",
+      "current": "Run 8655f468c64d4e4ca0fa7ecf570c2a2a proved bare and omitted integer zero and typed refusal for quoted zero or malformed numeric input. Initial failure 6ce4b87b16bb4e50932dba4710943455 expected inappropriate coercion; retained.",
+      "v1Impact": "Supported zero behavior has scoped existing proof. The exact callback-mask refusal remains open; no type coercion or generic parser rewrite warranted.",
+      "references": [
+        "docs/audit/field-reports/plan-2026-11-04.json",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPIntegerDefaultTest.cpp",
+        "Tools/test-graph-append.py (TurboMCP.GraphAppend.IntegerDefault)"
+      ],
+      "missingEvidence": "Exact discovered node type ID, pin, append source and refusal plus revision. Add only the reproduced type/pin case to TurboMCPIntegerDefaultTest.cpp and edit the attributed parser/default path only if current behavior fails.",
+      "nextScope": null
+    },
+    {
+      "issue": 4,
+      "id": "NOV04-37",
+      "sourceIds": [
+        "X-119"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/4",
+      "owner": "R09 / stock Unreal upstream",
+      "status": "confirmed_external_result_defect",
+      "current": "Stock StopPIE can return the EndPlay script error after both ShutdownPIE and absent PlayWorld/session. Original persistent PIE not reproduced. Run 8a4f59ba87ee40608ad3a351aaa17bd0 proves the mismatch by separately obtaining automation test results. Failed raw result run fc8d5b53ec3746bab9a54082abc7cca7 retained.",
+      "v1Impact": "External defect remains open while stock engine is preserved. During V1 use independent IsPIERunning after a stop error; if it is still true, do not edit. An addon stop/status operation requires separately reviewed scope.",
+      "references": [
+        "docs/audit/field-reports/plan-2026-11-04.json",
+        "docs/audit/engine-issues-ue59-proposal.md",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPIEStopWorkflowTest.cpp"
+      ],
+      "missingEvidence": "Whether the original session actually stayed active; retain real engine response and independent state. Do not claim an end witness from absence of error.",
+      "nextScope": "stop"
+    },
+    {
+      "issue": 5,
+      "id": "NOV04-38",
+      "sourceIds": [
+        "X-126"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/5",
+      "owner": "R09 / stock Unreal upstream; #13 is distinct",
+      "status": "generic_controls_passed_field_evidence_missing",
+      "current": "Stock finder is case-insensitive literal substring, not wildcard; referencers accepts package/object paths and rejects short names. f952a077ffea484cbc1f611458d8607e proves known native path/referral controls and unchanged dirty state.",
+      "v1Impact": "Keep original unknown finding open. #13 is a repaired TurboMCP multi-asset resolver and cannot close a stock call with unavailable inputs.",
+      "references": [
+        "docs/audit/field-reports/plan-2026-11-04.json",
+        "Tools/test-asset-tools.py",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefs.cpp"
+      ],
+      "missingEvidence": "Exact finder/referencer calls, syntactic path shape and response. Repeat the original path-form only on owned assets with known relation and unchanged dirty-state control. No rebuild or code patch for passing generic controls.",
+      "nextScope": null
+    },
+    {
+      "issue": 6,
+      "id": "NOV05-02",
+      "sourceIds": [
+        "TD-62",
+        "TD-70",
+        "FT-149",
+        "FT-150"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/6",
+      "owner": "R07 / shared #7 and FIELD-06 evidence; route mechanics primary",
+      "status": "implemented_partial_visual_and_remaining_routing",
+      "current": "Focused J5 55bdea70983a4ac2b6aae7696d1e8a1d applied a 26-node placement with exact outside geometry/undo; fixed Completed targets cannot be moved by scope. cfce525c70f84cfbaa65a3d87999a18b already inspected a repaired L3B execution spline in the routing-only detail; one cyan data wire still crosses and nine routes are skipped.",
+      "v1Impact": "Keep both historical failures and partial passes. Full Tidy acceptance requires comparison against accepted reference with native detail and truthfully reported residuals. No full-cascade repetition per code edit.",
+      "references": [
+        "docs/audit/field-reports/plan-2026-11-05.json",
+        "docs/audit/field-reports/nov14-scoped-loop-placement-contract.md",
+        "docs/audit/field-reports/2026-11-05-loop-cascade-scenario.md",
+        "docs/audit/field-reports/nov14-layout-handoff-boundary.md"
+      ],
+      "missingEvidence": "Compare full controller/body/continuation slice where movement is allowed, quantify actual remaining data crossing and skipped routes, preserve fixed-scope refusal. See separate layoutRepair scope if reproduced.",
+      "nextScope": "layout"
+    },
+    {
+      "issue": 7,
+      "id": "NOV05-03",
+      "sourceIds": [
+        "TD-63",
+        "TD-64",
+        "TD-73",
+        "LR-21",
+        "LR-22",
+        "FT-154"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/7",
+      "owner": "R07 / same reference evidence as #6; classification primary",
+      "status": "implemented_partial_visual_acceptance",
+      "current": "Aligned versus diagonal R3/R6 regression passes at 7d1d2bc4926e457fbe9714fd06f7e6a8. Large preview coordinate paging 1400dc7bcf324bbb859108b8343d9239 closes a prior checker omission; no complete visual check. Do not call every crossing a defect or suppress meaningful regressions.",
+      "v1Impact": "Missing cross-box visual and independent reference classification bars universal claims. Avoid a duplicate full run of #6.",
+      "references": [
+        "docs/audit/field-reports/plan-2026-11-05.json",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp",
+        "Tools/tidy_loop_cascade.py"
+      ],
+      "missingEvidence": "Review accepted E8/E9 and exact synthetic aligned/diagonal controls under one evidence owner. Use engine-observed geometry and independent classification, not the report classifying itself.",
+      "nextScope": "layout"
+    },
+    {
+      "issue": 8,
+      "id": "NOV05-15",
+      "sourceIds": [
+        "X-128",
+        "FT-142"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/8",
+      "owner": "R09 / local PlayInput and DiagnosticConsole",
+      "status": "implemented_input_partial_console_capability_missing",
+      "current": "91129b4c and ea0cf7dac7444a32b96e7c36138661a2 prove session token targeting and two-world keyboard isolation only; diagnostic console's PIE instance selection does not confine allowlisted process-wide effects.",
+      "v1Impact": "No general console widening or external input. Keyboard slice is covered; CommonUI/gamepad/split-screen and the broader client-local console request remain open.",
+      "references": [
+        "docs/audit/field-reports/nov14-pie-client-target-contract.md",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDiagnosticConsole.cpp"
+      ],
+      "missingEvidence": "First establish one harmless, supported client-local diagnostic action and user-request semantics. Verify per-world side-effect isolation with stale/wrong target and global-effect refusal.",
+      "nextScope": "console"
+    },
+    {
+      "issue": 9,
+      "id": "NOV05-16",
+      "sourceIds": [
+        "WT-17",
+        "FT-143"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/9",
+      "owner": "R08 / Widget mutation; not tree-sync replacement",
+      "status": "missing_feature",
+      "current": "Existing tree-sync replace rewrites a subtree; add/remove/rename cannot preserve placed class replacement. Stock helper mutates before verifying topology/capacity and may discard slot properties. Reviewed designer replacement contract exists; no implementation.",
+      "v1Impact": "Open feature under V1 reconciliation. Designer replacement may proceed after repair priority; Runtime ListView population/selection is a separate unresolved capability and lack of support must stay explicit.",
+      "references": [
+        "docs/audit/field-reports/nov14-widget-class-replacement-contract.md",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeSync.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp"
+      ],
+      "missingEvidence": "Compatible stock designer leaf fixture, negative incompatible property/reference and capacity cases, and separately reviewed runtime collection-entry semantics.",
+      "nextScope": "widget"
+    },
+    {
+      "issue": 10,
+      "id": "NOV10-02",
+      "sourceIds": [
+        "X-133"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/10",
+      "owner": "R04/R17 / policy & transport; FIELD-08 related evidence",
+      "status": "field_evidence_missing",
+      "current": "Reported error phrase is not in TurboMCP policy/recorder paths. Previous NOV09-18 fixes scoped unknown-name discovery and real disabled-tool refusals, without evidence about one affected client.",
+      "v1Impact": "Keep open; no diagnosis of concurrency, plugin problem or client state without a paired trace.",
+      "references": [
+        "docs/audit/field-reports/plan-2026-11-10.json",
+        "docs/audit/field-reports/nov14-placement-and-search-reconciliation.md",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "Tools/test-agent-help.py"
+      ],
+      "missingEvidence": "Capture same exact sanitized request/response in working/failing client, both toolset listings, matching plugin status/policy and editor/transport log window without restarting; then assign exact layer and files. Existing tool-policy negative controls are not a reproduction.",
+      "nextScope": null
+    },
+    {
+      "issue": 11,
+      "id": "NOV10-11",
+      "sourceIds": [
+        "GL-35"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/11",
+      "owner": "R06 / GraphText; FIELD-05 related reader identity",
+      "status": "related_fix_verified_field_cause_unknown",
+      "current": "Native supported scalar multi-self is now reported as inspection-only with exact endpoints, with independent links/dirty state unchanged in ca280e86c5de40f88fcd2f1dd7f3fd67. Prior fixture errors retained. Field SetText self endpoints are not captured.",
+      "v1Impact": "The distinct multi-self defect is fixed locally; no general malformed input suppression or claim about one-time field event.",
+      "references": [
+        "docs/audit/field-reports/nov14-placement-and-search-reconciliation.md",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextSharedValueTest.cpp",
+        "Tools/test-graph-text-guards.py"
+      ],
+      "missingEvidence": "Get exact endpoint GUIDs and reciprocal raw connections on next reproduction and compare supported multiple targets, single target, and a genuinely malformed ordinary-value pin. Additional source work only if discrepancy remains.",
+      "nextScope": null
+    },
+    {
+      "issue": 12,
+      "id": "NOV13-03",
+      "sourceIds": [
+        "X-138",
+        "X-142"
+      ],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/12",
+      "owner": "R06/R09 / NodeFind; related WidgetInventory and BulkExport no-map boundary",
+      "status": "implemented_loaded_path_unloaded_incomplete",
+      "current": "Resident/unsaved NodeFind has a focused Inventory pass (4cb0955a1271404a8e75d7d1f86e1135). Guarded unloaded scan still skips maps/redirectors/missing metadata/budget and labels incompleteness. Saved FiB metadata may be stale or absent and force-load APIs do not meet this contract.",
+      "v1Impact": "A concrete coverage gap for unloaded assets remains. Do not exchange no-map safety or truthful completeness for higher counts.",
+      "references": [
+        "docs/audit/field-reports/nov14-placement-and-search-reconciliation.md",
+        "docs/audit/field-reports/nov13-loaded-node-search-review.md",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetInventory.cpp"
+      ],
+      "missingEvidence": "Stock 5.8.4 API probe plus direct load instrumentation and saved index freshness/coverage oracle before production; live and indexed evidence remain distinguishable.",
+      "nextScope": "indexedSearch"
+    },
+    {
+      "issue": 14,
+      "id": "REL-SCOPE",
+      "sourceIds": [],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/14",
+      "owner": "Release integrator / R04",
+      "status": "open_integrator_review",
+      "current": "This audit proposes dispositions for active issues, FIELD-03..10 and roadmap. No implementation completion or approved deferral is inferred. Current V1 expected baseline is pinned Windows stock Unreal 5.8.4.",
+      "v1Impact": "Confirmed GraphReplace safety, release acceptance and packaging remain gates; unknown field reports need evidence or explicit owner disposition. No compatibility expansion.",
+      "references": [
+        "ROADMAP.md",
+        "docs/release-1.0.0.md",
+        "engine.lock.json",
+        "release/status.json"
+      ],
+      "missingEvidence": "Owner reviews this report, dispatches exact contracts, checks stale status documentation against evidence, then records disposition. Do not edit shared trackers in this worker.",
+      "nextScope": "graphReplace"
+    },
+    {
+      "issue": 15,
+      "id": "REL-ACCEPT",
+      "sourceIds": [],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/15",
+      "owner": "R11 / release integrator",
+      "status": "blocked_by_missing_executables_and_exact_evidence",
+      "current": "All 97 canonical cases still not_mapped. Companion proposal separates full existing candidates, partial checks and missing cases. Prior 27 offline checks and 13/15 fixture privacy inventory cover different domains.",
+      "v1Impact": "Release blocker. Resolve genuinely missing checks, collect negative controls, preserve failures and then run exact candidate manifest with hashes.",
+      "references": [
+        "Tests/acceptance.json",
+        "docs/audit/v1-acceptance-mapping-2026-11-17.json",
+        "docs/release-manager.md",
+        "Tools/release-check.py"
+      ],
+      "missingEvidence": "All required rows must be executable and passing, with exact source, engine, artifact, log and evidence. Use focused repair tests first; do not substitute a registration/declaration or pass on a previous object.",
+      "nextScope": null
+    },
+    {
+      "issue": 16,
+      "id": "REL-PACKAGE",
+      "sourceIds": [],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/16",
+      "owner": "R12 / ARC13 and release integrator",
+      "status": "preview_package_built_clean_consumers_missing",
+      "current": "Native package run 802cee64cd5640019a27c45c9b81ad4d on 9c97d01af2c094fb1f022fccf903f377a2f78fdc produced Win64 preview (371 ZIP files, 40160669 bytes, SHA-256 eeafc80cb06838cf71e5ac836673d3daedd328d7dfb502f0f96850adad1617a6). Initial archive/license filtering failure remains historical evidence. No clean consumer runtime evidence.",
+      "v1Impact": "Stable source distribution clean install/read/edit/refusal is a release gate. Launcher compatibility needs its own package and evidence; 5.9 remains separate.",
+      "references": [
+        "todo/roadmap-r04.md",
+        "todo/roadmap-r12.md",
+        "docs/release-manager.md",
+        "Tools/package-plugin.ps1"
+      ],
+      "missingEvidence": "Two clean installed consumer projects with exact module identity, focused functional round trip and refusal, independent archive and notices inspection.",
+      "nextScope": "packaging"
+    },
+    {
+      "issue": 20,
+      "id": "CI-MAINT",
+      "sourceIds": [],
+      "url": "https://github.com/FloStyle/TurboMCP/issues/20",
+      "owner": "R15 / repository integrator",
+      "status": "implemented_locally_hosted_evidence_pending",
+      "current": "Review replaced only official pinned checkout and setup-python references in validate, Pages, daily source and validation template. Exact restore-to-base text equality checks confirm unchanged job semantics. Checkout v7 leaves its unsafe fork override unset; privileged jobs already require successful same-repository main push with exact validated head.",
+      "v1Impact": "Maintenance debt addressed here, hosted result remains required to close the issue; no inference about native acceptance.",
+      "references": [
+        ".github/workflows/validate.yml",
+        ".github/workflows/pages.yml",
+        ".github/workflows/daily-source.yml",
+        "Tools/ci/validate.yml"
+      ],
+      "missingEvidence": "Integration PR validation green on the new pinned actions, then observe a successful same-repository main push routes appropriately to existing Pages/daily source policy. No stable publication.",
+      "nextScope": null
+    }
+  ],
+  "historicalFields": [
+    {
+      "id": "FIELD-03",
+      "owner": "R05/R08; F07/F08 and Z02",
+      "references": [
+        "todo/field-03.md",
+        "docs/audit/deferred-field-verification.md"
+      ],
+      "disposition": "FIELD-FIX-05 separates dirty marks/save and verifies pin read-back. Current native Widget persistence code independently witnesses cold reload and exact defaults/links; use that for scoped widget evidence, not every package or save failure. No fresh pin-write defect is inferred from the older ledger.",
+      "minimalNextCheck": "Reuse test-widget-persistence on final candidate and add one owned read-only per-package failure if needed; no new write code before reproduced failure."
+    },
+    {
+      "id": "FIELD-04",
+      "owner": "R05; C01/C02/M06/B02 and #10 only if same transport trace",
+      "references": [
+        "todo/field-04.md",
+        "docs/audit/deferred-field-verification.md"
+      ],
+      "disposition": "Client denies replay after ambiguous loss and reports unknown; fake transport has exact effect counter. Batch native failure test checks rollback and recovery latch. Original stock script timeout/late execution and duplicate suspicion remain unsubstantiated; generic client success cannot resolve them.",
+      "minimalNextCheck": "One safe disposable counter request, record actual dispatch/apply timestamps and request IDs, drop response through fake transport first, and capture native timeline only if stock late outcome is reproduced. No duplicate patch based on presumed retry."
+    },
+    {
+      "id": "FIELD-05",
+      "owner": "R06; G01T-G10T, W07-W09 and #11",
+      "references": [
+        "todo/field-05.md",
+        "docs/audit/deferred-field-verification.md"
+      ],
+      "disposition": "Swap defaults/copy schema/function-add lifetimes have narrower implemented slices. Native shared-value read proves specific true links. No complete edit export/fingerprint; Replace omission behavior still violates ARC07. Refuse unsupported/custom cases rather than call read/full round-trip.",
+      "minimalNextCheck": "Prioritize graphReplace exact scope. Run test-replace-plan first, then share supported edited corpus across graph workflows; retain no-op, ambiguous and incomplete cases."
+    },
+    {
+      "id": "FIELD-06",
+      "owner": "R07; #6/#7, U08, NOV09-02/03/04/05",
+      "references": [
+        "todo/field-06.md",
+        "docs/audit/deferred-field-verification.md"
+      ],
+      "disposition": "Scoped Tidy and selected append placement cases have partial evidence. Existing measured geometry cannot certify overlap-free rendered order. Do not treat all stale historical reports as active defects; explicit tail motion remains a distinct approved-contract follow-up, not generic outside mode.",
+      "minimalNextCheck": "Reuse layout evidence scope. If the reported selected graph still requires movement, review minimal exact append placement files per docs/audit/field-reports/nov14-append-placement-contract.md; assert untouched neighbors, reported motion, stale refusal and exact undo."
+    },
+    {
+      "id": "FIELD-07",
+      "owner": "R06; G02T/G08T/W05/W06, FIELD-05 shared graph tests",
+      "references": [
+        "todo/field-07.md",
+        "docs/audit/deferred-field-verification.md"
+      ],
+      "disposition": "Reachability/dead-chain diagnostics and disconnected-append/valid exec-merge handling have bounded fixes. Full replacement duplicate prevention, arbitrary multi-source round trip and missing linkage remain unproven. Compile success does not prove path correctness.",
+      "minimalNextCheck": "Use one event-to-known-action fixture with dead chain, safe exec merge and shared pure data source; independently traverse before/after and verify selected append/new Replace semantics, no duplicates or orphaned expected nodes."
+    },
+    {
+      "id": "FIELD-08",
+      "owner": "R04/R17/ARC14; #10, C09, E06, U04/U05 and L01-L03",
+      "references": [
+        "todo/field-08.md",
+        "docs/audit/deferred-field-verification.md"
+      ],
+      "disposition": "Supervisor verifies actual DLL path/SHA; live status appropriately says source revision unknown when no provenance. Paginated help and role/effect notes exist. Source-backed log sink failures/cap/concurrency are separate genuine gaps. One-client field failure needs paired evidence.",
+      "minimalNextCheck": "Call log scope first for ARC14. Run exact loaded binary/status evidence and targeted live help/read-only or consent checks, and use #10 paired incident capture; do not expose secrets or guess source revision."
+    },
+    {
+      "id": "FIELD-09",
+      "owner": "R06/R08; #3 typed zero, F03-F06/F09, #9 independent feature",
+      "references": [
+        "todo/field-09.md",
+        "docs/audit/deferred-field-verification.md"
+      ],
+      "disposition": "BL-12, NF-08 and OV-03 have scoped repairs; schema/edit gaps such as typed/struct defaults, flags and external reference compilation still need independent checks, and missing wildcard/equality attribution remains uncertain. Keep original IDs with their family owner.",
+      "minimalNextCheck": "Group by acceptance family: pin and graph modes into G04T/G10T, struct/default/externals into F03-F06; require a source-driven reproduction before any type-system broadening."
+    },
+    {
+      "id": "FIELD-10",
+      "owner": "R07 / capture and engine GPU, U07 only as separate accepted behavior",
+      "references": [
+        "todo/field-10.md",
+        "docs/audit/deferred-field-verification.md"
+      ],
+      "disposition": "Project capture GPU exhaustion occurred outside TurboMCP tool calls. No causality demonstrated; native screenshot framing and GPU stability are different questions.",
+      "minimalNextCheck": "Compare bounded scripted capture and direct editor capture in disposable rendering session; collect actual framebuffer dimensions, GPU log/budget, memory traces and timing. Stop after one reproducing sample; no unsafe resource stress or production fix absent attribution."
+    }
+  ],
+  "roadmap": [
+    {
+      "id": "R01",
+      "state": "done_foundation",
+      "record": "todo/roadmap-r01.md",
+      "disposition": "Source audit classifications distinguish names, parsed calls and no-assert controls, not behavior acceptance.",
+      "next": "Use H08/H09 and Z01; do not turn 196 declarations into a native count."
+    },
+    {
+      "id": "R02",
+      "state": "done_foundation",
+      "record": "todo/roadmap-r02.md",
+      "disposition": "Resource locks and cleanup established, but final E02 admission and E07 combined timeout/recovery controls are not established by isolated primitives alone.",
+      "next": "Map existing generated logs and add the precise combined checks from the acceptance proposal if needed."
+    },
+    {
+      "id": "R03",
+      "state": "done_foundation",
+      "record": "todo/roadmap-r03.md",
+      "disposition": "Known build provenance, loaded exact module and fixture restoration controls operate locally.",
+      "next": "Obtain exact final build/loaded module and recovery evidence for E01-E07; retain prior runner and fixture failures."
+    },
+    {
+      "id": "R04",
+      "state": "open",
+      "record": "todo/roadmap-r04.md",
+      "disposition": "Reconcile callable effects, refusal and evidence for 196 declarations. Previous audit/testing rows are narrower and many have name-only or missing call evidence.",
+      "next": "Z01 declaration-to-registry/result/capability/assertion map plus live help; record missing families before trying full runs."
+    },
+    {
+      "id": "R05",
+      "state": "open",
+      "record": "todo/roadmap-r05.md",
+      "disposition": "Current batch has one-transaction/independent restore proof for bounded cases; old todo implying no live rollback guard is stale. Readiness baselines, between-phase and complete B01-B05 evidence remain.",
+      "next": "Use batchAcceptance scope and M01-M08 individual real-core gaps. Do not add general multi-asset batch or implicit compile to B01."
+    },
+    {
+      "id": "R06",
+      "state": "open_confirmed_safety",
+      "record": "todo/roadmap-r06.md",
+      "disposition": "Legacy implicit deletion contradicts ARC07, while reader/swap/alias and append repairs are individually bounded.",
+      "next": "Dispatch graphReplace first. Keep exact IDs, fingerprints, stale and incomplete refusals; reconcile G01T-G10T, W01-W11 and #11/#12."
+    },
+    {
+      "id": "R07",
+      "state": "open_partial",
+      "record": "todo/roadmap-r07.md",
+      "disposition": "Layout and capture have focused mechanics; accepted cross-box evidence and pixel-based framing still incomplete. Original GPU attribution remains unknown.",
+      "next": "Use layout facet plus U07/U08. Fix geometry only from a current measured mismatch, then run focused valid/blocked control."
+    },
+    {
+      "id": "R08",
+      "state": "open_partial",
+      "record": "todo/roadmap-r08.md",
+      "disposition": "Data/Widget persistence and material tests cover some families. Atomic multi-field, material restoration and class replacement are distinct gaps.",
+      "next": "Use F01-F10 negative controls; widget scope for #9 after safety defects, and no migration claim from designer leaf proof."
+    },
+    {
+      "id": "R09",
+      "state": "open_partial",
+      "record": "todo/roadmap-r09.md",
+      "disposition": "Stock stop/lookup field issues, indexed coverage and direct runtime trace attribution differ; status and diagnostics display uncertainty only for covered paths.",
+      "next": "Run independent reference path/union, trace and play witnesses R01T-R07T; separately triage #2/#4/#5/#8/#12."
+    },
+    {
+      "id": "R10",
+      "state": "open",
+      "record": "todo/roadmap-r10.md",
+      "disposition": "Website/interactive guide and live help establish useful starting points, not agreement for all edited behavior.",
+      "next": "Reviewer aligns docs with new safety refusal and exact target; use U04/U05 and Z01 observed schemas."
+    },
+    {
+      "id": "R11",
+      "state": "open_blocking",
+      "record": "todo/roadmap-r11.md",
+      "disposition": "Canonical 97 rows not_mapped, plan and negative controls proposed; no final candidate execution.",
+      "next": "Resolve missing executable and production gaps, freeze identities, run required manifest and keep all failed/blocked status visible."
+    },
+    {
+      "id": "R12",
+      "state": "open_blocking_for_claimed_distribution",
+      "record": "todo/roadmap-r12.md",
+      "disposition": "Preview binary built on pinned source; clean consumers and distribution-specific coverage absent.",
+      "next": "Install exact package in Blueprint-only and C++ clean projects; separate Launcher proof and hash both archived and loaded artifact."
+    },
+    {
+      "id": "R13",
+      "state": "done_analysis_only",
+      "record": "todo/roadmap-r13.md",
+      "disposition": "Native comparison does not certify adapter or 5.9 runtime.",
+      "next": "Carry forward verified adopt/retain decisions only; #19 separate."
+    },
+    {
+      "id": "R14",
+      "state": "separate_compatibility",
+      "record": "todo/roadmap-r14.md",
+      "disposition": "Dedicated 5.9 product track is dormant and unsupported for V1.",
+      "next": "Do not change pinned engine or broaden V1 proof."
+    },
+    {
+      "id": "R15",
+      "state": "open_partial",
+      "record": "todo/roadmap-r15.md",
+      "disposition": "Hosted validation/protection issue #17 is closed; #20 pin repair awaits hosted evidence. Source-only daily publication does not grant stable release.",
+      "next": "Verify candidate hosted gate and release evidence failure controls; retain stable manual approval and tag boundaries."
+    },
+    {
+      "id": "R16",
+      "state": "done_investigation_only",
+      "record": "todo/roadmap-r16.md",
+      "disposition": "Identified engine dependency/rebuild closure. Packaging execution and consumer acceptance are independent R12 evidence.",
+      "next": "Use pinned 5.8.4 rather than historical 5.8.3 labels; no Launcher result inherited."
+    },
+    {
+      "id": "R17",
+      "state": "open_partial",
+      "record": "todo/roadmap-r17.md",
+      "disposition": "Live help, tool policy and disable/recovery tests exist; unresolved one-client report is not proven preference failure.",
+      "next": "Run scoped exact schema/preferences negative probes, pair field client traces only where observed."
+    },
+    {
+      "id": "R18",
+      "state": "open_partial",
+      "record": "todo/roadmap-r18.md",
+      "disposition": "Panel task slices have native evidence; compact/human workflow and requested visual acceptance need actual review.",
+      "next": "Keep accepted monitor history/cap tests and scoped rendered UI review; no reason for general rewrite."
+    }
+  ],
+  "closedIssues": [
+    {
+      "issue": 13,
+      "id": "ASSET-EXACT",
+      "evidence": "PR #22; exact-object metadata focused native pass on 6996d636; no full 15-package rerun."
+    },
+    {
+      "issue": 17,
+      "id": "REL-HOST",
+      "evidence": "Repository protection control issue closed; verify actual controls on release candidate."
+    },
+    {
+      "issue": 18,
+      "id": "DEV-CLAIM",
+      "evidence": "PR #22; fresh task-claim setup and output verified, separate from release acceptance."
+    },
+    {
+      "issue": 23,
+      "id": "DOC-GUIDE",
+      "evidence": "PR #24/#25 era interactive guide is implemented; not product/schema acceptance."
+    }
+  ],
+  "orderedBacklog": [
+    "graphReplace",
+    "callLog",
+    "batchAcceptance",
+    "layout",
+    "layoutRepair",
+    "indexedSearch",
+    "widget",
+    "console",
+    "stop",
+    "packaging"
+  ],
+  "scope": {
+    "graphReplace": {
+      "exactProposedFiles": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphText.h",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphReplace.h",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplaceTools.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPReplacePlanTest.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphEditWorkflowTest.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
+        "Tools/test-graph-replace.py",
+        "docs/user/tools.md"
+      ],
+      "behavior": "R06/ARC07 release safety defect. Replace currently adds every otherwise unmentioned deletable body node to Removals (TurboMCPGraphReplace.cpp:187); the native test expects this inverse of G08T. Add an explicit edit format in the current reader and shared renderer; fingerprint the exact canonical asset/graph GUID and sorted typed graph semantics with SHA-256 from independent engine state, never reuse the pagination SHA-1. Render explicit edit IDs, typed defaults, exact source endpoints and incompleteness; refuse ambiguous/unknown edges and unsupported semantics instead of asserting complete. Require a fresh complete envelope and explicit per-node deletion directives; refuse legacy inspection/partial payloads, omitted nodes, conflict/duplicate/foreign/protected IDs, stale fingerprint, filtered event stub or ambiguous owner before live mutation. Recheck fingerprint against current native state directly before Apply. Keep one transaction, separate compile/save and unchanged preview. Migrate all three native callers, Python Replace workflow and exposed help; preserve Append/Patch for targeted snippets. Integrator owns generated capability and site catalog updates after overlapping site work.",
+      "focusedCheck": "Start with test-replace-plan (TurboMCP.Replace.LinkedRetention): exact no-op round trip, unsupported complete=false, retained node omission refusal, explicit single removal only, mandatory/duplicate/conflict/foreign refusal, native change after export, untouched undo/dirty state. Extend to fresh-reader addition plus explicit removal/one undo and a failure injected between live addition and removal. One reviewed build and focused test-graph-edit-workflow; retest migrated vision replacement subcase under supervision if its route differs. Do not run all graph suites after each iteration."
+    },
+    "layout": {
+      "exactProposedFiles": [
+        "Tools/tidy_loop_cascade.py",
+        "Tools/test-tidy-loop-cascade.py",
+        "Tests/tidy-loop-cascade.json"
+      ],
+      "behavior": "First evidence batch only. Compare the existing accepted reference and the L3B/E8/E9 native evidence before changing heuristics. Explicitly distinguish the repaired execution spline from the still-crossing data spline, record each skipped route by cause, and capture known intended and actual regression examples. Run the smallest existing slices; add a selector/oracle only where it is genuinely missing.",
+      "focusedCheck": "Capture one L3B routed detail and one E8/E9 handoff comparison. Check direct native geometry, logical link/fanout order, membership, unselected boxes, aligned-versus-diagonal classification, and exact undo. Existing numbers are approximate segment metrics, not all spline clearance. Only dispatch a second production slice on a reproducible undesired route."
+    },
+    "layoutRepair": {
+      "exactProposedFiles": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLayoutReport.h",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTidyFeedbackTest.cpp"
+      ],
+      "behavior": "Conditional exact candidate scope. Change only demonstrated packing/routing or reporting behavior under R07. Preserve the J5 fixed-outside refusal, clear crossing reason, Force disclosure and scope boundaries. Split routing and reporting if the evidence identifies independent causes.",
+      "focusedCheck": "Use the same failing synthetic geometry from phase one plus one blocked alternative. Require exact scope, links, anchors, read-back, undo, and no reported improvement manufactured by suppressing an unexplained diagnostic."
+    },
+    "widget": {
+      "exactProposedFiles": [
+        "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetClassReplace.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetClassReplaceTest.cpp",
+        "Tools/test-widget-class-replace.py"
+      ],
+      "behavior": "Add two new preview/edit declarations with token-bound designer class replacement in one owned transaction. Validate exact instance/class, subtree capacity, slot and named slots, typed authored overrides and all supported references. Preserve exact name, slot/order, variable flag, entries, links and properties or refuse. Do not directly wrap the engine template helper or remove/add. ListView-to-DynamicEntryBox data and selection logic remain explicit pending product scope; do not treat designer replacement as migration.",
+      "focusedCheck": "Transient compatible leaf under a nondefault parent slot with siblings and reference, Preview no mutation, exact application and undo, separate explicit compile; compare nondefault slot and raw graph/pin identity. Refuse stale token, incompatible authored event/property, and multi-child-to-single-child before mutation."
+    },
+    "indexedSearch": {
+      "exactProposedFiles": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphInventoryTest.cpp",
+        "Tools/test-node-search-json.py"
+      ],
+      "behavior": "Source/engineering probe first. Evaluate stock indexed Find-in-Blueprint data read through GetSearchDataForAssetPath and ProcessEncodedValueForUnloadedBlueprint without live GetBlueprint, Package loads or deferred indexing. If verified, use as separately labelled saved indexed evidence in NodeFind, never exact live coverage and never bypass unsafe dependency checks. WidgetInventory/BulkExport are separate follow-ups after proving their metadata or keeping an explicit missing status.",
+      "focusedCheck": "Unloaded disposable Blueprint hard-dependent on a map/redirector plus a current loaded/unsaved control and a stale/missing index control; prove no target/map load with package-load delegate and independent package inventory before/after. Compare selected typed node/pin identities to fixture expectations; assert incomplete and categorized skips for unsupported/stale records."
+    },
+    "console": {
+      "exactProposedFiles": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDiagnosticConsole.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDiagnosticConsoleTest.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "Tools/test-diagnostic-console.py"
+      ],
+      "behavior": "Separate #8 diagnostic slice. Disclose distinction between world identity and command effect; refuse explicit per-client isolation for process-wide allowlisted effects. Only implement a session-bound client command if a benign explicitly supported API demonstrably confines the effect to that world/controller; keep arbitrary console, external process and broadened allowlist out. The integrator must confirm requested client-local operation before expanding schema.",
+      "focusedCheck": "One two-world fixture reuses selected client/other client checks. Witness one supported local effect only on chosen world if supported. Prove stale token and process-global command refuse prior to any effect; report unsupported for cases without a local engine API."
+    },
+    "stop": {
+      "exactProposedFiles": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPIEStopWorkflowTest.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayCheck.cpp"
+      ],
+      "behavior": "Conditional addon mitigation; stock StopPIE and stock source stay unchanged. Reconcile current end witness and exact observed world state independently of script diagnostics. If the owner requests a dedicated stop/status operation beyond documenting the stock workaround, review exact new tool files and any toolset schema before dispatch; do not hide script errors or treat error as a still-running predicate.",
+      "focusedCheck": "Use existing native controlled null-reference EndPlay and clean control. Record ShutdownPIE witness, independent IsPIERunning or remaining world, and separate diagnostic. Retain existing failed raw RunTests response."
+    },
+    "packaging": {
+      "exactProposedFiles": [
+        "Tools/package-plugin.ps1",
+        "Tools/execute-tests.py",
+        "Tools/test-execution-runtime.py",
+        "docs/user/installation.md",
+        "docs/release-manager.md"
+      ],
+      "behavior": "Inventory existing package runner first; no defect presumed. Add only the exact consumer workflow/admission code needed after review; no engine mount edits. Install frozen preview/source or versioned package in two clean owned projects: Blueprint-only and C++ under distinct paths containing spaces. Keep source-built and Launcher evidence separate; no stable release action in this assignment.",
+      "focusedCheck": "Record exact engine checkout, compiler/toolchain/build version, candidate SHA, package and loaded DLL hash; verify both clean projects build/load, registration after restart, read known asset, accepted safe edit with independent readback and refused use preserving state. Inspect packaging exclusions and notices; Launcher stays unverified unless separately tested."
+    },
+    "callLog": {
+      "exactProposedFiles": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLog.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCallLog.h",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogSinkTest.cpp",
+        "Tools/test-call-log-sink.py"
+      ],
+      "behavior": "ARC14/L01-L02 confirmed current source defects. AppendToFile discards file API results, emits a successful marker even after failed rotation, checks size before appending an unbounded record, and writes outside Mutex. Serialize size/check/rotate/append, bound UTF-8 record size without breaking JSON, count omissions, and expose sanitized sink failure separately from factual operation outcome. Preserve ring, schema compatibility and privacy controls.",
+      "focusedCheck": "Isolated temporary log directory; fail append and deletion/move separately; force oversized JSON and concurrent threshold crossing. Assert successful rotation marker only after successful move; parse each retained record independently, verify cap and explicit omissions, verify actual low-level failure and no effect on tool result."
+    },
+    "batchAcceptance": {
+      "exactProposedFiles": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchSequenceTest.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
+        "Tools/test-batch-sequence.py",
+        "Tools/test-batch-rollback.py"
+      ],
+      "behavior": "ARC09 B01-B05. Existing coordinator/rollback behavior has focused native checks. Extend only missing contract cases; avoid reviving obsolete prose that requires implicit compile. Keep single Blueprint and graph and expose failed/attempted IDs, verify original source state before claiming outcome. A prior delete invalidating a later target must refuse in preflight or restore live state if invalidated unexpectedly.",
+      "focusedCheck": "One synthetic graph exercises three operations, one undo, independent exact snapshot, explicit compile/read/save in separate owned stages, third-step failure after two changes, distinct Blueprint and graph refusals, and stale-target refusal. Reuse one session; change production only on demonstrated mismatch."
+    }
+  },
+  "ciProvenance": [
+    {
+      "name": "actions/checkout",
+      "tag": "v7.0.1",
+      "commit": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "runtime": "node24",
+      "release": "https://github.com/actions/checkout/releases/tag/v7.0.1",
+      "signedCommit": "https://github.com/actions/checkout/commit/3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "action": "https://raw.githubusercontent.com/actions/checkout/v7.0.1/action.yml",
+      "runtimeBehavior": "Default fork-PR checkout safeguard retained; setup does not set the override. Existing repository, branch, triggering event, conclusion, credential and exact ref guards are byte-identical once the new pin is reverted."
+    },
+    {
+      "name": "actions/setup-python",
+      "tag": "v7.1.0",
+      "commit": "6d4fd22b20465ccc0f7354476588e8df7c9ca0e0",
+      "runtime": "node24",
+      "release": "https://github.com/actions/setup-python/releases/tag/v7.1.0",
+      "signedCommit": "https://github.com/actions/setup-python/commit/6d4fd22b20465ccc0f7354476588e8df7c9ca0e0",
+      "action": "https://raw.githubusercontent.com/actions/setup-python/v7.1.0/action.yml",
+      "runtimeBehavior": "Python 3.13 inputs/default official distribution source and token permissions remain unchanged; no custom mirror is configured."
+    }
+  ],
+  "checks": [
+    {
+      "command": "python Tools/validate-repo.py",
+      "result": "exit_0"
+    },
+    {
+      "command": "python Tools/test-repo-boundaries.py",
+      "result": "exit_0"
+    },
+    {
+      "command": "python Tools/test-daily-release.py",
+      "result": "exit_0_six_tests"
+    },
+    {
+      "command": "git diff --check; compare all four workflow files against exact base after undoing seven pin substitutions and compare both validation YAMLs byte-for-byte",
+      "result": "exit_0"
+    }
+  ],
+  "appendEvidence": [
+    {
+      "run": "cc151d397f67422cb043cec02e81cefd",
+      "outcome": "failed",
+      "notes": "Existing-only forms intentionally do not edit defaults; later fixture creates nodes.",
+      "ref": "docs/audit/field-reports/nov13-append-pin-review.md"
+    },
+    {
+      "run": "4e2afc104f5f4af987243921dadf384f",
+      "outcome": "failed",
+      "notes": "Legacy literal/pin count wording assertion and empty-event Inventory failure.",
+      "ref": "docs/audit/field-reports/nov13-append-pin-review.md"
+    },
+    {
+      "run": "4cb0955a1271404a8e75d7d1f86e1135",
+      "outcome": "failed_wrapper_inventory_pass",
+      "notes": "Empty-event/loaded-path Inventory passed after fix; legacy literal-count assertion still failed.",
+      "ref": "docs/audit/field-reports/nov13-loaded-node-search-review.md"
+    },
+    {
+      "run": "810ccf6e47f9459a9d9b7dc106d218fc",
+      "source": "f2f2e57e3fc76db8f9adb8171d6361cf51e0aea3",
+      "outcome": "historical_pass",
+      "notes": "Whole selected append wrapper passed after f0eb3b88 assertion repair; this does not reclassify earlier failures or pass the final candidate.",
+      "ref": "docs/audit/field-reports/nov13-loaded-node-search-review.md"
+    },
+    {
+      "run": "5d19da114b70490daa7c791ea388ec70",
+      "outcome": "failed",
+      "notes": "Old placement mode expectation; corrected and only focused placement acceptance documented for that repair initially.",
+      "ref": "docs/audit/field-reports/nov14-per-anchor-integration.md"
+    },
+    {
+      "run": "cbcd59ec634045b09b06cba2b632db31",
+      "outcome": "failed",
+      "notes": "Node JSON Inventory fixture lacked measurement render target. Rendering admission remains necessary; no JSON pass inferred.",
+      "ref": "docs/audit/field-reports/nov13-node-json-review.md"
+    },
+    {
+      "run": "64f8613b95c74c3a8423fae76a0d4de4",
+      "outcome": "failed_incomplete_fixture_inventory",
+      "notes": "Separate preview fixture inventory collected 13/15 after two exact-object reads refused; focused #13 result did not rerun full inventory.",
+      "ref": "todo/roadmap-r04.md"
+    }
+  ]
+}
