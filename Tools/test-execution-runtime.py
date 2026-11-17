@@ -1,5 +1,7 @@
 """Regression tests for bounded execution. No Unreal process is started."""
 import importlib.util
+import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -10,9 +12,77 @@ import tempfile
 import time
 import unittest
 from unittest.mock import patch
+import zipfile
 from execution_runtime import ResourceLocks, run_owned
+import package_consumer as consumer
 
 TOOLS=Path(__file__).resolve().parent
+
+
+class ConsumerAdmissionTests(unittest.TestCase):
+    def test_consumer_profile_has_two_fixed_supervised_phases(self):
+        spec = importlib.util.spec_from_file_location('executor', TOOLS/'execute-tests.py')
+        executor = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(executor)
+        root = TOOLS.parent
+        head = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip()
+        artifact = {'directory': 'TurboMCP-Test', 'source_commit': '1'*40,
+                    'archive_sha256': '2'*64, 'manifest_sha256': '3'*64}
+        plan = {'schema': 1, 'commit': head, 'tree_digest': 'fixture', 'profile': 'consumer',
+                'suites': [], 'max_seconds': 60, 'consumer_artifact': artifact}
+        with patch.object(executor, 'identity', return_value='fixture'):
+            executor.validate_request(plan)
+            self.assertEqual(executor.commands(plan, 'engine'), [
+                [sys.executable, 'Tools/package_consumer.py', phase] for phase in ('bp-only', 'cpp')
+            ])
+            for change in ({'profile': 'package'}, {'suites': ['test-agent-help']}, {'port': 1234},
+                           {'consumer_artifact': {**artifact, 'directory': '../outside'}},
+                           {'consumer_artifact': {**artifact, 'archive_sha256': 'missing'}}):
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    executor.validate_request({**plan, **change})
+        with patch.dict(os.environ, {'TURBOMCP_EXECUTION_CONTEXT': ''}):
+            with self.assertRaisesRegex(RuntimeError, 'supervisor context'):
+                consumer.admitted_run(root, root/'engine', 'bp-only')
+
+    def test_consumer_archive_validation_and_installed_integrity(self):
+        blob = b'known bytes'
+        identity = {'bytes': len(blob), 'sha256': hashlib.sha256(blob).hexdigest()}
+        files = {f'TurboMCP/{path}': identity for path in consumer.REQUIRED_FILES}
+        consumer.validate_file_index(files)
+        for path in ('TurboMCP/../escape', 'TurboMCP/nul.txt', 'TurboMCP/foo:stream',
+                     'TurboMCP/BINARIES/alternative', 'TurboMCP/Binaries/Win64/UnrealEditor.modules/file'):
+            with self.subTest(path=path), self.assertRaises(ValueError):
+                consumer.validate_file_index({**files, path: identity})
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, 'w') as archive:
+            for name in files:
+                archive.writestr(name, blob)
+        with tempfile.TemporaryDirectory() as temp:
+            repo = Path(temp)
+            run = repo/'.local/executions'/('a'*32)
+            consumer.create_run(repo, run)
+            with self.assertRaises(FileExistsError):
+                consumer.create_run(repo, run)
+            plugins = run/'Plugins'
+            plugins.mkdir()
+            with zipfile.ZipFile(buffer) as archive:
+                with self.assertRaises(ValueError):
+                    consumer.validate_zip(archive, {**files, 'TurboMCP/Extra': identity})
+                entries = consumer.validate_zip(archive, files)
+                consumer.extract(archive, entries, files, plugins)
+            self.assertEqual(consumer.verify_installed(plugins, {'files': files}), len(files))
+            (plugins/'TurboMCP/LICENSE').write_bytes(b'changed')
+            with self.assertRaisesRegex(ValueError, 'file differs'):
+                consumer.verify_installed(plugins, {'files': files})
+
+    def test_consumer_build_requires_only_known_module_actions(self):
+        log = ('[1/3] Compile [x64] ConsumerCpp.cpp\n[2/3] Link [x64] UnrealEditor-ConsumerCpp.dll\n'
+               '[3/3] WriteMetadata ConsumerCppEditor.target [NoUba]\n')
+        self.assertEqual(len(consumer.check_build_actions(log, 'ConsumerCpp')), 3)
+        with self.assertRaisesRegex(ValueError, 'unexpected compile'):
+            consumer.check_build_actions(log.replace('ConsumerCpp.cpp', 'TurboMCP.cpp'), 'ConsumerCpp')
+        with self.assertRaisesRegex(RuntimeError, 'Cannot prove'):
+            consumer.check_build_actions(log.splitlines()[0], 'ConsumerCpp')
 
 
 @unittest.skipUnless(os.name=='nt','Windows execution primitives')

@@ -14,9 +14,10 @@ from execution_runtime import ResourceLocks, canonical, run_owned
 from tmcp_paths import find_engine
 from execution_recovery import atomic_json, snapshot, restore, pending, collect_failure
 from engine_execution import preflight, finish_lease
+import package_consumer
 
 ROOT=Path(__file__).resolve().parents[1]
-ENGINE_PROFILES=('engine','fixture','build','package')
+ENGINE_PROFILES=('engine','fixture','build','package','consumer')
 
 
 def identity(root):
@@ -32,8 +33,14 @@ def identity(root):
 
 
 def validate_request(request, root=ROOT):
+    if not isinstance(request, dict):
+        raise ValueError('Execution request must be an object')
     required={'schema','commit','tree_digest','profile','suites','max_seconds'}
+    if request.get('profile') == 'consumer':
+        required.add('consumer_artifact')
     if set(request)!=required or request['schema']!=1:raise ValueError('Unknown or missing request fields')
+    if request['profile'] == 'consumer':
+        package_consumer.validate_artifact_ref(request['consumer_artifact'])
     if request['profile'] not in ('fast','offline','persistence-native',*ENGINE_PROFILES):raise ValueError('Unknown profile')
     if type(request['max_seconds']) is not int or not 1<=request['max_seconds']<=7200:raise ValueError('Run deadline must be 1..7200 seconds')
     if not isinstance(request['suites'],list) or any(not isinstance(x,str) for x in request['suites']):raise ValueError('Suites must be a list of names')
@@ -51,6 +58,8 @@ def commands(request, engine):
     if request['profile']=='fast':return [[sys.executable,'Tools/validate-repo.py'],[sys.executable,'Tools/check-language.py']]
     if request['profile']=='offline':return [[sys.executable,'Tools/validate.py']]
     if request['profile']=='persistence-native':return [[sys.executable,'Tools/persistence-job-acceptance.py']]
+    if request['profile']=='consumer':
+        return [package_consumer.phase_command(phase) for phase in package_consumer.PHASES]
     pwsh=shutil.which('pwsh')
     if not pwsh:raise ValueError('PowerShell 7 is required')
     doctor = [sys.executable, 'Tools/doctor.py']
@@ -84,12 +93,19 @@ def main():
         print(json.dumps(request,indent=2));return 0
     if os.name!='nt':raise ValueError('Owned execution currently requires Windows')
     engine=canonical(find_engine()) if request['profile'] in ENGINE_PROFILES else ''
-    run=ROOT/'.local/executions'/uuid.uuid4().hex;run.mkdir(parents=True)
+    consumer=request['profile']=='consumer'
+    run=ROOT/'.local/executions'/uuid.uuid4().hex
+    run_created=False
+    if not consumer:
+        run.mkdir(parents=True)
+        run_created=True
     # Remove inherited automation overrides and common credential variables from children.
     env={k:v for k,v in os.environ.items() if not k.startswith('TURBOMCP_') and not any(w in k.upper() for w in ('TOKEN','SECRET','PASSWORD','API_KEY','AUTHORIZATION'))}
     env['PYTHONIOENCODING']='utf-8';env['MSBUILDDISABLENODEREUSE']='1'
     context={'repo':canonical(ROOT),'engine':engine,'pid':os.getpid(),'token':secrets.token_hex(32)}
-    context_path=run/'context.json';context_path.write_text(json.dumps(context),encoding='utf8')
+    context_path=run/'context.json'
+    if run_created:
+        context_path.write_text(json.dumps(context),encoding='utf8')
     env['TURBOMCP_EXECUTION_CONTEXT']=str(context_path);env['TURBOMCP_EXECUTION_TOKEN']=context['token']
     env['TURBOMCP_RUNNER_LOG_ROOT']=str(run/'suites')
     env['TURBOMCP_OWNER_ID']='executor:'+str(os.getpid())
@@ -102,13 +118,19 @@ def main():
     try:
         with ResourceLocks(lockroot,resources):
             validate_request(request)
+            if consumer:
+                package_consumer.create_run(ROOT, run)
+                run_created=True
+                with context_path.open('x',encoding='utf8') as handle:
+                    json.dump(context,handle)
             if engine:
                 if pending(ROOT):raise RuntimeError('Pending fixture recovery blocks engine execution: '+', '.join(pending(ROOT)))
                 preflight(engine)
                 if (ROOT/'.agent/turbo-mcp-lease.json').exists():
                     raise RuntimeError('Existing editor lease preserved; inspect before starting a new run')
                 atomic_json(run/'owner.json',{'engine':engine,'owner':env['TURBOMCP_OWNER_ID'],'pid':os.getpid()})
-                snapshot(ROOT,run)
+                if not consumer:
+                    snapshot(ROOT,run)
             atomic_json(run/'report.json',report)
             try:
                 for index,command in enumerate(commands(request,engine)):
@@ -119,14 +141,17 @@ def main():
                     report['active_command']=command
                     atomic_json(run/'report.json',report)
                     env['TURBOMCP_RUNNER_LOG_ROOT']=str(run/(f'{index:02d}-suites'))
-                    result=run_owned(command,str(ROOT),env,str(log),remaining)
+                    if consumer:
+                        result=package_consumer.run_phase(ROOT, Path(engine), run, request, command, env, log, remaining)
+                    else:
+                        result=run_owned(command,str(ROOT),env,str(log),remaining)
                     result.update(command=command,log=log.name)
                     if result['exit_code']==0 and 'Tools/build.ps1' in command:
                         shutil.copyfile(ROOT/'.agent/build-provenance.json',run/'build-provenance.json')
                     report['results'].append(result)
                     atomic_json(run/'report.json',report)
                     if result['exit_code']!=0:
-                        report['status']='timed_out' if result['timed_out'] else 'failed';break
+                        report['status']=result.get('verdict', 'timed_out' if result['timed_out'] else 'failed');break
                 else:report['status']='passed'
             except BaseException:
                 report['status']='interrupted'
@@ -146,8 +171,9 @@ def main():
         report['status']='blocked';report['reason']=str(error)
     finally:
         report['duration_seconds']=round(time.monotonic()-start,3)
-        atomic_json(run/'report.json',report)
-        context_path.unlink(missing_ok=True)
+        if run_created:
+            atomic_json(run/'report.json',report)
+            context_path.unlink(missing_ok=True)
     print('RESULT: '+report['status'].upper()+'; evidence: '+str(run/'report.json'))
     return 0 if report['status']=='passed' else 1
 
