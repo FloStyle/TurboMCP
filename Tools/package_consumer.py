@@ -419,9 +419,11 @@ def check_build_actions(output, name):
     # UnrealBuildTool also compiles the module's generated PerModuleInline.gen.cpp.
     expected_compile = f'Compile [x64] {name}.cpp'
     generated_compile = 'Compile [x64] PerModuleInline.gen.cpp'
+    # An installed engine build also compiles the module's generated version resource.
+    generated_resource = 'Compile Resource [x64] Default.rc2'
     expected_link = f'Link [x64] UnrealEditor-{name}.dll'
-    allowed = {expected_compile, generated_compile, expected_link, f'Link [x64] UnrealEditor-{name}.lib',
-               f'WriteMetadata {name}Editor.target'}
+    allowed = {expected_compile, generated_compile, generated_resource, expected_link,
+               f'Link [x64] UnrealEditor-{name}.lib', f'WriteMetadata {name}Editor.target'}
     actions = []
     totals = set()
     indices = []
@@ -436,7 +438,7 @@ def check_build_actions(output, name):
         indices.append(int(index))
         totals.add(int(total))
     if (actions.count(expected_compile) != 1 or actions.count(expected_link) != 1
-            or actions.count(generated_compile) > 1):
+            or actions.count(generated_compile) > 1 or actions.count(generated_resource) > 1):
         raise RuntimeError('Cannot prove exactly one compile and link for the consumer module')
     if (not {expected_compile, expected_link}.issubset(actions)
             or totals != {len(actions)} or sorted(indices) != list(range(1, len(actions) + 1))):
