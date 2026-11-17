@@ -16,6 +16,14 @@ import package_consumer  # noqa: E402
 
 NAME = 'ConsumerCpp'
 
+GOOD_RESOURCE = '\n'.join([
+    '[1/5] Compile Resource [x64] Default.rc2',
+    '[2/5] Compile [x64] PerModuleInline.gen.cpp [NoUba]',
+    '[3/5] Compile [x64] ConsumerCpp.cpp [NoUba]',
+    '[4/5] Link [x64] UnrealEditor-ConsumerCpp.lib [NoUba]',
+    '[5/5] Link [x64] UnrealEditor-ConsumerCpp.dll [NoUba]',
+])
+
 GOOD = '\n'.join([
     '[1/4] Compile [x64] PerModuleInline.gen.cpp [NoUba]',
     '[2/4] Compile [x64] ConsumerCpp.cpp [NoUba]',
@@ -43,6 +51,15 @@ def main():
     if len(actions) != 4:
         failures += 1
         print('FAIL: expected 4 accepted actions, got %d' % len(actions))
+
+    resource_actions = package_consumer.check_build_actions(GOOD_RESOURCE, NAME)
+    if len(resource_actions) != 5:
+        failures += 1
+        print('FAIL: the generated resource compile was not accepted')
+
+    duplicate_resource = GOOD_RESOURCE + '\n[6/6] Compile Resource [x64] Default.rc2'
+    failures += expect(lambda: package_consumer.check_build_actions(duplicate_resource, NAME),
+                       'a duplicate resource compile', RuntimeError)
 
     rogue_engine = GOOD.replace('[4/4] Link', '[5/5] Compile [x64] EngineThing.cpp [NoUba]\n[4/4] Link')
     failures += expect(lambda: package_consumer.check_build_actions(rogue_engine, NAME),
