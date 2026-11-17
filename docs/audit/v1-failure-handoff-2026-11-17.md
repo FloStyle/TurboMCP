@@ -83,7 +83,7 @@ The tested source candidate is ec76157f (full SHA above). Later changes here
 are the repair assignment and this handoff, not a claimed new native pass.
 
 Active worker: Sol High, `/root/sol_v1_schema_callers`.
-Checkout: `C:/Users/flost/.codex/worktrees/v1-site-examples/validate-main`.
+Checkout: `C:/Users/<user>/.codex/worktrees/v1-site-examples/validate-main`.
 Branch: `codex/v1-schema-callers`; approved base:
 7235054ee34bdb80040c321a45360304e92d0d4d.
 Assignment: `v1-schema-callers`. Claim: 04f41e2c28ad48d4977b1d4169db332a.
