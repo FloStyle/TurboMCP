@@ -30,19 +30,19 @@ function copyButton(label, text, accessibleLabel) {
 
 const captures = {
   overview: {
-    title: "Understand the whole graph",
-    description: "Find the graph's structure and repeated groups. The overview fits 69 nodes in one frame; use a detail view to read individual pins and labels.",
+    title: "Graph capture: 69-node fixture",
+    description: "Mode=graph captures the selected graph. This recorded overview contains 69 nodes; labels need a closer node or neighbour capture.",
     caption: "Whole-graph view: 69 nodes in the synthetic VisionEvents_0 graph. Open for full size.",
     mode: "graph", size: "1600x900", target: "Graph selected by GraphName", width: 1600, height: 900
   },
   focus: {
-    title: "Inspect a precise target",
-    description: "Use NodeFind to obtain an exact node ID, then request a native detail capture. A successful overview is not proof that the text is readable.",
+    title: "Node capture: 1200 × 800",
+    description: "Pass the exact node ID returned by NodeFind as Target, with Mode=node and Size=1200x800. The image shows the captured region of the synthetic graph.",
     caption: "Exact-node view: make the selected area readable. Open the image for full size.",
     mode: "node", size: "1200x800", target: "Exact node ID from NodeFind", width: 1200, height: 800
   },
   neighbours: {
-    title: "Follow connected nodes",
+    title: "Neighbour capture: one hop, six nodes",
     description: "See the target and its immediate connections. In neighbours mode, Size is a hop count, not an image resolution. This capture contains six nodes.",
     caption: "Connected-node view: one hop from the selected Sequence node. Open for full size.",
     mode: "neighbours", size: "1 (hop)", target: "Exact Sequence node ID", width: 1038, height: 1058
@@ -74,37 +74,37 @@ document.querySelectorAll("[data-capture]").forEach((button) => {
 const recipes = [
   {
     title: "Understand a complex Blueprint",
-    benefit: "Read the structure. Find the call. Follow its immediate context.",
+    benefit: "Expected: graph names, exact node IDs, nearby execution links and input sources.",
     tools: ["ReadTurboMCPBlueprintLoad", "ReadTurboMCPNodeFind", "ReadTurboMCPNodeContext"],
     prompt: "Discover the live TurboMCP schema. Read /Game/Examples/BP_Demo without editing it. Find the calls involved in its input flow, follow their node context, and explain the result with exact asset, graph and node IDs. Report skipped or unreadable content."
   },
   {
     title: "Audit references and widgets",
-    benefit: "Find dependencies and matching widget instances across a folder.",
+    benefit: "Expected: saved reference edges and matching widget instances, with continuation and coverage limits.",
     tools: ["ReadTurboMCPRefsBatch", "ReadTurboMCPWidgetInventory"],
     prompt: "Discover the live TurboMCP schema. Audit referencers of /Game/Examples/Input and widget uses of those input assets. Read every result page, preserve reference kinds and instance values, and report skipped assets and coverage limits. Do not edit, save or start PIE."
   },
   {
     title: "Inspect data before a batch edit",
-    benefit: "Read typed values. Preview the exact rows and fields to change.",
+    benefit: "Expected: current typed values and a validated list of proposed row changes.",
     tools: ["ReadTurboMCPDataAssetProperty", "PreviewTurboMCPDataTableRows"],
     prompt: "Discover the live TurboMCP schema. Read the requested properties of /Game/Examples/DA_Demo. For /Game/Examples/DT_Demo, inspect the row schema and preview only my requested row changes. Show the affected rows and current values before any edit. Do not apply or save changes yet."
   },
   {
     title: "Make graph layout readable",
-    benefit: "Find layout problems. Preview a bounded cleanup and inspect it.",
+    benefit: "Expected: layout findings and a proposed arrangement for the selected graph.",
     tools: ["LookTurboMCPLayoutReport", "PreviewTurboMCPGraphTidy", "LookTurboMCPCapture"],
     prompt: "Discover the live TurboMCP schema. Inspect layout in the EventGraph of /Game/Examples/BP_Demo. Capture the current graph, then preview a tidy operation limited to the selected graph. Explain the proposed changes and any warnings. Wait before applying changes."
   },
   {
     title: "Check menu input in local PIE",
-    benefit: "Inspect focus and input state, then send a bounded test input.",
+    benefit: "Expected: selected-player focus and contexts, followed by a bounded input delivery report.",
     tools: ["ReadTurboMCPPlayInputState", "EditTurboMCPPlayInput"],
     prompt: "Discover the live TurboMCP schema. Inspect focus and input state in my running local PIE session. Confirm the exact target and test key with me before sending any input. Then send only that bounded input and read the result. Distinguish input delivery from proof that the intended game action happened."
   },
   {
     title: "Understand a failed call",
-    benefit: "Use tool help and logs to correct the next call with context.",
+    benefit: "Expected: the failed request, relevant diagnostics and supported parameter values.",
     tools: ["ReadTurboMCPToolHelp", "ReadTurboMCPCallLog", "ReadTurboMCPEditorLog"],
     prompt: "Inspect the failed TurboMCP call, current tool help and relevant editor log. Explain the specific error and the smallest correction. If an edit may already have run, inspect its outcome before retrying. Do not repeat a possibly completed mutation blindly."
   }
@@ -159,7 +159,7 @@ function toolRow(tool) {
   detail.append(params);
   if (!tool.parameters.length) detail.append(element("p", "No parameters in this declaration."));
   detail.append(element("h4", "Use it with an agent"));
-  const usage = `Discover the live schema and read current tool help for ${tool.toolset}.${tool.name}. Explain its inputs and effects before using it for my task. Do not assume that a Read or Preview name means no side effects.`;
+  const usage = `Discover the live schema and read current tool help for ${tool.toolset}.${tool.name}. Return its required inputs, supported operations and side effects for my task.`;
   detail.append(element("p", usage));
   const actions = element("div", undefined, "tool-actions");
   const source = element("a", "Source and contract ↗");
