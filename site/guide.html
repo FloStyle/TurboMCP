@@ -56,17 +56,6 @@
 <li data-chapter="release"><a href="#release">Read package and release status</a></li>
 <li class="chapter-group" data-group-heading="Release reference">Release reference</li>
 <li data-chapter="next"><a href="#next">Check the current release scope</a></li>
-<li class="appendix-nav"><details id="appendix-navigation"><summary>Experimental design notes</summary><ul>
-<li data-chapter="turboux"><a href="#turboux">Describe a menu route</a></li>
-<li data-chapter="project-model"><a href="#project-model">Name screens, controls and routes</a></li>
-<li data-chapter="authoring-loop"><a href="#authoring-loop">Review the proposed route</a></li>
-<li data-chapter="workspaces"><a href="#workspaces">Separate appearance from action</a></li>
-<li data-chapter="ux-inputs"><a href="#ux-inputs">Specify Back with and without a modal</a></li>
-<li data-chapter="command-parity"><a href="#command-parity">Describe a proposed change</a></li>
-<li data-chapter="portable-projects"><a href="#portable-projects">Share a reproducible design</a></li>
-<li data-chapter="svg-figma"><a href="#svg-figma">Keep behavior with the source design</a></li>
-<li data-chapter="native-handoff"><a href="#native-handoff">Turn the design into a PIE check</a></li>
-</ul></details></li>
 </ul></nav>
 </aside>
 <main id="guide-main">
@@ -793,82 +782,6 @@ after: 4</code></pre></figure>
 <a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Check%20the%20current%20release%20scope&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23next%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Check the current release scope">Suggest a correction</a>
 </footer>
 </section>
-<details id="experimental-notes" class="experimental-notes">
-<summary>Experimental design notes</summary>
-<p>TurboUX is a separate experimental prototype. These notes describe a menu design that can guide Unreal implementation. They do not describe automatic synchronization or a verified TurboMCP feature.</p>
-<section class="chapter" data-appendix="true" id="turboux" data-group="Experimental design notes" aria-labelledby="turboux-title">
-<h2 id="turboux-title" tabindex="-1">Describe a menu route</h2><p class="chapter-lead">Describe Pause → Settings → Back before changing the Unreal project. Record the screen and focus expected after each action.</p>
-<footer class="chapter-footer">
-<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/v1-guide-and-package.md">Source reference</a>
-<a href="#turboux" aria-label="Link to Describe a menu route">Link to section</a>
-<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Describe%20a%20menu%20route&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23turboux%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Describe a menu route">Suggest a correction</a>
-</footer>
-</section>
-<section class="chapter" data-appendix="true" id="project-model" data-group="Experimental design notes" aria-labelledby="project-model-title">
-<h2 id="project-model-title" tabindex="-1">Name screens, controls and routes</h2><p class="chapter-lead">Give each screen and control a stable ID. Map each ID to its Unreal asset or widget name when implementation starts.</p>
-<footer class="chapter-footer">
-
-<a href="#project-model" aria-label="Link to Name screens, controls and routes">Link to section</a>
-<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Name%20screens%2C%20controls%20and%20routes&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23project-model%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Name screens, controls and routes">Suggest a correction</a>
-</footer>
-</section>
-<section class="chapter" data-appendix="true" id="authoring-loop" data-group="Experimental design notes" aria-labelledby="authoring-loop-title">
-<h2 id="authoring-loop-title" tabindex="-1">Review the proposed route</h2><p class="chapter-lead">Review the proposed route from Pause to Settings and back. Record which control should receive focus after each transition.</p>
-<footer class="chapter-footer">
-
-<a href="#authoring-loop" aria-label="Link to Review the proposed route">Link to section</a>
-<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Review%20the%20proposed%20route&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23authoring-loop%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Review the proposed route">Suggest a correction</a>
-</footer>
-</section>
-<section class="chapter" data-appendix="true" id="workspaces" data-group="Experimental design notes" aria-labelledby="workspaces-title">
-<h2 id="workspaces-title" tabindex="-1">Separate appearance from action</h2><p class="chapter-lead">Reuse a button’s appearance where appropriate. Define its action separately for each screen.</p>
-<footer class="chapter-footer">
-
-<a href="#workspaces" aria-label="Link to Separate appearance from action">Link to section</a>
-<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Separate%20appearance%20from%20action&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23workspaces%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Separate appearance from action">Suggest a correction</a>
-</footer>
-</section>
-<section class="chapter" data-appendix="true" id="ux-inputs" data-group="Experimental design notes" aria-labelledby="ux-inputs-title">
-<h2 id="ux-inputs-title" tabindex="-1">Specify Back with and without a modal</h2><p class="chapter-lead">When a modal is open, Back should close the modal and return focus to its opening control. Otherwise, Back returns from Settings to Pause.</p>
-<footer class="chapter-footer">
-
-<a href="#ux-inputs" aria-label="Link to Specify Back with and without a modal">Link to section</a>
-<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Specify%20Back%20with%20and%20without%20a%20modal&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23ux-inputs%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Specify Back with and without a modal">Suggest a correction</a>
-</footer>
-</section>
-<section class="chapter" data-appendix="true" id="command-parity" data-group="Experimental design notes" aria-labelledby="command-parity-title">
-<h2 id="command-parity-title" tabindex="-1">Describe a proposed change</h2><p class="chapter-lead">Record the current revision, target control ID, and intended text. If the revision changes, inspect the target again before applying the proposal.</p>
-<footer class="chapter-footer">
-
-<a href="#command-parity" aria-label="Link to Describe a proposed change">Link to section</a>
-<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Describe%20a%20proposed%20change&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23command-parity%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Describe a proposed change">Suggest a correction</a>
-</footer>
-</section>
-<section class="chapter" data-appendix="true" id="portable-projects" data-group="Experimental design notes" aria-labelledby="portable-projects-title">
-<h2 id="portable-projects-title" tabindex="-1">Share a reproducible design</h2><p class="chapter-lead">Include the source design and its required assets when sharing a reproduction. Record missing fonts, images, and routes.</p>
-<footer class="chapter-footer">
-
-<a href="#portable-projects" aria-label="Link to Share a reproducible design">Link to section</a>
-<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Share%20a%20reproducible%20design&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23portable-projects%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Share a reproducible design">Suggest a correction</a>
-</footer>
-</section>
-<section class="chapter" data-appendix="true" id="svg-figma" data-group="Experimental design notes" aria-labelledby="svg-figma-title">
-<h2 id="svg-figma-title" tabindex="-1">Keep behavior with the source design</h2><p class="chapter-lead">A visual export can help compare geometry, text, and hierarchy. Keep navigation, focus, and input rules in the source design.</p>
-<footer class="chapter-footer">
-
-<a href="#svg-figma" aria-label="Link to Keep behavior with the source design">Link to section</a>
-<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Keep%20behavior%20with%20the%20source%20design&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23svg-figma%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Keep behavior with the source design">Suggest a correction</a>
-</footer>
-</section>
-<section class="chapter" data-appendix="true" id="native-handoff" data-group="Experimental design notes" aria-labelledby="native-handoff-title">
-<h2 id="native-handoff-title" tabindex="-1">Turn the design into a PIE check</h2><p class="chapter-lead">List the Widget Blueprints and input assets that implement each route. For each route, record the expected screen and focus. Test those results in PIE.</p>
-<footer class="chapter-footer">
-<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/v1-guide-and-package.md">Source reference</a>
-<a href="#native-handoff" aria-label="Link to Turn the design into a PIE check">Link to section</a>
-<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Turn%20the%20design%20into%20a%20PIE%20check&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23native-handoff%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Turn the design into a PIE check">Suggest a correction</a>
-</footer>
-</section>
-</details>
 </main>
 </div>
 <div class="presentation-controls" hidden aria-label="Presentation controls">
