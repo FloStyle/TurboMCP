@@ -180,17 +180,26 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  TestEqual(TEXT("Reader section refusal preserves nodes"), SyntaxGraph->Nodes.Num(), SyntaxCount);
  TestTrue(TEXT("Reader section refusal preserves existing condition link"), SyntaxBranches[0]->GetConditionPin()->LinkedTo.Contains(SyntaxGetters[0]->GetValuePin()));
  const FGuid RetainedBranch = SyntaxBranches[0]->NodeGuid;
- const FString ReplacementText = FString::Printf(TEXT(R"DSL((%s
- ; %s
- execute (-> %s:then)
- Condition true
-))DSL"), *BranchType, *TurboMCPNodeId::MakeForNode(SyntaxBranches[0]), *SyntaxEntryId);
+ const FString SyntaxExport = Record(TEXT("Complete edit export"), UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
+     BP->GetPathName(), SyntaxGraph->GetName(), TEXT("edit"), TEXT("bodies"), 0, 24000));
+ if (!TestTrue(TEXT("Function with a member getter and branch has a complete export"), SyntaxExport.Contains(TEXT("\"complete\":true")))) return false;
+ const FString GetterId = SyntaxGetters[0]->NodeGuid.ToString(EGuidFormats::DigitsLower);
+ const int32 GetterTag = SyntaxExport.Find(TEXT(" ; ") + GetterId + TEXT("\n"), ESearchCase::CaseSensitive);
+ if (!TestTrue(TEXT("Complete export identifies the exact getter"), GetterTag != INDEX_NONE)) return false;
+ const int32 GetterStart = SyntaxExport.Left(GetterTag).Find(TEXT("\n("), ESearchCase::CaseSensitive, ESearchDir::FromEnd) + 1;
+ const int32 GetterEnd = SyntaxExport.Find(TEXT("\n)\n"), ESearchCase::CaseSensitive, ESearchDir::FromStart, GetterTag);
+ if (!TestTrue(TEXT("Getter form has exact bounds"), GetterStart > 0 && GetterEnd != INDEX_NONE)) return false;
+ FString ReplacementText = SyntaxExport.Left(GetterStart) + SyntaxExport.Mid(GetterEnd + 3);
+ const FString InputLine = TEXT("\"Condition\" (-> ") + GetterId + TEXT(":\"") + SyntaxGetters[0]->GetValuePin()->PinName.ToString() + TEXT("\")");
+ if (!TestEqual(TEXT("Edit changes one exact branch input"), ReplacementText.ReplaceInline(*InputLine, TEXT("\"Condition\" true"), ESearchCase::CaseSensitive), 1)) return false;
+ ReplacementText += TEXT("; tmcp-delete-v1: {\"nodeId\":\"") + GetterId + TEXT("\"}\n");
+
  const FString ReplacementPreview = Record(TEXT("Converted replacement preview"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphReplace(BP->GetPathName(), SyntaxGraph->GetName(), ReplacementText));
  TestEqual(TEXT("Replacement preview preserves nodes"), SyntaxGraph->Nodes.Num(), SyntaxCount);
  const FString ReplacementEdit = Record(TEXT("Converted replacement edit"), UTurboMCPEditToolset::EditTurboMCPGraphReplace(BP->GetPathName(), SyntaxGraph->GetName(), ReplacementText));
  TestTrue(TEXT("Converted replacement accepted"), ReplacementEdit.StartsWith(TEXT("changed:")));
  SyntaxGetters.Reset(); SyntaxGraph->GetNodesOfClass(SyntaxGetters);
- TestEqual(TEXT("Replacement removes only omitted getter"), SyntaxGetters.Num(), 0);
+ TestEqual(TEXT("Replacement removes only the explicitly named getter"), SyntaxGetters.Num(), 0);
  TestEqual(TEXT("Replacement preserves Branch identity"), SyntaxBranches[0]->NodeGuid, RetainedBranch);
  TestEqual(TEXT("Replacement sets condition"), SyntaxBranches[0]->GetConditionPin()->DefaultValue, FString(TEXT("true")));
  TestTrue(TEXT("Replacement preserves execution wire"), SyntaxBranches[0]->GetExecPin()->LinkedTo.Contains(SyntaxEntries[0]->FindPinChecked(UEdGraphSchema_K2::PN_Then)));

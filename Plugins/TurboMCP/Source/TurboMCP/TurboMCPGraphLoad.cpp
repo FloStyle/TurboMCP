@@ -140,7 +140,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
     const FString Revision = InRevision == TEXT("first") ? FString() : InRevision;
     const FString EntryFilter = InEntryFilter == TEXT("*") ? FString() : InEntryFilter;
     if (Offset < 0 || MaxChars < 256 || MaxChars > MaxGraphTextChars) return TEXT("error: Offset must be nonnegative and MaxChars must be 256..24000");
-    if (Offset > 0 && Revision.IsEmpty()) return TEXT("error: subsequent pages require the revision token from page zero");
+    if (!Format.TrimStartAndEnd().Equals(TEXT("edit"), ESearchCase::IgnoreCase) && Offset > 0 && Revision.IsEmpty()) return TEXT("error: subsequent pages require the revision token from page zero");
 	if (Asset.IsEmpty())
 	{
 		return TEXT("error: no asset given. Pass a Blueprint in any path form, for ")
@@ -163,14 +163,14 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 
 	// JSON wraps the same readable body; it is not a second graph dialect.
 	const FString WantedFormat = Format.TrimStartAndEnd().ToLower();
-	if (!WantedFormat.IsEmpty() && WantedFormat != TEXT("read") && WantedFormat != TEXT("json"))
+	if (!WantedFormat.IsEmpty() && WantedFormat != TEXT("read") && WantedFormat != TEXT("json") && WantedFormat != TEXT("edit"))
 	{
 		if (WantedFormat == TEXT("write"))
 		{
             return TEXT("error: format 'write' is unsupported. Use Format=read to inspect the graph; read output is not the engine's graph-write dialect.");
 		}
 		return FString::Printf(
-			TEXT("error: '%s' is not a format. Accepted: read, json."), *Format);
+			TEXT("error: '%s' is not a format. Accepted: read, json, edit."), *Format);
 	}
 
 	FTurboMCPAssetResolver::FResolved Resolved;
@@ -199,6 +199,19 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 	{
 		return FString::Printf(TEXT("error: %s has multiple graphs named '%s'; the graph name is ambiguous."),
 			*Resolved.ObjectPath, *GraphName);
+	}
+
+	if (WantedFormat == TEXT("edit"))
+	{
+		if (!Graph)
+			return FString::Printf(TEXT("error: %s has no authored graph named '%s'. Its graphs are: %s"),
+				*Resolved.ObjectPath, *GraphName, *ListGraphNames(Blueprint));
+		FString Issue;
+		if (Offset != 0 || !Revision.IsEmpty() || !EntryFilter.IsEmpty())
+			Issue = TEXT("edit export requires Offset=0, first revision and no EntryFilter; it cannot be paginated or filtered");
+		else if (!GetEventStubName(*Blueprint, *Graph).IsNone())
+			Issue = TEXT("generated event stub; request the authored event graph directly");
+		return FTurboMCPGraphText::RenderEdit(*Blueprint, *Graph, MaxChars, Issue);
 	}
 
 	const FName StubName = Graph != nullptr ? GetEventStubName(*Blueprint, *Graph) : NAME_None;

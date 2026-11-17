@@ -11,7 +11,7 @@
 
 #include "TurboMCPGraphReplace.h"
 
-// Both tools plan from current state; Apply also checks edit guards and removal targets.
+// Both tools plan from current state; Apply checks the complete base again just before mutation.
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphReplace(
 	const FString& Asset, const FString& GraphName, const FString& Text)
 {
@@ -38,9 +38,6 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphReplace(
 
 	if (!Plan.bAcceptable())
 	{
-		// A REFUSED PLAN IS RENDERED RATHER THAN RESTATED. The refusals name their lines, the first line is
-		// `unchanged`, and the render says explicitly that NOTHING WOULD BE REMOVED - which a caller of the
-		// only destructive writer in the plugin needs to be told rather than left to infer.
 		return FTurboMCPGraphReplace::RenderPreview(Plan);
 	}
 
@@ -48,9 +45,6 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphReplace(
 	FString ApplyError;
 	if (!FTurboMCPGraphReplace::Apply(Plan, Report, ApplyError))
 	{
-		// `Apply` reports its own failures with the first line `changed` or `unchanged`, because the spec
-		// requires a failed write to SAY it failed rather than to look like a success. Only a failure to even
-		// reach the graph comes back as an `error:` line.
 		return FTurboMCPToolError::AsError(ApplyError);
 	}
 

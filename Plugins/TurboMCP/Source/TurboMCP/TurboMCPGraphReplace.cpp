@@ -8,509 +8,699 @@
 #include "TurboMCPGraphReplace.h"
 
 #include "TurboMCPAssetResolver.h"
+#include "TurboMCPGraphReachability.h"
+#include "TurboMCPGraphScratch.h"
+#include "TurboMCPGraphText.h"
+#include "TurboMCPGraphTextLex.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPNodeType.h"
 
-#include "EdGraph/EdGraph.h"
-#include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
-#include "Engine/Blueprint.h"
-#include "Kismet2/BlueprintEditorUtils.h"
-#include "Kismet2/KismetEditorUtilities.h"
-#include "Misc/ScopeExit.h"
-#include "Editor/TransBuffer.h"
-#include "Editor.h"
-
 #include "EdGraphNode_Comment.h"
+#include "EdGraphSchema_K2.h"
+#include "Editor.h"
+#include "Editor/TransBuffer.h"
+#include "K2Node_Event.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
-#include "K2Node_Event.h"
-#include "K2Node_CustomEvent.h"
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "Templates/UnrealTemplate.h"
+#include "Misc/ScopeExit.h"
+#include "Serialization/JsonReader.h"
 
 namespace
 {
-	/** Whichever form the text uses, one graph is looked up the same way. A local copy of APPEND's helper. */
-	UEdGraph* FindGraphLocal(UBlueprint* InBlueprint, const FString& InGraphName)
-	{
-        int32 Matches = 0;
-        UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(InBlueprint, InGraphName.TrimStartAndEnd(), Matches);
-        if (!Graph) return nullptr;
-        return Matches == 1 ? Graph : nullptr;
-    }
+	const FString EditPrefix = TEXT("; tmcp-edit-v1: ");
+	const FString DeletePrefix = TEXT("; tmcp-delete-v1: ");
 
-	/**
-	 * TRUE FOR A NODE THE SPEC SAYS IS NEVER REMOVED: an entry, an event, or a result.
-	 *
-	 * "Writes into the EXISTING entry node and result nodes; NEVER ADDS A SECOND ENTRY." An entry or a result
-	 * that the submitted text does not mention is therefore a node to KEEP, not a node to remove - removing it
-	 * would either delete the function's signature or make the writer add a second one, and both are the exact
-	 * thing the spec forbids in one sentence.
-	 */
-	bool IsEntryOrResult(const UEdGraphNode* InNode)
+	FString ReplaceId(const FGuid& Id)
 	{
-		if (InNode == nullptr)
-		{
-			return false;
-		}
-		return InNode->IsA<UK2Node_FunctionEntry>()
-			|| InNode->IsA<UK2Node_FunctionResult>()
-			|| InNode->IsA<UK2Node_Event>()
-			|| InNode->IsA<UK2Node_CustomEvent>();
+		return Id.ToString(EGuidFormats::DigitsLower);
 	}
 
-	/** A comment is documentation rather than body, so it is kept exactly as `E-GRAPH-DEAD` taught. */
-	bool IsComment(const UEdGraphNode* InNode)
+	bool IsLowerHex(const FString& String, int32 Length)
 	{
-		return InNode != nullptr && InNode->IsA<UEdGraphNode_Comment>();
+		return String.Len() == Length && TurboMCPNodeId::NormaliseKey(String).Equals(String, ESearchCase::CaseSensitive);
+	}
+
+	bool ParseReplaceId(const FString& String, FGuid& OutId)
+	{
+		return IsLowerHex(String, 32) && FGuid::ParseExact(String, EGuidFormats::Digits, OutId) && OutId.IsValid();
+	}
+
+	// ARC07 envelopes are flat and have an exact field set. Read the tokens rather
+	// than a JSON object map, which would hide repeated (possibly conflicting) keys.
+	bool ParseEditEnvelope(const FString& Json, TMap<FString, FString>& Out, bool bHeader)
+	{
+		const auto Reader = TJsonReaderFactory<>::Create(Json);
+		EJsonNotation Token;
+		if (!Reader->ReadNext(Token) || Token != EJsonNotation::ObjectStart) return false;
+		bool bComplete = false;
+		while (Reader->ReadNext(Token) && Token != EJsonNotation::ObjectEnd)
+		{
+			const FString Key = Reader->GetIdentifier();
+			if (bHeader && Key.Equals(TEXT("complete"), ESearchCase::CaseSensitive))
+			{
+				if (bComplete || Token != EJsonNotation::Boolean || !Reader->GetValueAsBoolean()) return false;
+				bComplete = true;
+			}
+			else
+			{
+				const bool bKnown = bHeader
+					? Key.Equals(TEXT("asset"), ESearchCase::CaseSensitive) || Key.Equals(TEXT("graph"), ESearchCase::CaseSensitive)
+						|| Key.Equals(TEXT("graphGuid"), ESearchCase::CaseSensitive) || Key.Equals(TEXT("baseFingerprint"), ESearchCase::CaseSensitive)
+					: Key.Equals(TEXT("nodeId"), ESearchCase::CaseSensitive);
+				if (!bKnown || Token != EJsonNotation::String || Out.Contains(Key)) return false;
+				Out.Add(Key, Reader->GetValueAsString());
+			}
+		}
+		return Token == EJsonNotation::ObjectEnd && !Reader->ReadNext(Token)
+			&& Reader->GetErrorMessage().IsEmpty() && (bHeader ? bComplete && Out.Num() == 4 : Out.Num() == 1);
+	}
+
+	bool FindReplaceGraph(const FString& Asset, const FString& Name, UBlueprint*& Blueprint, UEdGraph*& Graph, FString& Error)
+	{
+		FTurboMCPAssetResolver::FResolved Resolved;
+		Error = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+		if (!Error.IsEmpty()) return false;
+		Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+		if (!Blueprint)
+		{
+			Error = TEXT("replacement asset is missing or is not a Blueprint");
+			return false;
+		}
+		int32 Matches = 0;
+		Graph = TurboMCPNodeId::FindGraphByName(Blueprint, Name.TrimStartAndEnd(), Matches);
+		if (!Graph || Matches != 1)
+		{
+			Error = TEXT("replacement needs one exact named Blueprint graph; graph is missing or ambiguous");
+			return false;
+		}
+		return true;
+	}
+
+	UEdGraphPin* ExactReplacePin(UEdGraphNode* Node, const FString& Name, EEdGraphPinDirection Direction)
+	{
+		UEdGraphPin* Match = nullptr;
+		if (Node)
+			for (UEdGraphPin* Pin : Node->Pins)
+				if (Pin && Pin->Direction == Direction && !Pin->bOrphanedPin && Pin->PinName.ToString().Equals(Name, ESearchCase::CaseSensitive))
+				{
+					if (Match) return nullptr;
+					Match = Pin;
+				}
+		return Match;
+	}
+
+	struct FValidatedDefault
+	{
+		FString Literal;
+		TObjectPtr<UObject> Object = nullptr;
+		FText Text;
+	};
+
+	// Decode the single existing grammar literal by pin type. A localized FText
+	// must retain its namespace/key, so do not use TrySetDefaultValue for it.
+	bool ReplaceDefault(const UEdGraphSchema_K2& Schema, UEdGraphPin& Pin, const FString& Value,
+		FValidatedDefault& Out, FString& Error)
+	{
+		if (Pin.bHidden || Pin.bDefaultValueIsIgnored || Pin.bDefaultValueIsReadOnly
+			|| Pin.PinType.PinCategory == UEdGraphSchema_K2::PC_Exec || Pin.PinType.PinCategory == UEdGraphSchema_K2::PC_Wildcard)
+		{
+			Error = TEXT("the input does not support a default assignment");
+			return false;
+		}
+		Schema.GetPinDefaultValuesFromString(Pin.PinType, Pin.GetOwningNode(), Value, Out.Literal, Out.Object, Out.Text, true);
+		if ((Pin.PinType.PinCategory == UEdGraphSchema_K2::PC_Object || Pin.PinType.PinCategory == UEdGraphSchema_K2::PC_Class
+			|| Pin.PinType.PinCategory == UEdGraphSchema_K2::PC_Interface)
+			&& Value.StartsWith(TEXT("/")) && (!Out.Object || !Out.Object->GetPathName().Equals(Value, ESearchCase::CaseSensitive)))
+		{
+			Error = TEXT("the exact object default did not resolve");
+			return false;
+		}
+		Error = Schema.IsPinDefaultValid(&Pin, Out.Literal, Out.Object, Out.Text);
+		return Error.IsEmpty();
+	}
+
+	bool RetainedIdentityOnly(const UEdGraphNode& Node)
+	{
+		return Node.IsA<UK2Node_FunctionEntry>() || Node.IsA<UK2Node_FunctionResult>() || Node.IsA<UK2Node_Event>();
+	}
+
+	bool ValidLabel(const FString& Text)
+	{
+		if (Text.IsEmpty() || (Text.Len() == 32 && !TurboMCPNodeId::NormaliseKey(Text).IsEmpty())) return false;
+		for (const TCHAR Ch : Text)
+			if (!((Ch >= TEXT('a') && Ch <= TEXT('z')) || (Ch >= TEXT('A') && Ch <= TEXT('Z'))
+				|| (Ch >= TEXT('0') && Ch <= TEXT('9')) || Ch == TEXT('_'))) return false;
+		return true;
 	}
 }
 
 bool FTurboMCPGraphReplace::Plan(const FString& InAsset, const FString& InGraphName,
 	const FString& InText, FPlan& OutPlan, FString& OutError)
 {
-	OutError.Empty();
+	using namespace TurboMCPGraphTextLex;
 	OutPlan = FPlan();
-
-	// ---- 1. THE APPEND PLAN RUNS FIRST, BECAUSE EVERYTHING IT DECIDES IS ALSO TRUE HERE -----------------
-	//
-	// THIS IS THE SHARING THAT MATTERS. `APPEND` already calls the checker, lexes the one dialect, resolves type
-	// ids through the engine's own action database, decides which forms name EXISTING nodes, and captures the pin
-	// names of nodes it will create. REPLACE needs all of it and adds only the old-graph question below. A second
-	// parser or a second factory would be a second dialect and a second opinion about the same format, and this
-	// project has recorded that bug twice.
-	if (!FTurboMCPGraphAppend::Plan(InAsset, InGraphName, InText, OutPlan.Append, OutError, /*bRequestPlacement=*/true))
+	OutPlan.Asset = InAsset;
+	OutPlan.Graph = InGraphName;
+	OutError.Reset();
+	auto Refuse = [&](const FString& Reason)
 	{
-		return false;
-	}
-	if (OutPlan.Append.Refusals.Num() > 0)
-	{
-		// A REFUSED TEXT HAS NO OPINION ABOUT THE OLD GRAPH, so nothing is listed for removal. Reporting
-		// removals for a text that will not be applied would tell a caller that nodes are going when nothing is.
+		OutPlan.Refusals.Add(Reason);
 		return true;
-	}
+	};
+	if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GIsTransacting
+		|| GEditor->IsPlaySessionInProgress() || GCompilingBlueprint)
+		return Refuse(TEXT("replacement requires an idle editor outside PIE, compilation and transactions"));
+	if (InText.Len() > 24000)
+		return Refuse(TEXT("replacement text exceeds the 24000 character edit document limit"));
 
-	// ---- 2. THE GRAPH, SO THE OLD BODY CAN BE COMPARED WITH WHAT THE TEXT DESCRIBES --------------------
-	FTurboMCPAssetResolver::FResolved Resolved;
-	const FString ResolveError = FTurboMCPAssetResolver::Resolve(InAsset, Resolved);
-	if (!ResolveError.IsEmpty())
-	{
-		OutError = ResolveError;
-		return false;
-	}
-	UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
-	if (Blueprint == nullptr)
-	{
-		OutError = FString::Printf(TEXT("'%s' is not a Blueprint, and only a Blueprint has graphs"),
-			*Resolved.PackagePath);
-		return false;
-	}
-	UEdGraph* Graph = FindGraphLocal(Blueprint, OutPlan.Append.GraphName);
-	if (Graph == nullptr)
-	{
-		OutError = FString::Printf(TEXT("no graph named '%s' in '%s'"),
-			*OutPlan.Append.GraphName, *Resolved.PackagePath);
-		return false;
-	}
-	OutPlan.NodeCountBefore = Graph->Nodes.Num();
+	const TArray<FLine> Lines = SplitLines(InText);
+	TMap<FString, FString> Header;
+	if (Lines.IsEmpty() || !Lines[0].Text.StartsWith(EditPrefix, ESearchCase::CaseSensitive)
+		|| !ParseEditEnvelope(Lines[0].Text.Mid(EditPrefix.Len()), Header, true))
+		return Refuse(TEXT("replacement requires a valid complete tmcp-edit-v1 header on its first line; legacy, partial and malformed documents are refused"));
+	OutPlan.BaseFingerprint = Header.FindChecked(TEXT("baseFingerprint"));
+	if (!ParseReplaceId(Header.FindChecked(TEXT("graphGuid")), OutPlan.GraphGuid)
+		|| !IsLowerHex(OutPlan.BaseFingerprint, 64) || Header.FindChecked(TEXT("graph")).IsEmpty())
+		return Refuse(TEXT("invalid edit graph GUID, graph description or SHA-256 fingerprint"));
 
-	// ---- 3. WHAT THE TEXT DESCRIBES, AS KEYS -----------------------------------------------------------
-	//
-	// A form that names an EXISTING node keeps that node, so its key is described. A form that creates a node
-	// describes nothing that exists yet, so it contributes no key here.
-	TSet<FString> Described;
-	for (const FTurboMCPGraphAppend::FNewNode& Form : OutPlan.Append.Nodes)
+	UBlueprint* Blueprint = nullptr;
+	UEdGraph* Graph = nullptr;
+	if (!FindReplaceGraph(InAsset, InGraphName, Blueprint, Graph, OutError)) return false;
+	OutPlan.Asset = Blueprint->GetPathName();
+	OutPlan.Graph = Graph->GetName();
+	if (!Header.FindChecked(TEXT("asset")).Equals(OutPlan.Asset, ESearchCase::CaseSensitive)
+		|| OutPlan.GraphGuid != Graph->GraphGuid)
+		return Refuse(TEXT("foreign edit header: canonical asset or graph GUID does not match the selected graph"));
+	FString CurrentBody;
+	TArray<FString> Issues;
+	const FString CurrentFingerprint = FTurboMCPGraphText::EditSnapshot(*Blueprint, *Graph, CurrentBody, Issues);
+	if (!Issues.IsEmpty()) return Refuse(TEXT("current graph has no complete edit export: ") + FString::Join(Issues, TEXT("; ")));
+	if (!OutPlan.BaseFingerprint.Equals(CurrentFingerprint, ESearchCase::CaseSensitive))
+		return Refuse(TEXT("stale edit fingerprint; read a fresh complete edit export"));
+
+	TMap<FGuid, UEdGraphNode*> Nodes;
+	for (UEdGraphNode* Node : Graph->Nodes) Nodes.Add(Node->NodeGuid, Node);
+
+	struct FPendingLink { int32 Form; int32 Input; FString From; FString Output; };
+	TArray<FPendingLink> PendingLinks;
+	TMap<FGuid, int32> ExistingForms;
+	TMap<FString, int32> Labels;
+	TSet<FGuid> Deleted;
+	int32 Current = INDEX_NONE;
+	for (int32 LineIndex = 1; LineIndex < Lines.Num(); ++LineIndex)
 	{
-		if (Form.bLinksToExisting && !Form.ExistingNodeId.IsEmpty())
+		const FLine& Line = Lines[LineIndex];
+		const FString Text = Line.Text.TrimStartAndEnd();
+		if (Text.IsEmpty()) continue;
+		auto Invalid = [&](const FString& Reason)
 		{
-			Described.Add(Form.ExistingNodeId);
-		}
-	}
-
-    // An explicit wire reference also describes an existing node. Removing that
-    // endpoint after Append verifies the wire would silently break the requested edit.
-    for (const FTurboMCPGraphAppend::FNewLink& Link : OutPlan.Append.Links)
-    {
-        if (!Link.FromNodeKey.IsEmpty()) Described.Add(Link.FromNodeKey);
-        if (!Link.ToNodeKey.IsEmpty()) Described.Add(Link.ToNodeKey);
-    }
-
-	// ---- 4. THE REMOVAL LIST, WHICH IS THE WHOLE DIFFERENCE FROM APPEND ---------------------------------
-	for (UEdGraphNode* Node : Graph->Nodes)
-	{
-		if (Node == nullptr)
+			return Refuse(FString::Printf(TEXT("line %d: %s"), Line.Number, *Reason));
+		};
+		if (Text.StartsWith(DeletePrefix, ESearchCase::CaseSensitive))
 		{
+			TMap<FString, FString> Directive;
+			FGuid Id;
+			if (Current != INDEX_NONE || !ParseEditEnvelope(Text.Mid(DeletePrefix.Len()), Directive, false)
+				|| !ParseReplaceId(Directive.FindChecked(TEXT("nodeId")), Id))
+				return Invalid(TEXT("invalid tmcp-delete-v1 directive"));
+			if (Deleted.Contains(Id)) return Invalid(TEXT("duplicate deletion directive for ") + ReplaceId(Id));
+			UEdGraphNode* const* Node = Nodes.Find(Id);
+			if (!Node) return Invalid(TEXT("foreign or missing deletion target ") + ReplaceId(Id));
+			if (FTurboMCPGraphText::IsEditRemovalProtected(**Node))
+				return Invalid(TEXT("protected deletion target ") + ReplaceId(Id) + TEXT(" (entries, results, events, comments or engine-protected nodes)"));
+			Deleted.Add(Id);
+			OutPlan.Removals.Add({Id, (*Node)->GetClass()->GetName(), TurboMCPNodeId::GetNodeTitle(*Node)});
 			continue;
 		}
-
-		// THE KEYS ARE PRODUCED BY THE PROJECT'S OWN READER rather than by this pass. `FTurboMCPNodeId` is what
-		// `R-GRAPH-LOAD` prints and what a caller puts back into the text, so a removal key that comes from
-		// anywhere else could name a node the caller cannot write.
-		const FString Key = TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true);
-
-		if (IsEntryOrResult(Node))
+		// A strict flat subset of the shared multiline grammar: a type head,
+		// existing ID on the head or a local label, input pin lines, then ')'.
+		FString Type;
+		int32 Column = 0, After = 0;
+		if (ExtractHeadTypeId(Text, Type, Column, After))
 		{
-			// KEPT, AND RECORDED AS REUSED RATHER THAN SILENTLY SKIPPED. "never adds a second entry" is only
-			// demonstrated to a caller if the report says the existing one was written into.
-			OutPlan.ReusedKeys.Add(Key);
+			if (Current != INDEX_NONE) return Invalid(TEXT("nested forms are unsupported; use separate forms and explicit pin links"));
+			FString Suffix = Text.Mid(After).TrimStartAndEnd();
+			const bool bClosed = Suffix.RemoveFromStart(TEXT(")"));
+			Suffix.TrimStartAndEndInline();
+			FForm Form;
+			Form.Type = Type;
+			const int32 Index = OutPlan.Forms.Num();
+			if (!Suffix.IsEmpty())
+			{
+				if (!Suffix.RemoveFromStart(TEXT(";"))) return Invalid(TEXT("unexpected text after node head"));
+				Suffix.TrimStartAndEndInline();
+				if (Suffix.StartsWith(TEXT("label "), ESearchCase::CaseSensitive))
+				{
+					Form.Label = LocalLabelFromComment(Suffix);
+					if (!ValidLabel(Form.Label) || Labels.Contains(Form.Label))
+						return Invalid(TEXT("invalid or duplicate new-node label"));
+					Labels.Add(Form.Label, Index);
+				}
+				else
+				{
+					if (!ParseReplaceId(Suffix, Form.Id))
+						return Invalid(TEXT("existing nodes require an exact 32-digit lowercase GUID"));
+					UEdGraphNode* const* Node = Nodes.Find(Form.Id);
+					if (!Node) return Invalid(TEXT("foreign or missing existing node ") + Suffix);
+					if (ExistingForms.Contains(Form.Id)) return Invalid(TEXT("duplicate node form for ") + Suffix);
+					if (!FTurboMCPGraphText::EditType(**Node).Equals(Form.Type, ESearchCase::CaseSensitive))
+						return Invalid(TEXT("existing node type differs from the export for ") + Suffix);
+					ExistingForms.Add(Form.Id, Index);
+				}
+			}
+			OutPlan.Forms.Add(MoveTemp(Form));
+			Current = bClosed ? INDEX_NONE : Index;
 			continue;
 		}
-		if (IsComment(Node))
+		if (Text == TEXT(")") && Current != INDEX_NONE)
 		{
-			// A COMMENT IS DOCUMENTATION, NOT BODY. `E-GRAPH-DEAD` already learned this the hard way: a comment
-			// has no pins, so it is unreachable from any walk, and treating that as "dead" queued an author's
-			// documentation for deletion. A REPLACE has no business deleting it either.
-			//
-			// COUNTED RATHER THAN ONLY SKIPPED, because it is still a node the text does not describe and the
-			// report has to be able to account for it.
-			++OutPlan.CommentKeysKept;
+			Current = INDEX_NONE;
 			continue;
 		}
-		if (Described.Contains(Key))
+		FString PinName, Value;
+		if (Current == INDEX_NONE || Text.StartsWith(TEXT(";")) || !ParsePinLine(Text, PinName, Value, Column)
+			|| Value.IsEmpty())
+			return Invalid(TEXT("expected a node form, explicit input value, closing delimiter or deletion directive"));
+		FForm& Form = OutPlan.Forms[Current];
+		int32 InputIndex = Form.Inputs.IndexOfByPredicate([&](const FInput& Input)
 		{
-			// COUNTED, BECAUSE WITHOUT IT THE PREVIEW HAS NO WAY TO NAME THIS BUCKET. Every node the loop
-			// walks falls into exactly one of four: described, re-used, documentation, or removed, and the
-			// report prints them separately rather than reporting their sum as "described by the text".
-			++OutPlan.DescribedKeysKept;
-			continue;
+			return Input.Name.Equals(PinName, ESearchCase::CaseSensitive);
+		});
+		if (InputIndex == INDEX_NONE) InputIndex = Form.Inputs.Add({PinName, {}, {}});
+		FInput& Input = Form.Inputs[InputIndex];
+		if (ValueIsALink(Value))
+		{
+			FLinkForm Link;
+			FString Error;
+			if (Input.Default.IsSet() || !ParseLinkValue(Value, Link, Error))
+				return Invalid(TEXT("invalid or conflicting link on pin ") + PinName + TEXT(" ") + Error);
+			// ParsePinLine removes the link's closing ')'. Require one actual
+			// delimiter outside quotes and no ignored trailing text or comments.
+			const FString Prefix = TEXT(" (-> ") + Link.FromNode + TEXT(":");
+			const FString QuotedOutput = Prefix + QuoteLiteral(Link.FromPin) + TEXT(")");
+			const FString PlainOutput = Prefix + Link.FromPin + TEXT(")");
+			if (!Text.Equals(QuoteLiteral(PinName) + QuotedOutput, ESearchCase::CaseSensitive)
+				&& !Text.Equals(PinName + QuotedOutput, ESearchCase::CaseSensitive)
+				&& !Text.Equals(QuoteLiteral(PinName) + PlainOutput, ESearchCase::CaseSensitive)
+				&& !Text.Equals(PinName + PlainOutput, ESearchCase::CaseSensitive))
+				return Invalid(TEXT("link must use an explicit (-> identity:output) expression on its own pin line"));
+			if (PendingLinks.ContainsByPredicate([&](const FPendingLink& Prior)
+				{ return Prior.Form == Current && Prior.Input == InputIndex && Prior.From == Link.FromNode && Prior.Output == Link.FromPin; }))
+				return Invalid(TEXT("duplicate pin link for ") + PinName);
+			PendingLinks.Add({Current, InputIndex, Link.FromNode, Link.FromPin});
 		}
+		else
+		{
+			FString Literal, Error;
+			if (Input.Default.IsSet() || PendingLinks.ContainsByPredicate([&](const FPendingLink& Link)
+				{ return Link.Form == Current && Link.Input == InputIndex; }) || !DecodeLiteral(Value, Literal, Error))
+				return Invalid(TEXT("invalid, duplicate or conflicting default for ") + PinName + TEXT(" ") + Error);
+			// Do not let the shared reader's trailing-closer/comment tolerance
+			// turn an incomplete or branch heading line into a literal write.
+			if (!Text.Equals(QuoteLiteral(PinName) + TEXT(" ") + Value, ESearchCase::CaseSensitive)
+				&& !Text.Equals(PinName + TEXT(" ") + Value, ESearchCase::CaseSensitive))
+				return Invalid(TEXT("default must use a single pin/value line"));
+			Input.Default = MoveTemp(Literal);
+		}
+	}
+	if (Current != INDEX_NONE) return Refuse(TEXT("unterminated node form in edit document"));
 
-        if (!Node->CanUserDeleteNode())
-        {
-            OutPlan.Append.Refusals.Add(FString::Printf(TEXT("node %s (%s) is protected by Unreal and cannot be removed; explicitly retain it in the replacement"),
-                *Key, *Node->GetClass()->GetName()));
-            continue;
-        }
+	for (const auto& Pair : ExistingForms)
+		if (Deleted.Contains(Pair.Key)) return Refuse(TEXT("conflicting retention and deletion for ") + ReplaceId(Pair.Key));
+	for (const auto& Pair : Nodes)
+		if (!ExistingForms.Contains(Pair.Key) && !Deleted.Contains(Pair.Key)
+			&& !Pair.Value->IsA<UEdGraphNode_Comment>())
+			return Refuse(TEXT("omitted semantic node without an explicit deletion directive: ") + ReplaceId(Pair.Key));
 
-		FRemoval Removal;
-		Removal.Key = Key;
-		Removal.ClassName = Node->GetClass()->GetName();
-		Removal.Title = TurboMCPNodeId::GetNodeTitle(Node);
-		OutPlan.Removals.Add(Removal);
+	for (const FPendingLink& Link : PendingLinks)
+	{
+		FGuid Id;
+		const int32* Index = ParseReplaceId(Link.From, Id) ? ExistingForms.Find(Id) : Labels.Find(Link.From);
+		if (!Index) return Refuse(TEXT("foreign, omitted, deleted or ambiguous link source ") + Link.From
+			+ TEXT("; use a retained full GUID or the unique label of a new node"));
+		const FForm& Source = OutPlan.Forms[*Index];
+		if (Source.Id.IsValid() && !ExactReplacePin(Nodes.FindChecked(Source.Id), Link.Output, EGPD_Output))
+			return Refuse(TEXT("missing or ambiguous source pin ") + Link.From + TEXT(":") + Link.Output);
+		OutPlan.Forms[Link.Form].Inputs[Link.Input].Links.Add({*Index, Link.Output});
 	}
 
-    // Both public entry points must reject append failures before a live
-    // replacement transaction starts. Scratch success is not compile proof.
-    if (OutPlan.Append.Refusals.IsEmpty())
-    {
-        FString ScratchReport, ScratchError;
-        if (!FTurboMCPGraphAppend::Preflight(OutPlan.Append, ScratchReport, ScratchError))
-            OutPlan.Append.Refusals.Add(TEXT("replacement preflight refused: ") + ScratchError);
-    }
+	TArray<FTurboMCPGraphAppend::FNewNode> PlacementForms;
+	TArray<FTurboMCPGraphAppend::FNewLink> PlacementLinks;
+	for (const FForm& Form : OutPlan.Forms)
+	{
+		auto& Placement = PlacementForms.AddDefaulted_GetRef();
+		Placement.bLinksToExisting = Form.Id.IsValid();
+		Placement.TypeId = Form.Type;
+		if (!Form.Id.IsValid()) continue;
+		UEdGraphNode* Node = Nodes.FindChecked(Form.Id);
+		for (const UEdGraphPin* Pin : Node->Pins)
+			if (FTurboMCPGraphText::IsEditInput(*Pin) && !Form.Inputs.ContainsByPredicate([&](const FInput& Input)
+				{ return Input.Name.Equals(Pin->PinName.ToString(), ESearchCase::CaseSensitive); }))
+				return Refuse(TEXT("omitted input ") + ReplaceId(Form.Id) + TEXT(":") + Pin->PinName.ToString()
+					+ TEXT("; preserve its wire or submit an explicit replacement value/link"));
+		for (const FInput& Input : Form.Inputs)
+		{
+			UEdGraphPin* Pin = ExactReplacePin(Node, Input.Name, EGPD_Input);
+			if (!Pin) return Refuse(TEXT("unknown or ambiguous input ") + ReplaceId(Form.Id) + TEXT(":") + Input.Name);
+			if (Input.Default.IsSet() && (Pin->bHidden || Pin->bDefaultValueIsIgnored || Pin->bDefaultValueIsReadOnly
+				|| Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Wildcard))
+				return Refuse(TEXT("unsupported default assignment on ") + ReplaceId(Form.Id) + TEXT(":") + Input.Name);
+			bool bDiffers = Input.Default.IsSet()
+				? !Pin->LinkedTo.IsEmpty() || !FTurboMCPGraphText::EditLiteral(*Pin).Equals(Input.Default.GetValue(), ESearchCase::CaseSensitive)
+				: Pin->LinkedTo.Num() != Input.Links.Num();
+			if (!bDiffers && !Input.Default.IsSet())
+				for (const FLink& Link : Input.Links)
+				{
+					const FGuid& SourceId = OutPlan.Forms[Link.From].Id;
+					bDiffers |= !SourceId.IsValid() || !Pin->LinkedTo.Contains(ExactReplacePin(Nodes.FindRef(SourceId), Link.Output, EGPD_Output));
+				}
+			if (bDiffers) OutPlan.Updates.Add(ReplaceId(Form.Id) + TEXT(":") + Input.Name);
+		}
+	}
+
+	for (int32 To = 0; To < OutPlan.Forms.Num(); ++To)
+		for (const FInput& Input : OutPlan.Forms[To].Inputs)
+			for (const FLink& Link : Input.Links)
+			{
+				auto& PlacementLink = PlacementLinks.AddDefaulted_GetRef();
+				PlacementLink.FromPin = Link.Output;
+				PlacementLink.ToPin = Input.Name;
+				const FGuid& FromId = OutPlan.Forms[Link.From].Id;
+				const FGuid& ToId = OutPlan.Forms[To].Id;
+				if (FromId.IsValid()) PlacementLink.FromNodeKey = TurboMCPNodeId::MakeForNode(Nodes.FindChecked(FromId), true);
+				else PlacementLink.FromFormIndex = Link.From;
+				if (ToId.IsValid()) PlacementLink.ToNodeKey = TurboMCPNodeId::MakeForNode(Nodes.FindChecked(ToId), true);
+				else PlacementLink.ToFormIndex = To;
+			}
+	if (PlacementForms.ContainsByPredicate([](const FTurboMCPGraphAppend::FNewNode& Form) { return !Form.bLinksToExisting; }))
+	{
+		bool bEstimated = false;
+		FString PlacementError;
+		if (!FTurboMCPGraphAppend::PlanPlacement(Graph, PlacementForms, OutPlan.Positions, bEstimated, PlacementError, &PlacementLinks))
+			return Refuse(TEXT("replacement placement refused: ") + PlacementError);
+	}
+
+	// Simulate the combined deletion/default/link/spawn plan, including execution
+	// reachability, on a disposable duplicate before opening a live transaction.
+	if (OutPlan.HasChanges())
+	{
+		TGuardValue<ITransaction*> SuppressScratchUndo(GUndo, nullptr);
+		TurboMCPGraphScratch::FCopy Scratch;
+		FString ScratchError;
+		if (!Scratch.Init(Blueprint, Graph) || !Execute(OutPlan, *Scratch.Owner.Get(), *Scratch.Graph, Graph, ScratchError))
+			return Refuse(TEXT("replacement preflight refused: ") + (ScratchError.IsEmpty() ? TEXT("scratch graph could not be created") : ScratchError));
+	}
+	OutPlan.bValidated = true;
 	return true;
 }
 
-FString FTurboMCPGraphReplace::RenderPreview(const FPlan& InPlan)
+bool FTurboMCPGraphReplace::Execute(const FPlan& Plan, UBlueprint& Blueprint, UEdGraph& Graph,
+	UEdGraph* DiscoveryGraph, FString& OutError, bool bFailAfterRemoval)
 {
-	FString Out = FString::Printf(TEXT("preview: replace the body of %s in %s"),
-		*InPlan.Append.GraphName, *InPlan.Append.Asset);
-
-	// A REFUSED TEXT WAS NEVER COMPARED WITH THE GRAPH, SO THIS PREVIEW PRINTS NO GRAPH ARITHMETIC AT ALL.
-	// `Plan` returns before it reads the graph, so the node count and all four buckets are still zero - numbers
-	// no measurement produced. Printing them would state "0 node(s) in the graph now" about a graph nobody had
-	// looked at, and "the text describes every node that exists" about a text that was REFUSED. `Plan` states
-	// the rule this obeys where it refuses: "A REFUSED TEXT HAS NO OPINION ABOUT THE OLD GRAPH".
-	if (InPlan.Append.Refusals.Num() > 0)
+	const auto* Schema = CastChecked<UEdGraphSchema_K2>(Graph.GetSchema());
+	auto Refuse = [&](const FString& Reason) { OutError = Reason; return false; };
+	struct FPinBefore { FString Shape; FString Default; };
+	struct FNodeBefore { FString State; TMap<FGuid, FPinBefore> Pins; };
+	TMap<const UEdGraphNode*, FNodeBefore> Retained;
+	TSet<FGuid> DeleteIds;
+	for (const FRemoval& Removal : Plan.Removals) DeleteIds.Add(Removal.Id);
+	for (UEdGraphNode* Node : Graph.Nodes)
 	{
-		Out += FString::Printf(TEXT("\n\nunchanged: %d refusal(s). Nothing would be written and NOTHING REMOVED."),
-			InPlan.Append.Refusals.Num());
-		for (const FString& Refusal : InPlan.Append.Refusals)
+		if (DeleteIds.Contains(Node->NodeGuid)) continue;
+		auto& Before = Retained.Add(Node);
+		Before.State = FTurboMCPGraphText::EditNodeState(*Node);
+		for (const UEdGraphPin* Pin : Node->Pins)
+			Before.Pins.Add(Pin->PinId, {FTurboMCPGraphText::EditPinShape(*Pin), FTurboMCPGraphText::EditDefaultState(*Pin)});
+	}
+
+	Blueprint.Modify();
+	Graph.Modify();
+	for (const FRemoval& Removal : Plan.Removals)
+	{
+		UEdGraphNode* Node = TurboMCPGraphScratch::ByGuid(&Graph, Removal.Id);
+		if (!Node || FTurboMCPGraphText::IsEditRemovalProtected(*Node))
+			return Refuse(TEXT("removal target missing or protected: ") + ReplaceId(Removal.Id));
+		FBlueprintEditorUtils::RemoveNode(DiscoveryGraph ? nullptr : &Blueprint, Node, true);
+		if (Graph.Nodes.Contains(Node)) return Refuse(TEXT("removal did not take effect: ") + ReplaceId(Removal.Id));
+	}
+
+	TArray<UEdGraphNode*> Instances;
+	Instances.SetNumZeroed(Plan.Forms.Num());
+	for (int32 Index = 0; Index < Plan.Forms.Num(); ++Index)
+	{
+		const FForm& Form = Plan.Forms[Index];
+		UEdGraphNode*& Node = Instances[Index];
+		if (Form.Id.IsValid())
 		{
-			Out += FString::Printf(TEXT("\n    refused %s"), *Refusal);
+			Node = TurboMCPGraphScratch::ByGuid(&Graph, Form.Id);
+			if (!Node || !Retained.Contains(Node)) return Refuse(TEXT("retained node identity changed: ") + ReplaceId(Form.Id));
+			continue;
 		}
-		Out += TEXT("\nInput guidance: replacement uses the append grammar. Use the complete graph reader result as reference, then write node forms with exact type IDs, input pin names and explicit (-> NodeId:OutputPin) links. Preserve existing node ID comments for nodes you intend to retain.");
-		Out += TEXT("\nReader branch headings such as :then/:else do not create links. Write the destination execute input as (-> SourceNodeId:then) or (-> SourceNodeId:else). Use PreviewTurboMCPNodeType to check the actual pin names.");
-		Out += TEXT("\nDo not retry with a shortened graph fragment: replacement can delete omitted nodes. Correct the reported input and inspect a successful preview's removal list before editing.");
-		return Out;
+		const int32 CountBefore = Graph.Nodes.Num();
+		FString FactoryError;
+		// Resolve creation in the same authored Blueprint context on scratch and live.
+		UBlueprint* FactoryOwner = DiscoveryGraph ? CastChecked<UBlueprint>(DiscoveryGraph->GetOuter()) : &Blueprint;
+		if (FTurboMCPNodeType::SpawnNodeOfType(FactoryOwner, &Graph, Form.Type, Node, FactoryError, DiscoveryGraph)
+			!= FTurboMCPNodeType::ESpawnResult::Spawned || !Node)
+			return Refuse(TEXT("cannot create ") + Form.Type + TEXT(": ") + FactoryError);
+		if (Node->GetOuter() != &Graph || !Graph.Nodes.Contains(Node) || Graph.Nodes.Num() != CountBefore + 1
+			|| FTurboMCPGraphText::EditType(*Node).IsEmpty() || RetainedIdentityOnly(*Node))
+			return Refuse(TEXT("unsupported creation family or engine-created companions: ") + Form.Type);
+		const auto* Position = Plan.Positions.FindByPredicate([&](const FTurboMCPGraphAppend::FPlannedPosition& Item)
+			{ return Item.FormIndex == Index; });
+		if (!Position) return Refuse(TEXT("new node has no planned position: ") + Form.Type);
+		Node->NodePosX = Position->X;
+		Node->NodePosY = Position->Y;
 	}
 
-	// THE FOUR BUCKETS, EACH MEASURED SEPARATELY, BECAUSE THEIR SUM IS NOT ONE OF THEM. `NodeCountBefore -
-	// Removals.Num()` is NOT "described by the text": it also holds the re-used entry and result nodes and the
-	// comments. A re-used entry is written into rather than described, and a comment is kept because it is
-	// documentation, so printing that sum as one bucket lets a reader who adds it to the reuse line below
-	// count those nodes twice.
-	Out += FString::Printf(TEXT("\n%d node(s) in the graph now: %d described by the text, %d kept as entry/result/event, %d kept as documentation, %d would be added"),
-		InPlan.NodeCountBefore, InPlan.DescribedKeysKept, InPlan.ReusedKeys.Num(),
-		InPlan.CommentKeysKept, InPlan.Append.Nodes.Num());
-
-	// THE PARTITION IS CHECKED RATHER THAN ASSUMED. Every node the loop walked fell into exactly one of those
-	// four buckets, so a sum that does not come back is a node these figures have LOST - the one failure a
-	// report of counts cannot show by itself.
-	const int32 AccountedFor = InPlan.DescribedKeysKept + InPlan.ReusedKeys.Num()
-		+ InPlan.CommentKeysKept + InPlan.Removals.Num();
-	if (AccountedFor != InPlan.NodeCountBefore)
+	auto ResolveOutputs = [&](const FInput& Input, TArray<UEdGraphPin*>& Outputs)
 	{
-		Out += FString::Printf(TEXT("\n    *** %d of the %d node(s) are in none of the counts above, so they do not add up to the graph."),
-			InPlan.NodeCountBefore - AccountedFor, InPlan.NodeCountBefore);
-	}
+		for (const FLink& Link : Input.Links)
+		{
+			UEdGraphPin* Pin = ExactReplacePin(Instances[Link.From], Link.Output, EGPD_Output);
+			if (!Pin || Pin->bNotConnectable || Outputs.Contains(Pin)) return false;
+			Outputs.Add(Pin);
+		}
+		return true;
+	};
 
-	Out += FString::Printf(TEXT("\n%d node(s) preserved as entry, result or event nodes"),
-		InPlan.ReusedKeys.Num());
+	// First remove only displaced, explicitly submitted incoming links.
+	for (int32 Index = 0; Index < Plan.Forms.Num(); ++Index)
+		for (const FInput& Input : Plan.Forms[Index].Inputs)
+		{
+			UEdGraphNode* Node = Instances[Index];
+			UEdGraphPin* Pin = ExactReplacePin(Node, Input.Name, EGPD_Input);
+			TArray<UEdGraphPin*> Outputs;
+			if (!Pin || !ResolveOutputs(Input, Outputs)
+				|| (Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec && Outputs.Num() > 1))
+				return Refuse(TEXT("unsupported input or ambiguous links on ") + Input.Name);
+			const TArray<UEdGraphPin*> Original = Pin->LinkedTo;
+			for (UEdGraphPin* Prior : Original)
+				if (!Outputs.Contains(Prior))
+				{
+					Pin = ExactReplacePin(Node, Input.Name, EGPD_Input);
+					if (!Pin || !Pin->LinkedTo.Contains(Prior)) return Refuse(TEXT("input was reconstructed while breaking ") + Input.Name);
+					Node->Modify();
+					Prior->GetOwningNode()->Modify();
+					Schema->BreakSinglePinLink(Prior, Pin);
+				}
+		}
 
-	// THE TWO HALVES OF REPLACE, STATED APART. Adding and removing are different acts and a caller reading one
-	// number for both would not know whether the graph grew or shrank.
-	Out += FString::Printf(TEXT("\n%d node(s) the text does not describe, which this would REMOVE"),
-		InPlan.Removals.Num());
+	for (int32 Index = 0; Index < Plan.Forms.Num(); ++Index)
+		for (const FInput& Input : Plan.Forms[Index].Inputs)
+		{
+			UEdGraphNode* Node = Instances[Index];
+			for (const FLink& Link : Input.Links)
+			{
+				UEdGraphPin* Pin = ExactReplacePin(Node, Input.Name, EGPD_Input);
+				UEdGraphPin* Output = ExactReplacePin(Instances[Link.From], Link.Output, EGPD_Output);
+				if (!Pin || !Output) return Refuse(TEXT("input or source was reconstructed while writing ") + Input.Name);
+				if (Pin->LinkedTo.Contains(Output)) continue;
+				if (Pin->bNotConnectable || Output->bNotConnectable)
+					return Refuse(TEXT("non-connectable pin in requested link: ") + Input.Name);
+				if (Schema->CanCreateConnection(Output, Pin).Response != CONNECT_RESPONSE_MAKE)
+					return Refuse(TEXT("schema requires a conversion, an unrelated link break or refuses the link: ") + Link.Output + TEXT(" -> ") + Input.Name);
+				Node->Modify();
+				Output->GetOwningNode()->Modify();
+				if (!Schema->TryCreateConnection(Output, Pin)) return Refuse(TEXT("schema could not connect input ") + Input.Name);
+			}
+		}
 
-	for (const FRemoval& Removal : InPlan.Removals)
+	TMap<const UEdGraphPin*, FString> WrittenDefaults;
+	for (int32 Index = 0; Index < Plan.Forms.Num(); ++Index)
+		for (const FInput& Input : Plan.Forms[Index].Inputs)
+		{
+			if (!Input.Default.IsSet()) continue;
+			UEdGraphNode* Node = Instances[Index];
+			UEdGraphPin* Pin = ExactReplacePin(Node, Input.Name, EGPD_Input);
+			if (!Pin) return Refuse(TEXT("default target disappeared: ") + Input.Name);
+			const FString& Literal = Input.Default.GetValue();
+			if (FTurboMCPGraphText::EditLiteral(*Pin).Equals(Literal, ESearchCase::CaseSensitive)) continue;
+			FValidatedDefault Value;
+			if (!ReplaceDefault(*Schema, *Pin, Literal, Value, OutError))
+			{
+				OutError = TEXT("invalid default for ") + Input.Name + TEXT(": ") + OutError;
+				return false;
+			}
+			Node->Modify();
+			if (Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Text)
+				Schema->TrySetDefaultText(*Pin, Value.Text, false);
+			else if (Value.Object)
+				Schema->TrySetDefaultObject(*Pin, Value.Object, false);
+			else
+				Schema->TrySetDefaultValue(*Pin, Literal, false);
+			UEdGraphPin* After = ExactReplacePin(Node, Input.Name, EGPD_Input);
+			if (!After || !FTurboMCPGraphText::EditLiteral(*After).Equals(Literal, ESearchCase::CaseSensitive))
+				return Refuse(TEXT("schema normalized, rejected or lost the exact requested default for ") + Input.Name);
+			WrittenDefaults.Add(After, FTurboMCPGraphText::EditDefaultState(*After));
+		}
+
+	if (bFailAfterRemoval) return Refuse(TEXT("injected post-removal regression failure"));
+	if (!DiscoveryGraph) FBlueprintEditorUtils::MarkBlueprintAsModified(&Blueprint);
+	if (Graph.Nodes.Num() != Retained.Num() + Plan.Positions.Num())
+		return Refuse(TEXT("unexpected node count after staged replacement"));
+
+	TSet<FGuid> Ids;
+	TSet<const UEdGraphNode*> Reachable;
+	if (!Plan.Positions.IsEmpty()) TurboMCPGraphReachability::MarkReachable(&Graph, Reachable);
+	for (const UEdGraphNode* Node : Graph.Nodes)
 	{
-		Out += FString::Printf(TEXT("\n    would REMOVE  %s  %s  '%s'"),
-			*Removal.Key, *Removal.ClassName, *Removal.Title);
+		if (!Node || Node->GetOuter() != &Graph || !Node->NodeGuid.IsValid() || Ids.Contains(Node->NodeGuid)
+			|| DeleteIds.Contains(Node->NodeGuid))
+			return Refuse(TEXT("unexpected node ownership or identity after staged replacement"));
+		Ids.Add(Node->NodeGuid);
+		const bool bExisting = Retained.Contains(Node);
+		const int32 FormIndex = Instances.Find(Node);
+		if (!bExisting && FormIndex == INDEX_NONE)
+			return Refuse(TEXT("unplanned node appeared after staged replacement"));
+		const FNodeBefore* Before = Retained.Find(Node);
+		if (Before && (!Before->State.Equals(FTurboMCPGraphText::EditNodeState(*Node), ESearchCase::CaseSensitive) || Before->Pins.Num() != Node->Pins.Num()))
+			return Refuse(TEXT("retained node changed outside the requested inputs: ") + ReplaceId(Node->NodeGuid));
+		const FForm* Form = FormIndex != INDEX_NONE ? &Plan.Forms[FormIndex] : nullptr;
+		for (const UEdGraphPin* Pin : Node->Pins)
+		{
+			if (!Pin || Pin->GetOwningNodeUnchecked() != Node || Pin->bOrphanedPin || Pin->ParentPin || !Pin->SubPins.IsEmpty())
+				return Refuse(TEXT("pin identity or support changed during replacement"));
+			if (Before)
+			{
+				const auto* Prior = Before->Pins.Find(Pin->PinId);
+				const FString* Written = WrittenDefaults.Find(Pin);
+				if (!Prior || !Prior->Shape.Equals(FTurboMCPGraphText::EditPinShape(*Pin), ESearchCase::CaseSensitive)
+					|| !(Written ? *Written : Prior->Default).Equals(FTurboMCPGraphText::EditDefaultState(*Pin), ESearchCase::CaseSensitive))
+					return Refuse(TEXT("retained pin identity, type or default changed outside the plan: ") + Pin->PinName.ToString());
+			}
+			if (Pin->Direction != EGPD_Input)
+			{
+				for (const UEdGraphPin* Sink : Pin->LinkedTo)
+				{
+					const UEdGraphNode* SinkNode = Sink ? Sink->GetOwningNodeUnchecked() : nullptr;
+					if (!SinkNode || !Graph.Nodes.Contains(SinkNode) || !SinkNode->Pins.Contains(Sink)
+						|| Sink->Direction != EGPD_Input || !Sink->LinkedTo.Contains(Pin))
+						return Refuse(TEXT("replacement produced a foreign or incomplete output endpoint"));
+				}
+				continue;
+			}
+			const FInput* Request = Form ? Form->Inputs.FindByPredicate([&](const FInput& Input)
+				{ return Input.Name.Equals(Pin->PinName.ToString(), ESearchCase::CaseSensitive); }) : nullptr;
+			TArray<UEdGraphPin*> Outputs;
+			if ((Request && !ResolveOutputs(*Request, Outputs)) || Pin->LinkedTo.Num() != Outputs.Num())
+				return Refuse(TEXT("input link set differs from the requested body: ") + Pin->PinName.ToString());
+			for (const UEdGraphPin* Output : Outputs)
+				if (!Pin->LinkedTo.Contains(Output) || !Output->LinkedTo.Contains(Pin))
+					return Refuse(TEXT("an exact requested wire did not survive: ") + Pin->PinName.ToString());
+			if (!bExisting && !Reachable.Contains(Node) && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+				return Refuse(TEXT("new execution node has no path from a recognized entry: ") + Form->Type);
+		}
 	}
-	if (InPlan.Removals.Num() == 0)
-	{
-		// A ZERO THAT CARRIES THE DENOMINATOR IT WAS MEASURED AGAINST. "The text describes every node that
-		// exists" would be a conclusion drawn from an absence, and it is FALSE for any graph holding a comment:
-		// the comment exists, the text does not describe it, and it is kept because it is documentation. The
-		// count that was taken is what belongs here.
-		Out += FString::Printf(TEXT("\n    no removal: 0 of the %d node(s) are outside the text."),
-			InPlan.NodeCountBefore);
-	}
-
-	Out += TEXT("\nNo replacement was applied. Inspect the removal list before calling EditTurboMCPGraphReplace; compilation and runtime behavior are not verified.");
-	return Out;
+	for (const auto& Pair : Retained)
+		if (!Graph.Nodes.Contains(Pair.Key)) return Refuse(TEXT("replacement lost a retained node"));
+	return true;
 }
 
-bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FString& OutError)
+FString FTurboMCPGraphReplace::RenderPreview(const FPlan& Plan)
 {
-    return ApplyInternal(InPlan, OutReport, OutError, false);
+	if (!Plan.bAcceptable())
+		return TEXT("unchanged: replacement refused; nothing would be written or removed\n  ")
+			+ FString::Join(Plan.Refusals, TEXT("\n  "))
+			+ TEXT("\nRead Format=edit and keep its complete header and every retained node form. Use tmcp-delete-v1 for each deletion.");
+	FString Out = FString::Printf(TEXT("preview: replace %s in %s; %d addition(s), %d input update(s), %d explicit removal(s)"),
+		*Plan.Graph, *Plan.Asset, Plan.Positions.Num(), Plan.Updates.Num(), Plan.Removals.Num());
+	for (const auto& Addition : Plan.Positions)
+		Out += TEXT("\n  would ADD ") + Plan.Forms[Addition.FormIndex].Type;
+	for (const FString& Update : Plan.Updates)
+		Out += TEXT("\n  would UPDATE ") + Update;
+	for (const FRemoval& Removal : Plan.Removals)
+		Out += FString::Printf(TEXT("\n  would REMOVE %s %s '%s'"), *ReplaceId(Removal.Id), *Removal.ClassName, *Removal.Title);
+	if (!Plan.HasChanges()) Out += TEXT("\n  no changes requested");
+	return Out + TEXT("\nNo replacement was applied; compile=not_run; save=not_requested");
 }
 
-bool FTurboMCPGraphReplace::ApplyInternal(const FPlan& InPlan, FString& OutReport, FString& OutError, bool bFailAfterRemoval)
+bool FTurboMCPGraphReplace::Apply(const FPlan& Plan, FString& OutReport, FString& OutError)
 {
-	OutReport.Empty();
-	OutError.Empty();
-    if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GIsTransacting || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
-    {
-        OutError = TEXT("unchanged: graph write requires an idle editor outside an active transaction");
-        return false;
-    }
+	return ApplyInternal(Plan, OutReport, OutError, false);
+}
 
-
-	if (InPlan.Append.Refusals.Num() > 0)
+bool FTurboMCPGraphReplace::ApplyInternal(const FPlan& Plan, FString& OutReport, FString& OutError, bool bFailAfterRemoval)
+{
+	OutReport.Reset();
+	OutError.Reset();
+	if (!Plan.bAcceptable() || !IsInGameThread() || !GEditor || !GEditor->CanTransact() || GIsTransacting
+		|| GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress() || GCompilingBlueprint)
 	{
-		// THE PLAN ALREADY DECIDED. Nothing is written and nothing is removed.
-		OutReport = RenderPreview(InPlan);
+		OutError = TEXT("unchanged: replacement requires a validated plan and an idle editor with undo");
+		return false;
+	}
+	UBlueprint* Blueprint = nullptr;
+	UEdGraph* Graph = nullptr;
+	if (!FindReplaceGraph(Plan.Asset, Plan.Graph, Blueprint, Graph, OutError)) return false;
+	FString Body;
+	TArray<FString> Issues;
+	if (!Blueprint->GetPathName().Equals(Plan.Asset, ESearchCase::CaseSensitive) || Plan.GraphGuid != Graph->GraphGuid
+		|| FTurboMCPGraphText::EditSnapshot(*Blueprint, *Graph, Body, Issues) != Plan.BaseFingerprint || !Issues.IsEmpty())
+	{
+		OutError = TEXT("unchanged: replacement graph is stale, foreign or no longer supports a complete edit export");
+		return false;
+	}
+	if (!Plan.HasChanges())
+	{
+		OutReport = TEXT("unchanged: edit export already matches; no transaction created; compile=not_run; save=not_requested");
 		return true;
 	}
-
-	// ---- 1. THE ADD HALF, THROUGH APPEND'S OWN APPLY ---------------------------------------------------
-	//
-	// IT IS CALLED RATHER THAN REIMPLEMENTED, so the creation, the linking, the layout and the
-	// read-back comparison are the SAME CODE the append tool uses. Two implementations of one write path is how
-	// the two tools come to disagree about the format, which is the failure this project has recorded twice.
-    // Validate destructive identities before the append phase can change anything.
-    FTurboMCPAssetResolver::FResolved PreflightResolved;
-    const FString PreflightError = FTurboMCPAssetResolver::Resolve(InPlan.Append.Asset, PreflightResolved);
-    UBlueprint* PreflightBlueprint = PreflightError.IsEmpty() ? LoadObject<UBlueprint>(nullptr, *PreflightResolved.ObjectPath) : nullptr;
-    UEdGraph* PreflightGraph = FindGraphLocal(PreflightBlueprint, InPlan.Append.GraphName);
-    if (!PreflightGraph || PreflightGraph->Nodes.Num() != InPlan.NodeCountBefore)
-    { OutError = TEXT("unchanged: replacement graph missing, ambiguous or changed since planning"); return false; }
-    for (const FRemoval& Removal : InPlan.Removals)
-    {
-        int32 Matches = 0;
-        for (UEdGraphNode* Node : PreflightGraph->Nodes)
-            if (Node && TurboMCPNodeId::MakeForNode(Node, true) == Removal.Key && !IsEntryOrResult(Node) && !IsComment(Node) && Node->CanUserDeleteNode()) ++Matches;
-        if (Matches != 1)
-        { OutError = TEXT("unchanged: replacement removal target is missing, ambiguous or protected"); return false; }
-    }
-    UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
-    if (!Buffer) { OutError = TEXT("unchanged: editor undo is unavailable"); return false; }
-    GEditor->BeginTransaction(NSLOCTEXT("TurboMCP", "GraphReplace", "TurboMCP replace a graph body"));
-    const FGuid OwnedId = Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty()
-        ? Buffer->UndoBuffer.Last()->GetId() : FGuid();
-    auto OwnsActiveTransaction = [&]()
-    {
-        return OwnedId.IsValid() && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty()
-            && Buffer->UndoBuffer.Last()->GetId() == OwnedId;
-    };
-    ON_SCOPE_EXIT
-    {
-        // Append may have ended and undone this record on failure. Never end twice,
-        // and never finalize a callback's unrelated transaction.
-        if (OwnsActiveTransaction()) GEditor->EndTransaction();
-    };
-    if (!OwnedId.IsValid()) { OutError = TEXT("unchanged: could not acquire an owned replacement transaction"); return false; }
-    auto Fail = [&](const FString& Why)
-    {
-        bool bUndone = false;
-        if (OwnsActiveTransaction())
-        {
-            GEditor->EndTransaction();
-            const int32 Index = Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1;
-            const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
-            bUndone = Record && Record->GetId() == OwnedId && GEditor->UndoTransaction(false);
-        }
-        OutError = TEXT("partial: ") + Why
-            + (bUndone ? TEXT("; owned undo applied; restoration is unverified") : TEXT("; no additional undo applied; restoration is unverified"))
-            + TEXT("; changes may remain; inspect the graph before retrying; compile=not_run; save=not_requested");
-        OutReport.Empty();
-        return false;
-    };
-    UBlueprint* Blueprint = PreflightBlueprint;
-    UEdGraph* Graph = PreflightGraph;
-    Blueprint->Modify();
-    Graph->Modify();
-	FString AppendReport;
-	FString AppendError;
-	if (!FTurboMCPGraphAppend::Apply(InPlan.Append, AppendReport, AppendError, true))
+	UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
+	if (!Buffer) { OutError = TEXT("unchanged: editor undo is unavailable"); return false; }
+	GEditor->BeginTransaction(NSLOCTEXT("TurboMCP", "GraphReplace", "TurboMCP replace a graph body"));
+	const FGuid OwnedId = Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty()
+		? Buffer->UndoBuffer.Last()->GetId() : FGuid();
+	auto OwnsActiveTransaction = [&]()
 	{
-        return Fail(TEXT("replacement append failed: ") + AppendError);
-	}
-
-	// ---- 2. THE REMOVE HALF, WHICH IS THE PART ONLY REPLACE DOES ---------------------------------------
-	if (InPlan.Removals.Num() == 0)
+		return OwnedId.IsValid() && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty()
+			&& Buffer->UndoBuffer.Last()->GetId() == OwnedId;
+	};
+	ON_SCOPE_EXIT { if (OwnsActiveTransaction()) GEditor->EndTransaction(); };
+	if (!OwnedId.IsValid()) { OutError = TEXT("unchanged: could not acquire an owned replacement transaction"); return false; }
+	FString Failure;
+	if (!Execute(Plan, *Blueprint, *Graph, nullptr, Failure, bFailAfterRemoval))
 	{
-		// NOTHING TO REMOVE, SO THE APPEND REPORT STANDS. Saying what was removed when nothing was is the kind
-		// of sentence this project has learned to distrust, so the count is printed with the denominator it was
-		// measured against rather than with a claim about the text: "the text describes every node that exists"
-		// is FALSE for any graph holding a comment, which is kept because it is documentation and not because
-		// the text describes it. A caller of the only destructive writer in the plugin should not have to infer
-		// that the zero is a measurement.
-		OutReport = AppendReport;
-		OutReport += FString::Printf(TEXT("\nremoved 0 node(s): 0 of the %d node(s) were outside the text."),
-			InPlan.NodeCountBefore);
-		return true;
-	}
-
-	TSet<FString> Wanted;
-	for (const FRemoval& Removal : InPlan.Removals)
-	{
-		Wanted.Add(Removal.Key);
-	}
-
-    TSet<FGuid> ExpectedRemaining;
-    int32 ExpectedCount = 0;
-    for (const UEdGraphNode* Node : Graph->Nodes)
-        if (Node && !Wanted.Contains(TurboMCPNodeId::MakeForNode(Node, true)))
-        {
-            ExpectedRemaining.Add(Node->NodeGuid);
-            ++ExpectedCount;
-        }
-
-	TArray<FString> ActuallyRemoved;
-	TArray<FString> NotRemoved;
-
-	// THE NODE LIST IS COPIED BEFORE ITERATING, because removal mutates `Graph->Nodes` and iterating a container
-	// while removing from it is the classic way to skip every other element - which here would mean a body
-	// silently HALF replaced, the worst possible outcome for this capability.
-	TArray<UEdGraphNode*> Existing = Graph->Nodes;
-	for (UEdGraphNode* Node : Existing)
-	{
-		if (Node == nullptr)
+		bool bUndone = false;
+		if (OwnsActiveTransaction())
 		{
-			continue;
+			GEditor->EndTransaction();
+			const int32 Index = Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1;
+			const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
+			bUndone = Record && Record->GetId() == OwnedId && GEditor->UndoTransaction(false);
 		}
-		// RE-DERIVED FROM THE LIVE GRAPH rather than trusted from the plan, because the append half ran in
-		// between and could have changed the graph. The plan said WHICH KEYS; this decides which NODES those
-		// are NOW, and a key that no longer resolves is reported rather than ignored.
-		const FString Key = TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true);
-		if (!Wanted.Contains(Key))
-		{
-			continue;
-		}
-
-		// A NODE RE-DISCOVERED AS AN ENTRY OR RESULT IS KEPT EVEN IF THE PLAN LISTED IT. Belt and braces, and
-		// the cost of being wrong here is a function with no signature.
-		if (IsEntryOrResult(Node) || IsComment(Node) || !Node->CanUserDeleteNode())
-		{
-			NotRemoved.Add(Key);
-			continue;
-		}
-
-		// THE EDITOR'S OWN REMOVAL, which breaks the links and keeps the transaction consistent.
-		// `FBlueprintEditorUtils::RemoveNode` is what `E-GRAPH-DEAD` uses for the same act.
-		FBlueprintEditorUtils::RemoveNode(Blueprint, Node, /*bDontRecompile=*/true);
-		ActuallyRemoved.Add(Key);
+		OutError = TEXT("partial: ") + Failure
+			+ (bUndone ? TEXT("; owned undo applied; restoration is unverified") : TEXT("; owned undo failed or unavailable; restoration is unverified"))
+			+ TEXT("; inspect the graph before retrying; compile=not_run; save=not_requested");
+		return false;
 	}
-
-    if (bFailAfterRemoval) return Fail(TEXT("injected post-removal regression failure"));
-
-	// ---- 3. MARK DIRTY WITHOUT COMPILING, THEN READ BACK AND COMPARE ---------------------------------------------------------
-	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
-    if (Graph->Nodes.Num() != ExpectedCount || ExpectedRemaining.Num() != ExpectedCount)
-        return Fail(TEXT("replacement changed the expected retained-node set"));
-    for (const UEdGraphNode* Node : Graph->Nodes)
-        if (!Node || !ExpectedRemaining.Contains(Node->NodeGuid))
-            return Fail(TEXT("replacement lost or substituted a retained node"));
-
-	// Compile is explicit and must run after the edit transaction ends.
-
-	// THE READ BACK IS THE CHECK THAT MATTERS MOST FOR REPLACE. A node silently KEPT is invisible to the tool's
-	// own report, and a node silently DROPPED is invisible to it too; reading the graph back through the
-	// project's own reader is what catches both.
-	TSet<FString> NowInGraph;
-	for (const UEdGraphNode* Node : Graph->Nodes)
-	{
-		if (Node != nullptr)
-		{
-			NowInGraph.Add(TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true));
-		}
-	}
-
-	TArray<FString> Survived;
-	for (const FString& Key : ActuallyRemoved)
-	{
-		if (!NowInGraph.Contains(Key))
-		{
-			Survived.Add(Key);
-		}
-	}
-	const int32 FailedToRemove = Wanted.Num() - Survived.Num();
-
-	// ---- 4. THE REPORT, FIRST LINE `changed`, WITH EVERY REMOVAL LISTED ---------------------------------
-	FString Out = FString::Printf(TEXT("changed: replaced the body of %s in %s : %d node(s) removed, %d -> %d"),
-		*InPlan.Append.GraphName, *InPlan.Append.Asset, Survived.Num(),
-		InPlan.NodeCountBefore, Graph->Nodes.Num());
-
-	Out += FString::Printf(TEXT("\n%d node(s) preserved as entry, result or event nodes"),
-		InPlan.ReusedKeys.Num());
-
-	// THE LIST, NOT A COUNT. The spec says "LISTS WHAT IT REMOVED", and a count tells a reader how much is gone
-	// while a list tells them what - which is the difference between a report and a receipt.
-	Out += TEXT("\nremoved, by key, with the class and the title an author would recognise:");
-	for (const FRemoval& Removal : InPlan.Removals)
-	{
-		if (Survived.Contains(Removal.Key))
-		{
-			Out += FString::Printf(TEXT("\n    REMOVED  %s  %s  '%s'"),
-				*Removal.Key, *Removal.ClassName, *Removal.Title);
-		}
-	}
-	if (Survived.Num() == 0)
-	{
-		Out += TEXT("\n    (none)");
-	}
-
-	if (NotRemoved.Num() > 0)
-	{
-		Out += FString::Printf(TEXT("\nNOT removed, because they are entry or result nodes or documentation: %s"),
-			*FString::Join(NotRemoved, TEXT(", ")));
-	}
-
-	if (FailedToRemove > 0)
-	{
-		// A FAILED COMPARE IS A FAILURE, NOT A SUCCESS WITH A NOTE. The spec requires it and this is the line
-		// that carries it: a node that is still in the graph after being removed is the exact silent failure a
-		// self-report would hide.
-		Out += FString::Printf(TEXT("\nFAILED COMPARE: %d node(s) were removed and are STILL in the graph."),
-			FailedToRemove);
-		Out += TEXT("\n; this is a FAILURE, not a success with a note. Read the graph back and compare.");
-	}
-	else
-	{
-		Out += TEXT("\nthe read back matches: every node this tool removed is gone.");
-	}
-
-	// THE APPEND HALF'S OWN REPORT IS CARRIED, because "the body was replaced" without the add half's counts
-	// would leave the caller unable to check that the new nodes arrived.
-	Out += TEXT("\n; the add half reported:");
-	Out += FString::Printf(TEXT("\n    %s"), *AppendReport.Replace(TEXT("\n"), TEXT("\n    ")));
-
-	Out += TEXT("\ncompile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
-    if (FailedToRemove > 0 || NotRemoved.Num() > 0)
-    {
-        return Fail(TEXT("replacement removal verification failed"));
-    }
-    Out += TEXT("\nundo=one_transaction_for_append_and_removal");
-	OutReport = Out;
+	OutReport = FString::Printf(TEXT("changed: replaced %s in %s; %d node(s) added, %d input(s) updated, %d node(s) removed"),
+		*Plan.Graph, *Plan.Asset, Plan.Positions.Num(), Plan.Updates.Num(), Plan.Removals.Num());
+	for (const FRemoval& Removal : Plan.Removals)
+		OutReport += FString::Printf(TEXT("\n  REMOVED %s %s '%s'"), *ReplaceId(Removal.Id), *Removal.ClassName, *Removal.Title);
+	OutReport += TEXT("\nRetained nodes, pin defaults and exact wires verified; undo=one_transaction; compile=not_run; save=not_requested");
 	return true;
 }

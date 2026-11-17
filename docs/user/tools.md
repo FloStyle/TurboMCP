@@ -31,7 +31,7 @@ Generated from plugin declarations. For validation and compatibility limits, see
 | `ReadTurboMCPNodeResolve` | Resolve node identities and inspect pins; may load assets, without requesting edits, compile or save |
 | `ReadTurboMCPNodeContext` | Inspect static execution context and input sources; may load assets, without requesting edits, compile or save |
 | `ReadTurboMCPNodeFind` | Search Blueprint nodes by text; may load assets, without requesting edits, compile or save |
-| `ReadTurboMCPGraphLoad` | Read one graph as text |
+| `ReadTurboMCPGraphLoad` | Inspect one graph as text or JSON, or export a complete supported graph for Replace |
 | `ReadTurboMCPBlueprintLoad` | Inspect Blueprint structure and selected graph content; loads assets without requesting edits, compile or save |
 | `ReadTurboMCPRefs` | Read saved registry references into or out of an asset |
 | `ReadTurboMCPRefsBatch` | Read saved registry edges for multiple packages in one call |
@@ -115,7 +115,7 @@ Generated from plugin declarations. For validation and compatibility limits, see
 | `PreviewTurboMCPGraphFixBackward` | Preview supported position repairs across one Blueprint graph; loads and measures transient graph widgets, but does not move live nodes, compile or save |
 | `PreviewTurboMCPGraphCheck` | Check graph-text syntax, node types, pin names and supported literal types; loads the Blueprint for inspection but does not write graph changes, compile or save |
 | `PreviewTurboMCPGraphAppend` | Preview adding nodes without editing; Placement=local searches nearby; Placement=outside uses space beyond existing bounds and may create long wires |
-| `PreviewTurboMCPGraphReplace` | Plan graph replacement and list deletions; loads the Blueprint without applying the replacement, compiling or saving |
+| `PreviewTurboMCPGraphReplace` | Plan graph replacement and list additions, updates and explicit deletions without editing, compiling or saving |
 | `PreviewTurboMCPAssetUndo` | Inspect the latest global undo entry for the named Blueprint and return its confirmation GUID; does not undo |
 | `PreviewTurboMCPGraphGroupMove` | Check a group translation; loads the Blueprint and measures transient graph widgets, without requesting live node moves, compilation or saving |
 | `PreviewTurboMCPGraphGroupPlacement` | Suggest a group translation; loads the Blueprint and renders transient graph widgets for measurement, without requesting live node moves, compilation or saving |
@@ -201,7 +201,7 @@ Generated from plugin declarations. For validation and compatibility limits, see
 | `EditTurboMCPCallLogClear` | Clear retained in-memory call records after confirmation |
 | `EditTurboMCPTrace` | Manage in-memory trace points; does not edit graph nodes, compile or save assets, and clearing recorded hits is not undoable |
 | `EditTurboMCPGraphAppend` | Add nodes and connections without deleting existing nodes; Placement=local searches nearby; Placement=outside uses space beyond existing bounds and may create long wires |
-| `EditTurboMCPGraphReplace` | Replace graph content and delete omitted eligible nodes in one undo transaction; loads the Blueprint, but does not compile or save |
+| `EditTurboMCPGraphReplace` | Replace supported graph content from a fresh complete edit export; only explicit deletions are allowed, in one undo transaction without compile or save |
 | `EditTurboMCPAssetUndo` | Undo the latest global TurboMCP transaction for the named Blueprint; does not explicitly compile or save |
 | `EditTurboMCPGraphGroupMove` | Move selected nodes and comment contents in one undo transaction; loads and measures the graph, marks the Blueprint modified, and does not compile or save |
 | `EditTurboMCPAssetRevert` | Reload a saved Blueprint or data-asset package, discarding ALL unsaved changes approved by preview; never saves |
@@ -232,3 +232,12 @@ Generated from plugin declarations. For validation and compatibility limits, see
 | `EditTurboMCPStructNew` | Create and compile a user-defined struct in memory within an undo transaction in an idle editor outside PIE; marks its package dirty and may run editor callbacks; does not save |
 | `EditTurboMCPStructFields` | Add, change, reorder or remove struct fields in an undo transaction in an idle editor outside PIE; may check out files, compile structs and trigger dependent editor updates; removal or type changes may lose data; does not save |
 | `EditTurboMCPVcsCheckout` | Request provider checkout per asset; may contact the server and change source-control or file state, with no automatic rollback of partial success and no asset compile/save request |
+
+### Replace a supported Blueprint graph
+
+1. Call `ReadTurboMCPGraphLoad` with `Format=edit` for the exact authored graph. Use offset zero, no entry filter, and the first revision. Check that the first line is a `tmcp-edit-v1` header with `"complete":true`. Keep that header and the full lowercase GUID on each retained node form.
+2. To delete a node, remove its form and add one `; tmcp-delete-v1: {"nodeId":"<32 lowercase hex digits>"}` line. Update each retained input that referred to its outputs with the intended replacement link or literal. A missing node form or incomplete input is refused. Entry, result, event and comment nodes cannot be deleted by Replace.
+3. To add a node, use the existing node type syntax and explicit input lines. Use `; label Name` on its head and `(-> Name:OutputPin)` wherever a link refers to it. For an existing node, use the full GUID in a link. Existing geometry and unedited pin defaults are preserved. New execution nodes must have a path from an entry.
+4. Call `PreviewTurboMCPGraphReplace` and inspect each listed addition, update and deletion. Submit the same text to `EditTurboMCPGraphReplace` if the preview is correct. If the graph changes, read a fresh edit export and review the changes again.
+
+The initial edit format covers stock K2 call, branch and variable nodes and existing stock function and event terminators. It refuses graph states it cannot represent, such as function locals, unsupported node classes, split or orphaned pins, ambiguous endpoints and incomplete links. Edit exports cannot be paginated; a result over the character limit is incomplete. Inspection formats such as `read` and `json` remain available. Use the relevant targeted tool when Replace cannot express the intended change. Replace does not compile or save.

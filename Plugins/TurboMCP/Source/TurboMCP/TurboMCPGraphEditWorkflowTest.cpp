@@ -120,7 +120,15 @@ bool FTurboMCPGraphEditWorkflowTest::RunTest(const FString& Parameters)
     UEdGraph* Sibling = NewObject<UEdGraph>(Blueprint,TEXT("UnrelatedGraph"),RF_Transactional);
     Sibling->Schema = UEdGraphSchema_K2::StaticClass();
     Blueprint->UbergraphPages.Add(Sibling);
-    const FString Disconnected = TEXT("(Development|PrintString\n InString \"unconnected\"\n)");
+    auto EditExport = [&]()
+    {
+        return UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Blueprint->GetPathName(), Graph->GetName(),
+            TEXT("edit"), TEXT("bodies"), 0, 24000);
+    };
+    const FString BeforeEntry = EditExport();
+    if (!TestTrue(TEXT("Exact graph has a complete edit export"), BeforeEntry.Contains(TEXT("\"complete\":true"))))
+    { AddError(BeforeEntry); return false; }
+    const FString Disconnected = BeforeEntry + TEXT("(Development|PrintString\n InString \"unconnected\"\n)\n");
     const int32 BeforeRefusalUndo = Buffer->GetQueueLength();
     const bool BeforeRefusalDirty = Package->IsDirty();
     const FString RefusedPreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphReplace(Blueprint->GetPathName(),Graph->GetName(),Disconnected);
@@ -131,11 +139,28 @@ bool FTurboMCPGraphEditWorkflowTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Refusal preserves undo history"),Buffer->GetQueueLength(),BeforeRefusalUndo);
     TestEqual(TEXT("Refusal preserves dirty flag"),Package->IsDirty(),BeforeRefusalDirty);
     TestEqual(TEXT("Refusal preserves nodes"),Graph->Nodes.Num(),3);
+    TestTrue(TEXT("Refusal keeps existing connection and default"), Consumer->FindPinChecked(TEXT("execute"))->LinkedTo.Contains(Target->FindPinChecked(TEXT("then")))
+        && Consumer->FindPinChecked(TEXT("InString"))->DefaultValue == TEXT("corrected"));
     UK2Node_CustomEvent* Entry = NewObject<UK2Node_CustomEvent>(Graph,NAME_None,RF_Transactional);
     Entry->CustomFunctionName = TEXT("ReviewEntry"); Graph->AddNode(Entry,false,false);
     Entry->CreateNewGuid(); Entry->AllocateDefaultPins();
     Entry->FindPinChecked(TEXT("then"))->MakeLinkTo(Target->FindPinChecked(TEXT("execute")));
-    const FString Replacement = FString::Printf(TEXT("(Development|PrintString\n InString \"replacement body\"\n execute (-> %s:then)\n)"), *TurboMCPNodeId::MakeForNode(Entry,true));
+    FString Replacement = EditExport();
+    FString Deletions;
+    for (const UEdGraphNode* Node : {Source, Consumer, Target})
+    {
+        const FString Id = Node->NodeGuid.ToString(EGuidFormats::DigitsLower);
+        const int32 Tag = Replacement.Find(TEXT(" ; ") + Id + TEXT("\n"), ESearchCase::CaseSensitive);
+        if (!TestTrue(TEXT("Export names each requested deletion"), Tag != INDEX_NONE)) return false;
+        const int32 Begin = Replacement.Left(Tag).Find(TEXT("\n("), ESearchCase::CaseSensitive, ESearchDir::FromEnd) + 1;
+        const int32 End = Replacement.Find(TEXT("\n)\n"), ESearchCase::CaseSensitive, ESearchDir::FromStart, Tag);
+        if (!TestTrue(TEXT("Deletion form has exact bounds"), Begin > 0 && End != INDEX_NONE)) return false;
+        Replacement.RemoveAt(Begin, End + 3 - Begin);
+        Deletions += TEXT("; tmcp-delete-v1: {\"nodeId\":\"") + Id + TEXT("\"}\n");
+    }
+    Replacement += Deletions + FString::Printf(TEXT("(Development|PrintString\n InString \"replacement body\"\n execute (-> %s:then)\n)\n"),
+        *Entry->NodeGuid.ToString(EGuidFormats::DigitsLower));
+
     const FString ReplacePreview = UTurboMCPPreviewToolset::PreviewTurboMCPGraphReplace(Blueprint->GetPathName(),Graph->GetName(),Replacement);
     AddInfo(ReplacePreview);
     TestEqual(TEXT("Replace preview does not remove nodes"),Graph->Nodes.Num(),4);

@@ -1,4 +1,4 @@
-"""Check Replace retention of explicitly referenced wire endpoints."""
+"""Check explicit Replace, semantic staleness, exact retained state and undo."""
 import runpy
 from pathlib import Path
 from tmcp import Session
