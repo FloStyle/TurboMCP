@@ -84,6 +84,66 @@ class ConsumerAdmissionTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Cannot prove'):
             consumer.check_build_actions(log.splitlines()[0], 'ConsumerCpp')
 
+    def test_consumer_metadata_admits_only_stock_owned_project_outputs(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            project = root/'Owned Consumer/ConsumerCpp.uproject'
+            engine = root/'engine'
+            modules = project.parent/'Binaries/Win64/UnrealEditor.modules'
+            receipt = modules.with_name('ConsumerCppEditor.target')
+            plugin = project.parent/'Plugins/TurboMCP'/consumer.RECEIPT
+            module_outputs = {
+                str(modules): {'ModuleNameToFileName': {'ConsumerCpp': 'UnrealEditor-ConsumerCpp.dll'}},
+                str(plugin): {'ModuleNameToFileName': {'TurboMCP': Path(consumer.DLL).name}},
+            }
+            generated = {
+                'ProjectFile': str(project), 'Version': None,
+                'VersionFile': str(engine/'Engine/Binaries/Win64/UnrealEditor.version'),
+                'ReceiptFile': str(receipt), 'MergeModules': False, 'FileToLoadOrderManifest': {},
+                'Receipt': {'ProjectFile': str(project), 'TargetName': 'ConsumerCppEditor', 'Platform': 'Win64',
+                            'Configuration': 'Development', 'Version': {'BuildId': None}},
+                'FileToManifest': module_outputs,
+            }
+            selected, receipt_path, manifest = consumer.project_metadata_outputs(generated, project, engine, 'engine-id')
+            self.assertEqual((receipt_path, manifest), (receipt, modules))
+            self.assertEqual(selected, {**generated, 'FileToManifest': {str(modules): module_outputs[str(modules)]}})
+            self.assertEqual(generated['FileToManifest'], module_outputs)
+            outside = str(engine/'Engine/Binaries/Win64/UnrealEditor.modules')
+            for change in ({'ReceiptFile': str(plugin)}, {'Version': {'BuildId': 'write attempt'}},
+                           {'FileToManifest': {**module_outputs, outside: module_outputs[str(modules)]}},
+                           {'FileToLoadOrderManifest': {outside: {}}}):
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    consumer.project_metadata_outputs({**generated, **change}, project, engine, 'engine-id')
+
+    def test_consumer_timeout_preserves_unknown_in_flight_edit(self):
+        with tempfile.TemporaryDirectory() as temp:
+            repo = Path(temp)
+            run = repo/'.local/executions'/('a'*32)
+            consumer.create_run(repo, run)
+            project = consumer.phase_root(run, 'bp-only')
+            project.mkdir()
+            ref = {'archive_sha256': 'approved archive', 'manifest_sha256': 'approved manifest'}
+            command = consumer.phase_command('bp-only')
+            timeout = {'exit_code': 124, 'timed_out': True, 'duration_seconds': 1}
+            with (patch.object(consumer, 'artifact_paths', return_value=(repo/'zip', repo/'manifest')),
+                  patch.object(consumer, 'verify_artifact_file'),
+                  patch.object(consumer, 'validate_file_index'),
+                  patch.object(consumer, 'verify_installed', return_value=1),
+                  patch.object(consumer, 'consumer_observations', return_value={'listeners': []}),
+                  patch.object(consumer, 'check_engine', return_value={}),
+                  patch.object(consumer, 'run_owned', side_effect=lambda *args: dict(timeout))):
+                (repo/'manifest').write_text('{"files":{}}', encoding='utf-8')
+                consumer.record_mutation(project, 'create', 'pending')
+                args = (repo, repo/'engine', run, {'consumer_artifact': ref}, command, {}, run/'log', 1)
+                pending = consumer.run_phase(*args)
+                self.assertTrue(pending['timed_out'])
+                self.assertEqual(pending['child_exit_code'], 124)
+                self.assertEqual(pending['verdict'], 'outcome_unknown')
+                self.assertEqual(pending['after_teardown']['edits'], {'create': 'outcome_unknown'})
+                self.assertEqual(pending['after_teardown']['installed_files'], 1)
+                consumer.record_mutation(project, 'create', 'completed', 'created')
+                self.assertEqual(consumer.run_phase(*args)['verdict'], 'timed_out')
+
 
 @unittest.skipUnless(os.name=='nt','Windows execution primitives')
 class ExecutionTests(unittest.TestCase):

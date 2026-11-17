@@ -359,7 +359,7 @@ def check_build_actions(output, name):
     expected_compile = f'Compile [x64] {name}.cpp'
     expected_link = f'Link [x64] UnrealEditor-{name}.dll'
     allowed = {expected_compile, expected_link, f'Link [x64] UnrealEditor-{name}.lib',
-               f'WriteMetadata {name}Editor.target', 'WriteMetadata UnrealEditor.target'}
+               f'WriteMetadata {name}Editor.target'}
     actions = []
     totals = set()
     indices = []
@@ -418,7 +418,90 @@ def record_prerequisites(engine, before):
     return changes
 
 
-def build_consumer(project, engine, env, evidence):
+def project_metadata_outputs(data, project, engine, build_id):
+    """Select only the owned project outputs from stock UBT's target metadata."""
+    binaries = project.parent / 'Binaries/Win64'
+    target = project.stem + 'Editor'
+    version = engine / 'Engine/Binaries/Win64/UnrealEditor.version'
+    receipt_path = binaries / (target + '.target')
+    module_path = binaries / 'UnrealEditor.modules'
+    plugin_path = project.parent / 'Plugins/TurboMCP' / RECEIPT
+    receipt = data['Receipt']
+    if (Path(data['ProjectFile']) != project or Path(receipt['ProjectFile']) != project
+            or Path(data['VersionFile']) != version or data['Version'] is not None
+            or Path(data['ReceiptFile']) != receipt_path or receipt['TargetName'] != target
+            or receipt['Platform'] != 'Win64' or receipt['Configuration'] != 'Development'
+            or receipt['Version'].get('BuildId') not in (None, '', build_id)
+            or data['FileToLoadOrderManifest'] or data['MergeModules'] is not False):
+        raise ValueError('UBT target metadata does not identify the owned Win64 editor receipt')
+    mappings = {
+        module_path: {project.stem: f'UnrealEditor-{project.stem}.dll'},
+        plugin_path: {'TurboMCP': Path(DLL).name},
+    }
+    selected = {}
+    seen = set()
+    for destination, item in data['FileToManifest'].items():
+        path = Path(destination)
+        if path not in mappings or path in seen or item['ModuleNameToFileName'] != mappings[path]:
+            raise ValueError(f'Unexpected UBT module manifest output: {destination}')
+        seen.add(path)
+        if path == module_path:
+            selected[destination] = item
+    if not selected:
+        raise ValueError('UBT did not generate the owned consumer module manifest input')
+    return {**data, 'FileToManifest': selected}, receipt_path, module_path
+
+
+def write_stock_project_receipt(ubt, project, engine, build_id, env, evidence):
+    owned = project.parent
+    metadata = owned / 'Intermediate/Build/Win64/x64' / (project.stem + 'Editor') / 'Development/TargetMetadata.json'
+    for parent in reversed(tuple(metadata.parent.relative_to(owned).parents)):
+        ordinary(owned / parent, directory=True)
+    ordinary(metadata.parent, directory=True)
+    ordinary(metadata)
+    raw_hash = digest(metadata)
+    data = read_json(metadata)
+    selected, receipt, manifest = project_metadata_outputs(data, project, engine, build_id)
+    report = evidence['project_metadata'] = {
+        'original': str(metadata), 'original_sha256': raw_hash,
+        'original_outputs': [data['ReceiptFile'], *data['FileToManifest']],
+        'selected_outputs': [selected['ReceiptFile'], *selected['FileToManifest']],
+    }
+    if not (ordinary(receipt, optional=True) and ordinary(manifest, optional=True)):
+        version = Path(data['VersionFile'])
+        if read_json(version).get('BuildId') != build_id:
+            raise ValueError('UBT metadata input engine version does not match the editor BuildId')
+        for output in (receipt, manifest):
+            if ordinary(output, optional=True):
+                raise ValueError(f'UBT produced only part of the project metadata: {output}')
+        input_path = owned / 'ConsumerTargetMetadata.json'
+        write_new(input_path, json.dumps(selected, indent=2) + '\n')
+        report['selected_input_sha256'] = digest(input_path)
+        # Match an ordinary recursive UBT action. This skips the default engine trace.
+        command = [str(ubt), f'-Session={owned.parent.name}', '-Mode=WriteMetadata',
+                   f'-Input={input_path}', '-Version=2']
+        report['command'] = command
+        with (owned / 'ubt-metadata.log').open('xb') as output:
+            result = subprocess.run(command, cwd=engine / 'Engine/Source', env=env, stdout=output,
+                                    stderr=subprocess.STDOUT, timeout=60, creationflags=subprocess.CREATE_NO_WINDOW)
+        report['exit_code'] = result.returncode
+        if result.returncode:
+            raise ValueError(f'Stock UBT metadata writer failed with exit {result.returncode}')
+        if digest(input_path) != report['selected_input_sha256']:
+            raise ValueError('Stock UBT metadata input changed while writing the project receipt')
+    if digest(metadata) != raw_hash:
+        raise ValueError('Original UBT target metadata changed while writing the project receipt')
+    written = read_json(manifest)
+    written_receipt = read_json(receipt)
+    if (written.get('BuildId') != build_id or written.get('Modules') != {
+            project.stem: f'UnrealEditor-{project.stem}.dll'}
+            or written_receipt.get('TargetName') != project.stem + 'Editor'
+            or written_receipt.get('Version', {}).get('BuildId') != build_id):
+        raise ValueError('Stock-generated consumer module receipt does not match the editor and consumer DLL')
+    report.update(build_id=build_id, receipt_sha256=digest(receipt), module_manifest_sha256=digest(manifest))
+
+
+def build_consumer(project, engine, build_id, env, evidence):
     name = project.stem
     owned = project.parent
     ubt = engine / 'Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe'
@@ -434,17 +517,18 @@ def build_consumer(project, engine, env, evidence):
             result = subprocess.run(command, cwd=engine / 'Engine/Source', env=env, stdout=output,
                                     stderr=subprocess.STDOUT, timeout=900, creationflags=subprocess.CREATE_NO_WINDOW)
         evidence['build_exit'] = result.returncode
+        if result.returncode:
+            raise ValueError(f'Consumer module build failed with exit {result.returncode}')
+        evidence['build_actions'] = check_build_actions(log.read_text(encoding='utf-8-sig'), name)
+        binary = owned / 'Binaries/Win64' / f'UnrealEditor-{name}.dll'
+        ordinary(owned / 'Binaries', directory=True)
+        ordinary(binary.parent, directory=True)
+        ordinary(binary)
+        write_stock_project_receipt(ubt, project, engine, build_id, env, evidence)
     finally:
         evidence['engine_prerequisite_outputs'] = record_prerequisites(engine, before)
-    if result.returncode:
-        raise ValueError(f'Consumer module build failed with exit {result.returncode}')
-    evidence['build_actions'] = check_build_actions(log.read_text(encoding='utf-8-sig'), name)
     if any(entry['disposition'] == 'unverified' for entry in evidence['engine_prerequisite_outputs']):
         raise RuntimeError('Engine output changes include unclassified prerequisites')
-    binary = owned / 'Binaries/Win64' / f'UnrealEditor-{name}.dll'
-    ordinary(owned / 'Binaries', directory=True)
-    ordinary(binary.parent, directory=True)
-    ordinary(binary)
     return binary, digest(binary)
 
 
@@ -464,7 +548,7 @@ class ConsumerSession(Session):
         self.guard = guard
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
 
-    def rpc(self, method, params=None, request_id=1, mutates=None):
+    def rpc(self, method, params=None, request_id=1, mutates=None, before_send=None):
         self.guard()
         payload = {'jsonrpc': '2.0', 'id': request_id, 'method': method}
         if params is not None:
@@ -473,6 +557,8 @@ class ConsumerSession(Session):
         if self.id:
             headers['Mcp-Session-Id'] = self.id
         request = urllib.request.Request('http://127.0.0.1:8000/mcp', json.dumps(payload).encode(), headers)
+        if before_send:
+            before_send()
         try:
             with self.opener.open(request, timeout=25) as response:
                 raw = response.read(4 * 1024 * 1024 + 1)
@@ -496,8 +582,9 @@ class ConsumerSession(Session):
             raise
 
 
-def call_text(session, name, arguments, *, mutates=False):
-    result = session.rpc('tools/call', {'name': name, 'arguments': arguments}, mutates=mutates)
+def call_text(session, name, arguments, *, mutates=False, before_send=None):
+    result = session.rpc('tools/call', {'name': name, 'arguments': arguments},
+                         mutates=mutates, before_send=before_send)
     blocks = result.get('content') if isinstance(result, dict) else None
     if (not isinstance(blocks, list) or not blocks
             or any(not isinstance(block, dict) or not isinstance(block.get('text'), str) for block in blocks)):
@@ -522,14 +609,59 @@ def verify_schema(session, toolset, tool, field):
     return keys[0]
 
 
+def record_mutation(owned, label, stage, outcome=None):
+    path = owned / f'{label}-{stage}.json'
+    data = {'tool': CREATE_TOOL, 'operation': label, 'stage': stage}
+    if outcome is not None:
+        data['outcome'] = outcome
+    ordinary(owned, directory=True)
+    with path.open('x', encoding='utf-8', newline='\n') as output:
+        json.dump(data, output)
+        output.write('\n')
+        output.flush()
+        os.fsync(output.fileno())
+
+
+def mutation_progress(owned):
+    """An edit with a durable dispatch record and no usable completion is ambiguous."""
+    edits = {}
+    if not ordinary(owned, directory=True, optional=True):
+        return edits
+    for operation in ('create', 'duplicate'):
+        pending = owned / f'{operation}-pending.json'
+        if not ordinary(pending, optional=True):
+            continue
+        try:
+            record = read_json(pending)
+        except (OSError, ValueError):
+            # An incomplete pending write never authorizes sending the request.
+            edits[operation] = 'dispatch_record_incomplete'
+            continue
+        if record != {'tool': CREATE_TOOL, 'operation': operation, 'stage': 'pending'}:
+            edits[operation] = 'dispatch_record_incomplete'
+            continue
+        edits[operation] = 'outcome_unknown'
+        complete = owned / f'{operation}-completed.json'
+        try:
+            report = read_json(complete)
+        except (OSError, ValueError):
+            continue
+        allowed = {'created', 'reported_failure'} if operation == 'create' else {'already_exists', 'reported_failure'}
+        if (isinstance(report, dict) and report.get('tool') == CREATE_TOOL and report.get('operation') == operation
+                and report.get('stage') == 'completed' and report.get('outcome') in allowed):
+            edits[operation] = report['outcome']
+    return edits
+
+
 def smoke(session, content, evidence):
     results = []
     evidence['calls'] = results
 
     def tool(toolset, name, arguments, label, *, mutates=False):
+        before_send = (lambda: record_mutation(content.parent, label, 'pending')) if mutates else None
         raw = call_text(session, 'call_tool', {
             'toolset_name': toolset, 'tool_name': name, 'arguments': arguments,
-        }, mutates=mutates)
+        }, mutates=mutates, before_send=before_send)
         results.append({'call': label, 'tool': name, 'reply': raw[:4000]})
         return raw
 
@@ -570,8 +702,10 @@ def smoke(session, content, evidence):
                   f'Generated class: {OBJECT}_C',
                   'Unsaved changes: yes. No disk save was requested. Inspect the library before saving; do not automatically retry creation.']:
         if any(line.startswith('error:') for line in lines) or created.startswith('unchanged'):
+            record_mutation(content.parent, 'create', 'completed', 'reported_failure')
             raise ValueError('Consumer function library creation returned a refusal or partial failure')
         raise UnknownMutation('Consumer creation response did not confirm all expected outcomes')
+    record_mutation(content.parent, 'create', 'completed', 'created')
     described = describe('after_create')
     expected_lines = {f'package: {ASSET}', f'object: {OBJECT}', 'class: Blueprint',
                       f'parent: {PARENT}', f'generated class: {OBJECT}_C', 'loaded: yes',
@@ -582,8 +716,10 @@ def smoke(session, content, evidence):
     duplicate = create('duplicate')
     if duplicate != 'unchanged\nrefused: The destination package already exists in memory, the registry or on disk: ' + ASSET:
         if duplicate.startswith(('changed', 'unchanged')):
+            record_mutation(content.parent, 'duplicate', 'completed', 'reported_failure')
             raise ValueError('Duplicate consumer create did not refuse as expected')
         raise UnknownMutation('Duplicate consumer create returned an ambiguous result')
+    record_mutation(content.parent, 'duplicate', 'completed', 'already_exists')
     if describe('after_refusal') != described or inventory(content):
         raise ValueError('Duplicate create changed the consumer asset or wrote Content')
 
@@ -659,10 +795,11 @@ def execute_phase(repo, engine, run, request, phase, evidence):
     check_installed_discovery(project, engine)
     env = dict(os.environ, TEMP=str(owned / 'Temp'), TMP=str(owned / 'Temp'))
     env['UE-LocalDataCachePath'] = str(owned / 'DerivedDataCache')
-    env.pop('UBT_EXTRA_ARGS', None)
+    for inherited in ('UBT_EXTRA_ARGS', 'UnrealBuildTool_TMP'):
+        env.pop(inherited, None)
     modules = {plugin / DLL: data['dll_sha256']}
     if phase == 'cpp':
-        binary, sha256 = build_consumer(project, engine, env, evidence)
+        binary, sha256 = build_consumer(project, engine, identity['build_id'], env, evidence)
         if check_engine(repo, engine) != identity:
             raise ValueError('Engine identity changed during the consumer build')
         verify_installed(plugins, data)
@@ -697,6 +834,19 @@ def run_phase(repo, engine, run, request, command, env, log, timeout):
     verdict = {0: 'passed', 1: 'failed', 2: 'blocked', 3: 'outcome_unknown'}.get(child_code, 'failed')
     if result['timed_out']:
         verdict = 'timed_out'
+    try:
+        check_run(repo, run)
+        edits = mutation_progress(phase_root(run, phase))
+        after['edits'] = edits
+        if 'outcome_unknown' in edits.values():
+            verdict = 'outcome_unknown'
+            if child_code == 0:
+                result['exit_code'] = 3
+        elif 'dispatch_record_incomplete' in edits.values() or (
+                child_code == 0 and edits != {'create': 'created', 'duplicate': 'already_exists'}):
+            errors.append('Consumer edit dispatch or completion evidence is incomplete')
+    except (OSError, ValueError) as error:
+        errors.append(f'Consumer edit evidence after child exit: {error}')
     for key, index, limit in (('archive_sha256', 0, MAX_PACKAGE_BYTES),
                               ('manifest_sha256', 1, 8 * 1024 * 1024)):
         try:
@@ -726,7 +876,7 @@ def run_phase(repo, engine, run, request, command, env, log, timeout):
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
         errors.append(f'Engine or listener after child exit: {error}')
 
-    if errors and child_code == 0:
+    if errors and result['exit_code'] == 0:
         result['exit_code'] = 1
         verdict = 'failed'
     result.update(verdict=verdict, child_exit_code=child_code, after_teardown=after, post_check_errors=errors)
