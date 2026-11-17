@@ -254,8 +254,22 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-consumer-actions",
+      "path": "Tools/test-consumer-actions.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
+    },
+    {
       "id": "test-consumer-env",
       "path": "Tools/test-consumer-env.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
+    },
+    {
+      "id": "test-consumer-install",
+      "path": "Tools/test-consumer-install.py",
       "tier": "offline",
       "timeout_seconds": 60,
       "acceptance": "infrastructure-regression"
@@ -378,6 +392,13 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-engine-prereq",
+      "path": "Tools/test-engine-prereq.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
     },
     {
       "id": "test-execution-recovery",
