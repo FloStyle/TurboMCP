@@ -5,6 +5,9 @@
 const chapters = [...document.querySelectorAll(".chapter")];
 const chapterLinks = [...document.querySelectorAll("#chapter-links [data-chapter]")];
 const headings = [...document.querySelectorAll("[data-group-heading]")];
+const appendix = document.querySelector("#experimental-notes");
+const appendixNavigation = document.querySelector("#appendix-navigation");
+const presentationIndexes = chapters.flatMap((chapter, index) => chapter.dataset.appendix ? [] : [index]);
 const search = document.querySelector("#chapter-search");
 const presentToggle = document.querySelector("#present-toggle");
 const controls = document.querySelector(".presentation-controls");
@@ -16,6 +19,20 @@ let presenting = false;
 let noticeTimer;
 let printState = null;
 let navigationScrollY;
+let searchOpenState = null;
+
+function isAppendix(index) { return Boolean(chapters[index].dataset.appendix); }
+function revealAppendix(index) {
+  if (isAppendix(index)) {
+    appendix.open = true;
+    appendixNavigation.open = true;
+  }
+}
+function movePresentation(direction) {
+  const position = presentationIndexes.indexOf(active);
+  const nextPosition = Math.max(0, Math.min(presentationIndexes.length - 1, position + direction));
+  choose(presentationIndexes[nextPosition]);
+}
 
 function tell(message) {
   notice.textContent = message;
@@ -28,29 +45,42 @@ function indexFromHash() {
   return chapters.findIndex((chapter) => chapter.id === id);
 }
 function updateNavigation() {
-  chapterLinks.forEach((item, index) => {
+  chapterLinks.forEach((item) => {
     const link = item.querySelector("a");
-    if (index === active) link.setAttribute("aria-current", "location");
+    if (item.dataset.chapter === chapters[active].id) link.setAttribute("aria-current", "location");
     else link.removeAttribute("aria-current");
   });
-  document.querySelector("#chapter-progress").textContent = `${active + 1} / ${chapters.length} · ${chapters[active].dataset.group}`;
-  previous.disabled = active === 0;
-  next.disabled = active === chapters.length - 1;
+  const position = presentationIndexes.indexOf(active);
+  document.querySelector("#chapter-progress").textContent = `${position + 1} / ${presentationIndexes.length} · ${chapters[active].dataset.group}`;
+  previous.disabled = position <= 0;
+  next.disabled = position === presentationIndexes.length - 1;
 }
 function render() {
   const terms = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length && !searchOpenState) searchOpenState = { content: appendix.open, navigation: appendixNavigation.open };
+  if (!terms.length && searchOpenState) {
+    appendix.open = searchOpenState.content;
+    appendixNavigation.open = searchOpenState.navigation;
+    searchOpenState = null;
+  }
   let count = 0;
+  let appendixMatches = 0;
   const matchingGroups = new Set();
   chapters.forEach((chapter, index) => {
-    const match = terms.every((term) => chapter.textContent.toLowerCase().includes(term));
+    const searchable = `${chapter.textContent} ${chapter.dataset.group} ${isAppendix(index) ? "TurboUX prototype design" : ""}`.toLowerCase();
+    const match = terms.every((term) => searchable.includes(term));
     chapter.hidden = presenting ? index !== active : !match;
-    chapterLinks[index].hidden = !match;
+    chapterLinks.find((item) => item.dataset.chapter === chapter.id).hidden = !match;
     if (match) {
       count++;
+      if (isAppendix(index)) appendixMatches++;
       matchingGroups.add(chapter.dataset.group);
     }
   });
   headings.forEach((heading) => { heading.hidden = !matchingGroups.has(heading.dataset.groupHeading); });
+  appendix.hidden = presenting || appendixMatches === 0;
+  appendixNavigation.closest("li").hidden = appendixMatches === 0;
+  if (terms.length && appendixMatches) { appendix.open = true; appendixNavigation.open = true; }
   document.querySelector("#no-chapters").hidden = count > 0 || presenting;
   document.querySelector("#search-status").textContent = terms.length ? `${count} matching sections` : "";
   updateNavigation();
@@ -69,13 +99,16 @@ function scrollToSelection(target) {
 }
 function choose(index, { focus = true, scroll = true, push = true } = {}) {
   active = Math.max(0, Math.min(chapters.length - 1, index));
+  if (presenting && isAppendix(active)) setMode(false, { focus: false, updateUrl: false });
   if (search.value) search.value = "";
   render();
+  revealAppendix(active);
   writeLocation(push);
   if (scroll) scrollToSelection(chapters[active]);
   if (focus) chapters[active].querySelector("h2").focus({ preventScroll: true });
 }
 function setMode(value, { push = false, focus = true, updateUrl = true } = {}) {
+  if (value && isAppendix(active)) active = presentationIndexes[0];
   presenting = value;
   search.value = "";
   document.body.classList.toggle("presenting", value);
@@ -83,6 +116,7 @@ function setMode(value, { push = false, focus = true, updateUrl = true } = {}) {
   presentToggle.setAttribute("aria-pressed", String(value));
   controls.hidden = !value;
   render();
+  revealAppendix(active);
   if (updateUrl) writeLocation(push);
   if (focus) {
     scrollToSelection(chapters[active]);
@@ -92,7 +126,7 @@ function setMode(value, { push = false, focus = true, updateUrl = true } = {}) {
 function syncLocation() {
   const index = indexFromHash();
   active = index >= 0 ? index : 0;
-  setMode(new URL(location.href).searchParams.get("view") === "present", { focus: false, updateUrl: false });
+  setMode(new URL(location.href).searchParams.get("view") === "present" && !isAppendix(active), { focus: false, updateUrl: false });
   scrollToSelection(index >= 0 ? chapters[active] : document.querySelector("#guide-main"));
 }
 
@@ -100,8 +134,8 @@ presentToggle.hidden = false;
 document.querySelector("#print-guide").hidden = false;
 document.querySelector(".chapter-search").hidden = false;
 presentToggle.addEventListener("click", () => setMode(!presenting, { push: true }));
-previous.addEventListener("click", () => choose(active - 1));
-next.addEventListener("click", () => choose(active + 1));
+previous.addEventListener("click", () => movePresentation(-1));
+next.addEventListener("click", () => movePresentation(1));
 search.addEventListener("input", render);
 search.addEventListener("keydown", (event) => {
   if (event.key === "Escape") { search.value = ""; render(); }
@@ -128,9 +162,9 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault(); setMode(!presenting, { push: true });
   } else if (presenting && ["ArrowRight", "PageDown", "ArrowLeft", "PageUp", "Home", "End"].includes(event.key)) {
     event.preventDefault();
-    if (event.key === "Home") choose(0);
-    else if (event.key === "End") choose(chapters.length - 1);
-    else choose(active + (["ArrowRight", "PageDown"].includes(event.key) ? 1 : -1));
+    if (event.key === "Home") choose(presentationIndexes[0]);
+    else if (event.key === "End") choose(presentationIndexes.at(-1));
+    else movePresentation(["ArrowRight", "PageDown"].includes(event.key) ? 1 : -1);
   }
 });
 
@@ -151,7 +185,7 @@ document.querySelectorAll("[data-request]").forEach((request) => {
 // reader is currently filtering or presenting just one chapter.
 window.addEventListener("beforeprint", () => {
   if (printState) return;
-  const details = [...document.querySelectorAll(".chapter details")];
+  const details = [...document.querySelectorAll("#guide-main details")];
   printState = { details, open: details.map((detail) => detail.open) };
   details.forEach((detail) => { detail.open = true; });
   document.body.classList.add("printing");
@@ -181,6 +215,7 @@ if ("IntersectionObserver" in window) {
 }
 const initialIndex = indexFromHash();
 if (initialIndex >= 0) active = initialIndex;
-if (new URL(location.href).searchParams.get("view") === "present") setMode(true, { focus: false });
+if (new URL(location.href).searchParams.get("view") === "present" && !isAppendix(active)) setMode(true, { focus: false });
 else render();
+revealAppendix(active);
 if (initialIndex >= 0) scrollToSelection(chapters[active]);

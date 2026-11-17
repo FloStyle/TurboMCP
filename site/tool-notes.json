@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "notes": {
+    "EditTurboMCPBindFunction": {
+      "sourceDescription": "Connect an existing function through a Create Event node in one undo transaction; replaces the target input and marks the asset modified, with no compile or save. Requires an idle editor. Preview exercises graph/schema callbacks on a copy; successful preview does not guarantee a later edit. Inspect the result and arrange new nodes before compiling and saving. Repeating the identical compatible function/object binding is unchanged. Replaced source nodes are retained and listed for inspection. This creates a delegate value; the owning Bind or Timer node must execute for registration. Read back, tidy the affected nodes, inspect a capture, then compile and save explicitly.",
+      "summary": "Connect an existing function to a delegate input through a Create Event node.",
+      "sections": [
+        {
+          "heading": "Action",
+          "paragraphs": [
+            "Connect an existing function to a delegate input through a Create Event node. The function must match the delegate’s signature."
+          ]
+        },
+        {
+          "heading": "Effects",
+          "paragraphs": [
+            "The edit replaces the target input’s existing connection and marks the Blueprint modified. It uses one undo transaction. It does not compile or save.",
+            "An identical compatible function/object binding leaves the graph unchanged. The tool retains replaced source nodes and lists them for inspection.",
+            "This creates a delegate value. The Bind or Timer node that consumes it must execute to register the handler."
+          ]
+        },
+        {
+          "heading": "Before you apply",
+          "steps": [
+            "Use an idle editor.",
+            "Copy the graph, node ID, and exact delegate pin name from the reader.",
+            "Choose an existing compatible function on self or the specified object.",
+            "Run the matching preview.",
+            "Check the proposed connection and any replaced source."
+          ],
+          "paragraphs": [
+            "Preview runs graph and schema callbacks on a copy. Its result does not guarantee a later edit will succeed."
+          ]
+        },
+        {
+          "heading": "After you apply",
+          "paragraphs": [
+            "Read the changed connection. Arrange any new nodes and inspect a graph capture. Compile the Blueprint and check the behavior before saving."
+          ]
+        }
+      ]
+    },
+    "EditTurboMCPPlayInput": {
+      "sourceDescription": "Route bounded keyboard/gamepad input through Slate in PIE; executes game/UI code. Delivery is not gameplay success. No Enhanced Input action injection, asset edits, save or undo. Use native Slate tools for mouse/text.",
+      "summary": "Send a short keyboard or gamepad input through Slate to a local PIE player.",
+      "sections": [
+        {
+          "heading": "Action",
+          "paragraphs": [
+            "Send a short keyboard or gamepad input through Slate to the selected local PIE player. This executes game and UI code."
+          ]
+        },
+        {
+          "heading": "Choose the target",
+          "steps": [
+            "List targets with ReadTurboMCPPlayInputState.",
+            "Copy the current player token and inspect focus.",
+            "Use hold for one key or axis, or sequence for timed events.",
+            "Read focus and capture the screen after normal editor frames run."
+          ]
+        },
+        {
+          "heading": "What to check",
+          "paragraphs": [
+            "A delivery report does not prove that the game action happened. Holds can repeat and must end within five seconds.",
+            "The focus and activate_gameplay actions move focus to the gameplay viewport. They can interfere with a menu test.",
+            "Release cancels the tool’s active input and pending events for its owning target. This operation does not edit assets, save, or provide undo."
+          ]
+        }
+      ]
+    },
+    "ReadTurboMCPWidgetInventory": {
+      "sourceDescription": "Find Widget Blueprints by class, references, overrides and graph nodes. Uses a bounded page of sorted registry candidates and returns JSON evidence. Searches the owned designer tree, including embedded widget instances and local named-slot content, and owned Blueprint graphs. Embedded internals, inherited trees, native implementations, maps, sets and dynamic references are outside scope. Values compare against existing class defaults. Loading an unloaded candidate may run PostLoad or dependency compilation and dirty packages. No explicit compilation, save, checkout, map opening or PIE.",
+      "summary": "Find Widget Blueprints that match a class, reference, function, or graph-node rule.",
+      "sections": [
+        {
+          "heading": "Question",
+          "paragraphs": [
+            "Use this search to find Widget Blueprints that contain a widget class or match another supported rule. A class rule also matches subclasses."
+          ]
+        },
+        {
+          "heading": "Read the result",
+          "steps": [
+            "Inspect the asset and evidence in each matches entry.",
+            "Check pageIssues and the skipped and error counts.",
+            "Continue with nextCursor and unchanged filters until the cursor is empty."
+          ]
+        },
+        {
+          "heading": "Scope and effects",
+          "paragraphs": [
+            "The scan covers owned designer trees and graphs. It does not descend into embedded widget internals or inherited trees. Native implementations, dynamic references, maps, and sets are outside its scope.",
+            "Loading an unloaded candidate can run PostLoad or dependency compilation and dirty packages. The tool requests no explicit compile, save, checkout, map opening, or PIE."
+          ]
+        }
+      ]
+    }
+  }
+}

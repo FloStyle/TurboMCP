@@ -96,6 +96,17 @@ for (const button of document.querySelectorAll("[data-copy-target]")) {
   button.addEventListener("click", () => copyText($(button.dataset.copyTarget).textContent));
 }
 let catalogue = null;
+let toolNotes = {};
+function reviewedNote(tool) {
+  const note = toolNotes[tool.name];
+  if (!note || note.sourceDescription !== tool.description || typeof note.summary !== "string" || !Array.isArray(note.sections) || !note.sections.length) return null;
+  // Only reviewed, exact-source notes are displayed. A stale or malformed note
+  // falls back to canonical text without changing parameters or copied calls.
+  const textList = (value) => value === undefined || (Array.isArray(value) && value.every((item) => typeof item === "string"));
+  return note.sections.every((section) => section && typeof section.heading === "string" &&
+    textList(section.paragraphs) && textList(section.steps) &&
+    ((section.paragraphs?.length || 0) + (section.steps?.length || 0) > 0)) ? note : null;
+}
 function showTool(name) {
   $("#tool-search").value = name;
   $("#tool-group").value = "all";
@@ -110,13 +121,33 @@ function showTool(name) {
   }
 }
 function toolRow(tool) {
+  const note = reviewedNote(tool);
   const row = element("details", undefined, "tool-row");
   const summary = element("summary");
   const badge = element("span", tool.group, "badge");
   badge.dataset.group = tool.group;
-  summary.append(badge, element("span", tool.name, "tool-name"), element("span", tool.summary, "tool-summary"));
+  summary.append(badge, element("span", tool.name, "tool-name"), element("span", note ? note.summary : tool.summary, "tool-summary"));
   const detail = element("div", undefined, "tool-detail");
-  detail.append(element("p", tool.description), element("h4", "Parameters from the source declaration"));
+  if (note) {
+    const explanation = element("div", undefined, "tool-explanation");
+    note.sections.forEach((section) => {
+      const block = element("section");
+      block.append(element("h4", section.heading));
+      if (section.steps?.length) {
+        const steps = element("ol");
+        section.steps.forEach((step) => steps.append(element("li", step)));
+        block.append(steps);
+      }
+      (section.paragraphs || []).forEach((paragraph) => block.append(element("p", paragraph)));
+      explanation.append(block);
+    });
+    const sourceText = element("details", undefined, "source-description");
+    sourceText.append(element("summary", "Full source description"), element("p", tool.description));
+    detail.append(explanation, sourceText);
+  } else {
+    detail.append(element("p", tool.description, "canonical-description"));
+  }
+  detail.append(element("h4", "Parameters from the source declaration"));
   const params = element("dl", undefined, "param-list");
   tool.parameters.forEach((param) => {
     const wrapper = element("div", undefined, "param");
@@ -161,12 +192,18 @@ $("#tool-filters").addEventListener("reset", () => {
   // Form controls reset after the reset event dispatch.
   setTimeout(renderTools, 0);
 });
-fetch("tools.json").then((response) => {
+const catalogueRequest = fetch("tools.json").then((response) => {
   if (!response.ok) throw new Error("Catalogue unavailable");
   return response.json();
-}).then((data) => {
+});
+const notesRequest = fetch("tool-notes.json").then((response) => {
+  if (!response.ok) throw new Error("Display notes unavailable");
+  return response.json();
+}).catch(() => null);
+Promise.all([catalogueRequest, notesRequest]).then(([data, notes]) => {
   if (data.schema !== 1 || !Array.isArray(data.tools) || data.tools.length !== data.count) throw new Error("Invalid catalogue");
   catalogue = data;
+  if (notes?.schema === 1 && notes.notes && typeof notes.notes === "object" && !Array.isArray(notes.notes)) toolNotes = notes.notes;
   const linkedTool = new URL(location.href).searchParams.get("tool");
   if (linkedTool && catalogue.tools.some((tool) => tool.name === linkedTool)) {
     showTool(linkedTool);

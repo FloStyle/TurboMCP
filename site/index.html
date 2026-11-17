@@ -13,8 +13,8 @@
 <div>
 <p class="eyebrow">An addon to stock Unreal MCP</p>
 <h1 id="hero-title">More tools.<br><em>Better context.</em></h1>
-<p class="lead">Read Blueprint pins and asset references, preview graph and data edits, and inspect the editor through Unreal’s MCP server.</p>
-<div class="actions"><a class="button primary" href="#examples">See a Blueprint capture</a><a class="button" href="guide.html">Open the field guide</a></div>
+<p class="lead">Give your agent the Blueprint, widget, and input information it needs to build a feature and check it in Unreal.</p>
+<div class="actions"><a class="button primary" href="guide.html#why">Build and test a menu feature</a><a class="button" href="#catalogue">Explore the tools</a></div>
 <p class="preview"><strong>Development preview</strong><br>Windows · pinned Unreal 5.8.4 source build</p>
 </div>
 <aside class="hero-paths" aria-labelledby="first-request-title">
@@ -28,8 +28,22 @@
 }</code></pre>
 <button type="button" class="copy" data-copy-target="#first-request" hidden>Copy request</button>
 </figure>
-<p class="fine-print"><a href="guide.html#discovery">Check a tool schema</a> · <a href="guide.html?view=present#vision">Presentation mode</a></p>
+<p class="fine-print"><a href="guide.html#discovery">Check a tool schema</a> · <a href="guide.html?view=present#why">Presentation mode</a></p>
 </aside>
+</section>
+
+<section class="wrap section feature-workflow" id="workflow" aria-labelledby="workflow-title">
+<div class="section-heading"><p class="eyebrow">From specification to an observed result</p><h2 id="workflow-title">Build and test a Settings button</h2><p>Start with an existing Pause and Settings menu. Describe the result before the agent changes the project.</p></div>
+<blockquote>Add Settings below Resume. Selecting Settings must open the existing Settings screen. Back must return to Pause with Settings focused. Keep Resume working.</blockquote>
+<ol class="workflow-cards">
+<li><h3>Inspect</h3><p>Read the widgets, menu graphs, and input setup. Find the assets and existing navigation code.</p></li>
+<li><h3>Implement</h3><p>Add the button and connect it to the screen-change logic. Check the new widget and graph connections.</p></li>
+<li><h3>Compile</h3><p>Compile the changed Blueprints. Check each asset’s compiler result before starting play.</p></li>
+<li><h3>Test</h3><p>Send short inputs in Play In Editor. Check that Settings opens, Back returns to Pause, and focus returns to Settings.</p></li>
+</ol>
+<p class="workflow-result">The agent checks the screen, focus, and relevant log messages after each input. If input arrives but the screen does not change, the test fails.</p>
+<p class="fine-print"><strong>Illustrative workflow.</strong> These steps combine supported tools. They are not a recorded passing test of this complete feature.</p>
+<a class="button" href="guide.html#why">Follow the complete workflow</a>
 </section>
 
 <section class="wrap section capture-example" id="examples" aria-labelledby="example-title">
@@ -72,7 +86,7 @@
 <div class="task-examples">
 <article><h3><a href="guide.html#graph-edits">Check one execution wire</a></h3><p>Preview <code>then</code> → <code>execute</code> using the two reader IDs. Check whether the preview lists a destination the source would replace.</p></article>
 <article><h3><a href="guide.html#data-tables">Change one field in a row</a></h3><p>Read the row struct, then preview <code>Potion = Health=100</code>. Check whether Potion already exists and which other fields stay as they are.</p></article>
-<article><h3><a href="guide.html#play-input">Find which menu has focus</a></h3><p>List local PIE targets and read the selected player. Check the actual focus path before sending input.</p></article>
+<article><h3><a href="guide.html#play-input">Find which menu has focus</a></h3><p>Find which control has focus in your running menu. Send a short input, then check the screen and focus again.</p></article>
 </div>
 </section>
 

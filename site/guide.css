@@ -81,8 +81,28 @@
 }
 .chapter[data-group="Blueprint graphs"] { --chapter-accent: #ffc56d; }
 .chapter[data-group="Data, widgets and materials"] { --chapter-accent: #8fe3c1; }
-.chapter[data-group="TurboUX prototype"] { --chapter-accent: #cdb7ff; }
+.chapter[data-group="Experimental design notes"] { --chapter-accent: #cdb7ff; }
 .chapter h2 { font-size: clamp(26px, 4vw, 38px); text-wrap: balance; }
+.chapter h3 { margin-top: 30px; margin-bottom: 12px; font-size: 21px; line-height: 1.4; }
+.chapter > p, .chapter > blockquote, .workflow-steps { max-width: 75ch; line-height: 1.75; }
+.chapter > p { margin-block: 14px; }
+.chapter > blockquote { margin-block: 18px; }
+.workflow-steps { padding-left: 24px; }
+.workflow-steps li { padding-left: 5px; margin-block: 10px; }
+.table-scroll { overflow-x: auto; margin-block: 24px; }
+.table-scroll table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; line-height: 1.65; }
+.table-scroll th, .table-scroll td { padding: 12px 14px; border-bottom: 1px solid var(--guide-border); vertical-align: top; }
+.table-scroll th { color: var(--cyan); }
+.table-scroll td { color: #d1dce5; }
+.table-scroll th:first-child { width: 33%; }
+.experimental-notes { max-width: 850px; margin: 36px auto 0; padding: 20px; border: 1px solid var(--guide-border); border-radius: 6px; }
+.experimental-notes > summary { color: #cdb7ff; font-size: 19px; font-weight: 600; cursor: pointer; }
+.experimental-notes > p { color: var(--muted); max-width: 75ch; line-height: 1.7; }
+.experimental-notes .chapter:last-child { border-bottom: 0; padding-bottom: 0; }
+.experimental-notes .chapter h2 { font-size: 25px; }
+.appendix-nav { margin-top: 20px; }
+.appendix-nav summary { color: #cdb7ff; font-size: 12px; font-weight: 600; cursor: pointer; padding: 7px 0; }
+.appendix-nav ul { list-style: none; padding: 0; margin: 6px 0 0; }
 .chapter-lead { margin-top: 12px; }
 .chapter .interpretation { max-width: 75ch; }
 .chapter .constraint { color: #aebfcc; font-size: 14px; padding-left: 12px; border-left: 2px solid var(--guide-border); }
@@ -166,15 +186,19 @@
   #guide-main { padding: 20px 18px 60px; }
   .chapter { padding-block: 26px; }
   .chapter-lead, .guide-intro > p { font-size: 16px; }
+  .experimental-notes { padding: 16px; }
+  .table-scroll th, .table-scroll td { padding: 10px 8px; }
 }
 @media print {
   .guide-page { color: #111; background: #fff; }
   .guide-header, .chapter-nav, .presentation-controls, #guide-notice, .copy-prompt, #no-chapters, .chapter-footer { display: none !important; }
-  .guide-shell, .printing .guide-intro, .printing .chapter[hidden] { display: block !important; }
+  .guide-shell, .printing .guide-intro, .printing .chapter[hidden], .printing .experimental-notes[hidden] { display: block !important; }
   #guide-main { padding: 0; }
   .guide-intro, .chapter { color: #111; max-width: none; padding: 12px 0; }
   .chapter h2 { break-after: avoid; }
   .guide-page p, .guide-page a, .guide-page figcaption { color: #222; }
   .request, .example-result, .prototype-flow { background: #fff; color: #111; }
   .request, .example-result, .guide-capture { break-inside: avoid; }
+  .experimental-notes { max-width: none; border: 0; padding: 0; }
+  .table-scroll td, .table-scroll th { color: #222; }
 }
