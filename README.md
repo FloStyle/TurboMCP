@@ -4,7 +4,7 @@ More context and more tools for Unreal Editor MCP workflows.
 
 TurboMCP is an addon to stock Unreal MCP. It helps an AI assistant inspect complex Blueprints, understand project data, make focused edits and investigate failures. It keeps Unreal's native toolset structure and uses the editor's APIs.
 
-**Development preview:** Windows with the pinned Unreal Engine 5.8.4 source build. Stable 1.0.0 is planned. Launcher packages and Unreal 5.9 are not certified.
+**1.0.0 stable:** Windows with the pinned Unreal Engine 5.8.4 source build (`f45729c0`). Launcher builds and Unreal 5.9 are not certified yet. See the [1.0.0 release](https://github.com/FloStyle/TurboMCP/releases/tag/v1.0.0).
 
 **[Website and getting started](https://flostyle.github.io/TurboMCP/)** | [Releases](https://github.com/FloStyle/TurboMCP/releases) | [Open issues](https://github.com/FloStyle/TurboMCP/issues) | [1.0.0 plan](docs/release-1.0.0.md) | [User wiki](https://github.com/FloStyle/TurboMCP/wiki) | [Documentation](docs/README.md)
 
@@ -24,7 +24,9 @@ Read, view and edit are workflow groups, not permission levels. Some calls execu
 ## Install and connect
 
 1. Use Windows, the C++ toolchain and a source engine matching [engine.lock.json](engine.lock.json).
-2. Copy `Plugins/TurboMCP` into your project's `Plugins` directory. Enable the plugin and build your editor target.
+2. Install the plugin one of two ways:
+   - **From the 1.0.0 ZIP.** Download the package from the [1.0.0 release](https://github.com/FloStyle/TurboMCP/releases/tag/v1.0.0) and extract it so that `Plugins/TurboMCP` sits inside your project. The prebuilt binary matches only the engine build that produced it, identified by its BuildId `ad399df4-fb25-4fc8-af97-38e7d74715d2`. On your own 5.8.4 source build Unreal skips that binary and rebuilds TurboMCP from the included `Source` folder with your C++ toolchain, so the first editor build takes longer.
+   - **From source.** Copy `Plugins/TurboMCP` from a checkout of this repository into your project's `Plugins` directory and build your editor target.
 3. Open **Edit > Editor Preferences > Plugins > TurboMCP**, enable **TurboMCP**, then restart the editor. This per-user preference defaults to off.
 4. Enable Unreal's local MCP server and use its generated connection settings in your client.
 5. Ask the client to discover the toolsets and inspect a known asset before making edits.
@@ -42,12 +44,12 @@ Use version control. Check the reported operation outcome and read the result ba
 | Branch | Role |
 | --- | --- |
 | `main` | Active development and reviewed fixes. Successful pushes can produce daily source prereleases. |
-| `stable` | Accepted stable releases only. It starts at the first approved stable release; it is not created from an unaccepted preview. |
+| `stable` | Accepted stable releases. It starts at 1.0.0 (`ef1d1e1f`). |
 | `codex/ue59-preparation` | Unreal 5.9 compatibility candidate. Separate engine and tests; no support claim yet. |
 
 Temporary work branches are merged and removed. The [Git workflow](docs/git-workflow.md) explains the three long-lived roles.
 
-Daily prereleases use `daily-YYYY-MM-DD`, based on the Europe/Paris date. Successful `main` pushes update that day's snapshot after validation. Stable `v1.0.0` remains a manual release with its own acceptance gates. See [release process](docs/release.md).
+Daily prereleases use `daily-YYYY-MM-DD`, based on the Europe/Paris date. Successful `main` pushes update that day's snapshot after validation. Stable `v1.0.0` is a manual release with its own acceptance gates. See [release process](docs/release.md).
 
 ## Feedback
 

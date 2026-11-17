@@ -1,6 +1,6 @@
 # 1.0.0 release plan
 
-Status: candidate preparation. No stable package is published yet.
+Status: released. [v1.0.0](https://github.com/FloStyle/TurboMCP/releases/tag/v1.0.0) is published at `ef1d1e1f` for Windows on the pinned Unreal Engine 5.8.4 source build. Launcher builds and Unreal 5.9 are not certified yet.
 
 [Milestone](https://github.com/FloStyle/TurboMCP/milestone/1) | [Releases](https://github.com/FloStyle/TurboMCP/releases) | [Issue map](github-issues.md)
 
@@ -19,8 +19,8 @@ The original 97 acceptance specifications remain in Tests/acceptance.json with t
 - [x] Explicit graph deletion repair (#27) integrated into public main after review and focused native acceptance (c9a84897; two-suite rerun 4ff208c2b7ef46eca4ed3aa88e28bb73).
 - [x] Frozen-candidate focused acceptance rehearsal (#15) on the pre-approval candidate: eight fixtures in one supervised request, all passed.
 - [x] Versioned package rehearsal on the pre-approval candidate: BuildPlugin produced a 1.0.0 ZIP and a manifest with installed_consumer_acceptance: pending.
-- [ ] Both clean consumers (Blueprint-only and C++) on the final ZIP (#16).
-- [ ] Publish stable and v1.0.0 with the tested ZIP, manifest and SHA-256; update website, wiki and README to V1.
+- [x] Both clean consumers (Blueprint-only and C++) on the final ZIP (#16). Both passed on `b8dd28b170d641cb8317c8144570d0a5` against [the v1.0.0 archive](https://github.com/FloStyle/TurboMCP/releases/tag/v1.0.0), with the same packaged DLL `d80238f9…c3d6`.
+- [x] Publish stable and v1.0.0 with the tested ZIP, manifest and SHA-256; update website, wiki and README to V1. The release is published at `v1.0.0` (`ef1d1e1f`); the website banner and README carry the stable wording in this change, and the wiki status page follows.
 
 These two rehearsals are not release evidence. They ran before the owner-approval commit, and release-check.py requires the evidence source commit to equal the approved tree. The final run IDs and the final ZIP SHA-256 belong in .local/release/evidence.json and the release notes, not in this tree. Collect each gate again on the approved commit, once.
 
