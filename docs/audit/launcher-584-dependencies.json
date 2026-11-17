@@ -907,6 +907,15 @@
       "BUILD SUCCESSFUL",
       "AutomationTool executed for 0h 4m 11s",
       "AutomationTool exiting with ExitCode=0 (Success)"
+    ],
+    "failed_attempts": [
+      {
+        "attempt": 1,
+        "exit_code": 1,
+        "cause": "the command line split -Plugin= from its value, so AutomationTool received an empty path",
+        "log_kept": false,
+        "note": "The process was rerun with a quoted command line; the failed log was overwritten."
+      }
     ]
   },
   "verdict": "ready-for-package",

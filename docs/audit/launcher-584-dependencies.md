@@ -144,6 +144,8 @@ The class `ISourceControlModule` has no export of its own because its accessor i
 | DLL SHA-256 | 19129c0866c307ed8e3ce233bc6e26ad5004e5820b012b22a840e43c25899db5 |
 | Log | C:\Dev\_b\.local\launcher-audit\buildplugin.log |
 
+The first attempt exited 1 because the command line split `-Plugin=` from its value; the process was rerun correctly, and that failed attempt's log was overwritten and not kept. No code or environment fault was involved.
+
 The 5 actions outside the plugin name are the module's own generated inputs, not engine modules: `Compile Resource [x64] Default.rc2`, `Compile [x64] SharedPCH.UnrealEd.Cpp20.cpp`, `Compile [x64] Logging.cpp`, `Compile [x64] PerModuleInline.gen.cpp`. No engine module compiled, so the build reused the distribution's prebuilt binaries.
 
 Nothing under the engine folder changed during the build: no file under `Engine/Intermediate`, `Engine/Binaries` or `Engine/Programs/UnrealBuildTool` has a modification time inside the build window.
