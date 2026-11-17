@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "6aeb67122a84a6bad93cbda53f11dd9210fb341a",
+  "plugin_tree": "c138ed615148ca2e93c300056e18bb7c7d9d60ef",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 196,
@@ -911,7 +911,7 @@
       "test_references": [
         "Tools/test-graph-replace.py"
       ],
-      "static_call_evidence": "parsed_call",
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -2917,7 +2917,7 @@
       "test_references": [
         "Tools/test-graph-replace.py"
       ],
-      "static_call_evidence": "parsed_call",
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
