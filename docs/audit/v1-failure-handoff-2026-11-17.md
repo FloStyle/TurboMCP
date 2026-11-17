@@ -128,6 +128,27 @@ documented names-only output and delimit actual rows, while retaining exact
 row identity/count and refusal assertions. These findings are not new
 production fixes. Native confirmation remains pending.
 
+## Takeover progress: 2026-11-17 09:40-10:00
+
+Integration resumed from this handoff in the canonical checkout.
+
+1. Sol's candidate was already reviewed and integrated as 7271f6c0 before
+   the previous session ended; its supervised rerun
+   (4ff208c2b7ef46eca4ed3aa88e28bb73) passed both suites and is recorded
+   above. What was missing was the report and this record, not the work.
+2. The layout follow-up was committed as 55e56d80 on
+   codex/site-example-spacing, pushed, merged by PR #34 as 4e69fe37. Main
+   validation (run 44049722737) and the Documentation site deployment (run
+   44050216715) succeeded, and the live page serves the six-card grid.
+3. Main was merged into codex/v1-graph-acceptance and pushed for review as
+   PR #35. Conflicts: worker-scopes.json resolved as a union of assignment
+   entries (534 assignments), site/index.html and the rest of site/ taken
+   verbatim from main so the branch and the published site agree.
+   python Tools/validate.py reports 28 passed, 0 failed on the merged tree.
+4. Still open after this: the clean-consumer 1.0.0 candidate, the public
+   export and final exact-candidate evidence, and the stable publish. Issue
+   #27 closes once PR #35 lands on main.
+
 ## Workspace cleanup and engine access
 
 A final Dev-folder cleanup has NOT been performed. Read-only inventory found
