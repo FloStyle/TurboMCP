@@ -39,6 +39,47 @@ def hex_id(value, length):
     return isinstance(value, str) and re.fullmatch(r'[0-9a-f]{%d}' % length, value)
 
 
+DIRTY_HEADER = re.compile(r'^dirty_packages: before=(\d+) after=(\d+) newly_dirty=(\d+) no_longer_dirty=(\d+)$')
+DIRTY_REVIEW = ('Review newly dirty packages against the requested targets; this report does not save '
+                'or discard them. Dependency/editor side effects may be included.')
+
+
+def split_edit_reply(reply):
+    """Split an edit reply into its message lines and its dirty-package block.
+
+    Every edit reply carries a dirty-package report after the message
+    (TurboMCPCallRecorder). The message is compared exactly and the report is
+    validated on its own, so a documented report cannot hide a change to the
+    operation's own answer.
+    """
+    lines = reply.splitlines()
+    for index, line in enumerate(lines):
+        if line.startswith(('dirty_packages:', '  newly_dirty:', '  no_longer_dirty:')):
+            return lines[:index], lines[index:]
+    return lines, []
+
+
+def check_dirty_block(block, expect_name=None, require=False):
+    """Validate the dirty-package report and return the newly dirty names."""
+    if not block:
+        if require:
+            raise ValueError('Edit reply carried no dirty-package report')
+        return []
+    header = DIRTY_HEADER.match(block[0])
+    if not header:
+        raise ValueError('Dirty-package report header is not in the documented form: %r' % block[0])
+    newly = int(header.group(3))
+    names = [line[len('  newly_dirty: '):] for line in block if line.startswith('  newly_dirty: ')]
+    if len(names) != newly:
+        raise ValueError('Dirty-package report has %d newly_dirty row(s) for newly_dirty=%d'
+                         % (len(names), newly))
+    if expect_name is not None and expect_name not in names:
+        raise ValueError('Dirty-package report does not name %s' % expect_name)
+    if require and block[-1] != DIRTY_REVIEW:
+        raise ValueError('Dirty-package report is missing its review sentence')
+    return names
+
+
 def windows_component(name):
     base = name.partition('.')[0].rstrip(' ').upper()
     return (name not in ('', '.', '..') and name[-1] not in '. '
@@ -262,11 +303,27 @@ def _raise_walk_error(error):
     raise error
 
 
-def verify_installed(plugins, data):
-    contents = inventory(plugins)
-    files = data['files']
-    if contents.keys() != files.keys():
-        raise ValueError('Installed plugin file set differs from the archive')
+def verify_installed(plugins, data, generated_prefixes=()):
+    """Prove the installed plugin still matches the archive.
+
+    UnrealBuildTool regenerates its generated-code area inside the plugin when a
+    C++ consumer builds, because the package ships source and those headers.
+    Files under the prefixes the caller names are that generated build state:
+    they are excluded from the comparison and reported separately. Every other
+    archive file must be present and byte-identical, so the packaged DLL,
+    descriptor, receipt, content and resources cannot change.
+    """
+    prefixes = tuple(generated_prefixes)
+    contents = {name: path for name, path in inventory(plugins).items()
+                if not name.startswith(prefixes)}
+    files = {name: entry for name, entry in data['files'].items()
+             if not name.startswith(prefixes)}
+    missing = sorted(set(files) - set(contents))
+    if missing:
+        raise ValueError('Installed plugin is missing archive file(s): %s' % ', '.join(missing[:3]))
+    unexpected = sorted(set(contents) - set(files))
+    if unexpected:
+        raise ValueError('Installed plugin file set differs from the archive: %s' % ', '.join(unexpected[:3]))
     for name, path in contents.items():
         if path.stat().st_size != files[name]['bytes'] or digest(path) != files[name]['sha256']:
             raise ValueError(f'Installed plugin file differs from the archive: {name}')
@@ -356,9 +413,11 @@ DefaultReuseAddressAndPort=False
 
 def check_build_actions(output, name):
     # Pinned ActionLogger emits one indexed line for every completed local action.
+    # UnrealBuildTool also compiles the module's generated PerModuleInline.gen.cpp.
     expected_compile = f'Compile [x64] {name}.cpp'
+    generated_compile = 'Compile [x64] PerModuleInline.gen.cpp'
     expected_link = f'Link [x64] UnrealEditor-{name}.dll'
-    allowed = {expected_compile, expected_link, f'Link [x64] UnrealEditor-{name}.lib',
+    allowed = {expected_compile, generated_compile, expected_link, f'Link [x64] UnrealEditor-{name}.lib',
                f'WriteMetadata {name}Editor.target'}
     actions = []
     totals = set()
@@ -373,6 +432,9 @@ def check_build_actions(output, name):
         actions.append(action)
         indices.append(int(index))
         totals.add(int(total))
+    if (actions.count(expected_compile) != 1 or actions.count(expected_link) != 1
+            or actions.count(generated_compile) > 1):
+        raise RuntimeError('Cannot prove exactly one compile and link for the consumer module')
     if (not {expected_compile, expected_link}.issubset(actions)
             or totals != {len(actions)} or sorted(indices) != list(range(1, len(actions) + 1))):
         raise RuntimeError('Cannot prove all compile and link actions for the consumer module')
@@ -391,22 +453,34 @@ def engine_output_metadata(engine):
     return files
 
 
+def classify_engine_change(path, action):
+    """Return the disposition for one change under the engine's UBT output areas.
+
+    A removed file follows the same rules as a created or updated one: UnrealBuildTool
+    rotates its trace backups, so a deleted .uba is still a generated trace rather than
+    an unexplained engine change.
+    """
+    if '/BuildRules/' in path:
+        return 'generated rules metadata'
+    if PureWindowsPath(path).name in ('ActionHistory.bin', 'SourceFileCache.bin', 'DependencyCache.bin'):
+        return 'generated build cache'
+    if path.startswith('Engine/Programs/UnrealBuildTool/') and Path(path).suffix == '.uba':
+        return 'generated UnrealBuildTool trace'
+    if path.startswith('Engine/Intermediate/Build/') and '/Inc/' in path and '/UHT/' in path:
+        return 'generated UHT header'
+    return 'unverified'
+
+
 def record_prerequisites(engine, before):
     after = engine_output_metadata(engine)
     changes = []
     for path in sorted(before.keys() | after.keys()):
         if before.get(path) == after.get(path):
             continue
-        entry = {'path': path, 'action': 'updated' if path in before else 'created',
-                 'disposition': 'unverified'}
+        entry = {'path': path, 'action': 'updated' if path in before else 'created'}
         if path not in after:
             entry['action'] = 'removed'
-        elif '/BuildRules/' in path:
-            entry['disposition'] = 'generated rules metadata'
-        elif PureWindowsPath(path).name in ('ActionHistory.bin', 'SourceFileCache.bin', 'DependencyCache.bin'):
-            entry['disposition'] = 'generated build cache'
-        elif path.startswith('Engine/Programs/UnrealBuildTool/') and Path(path).suffix == '.uba':
-            entry['disposition'] = 'generated UnrealBuildTool trace'
+        entry['disposition'] = classify_engine_change(path, entry['action'])
         if entry['disposition'] != 'unverified':
             try:
                 git(engine, 'check-ignore', '--', path)
@@ -501,15 +575,47 @@ def write_stock_project_receipt(ubt, project, engine, build_id, env, evidence):
     report.update(build_id=build_id, receipt_sha256=digest(receipt), module_manifest_sha256=digest(manifest))
 
 
+def ubt_environment(engine, env):
+    """Point a direct UnrealBuildTool call at the engine's bundled .NET runtime.
+
+    UnrealBuildTool targets a .NET version that is not installed machine-wide on
+    this host. RunUAT sets the runtime up for itself; a direct UBT call does not,
+    and the host then fails with a framework-not-found exit before UBT writes
+    any log. Use the runtime the engine already ships.
+    """
+    root = engine / 'Engine/Binaries/ThirdParty/DotNet'
+    candidates = []
+    for path in root.glob('*/win-x64') if root.is_dir() else []:
+        parts = path.parent.name.split('.')
+        if all(part.isdigit() for part in parts):
+            candidates.append((tuple(int(part) for part in parts), path))
+    if not candidates:
+        raise ValueError('The engine ships no bundled win-x64 dotnet runtime for UnrealBuildTool')
+    bundled = max(candidates)[1]
+    updated = dict(env)
+    updated['DOTNET_ROOT'] = str(bundled)
+    updated['PATH'] = str(bundled) + os.pathsep + updated.get('PATH', '')
+    return updated
+
+
 def build_consumer(project, engine, build_id, env, evidence):
     name = project.stem
     owned = project.parent
     ubt = engine / 'Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe'
     ordinary(ubt)
     log = owned / 'ubt-stdout.log'
+    # UBT loads the XML config cache as an input, so a path that does not exist is a
+    # hard failure. Seed the owned copy from the engine's cache, and fall back to
+    # UBT's own location when the engine has never written one.
+    cache = owned / 'XmlConfigCache.bin'
+    seed = engine / 'Engine/Intermediate/Build/XmlConfigCache.bin'
+    if ordinary(seed, optional=True) and not cache.exists():
+        cache.write_bytes(seed.read_bytes())
     command = [str(ubt), name + 'Editor', 'Win64', 'Development', f'-Project={project}', f'-Module={name}',
                '-NoHotReload', '-NoEngineChanges', '-NoUBA', '-NoXGE', '-NoFASTBuild', '-NoSNDBS',
-               f'-Log={owned / "ubt.log"}', f'-XmlConfigCache={owned / "XmlConfigCache.bin"}']
+               f'-Log={owned / "ubt.log"}']
+    if cache.exists():
+        command.append(f'-XmlConfigCache={cache}')
     before = engine_output_metadata(engine)
     evidence['build_command'] = command
     try:
@@ -697,14 +803,15 @@ def smoke(session, content, evidence):
     if inventory(content):
         raise ValueError('Consumer Content changed before the edit')
     created = create('create')
-    lines = created.splitlines()
+    lines, dirty = split_edit_reply(created)
     if lines != ['changed', f'Created Blueprint function library: {OBJECT}', f'Parent: {PARENT}',
-                  f'Generated class: {OBJECT}_C',
-                  'Unsaved changes: yes. No disk save was requested. Inspect the library before saving; do not automatically retry creation.']:
-        if any(line.startswith('error:') for line in lines) or created.startswith('unchanged'):
+                 f'Generated class: {OBJECT}_C',
+                 'Unsaved changes: yes. No disk save was requested. Inspect the library before saving; do not automatically retry creation.']:
+        if any(line.startswith('error:') for line in lines) or lines[:1] == ['unchanged']:
             record_mutation(content.parent, 'create', 'completed', 'reported_failure')
             raise ValueError('Consumer function library creation returned a refusal or partial failure')
         raise UnknownMutation('Consumer creation response did not confirm all expected outcomes')
+    check_dirty_block(dirty, ASSET, require=True)
     record_mutation(content.parent, 'create', 'completed', 'created')
     described = describe('after_create')
     expected_lines = {f'package: {ASSET}', f'object: {OBJECT}', 'class: Blueprint',
@@ -714,11 +821,13 @@ def smoke(session, content, evidence):
             not expected_lines.issubset(line.strip() for line in described.splitlines())):
         raise ValueError('Independent read did not verify the created unsaved function library')
     duplicate = create('duplicate')
-    if duplicate != 'unchanged\nrefused: The destination package already exists in memory, the registry or on disk: ' + ASSET:
-        if duplicate.startswith(('changed', 'unchanged')):
+    dup_lines, dup_dirty = split_edit_reply(duplicate)
+    if dup_lines != ['unchanged', 'refused: The destination package already exists in memory, the registry or on disk: ' + ASSET]:
+        if dup_lines[:1] in (['changed'], ['unchanged']):
             record_mutation(content.parent, 'duplicate', 'completed', 'reported_failure')
             raise ValueError('Duplicate consumer create did not refuse as expected')
         raise UnknownMutation('Duplicate consumer create returned an ambiguous result')
+    check_dirty_block(dup_dirty)
     record_mutation(content.parent, 'duplicate', 'completed', 'already_exists')
     if describe('after_refusal') != described or inventory(content):
         raise ValueError('Duplicate create changed the consumer asset or wrote Content')
@@ -799,10 +908,11 @@ def execute_phase(repo, engine, run, request, phase, evidence):
     env['UE-LOCALDATACACHEPATH'] = str(owned / 'DerivedDataCache')
     modules = {plugin / DLL: data['dll_sha256']}
     if phase == 'cpp':
+        env = ubt_environment(engine, env)
         binary, sha256 = build_consumer(project, engine, identity['build_id'], env, evidence)
         if check_engine(repo, engine) != identity:
             raise ValueError('Engine identity changed during the consumer build')
-        verify_installed(plugins, data)
+        verify_installed(plugins, data, generated_prefixes=('TurboMCP/Intermediate/',))
         modules[binary] = sha256
     launch_and_probe(project, engine, modules, env, evidence)
     if phase == 'bp-only' and any((owned / path).exists() for path in ('Source', 'Binaries')):
@@ -859,7 +969,9 @@ def run_phase(repo, engine, run, request, command, env, log, timeout):
         check_run(repo, run)
         owned = phase_root(run, phase)
         if ordinary(owned, directory=True, optional=True):
-            after['installed_files'] = verify_installed(owned / 'Plugins', original_manifest)
+            after['installed_files'] = verify_installed(
+                owned / 'Plugins', original_manifest,
+                generated_prefixes=('TurboMCP/Intermediate/',) if phase == 'cpp' else ())
         elif child_code == 0:
             raise ValueError('Successful consumer phase did not leave an installation')
         details = run / f'{phase}-consumer.json'

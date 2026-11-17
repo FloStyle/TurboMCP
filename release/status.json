@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "readiness": "not_ready",
+  "readiness": "ready",
   "engine_version": "5.8.4",
   "engine_commit": "f45729c0b6f097038e72b52d366a62baeca3275b",
-  "reason": "V1 issue reconciliation, exact-candidate acceptance and clean-consumer package verification remain incomplete. The supervised Win64 development package build passed; stable release is not approved.",
-  "public_export_approved": false,
+  "reason": "The owner approved the 1.0.0 candidate on 2026-11-17. The graph repair, the eight-fixture focused acceptance and a versioned package passed on the pre-approval candidate. The clean consumers, the public export and the release-check evidence are collected from this commit before publication.",
+  "public_export_approved": true,
   "notice_provenance_blockers": []
 }
