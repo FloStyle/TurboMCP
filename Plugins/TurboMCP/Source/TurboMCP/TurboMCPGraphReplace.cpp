@@ -16,6 +16,7 @@
 #include "TurboMCPNodeType.h"
 
 #include "EdGraph/EdGraphPin.h"
+#include "EdGraph/EdGraphSchema.h"
 #include "EdGraphNode_Comment.h"
 #include "EdGraphSchema_K2.h"
 #include "Editor.h"
@@ -24,6 +25,8 @@
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Kismet2/Breakpoint.h"
+#include "Kismet2/KismetDebugUtilities.h"
 #include "Templates/UnrealTemplate.h"
 #include "Misc/ScopeExit.h"
 #include "Serialization/JsonReader.h"
@@ -142,6 +145,59 @@ namespace
 		return Error.IsEmpty();
 	}
 
+	FString RemovalDebuggerIssue(const UBlueprint& Blueprint, const UEdGraphNode& Node)
+	{
+		// FindBreakpointForNode can clean and save settings. This lookup is read-only.
+		if (FKismetDebugUtilities::FindBreakpointByPredicate(&Blueprint, [&](const FBlueprintBreakpoint& Breakpoint)
+			{ return Breakpoint.GetLocation() == &Node; }))
+			return TEXT("node has a Blueprint breakpoint");
+		for (const UEdGraphPin* Pin : Node.Pins)
+			if (FKismetDebugUtilities::DoesPinHaveWatches(&Blueprint, Pin))
+				return TEXT("node has a Blueprint pin watch: ") + Pin->PinName.ToString();
+		return FString();
+	}
+
+	// K2's convenience wrapper starts a global editor transaction and marks the
+	// owning Blueprint modified. The base API makes the same pin and node
+	// notifications. Replace owns the live transaction and Blueprint notification.
+	void BreakReplaceLink(const UEdGraphSchema_K2& Schema, UEdGraphPin* First, UEdGraphPin* Second)
+	{
+		Schema.UEdGraphSchema::BreakSinglePinLink(First, Second);
+	}
+
+	bool RemoveReplaceNode(const UEdGraphSchema_K2& Schema, UEdGraph& Graph, UEdGraphNode& Node)
+	{
+		// BlueprintEditorUtils::RemoveNode delegates to the transacting K2
+		// BreakPinLinks and also edits debugger settings outside graph undo.
+		// Break incident links with the base API, then use stock node destruction.
+		TArray<TPair<FEdGraphPinReference, FEdGraphPinReference>> Incident;
+		for (UEdGraphPin* Pin : Node.Pins)
+		{
+			if (!Pin) return false;
+			for (UEdGraphPin* Other : Pin->LinkedTo)
+			{
+				if (!Other || Other->IsPendingKill()) return false;
+				if (Other->GetOwningNodeUnchecked() != &Node || Pin->Direction == EGPD_Output)
+					Incident.Emplace(FEdGraphPinReference(Pin), FEdGraphPinReference(Other));
+			}
+		}
+
+		for (const auto& Edge : Incident)
+		{
+			UEdGraphPin* First = Edge.Key.Get();
+			UEdGraphPin* Second = Edge.Value.Get();
+			if (!First || !Second || !First->LinkedTo.Contains(Second) || !Second->LinkedTo.Contains(First))
+				return false;
+			BreakReplaceLink(Schema, First, Second);
+		}
+		for (const UEdGraphPin* Pin : Node.Pins)
+			if (!Pin || !Pin->LinkedTo.IsEmpty()) return false;
+
+		Node.Modify();
+		Node.DestroyNode();
+		return !Graph.Nodes.Contains(&Node);
+	}
+
 	bool RetainedIdentityOnly(const UEdGraphNode& Node)
 	{
 		return Node.IsA<UK2Node_FunctionEntry>() || Node.IsA<UK2Node_FunctionResult>() || Node.IsA<UK2Node_Event>();
@@ -231,6 +287,9 @@ bool FTurboMCPGraphReplace::Plan(const FString& InAsset, const FString& InGraphN
 			if (!Node) return Invalid(TEXT("foreign or missing deletion target ") + ReplaceId(Id));
 			if (FTurboMCPGraphText::IsEditRemovalProtected(**Node))
 				return Invalid(TEXT("protected deletion target ") + ReplaceId(Id) + TEXT(" (entries, results, events, comments or engine-protected nodes)"));
+			const FString DebuggerIssue = RemovalDebuggerIssue(*Blueprint, **Node);
+			if (!DebuggerIssue.IsEmpty())
+				return Invalid(TEXT("cannot delete ") + ReplaceId(Id) + TEXT(": ") + DebuggerIssue);
 			Deleted.Add(Id);
 			OutPlan.Removals.Add({Id, (*Node)->GetClass()->GetName(), TurboMCPNodeId::GetNodeTitle(*Node)});
 			continue;
@@ -436,15 +495,18 @@ bool FTurboMCPGraphReplace::Execute(const FPlan& Plan, UBlueprint& Blueprint, UE
 			Before.Pins.Add(Pin->PinId, {FTurboMCPGraphText::EditPinShape(*Pin), FTurboMCPGraphText::EditDefaultState(*Pin)});
 	}
 
-	Blueprint.Modify();
-	Graph.Modify();
+	if (!DiscoveryGraph)
+	{
+		Blueprint.Modify();
+		Graph.Modify();
+	}
 	for (const FRemoval& Removal : Plan.Removals)
 	{
 		UEdGraphNode* Node = TurboMCPGraphScratch::ByGuid(&Graph, Removal.Id);
 		if (!Node || FTurboMCPGraphText::IsEditRemovalProtected(*Node))
 			return Refuse(TEXT("removal target missing or protected: ") + ReplaceId(Removal.Id));
-		FBlueprintEditorUtils::RemoveNode(DiscoveryGraph ? nullptr : &Blueprint, Node, true);
-		if (Graph.Nodes.Contains(Node)) return Refuse(TEXT("removal did not take effect: ") + ReplaceId(Removal.Id));
+		if (!RemoveReplaceNode(*Schema, Graph, *Node))
+			return Refuse(TEXT("could not remove node and its exact wires: ") + ReplaceId(Removal.Id));
 	}
 
 	TArray<UEdGraphNode*> Instances;
@@ -505,7 +567,7 @@ bool FTurboMCPGraphReplace::Execute(const FPlan& Plan, UBlueprint& Blueprint, UE
 					if (!Pin || !Pin->LinkedTo.Contains(Prior)) return Refuse(TEXT("input was reconstructed while breaking ") + Input.Name);
 					Node->Modify();
 					Prior->GetOwningNode()->Modify();
-					Schema->BreakSinglePinLink(Prior, Pin);
+					BreakReplaceLink(*Schema, Prior, Pin);
 				}
 		}
 
@@ -525,7 +587,11 @@ bool FTurboMCPGraphReplace::Execute(const FPlan& Plan, UBlueprint& Blueprint, UE
 					return Refuse(TEXT("schema requires a conversion, an unrelated link break or refuses the link: ") + Link.Output + TEXT(" -> ") + Input.Name);
 				Node->Modify();
 				Output->GetOwningNode()->Modify();
-				if (!Schema->TryCreateConnection(Output, Pin)) return Refuse(TEXT("schema could not connect input ") + Input.Name);
+				// K2 validated the exact connection above. Its TryCreateConnection
+				// wrapper additionally marks the Blueprint modified, which touches
+				// generated-class state borrowed by the scratch copy.
+				if (!Schema->UEdGraphSchema::TryCreateConnection(Output, Pin))
+					return Refuse(TEXT("schema could not connect input ") + Input.Name);
 			}
 		}
 
@@ -573,7 +639,7 @@ bool FTurboMCPGraphReplace::Execute(const FPlan& Plan, UBlueprint& Blueprint, UE
 			return Refuse(TEXT("unexpected node ownership or identity after staged replacement"));
 		Ids.Add(Node->NodeGuid);
 		const bool bExisting = Retained.Contains(Node);
-		const int32 FormIndex = Instances.Find(Node);
+		const int32 FormIndex = Instances.IndexOfByPredicate([Node](const UEdGraphNode* Instance) { return Instance == Node; });
 		if (!bExisting && FormIndex == INDEX_NONE)
 			return Refuse(TEXT("unplanned node appeared after staged replacement"));
 		const FNodeBefore* Before = Retained.Find(Node);
@@ -594,6 +660,8 @@ bool FTurboMCPGraphReplace::Execute(const FPlan& Plan, UBlueprint& Blueprint, UE
 			}
 			if (Pin->Direction != EGPD_Input)
 			{
+				if (Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec && Pin->LinkedTo.Num() > 1)
+					return Refuse(TEXT("replacement produced an unsupported execution output fan-out"));
 				for (const UEdGraphPin* Sink : Pin->LinkedTo)
 				{
 					const UEdGraphNode* SinkNode = Sink ? Sink->GetOwningNodeUnchecked() : nullptr;
@@ -669,6 +737,23 @@ bool FTurboMCPGraphReplace::ApplyInternal(const FPlan& Plan, FString& OutReport,
 		OutReport = TEXT("unchanged: edit export already matches; no transaction created; compile=not_run; save=not_requested");
 		return true;
 	}
+	// Debugger settings can change without altering the graph fingerprint.
+	for (const FRemoval& Removal : Plan.Removals)
+	{
+		const UEdGraphNode* Node = TurboMCPGraphScratch::ByGuid(Graph, Removal.Id);
+		if (!Node || FTurboMCPGraphText::IsEditRemovalProtected(*Node))
+		{
+			OutError = TEXT("unchanged: removal target missing or protected: ") + ReplaceId(Removal.Id);
+			return false;
+		}
+		const FString DebuggerIssue = RemovalDebuggerIssue(*Blueprint, *Node);
+		if (!DebuggerIssue.IsEmpty())
+		{
+			OutError = TEXT("unchanged: cannot delete ") + ReplaceId(Removal.Id) + TEXT(": ") + DebuggerIssue;
+			return false;
+		}
+	}
+
 	UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
 	if (!Buffer) { OutError = TEXT("unchanged: editor undo is unavailable"); return false; }
 	GEditor->BeginTransaction(NSLOCTEXT("TurboMCP", "GraphReplace", "TurboMCP replace a graph body"));

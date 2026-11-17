@@ -1270,7 +1270,7 @@ static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& Gr
 
 	/**
      * Plan graph replacement and list additions, updates and explicit deletions; loads the Blueprint without applying the replacement, compiling or saving.
-     * The complete export must still match the named graph. Entry, result, event and comment nodes are protected. Review the preview before editing.
+     * The complete export must still match the named graph. Entry, result, event and comment nodes and nodes with breakpoints or pin watches are protected. Review the preview before editing.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
      * @param GraphName Required target graph name, e.g. EventGraph. Use the reader's exact graph name; missing or ambiguous targets are refused.
      * @param Text Required complete ReadTurboMCPGraphLoad Format=edit document with its current tmcp-edit-v1 header. Retain unmodified forms, full lowercase node GUIDs and explicit incoming links. To delete an eligible node remove its form and add one ; tmcp-delete-v1: {"nodeId":"32 lowercase hex digits"} directive. Omission, unsupported state and stale or incomplete exports are refused. Use unique local labels on new forms when referring to their outputs.
@@ -2276,7 +2276,7 @@ static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& Graph
 
 	/**
      * Replace supported graph content and delete only explicitly named eligible nodes in one undo transaction; loads the Blueprint without compiling or saving.
-     * The complete export must still match the named graph. Entry, result, event and comment nodes are protected. Review the preview before editing.
+     * The complete export must still match the named graph. Entry, result, event and comment nodes and nodes with breakpoints or pin watches are protected. Review the preview before editing.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
      * @param GraphName Required target graph name, e.g. EventGraph. Use the reader's exact graph name; missing or ambiguous targets are refused.
      * @param Text Required complete ReadTurboMCPGraphLoad Format=edit document with its current tmcp-edit-v1 header. Retain unmodified forms, full lowercase node GUIDs and explicit incoming links. To delete an eligible node remove its form and add one ; tmcp-delete-v1: {"nodeId":"32 lowercase hex digits"} directive. Omission, unsupported state and stale or incomplete exports are refused. Use unique local labels on new forms when referring to their outputs.

@@ -6,6 +6,8 @@
 #include "TurboMCPGraphReplace.h"
 #include "Tools/TurboMCPToolsets.h"
 #include "Editor/TransBuffer.h"
+#include "BlueprintEditorSettings.h"
+#include "ScopedTransaction.h"
 #include "EdGraphNode_Comment.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "Engine/Blueprint.h"
@@ -22,6 +24,7 @@
 #include "GameFramework/Actor.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UObject/Package.h"
+#include "UObject/UnrealType.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPReplacePlanTest,
     "TurboMCP.Replace.LinkedRetention",
@@ -103,6 +106,49 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     const FString Export = Load();
     if (!TestTrue(TEXT("Supported graph exports a complete edit document"), Export.Contains(TEXT("\"complete\":true"))))
     { AddError(Export); return false; }
+    UEdGraphPin* SourceThen = Source->FindPinChecked(TEXT("then"));
+    UEdGraphPin* TargetExecute = Target->FindPinChecked(TEXT("execute"));
+    SourceThen->MakeLinkTo(TargetExecute);
+    const FString FanOutReason = Id(*Source) + TEXT(":then: execution output fan-out is inspection only");
+    auto ExpectFanOutRefusal = [&]()
+    {
+        const FString Incomplete = Load();
+        TestTrue(TEXT("Exec output fan-out export is incomplete and identifies the exact output"),
+            Incomplete.Contains(TEXT("\"complete\":false")) && Incomplete.Contains(FanOutReason));
+        FTurboMCPGraphReplace::FPlan Candidate;
+        FString FanOutError;
+        TestTrue(TEXT("Current fan-out graph refuses an earlier complete document"),
+            FTurboMCPGraphReplace::Plan(Blueprint->GetPathName(), Graph->GetName(), Export, Candidate, FanOutError)
+            && !Candidate.bAcceptable() && FTurboMCPGraphReplace::RenderPreview(Candidate).Contains(FanOutReason));
+    };
+    if (!TestEqual(TEXT("Fixture has both exec output destinations"), SourceThen->LinkedTo.Num(), 2)) return false;
+    ExpectFanOutRefusal();
+    SourceThen->LinkedTo.Swap(0, 1);
+    ExpectFanOutRefusal();
+    TestTrue(TEXT("Rejected Replace never reorders exec output destinations"),
+        SourceThen->LinkedTo.Num() == 2 && SourceThen->LinkedTo[0] == TargetExecute);
+    SourceThen->BreakLinkTo(TargetExecute, false);
+
+    UEdGraphPin* EventThen = Event->FindPinChecked(TEXT("then"));
+    UEdGraphPin* SourceExecute = Source->FindPinChecked(TEXT("execute"));
+    UEdGraphPin* ConsumerExecute = Consumer->FindPinChecked(TEXT("execute"));
+    EventThen->BreakLinkTo(SourceExecute, false);
+    EventThen->MakeLinkTo(ConsumerExecute);
+    TestEqual(TEXT("Fixture has a valid merge into one exec input"), ConsumerExecute->LinkedTo.Num(), 2);
+    const FString Merge = Load();
+    TestTrue(TEXT("Both incoming exec wires remain representable"),
+        Merge.Contains(TEXT("\"complete\":true"))
+        && Merge.Contains(TEXT("\"execute\" (-> ") + Id(*Event) + TEXT(":\"then\")"))
+        && Merge.Contains(TEXT("\"execute\" (-> ") + Id(*Source) + TEXT(":\"then\")")));
+    FTurboMCPGraphReplace::FPlan MergePlan;
+    FString MergeError;
+    TestTrue(TEXT("An exact exec merge export can be submitted unchanged"),
+        FTurboMCPGraphReplace::Plan(Blueprint->GetPathName(), Graph->GetName(), Merge, MergePlan, MergeError)
+        && MergePlan.bAcceptable());
+    EventThen->BreakLinkTo(ConsumerExecute, false);
+    EventThen->MakeLinkTo(SourceExecute);
+    Package->SetDirtyFlag(false); // End of fixture setup.
+    TestEqual(TEXT("Fixture restored exact initial semantic state"), Load(), Export);
     TestEqual(TEXT("Repeated export uses stable order and fingerprint"), Load(), Export);
     TestTrue(TEXT("Localized default is rendered with its namespace and key"), Export.Contains(TEXT("FixtureNamespace")) && Export.Contains(TEXT("ExactKey")));
     TestTrue(TEXT("Object default is rendered by exact object path"), Export.Contains(GetDefault<UKismetTextLibrary>()->GetPathName()));
@@ -183,6 +229,23 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
         *FGuid::NewGuid().ToString(EGuidFormats::DigitsLower)), TEXT("foreign edit header"));
     Refused(TEXT("Foreign asset refused"), Export.Replace(*Blueprint->GetPathName(), TEXT("/Game/Foreign.Foreign")), TEXT("foreign edit header"));
 
+    // Add disposable debugger attachments directly in memory so this fixture
+    // never writes editor settings via the public debugger mutation commands.
+    auto* DebuggerSettings = GetMutableDefault<UBlueprintEditorSettings>();
+    const FString DebuggerPath = Blueprint->GetPathName();
+    TestFalse(TEXT("Fixture starts with no debugger settings"), DebuggerSettings->PerBlueprintSettings.Contains(DebuggerPath));
+    DebuggerSettings->PerBlueprintSettings.Add(DebuggerPath, FPerBlueprintSettings());
+    auto& Attachments = DebuggerSettings->PerBlueprintSettings.FindChecked(DebuggerPath);
+    ON_SCOPE_EXIT { DebuggerSettings->PerBlueprintSettings.Remove(DebuggerPath); };
+    const auto* BreakpointNode = FindFProperty<FSoftObjectProperty>(FBlueprintBreakpoint::StaticStruct(), TEXT("Node"));
+    if (!TestNotNull(TEXT("Breakpoint fixture node property"), BreakpointNode)) return false;
+    FBlueprintBreakpoint& Breakpoint = Attachments.Breakpoints.AddDefaulted_GetRef();
+    BreakpointNode->SetObjectPropertyValue_InContainer(&Breakpoint, Target);
+    if (!TestTrue(TEXT("Fixture attaches a breakpoint to exact removal target"), Breakpoint.GetLocation() == Target)) return false;
+    Refused(TEXT("Deletion with a breakpoint refused"), NewBody, TEXT("Blueprint breakpoint"));
+    TestTrue(TEXT("Breakpoint record survives refusal"), Attachments.Breakpoints.Num() == 1 && Breakpoint.GetLocation() == Target);
+    Attachments.Breakpoints.Reset();
+
     UEdGraph* Macro = NewObject<UEdGraph>(Blueprint, TEXT("ProtectedMacro"), RF_Transactional);
     Macro->Schema = UEdGraphSchema_K2::StaticClass();
     Blueprint->MacroGraphs.Add(Macro);
@@ -202,12 +265,95 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Unsupported graph retains its exact protected node"), Macro->Nodes.Num() == 1 && Macro->Nodes.Contains(Tunnel));
     TestEqual(TEXT("Unsupported graph refusal adds no undo history"), Buffer->GetQueueLength(), BaselineUndo);
 
+    // One applied record and one unapplied record expose both redo pruning and
+    // empty transaction churn. Keep them independent of the edited graph.
+    UEdGraph* HistoryGraph = NewObject<UEdGraph>(Blueprint, TEXT("HistoryWitness"), RF_Transactional);
+    HistoryGraph->Schema = UEdGraphSchema_K2::StaticClass();
+    Blueprint->UbergraphPages.Add(HistoryGraph);
+    UEdGraphNode_Comment* HistoryWitness = NewObject<UEdGraphNode_Comment>(HistoryGraph, NAME_None, RF_Transactional);
+    HistoryGraph->AddNode(HistoryWitness, false, false);
+    HistoryWitness->CreateNewGuid();
+    {
+        const FScopedTransaction Record(NSLOCTEXT("TurboMCP", "ReplaceFixtureUndo", "Replace fixture undo record"));
+        HistoryWitness->Modify();
+        HistoryWitness->NodeComment = TEXT("first record");
+    }
+    {
+        const FScopedTransaction Record(NSLOCTEXT("TurboMCP", "ReplaceFixtureRedo", "Replace fixture redo record"));
+        HistoryWitness->Modify();
+        HistoryWitness->NodeComment = TEXT("second record");
+    }
+    if (!TestTrue(TEXT("Fixture establishes a redo record"), Buffer->Undo(true))) return false;
+    TestEqual(TEXT("Undo produces the first record's actual state"), HistoryWitness->NodeComment, FString(TEXT("first record")));
+    if (!TestTrue(TEXT("Fixture has existing undo and redo entries"), Buffer->GetUndoCount() > 0 && AppliedUndoCount() > 0)) return false;
+    Package->SetDirtyFlag(false); // End of undo fixture setup.
+    auto ReadHistory = [&]()
+    {
+        TArray<FGuid> Ids;
+        for (int32 Index = 0; Index < Buffer->GetQueueLength(); ++Index)
+        {
+            const FTransaction* Record = Buffer->GetTransaction(Index);
+            Ids.Add(Record ? Record->GetId() : FGuid());
+        }
+        return Ids;
+    };
+    const TArray<FGuid> HistoryBefore = ReadHistory();
+    const int32 RedoBefore = Buffer->GetUndoCount();
+    auto ExpectHistoryUnchanged = [&]()
+    {
+        TestTrue(TEXT("Global undo and redo retain every existing transaction ID"), ReadHistory() == HistoryBefore);
+        TestEqual(TEXT("Redo cursor stays at the same record"), Buffer->GetUndoCount(), RedoBefore);
+        TestFalse(TEXT("No editor transaction remains active"), GEditor->IsTransactionActive());
+        TestEqual(TEXT("Unrelated undo witness is untouched"), HistoryWitness->NodeComment, FString(TEXT("first record")));
+    };
+
     FTurboMCPGraphReplace::FPlan LivePlan;
-    if (!TestTrue(TEXT("Explicit one-node removal and addition plan before editing"), Plan(NewBody, LivePlan) && LivePlan.bAcceptable()))
-    { AddError(Error + FTurboMCPGraphReplace::RenderPreview(LivePlan)); return false; }
-    TestEqual(TEXT("Scratch plan preserves original graph exactly"), Inspect(), Original);
-    TestFalse(TEXT("Scratch plan leaves package clean"), Package->IsDirty());
-    TestEqual(TEXT("Scratch plan adds no undo history"), Buffer->GetQueueLength(), BaselineUndo);
+    {
+        int32 HistoryEvents = 0;
+        auto Handle = Buffer->OnTransactionStateChanged().AddLambda(
+            [&](const FTransactionContext&, ETransactionStateEventType) { ++HistoryEvents; });
+        ON_SCOPE_EXIT { Buffer->OnTransactionStateChanged().Remove(Handle); };
+        if (!TestTrue(TEXT("Explicit one-node removal and addition plan before editing"), Plan(NewBody, LivePlan) && LivePlan.bAcceptable()))
+        { AddError(Error + FTurboMCPGraphReplace::RenderPreview(LivePlan)); return false; }
+        ExpectHistoryUnchanged();
+
+        FString Rewire = NewBody;
+        const FString OldLine = TEXT("\"InString\" (-> ") + Id(*TextSource) + TEXT(":\"ReturnValue\")");
+        if (!TestEqual(TEXT("Find exact input for scratch-only disconnect"), Rewire.ReplaceInline(
+            *OldLine, TEXT("\"InString\" \"staged default\""), ESearchCase::CaseSensitive), 1)) return false;
+        FTurboMCPGraphReplace::FPlan RewirePlan;
+        if (!TestTrue(TEXT("A supported scratch edit breaks an existing retained wire"), Plan(Rewire, RewirePlan) && RewirePlan.bAcceptable()))
+        { AddError(Error + FTurboMCPGraphReplace::RenderPreview(RewirePlan)); return false; }
+        ExpectHistoryUnchanged();
+
+        FTurboMCPGraphReplace::FPlan FailingScratch;
+        TestTrue(TEXT("A later scratch failure rejects a disconnected execution node"),
+            Plan(Rewire + TEXT("(Development|PrintString\n InString \"unreachable\"\n)\n"), FailingScratch)
+            && !FailingScratch.bAcceptable()
+            && FTurboMCPGraphReplace::RenderPreview(FailingScratch).Contains(TEXT("no path from a recognized entry")));
+        ExpectHistoryUnchanged();
+        TestEqual(TEXT("Neither successful nor failed scratch execution emits transaction events"), HistoryEvents, 0);
+    }
+    TestEqual(TEXT("Scratch execution preserves original graph exactly"), Inspect(), Original);
+    TestFalse(TEXT("Scratch execution leaves package clean"), Package->IsDirty());
+
+    // A property watch added after planning leaves the graph fingerprint
+    // unchanged. Apply must still refuse before opening an undo transaction.
+    UEdGraphPin* Watched = Target->FindPinChecked(TEXT("InString"));
+    const TArray<FName> WatchPath{TEXT("NestedFixtureProperty")};
+    Attachments.WatchedPins.Emplace(Watched, TArray<FName>(WatchPath));
+    TestFalse(TEXT("Whole-pin watch query alone would miss the nested property"),
+        FKismetDebugUtilities::IsPinBeingWatched(Blueprint, Watched));
+    TestTrue(TEXT("Fixture adds a nested property watch"),
+        FKismetDebugUtilities::IsPinBeingWatched(Blueprint, Watched, WatchPath));
+    TestFalse(TEXT("Apply refuses a watch added since planning"), FTurboMCPGraphReplace::Apply(LivePlan, Report, Error));
+    TestTrue(TEXT("Apply names the debugger attachment"), Error.Contains(TEXT("Blueprint pin watch: InString")));
+    TestTrue(TEXT("Nested debugger watch survives refusal"),
+        Attachments.WatchedPins.Num() == 1 && FKismetDebugUtilities::IsPinBeingWatched(Blueprint, Watched, WatchPath));
+    TestEqual(TEXT("Debugger refusal preserves the graph"), Inspect(), Original);
+    TestFalse(TEXT("Debugger refusal preserves package state"), Package->IsDirty());
+    ExpectHistoryUnchanged();
+    DebuggerSettings->PerBlueprintSettings.Remove(DebuggerPath);
 
     // Change only the localization identity, while leaving displayed text and
     // the node/pin count unchanged. A stored plan must fail its live SHA-256 check.
@@ -217,7 +363,7 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Apply reports stale graph"), Error.Contains(TEXT("stale")));
     TestEqual(TEXT("Stale apply preserves human change and all endpoints"), Inspect(), ChangedOutside);
     TestFalse(TEXT("Stale apply preserves package state"), Package->IsDirty());
-    TestEqual(TEXT("Stale apply adds no undo history"), Buffer->GetQueueLength(), BaselineUndo);
+    ExpectHistoryUnchanged();
     TextDefault->DefaultTextValue = Localized;
 
     const int32 BeforeSuccess = AppliedUndoCount();

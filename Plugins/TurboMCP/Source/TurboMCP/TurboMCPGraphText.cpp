@@ -1731,8 +1731,14 @@ FString FTurboMCPGraphText::EditSnapshot(const UBlueprint& Blueprint, const UEdG
 			for (const FString& Link : LinkRecords) EditField(PinRecord, Link);
 			PinRecords.Add(MoveTemp(PinRecord));
 
-			if (Pin->Direction == EGPD_Input && Pin->LinkedTo.Num() > 1 && Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec)
-				OutIssues.Add(TEXT("pin ") + Address + TEXT(": multiple data sources are not supported"));
+			if (Pin->LinkedTo.Num() > 1)
+			{
+				const bool bExec = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec;
+				if (Pin->Direction == EGPD_Output && bExec)
+					OutIssues.Add(TEXT("pin ") + Address + TEXT(": execution output fan-out is inspection only"));
+				else if (Pin->Direction == EGPD_Input && !bExec)
+					OutIssues.Add(TEXT("pin ") + Address + TEXT(": multiple data sources are not supported"));
+			}
 			if (bRepresentableNode && Pin->LinkedTo.IsEmpty() && IsEditInput(*Pin))
 			{
 				if (!EditCanWriteLiteral(*Pin))
