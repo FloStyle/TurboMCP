@@ -4467,6 +4467,13 @@
           "new_files": [
             "site/tool-notes.json"
           ]
+        },
+        "v1-schema-callers": {
+          "files": [
+            "Tools/test-graph-append.py",
+            "Tools/test-datatable-rows.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

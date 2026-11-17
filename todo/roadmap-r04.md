@@ -8,6 +8,15 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current review: V1 schema callers (2026-11-17)
+
+Readiness: ready. The integrator approves `v1-schema-callers` in exactly
+Tools/test-graph-append.py and Tools/test-datatable-rows.py.
+Follow [the repair contract and remaining checklist](../docs/audit/v1-failure-handoff-2026-11-17.md).
+The existing macro fix is integrated and passed focused native checks.
+This assignment repairs callers and prerequisite failure reporting only.
+Production edits, weaker assertions and broad test runs are not authorized.
+
 ## V1 integration checkpoint (2026-11-17)
 
 The owner approved the current documented tool set after critical fixes and
