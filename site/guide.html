@@ -6,9 +6,9 @@
 <title>TurboMCP Field Guide</title>
 <meta name="description" content="Build a menu feature, inspect Blueprint and widget changes, and test input in Unreal. Includes data workflows and a searchable tool catalogue.">
 <link rel="icon" href="icon.png">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="guide.css">
-<script src="guide.js" defer></script>
+<link rel="stylesheet" href="styles.css?v=20261117-spacing1">
+<link rel="stylesheet" href="guide.css?v=20261117-spacing1">
+<script src="guide.js?v=20261117-spacing1" defer></script>
 </head>
 <body class="guide-page">
 <a class="skip-link" href="#guide-main">Skip to guide</a>
@@ -77,8 +77,10 @@
 <p><strong>Example specification</strong></p>
 <blockquote>Add a Settings button below Resume in the Pause menu. Selecting it opens the existing Settings screen. Back returns to Pause and focuses Settings. Resume must still close the menu.</blockquote>
 <p>This is a recipe to adapt to your project. No recorded end-to-end run accompanies it.</p>
+<section class="workflow-step">
 <h3>1. Find the existing menu</h3>
 <p>Ask the agent to identify the Widget Blueprint, the panel that contains Resume, and the code that changes screens.</p>
+<details class="step-details"><summary>Tools, requests and checks</summary>
 <p>Use <code>ReadTurboMCPWidgetTree</code> to locate the controls. Read their relevant properties with <code>ReadTurboMCPWidgetProperty</code>. Use the Blueprint manifest to find the menu graphs:</p>
 <figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPBlueprintLoad#catalogue"><code>ReadTurboMCPBlueprintLoad</code></a></figcaption><pre data-request><code>{
   &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
@@ -90,8 +92,12 @@
 }</code></pre></figure>
 <p>Use <code>ReadTurboMCPNodeFind</code> and <code>ReadTurboMCPNodeContext</code> to follow the existing screen-change and Back logic. Record the exact graph names, node IDs, and pins.</p>
 <p>Before editing, identify three things: the destination Settings screen, the button class, and the input that means Back. Stop if the project does not provide them. That missing setup needs its own implementation decision.</p>
+</details>
+</section>
+<section class="workflow-step">
 <h3>2. Add the button and its behavior</h3>
 <p>Use the same compatible button class as the menu&#x27;s existing controls. Preview adding the button to the named panel:</p>
+<details class="step-details"><summary>Tools, requests and checks</summary>
 <figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=PreviewTurboMCPWidgetAdd#catalogue"><code>PreviewTurboMCPWidgetAdd</code></a></figcaption><pre data-request><code>{
   &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPPreviewToolset&quot;,
   &quot;tool_name&quot;: &quot;PreviewTurboMCPWidgetAdd&quot;,
@@ -109,10 +115,16 @@
 <p>Connect the activation event through the appropriate graph delegate tools. <code>BindFunction</code> can connect an existing compatible handler through a Create Event node. The consuming Bind node must also execute.</p>
 <p>Do not use <code>WidgetBindAdd</code> for multicast <code>OnClicked</code>: that tool refuses it. For CommonUI, use the actual delegate and route found in this project.</p>
 <p>Inspect the added widget and changed connections. Confirm that Resume still uses its original route. Arrange new nodes if needed.</p>
+</details>
+</section>
+<section class="workflow-step">
 <h3>3. Compile the changed Blueprints</h3>
 <p>Call <code>EditTurboMCPCompile</code> for the changed assets. Check each asset&#x27;s compiler result. If compilation fails, correct the reported problem before starting the runtime test.</p>
+</section>
+<section class="workflow-step">
 <h3>4. Start Play In Editor</h3>
 <p>Use Unreal&#x27;s native <code>StartPIE</code> tool for the open test level. Your client may display it as <code>startPIE</code>. Use its registered schema for the session options.</p>
+<details class="step-details"><summary>Tools, requests and checks</summary>
 <p>Choose ordinary Play In Editor, with one in-process world and one local player. Wait for startup to complete. Then list the available input targets:</p>
 <figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPPlayInputState#catalogue"><code>ReadTurboMCPPlayInputState</code></a></figcaption><pre data-request><code>{
   &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
@@ -121,8 +133,12 @@
 }</code></pre></figure>
 <p>Copy the returned target token. Read that target again to inspect focus and the menu&#x27;s runtime button paths. Open Pause through the project&#x27;s existing route.</p>
 <p>Check that Pause is visible and Resume has focus. Do not send the test input while another screen or application owns focus.</p>
+</details>
+</section>
+<section class="workflow-step">
 <h3>5. Test navigation, activation, and Back</h3>
 <p>Slate is Unreal&#x27;s UI input system. For a menu that uses standard Slate gamepad navigation, this example sends a short Down input:</p>
+<details class="step-details"><summary>Tools, requests and checks</summary>
 <figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=EditTurboMCPPlayInput#catalogue"><code>EditTurboMCPPlayInput</code></a></figcaption><pre data-request><code>{
   &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPEditToolset&quot;,
   &quot;tool_name&quot;: &quot;EditTurboMCPPlayInput&quot;,
@@ -158,11 +174,17 @@
 </tbody></table></div>
 <p>Read relevant retained editor messages with <code>ReadTurboMCPEditorLog</code>. Use the test time and category to distinguish these messages from earlier activity. If the project emits route messages, compare them with the observed screen. An empty or truncated log does not prove that nothing ran.</p>
 <p><code>EditTurboMCPMenuActivate</code> can help test a named runtime button independently of navigation. It focuses that button and sends a short confirm press. It does not test whether Down reaches the button.</p>
+</details>
+</section>
+<section class="workflow-step">
 <h3>6. Finish or stop at the failed step</h3>
 <p>Record each test as passed, failed, or not observed. A successful input response alone is not a passed menu test.</p>
+<details class="step-details"><summary>Tools, requests and checks</summary>
 <p>If focus or the screen is wrong, stop the sequence. Read the state before retrying. <code>focus</code> and <code>activate_gameplay</code> move focus to the gameplay viewport, so they can interfere with menu testing.</p>
 <p>If input remains active, use <code>Action=&quot;release&quot;</code> for its owning target with empty <code>Key</code>, <code>Value</code>, and <code>Seconds</code>. Stop PIE with Unreal&#x27;s native <code>StopPIE</code> before changing assets again. Check that the editor reports PIE is no longer running. A StopPIE script error can occur after the session stops, so inspect the actual state before retrying or editing. Tokens from the old session cannot be reused.</p>
 <p>After the checks pass, inspect <code>ReadTurboMCPDirtyList</code>. Save the intended packages with <code>EditTurboMCPSave</code> and check each save result. Report changed assets, compiler results, observed tests, and any remaining failure.</p>
+</details>
+</section>
 <footer class="chapter-footer">
 <a href="https://github.com/FloStyle/TurboMCP/wiki/Build-and-test-a-menu-feature">Source reference</a>
 <a href="#why" aria-label="Link to Build and test a Settings button">Link to section</a>
