@@ -4364,6 +4364,30 @@
           "new_files": [
             "Tools/package-plugin.ps1"
           ]
+        },
+        "v1-factual-site": {
+          "files": [
+            "site/index.html",
+            "site/guide.html",
+            "site/guide-content.json",
+            "site/guide.js",
+            "site/guide.css",
+            "site/styles.css",
+            "site/app.js"
+          ],
+          "new_files": []
+        },
+        "v1-release-reconcile": {
+          "files": [
+            ".github/workflows/validate.yml",
+            ".github/workflows/pages.yml",
+            ".github/workflows/daily-source.yml",
+            "Tools/ci/validate.yml"
+          ],
+          "new_files": [
+            "docs/audit/v1-remaining-reconciliation-2026-11-17.json",
+            "docs/audit/v1-acceptance-mapping-2026-11-17.json"
+          ]
         }
       },
       "preserve_rows": []
