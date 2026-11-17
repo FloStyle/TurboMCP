@@ -37,7 +37,13 @@ only these two failed suites through the supervisor. Keep old failures.
 
 ## Remaining V1 checklist
 
-- [ ] Repair and review these two callers; rerun only the two failed suites (#15).
+- [x] Repair and review these two callers; rerun only the two failed suites (#15).
+      Sol's patch 86b1081e passed the scope check against 7235054e and is
+      integrated as 7271f6c0. Supervised run
+      4ff208c2b7ef46eca4ed3aa88e28bb73 built the candidate and passed both
+      suites: test-graph-append PASS, test-datatable-rows PASS (26 checks run),
+      2 passed of 2, 383 s wall. Report and logs are under
+      .local/executions/4ff208c2b7ef46eca4ed3aa88e28bb73/.
 - [ ] Integrate the reviewed graph fix and acceptance/consumer work into main;
       close #27 only after integration, with its existing passing evidence.
 - [ ] Build the owner-approved private 1.0.0 candidate (#16). Keep public
@@ -55,9 +61,17 @@ silently counted as completed or added back to the agreed V1 scope.
 
 Cleanup pushed to PR #31 at 0addd329: guide is TurboMCP-only, grey/yellow,
 and navigation is corrected. PR validation passed and PR #31 merged as 4df99d7a.
-Main validation and Pages deployment still need confirmation. The missing monitor screenshot is deferred; the existing request
+Main validation (run 44046182607) and the Documentation site deployment (run
+44046553766) both succeeded, and the published files matched 4df99d7a byte for
+byte. The missing monitor screenshot is deferred; the existing request
 example remains visible, with no broken image or simulated capture claim.
 A real monitor capture with synthetic calls remains a follow-up.
+
+Layout follow-up merged as PR #34 (4e69fe37): the examples section is a three
+column, two row grid again, each guide step folds its request templates behind
+a disclosure, and asset URLs carry v=20261117-spacing1. Copy, chapter anchors
+and catalogue data are unchanged; the catalogue check reported 196 documented
+declarations current.
 
 ## Takeover entry point
 
