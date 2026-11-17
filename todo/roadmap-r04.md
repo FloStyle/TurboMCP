@@ -34,6 +34,26 @@ A preceding integration build 4805185710b9446883c77994d5d2784c was started with
 unresolved cherry-pick markers and failed; it is not product-test evidence.
 Graph replacement remains pending integration and acceptance, not complete.
 
+## Current review: minimal V1 package consumer (2026-11-17)
+
+Readiness: ready. The integration owner accepts the source-only consumer
+contract at 5b7cb175 after independent review, including its explicit distinction
+between engine source and bounded generated prerequisite outputs. Implement
+`v1-clean-consumer` in its exact five-file schema-2 scope according to
+[the contract](../docs/audit/v1-clean-consumer-contract-2026-11-17.md) and ARC13.
+Reuse the existing supervisor, process ownership and identity helpers. Provide
+one fixed Blueprint-only phase and one fixed C++ phase. Verify the exact archive,
+installed DLL, discovery and a small unsaved create/read/refusal loop. Do not
+expand this into general testing infrastructure. Keep focused offline checks for
+new admission and identity behavior. Native execution belongs to the integrator.
+A source-engine result does not establish Launcher or 5.9 compatibility.
+
+The owner requests a downloadable V1 package, minimal nonduplicative tests,
+and updated GitHub/source trackers. Release wording changes from preview to
+V1 only after the release checks pass. Preserve failed/unknown results and
+existing safety guards. Historical investigations without a reproduced addon
+defect stay open with their limits; do not invent fixes to close a tracker.
+
 ## Integrated call-log sink evidence (2026-11-17)
 
 Candidate 6cf797b2c090484eeb0f8fd1b2a50fae43e211b7 passed the immutable
