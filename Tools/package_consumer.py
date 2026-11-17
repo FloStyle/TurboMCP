@@ -14,6 +14,7 @@ import zipfile
 
 from execution_recovery import digest
 from execution_runtime import canonical, require_context, run_owned
+import engine_distribution
 from plugin_identity import (check_installed_discovery, consumer_observations, ordinary,
                              verify_consumer_listener, verify_consumer_process)
 from tmcp import EDIT_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, READ_TOOLSET, Session, StructuredAnswer
@@ -188,19 +189,16 @@ def git(root, *args):
 
 
 def check_engine(repo, engine):
+    """Identify the consumer engine for the configured distribution.
+
+    A source build is proved by its clean pinned commit. An installed Launcher
+    engine has no git history, so its promoted build number, changelist and
+    BuildId are the identity instead. Both paths check the version against the pin.
+    """
     ordinary(engine, directory=True)
     pin = read_json(repo / 'engine.lock.json')
-    head = git(engine, 'rev-parse', 'HEAD')
-    if head != pin['commit'] or git(engine, 'status', '--porcelain', '--untracked-files=no'):
-        raise ValueError('Consumer requires the matching clean stock source-engine checkout')
-    version = read_json(engine / 'Engine/Build/Build.version')
-    actual = '.'.join(str(version[key]) for key in ('MajorVersion', 'MinorVersion', 'PatchVersion'))
-    if actual != pin['version']:
-        raise ValueError('Consumer engine version differs from its execution pin')
-    receipt = read_json(engine / 'Engine/Binaries/Win64/UnrealEditor.modules')
-    if not isinstance(receipt.get('BuildId'), str) or not receipt['BuildId']:
-        raise ValueError('Missing consumer engine BuildId')
-    return {'commit': head, 'version': actual, 'build_id': receipt['BuildId']}
+    distribution = engine_distribution.configured(repo)
+    return engine_distribution.identify(engine, distribution, pin)
 
 
 def validate_file_index(files):
@@ -250,9 +248,14 @@ def package_metadata(repo, archive, manifest, ref, engine):
     tree = git(repo, 'rev-parse', '--verify', f'{src}:Plugins/TurboMCP')
     source_descriptor = json.loads(git(repo, 'show', f'{src}:Plugins/TurboMCP/{DESCRIPTOR}'))
     expected = {'schema': 1, 'archive': archive.name, 'platform': 'Win64',
-                'engine_distribution': 'source-build', 'source_commit': src,
-                'plugin_tree': tree, 'engine_commit': engine['commit'], 'engine_version': engine['version'],
+                'engine_distribution': engine['distribution'], 'source_commit': src,
+                'plugin_tree': tree, 'engine_version': engine['version'],
                 'module_build_id': engine['build_id'], 'archive_sha256': ref['archive_sha256']}
+    if engine['distribution'] == 'installed-launcher':
+        expected['engine_changelist'] = engine['changelist']
+        expected['engine_build_id'] = engine['build_id']
+    else:
+        expected['engine_commit'] = engine['commit']
     for key, value in expected.items():
         if data.get(key) != value:
             raise ValueError(f'Package manifest {key} differs from the approved identity')

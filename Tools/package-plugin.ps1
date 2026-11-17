@@ -107,11 +107,13 @@ function Assert-SourceIdentity([string] $Commit) {
     }
 }
 
-function Assert-EngineIdentity([string] $Commit) {
-    if ((Read-Git $Engine @('rev-parse', 'HEAD')) -ne $Commit -or
-        @(Read-Git $Engine @('status', '--porcelain=v1', '--untracked-files=no')).Count) {
-        throw 'Packaging requires the clean pinned engine source'
-    }
+function Assert-EngineIdentity {
+    # The distribution and its identity come from local configuration, never a
+    # hard-coded path. A source build is proved by its clean pinned commit; an
+    # installed Launcher engine by its promoted build, changelist and BuildId.
+    $identity = & python (Join-Path $PSScriptRoot 'engine_distribution.py') --repo $repo --engine $Engine --json
+    if ($LASTEXITCODE -ne 0) { throw 'Packaging engine identity check failed' }
+    return ($identity | ConvertFrom-Json -AsHashtable)
 }
 
 $context = [IO.Path]::GetFullPath($env:TURBOMCP_EXECUTION_CONTEXT)
@@ -135,7 +137,7 @@ $commit = $report.request.commit
 Assert-SourceIdentity $commit
 $pluginTree = Read-Git $repo @('rev-parse', "${commit}:Plugins/TurboMCP")
 $lock = Read-Json (Join-Path $repo 'engine.lock.json')
-Assert-EngineIdentity $lock.commit
+$engineIdentity = Assert-EngineIdentity
 $version = Read-Json (Join-Path $Engine 'Engine/Build/Build.version')
 $engineVersion = "$($version.MajorVersion).$($version.MinorVersion).$($version.PatchVersion)"
 if ($engineVersion -ne $lock.version) { throw 'Engine build version does not match the package pin' }
@@ -176,7 +178,10 @@ Write-Output ('BuildPlugin command: ' + (ConvertTo-Json -InputObject (@($uat) + 
 & $uat @buildArguments
 if ($LASTEXITCODE -ne 0) { throw "Win64 BuildPlugin failed with exit $LASTEXITCODE" }
 Assert-SourceIdentity $commit
-Assert-EngineIdentity $lock.commit
+$afterIdentity = Assert-EngineIdentity
+if ((ConvertTo-Json $afterIdentity -Compress) -ne (ConvertTo-Json $engineIdentity -Compress)) {
+    throw 'Engine identity changed during packaging'
+}
 foreach ($path in @($artifactRoot, $stage, $inputRoot, $inputPlugin, $buildRoot)) {
     [void](Assert-OrdinaryItem $path)
 }
@@ -261,11 +266,10 @@ if ($LASTEXITCODE -ne 0 -or $releaseScope -notin @('stable', 'development-previe
 $manifest = [ordered]@{
     schema = 1
     release_scope = $releaseScope
-    engine_distribution = 'source-build'
+    engine_distribution = $engineIdentity.distribution
     source_commit = $commit
     plugin_tree = $pluginTree
     engine_version = $engineVersion
-    engine_commit = $lock.commit
     platform = 'Win64'
     installed_consumer_acceptance = 'pending'
     build_command = @('Engine/Build/BatchFiles/RunUAT.bat', 'BuildPlugin',
@@ -276,6 +280,12 @@ $manifest = [ordered]@{
     archive = "$label.zip"
     archive_sha256 = $zipHash
     files = $files
+}
+if ($engineIdentity.distribution -eq 'installed-launcher') {
+    $manifest.engine_changelist = $engineIdentity.changelist
+    $manifest.engine_build_id = $engineIdentity.build_id
+} else {
+    $manifest.engine_commit = $engineIdentity.commit
 }
 $manifest | ConvertTo-Json -Depth 35 | Set-Content -LiteralPath (Join-Path $delivery 'manifest.json') -Encoding UTF8
 # A same-volume directory move exposes both verified files and refuses an existing destination.
