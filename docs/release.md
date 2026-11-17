@@ -16,11 +16,11 @@ Several successful pushes on one day update the same daily tag and page. A day w
 
 The repository and its published source releases are public. The workflow does not change repository visibility.
 
-## Plan 1.0.0
+## Released: 1.0.0
 
-Use the **1.0.0** milestone and the **1.0.0 - planned stable release** draft in [Releases](https://github.com/FloStyle/TurboMCP/releases). The draft is a work plan, not a release announcement or promise of support. Do not create `v1.0.0` or `stable` until acceptance passes.
+`v1.0.0` is released at commit `ef1d1e1f`, built and tested against the pinned Unreal Engine 5.8.4 source build (`f45729c0`). The package is `TurboMCP-1.0.0-Win64-UE5.8.4-ef1d1e1fbd15-04d2c06d468a4e249f41cea3b567f5cf.zip`, SHA-256 `59b28032ae6d8f72fc079e601f937efb89ed8e9b5870452f99a42e59db6c02fe`. Both clean consumers passed on that exact archive (run `b8dd28b1`). The [`stable`](https://github.com/FloStyle/TurboMCP/tree/stable) branch starts at that commit.
 
-See the [1.0.0 checklist](release-1.0.0.md) for open issues, exact-target tests and package requirements. Stable release approval remains manual.
+Launcher builds and Unreal 5.9 are not certified yet. See the [1.0.0 checklist](release-1.0.0.md) for the accepted scope and the deferred work.
 
 ## Source and installation packages
 
