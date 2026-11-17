@@ -6,7 +6,7 @@ TurboMCP is an addon to stock Unreal MCP. It helps an AI assistant inspect compl
 
 **Development preview:** Windows with the pinned Unreal Engine 5.8.4 source build. Stable 1.0.0 is planned. Launcher packages and Unreal 5.9 are not certified.
 
-**[Website and getting started](https://flostyle.github.io/TurboMCP/)** | [Releases](https://github.com/FloStyle/TurboMCP/releases) | [Open issues](https://github.com/FloStyle/TurboMCP/issues) | [1.0.0 plan](docs/release-1.0.0.md) | [Documentation](docs/README.md)
+**[Website and getting started](https://flostyle.github.io/TurboMCP/)** | [Releases](https://github.com/FloStyle/TurboMCP/releases) | [Open issues](https://github.com/FloStyle/TurboMCP/issues) | [1.0.0 plan](docs/release-1.0.0.md) | [User wiki](https://github.com/FloStyle/TurboMCP/wiki) | [Documentation](docs/README.md)
 
 ## What it adds
 

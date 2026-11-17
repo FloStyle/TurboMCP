@@ -1,400 +1,794 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TurboMCP + TurboUX — Interactive technical guide</title>
-<meta name="description" content="How TurboMCP extends stock Unreal MCP, and how TurboUX models interactive UX. Read the workflow, inspect examples or present each chapter.">
-<link rel="icon" href="icon.png"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="guide.css">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TurboMCP Field Guide</title>
+<meta name="description" content="Build a menu feature, inspect Blueprint and widget changes, and test input in Unreal. Includes data workflows and a searchable tool catalogue.">
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="guide.css">
 <script src="guide.js" defer></script>
-</head><body class="guide-page">
-<a class="skip-link" href="#guide-main">Skip to chapters</a>
-<header class="guide-header"><a class="brand" href="index.html"><img src="icon.png" width="32" height="32" alt=""><span>TurboMCP <small>/ Field guide</small></span></a>
-<div class="guide-actions"><a href="index.html#catalogue">Tool catalogue</a><button id="present-toggle" type="button" aria-pressed="false" hidden>Present</button><button id="print-guide" type="button" hidden>Print / PDF</button></div></header>
+</head>
+<body class="guide-page">
+<a class="skip-link" href="#guide-main">Skip to guide</a>
+<header class="guide-header">
+<a class="brand" href="index.html"><img src="icon.png" width="32" height="32" alt="">TurboMCP</a>
+<nav class="guide-actions" aria-label="Guide actions">
+<a href="index.html#catalogue">Tool catalogue</a>
+<a href="https://github.com/FloStyle/TurboMCP/wiki">User wiki</a>
+<button id="present-toggle" type="button" aria-keyshortcuts="P" aria-pressed="false" hidden>Present</button>
+<button id="print-guide" type="button" hidden>Print</button>
+</nav>
+</header>
 <div class="guide-shell">
-<aside class="chapter-nav" aria-label="Guide navigation"><div class="nav-heading"><strong>Explore the workflow</strong><p>Read a chapter or present it. All detail stays here.</p></div>
-<label class="chapter-search" hidden>Search chapters<input id="chapter-search" type="search" placeholder="Try data, focus or export" autocomplete="off"></label>
+<aside class="chapter-nav" aria-label="Guide navigation">
+<label class="chapter-search" hidden>Find a workflow<input id="chapter-search" type="search" placeholder="Graph, DataTable, PIE…" autocomplete="off"></label>
 <p id="search-status" role="status" aria-live="polite"></p>
-<nav aria-label="Chapters"><ol id="chapter-links">
-<li data-chapter="why"><a href="#why"><span>01</span>Inspect graph structure, nodes and pins</a></li>
-<li data-chapter="stock-unreal"><a href="#stock-unreal"><span>02</span>Connect through Unreal&#x27;s MCP server</a></li>
-<li data-chapter="tool-roles"><a href="#tool-roles"><span>03</span>Read, Look, Preview and Edit toolsets</a></li>
-<li data-chapter="discovery"><a href="#discovery"><span>04</span>Discover tool schemas and parameters</a></li>
-<li data-chapter="context-steering"><a href="#context-steering"><span>05</span>Use diagnostics to correct a failed call</a></li>
-<li data-chapter="results"><a href="#results"><span>06</span>Verify edits, compilation and saving</a></li>
-<li data-chapter="blueprint-reading"><a href="#blueprint-reading"><span>07</span>Search Blueprint nodes and their context</a></li>
-<li data-chapter="vision"><a href="#vision"><span>08</span>Graph, node and neighbour captures</a></li>
-<li data-chapter="graph-edits"><a href="#graph-edits"><span>09</span>Connect, repoint, append and remove nodes</a></li>
-<li data-chapter="graph-tidy"><a href="#graph-tidy"><span>10</span>Preview layout changes and inspect the result</a></li>
-<li data-chapter="batching"><a href="#batching"><span>11</span>Batch repoint operations within one graph</a></li>
-<li data-chapter="inventory"><a href="#inventory"><span>12</span>Query asset references and widget instances</a></li>
-<li data-chapter="data-read"><a href="#data-read"><span>13</span>Read Data Asset fields and class defaults</a></li>
-<li data-chapter="data-edit"><a href="#data-edit"><span>14</span>Edit properties with a state revision</a></li>
-<li data-chapter="data-create"><a href="#data-create"><span>15</span>Create a typed Data Asset</a></li>
-<li data-chapter="data-tables"><a href="#data-tables"><span>16</span>Set and remove DataTable rows</a></li>
-<li data-chapter="widgets-materials"><a href="#widgets-materials"><span>17</span>Inspect widget and material structure</a></li>
-<li data-chapter="play-input"><a href="#play-input"><span>18</span>Inspect PIE focus and send bounded input</a></li>
-<li data-chapter="safeguards"><a href="#safeguards"><span>19</span>Target checks, edit guards and local access</a></li>
-<li data-chapter="feedback"><a href="#feedback"><span>20</span>Report tool failures and feature requests</a></li>
-<li data-chapter="development-process"><a href="#development-process"><span>21</span>Assign, test and integrate a scoped change</a></li>
-<li data-chapter="installation"><a href="#installation"><span>22</span>Install and enable the source plugin</a></li>
-<li data-chapter="release"><a href="#release"><span>23</span>Package evidence and release requirements</a></li>
-<li data-chapter="turboux"><a href="#turboux"><span>24</span>Build interactive HTML/JSON UX prototypes</a></li>
-<li data-chapter="project-model"><a href="#project-model"><span>25</span>Store screens, routes and inputs in JSON</a></li>
-<li data-chapter="authoring-loop"><a href="#authoring-loop"><span>26</span>Arrange screens, edit controls and test routes</a></li>
-<li data-chapter="workspaces"><a href="#workspaces"><span>27</span>Manage elements, styles, skills and assets</a></li>
-<li data-chapter="ux-inputs"><a href="#ux-inputs"><span>28</span>Model input mappings and active contexts</a></li>
-<li data-chapter="command-parity"><a href="#command-parity"><span>29</span>Share revisioned commands between UI and MCP</a></li>
-<li data-chapter="portable-projects"><a href="#portable-projects"><span>30</span>Save locally and export project bundles</a></li>
-<li data-chapter="svg-figma"><a href="#svg-figma"><span>31</span>Export scene data and review import losses</a></li>
-<li data-chapter="native-handoff"><a href="#native-handoff"><span>32</span>Map prototype behavior to Unreal owners</a></li>
-<li data-chapter="next"><a href="#next"><span>33</span>Remaining release and interoperability checks</a></li>
-</ol></nav><p class="nav-foot"><a href="guide-content.json">Machine-readable chapter index</a><br>Development guide · November 2026<br>Public, generic examples only.</p></aside>
+<nav aria-label="Sections"><ul id="chapter-links">
+<li class="chapter-group" data-group-heading="Getting started">Getting started</li>
+<li data-chapter="why"><a href="#why">Build and test a Settings button</a></li>
+<li data-chapter="stock-unreal"><a href="#stock-unreal">Check what registered in Unreal</a></li>
+<li data-chapter="tool-roles"><a href="#tool-roles">Choose the tool for the next step</a></li>
+<li data-chapter="discovery"><a href="#discovery">Check the live parameters</a></li>
+<li data-chapter="context-steering"><a href="#context-steering">Find why a call failed</a></li>
+<li data-chapter="results"><a href="#results">Check an edit before saving</a></li>
+<li class="chapter-group" data-group-heading="Blueprint graphs">Blueprint graphs</li>
+<li data-chapter="blueprint-reading"><a href="#blueprint-reading">Find a node and read its neighbours</a></li>
+<li data-chapter="vision"><a href="#vision">Trace the Sequence in a capture</a></li>
+<li data-chapter="graph-edits"><a href="#graph-edits">Preview one execution connection</a></li>
+<li data-chapter="graph-tidy"><a href="#graph-tidy">Preview layout for selected nodes</a></li>
+<li data-chapter="batching"><a href="#batching">Preview repeated wire changes</a></li>
+<li class="chapter-group" data-group-heading="Data, widgets and materials">Data, widgets and materials</li>
+<li data-chapter="inventory"><a href="#inventory">Find assets and widgets affected by a change</a></li>
+<li data-chapter="data-read"><a href="#data-read">Read an exact Data Asset field</a></li>
+<li data-chapter="data-edit"><a href="#data-edit">Preview changing one Data Asset field</a></li>
+<li data-chapter="data-create"><a href="#data-create">Preview a new Data Asset</a></li>
+<li data-chapter="data-tables"><a href="#data-tables">Change one field in a DataTable row</a></li>
+<li data-chapter="widgets-materials"><a href="#widgets-materials">Find the source of a displayed value</a></li>
+<li class="chapter-group" data-group-heading="Runtime checks">Runtime checks</li>
+<li data-chapter="play-input"><a href="#play-input">Check focus on one PIE player</a></li>
+<li data-chapter="safeguards"><a href="#safeguards">Check whether the editor can take an edit</a></li>
+<li class="chapter-group" data-group-heading="Installation and release">Installation and release</li>
+<li data-chapter="feedback"><a href="#feedback">Report a reproducible failure</a></li>
+<li data-chapter="development-process"><a href="#development-process">Contribute a focused regression</a></li>
+<li data-chapter="installation"><a href="#installation">Install the source plugin</a></li>
+<li data-chapter="release"><a href="#release">Read package and release status</a></li>
+<li class="chapter-group" data-group-heading="Release reference">Release reference</li>
+<li data-chapter="next"><a href="#next">Check the current release scope</a></li>
+</ul></nav>
+</aside>
 <main id="guide-main">
-<div class="guide-intro"><p class="eyebrow">TOOLS / REQUESTS / RESULTS</p><h1>TurboMCP tools<br>and <em>TurboUX workflows.</em></h1><p>Tool contracts, request examples, native captures and current release limits. Read the chapters or switch to presentation mode.</p><div class="legend"><span>Current source</span><span>Recorded evidence</span><span>Experimental / planned</span></div></div>
-<p id="no-chapters" hidden>No chapters match. Clear the search to restore the guide.</p>
-<section class="chapter" id="why" data-group="Foundation" aria-labelledby="why-title">
-<div class="chapter-meta"><span class="chapter-number">01</span><span>Foundation</span><span class="chapter-status">Development preview</span></div>
-<h2 id="why-title" tabindex="-1">Inspect graph structure, nodes and pins</h2>
-<p class="chapter-lead">TurboMCP reads graph names, node IDs, pin connections and reflected properties. An agent can use these outputs to identify targets before previewing an edit.</p>
-<div class="chapter-body"><div class="contrast"><div><h3>Starting question</h3><p>Which widget handles the selected menu action, and which nodes read its input?</p></div><div><h3>Tool sequence</h3><p>Find the owning widget, read its input bindings, follow the relevant nodes, then inspect the actual focus in Play.</p></div></div><div class="flow" aria-label="Development loop"><span>Question</span><span>Exact context</span><span>Scoped change</span><span>Read-back</span></div><p class="takeaway">BlueprintLoad identifies graphs. NodeFind locates nodes. NodeContext follows nearby execution links and input sources.</p><details><summary>Why the project exists</summary><p>TurboMCP extends the stock Unreal MCP workflow for complex Blueprint and data work. Its intent is better context, focused edits and actionable failures. Fewer repeated calls and lower context use are design goals, not measured performance guarantees across models.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPBlueprintLoad#catalogue">ReadTurboMCPBlueprintLoad</a><a href="index.html?tool=ReadTurboMCPNodeContext#catalogue">ReadTurboMCPNodeContext</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/README.md">README.md</a></div>
-<a class="permalink" href="#why" aria-label="Link to chapter 1: Inspect graph structure, nodes and pins">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Inspect+graph+structure%2C+nodes+and+pins&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+1%3A+Inspect+graph+structure%2C+nodes+and+pins%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23why%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23why%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 1">Suggest a change</a></footer>
-</section>
+<div class="guide-intro">
+<h1>TurboMCP Field Guide</h1>
+<p>Build a feature, inspect its Blueprint, and test what the player sees in Unreal.</p>
+<div class="guide-start">
+<a href="#why">Build and test a menu</a><a href="#vision">Trace a Blueprint</a>
+<a href="#data-tables">Update a DataTable row</a>
+<a href="#play-input">Inspect PIE focus</a>
+</div>
+<p class="guide-request-note">Request templates use the arguments of Unreal’s <code>call_tool</code> bridge. Replace sample paths and values in angle brackets with those from your project. Check the registered schema.</p>
+</div>
+<p id="no-chapters" hidden>No matching workflows. Search for a task or tool name.</p>
 
-<section class="chapter" id="stock-unreal" data-group="Foundation" aria-labelledby="stock-unreal-title">
-<div class="chapter-meta"><span class="chapter-number">02</span><span>Foundation</span><span class="chapter-status">Current integration</span></div>
-<h2 id="stock-unreal-title" tabindex="-1">Connect through Unreal&#x27;s MCP server</h2>
-<p class="chapter-lead">TurboMCP is an editor plugin registered alongside Unreal's native tools. It does not replace the MCP server or require a second service.</p>
-<div class="chapter-body"><figure class="diagram"><figcaption>Conceptual integration — not a runtime capture</figcaption><div class="flow"><span>AI client<br><small>Discovers the live schema</small></span><span>Unreal MCP<br><small>Native connection and registry</small></span><span>Editor APIs<br><small>Stock tools + TurboMCP</small></span></div></figure><div class="columns"><div><h3>Use the foundation</h3><p>Keep native object, actor, editor and other toolsets exposed by the running engine.</p></div><div><h3>Add focused context</h3><p>Read graphs and pins, inspect data and references, capture a region, and preview supported edits.</p></div></div><details><summary>What the comparison does not prove</summary><p>The repository compares source declarations for selected engine versions. Source overlap does not prove equivalent behavior, better performance or runtime compatibility. Discover what the current editor actually exposes.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPToolIndex#catalogue">ReadTurboMCPToolIndex</a><a href="index.html?tool=ReadTurboMCPStatus#catalogue">ReadTurboMCPStatus</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/tool-comparison.md">docs/tool-comparison.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md">docs/design/protocol.md</a></div>
-<a class="permalink" href="#stock-unreal" aria-label="Link to chapter 2: Connect through Unreal&#x27;s MCP server">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Connect+through+Unreal%27s+MCP+server&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+2%3A+Connect+through+Unreal%27s+MCP+server%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23stock-unreal%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23stock-unreal%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 2">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="tool-roles" data-group="Foundation" aria-labelledby="tool-roles-title">
-<div class="chapter-meta"><span class="chapter-number">03</span><span>Foundation</span><span class="chapter-status">Source catalogue</span></div>
-<h2 id="tool-roles-title" tabindex="-1">Read, Look, Preview and Edit toolsets</h2>
-<p class="chapter-lead">The catalogue contains 196 documented declarations: 42 Read, 6 Look, 68 Preview and 80 Edit. Preview/Edit pairs count separately.</p>
-<div class="chapter-body"><div class="role-grid"><div><b>READ · 42</b><p>Graphs, fields, references and diagnostics.</p></div><div><b>LOOK · 6</b><p>Native captures and layout inspection.</p></div><div><b>PREVIEW · 68</b><p>Inspect a supported operation before applying it.</p></div><div><b>EDIT · 80</b><p>Apply a targeted operation and inspect its outcome.</p></div></div><p class="takeaway">Effects vary by tool. Check loading, execution, writes and saving in its contract.</p><details><summary>Examples of effects hidden by a name</summary><p>A read can load an asset and run project hooks. BulkExport writes a report file. PlayCheck can start PIE. A widget preview can execute widget code. Review the exact tool contract rather than assuming that Read or Preview means no effects.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPToolSchema#catalogue">ReadTurboMCPToolSchema</a><a href="index.html?tool=ReadTurboMCPBulkExport#catalogue">ReadTurboMCPBulkExport</a><a href="index.html?tool=ReadTurboMCPPlayCheck#catalogue">ReadTurboMCPPlayCheck</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h</a></div>
-<a class="permalink" href="#tool-roles" aria-label="Link to chapter 3: Read, Look, Preview and Edit toolsets">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Read%2C+Look%2C+Preview+and+Edit+toolsets&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+3%3A+Read%2C+Look%2C+Preview+and+Edit+toolsets%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23tool-roles%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23tool-roles%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 3">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="discovery" data-group="Foundation" aria-labelledby="discovery-title">
-<div class="chapter-meta"><span class="chapter-number">04</span><span>Foundation</span><span class="chapter-status">Current workflow</span></div>
-<h2 id="discovery-title" tabindex="-1">Discover tool schemas and parameters</h2>
-<p class="chapter-lead">Inspect the registered toolset, parameter names and current help before constructing a request. Disabled tools and engine versions can change what is available.</p>
-<div class="chapter-body"><ol class="steps"><li><b>Discover</b><p>Find the enabled toolsets and the exact tool.</p></li><li><b>Inspect</b><p>Read its schema, effects and target requirements.</p></li><li><b>Narrow</b><p>Use an exact asset, graph, node and property path where supported.</p></li></ol><pre class="prompt"><code>Discover the current TurboMCP schema. Read /Game/Examples/BP_Demo.
-List its graphs and missing information. Do not edit, compile, save or start PIE.</code></pre><details><summary>Native call shape</summary><p>Unreal's call_tool route uses a toolset name, a tool name and a nested arguments object. Follow the live server schema; do not flatten the tool arguments into the outer request. Disabled tools are absent from discovery and refused before execution.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPToolIndex#catalogue">ReadTurboMCPToolIndex</a><a href="index.html?tool=ReadTurboMCPToolSchema#catalogue">ReadTurboMCPToolSchema</a><a href="index.html?tool=ReadTurboMCPToolHelp#catalogue">ReadTurboMCPToolHelp</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md">docs/design/protocol.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md">docs/user/installation.md</a></div>
-<a class="permalink" href="#discovery" aria-label="Link to chapter 4: Discover tool schemas and parameters">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Discover+tool+schemas+and+parameters&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+4%3A+Discover+tool+schemas+and+parameters%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23discovery%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23discovery%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 4">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="context-steering" data-group="Foundation" aria-labelledby="context-steering-title">
-<div class="chapter-meta"><span class="chapter-number">05</span><span>Foundation</span><span class="chapter-status">Implemented guidance</span></div>
-<h2 id="context-steering-title" tabindex="-1">Use diagnostics to correct a failed call</h2>
-<p class="chapter-lead">The response should identify the ambiguity or unsupported operation and steer the agent toward a focused correction.</p>
-<div class="chapter-body"><div class="contrast"><div><h3>Failure without a cause</h3><pre><code>Operation failed.</code></pre><p>The reply does not identify the failing target or input.</p></div><div><h3>Diagnostic fields</h3><p>Name the target. Return exact candidates or supported values. Explain the refusal and suggest the next read.</p></div></div><blockquote><code>next: use ReadTurboMCPNodeFind for an exact node ID, then Mode=node with Size=1200x800 or Mode=neighbours with Size=1.</code></blockquote><p class="caption">Actual guidance retained with the synthetic graph capture evidence.</p><details><summary>Recovery after an uncertain edit</summary><p>A timeout or failed transport does not prove that nothing changed. Inspect the target and call log before replaying a mutation. The goal is a correct next call, not a promise that every failure resolves in one retry.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPToolHelp#catalogue">ReadTurboMCPToolHelp</a><a href="index.html?tool=ReadTurboMCPCallLog#catalogue">ReadTurboMCPCallLog</a><a href="index.html?tool=ReadTurboMCPEditorLog#catalogue">ReadTurboMCPEditorLog</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md">docs/design/protocol.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/audit/vision-workflow-review.md">docs/audit/vision-workflow-review.md</a></div>
-<a class="permalink" href="#context-steering" aria-label="Link to chapter 5: Use diagnostics to correct a failed call">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Use+diagnostics+to+correct+a+failed+call&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+5%3A+Use+diagnostics+to+correct+a+failed+call%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23context-steering%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23context-steering%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 5">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="results" data-group="Foundation" aria-labelledby="results-title">
-<div class="chapter-meta"><span class="chapter-number">06</span><span>Foundation</span><span class="chapter-status">Acceptance boundary</span></div>
-<h2 id="results-title" tabindex="-1">Verify edits, compilation and saving</h2>
-<p class="chapter-lead">Separate the operation result from transport success. Then separate changed state, compilation, persistence and rollback.</p>
-<div class="chapter-body"><div class="flow"><span>Operation<br><small>Read / planned / changed / refused</small></span><span>Verification<br><small>Exact read-back and diagnostics</small></span><span>Persistence<br><small>Explicit save outcome</small></span></div><div class="columns"><div><h3>After a change</h3><p>Inspect intended fields, links and identities. Check that unrelated state stayed intact. Compile where the workflow requires it.</p></div><div><h3>After a failure</h3><p>Keep partial or unknown outcomes visible. Do not describe attempted undo as verified restoration.</p></div></div><details><summary>Contract versus release evidence</summary><p>The architecture defines structured result metadata including outcome, changed, compile, save, rollback and completeness. Read the actual response and each family's implementation. A written contract or a successful transport response does not certify every tool's conformance.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPDirtyList#catalogue">ReadTurboMCPDirtyList</a><a href="index.html?tool=EditTurboMCPCompile#catalogue">EditTurboMCPCompile</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md">docs/architecture.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md">docs/release-1.0.0.md</a></div>
-<a class="permalink" href="#results" aria-label="Link to chapter 6: Verify edits, compilation and saving">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Verify+edits%2C+compilation+and+saving&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+6%3A+Verify+edits%2C+compilation+and+saving%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23results%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23results%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 6">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="blueprint-reading" data-group="Blueprints" aria-labelledby="blueprint-reading-title">
-<div class="chapter-meta"><span class="chapter-number">07</span><span>Blueprints</span><span class="chapter-status">Current tools</span></div>
-<h2 id="blueprint-reading-title" tabindex="-1">Search Blueprint nodes and their context</h2>
-<p class="chapter-lead">Start with the Blueprint structure, search the relevant calls, then read the context around exact node IDs.</p>
-<div class="chapter-body"><div class="flow"><span>BlueprintLoad<br><small>Graphs and structure</small></span><span>NodeFind<br><small>Exact graph and node IDs</small></span><span>NodeContext<br><small>Execution and input sources</small></span></div><pre class="prompt"><code>In /Game/Examples/BP_Demo, find calls related to the selected event.
-Return exact graph and node IDs. Follow input sources and nearby execution links.
-Report skipped content. Do not modify the asset.</code></pre><details><summary>Why exact IDs help</summary><p>Display names can repeat. An exact graph and node identity makes the next capture or pin operation reviewable. Search scope and page limits still matter: an empty bounded page is not automatically proof that a call is absent everywhere.</p></details><details><summary>Example arguments: search all graphs in one asset</summary><p>Template for ReadTurboMCPNodeFind; replace the asset and search terms. This request has not been run against a user project.</p><pre><code>{"Asset":"/Game/Examples/BP_Demo","Words":"Print String","GraphName":"","Scope":"asset","MatchMode":"all","Format":"json","PageSize":40}</code></pre><p>The documented JSON result includes hits, errors, skips, coverage and next_cursor. Each hit identifies its asset, graph and node. Continue until next_cursor is null; skipped assets prevent an exhaustive conclusion.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPBlueprintLoad#catalogue">ReadTurboMCPBlueprintLoad</a><a href="index.html?tool=ReadTurboMCPNodeFind#catalogue">ReadTurboMCPNodeFind</a><a href="index.html?tool=ReadTurboMCPNodeContext#catalogue">ReadTurboMCPNodeContext</a><a href="index.html?tool=ReadTurboMCPNodeResolve#catalogue">ReadTurboMCPNodeResolve</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md">docs/design/graphs.md</a></div>
-<a class="permalink" href="#blueprint-reading" aria-label="Link to chapter 7: Search Blueprint nodes and their context">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Search+Blueprint+nodes+and+their+context&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+7%3A+Search+Blueprint+nodes+and+their+context%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23blueprint-reading%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23blueprint-reading%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 7">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="vision" data-group="Blueprints" aria-labelledby="vision-title">
-<div class="chapter-meta"><span class="chapter-number">08</span><span>Blueprints</span><span class="chapter-status">Recorded synthetic evidence</span></div>
-<h2 id="vision-title" tabindex="-1">Graph, node and neighbour captures</h2>
-<p class="chapter-lead">These three native captures show the same synthetic graph. An overview explains the structure; a focused view makes individual nodes useful.</p>
-<div class="chapter-body"><div class="capture-gallery"><figure><a href="assets/graph-overview.png" target="_blank" rel="noopener"><img src="assets/graph-overview.png" width="1600" height="900" loading="lazy" alt="Native overview of the synthetic 69-node VisionEvents graph."></a><figcaption>01 · Whole graph · 69 nodes</figcaption></figure><figure><a href="assets/graph-focus.png" target="_blank" rel="noopener"><img src="assets/graph-focus.png" width="1200" height="800" loading="lazy" alt="Native exact-node capture showing a Sequence and its neighbouring logic."></a><figcaption>02 · Exact node · 1200 × 800</figcaption></figure><figure><a href="assets/graph-neighbours.png" target="_blank" rel="noopener"><img src="assets/graph-neighbours.png" width="1038" height="1058" loading="lazy" alt="Native one-hop capture showing six nodes connected around a Sequence."></a><figcaption>03 · Neighbours · Size=1 hop</figcaption></figure></div><p class="caption">Open any image at native size. These are retained captures, not a new benchmark.</p><details><summary>Request the right view</summary><p>LookTurboMCPCapture supports different modes. Supply all required fields from its schema. In neighbours mode, Size means hop count; in node mode, it can describe a pixel resolution. Use NodeFind for the exact Target instead of guessing a label.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=LookTurboMCPCapture#catalogue">LookTurboMCPCapture</a><a href="index.html?tool=ReadTurboMCPNodeFind#catalogue">ReadTurboMCPNodeFind</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/audit/vision-workflow-review.md">docs/audit/vision-workflow-review.md</a><a href="assets/asset-provenance.json">Capture provenance</a></div>
-<a class="permalink" href="#vision" aria-label="Link to chapter 8: Graph, node and neighbour captures">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Graph%2C+node+and+neighbour+captures&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+8%3A+Graph%2C+node+and+neighbour+captures%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23vision%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23vision%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 8">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="graph-edits" data-group="Blueprints" aria-labelledby="graph-edits-title">
-<div class="chapter-meta"><span class="chapter-number">09</span><span>Blueprints</span><span class="chapter-status">Supported operations</span></div>
-<h2 id="graph-edits-title" tabindex="-1">Connect, repoint, append and remove nodes</h2>
-<p class="chapter-lead">Choose the smallest graph operation that matches the requested change. A graph dump is not automatically valid writer input.</p>
-<div class="chapter-body"><div class="columns three"><div><h3>Connect / repoint</h3><p>Repair an exact pin link or redirect supported consumers. Inspect displaced links.</p></div><div><h3>Append / copy</h3><p>Add a bounded set of nodes or copy a supported selection. Keep existing placement and external references explicit.</p></div><div><h3>Replace / remove</h3><p>Review deletion and dependencies. Omitted content can be destructive in replacement workflows.</p></div></div><pre class="prompt"><code>Inspect the selected graph and exact source/destination pins.
-Preview only the requested connection. Show displaced links.
-After approval, apply it and read back the connection and unaffected neighbours.</code></pre><details><summary>Read-back is part of the task</summary><p>Check node identity, link direction, pin types and literal defaults. Removal of an unused source is a separate change. Do not expand a one-wire repair into a graph rebuild merely because replacement syntax is convenient.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=PreviewTurboMCPGraphConnect#catalogue">PreviewTurboMCPGraphConnect</a><a href="index.html?tool=EditTurboMCPGraphConnect#catalogue">EditTurboMCPGraphConnect</a><a href="index.html?tool=PreviewTurboMCPGraphAppend#catalogue">PreviewTurboMCPGraphAppend</a><a href="index.html?tool=PreviewTurboMCPGraphReplace#catalogue">PreviewTurboMCPGraphReplace</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md">docs/design/graphs.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/audit/event-connect-workflow-review.md">docs/audit/event-connect-workflow-review.md</a></div>
-<a class="permalink" href="#graph-edits" aria-label="Link to chapter 9: Connect, repoint, append and remove nodes">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Connect%2C+repoint%2C+append+and+remove+nodes&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+9%3A+Connect%2C+repoint%2C+append+and+remove+nodes%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23graph-edits%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23graph-edits%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 9">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="graph-tidy" data-group="Blueprints" aria-labelledby="graph-tidy-title">
-<div class="chapter-meta"><span class="chapter-number">10</span><span>Blueprints</span><span class="chapter-status">Current tools · visual review needed</span></div>
-<h2 id="graph-tidy-title" tabindex="-1">Preview layout changes and inspect the result</h2>
-<p class="chapter-lead">Tidy and layout reports help organize a graph. They do not guarantee that every dense graph becomes easier to read.</p>
-<div class="chapter-body"><figure class="diagram"><figcaption>Illustrative layout review — not a before/after capture</figcaption><div class="flow"><span>Inspect bounds<br><small>Nodes, boxes and scope</small></span><span>Preview movement<br><small>Review fixed boundaries</small></span><span>Apply and capture<br><small>Check lanes and crossings</small></span></div></figure><div class="columns"><div><h3>Look for improvement</h3><p>Alignment, box membership, execution order, crossings and overlap. Use both overview and detail.</p></div><div><h3>Keep the exceptions visible</h3><p>Fixed nodes or a narrow selection can make a clean layout impossible. A shorter total wire length alone is not visual acceptance.</p></div></div><details><summary>Review scope before applying</summary><p>Read the current Tidy options and diagnostics. Some repairs need a larger explicit selection or placement choice. Do not move unselected nodes or change graph semantics to hide a layout problem.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=LookTurboMCPLayoutReport#catalogue">LookTurboMCPLayoutReport</a><a href="index.html?tool=PreviewTurboMCPGraphTidy#catalogue">PreviewTurboMCPGraphTidy</a><a href="index.html?tool=EditTurboMCPGraphTidy#catalogue">EditTurboMCPGraphTidy</a><a href="index.html?tool=LookTurboMCPCapture#catalogue">LookTurboMCPCapture</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md">docs/design/graphs.md</a></div>
-<a class="permalink" href="#graph-tidy" aria-label="Link to chapter 10: Preview layout changes and inspect the result">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Preview+layout+changes+and+inspect+the+result&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+10%3A+Preview+layout+changes+and+inspect+the+result%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23graph-tidy%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23graph-tidy%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 10">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="batching" data-group="Blueprints" aria-labelledby="batching-title">
-<div class="chapter-meta"><span class="chapter-number">11</span><span>Blueprints</span><span class="chapter-status">Bounded implementation</span></div>
-<h2 id="batching-title" tabindex="-1">Batch repoint operations within one graph</h2>
-<p class="chapter-lead">BatchEdit currently applies ordered repoint operations to one asset and one graph. Later plans see the state produced by earlier simulated changes.</p>
-<div class="chapter-body"><div class="flow"><span>Plan step A</span><span>Plan B after A</span><span>Review whole sequence</span><span>Apply one transaction</span></div><div class="columns"><div><h3>Useful boundary</h3><p>A related set of supported graph changes can be inspected together, with exact targets and a concise receipt.</p></div><div><h3>Separate outcomes</h3><p>The batch does not compile or save. A later compile failure does not automatically roll back the completed batch.</p></div></div><details><summary>Failure behavior</summary><p>Failed edits attempt owned undo and compare restored source state and dirty state. Unverified restoration blocks further TurboMCP edits in that editor session. Inspect and recover the asset before restarting; do not save uncertain changes. External project effects are not a general atomic transaction.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=PreviewTurboMCPBatchEdit#catalogue">PreviewTurboMCPBatchEdit</a><a href="index.html?tool=EditTurboMCPBatchEdit#catalogue">EditTurboMCPBatchEdit</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md">docs/architecture.md</a></div>
-<a class="permalink" href="#batching" aria-label="Link to chapter 11: Batch repoint operations within one graph">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Batch+repoint+operations+within+one+graph&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+11%3A+Batch+repoint+operations+within+one+graph%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23batching%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23batching%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 11">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="inventory" data-group="Data and assets" aria-labelledby="inventory-title">
-<div class="chapter-meta"><span class="chapter-number">12</span><span>Data and assets</span><span class="chapter-status">Current tools</span></div>
-<h2 id="inventory-title" tabindex="-1">Query asset references and widget instances</h2>
-<p class="chapter-lead">Reference and structural searches answer different questions. Use both, and keep their coverage limits attached to the result.</p>
-<div class="chapter-body"><div class="columns"><div><h3>Saved registry edges</h3><p>RefsBatch finds referencers or dependencies for assets or folder seeds, with kinds, bounded depth, missing-file information and pagination.</p></div><div><h3>Owned widget structure</h3><p>WidgetInventory matches classes, references, overrides and graph nodes. It can report matching instances and relevant values.</p></div></div><pre class="prompt"><code>Audit saved referencers of /Game/Examples/Input, then inspect matching widgets.
-Read every continuation page. Preserve reference kinds, skipped assets and limits.
-Separate confirmed matches from unsupported or unknown coverage.</code></pre><details><summary>What can still be absent</summary><p>Registry evidence can miss unsaved, configuration or dynamic references. WidgetInventory excludes inherited trees, embedded internals and native implementations; collection and dynamic-reference limits also apply. Loading candidates can run PostLoad or dependency compilation. “No explicit save” does not mean “no project code ran.”</p></details><details><summary>Example arguments: folder referencers</summary><pre><code>{"Folder":"/Game/Examples/Input","Recursive":true,"Direction":"referencers","Kinds":"hard,soft","Depth":1,"PageSize":100}</code></pre><p>Template for ReadTurboMCPRefsBatch. Expect seed and edge records with reference kinds and missing-file information. Continue with nextCursor. The query reads saved registry evidence; dynamic, configuration and unsaved references can be absent.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPRefsBatch#catalogue">ReadTurboMCPRefsBatch</a><a href="index.html?tool=ReadTurboMCPWidgetInventory#catalogue">ReadTurboMCPWidgetInventory</a><a href="index.html?tool=ReadTurboMCPNodeFind#catalogue">ReadTurboMCPNodeFind</a><a href="index.html?tool=ReadTurboMCPBulkExport#catalogue">ReadTurboMCPBulkExport</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h</a></div>
-<a class="permalink" href="#inventory" aria-label="Link to chapter 12: Query asset references and widget instances">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Query+asset+references+and+widget+instances&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+12%3A+Query+asset+references+and+widget+instances%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23inventory%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23inventory%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 12">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="data-read" data-group="Data and assets" aria-labelledby="data-read-title">
-<div class="chapter-meta"><span class="chapter-number">13</span><span>Data and assets</span><span class="chapter-status">Current tools</span></div>
-<h2 id="data-read-title" tabindex="-1">Read Data Asset fields and class defaults</h2>
-<p class="chapter-lead">Inspect selected reflected properties across Data Assets. Keep exact paths, type information, errors and continuation with the values.</p>
-<div class="chapter-body"><div class="columns"><div><h3>Keep the answer small</h3><p>Select named property paths. Use keys-only reads for supported maps or arrays when the question is about membership.</p></div><div><h3>Know the owner</h3><p>Blueprint class defaults use an already-loaded generated class and default object. This is distinct from constructing a runtime instance.</p></div></div><pre class="prompt"><code>Read the requested fields from my named input Data Assets in a bounded batch.
-Return asset identity, property path, value and errors. For the brush map, return keys only.
-Continue all pages and report incomplete coverage.</code></pre><details><summary>Load effects and completeness</summary><p>Data Asset loads can run hooks and dependencies. The reader does not request property writes, compilation or saving. Its paged output carries rows, totals, errors and continuation; inspect completeness rather than relying only on the first page.</p></details><details><summary>Example arguments: collection keys</summary><pre><code>{"Asset":"/Game/Examples/DA_Demo","Property":"Brushes","Mode":"keys","Source":"asset","Offset":0,"PageSize":32}</code></pre><p>Template for ReadTurboMCPDataAssetProperty. The example class must expose a supported Brushes collection. Keys mode returns map keys or array indices without their values. Copy nextOffset until it is -1. Unsupported or missing properties are reported as errors.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPDataAssetProperty#catalogue">ReadTurboMCPDataAssetProperty</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/data-asset-edits.md">docs/design/data-asset-edits.md</a></div>
-<a class="permalink" href="#data-read" aria-label="Link to chapter 13: Read Data Asset fields and class defaults">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Read+Data+Asset+fields+and+class+defaults&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+13%3A+Read+Data+Asset+fields+and+class+defaults%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-read%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-read%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 13">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="data-edit" data-group="Data and assets" aria-labelledby="data-edit-title">
-<div class="chapter-meta"><span class="chapter-number">14</span><span>Data and assets</span><span class="chapter-status">Revisioned property workflow</span></div>
-<h2 id="data-edit-title" tabindex="-1">Edit properties with a state revision</h2>
-<p class="chapter-lead">Read the exact field and revision, preview the operation, then apply only that approved change. Refuse stale state instead of overwriting a newer edit.</p>
-<div class="chapter-body"><div class="flow"><span>Read<br><small>Value + revision</small></span><span>Preview<br><small>Exact property operation</small></span><span>Apply<br><small>Current revision</small></span><span>Read back<br><small>Changed + untouched values</small></span></div><div class="columns"><div><h3>Supported intent</h3><p>Set a supported value, upsert or remove one map entry, or create a compatible owned instanced child.</p></div><div><h3>Avoid broad replacement</h3><p>Do not send an entire live map to an unrelated JSON writer when the task changes one entry.</p></div></div><details><summary>Property text and ownership</summary><p>Use the Unreal property text format reported by the reader. Owned structs and instanced children differ from externally referenced assets. Unsupported types, invalid references and stale revisions must be explicit. Project callbacks may run; verification and saving remain distinct outcomes.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPDataAssetProperty#catalogue">ReadTurboMCPDataAssetProperty</a><a href="index.html?tool=PreviewTurboMCPDataAssetProperty#catalogue">PreviewTurboMCPDataAssetProperty</a><a href="index.html?tool=EditTurboMCPDataAssetProperty#catalogue">EditTurboMCPDataAssetProperty</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/data-asset-edits.md">docs/design/data-asset-edits.md</a></div>
-<a class="permalink" href="#data-edit" aria-label="Link to chapter 14: Edit properties with a state revision">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Edit+properties+with+a+state+revision&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+14%3A+Edit+properties+with+a+state+revision%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-edit%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-edit%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 14">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="data-create" data-group="Data and assets" aria-labelledby="data-create-title">
-<div class="chapter-meta"><span class="chapter-number">15</span><span>Data and assets</span><span class="chapter-status">Current tools</span></div>
-<h2 id="data-create-title" tabindex="-1">Create a typed Data Asset</h2>
-<p class="chapter-lead">Give the tool a real concrete UDataAsset subclass and an unused destination. Do not substitute a placeholder class just to make creation succeed.</p>
-<div class="chapter-body"><ol class="steps"><li><b>Preview the definition</b><p>Confirm the loaded class, destination and supported initial properties.</p></li><li><b>Create in memory</b><p>Preserve class defaults and apply the explicit values.</p></li><li><b>Inspect and save</b><p>Read back type and fields. Save and source-control add are separate actions.</p></li></ol><pre class="prompt"><code>Inspect the concrete Data Asset class and its defaults.
-Preview creation at /Game/Examples/DA_New with only the requested initial fields.
-Refuse an existing destination. Do not save until the new asset has been inspected.</code></pre><details><summary>Creation effects</summary><p>Preview validates without allocation. Edit can run constructors and project code. It does not overwrite an existing package or compile a Blueprint to manufacture the requested class.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=PreviewTurboMCPDataAssetCreate#catalogue">PreviewTurboMCPDataAssetCreate</a><a href="index.html?tool=EditTurboMCPDataAssetCreate#catalogue">EditTurboMCPDataAssetCreate</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h</a></div>
-<a class="permalink" href="#data-create" aria-label="Link to chapter 15: Create a typed Data Asset">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Create+a+typed+Data+Asset&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+15%3A+Create+a+typed+Data+Asset%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-create%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-create%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 15">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="data-tables" data-group="Data and assets" aria-labelledby="data-tables-title">
-<div class="chapter-meta"><span class="chapter-number">16</span><span>Data and assets</span><span class="chapter-status">Current tools</span></div>
-<h2 id="data-tables-title" tabindex="-1">Set and remove DataTable rows</h2>
-<p class="chapter-lead">Read the real row struct first. Preview the entire operation list and verify both changed rows and preserved fields.</p>
-<div class="chapter-body"><div class="columns"><div><h3>Set or create</h3><pre><code>Potion = Health=100,Label="Small potion"</code></pre><p>Illustrative help syntax. The fields must exist in the actual row struct.</p></div><div><h3>Remove</h3><pre><code>- Obsolete</code></pre><p>Deletion discards the named row. It is not an empty-value update.</p></div></div><p class="takeaway">Existing unspecified fields are retained. New rows start from struct defaults.</p><details><summary>Validation and rollback limits</summary><p>Preview uses temporary row data and can load referenced objects. The writer validates the list before writing. Failed read-back attempts owned undo and reports whether row restoration was verified. External callback effects are not covered by that row check. Saving is explicit.</p></details><details><summary>Example call arguments</summary><pre><code>{"Asset":"/Game/Examples/DT_Items","Rows":"[\"Potion = Health=100,Label=\\\"Small potion\\\"\",\"- Obsolete\"]"}</code></pre><p>Template for PreviewTurboMCPDataTableRows. Rows is a string containing a JSON array of operation strings. The table must use a row struct with the illustrated Health and Label fields. Preview reports validation and proposed changes; apply requires a separate Edit call.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPDataTable#catalogue">ReadTurboMCPDataTable</a><a href="index.html?tool=PreviewTurboMCPDataTableRows#catalogue">PreviewTurboMCPDataTableRows</a><a href="index.html?tool=EditTurboMCPDataTableRows#catalogue">EditTurboMCPDataTableRows</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h</a></div>
-<a class="permalink" href="#data-tables" aria-label="Link to chapter 16: Set and remove DataTable rows">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Set+and+remove+DataTable+rows&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+16%3A+Set+and+remove+DataTable+rows%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-tables%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-tables%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 16">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="widgets-materials" data-group="Data and assets" aria-labelledby="widgets-materials-title">
-<div class="chapter-meta"><span class="chapter-number">17</span><span>Data and assets</span><span class="chapter-status">Supported readers and editors</span></div>
-<h2 id="widgets-materials-title" tabindex="-1">Inspect widget and material structure</h2>
-<p class="chapter-lead">A capture shows what rendered. Structured reads explain hierarchy, property values, bindings and inheritance.</p>
-<div class="chapter-body"><div class="columns"><div><h3>Widget Blueprints</h3><p>Inspect the designer tree, instance properties and relevant input references. Use preview images for appearance, PIE for active behavior.</p></div><div><h3>Materials</h3><p>Read parameters, parent inheritance, local overrides, output trees and named reroutes. A changed parameter is not proof of rendered equivalence.</p></div></div><figure class="diagram"><figcaption>Inspection sequence</figcaption><div class="flow"><span>Structured read<br><small>What owns this value?</small></span><span>Visual capture<br><small>What does the user see?</small></span><span>Runtime check<br><small>What actually happens?</small></span></div></figure><details><summary>Choose a supported operation</summary><p>Do not infer complete widget or material authoring from a screenshot or a broad family name. Check the exact tool for supported properties, node types, class ownership and side effects. Some previews construct objects or run project code.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPWidgetTree#catalogue">ReadTurboMCPWidgetTree</a><a href="index.html?tool=ReadTurboMCPWidgetProperty#catalogue">ReadTurboMCPWidgetProperty</a><a href="index.html?tool=LookTurboMCPWidgetPreview#catalogue">LookTurboMCPWidgetPreview</a><a href="index.html?tool=ReadTurboMCPMaterialInstance#catalogue">ReadTurboMCPMaterialInstance</a><a href="index.html?tool=ReadTurboMCPMaterialTrace#catalogue">ReadTurboMCPMaterialTrace</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h</a></div>
-<a class="permalink" href="#widgets-materials" aria-label="Link to chapter 17: Inspect widget and material structure">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Inspect+widget+and+material+structure&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+17%3A+Inspect+widget+and+material+structure%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23widgets-materials%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23widgets-materials%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 17">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="play-input" data-group="Runtime and safety" aria-labelledby="play-input-title">
-<div class="chapter-meta"><span class="chapter-number">18</span><span>Runtime and safety</span><span class="chapter-status">Bounded PIE support</span></div>
-<h2 id="play-input-title" tabindex="-1">Inspect PIE focus and send bounded input</h2>
-<p class="chapter-lead">Inspect the local player and focus, send a bounded input through the supported PIE route, then verify the action and resulting state.</p>
-<div class="chapter-body"><div class="flow"><span>Before<br><small>Target, focus, contexts</small></span><span>Input<br><small>Bounded key or axis</small></span><span>After<br><small>Action, screen, focus</small></span></div><div class="columns"><div><h3>What the reader reports</h3><p>Selected-player focus, held synthetic input and Enhanced Input context priorities. Optional CommonUI information may be unavailable.</p></div><div><h3>What the writer does</h3><p>Routes keyboard/gamepad input through Slate in PIE. It executes game/UI code; it is not an asset transaction.</p></div></div><details><summary>Important boundaries</summary><p>The state report does not determine the routing owner. Use explicit session-bound targets where exposed. No arbitrary OS input, external-process injection or direct Enhanced Input action injection is implied. Holds are bounded and need editor ticks. Check actual behavior, not only successful delivery.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPPlayInputState#catalogue">ReadTurboMCPPlayInputState</a><a href="index.html?tool=EditTurboMCPPlayInput#catalogue">EditTurboMCPPlayInput</a><a href="index.html?tool=ReadTurboMCPPlayFunction#catalogue">ReadTurboMCPPlayFunction</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md">docs/architecture.md</a></div>
-<a class="permalink" href="#play-input" aria-label="Link to chapter 18: Inspect PIE focus and send bounded input">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Inspect+PIE+focus+and+send+bounded+input&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+18%3A+Inspect+PIE+focus+and+send+bounded+input%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23play-input%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23play-input%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 18">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="safeguards" data-group="Runtime and safety" aria-labelledby="safeguards-title">
-<div class="chapter-meta"><span class="chapter-number">19</span><span>Runtime and safety</span><span class="chapter-status">Local trust boundary</span></div>
-<h2 id="safeguards-title" tabindex="-1">Target checks, edit guards and local access</h2>
-<p class="chapter-lead">The editor can load project code, write assets and run play sessions. Scope controls and validation reduce mistakes; they are not an operating-system sandbox.</p>
-<div class="chapter-body"><div class="columns three"><div><h3>Target</h3><p>Resolve exact identities. Refuse ambiguous or unsupported inputs.</p></div><div><h3>Coordinate</h3><p>Serialize mutations. Respect readiness, transaction and revision checks.</p></div><div><h3>Inspect</h3><p>Read back results. Keep partial changes and uncertain restoration visible.</p></div></div><details><summary>Logging and connection policy</summary><p>Keep the MCP listener local and follow the generated connection configuration. Call logs can contain paths, arguments and project results. Review evidence before sharing it. Tool-domain and exact-tool settings are per-user controls; they do not disable unrelated native toolsets.</p></details><details><summary>Do not weaken the guard to pass a test</summary><p>A refused call may be the correct result. If a task needs unsupported behavior, record a bounded feature request with an acceptance case. Do not remove a safety check merely to improve apparent coverage.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPEditQueue#catalogue">ReadTurboMCPEditQueue</a><a href="index.html?tool=ReadTurboMCPStatus#catalogue">ReadTurboMCPStatus</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/SECURITY.md">SECURITY.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md">docs/architecture.md</a></div>
-<a class="permalink" href="#safeguards" aria-label="Link to chapter 19: Target checks, edit guards and local access">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Target+checks%2C+edit+guards+and+local+access&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+19%3A+Target+checks%2C+edit+guards+and+local+access%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23safeguards%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23safeguards%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 19">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="feedback" data-group="Delivery" aria-labelledby="feedback-title">
-<div class="chapter-meta"><span class="chapter-number">20</span><span>Delivery</span><span class="chapter-status">Current contribution workflow</span></div>
-<h2 id="feedback-title" tabindex="-1">Report tool failures and feature requests</h2>
-<p class="chapter-lead">Use one feedback workflow for bugs, tool improvements and feature requests. Keep observed facts separate from a suspected cause.</p>
-<div class="chapter-body"><div class="flow"><span>Intent + call</span><span>Observed result</span><span>Small reproduction</span><span>Reviewed repair</span></div><div class="columns"><div><h3>Include</h3><p>Tool and engine version, exact request, expected result, actual output, side effects and a sanitized synthetic reproduction where possible.</p></div><div><h3>Then</h3><p>Search for duplicates, preserve original evidence, define the smallest scope and state what would prove the fix.</p></div></div><details><summary>Use the reporting skill</summary><p>The session-report skill prepares a local draft in the standard format. Review and sanitize the draft before submitting it. A useful issue explains the user's task as well as the failing call; it does not need a guessed implementation diagnosis.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPCallLog#catalogue">ReadTurboMCPCallLog</a><a href="index.html?tool=ReadTurboMCPEditorLog#catalogue">ReadTurboMCPEditorLog</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/SKILL.md">skills/turbomcp-session-report/SKILL.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/references/report-format.md">skills/turbomcp-session-report/references/report-format.md</a></div>
-<a class="permalink" href="#feedback" aria-label="Link to chapter 20: Report tool failures and feature requests">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Report+tool+failures+and+feature+requests&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+20%3A+Report+tool+failures+and+feature+requests%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23feedback%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23feedback%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 20">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="development-process" data-group="Delivery" aria-labelledby="development-process-title">
-<div class="chapter-meta"><span class="chapter-number">21</span><span>Delivery</span><span class="chapter-status">Repository workflow</span></div>
-<h2 id="development-process-title" tabindex="-1">Assign, test and integrate a scoped change</h2>
-<p class="chapter-lead">Agents can work independently when their scopes are explicit and disjoint. Build and editor resources need shared ownership and scheduling.</p>
-<div class="chapter-body"><ol class="steps"><li><b>Assign</b><p>Reviewed contract, approved base commit, exact files, clean worktree and durable claim.</p></li><li><b>Verify</b><p>Focused offline checks, compilation when needed, and native or visual evidence for the changed behavior.</p></li><li><b>Integrate</b><p>Review source and results, preserve open failures, update tracking and push a coherent batch.</p></li></ol><p class="takeaway">Record the exact checks run and retain failed, blocked or untested acceptance cases.</p><details><summary>What reviewers need</summary><p>Candidate and base identity, changed files, commands, results, screenshots when visuals matter, and explicit untested boundaries. Workers do not self-approve shared status or claim stable readiness from implementation alone.</p></details></div>
+<section class="chapter" id="why" data-group="Getting started" aria-labelledby="why-title">
+<h2 id="why-title" tabindex="-1">Build and test a Settings button</h2>
+<p class="chapter-lead">This example adds one feature to an existing menu. It assumes the project already has Pause and Settings screens, a Resume button, and gamepad navigation.</p>
+<p><strong>Example specification</strong></p>
+<blockquote>Add a Settings button below Resume in the Pause menu. Selecting it opens the existing Settings screen. Back returns to Pause and focuses Settings. Resume must still close the menu.</blockquote>
+<p>This is a recipe to adapt to your project. No recorded end-to-end run accompanies it.</p>
+<h3>1. Find the existing menu</h3>
+<p>Ask the agent to identify the Widget Blueprint, the panel that contains Resume, and the code that changes screens.</p>
+<p>Use <code>ReadTurboMCPWidgetTree</code> to locate the controls. Read their relevant properties with <code>ReadTurboMCPWidgetProperty</code>. Use the Blueprint manifest to find the menu graphs:</p>
+<figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPBlueprintLoad#catalogue"><code>ReadTurboMCPBlueprintLoad</code></a></figcaption><pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPBlueprintLoad&quot;,
+  &quot;arguments&quot;: {
+    &quot;Assets&quot;: &quot;/Game/Examples/WBP_Menu.WBP_Menu&quot;,
+    &quot;Detail&quot;: &quot;manifest&quot;
+  }
+}</code></pre></figure>
+<p>Use <code>ReadTurboMCPNodeFind</code> and <code>ReadTurboMCPNodeContext</code> to follow the existing screen-change and Back logic. Record the exact graph names, node IDs, and pins.</p>
+<p>Before editing, identify three things: the destination Settings screen, the button class, and the input that means Back. Stop if the project does not provide them. That missing setup needs its own implementation decision.</p>
+<h3>2. Add the button and its behavior</h3>
+<p>Use the same compatible button class as the menu&#x27;s existing controls. Preview adding the button to the named panel:</p>
+<figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=PreviewTurboMCPWidgetAdd#catalogue"><code>PreviewTurboMCPWidgetAdd</code></a></figcaption><pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPPreviewToolset&quot;,
+  &quot;tool_name&quot;: &quot;PreviewTurboMCPWidgetAdd&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;/Game/Examples/WBP_Menu.WBP_Menu&quot;,
+    &quot;Parent&quot;: &quot;&lt;panel-name-from-widget-tree&gt;&quot;,
+    &quot;WidgetClass&quot;: &quot;&lt;button-class-path-from-this-project&gt;&quot;,
+    &quot;Name&quot;: &quot;SettingsButton&quot;
+  }
+}</code></pre></figure>
+<p><code>WidgetAdd</code> appends to an existing panel. It does not create a root or automatically place the button below Resume. Check the panel order and layout before applying the matching edit.</p>
+<p>Set the supported label and layout properties through their matching previews and edits. For a custom button, inspect how that class exposes its label.</p>
+<p>Create the handler with <code>EditTurboMCPFunctionAdd</code> if the feature needs a new function. The new function starts without the requested behavior.</p>
+<p>Build its body with <code>PreviewTurboMCPGraphAppend</code> and <code>EditTurboMCPGraphAppend</code>. Reuse the project&#x27;s screen-change and focus logic. Discover exact node types and pin names before constructing the graph text.</p>
+<p>Connect the activation event through the appropriate graph delegate tools. <code>BindFunction</code> can connect an existing compatible handler through a Create Event node. The consuming Bind node must also execute.</p>
+<p>Do not use <code>WidgetBindAdd</code> for multicast <code>OnClicked</code>: that tool refuses it. For CommonUI, use the actual delegate and route found in this project.</p>
+<p>Inspect the added widget and changed connections. Confirm that Resume still uses its original route. Arrange new nodes if needed.</p>
+<h3>3. Compile the changed Blueprints</h3>
+<p>Call <code>EditTurboMCPCompile</code> for the changed assets. Check each asset&#x27;s compiler result. If compilation fails, correct the reported problem before starting the runtime test.</p>
+<h3>4. Start Play In Editor</h3>
+<p>Use Unreal&#x27;s native <code>StartPIE</code> tool for the open test level. Your client may display it as <code>startPIE</code>. Use its registered schema for the session options.</p>
+<p>Choose ordinary Play In Editor, with one in-process world and one local player. Wait for startup to complete. Then list the available input targets:</p>
+<figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPPlayInputState#catalogue"><code>ReadTurboMCPPlayInputState</code></a></figcaption><pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPPlayInputState&quot;,
+  &quot;arguments&quot;: { &quot;Target&quot;: &quot;list&quot; }
+}</code></pre></figure>
+<p>Copy the returned target token. Read that target again to inspect focus and the menu&#x27;s runtime button paths. Open Pause through the project&#x27;s existing route.</p>
+<p>Check that Pause is visible and Resume has focus. Do not send the test input while another screen or application owns focus.</p>
+<h3>5. Test navigation, activation, and Back</h3>
+<p>Slate is Unreal&#x27;s UI input system. For a menu that uses standard Slate gamepad navigation, this example sends a short Down input:</p>
+<figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=EditTurboMCPPlayInput#catalogue"><code>EditTurboMCPPlayInput</code></a></figcaption><pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPEditToolset&quot;,
+  &quot;tool_name&quot;: &quot;EditTurboMCPPlayInput&quot;,
+  &quot;arguments&quot;: {
+    &quot;Target&quot;: &quot;&lt;target-token-from-list&gt;&quot;,
+    &quot;Action&quot;: &quot;hold&quot;,
+    &quot;Key&quot;: &quot;Gamepad_LeftY&quot;,
+    &quot;Value&quot;: &quot;-1&quot;,
+    &quot;Seconds&quot;: &quot;0.1&quot;
+  }
+}</code></pre></figure>
+<p>The tool releases the hold automatically. Let normal editor frames run, then read the same target again. Confirm that Settings has focus before continuing. A hold can repeat, so do not assume it moves exactly one row.</p>
+<p>If the project&#x27;s confirm mapping uses <code>Gamepad_FaceButton_Bottom</code>, send it with <code>Action=&quot;hold&quot;</code>, <code>Value=&quot;&quot;</code>, and <code>Seconds=&quot;0.1&quot;</code>. Use the project&#x27;s actual mapping when it differs.</p>
+<p>Capture the viewport after the input completes:</p>
+<figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=LookTurboMCPCapture#catalogue"><code>LookTurboMCPCapture</code></a></figcaption><pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPLookToolset&quot;,
+  &quot;tool_name&quot;: &quot;LookTurboMCPCapture&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;&quot;,
+    &quot;GraphName&quot;: &quot;&quot;,
+    &quot;Mode&quot;: &quot;viewport&quot;,
+    &quot;Target&quot;: &quot;pie&quot;,
+    &quot;Size&quot;: &quot;&quot;
+  }
+}</code></pre></figure>
+<p>Read focus again. Check that Settings is visible and that the intended control has focus. Then send the project&#x27;s Back key with another short hold.</p>
+<p>Check the screen and focus after Back. Test Resume as well.</p>
+<div class="table-scroll"><table><thead><tr><th scope="col">Test</th><th scope="col">Required result</th></tr></thead><tbody>
+<tr><td>Navigate Down from Resume</td><td>Settings receives focus.</td></tr>
+<tr><td>Confirm Settings</td><td>The existing Settings screen opens and receives its intended initial focus.</td></tr>
+<tr><td>Back from Settings</td><td>Pause returns with Settings focused.</td></tr>
+<tr><td>Select Resume</td><td>The menu closes and gameplay resumes as before.</td></tr>
+</tbody></table></div>
+<p>Read relevant retained editor messages with <code>ReadTurboMCPEditorLog</code>. Use the test time and category to distinguish these messages from earlier activity. If the project emits route messages, compare them with the observed screen. An empty or truncated log does not prove that nothing ran.</p>
+<p><code>EditTurboMCPMenuActivate</code> can help test a named runtime button independently of navigation. It focuses that button and sends a short confirm press. It does not test whether Down reaches the button.</p>
+<h3>6. Finish or stop at the failed step</h3>
+<p>Record each test as passed, failed, or not observed. A successful input response alone is not a passed menu test.</p>
+<p>If focus or the screen is wrong, stop the sequence. Read the state before retrying. <code>focus</code> and <code>activate_gameplay</code> move focus to the gameplay viewport, so they can interfere with menu testing.</p>
+<p>If input remains active, use <code>Action=&quot;release&quot;</code> for its owning target with empty <code>Key</code>, <code>Value</code>, and <code>Seconds</code>. Stop PIE with Unreal&#x27;s native <code>StopPIE</code> before changing assets again. Check that the editor reports PIE is no longer running. A StopPIE script error can occur after the session stops, so inspect the actual state before retrying or editing. Tokens from the old session cannot be reused.</p>
+<p>After the checks pass, inspect <code>ReadTurboMCPDirtyList</code>. Save the intended packages with <code>EditTurboMCPSave</code> and check each save result. Report changed assets, compiler results, observed tests, and any remaining failure.</p>
 <footer class="chapter-footer">
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/AGENTS.md">AGENTS.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/contributing.md">docs/contributing.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/worker-boundaries.md">docs/worker-boundaries.md</a></div>
-<a class="permalink" href="#development-process" aria-label="Link to chapter 21: Assign, test and integrate a scoped change">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Assign%2C+test+and+integrate+a+scoped+change&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+21%3A+Assign%2C+test+and+integrate+a+scoped+change%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23development-process%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23development-process%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 21">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/wiki/Build-and-test-a-menu-feature">Source reference</a>
+<a href="#why" aria-label="Link to Build and test a Settings button">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Build%20and%20test%20a%20Settings%20button&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23why%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Build and test a Settings button">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="installation" data-group="Delivery" aria-labelledby="installation-title">
-<div class="chapter-meta"><span class="chapter-number">22</span><span>Delivery</span><span class="chapter-status">Pinned source preview</span></div>
-<h2 id="installation-title" tabindex="-1">Install and enable the source plugin</h2>
-<p class="chapter-lead">The current public preview targets Windows and the stock Unreal 5.8.4 source revision pinned in engine.lock.json.</p>
-<div class="chapter-body"><ol class="steps"><li><b>Build</b><p>Copy Plugins/TurboMCP into your project. Enable dependencies and build its editor target with the pinned toolchain.</p></li><li><b>Enable</b><p>Open Editor Preferences → Plugins → TurboMCP, enable the preference, then restart the editor.</p></li><li><b>Connect</b><p>Enable Unreal's local MCP server, use its generated client settings and discover the registered toolsets.</p></li></ol><pre class="prompt"><code>Read TurboMCP status and discover the enabled tools.
-Inspect one known synthetic asset without editing it.
-Report the engine/plugin state and any missing prerequisites.</code></pre><details><summary>Before diagnosing a missing tool</summary><p>The per-user TurboMCP preference defaults to off. Disabled tools are not registered; even Status is unavailable when the whole plugin is disabled. Check the preference and startup log before treating discovery as a code defect.</p></details></div>
-<footer class="chapter-footer"><div class="chapter-tools"><span>TOOLS</span><a href="index.html?tool=ReadTurboMCPStatus#catalogue">ReadTurboMCPStatus</a></div>
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md">docs/user/installation.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/engine.lock.json">engine.lock.json</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/user/troubleshooting.md">docs/user/troubleshooting.md</a></div>
-<a class="permalink" href="#installation" aria-label="Link to chapter 22: Install and enable the source plugin">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Install+and+enable+the+source+plugin&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+22%3A+Install+and+enable+the+source+plugin%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23installation%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23installation%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 22">Suggest a change</a></footer>
-</section>
-
-<section class="chapter" id="release" data-group="Delivery" aria-labelledby="release-title">
-<div class="chapter-meta"><span class="chapter-number">23</span><span>Delivery</span><span class="chapter-status">Win64 package verified · consumer checks pending</span></div>
-<h2 id="release-title" tabindex="-1">Package evidence and release requirements</h2>
-<p class="chapter-lead">Use the release channel that matches the evidence. The public repository supports development; stable 1.0.0 has separate acceptance gates.</p>
-<div class="chapter-body"><div class="columns three"><div><h3>main</h3><p>Reviewed development. Successful validation can publish the day's source prerelease.</p></div><div><h3>stable</h3><p>Starts at the first approved stable release and advances to accepted version tags.</p></div><div><h3>5.9 candidate</h3><p>Separate compatibility work on codex/ue59-preparation. No supported-baseline change implied.</p></div></div><details><summary>What a packaged release must establish</summary><p>Exact source and engine identity, archive hashes, license/notices, clean-consumer installation and relevant native acceptance. A successful BuildPlugin run alone is not proof of Blueprint-only/C++ consumer compatibility or Launcher support.</p></details><details><summary>Current status</summary><p>Supervised Win64 BuildPlugin and ZIP verification passed on the pinned Unreal 5.8.4 source engine. The package has 371 files and a matching module build ID. Fresh Blueprint-only/C++ consumer installation and Launcher compatibility are unverified. No binary was attached to the source-only daily release. Stable 1.0.0 is not approved.</p></details><details><summary>Recorded package run: 17 November 2026</summary><p>Source: <code>9c97d01af2c094fb1f022fccf903f377a2f78fdc</code>. The supervised run completed in 900.973 seconds; doctor and Win64 BuildPlugin exited 0. This duration describes that run, not expected build time on another machine.</p><p>ZIP: 371 files, 40,160,669 bytes, including PDB symbols. SHA-256: <code>eeafc80cb06838cf71e5ac836673d3daedd328d7dfb502f0f96850adad1617a6</code>.</p><p>The manifest records engine 5.8.4. Stock packaging writes descriptor EngineVersion 5.8.0 and Installed=true; use the manifest and module build ID when checking the package. See the <a href="https://github.com/FloStyle/TurboMCP/blob/main/todo/roadmap-r04.md">recorded packaging result</a> and <a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/status.md">current status</a>.</p></details></div>
+<section class="chapter" id="stock-unreal" data-group="Getting started" aria-labelledby="stock-unreal-title">
+<h2 id="stock-unreal-title" tabindex="-1">Check what registered in Unreal</h2>
+<p class="chapter-lead">The client connects to Unreal MCP, but TurboMCP tools are missing.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPStatus#catalogue"><code>ReadTurboMCPStatus</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPStatus&quot;,
+  &quot;arguments&quot;: {}
+}</code></pre>
+</figure>
+<p class="interpretation">If the tool is available, check the server and toolset entries in its response. If TurboMCP is entirely absent, use Unreal’s native list_toolsets call and check Editor Preferences before restarting.</p>
+<div class="chapter-links"><a href="#installation">Installation steps</a></div>
 <footer class="chapter-footer">
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/release.md">docs/release.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md">docs/release-1.0.0.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/git-workflow.md">docs/git-workflow.md</a></div>
-<a class="permalink" href="#release" aria-label="Link to chapter 23: Package evidence and release requirements">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Package+evidence+and+release+requirements&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+23%3A+Package+evidence+and+release+requirements%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23release%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23release%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 23">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/tool-comparison.md">Source reference</a>
+<a href="#stock-unreal" aria-label="Link to Check what registered in Unreal">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Check%20what%20registered%20in%20Unreal&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23stock-unreal%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Check what registered in Unreal">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="turboux" data-group="TurboUX" aria-labelledby="turboux-title">
-<div class="chapter-meta"><span class="chapter-number">24</span><span>TurboUX</span><span class="chapter-status">Early software prototype</span></div>
-<h2 id="turboux-title" tabindex="-1">Build interactive HTML/JSON UX prototypes</h2>
-<p class="chapter-lead">Agents can generate HTML and JSON that people can click, inspect and revise. TurboUX adds a structured editing environment around that workflow.</p>
-<div class="chapter-body"><div class="contrast"><div><h3>Prompt-only HTML</h3><p>Fast first mockup. Later edits need repeated context; components, routes and input rules can drift.</p></div><div><h3>Structured UX project</h3><p>Stable screens and controls, reusable parts, explicit navigation and a Play loop that keeps the model inspectable.</p></div></div><p class="takeaway">TurboUX models screen routes, focus targets, input contexts and control behavior for review in Play.</p><details><summary>Relationship to TurboMCP</summary><p>TurboUX explores intended behavior in a local prototype. TurboMCP helps inspect and modify supported parts of its native Unreal implementation. They are separate applications; automatic native synchronization is not a current guarantee.</p></details></div>
+<section class="chapter" id="tool-roles" data-group="Getting started" aria-labelledby="tool-roles-title">
+<h2 id="tool-roles-title" tabindex="-1">Choose the tool for the next step</h2>
+<p class="chapter-lead">Use Read for graph connections and property values. Use Look for an image of the editor. Use Preview to inspect a proposed change, then Edit to apply it.</p>
+<p class="interpretation">For a missing Blueprint wire, use NodeContext to locate both pins, then GraphConnect preview to check the change. The Edit call is a separate step.</p>
+<p class="constraint">Toolset names classify the intended operation. Read the tool’s effects before invoking it, especially for previews that can execute project code.</p>
+<div class="chapter-links"><a href="#graph-edits">Preview one connection</a><a href="#discovery">Read the registered schema</a></div>
 <footer class="chapter-footer">
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/v1-guide-and-package.md">docs/design/v1-guide-and-package.md</a></div>
-<a class="permalink" href="#turboux" aria-label="Link to chapter 24: Build interactive HTML/JSON UX prototypes">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Build+interactive+HTML%2FJSON+UX+prototypes&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+24%3A+Build+interactive+HTML%2FJSON+UX+prototypes%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23turboux%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23turboux%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 24">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">Source reference</a>
+<a href="#tool-roles" aria-label="Link to Choose the tool for the next step">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Choose%20the%20tool%20for%20the%20next%20step&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23tool-roles%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Choose the tool for the next step">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="project-model" data-group="TurboUX" aria-labelledby="project-model-title">
-<div class="chapter-meta"><span class="chapter-number">25</span><span>TurboUX</span><span class="chapter-status">Implemented local model</span></div>
-<h2 id="project-model-title" tabindex="-1">Store screens, routes and inputs in JSON</h2>
-<p class="chapter-lead">A project is more than rendered screens. Stable IDs connect geometry, navigation, focus, input context and referenced assets.</p>
-<div class="chapter-body"><figure class="diagram"><figcaption>Conceptual project structure — simplified, not a file schema</figcaption><div class="columns three"><div><h3>Screens</h3><p>Controls and groups<br>Geometry and styles<br>Referenced assets</p></div><div><h3>Flow</h3><p>Routes and guards<br>Dialogs and Back<br>Focus targets</p></div><div><h3>Inputs</h3><p>Actions and mappings<br>Active contexts<br>Screen intent bindings</p></div></div></figure><details><summary>Baseline, working state and history</summary><p>Imported evidence and the authored working model are distinct. Revisioned commands validate a candidate before committing it. A rendered image can be kept as an asset, but it does not replace routes, focus or input data. Portable export is not an export of the editor's entire transient undo history.</p></details></div>
+<section class="chapter" id="discovery" data-group="Getting started" aria-labelledby="discovery-title">
+<h2 id="discovery-title" tabindex="-1">Check the live parameters</h2>
+<p class="chapter-lead">Your client needs the argument shape for a DataTable preview.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPToolSchema#catalogue"><code>ReadTurboMCPToolSchema</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPToolSchema&quot;,
+  &quot;arguments&quot;: {
+    &quot;Toolset&quot;: &quot;TurboMCP.TurboMCPPreviewToolset&quot;,
+    &quot;Tool&quot;: &quot;PreviewTurboMCPDataTableRows&quot;
+  }
+}</code></pre>
+</figure>
+<p class="interpretation">Resolve the exact tool in the specified toolset. Use Unreal’s describe_toolset for the full JSON schema when this read returns a compact summary.</p>
+<div class="chapter-links"><a href="#data-tables">Use the Rows array</a></div>
 <footer class="chapter-footer">
-<p>TurboUX prototype direction and current local documentation. Public source/release migration is separate from TurboMCP.</p>
-<a class="permalink" href="#project-model" aria-label="Link to chapter 25: Store screens, routes and inputs in JSON">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Store+screens%2C+routes+and+inputs+in+JSON&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+25%3A+Store+screens%2C+routes+and+inputs+in+JSON%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23project-model%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23project-model%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 25">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md">Source reference</a>
+<a href="#discovery" aria-label="Link to Check the live parameters">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Check%20the%20live%20parameters&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23discovery%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Check the live parameters">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="authoring-loop" data-group="TurboUX" aria-labelledby="authoring-loop-title">
-<div class="chapter-meta"><span class="chapter-number">26</span><span>TurboUX</span><span class="chapter-status">Focused working-loop evidence</span></div>
-<h2 id="authoring-loop-title" tabindex="-1">Arrange screens, edit controls and test routes</h2>
-<p class="chapter-lead">Use one project across different work contexts. Arrange the flow, edit a screen, then try the authored navigation.</p>
-<div class="chapter-body"><div class="flow"><span>Canvas<br><small>Screens and connections</small></span><span>Edit<br><small>Layers and properties</small></span><span>Play<br><small>Navigation and focus</small></span><span>Review<br><small>Revise the same project</small></span></div><div class="columns"><div><h3>Human authoring</h3><p>Place an element, move it, inspect its layer and edit its properties. Save and reopen the project to verify persistence.</p></div><div><h3>Prototype behavior</h3><p>Test routes, Back behavior, focus and prompts. Keep modeled behavior separate from the real game's backend or engine execution.</p></div></div><details><summary>Evidence and limits</summary><p>Focused local checks cover drag/drop, movement, Delete/Undo, editing, Save/reopen and Play routes at normal and narrow sizes. This is not full V1 certification. Physical input, advanced combinations and remaining browser-dialog paths need their own checks.</p></details></div>
+<section class="chapter" id="context-steering" data-group="Getting started" aria-labelledby="context-steering-title">
+<h2 id="context-steering-title" tabindex="-1">Find why a call failed</h2>
+<p class="chapter-lead">A tool call returned an error. Find the call record before changing the inputs or repeating an edit.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPCallLog#catalogue"><code>ReadTurboMCPCallLog</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPCallLog&quot;,
+  &quot;arguments&quot;: {
+    &quot;Filter&quot;: &quot;GraphConnect&quot;,
+    &quot;Limit&quot;: &quot;10&quot;,
+    &quot;Since&quot;: &quot;&quot;
+  }
+}</code></pre>
+</figure>
+<p class="interpretation">With recording enabled, find the tool and timestamp. For an ambiguous node ID, read the graph again and copy its exact qualified ID. Match other errors to the relevant parameter in live help.</p>
+<p class="constraint">The retained log may omit older calls or shorten their text. If the connection dropped during an edit, read the graph before retrying.</p>
 <footer class="chapter-footer">
-<p>TurboUX prototype direction and current local documentation. Public source/release migration is separate from TurboMCP.</p>
-<a class="permalink" href="#authoring-loop" aria-label="Link to chapter 26: Arrange screens, edit controls and test routes">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Arrange+screens%2C+edit+controls+and+test+routes&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+26%3A+Arrange+screens%2C+edit+controls+and+test+routes%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23authoring-loop%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23authoring-loop%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 26">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md">Source reference</a>
+<a href="#context-steering" aria-label="Link to Find why a call failed">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Find%20why%20a%20call%20failed&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23context-steering%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Find why a call failed">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="workspaces" data-group="TurboUX" aria-labelledby="workspaces-title">
-<div class="chapter-meta"><span class="chapter-number">27</span><span>TurboUX</span><span class="chapter-status">Prototype workspaces</span></div>
-<h2 id="workspaces-title" tabindex="-1">Manage elements, styles, skills and assets</h2>
-<p class="chapter-lead">Dedicated workspaces keep the canvas focused while preserving the design rules that apply across screens.</p>
-<div class="chapter-body"><div class="workspace-map"><div><h3>Element Factory</h3><p>Create and manage named reusable presets. Insert instances into a screen.</p></div><div><h3>Styles + grids</h3><p>Keep colors, typography, spacing, named grids and custom guides with the project.</p></div><div><h3>Skills</h3><p>Attach reviewed UX guidance as context. Opening guidance does not execute an agent.</p></div><div><h3>Library</h3><p>Manage images, fonts, icons and project dependencies in a dedicated work context.</p></div></div><details><summary>AI-assisted element building</summary><p>A builder request provides an external agent with the current project revision, selected controls, reference screens and a description. TurboUX does not bundle a model. Native Unreal mappings need explicit class/property evidence; visual similarity is not a mapping contract.</p></details></div>
+<section class="chapter" id="results" data-group="Getting started" aria-labelledby="results-title">
+<h2 id="results-title" tabindex="-1">Check an edit before saving</h2>
+<p class="chapter-lead">After applying a graph edit, read the affected node again and verify both ends of the wire. Then make a separate compile request for the same Blueprint.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=EditTurboMCPCompile#catalogue"><code>EditTurboMCPCompile</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPEditToolset&quot;,
+  &quot;tool_name&quot;: &quot;EditTurboMCPCompile&quot;,
+  &quot;arguments&quot;: {
+    &quot;Assets&quot;: &quot;/Game/Examples/BP_Menu.BP_Menu&quot;
+  }
+}</code></pre>
+</figure>
+<p class="interpretation">Check the compile outcome for this asset. A successful compile checks compilation. For a menu route, verify the resulting screen or focus in PIE before treating it as working.</p>
+<p class="constraint">After checking the behavior, stop PIE and confirm the editor is idle. Read ReadTurboMCPDirtyList and select the packages you intend to save. Call EditTurboMCPSave for those paths. Check each asset’s save result before reporting completion.</p>
 <footer class="chapter-footer">
-<p>TurboUX prototype direction and current local documentation. Public source/release migration is separate from TurboMCP.</p>
-<a class="permalink" href="#workspaces" aria-label="Link to chapter 27: Manage elements, styles, skills and assets">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Manage+elements%2C+styles%2C+skills+and+assets&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+27%3A+Manage+elements%2C+styles%2C+skills+and+assets%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23workspaces%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23workspaces%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 27">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md">Source reference</a>
+<a href="#results" aria-label="Link to Check an edit before saving">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Check%20an%20edit%20before%20saving&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23results%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Check an edit before saving">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="ux-inputs" data-group="TurboUX" aria-labelledby="ux-inputs-title">
-<div class="chapter-meta"><span class="chapter-number">28</span><span>TurboUX</span><span class="chapter-status">Static prototype analysis</span></div>
-<h2 id="ux-inputs-title" tabindex="-1">Model input mappings and active contexts</h2>
-<p class="chapter-lead">Model actions, device mappings, context priorities and screen intent together. Make collisions, shadowing and unknown semantics visible.</p>
-<div class="chapter-body"><figure class="diagram"><figcaption>Illustrative Back behavior — a UX model, not an engine trace</figcaption><div class="flow"><span>Settings<br><small>Back → previous screen</small></span><span>Modal open<br><small>Back → close modal</small></span><span>Return<br><small>Restore previous focus</small></span></div></figure><div class="columns"><div><h3>Author and inspect</h3><p>Connect action, device/key, mapping context and active screen state. Inspect active candidates before testing a route.</p></div><div><h3>Keep unknowns</h3><p>Complex engine triggers/modifiers and physical device behavior are not proved by a static input model.</p></div></div><details><summary>Bridge to native input work</summary><p>Use the prototype to describe the intended screen route and focus. Verify CommonUI, Enhanced Input, mapping priorities and actual gameplay behavior in Unreal separately. A locally simulated conflict result is not a complete audit of engine routing.</p></details></div>
+<section class="chapter" id="blueprint-reading" data-group="Blueprint graphs" aria-labelledby="blueprint-reading-title">
+<h2 id="blueprint-reading-title" tabindex="-1">Find a node and read its neighbours</h2>
+<p class="chapter-lead">In the recorded fixture, a Sequence sits in VisionEvents_0. For your project, select a graph from its manifest and search for the event you need.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPNodeFind#catalogue"><code>ReadTurboMCPNodeFind</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPNodeFind&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;&lt;blueprint-object-path&gt;&quot;,
+    &quot;GraphName&quot;: &quot;VisionEvents_0&quot;,
+    &quot;Words&quot;: &quot;Sequence&quot;,
+    &quot;PageSize&quot;: 10
+  }
+}</code></pre>
+</figure>
+<details class="follow-up"><summary>Follow the selected node</summary><figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPNodeContext#catalogue"><code>ReadTurboMCPNodeContext</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPNodeContext&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;&lt;blueprint-object-path&gt;&quot;,
+    &quot;GraphName&quot;: &quot;VisionEvents_0&quot;,
+    &quot;NodeId&quot;: &quot;&lt;exact-node-id-from-node-find&gt;&quot;,
+    &quot;NextHops&quot;: 2
+  }
+}</code></pre>
+</figure></details>
+<p class="interpretation">The search returns matches with node IDs. If several nodes share the title, choose the one next to the event you care about. NodeContext follows nearby execution edges and shows input sources.</p>
+<p class="constraint">Search reports matches within its scan budget. Connections and stored defaults describe the authored graph, while runtime execution requires a PIE check.</p>
+<div class="chapter-links"><a href="#vision">Compare the recorded capture modes</a></div>
 <footer class="chapter-footer">
-<p>TurboUX prototype direction and current local documentation. Public source/release migration is separate from TurboMCP.</p>
-<a class="permalink" href="#ux-inputs" aria-label="Link to chapter 28: Model input mappings and active contexts">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Model+input+mappings+and+active+contexts&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+28%3A+Model+input+mappings+and+active+contexts%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23ux-inputs%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23ux-inputs%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 28">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md">Source reference</a>
+<a href="#blueprint-reading" aria-label="Link to Find a node and read its neighbours">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Find%20a%20node%20and%20read%20its%20neighbours&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23blueprint-reading%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Find a node and read its neighbours">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="command-parity" data-group="TurboUX" aria-labelledby="command-parity-title">
-<div class="chapter-meta"><span class="chapter-number">29</span><span>TurboUX</span><span class="chapter-status">Shared boundary · parity in progress</span></div>
-<h2 id="command-parity-title" tabindex="-1">Share revisioned commands between UI and MCP</h2>
-<p class="chapter-lead">The Rust host serves the web UI and MCP clients. Supported changes pass through a revisioned command boundary.</p>
-<div class="chapter-body"><figure class="diagram"><figcaption>Conceptual command path</figcaption><div class="flow"><span>Human UI / MCP<br><small>Stable targets + expected revision</small></span><span>Validate candidate<br><small>Refuse stale or invalid state</small></span><span>Commit<br><small>Working model + change record</small></span></div></figure><div class="columns"><div><h3>Proposal</h3><p>Read the current revision and selection. Prepare a focused change with provenance and intended effects.</p></div><div><h3>Review</h3><p>Inspect, refine, accept or reject it. Assistant provenance does not become human approval because a caller changes its name.</p></div></div><details><summary>Parity is tracked per action</summary><p>Sharing domain commands reduces duplicated behavior. It does not prove every UI/session gesture has an equivalent MCP action. Advanced 3D gestures, camera capture, external-download flows and some compound operations remain incomplete or unverified. Native Unreal writes are outside this local boundary.</p></details></div>
+<section class="chapter" id="vision" data-group="Blueprint graphs" aria-labelledby="vision-title">
+<h2 id="vision-title" tabindex="-1">Trace the Sequence in a capture</h2>
+<p class="chapter-lead">Which path binds On Destroyed? In the recorded synthetic graph, Request_0_0 enters Sequence, and Then 0 runs into Bind Event to On Destroyed. Then 1 leads to a Branch.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=LookTurboMCPCapture#catalogue"><code>LookTurboMCPCapture</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPLookToolset&quot;,
+  &quot;tool_name&quot;: &quot;LookTurboMCPCapture&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;&lt;blueprint-object-path&gt;&quot;,
+    &quot;GraphName&quot;: &quot;VisionEvents_0&quot;,
+    &quot;Mode&quot;: &quot;node&quot;,
+    &quot;Target&quot;: &quot;&lt;sequence-node-id&gt;&quot;,
+    &quot;Size&quot;: &quot;1200x800&quot;
+  }
+}</code></pre>
+</figure>
+<figure class="guide-capture">
+<a href="assets/graph-focus.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="assets/graph-focus.png" width="1200" height="800" alt="Request_0_0 enters Sequence. Then 0 reaches Bind Event to On Destroyed and Then 1 reaches Branch."></a>
+<figcaption>Recorded Unreal capture of a synthetic Blueprint. <a href="assets/asset-provenance.json">Image source</a></figcaption>
+</figure>
+<p class="interpretation">Use the white execution wire to trace Then 0. The red wire entering the Bind node’s Event pin identifies the bound handler, Destroyed_0_0.</p>
+<p class="constraint">Capture requires a rendering-capable editor. Use PIE to check whether Request_0_0 runs or binds the delegate in your project.</p>
+<div class="chapter-links"><a href="index.html#examples">Compare whole-graph, node and one-hop views</a></div>
 <footer class="chapter-footer">
-<p>TurboUX prototype direction and current local documentation. Public source/release migration is separate from TurboMCP.</p>
-<a class="permalink" href="#command-parity" aria-label="Link to chapter 29: Share revisioned commands between UI and MCP">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Share+revisioned+commands+between+UI+and+MCP&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+29%3A+Share+revisioned+commands+between+UI+and+MCP%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23command-parity%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23command-parity%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 29">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/audit/vision-workflow-review.md">Capture review</a>
+<a href="#vision" aria-label="Link to Trace the Sequence in a capture">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Trace%20the%20Sequence%20in%20a%20capture&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23vision%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Trace the Sequence in a capture">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="portable-projects" data-group="TurboUX" aria-labelledby="portable-projects-title">
-<div class="chapter-meta"><span class="chapter-number">30</span><span>TurboUX</span><span class="chapter-status">Implemented portable format · focused checks</span></div>
-<h2 id="portable-projects-title" tabindex="-1">Save locally and export project bundles</h2>
-<p class="chapter-lead">Save writes to the local application library. Export creates a portable project copy with its referenced dependencies.</p>
-<div class="chapter-body"><div class="columns"><div><h3>Application package</h3><p>Rust executable and shared web UI. The same application opens the generic demo and separately supplied projects.</p></div><div><h3>Portable .turboui bundle</h3><p>A ZIP containing project.json, a manifest and content-addressed assets. Import validates identity and dependencies before opening an unsaved draft.</p></div></div><div class="flow"><span>Export dependencies</span><span>Validate hashes</span><span>Open in another library</span><span>Save a local revision</span></div><details><summary>What images and exports preserve</summary><p>Images and fonts can travel as referenced assets. Missing dependencies cause a report rather than a silently incomplete project. Automatic screenshot persistence is not implemented. Stored GLB support does not imply GLB rendering; unsupported SVG binary dependencies also have limits. Keep original JSON for the complete authored behavior.</p></details></div>
+<section class="chapter" id="graph-edits" data-group="Blueprint graphs" aria-labelledby="graph-edits-title">
+<h2 id="graph-edits-title" tabindex="-1">Preview one execution connection</h2>
+<p class="chapter-lead">You have an existing event or call and want its execution output to feed an existing node. Read the current connection and use the exact pin names.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=PreviewTurboMCPGraphConnect#catalogue"><code>PreviewTurboMCPGraphConnect</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPPreviewToolset&quot;,
+  &quot;tool_name&quot;: &quot;PreviewTurboMCPGraphConnect&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;/Game/Examples/BP_Menu.BP_Menu&quot;,
+    &quot;GraphName&quot;: &quot;EventGraph&quot;,
+    &quot;SourceNodeId&quot;: &quot;&lt;source-node-id&gt;&quot;,
+    &quot;SourcePin&quot;: &quot;then&quot;,
+    &quot;TargetNodeId&quot;: &quot;&lt;target-node-id&gt;&quot;,
+    &quot;TargetPin&quot;: &quot;execute&quot;
+  }
+}</code></pre>
+</figure>
+<figure class="example-result"><figcaption>Illustrative result excerpt</figcaption><pre><code>connection: &lt;source-node-id&gt;:then -&gt; &lt;target-node-id&gt;:execute
+replaced source-output destinations: &lt;previous destination or none&gt;</code></pre></figure>
+<p class="interpretation">Check the named output and input and any displaced destination in the preview. If it matches your intent, apply GraphConnect and read the target pin back.</p>
+<p class="constraint">An execution connect can replace the source output’s current destination. It preserves other incoming execution paths and adds no automatic continuation.</p>
 <footer class="chapter-footer">
-<p>TurboUX prototype direction and current local documentation. Public source/release migration is separate from TurboMCP.</p>
-<a class="permalink" href="#portable-projects" aria-label="Link to chapter 30: Save locally and export project bundles">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Save+locally+and+export+project+bundles&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+30%3A+Save+locally+and+export+project+bundles%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23portable-projects%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23portable-projects%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 30">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md">Source reference</a>
+<a href="#graph-edits" aria-label="Link to Preview one execution connection">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Preview%20one%20execution%20connection&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23graph-edits%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Preview one execution connection">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="svg-figma" data-group="TurboUX" aria-labelledby="svg-figma-title">
-<div class="chapter-meta"><span class="chapter-number">31</span><span>TurboUX</span><span class="chapter-status">Experimental interchange</span></div>
-<h2 id="svg-figma-title" tabindex="-1">Export scene data and review import losses</h2>
-<p class="chapter-lead">Web-first SVG and scene JSON support design review. They are not a promise of full fidelity across arbitrary Figma components.</p>
-<div class="chapter-body"><div class="columns"><div><h3>Visual exchange</h3><p>Carry supported geometry, hierarchy, text and style metadata with stable identities. Review a loss report before importing supported changes.</p></div><div><h3>Behavior stays in JSON</h3><p>Routes, guards, focus and inputs remain in the original project. A flattened visual export is not a semantic backup.</p></div></div><details><summary>Figma adapter status</summary><p>An experimental development plugin uses Figma's frame/text APIs and retains stable IDs in plugin data. Editable round-trip validation remains outstanding. Typography, effects, auto-layout, nested components, image assets and navigation do not have a general faithful round trip. No Figma development workflow is required to use the main authoring loop.</p></details></div>
+<section class="chapter" id="graph-tidy" data-group="Blueprint graphs" aria-labelledby="graph-tidy-title">
+<h2 id="graph-tidy-title" tabindex="-1">Preview layout for selected nodes</h2>
+<p class="chapter-lead">Preview moving the selected nodes to make their connections easier to follow. Check which nodes will move and whether their fixed neighbours leave enough space.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=PreviewTurboMCPGraphTidy#catalogue"><code>PreviewTurboMCPGraphTidy</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPPreviewToolset&quot;,
+  &quot;tool_name&quot;: &quot;PreviewTurboMCPGraphTidy&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;/Game/Examples/BP_Menu.BP_Menu&quot;,
+    &quot;GraphName&quot;: &quot;EventGraph&quot;,
+    &quot;NodeIds&quot;: [
+      &quot;&lt;first-node-id&gt;&quot;,
+      &quot;&lt;second-node-id&gt;&quot;
+    ],
+    &quot;bForce&quot;: false,
+    &quot;RouteWires&quot;: &quot;off&quot;
+  }
+}</code></pre>
+</figure>
+<p class="interpretation">Check whether the planner accepts the change. If the fixed neighbours leave insufficient space, review a larger selection and preview again. After applying the change, capture the same area. Check node overlap, wire crossings, and the execution path.</p>
+<p class="constraint">An empty NodeIds array selects the whole graph. The request above uses two explicit IDs and leaves wire routing off.</p>
 <footer class="chapter-footer">
-<p>TurboUX prototype direction and current local documentation. Public source/release migration is separate from TurboMCP.</p>
-<a class="permalink" href="#svg-figma" aria-label="Link to chapter 31: Export scene data and review import losses">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Export+scene+data+and+review+import+losses&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+31%3A+Export+scene+data+and+review+import+losses%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23svg-figma%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23svg-figma%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 31">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md">Source reference</a>
+<a href="#graph-tidy" aria-label="Link to Preview layout for selected nodes">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Preview%20layout%20for%20selected%20nodes&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23graph-tidy%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Preview layout for selected nodes">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="native-handoff" data-group="TurboUX" aria-labelledby="native-handoff-title">
-<div class="chapter-meta"><span class="chapter-number">32</span><span>TurboUX</span><span class="chapter-status">Staged bridge · automatic sync planned</span></div>
-<h2 id="native-handoff-title" tabindex="-1">Map prototype behavior to Unreal owners</h2>
-<p class="chapter-lead">A handoff identifies screens, routes and expected input behavior, then maps them to exact Unreal assets for implementation and verification.</p>
-<div class="chapter-body"><ol class="steps"><li><b>Design packet</b><p>Screen/control IDs, routes, focus, contexts, guards and expected behavior.</p></li><li><b>Native owners</b><p>Exact Widget Blueprints, CommonUI layers, input assets and project revision.</p></li><li><b>Verify</b><p>Scoped changes, compile, structured read-back, then test the actual route and focus.</p></li></ol><p class="takeaway">TurboUX Play checks the prototype model. TurboMCP helps inspect the native implementation.</p><details><summary>Current boundary</summary><p>Automatic two-way native synchronization is a target, not a current guarantee. Accepted canvas edits must not silently trigger Unreal mutations. Keep local proposal acceptance, project persistence, exported handoff and native execution as separate explicit outcomes.</p></details></div>
+<section class="chapter" id="batching" data-group="Blueprint graphs" aria-labelledby="batching-title">
+<h2 id="batching-title" tabindex="-1">Preview repeated wire changes</h2>
+<p class="chapter-lead">A node’s output can feed several other nodes. Repoint moves those input connections to another output. This example repoints the connections twice in one proposed batch.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=PreviewTurboMCPBatchEdit#catalogue"><code>PreviewTurboMCPBatchEdit</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPPreviewToolset&quot;,
+  &quot;tool_name&quot;: &quot;PreviewTurboMCPBatchEdit&quot;,
+  &quot;arguments&quot;: {
+    &quot;Operations&quot;: &quot;[{\&quot;id\&quot;:\&quot;move-label-readers\&quot;,\&quot;kind\&quot;:\&quot;graphRepoint\&quot;,\&quot;asset\&quot;:\&quot;/Game/Examples/BP_Menu.BP_Menu\&quot;,\&quot;graphName\&quot;:\&quot;EventGraph\&quot;,\&quot;sourceNodeId\&quot;:\&quot;&lt;old-value-id&gt;\&quot;,\&quot;sourcePin\&quot;:\&quot;ReturnValue\&quot;,\&quot;targetNodeId\&quot;:\&quot;&lt;intermediate-value-id&gt;\&quot;,\&quot;targetPin\&quot;:\&quot;ReturnValue\&quot;,\&quot;keepSource\&quot;:true},{\&quot;id\&quot;:\&quot;move-to-final-value\&quot;,\&quot;kind\&quot;:\&quot;graphRepoint\&quot;,\&quot;asset\&quot;:\&quot;/Game/Examples/BP_Menu.BP_Menu\&quot;,\&quot;graphName\&quot;:\&quot;EventGraph\&quot;,\&quot;sourceNodeId\&quot;:\&quot;&lt;intermediate-value-id&gt;\&quot;,\&quot;sourcePin\&quot;:\&quot;ReturnValue\&quot;,\&quot;targetNodeId\&quot;:\&quot;&lt;final-value-id&gt;\&quot;,\&quot;targetPin\&quot;:\&quot;ReturnValue\&quot;,\&quot;keepSource\&quot;:true}]&quot;
+  }
+}</code></pre>
+</figure>
+<details class="follow-up"><summary>Read the two operations</summary><pre><code>[
+  {
+    &quot;id&quot;: &quot;move-label-readers&quot;,
+    &quot;kind&quot;: &quot;graphRepoint&quot;,
+    &quot;asset&quot;: &quot;/Game/Examples/BP_Menu.BP_Menu&quot;,
+    &quot;graphName&quot;: &quot;EventGraph&quot;,
+    &quot;sourceNodeId&quot;: &quot;&lt;old-value-id&gt;&quot;,
+    &quot;sourcePin&quot;: &quot;ReturnValue&quot;,
+    &quot;targetNodeId&quot;: &quot;&lt;intermediate-value-id&gt;&quot;,
+    &quot;targetPin&quot;: &quot;ReturnValue&quot;,
+    &quot;keepSource&quot;: true
+  },
+  {
+    &quot;id&quot;: &quot;move-to-final-value&quot;,
+    &quot;kind&quot;: &quot;graphRepoint&quot;,
+    &quot;asset&quot;: &quot;/Game/Examples/BP_Menu.BP_Menu&quot;,
+    &quot;graphName&quot;: &quot;EventGraph&quot;,
+    &quot;sourceNodeId&quot;: &quot;&lt;intermediate-value-id&gt;&quot;,
+    &quot;sourcePin&quot;: &quot;ReturnValue&quot;,
+    &quot;targetNodeId&quot;: &quot;&lt;final-value-id&gt;&quot;,
+    &quot;targetPin&quot;: &quot;ReturnValue&quot;,
+    &quot;keepSource&quot;: true
+  }
+]</code></pre></details>
+<p class="interpretation">The second operation sees the connections produced by the first. Check the final source of every affected input before applying the batch. Each operation names two output pins. Both source nodes stay because keepSource is true.</p>
+<p class="constraint">Operations is JSON encoded as a string. This batch supports graphRepoint in one Blueprint graph, with compilation and saving separate.</p>
 <footer class="chapter-footer">
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/v1-guide-and-package.md">docs/design/v1-guide-and-package.md</a></div>
-<a class="permalink" href="#native-handoff" aria-label="Link to chapter 32: Map prototype behavior to Unreal owners">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Map+prototype+behavior+to+Unreal+owners&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+32%3A+Map+prototype+behavior+to+Unreal+owners%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23native-handoff%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23native-handoff%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 32">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md">Source reference</a>
+<a href="#batching" aria-label="Link to Preview repeated wire changes">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Preview%20repeated%20wire%20changes&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23batching%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Preview repeated wire changes">Suggest a correction</a>
+</footer>
 </section>
 
-<section class="chapter" id="next" data-group="Next steps" aria-labelledby="next-title">
-<div class="chapter-meta"><span class="chapter-number">33</span><span>Next steps</span><span class="chapter-status">Evidence-led development</span></div>
-<h2 id="next-title" tabindex="-1">Remaining release and interoperability checks</h2>
-<p class="chapter-lead">Both tools are development work. Useful focused evidence is available; full release and interoperability acceptance is still separate.</p>
-<div class="chapter-body"><div class="columns"><div><h3>TurboMCP</h3><p>Public source and daily snapshots are available. Win64 BuildPlugin and package verification passed. Remaining release checks include exact-candidate acceptance and fresh Blueprint-only/C++ consumer installation.</p></div><div><h3>TurboUX</h3><p>A working local authoring loop and portable project model. Next: complete action parity, remaining browser flows, clean-machine and physical-input checks, then validated exchange.</p></div></div><div class="actions"><a class="button primary" href="index.html#catalogue">Explore all tools</a><a class="button" href="https://github.com/FloStyle/TurboMCP/issues">Review open issues</a><a class="button" href="https://github.com/FloStyle/TurboMCP/releases">Release evidence</a></div><details><summary>How to read this guide</summary><p>Current tools means the capability is described by the source; it does not certify every combination. Recorded evidence refers to a bounded past check. Experimental and planned features retain that status until their own acceptance work is complete. This guide contains no measured cross-model benchmark or stable V1 guarantee.</p></details></div>
+<section class="chapter" id="inventory" data-group="Data, widgets and materials" aria-labelledby="inventory-title">
+<h2 id="inventory-title" tabindex="-1">Find assets and widgets affected by a change</h2>
+<h3>Which saved assets reference this texture?</h3>
+<p class="chapter-lead">Use <code>ReadTurboMCPRefsBatch</code> before replacing a texture. This request finds direct saved referencers:</p>
+<figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPRefsBatch#catalogue"><code>ReadTurboMCPRefsBatch</code></a></figcaption><pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPRefsBatch&quot;,
+  &quot;arguments&quot;: {
+    &quot;Assets&quot;: &quot;/Game/Examples/UI/T_MenuIcon.T_MenuIcon&quot;,
+    &quot;Direction&quot;: &quot;referencers&quot;,
+    &quot;Depth&quot;: 1,
+    &quot;Kinds&quot;: &quot;hard,soft&quot;,
+    &quot;PageSize&quot;: 50,
+    &quot;IncludeSeeds&quot;: false
+  }
+}</code></pre></figure>
+<p>The result lists package-to-package references and their kinds. Continue with <code>nextCursor</code> until it is empty, using the same query inputs.</p>
+<p>This answers which saved packages refer to the texture. It does not identify the exact Image widget that displays it. Unsaved, configuration, and dynamic references can be absent.</p>
+<h3>Which Widget Blueprints contain this widget class?</h3>
+<p>Use <code>ReadTurboMCPWidgetInventory</code> to inspect the widgets and graphs inside candidate Widget Blueprints:</p>
+<figure class="request"><figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPWidgetInventory#catalogue"><code>ReadTurboMCPWidgetInventory</code></a></figcaption><pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPWidgetInventory&quot;,
+  &quot;arguments&quot;: {
+    &quot;Rules&quot;: &quot;{\&quot;class\&quot;:\&quot;/Script/UMG.Button\&quot;}&quot;,
+    &quot;Folder&quot;: &quot;/Game/UI&quot;,
+    &quot;Recursive&quot;: true,
+    &quot;MatchMode&quot;: &quot;all&quot;,
+    &quot;PageSize&quot;: 8,
+    &quot;Cursor&quot;: &quot;first&quot;,
+    &quot;LoadUnloaded&quot;: true
+  }
+}</code></pre></figure>
+<p>This example searches for Button and its subclasses. Replace the class path with your project&#x27;s compiled widget class when needed.</p>
+<p>Read each <code>matches</code> entry&#x27;s <code>asset</code>, <code>matchedRules</code>, and <code>evidence</code>. Evidence identifies the matching site and value. Check <code>pageIssues</code>, skipped/error counts, and <code>nextCursor</code> before describing the search as complete.</p>
+<p>The scan covers owned designer trees and graphs. It does not descend into embedded widget internals or inherited trees. Native implementations, dynamic references, and some collections are outside its scope. Loading candidates can run project code and dirty packages.</p>
+<p>Use the first query to find saved dependencies. Use the second to locate matching widgets inside candidate Blueprints. Neither query proves that a widget appears in the running game.</p>
 <footer class="chapter-footer">
-<div class="chapter-sources"><span>Contract / evidence</span><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md">docs/release-1.0.0.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/status.md">docs/status.md</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/github-issues.md">docs/github-issues.md</a></div>
-<a class="permalink" href="#next" aria-label="Link to chapter 33: Remaining release and interoperability checks">Link to chapter ↗</a><a class="feedback-link" href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D+Remaining+release+and+interoperability+checks&amp;body=Use+English+and+generic+examples.+Review+this+draft+before+submitting.%0A%0A%23%23+Type%0A%0ATool+improvement+%28documentation%29%0A%0A%23%23+Task+and+setup%0A%0AReview+chapter+33%3A+Remaining+release+and+interoperability+checks%0Ahttps%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23next%0A%0A%23%23+Observed+behavior%0A%0A%5BDescribe+the+unclear%2C+incorrect+or+missing+content.%5D%0A%0A%23%23+Desired+result+and+impact%0A%0A%5BDescribe+the+correction+or+example+you+need.%5D%0A%0A%23%23+Evidence+and+links%0A%0AChapter%3A+https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23next%0ARelated+guide+issue%3A+%2323%0A%5BAdd+public+sources+or+synthetic+evidence.+Do+not+include+private+project+material.%5D" target="_blank" rel="noopener" aria-label="Suggest a change to chapter 33">Suggest a change</a></footer>
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">Source reference</a>
+<a href="#inventory" aria-label="Link to Find assets and widgets affected by a change">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Find%20assets%20and%20widgets%20affected%20by%20a%20change&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23inventory%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Find assets and widgets affected by a change">Suggest a correction</a>
+</footer>
 </section>
-</main></div>
-<div class="presentation-controls" hidden><button id="previous-chapter" type="button" aria-label="Previous chapter">← Previous</button><div><span id="chapter-progress" role="status" aria-live="polite"></span><small class="keyboard-hint">← / → to navigate · P to toggle · Esc to exit</small></div><button id="next-chapter" type="button" aria-label="Next chapter">Next →</button></div>
+
+<section class="chapter" id="data-read" data-group="Data, widgets and materials" aria-labelledby="data-read-title">
+<h2 id="data-read-title" tabindex="-1">Read an exact Data Asset field</h2>
+<p class="chapter-lead">Check the current value of Settings.RetryLimit before changing it. Replace the asset path and property with a field your asset exposes.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPDataAssetProperty#catalogue"><code>ReadTurboMCPDataAssetProperty</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPDataAssetProperty&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;/Game/Examples/DA_Menu.DA_Menu&quot;,
+    &quot;Property&quot;: &quot;Settings.RetryLimit&quot;,
+    &quot;Source&quot;: &quot;asset&quot;,
+    &quot;Mode&quot;: &quot;legacy&quot;
+  }
+}</code></pre>
+</figure>
+<p class="interpretation">Use the exact reflected path, current value and returned revision. Keep that revision for the preview of this field.</p>
+<p class="constraint">To inspect class defaults, use blueprint_defaults with a paged mode and an already loaded generated class. Those defaults reflect the last compile.</p>
+<div class="chapter-links"><a href="#data-edit">Preview a change using the revision</a></div>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/data-asset-edits.md">Source reference</a>
+<a href="#data-read" aria-label="Link to Read an exact Data Asset field">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Read%20an%20exact%20Data%20Asset%20field&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-read%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Read an exact Data Asset field">Suggest a correction</a>
+</footer>
+</section>
+
+<section class="chapter" id="data-edit" data-group="Data, widgets and materials" aria-labelledby="data-edit-title">
+<h2 id="data-edit-title" tabindex="-1">Preview changing one Data Asset field</h2>
+<p class="chapter-lead">You read a numeric field from a Data Asset. Preview changing Settings.RetryLimit to 4. The example requires that reflected numeric field.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=PreviewTurboMCPDataAssetProperty#catalogue"><code>PreviewTurboMCPDataAssetProperty</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPPreviewToolset&quot;,
+  &quot;tool_name&quot;: &quot;PreviewTurboMCPDataAssetProperty&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;/Game/Examples/DA_Menu.DA_Menu&quot;,
+    &quot;Property&quot;: &quot;Settings.RetryLimit&quot;,
+    &quot;Operation&quot;: &quot;set&quot;,
+    &quot;Key&quot;: &quot;&quot;,
+    &quot;Value&quot;: &quot;4&quot;,
+    &quot;Revision&quot;: &quot;&lt;revision-from-the-reader&gt;&quot;
+  }
+}</code></pre>
+</figure>
+<figure class="example-result"><figcaption>Illustrative result excerpt</figcaption><pre><code>property: Settings.RetryLimit
+before: &lt;value currently on the asset&gt;
+after: 4</code></pre></figure>
+<p class="interpretation">Compare the proposed old and new values. Apply only if the preview targets the intended field. Afterward, read the value and new revision back.</p>
+<p class="constraint">The revision identifies the state you read. A stale revision refuses without writing. Read the field again before deciding whether the change still makes sense.</p>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/design/data-asset-edits.md">Source reference</a>
+<a href="#data-edit" aria-label="Link to Preview changing one Data Asset field">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Preview%20changing%20one%20Data%20Asset%20field&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-edit%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Preview changing one Data Asset field">Suggest a correction</a>
+</footer>
+</section>
+
+<section class="chapter" id="data-create" data-group="Data, widgets and materials" aria-labelledby="data-create-title">
+<h2 id="data-create-title" tabindex="-1">Preview a new Data Asset</h2>
+<p class="chapter-lead">Create a separate menu settings asset from an already loaded concrete Data Asset class. Choose a destination that does not already exist.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=PreviewTurboMCPDataAssetCreate#catalogue"><code>PreviewTurboMCPDataAssetCreate</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPPreviewToolset&quot;,
+  &quot;tool_name&quot;: &quot;PreviewTurboMCPDataAssetCreate&quot;,
+  &quot;arguments&quot;: {
+    &quot;ClassPath&quot;: &quot;&lt;loaded-concrete-data-asset-class-path&gt;&quot;,
+    &quot;PackagePath&quot;: &quot;/Game/Examples/DA_MenuVariant&quot;,
+    &quot;InitialFieldsJSON&quot;: &quot;&quot;,
+    &quot;Save&quot;: false,
+    &quot;AddToSourceControl&quot;: false
+  }
+}</code></pre>
+</figure>
+<p class="interpretation">Check that the class resolves and that the intended package is available. Empty initial fields select the class defaults.</p>
+<p class="constraint">Use a package path without an object suffix. With Save false, creation and disk persistence remain separate.</p>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">Source reference</a>
+<a href="#data-create" aria-label="Link to Preview a new Data Asset">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Preview%20a%20new%20Data%20Asset&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-create%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Preview a new Data Asset">Suggest a correction</a>
+</footer>
+</section>
+
+<section class="chapter" id="data-tables" data-group="Data, widgets and materials" aria-labelledby="data-tables-title">
+<h2 id="data-tables-title" tabindex="-1">Change one field in a DataTable row</h2>
+<p class="chapter-lead">Set the Potion row’s Health field to 100. Read the table first to confirm the row, field name, and current value.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPDataTable#catalogue"><code>ReadTurboMCPDataTable</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPDataTable&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;/Game/Examples/DT_Items.DT_Items&quot;,
+    &quot;Include&quot;: &quot;schema&quot;,
+    &quot;Columns&quot;: &quot;Health&quot;,
+    &quot;RowFilter&quot;: &quot;Potion&quot;
+  }
+}</code></pre>
+</figure>
+<details class="follow-up"><summary>Preview the row update</summary><figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=PreviewTurboMCPDataTableRows#catalogue"><code>PreviewTurboMCPDataTableRows</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPPreviewToolset&quot;,
+  &quot;tool_name&quot;: &quot;PreviewTurboMCPDataTableRows&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;/Game/Examples/DT_Items.DT_Items&quot;,
+    &quot;Rows&quot;: [
+      &quot;Potion = Health=100&quot;
+    ]
+  }
+}</code></pre>
+</figure></details>
+<p class="interpretation">Check whether the preview sets an existing row or creates a missing one. An existing row keeps unspecified fields. A new row starts from the struct defaults.</p>
+<p class="constraint">Rows is an array of operation strings. Preview validates the operation. Edit and save are separate steps.</p>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">Source reference</a>
+<a href="#data-tables" aria-label="Link to Change one field in a DataTable row">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Change%20one%20field%20in%20a%20DataTable%20row&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23data-tables%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Change one field in a DataTable row">Suggest a correction</a>
+</footer>
+</section>
+
+<section class="chapter" id="widgets-materials" data-group="Data, widgets and materials" aria-labelledby="widgets-materials-title">
+<h2 id="widgets-materials-title" tabindex="-1">Find the source of a displayed value</h2>
+<p class="chapter-lead">A settings label looks wrong. Read the designer tree to locate the named control. Then read its relevant properties and bindings. If the running screen shows a different value, follow the graph that updates it.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPWidgetTree#catalogue"><code>ReadTurboMCPWidgetTree</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPWidgetTree&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;/Game/Examples/WBP_Settings.WBP_Settings&quot;
+  }
+}</code></pre>
+</figure>
+<h3>Find a material parameter’s source</h3><details class="follow-up"><summary>Read material overrides</summary><figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPMaterialInstance#catalogue"><code>ReadTurboMCPMaterialInstance</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPMaterialInstance&quot;,
+  &quot;arguments&quot;: {
+    &quot;Asset&quot;: &quot;/Game/Examples/MI_Menu.MI_Menu&quot;
+  }
+}</code></pre>
+</figure></details>
+<p class="interpretation">For a material parameter, read the instance’s parent and local overrides. Check which asset owns the value before choosing an edit target.</p>
+<p class="constraint">Reading the tree does not check which widget has runtime focus. Widget image previews can execute project code when allowed.</p>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h">Source reference</a>
+<a href="#widgets-materials" aria-label="Link to Find the source of a displayed value">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Find%20the%20source%20of%20a%20displayed%20value&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23widgets-materials%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Find the source of a displayed value">Suggest a correction</a>
+</footer>
+</section>
+
+<section class="chapter" id="play-input" data-group="Runtime checks" aria-labelledby="play-input-title">
+<h2 id="play-input-title" tabindex="-1">Check focus on one PIE player</h2>
+<p class="chapter-lead">A Settings menu opens in Play In Editor, but navigation lands elsewhere. Start by choosing the running player you want to inspect.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPPlayInputState#catalogue"><code>ReadTurboMCPPlayInputState</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPPlayInputState&quot;,
+  &quot;arguments&quot;: {
+    &quot;Target&quot;: &quot;list&quot;
+  }
+}</code></pre>
+</figure>
+<details class="follow-up"><summary>Read focus and matching buttons</summary><figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPPlayInputState#catalogue"><code>ReadTurboMCPPlayInputState</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPPlayInputState&quot;,
+  &quot;arguments&quot;: {
+    &quot;Target&quot;: &quot;&lt;session-bound-target-token&gt;&quot;,
+    &quot;ButtonFilter&quot;: &quot;Settings&quot;,
+    &quot;ButtonLimit&quot;: 8
+  }
+}</code></pre>
+</figure></details>
+<p class="interpretation">Read the reported focus path and find the menu’s runtime buttons. If the intended control has focus, send one short input. Then read the same target and capture the viewport to check the screen and focus.</p>
+<figure class="request"><figcaption><span>Request template · standard Slate Down input</span><a href="index.html?tool=EditTurboMCPPlayInput#catalogue"><code>EditTurboMCPPlayInput</code></a></figcaption><pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPEditToolset&quot;,
+  &quot;tool_name&quot;: &quot;EditTurboMCPPlayInput&quot;,
+  &quot;arguments&quot;: {
+    &quot;Target&quot;: &quot;&lt;target-token-from-list&gt;&quot;,
+    &quot;Action&quot;: &quot;hold&quot;,
+    &quot;Key&quot;: &quot;Gamepad_LeftY&quot;,
+    &quot;Value&quot;: &quot;-1&quot;,
+    &quot;Seconds&quot;: &quot;0.1&quot;
+  }
+}</code></pre></figure>
+<p>Use your project’s mapping if it differs. Let normal frames run so the tool can release the input. A hold can repeat. If focus moves to the wrong control, stop before sending Confirm.</p>
+<p><code>focus</code> and <code>activate_gameplay</code> move focus to the gameplay viewport and can interfere with menu testing. See the <a href="#why">opening menu workflow</a> for Confirm, Back, cleanup, and save steps.</p>
+<p class="constraint">Tokens expire with the world or player. This workflow requires an in-process local player. A scheduled input report does not establish a menu action ran.</p>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md">Source reference</a>
+<a href="#play-input" aria-label="Link to Check focus on one PIE player">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Check%20focus%20on%20one%20PIE%20player&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23play-input%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Check focus on one PIE player">Suggest a correction</a>
+</footer>
+</section>
+
+<section class="chapter" id="safeguards" data-group="Runtime checks" aria-labelledby="safeguards-title">
+<h2 id="safeguards-title" tabindex="-1">Check whether the editor can take an edit</h2>
+<p class="chapter-lead">An asset edit was refused while testing in PIE. Check the current editor state before retrying.</p>
+<figure class="request">
+<figcaption><span>Request template</span><a href="index.html?tool=ReadTurboMCPEditQueue#catalogue"><code>ReadTurboMCPEditQueue</code></a></figcaption>
+<pre data-request><code>{
+  &quot;toolset_name&quot;: &quot;TurboMCP.TurboMCPReadToolset&quot;,
+  &quot;tool_name&quot;: &quot;ReadTurboMCPEditQueue&quot;,
+  &quot;arguments&quot;: {}
+}</code></pre>
+</figure>
+<p class="interpretation">Read the play, transaction and recovery state. Address the reported reason, then refresh the affected asset and preview again.</p>
+<p class="constraint">The result is a snapshot. It does not reserve an edit slot or override the tool’s checks.</p>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/SECURITY.md">Source reference</a>
+<a href="#safeguards" aria-label="Link to Check whether the editor can take an edit">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Check%20whether%20the%20editor%20can%20take%20an%20edit&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23safeguards%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Check whether the editor can take an edit">Suggest a correction</a>
+</footer>
+</section>
+
+<section class="chapter" id="feedback" data-group="Installation and release" aria-labelledby="feedback-title">
+<h2 id="feedback-title" tabindex="-1">Report a reproducible failure</h2>
+<p class="chapter-lead">Include the exact tool and minimal sanitized arguments, the editor and plugin revision, what happened, and what you expected. For uncertain edits, include a read-back of the affected asset.</p>
+<blockquote>Settings should open after Confirm. The input call returned, but Pause stayed visible and Resume kept focus. Include the request, test time, and observed screen.</blockquote>
+<div class="chapter-links"><a href="https://github.com/FloStyle/TurboMCP/issues">Check existing issues</a><a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md">Draft a feedback report</a></div>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/CONTRIBUTING.md">Source reference</a>
+<a href="#feedback" aria-label="Link to Report a reproducible failure">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Report%20a%20reproducible%20failure&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23feedback%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Report a reproducible failure">Suggest a correction</a>
+</footer>
+</section>
+
+<section class="chapter" id="development-process" data-group="Installation and release" aria-labelledby="development-process-title">
+<h2 id="development-process-title" tabindex="-1">Contribute a focused regression</h2>
+<p class="chapter-lead">Use a small disposable fixture and check the exact graph connection or value that must change. For a refusal, also check that the original state remains intact. Follow the contributor workflow before starting a repository change.</p>
+<div class="chapter-links"><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/contributing.md">Contributor workflow</a></div>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/AGENTS.md">Source reference</a>
+<a href="#development-process" aria-label="Link to Contribute a focused regression">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Contribute%20a%20focused%20regression&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23development-process%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Contribute a focused regression">Suggest a correction</a>
+</footer>
+</section>
+
+<section class="chapter" id="installation" data-group="Installation and release" aria-labelledby="installation-title">
+<h2 id="installation-title" tabindex="-1">Install the source plugin</h2>
+<ol class="workflow-steps"><li>Use the Windows source engine pinned in <code>engine.lock.json</code>.</li><li>Copy <code>Plugins/TurboMCP</code> into your project’s <code>Plugins</code> directory.</li><li>Enable the project plugin and build the editor target.</li><li>Enable TurboMCP in <strong>Editor Preferences &gt; Plugins &gt; TurboMCP</strong>.</li><li>Restart the editor.</li><li>Connect your client to Unreal’s local MCP server and refresh its tools.</li></ol>
+<div class="chapter-links"><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md">Installation steps</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/engine.lock.json">Pinned engine</a></div>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md">Source reference</a>
+<a href="#installation" aria-label="Link to Install the source plugin">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Install%20the%20source%20plugin&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23installation%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Install the source plugin">Suggest a correction</a>
+</footer>
+</section>
+
+<section class="chapter" id="release" data-group="Installation and release" aria-labelledby="release-title">
+<h2 id="release-title" tabindex="-1">Read package and release status</h2>
+<p class="chapter-lead">The daily release contains source. A Win64 development preview package was built with the pinned 5.8.4 source engine. Clean Blueprint-only and C++ consumer checks remain open.</p>
+<div class="chapter-links"><a href="https://github.com/FloStyle/TurboMCP/releases">Release downloads</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md">1.0.0 acceptance requirements</a></div>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/release.md">Source reference</a>
+<a href="#release" aria-label="Link to Read package and release status">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Read%20package%20and%20release%20status&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23release%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Read package and release status">Suggest a correction</a>
+</footer>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="chapter" id="next" data-group="Release reference" aria-labelledby="next-title">
+<h2 id="next-title" tabindex="-1">Check the current release scope</h2>
+<p class="chapter-lead">Use the project status and 1.0.0 checklist for the current development preview, clean-install evidence and outstanding release work.</p>
+<div class="chapter-links"><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/status.md">Project status</a><a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md">Release plan</a></div>
+<footer class="chapter-footer">
+<a href="https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md">Source reference</a>
+<a href="#next" aria-label="Link to Check the current release scope">Link to section</a>
+<a href="https://github.com/FloStyle/TurboMCP/issues/new?template=feedback.md&amp;title=%5BGuide%5D%20Check%20the%20current%20release%20scope&amp;body=Guide%20chapter%3A%20https%3A%2F%2Fflostyle.github.io%2FTurboMCP%2Fguide.html%23next%0A%0ADescribe%20the%20correction%20using%20a%20public%20or%20synthetic%20example." aria-label="Suggest a correction to Check the current release scope">Suggest a correction</a>
+</footer>
+</section>
+</main>
+</div>
+<div class="presentation-controls" hidden aria-label="Presentation controls">
+<button type="button" id="previous-chapter" aria-keyshortcuts="ArrowLeft PageUp">Previous</button>
+<span id="chapter-progress" aria-live="polite"></span>
+<button type="button" id="next-chapter" aria-keyshortcuts="ArrowRight PageDown">Next</button>
+</div>
 <div id="guide-notice" role="status" aria-live="polite"></div>
-<noscript><p class="noscript-note">All chapters and references are available without JavaScript. Presentation, filtering and copy controls need JavaScript.</p></noscript>
-</body></html>
+</body>
+</html>

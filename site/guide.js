@@ -3,7 +3,8 @@
 // Reading and presentation share the same static HTML chapters. No hidden
 // slide copy, remote renderer or server-side routing is needed for deep links.
 const chapters = [...document.querySelectorAll(".chapter")];
-const chapterLinks = [...document.querySelectorAll("#chapter-links li")];
+const chapterLinks = [...document.querySelectorAll("#chapter-links [data-chapter]")];
+const headings = [...document.querySelectorAll("[data-group-heading]")];
 const search = document.querySelector("#chapter-search");
 const presentToggle = document.querySelector("#present-toggle");
 const controls = document.querySelector(".presentation-controls");
@@ -14,6 +15,7 @@ let active = 0;
 let presenting = false;
 let noticeTimer;
 let printState = null;
+let navigationScrollY;
 
 function tell(message) {
   notice.textContent = message;
@@ -38,14 +40,19 @@ function updateNavigation() {
 function render() {
   const terms = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
   let count = 0;
+  const matchingGroups = new Set();
   chapters.forEach((chapter, index) => {
-    const match = terms.every((term) => chapter.textContent.toLowerCase().includes(term));
+    const match = terms.every((term) => `${chapter.textContent} ${chapter.dataset.group}`.toLowerCase().includes(term));
     chapter.hidden = presenting ? index !== active : !match;
     chapterLinks[index].hidden = !match;
-    if (match) count++;
+    if (match) {
+      count++;
+      matchingGroups.add(chapter.dataset.group);
+    }
   });
+  headings.forEach((heading) => { heading.hidden = !matchingGroups.has(heading.dataset.groupHeading); });
   document.querySelector("#no-chapters").hidden = count > 0 || presenting;
-  document.querySelector("#search-status").textContent = terms.length ? `${count} of ${chapters.length} chapters` : `${chapters.length} chapters · choose any starting point`;
+  document.querySelector("#search-status").textContent = terms.length ? `${count} matching sections` : "";
   updateNavigation();
 }
 function writeLocation(push) {
@@ -55,12 +62,17 @@ function writeLocation(push) {
   else url.searchParams.delete("view");
   if (url.href !== location.href) history[push ? "pushState" : "replaceState"](null, "", url);
 }
+function scrollToSelection(target) {
+  // Keep the selected chapter through observer updates from this jump.
+  target.scrollIntoView({ block: "start", behavior: "instant" });
+  navigationScrollY = window.scrollY;
+}
 function choose(index, { focus = true, scroll = true, push = true } = {}) {
   active = Math.max(0, Math.min(chapters.length - 1, index));
   if (search.value) search.value = "";
   render();
   writeLocation(push);
-  if (scroll) chapters[active].scrollIntoView({ block: "start" });
+  if (scroll) scrollToSelection(chapters[active]);
   if (focus) chapters[active].querySelector("h2").focus({ preventScroll: true });
 }
 function setMode(value, { push = false, focus = true, updateUrl = true } = {}) {
@@ -73,7 +85,7 @@ function setMode(value, { push = false, focus = true, updateUrl = true } = {}) {
   render();
   if (updateUrl) writeLocation(push);
   if (focus) {
-    chapters[active].scrollIntoView({ block: "start" });
+    scrollToSelection(chapters[active]);
     chapters[active].querySelector("h2").focus({ preventScroll: true });
   }
 }
@@ -81,8 +93,7 @@ function syncLocation() {
   const index = indexFromHash();
   active = index >= 0 ? index : 0;
   setMode(new URL(location.href).searchParams.get("view") === "present", { focus: false, updateUrl: false });
-  if (index >= 0) chapters[active].scrollIntoView({ block: "start" });
-  else document.querySelector("#guide-main").scrollIntoView({ block: "start" });
+  scrollToSelection(index >= 0 ? chapters[active] : document.querySelector("#guide-main"));
 }
 
 presentToggle.hidden = false;
@@ -123,17 +134,17 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-document.querySelectorAll("pre.prompt").forEach((prompt) => {
+document.querySelectorAll("[data-request]").forEach((request) => {
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "copy-prompt";
-  button.textContent = "Copy example prompt";
-  button.setAttribute("aria-label", `Copy example prompt: ${prompt.closest(".chapter").querySelector("h2").textContent}`);
+  button.className = "copy copy-prompt";
+  button.textContent = "Copy request";
+  button.setAttribute("aria-label", `Copy request for ${request.closest(".request").querySelector("figcaption code").textContent}`);
   button.addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(prompt.textContent); tell("Example prompt copied."); }
-    catch { tell("Clipboard unavailable. Select and copy the visible prompt."); }
+    try { await navigator.clipboard.writeText(request.textContent); tell("Request copied."); }
+    catch { tell("Clipboard unavailable. Select and copy the request text."); }
   });
-  prompt.after(button);
+  request.after(button);
 });
 
 // Printed output includes every chapter and expanded detail, even when the
@@ -158,7 +169,8 @@ document.querySelector("#print-guide").addEventListener("click", () => window.pr
 // rewrite history: a shared URL changes only after explicit chapter selection.
 if ("IntersectionObserver" in window) {
   const observer = new IntersectionObserver((entries) => {
-    if (presenting || printState || search.value) return;
+    if (presenting || printState || search.value || window.scrollY === navigationScrollY) return;
+    navigationScrollY = undefined;
     const visible = entries.filter((entry) => entry.isIntersecting);
     if (visible.length) {
       active = chapters.indexOf(visible[0].target);
@@ -171,4 +183,4 @@ const initialIndex = indexFromHash();
 if (initialIndex >= 0) active = initialIndex;
 if (new URL(location.href).searchParams.get("view") === "present") setMode(true, { focus: false });
 else render();
-if (initialIndex >= 0) chapters[active].scrollIntoView({ block: "start" });
+if (initialIndex >= 0) scrollToSelection(chapters[active]);

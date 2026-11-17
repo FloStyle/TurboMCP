@@ -28,88 +28,85 @@ function copyButton(label, text, accessibleLabel) {
   return button;
 }
 
+
 const captures = {
   overview: {
-    title: "Graph capture: 69-node fixture",
-    description: "Mode=graph captures the selected graph. This recorded overview contains 69 nodes; labels need a closer node or neighbour capture.",
-    caption: "Whole-graph view: 69 nodes in the synthetic VisionEvents_0 graph. Open for full size.",
-    mode: "graph", size: "1600x900", target: "Graph selected by GraphName", width: 1600, height: 900
+    title: "Find the relevant block",
+    description: "Frame the whole graph. The four comment groups help you locate the Request_0_0 block.",
+    caption: "The whole graph shows four authored groups. Individual pin labels are too small at this scale.",
+    alt: "Whole-graph capture with four vertically stacked comment groups.",
+    limit: "Use the overview to locate a block, then choose a closer capture to read its pins.",
+    mode: "graph", size: "1600x900", target: "", width: 1600, height: 900
   },
   focus: {
-    title: "Node capture: 1200 × 800",
-    description: "Pass the exact node ID returned by NodeFind as Target, with Mode=node and Size=1200x800. The image shows the captured region of the synthetic graph.",
-    caption: "Exact-node view: make the selected area readable. Open the image for full size.",
-    mode: "node", size: "1200x800", target: "Exact node ID from NodeFind", width: 1200, height: 800
+    title: "Follow Then 0",
+    description: "Find the Sequence’s exact node ID with NodeFind. Pass that ID to Capture in node mode to read the pin labels.",
+    caption: "The white wire from Then 0 reaches the bind node. The red wire identifies Destroyed_0_0 as its handler.",
+    alt: "A Sequence node connects Then 0 to Bind Event to On Destroyed and Then 1 to a Branch.",
+    limit: "The crop shows nearby pins. Some downstream nodes extend beyond the frame.",
+    mode: "node", size: "1200x800", target: "<sequence-node-id>", width: 1200, height: 800
   },
   neighbours: {
-    title: "Neighbour capture: one hop, six nodes",
-    description: "See the target and its immediate connections. In neighbours mode, Size is a hop count, not an image resolution. This capture contains six nodes.",
-    caption: "Connected-node view: one hop from the selected Sequence node. Open for full size.",
-    mode: "neighbours", size: "1 (hop)", target: "Exact Sequence node ID", width: 1038, height: 1058
+    title: "See what Sequence reaches",
+    description: "Use neighbours mode with Size set to 1. The tool selects the immediate neighbours and chooses the image dimensions.",
+    caption: "Request_0_0 feeds Sequence. Then 0 reaches the bind node, and Then 1 through Then 3 lead toward Branch nodes.",
+    alt: "One-hop capture showing the Sequence input and its bind and branch destinations.",
+    limit: "One hop shows the immediate graph connections. This image does not establish which branches ran.",
+    mode: "neighbours", size: "1", target: "<sequence-node-id>", width: 1038, height: 1058
   }
 };
-document.querySelectorAll("[data-capture]").forEach((button) => {
-  button.addEventListener("click", () => {
-    const key = button.dataset.capture;
-    const capture = captures[key];
-    const source = `assets/graph-${key}.png`;
-    $("#capture-image").src = source;
-    $("#capture-image").alt = capture.caption;
-    $("#capture-image").width = capture.width;
-    $("#capture-image").height = capture.height;
-    $("#capture-link").href = source;
-    $("#capture-title").textContent = capture.title;
-    $("#capture-description").textContent = capture.description;
-    $("#capture-caption").textContent = capture.caption;
-    $("#capture-settings").replaceChildren();
-    for (const [label, value] of [["Mode", capture.mode], ["Size", capture.size], ["Target", capture.target]]) {
-      $("#capture-settings").append(element("dt", label), element("dd", value));
+const captureButtons = [...document.querySelectorAll("[data-capture]")];
+const captureRequest = $("#capture-request code");
+function showCapture(key) {
+  const capture = captures[key];
+  const source = `assets/graph-${key}.png`;
+  const image = $("#capture-image");
+  image.src = source;
+  image.alt = capture.alt;
+  image.width = capture.width;
+  image.height = capture.height;
+  $("#capture-link").href = source;
+  $("#capture-title").textContent = capture.title;
+  $("#capture-description").textContent = capture.description;
+  $("#capture-caption").textContent = capture.caption;
+  $("#capture-limit").textContent = capture.limit;
+  captureRequest.textContent = JSON.stringify({
+    toolset_name: "TurboMCP.TurboMCPLookToolset",
+    tool_name: "LookTurboMCPCapture",
+    arguments: {
+      Asset: "<blueprint-object-path>",
+      GraphName: "VisionEvents_0",
+      Mode: capture.mode,
+      Target: capture.target,
+      Size: capture.size
     }
-    document.querySelectorAll("[data-capture]").forEach((tab) => {
-      tab.setAttribute("aria-pressed", String(tab === button));
-    });
-  });
-});
-
-const recipes = [
-  {
-    title: "Understand a complex Blueprint",
-    benefit: "Expected: graph names, exact node IDs, nearby execution links and input sources.",
-    tools: ["ReadTurboMCPBlueprintLoad", "ReadTurboMCPNodeFind", "ReadTurboMCPNodeContext"],
-    prompt: "Discover the live TurboMCP schema. Read /Game/Examples/BP_Demo without editing it. Find the calls involved in its input flow, follow their node context, and explain the result with exact asset, graph and node IDs. Report skipped or unreadable content."
-  },
-  {
-    title: "Audit references and widgets",
-    benefit: "Expected: saved reference edges and matching widget instances, with continuation and coverage limits.",
-    tools: ["ReadTurboMCPRefsBatch", "ReadTurboMCPWidgetInventory"],
-    prompt: "Discover the live TurboMCP schema. Audit referencers of /Game/Examples/Input and widget uses of those input assets. Read every result page, preserve reference kinds and instance values, and report skipped assets and coverage limits. Do not edit, save or start PIE."
-  },
-  {
-    title: "Inspect data before a batch edit",
-    benefit: "Expected: current typed values and a validated list of proposed row changes.",
-    tools: ["ReadTurboMCPDataAssetProperty", "PreviewTurboMCPDataTableRows"],
-    prompt: "Discover the live TurboMCP schema. Read the requested properties of /Game/Examples/DA_Demo. For /Game/Examples/DT_Demo, inspect the row schema and preview only my requested row changes. Show the affected rows and current values before any edit. Do not apply or save changes yet."
-  },
-  {
-    title: "Make graph layout readable",
-    benefit: "Expected: layout findings and a proposed arrangement for the selected graph.",
-    tools: ["LookTurboMCPLayoutReport", "PreviewTurboMCPGraphTidy", "LookTurboMCPCapture"],
-    prompt: "Discover the live TurboMCP schema. Inspect layout in the EventGraph of /Game/Examples/BP_Demo. Capture the current graph, then preview a tidy operation limited to the selected graph. Explain the proposed changes and any warnings. Wait before applying changes."
-  },
-  {
-    title: "Check menu input in local PIE",
-    benefit: "Expected: selected-player focus and contexts, followed by a bounded input delivery report.",
-    tools: ["ReadTurboMCPPlayInputState", "EditTurboMCPPlayInput"],
-    prompt: "Discover the live TurboMCP schema. Inspect focus and input state in my running local PIE session. Confirm the exact target and test key with me before sending any input. Then send only that bounded input and read the result. Distinguish input delivery from proof that the intended game action happened."
-  },
-  {
-    title: "Understand a failed call",
-    benefit: "Expected: the failed request, relevant diagnostics and supported parameter values.",
-    tools: ["ReadTurboMCPToolHelp", "ReadTurboMCPCallLog", "ReadTurboMCPEditorLog"],
-    prompt: "Inspect the failed TurboMCP call, current tool help and relevant editor log. Explain the specific error and the smallest correction. If an edit may already have run, inspect its outcome before retrying. Do not repeat a possibly completed mutation blindly."
+  }, null, 2);
+  for (const button of captureButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.capture === key));
   }
-];
+}
+$(".capture-tabs").hidden = false;
+$("#copy-capture").hidden = false;
+for (const button of captureButtons) {
+  button.addEventListener("click", () => showCapture(button.dataset.capture));
+}
+$("#copy-capture").addEventListener("click", () => copyText(captureRequest.textContent));
+for (const button of document.querySelectorAll("[data-copy-target]")) {
+  button.hidden = false;
+  button.addEventListener("click", () => copyText($(button.dataset.copyTarget).textContent));
+}
 let catalogue = null;
+let toolNotes = {};
+function reviewedNote(tool) {
+  const note = toolNotes[tool.name];
+  if (!note || note.sourceDescription !== tool.description || typeof note.summary !== "string" || !Array.isArray(note.sections) || !note.sections.length) return null;
+  // Only reviewed, exact-source notes are displayed. A stale or malformed note
+  // falls back to canonical text without changing parameters or copied calls.
+  const textList = (value) => value === undefined || (Array.isArray(value) && value.every((item) => typeof item === "string"));
+  return note.sections.every((section) => section && typeof section.heading === "string" &&
+    textList(section.paragraphs) && textList(section.steps) &&
+    ((section.paragraphs?.length || 0) + (section.steps?.length || 0) > 0)) ? note : null;
+}
 function showTool(name) {
   $("#tool-search").value = name;
   $("#tool-group").value = "all";
@@ -123,31 +120,34 @@ function showTool(name) {
     $("#tool-search").focus({ preventScroll: true });
   }
 }
-recipes.forEach((recipe, index) => {
-  const article = element("article");
-  article.append(element("span", `0${index + 1}`, "recipe-number"), element("h3", recipe.title), element("p", recipe.benefit));
-  const links = element("div", undefined, "tool-links");
-  recipe.tools.forEach((name) => {
-    const button = element("button", name);
-    button.type = "button";
-    button.setAttribute("aria-label", `Show ${name} in the catalogue`);
-    button.addEventListener("click", () => showTool(name));
-    links.append(button);
-  });
-  const details = element("details");
-  details.append(element("summary", "Example prompt"), element("p", recipe.prompt), copyButton("Copy prompt", recipe.prompt, `Copy prompt: ${recipe.title}`));
-  article.append(links, details);
-  $("#recipes").append(article);
-});
-
 function toolRow(tool) {
+  const note = reviewedNote(tool);
   const row = element("details", undefined, "tool-row");
   const summary = element("summary");
   const badge = element("span", tool.group, "badge");
   badge.dataset.group = tool.group;
-  summary.append(badge, element("span", tool.name, "tool-name"), element("span", tool.summary, "tool-summary"));
+  summary.append(badge, element("span", tool.name, "tool-name"), element("span", note ? note.summary : tool.summary, "tool-summary"));
   const detail = element("div", undefined, "tool-detail");
-  detail.append(element("p", tool.description), element("h4", "Parameters from the source declaration"));
+  if (note) {
+    const explanation = element("div", undefined, "tool-explanation");
+    note.sections.forEach((section) => {
+      const block = element("section");
+      block.append(element("h4", section.heading));
+      if (section.steps?.length) {
+        const steps = element("ol");
+        section.steps.forEach((step) => steps.append(element("li", step)));
+        block.append(steps);
+      }
+      (section.paragraphs || []).forEach((paragraph) => block.append(element("p", paragraph)));
+      explanation.append(block);
+    });
+    const sourceText = element("details", undefined, "source-description");
+    sourceText.append(element("summary", "Full source description"), element("p", tool.description));
+    detail.append(explanation, sourceText);
+  } else {
+    detail.append(element("p", tool.description, "canonical-description"));
+  }
+  detail.append(element("h4", "Parameters from the source declaration"));
   const params = element("dl", undefined, "param-list");
   tool.parameters.forEach((param) => {
     const wrapper = element("div", undefined, "param");
@@ -158,13 +158,15 @@ function toolRow(tool) {
   });
   detail.append(params);
   if (!tool.parameters.length) detail.append(element("p", "No parameters in this declaration."));
-  detail.append(element("h4", "Use it with an agent"));
-  const usage = `Discover the live schema and read current tool help for ${tool.toolset}.${tool.name}. Return its required inputs, supported operations and side effects for my task.`;
-  detail.append(element("p", usage));
+  const usage = JSON.stringify({
+    toolset_name: "TurboMCP.TurboMCPReadToolset",
+    tool_name: "ReadTurboMCPToolSchema",
+    arguments: { Toolset: tool.toolset, Tool: tool.name }
+  }, null, 2);
   const actions = element("div", undefined, "tool-actions");
   const source = element("a", "Source and contract ↗");
   source.href = `https://github.com/FloStyle/TurboMCP/blob/main/${catalogue.source}#L${tool.sourceLine}`;
-  actions.append(copyButton("Copy tool name", tool.name, `Copy tool name ${tool.name}`), copyButton("Copy help prompt", usage, `Copy help prompt for ${tool.name}`), source);
+  actions.append(copyButton("Copy tool name", tool.name, `Copy tool name ${tool.name}`), copyButton("Copy schema request", usage, `Copy schema request for ${tool.name}`), source);
   detail.append(actions);
   row.append(summary, detail);
   return row;
@@ -190,12 +192,18 @@ $("#tool-filters").addEventListener("reset", () => {
   // Form controls reset after the reset event dispatch.
   setTimeout(renderTools, 0);
 });
-fetch("tools.json").then((response) => {
+const catalogueRequest = fetch("tools.json").then((response) => {
   if (!response.ok) throw new Error("Catalogue unavailable");
   return response.json();
-}).then((data) => {
+});
+const notesRequest = fetch("tool-notes.json").then((response) => {
+  if (!response.ok) throw new Error("Display notes unavailable");
+  return response.json();
+}).catch(() => null);
+Promise.all([catalogueRequest, notesRequest]).then(([data, notes]) => {
   if (data.schema !== 1 || !Array.isArray(data.tools) || data.tools.length !== data.count) throw new Error("Invalid catalogue");
   catalogue = data;
+  if (notes?.schema === 1 && notes.notes && typeof notes.notes === "object" && !Array.isArray(notes.notes)) toolNotes = notes.notes;
   const linkedTool = new URL(location.href).searchParams.get("tool");
   if (linkedTool && catalogue.tools.some((tool) => tool.name === linkedTool)) {
     showTool(linkedTool);

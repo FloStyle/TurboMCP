@@ -43,6 +43,47 @@ UTF-8 JSON, omission counts and unchanged in-memory operation results. The
 engine remains the pinned stock 5.8.4 source build. This closes the implemented
 disk-sink slice after integration; it is not full logging or V1 acceptance.
 
+## Current review: human-focused field guide (2026-11-17)
+
+Readiness: ready. The integration owner approves `v1-site-human-guide` after
+Astra's review of all 33 chapters and six annotated screenshots. Preserve the
+headline "More tools. Better context." Lead with a concrete menu feature
+specification, implementation steps and input simulation with observable screen
+and focus results. Label this as an illustrative recipe, not recorded acceptance.
+Use simple technical English following the owner-requested STE writing guidance.
+Explain reference versus widget-instance searches with actual examples. Keep
+experimental TurboUX notes in a separate collapsed appendix, retaining anchors.
+
+The exact eight-file scope is seven existing website files and new
+site/tool-notes.json. Add reviewed human tool notes for dense descriptions,
+starting with BindFunction, while preserving canonical source parameters/effects.
+Compare the notes' source description against the current catalogue at runtime
+and fall back to the canonical text when they differ. Show source text in a
+separate disclosure. Do not infer new claims by splitting machine descriptions.
+Use readable line lengths and spacing. No new test framework, Python checker,
+engine call, source tool change or runtime acceptance is part of this task.
+Check JSON/request schema, JavaScript syntax and the affected interactions only.
+Root owns visual review, publication and the separately published wiki revision.
+Keep preview wording until the actual V1 release is accepted.
+
+## Website and handbook integration (2026-11-17)
+
+Reviewed site candidate 4a4bc122 and navigation follow-up d4659a69 against
+approved base 30937018. The exact seven-file scope passed. The revised pages
+retain 33 chapter anchors and the 196-tool catalogue, with 24 schema-checked
+request templates, labelled illustrative results and three recorded synthetic
+captures. Root browser checks covered capture switching, copy output, exact
+catalogue search, DataTable reading, a narrow presentation layout, and the
+corrected chapter-to-Present/Back/Forward flow. The prepared Pages tree includes
+the existing icon using the deployment workflow's copy step. No new native
+behavior or performance result is claimed by these examples.
+
+The human wiki is published at revision ece4a9d: seven handbook pages and a
+sidebar. Root reviewed all content, verified the public Home page and added
+links from the README, website and guide. The wiki covers installation, tool
+selection, Blueprint inspection, data, verification and troubleshooting. Wiki
+publication is separate from stable release acceptance. R04 remains open.
+
 ## Current review: concrete website demonstrations (2026-11-17)
 
 Readiness: ready. The integration owner approves v1-site-demonstrations in the

@@ -23,3 +23,5 @@ The call-log disk sink now checks file-operation failures and bounds UTF-8
 records. Its focused native regression passed on 30937018. Graph replacement
 is under safety review; full release acceptance and clean-consumer installation
 remain pending.
+
+The [human handbook](https://github.com/FloStyle/TurboMCP/wiki) is published with installation, tool selection, Blueprint inspection, data workflows, edit verification and troubleshooting. The website revision retains the 196-tool catalogue and 33 guide chapters, with schema-checked request templates and recorded synthetic graph captures.
