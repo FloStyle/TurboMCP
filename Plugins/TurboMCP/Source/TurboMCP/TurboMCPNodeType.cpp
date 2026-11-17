@@ -24,6 +24,7 @@
 #include "Components/Widget.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
+#include "K2Node_MacroInstance.h"
 #include "K2Node_VariableSet.h"
 #include "Internationalization/Text.h"
 #include "EdGraph/EdGraph.h"
@@ -257,6 +258,17 @@ namespace
 				if (NodeSpawner == nullptr)
 				{
 					continue;
+				}
+
+				if (NodeSpawner->NodeClass.Get() == UK2Node_MacroInstance::StaticClass())
+				{
+					// Filtering can prime the UI spec, and stock GetKeywords dereferences
+					// the macro's entry metadata. Resolve the same cached template first.
+					const UK2Node_MacroInstance* Macro = Cast<UK2Node_MacroInstance>(NodeSpawner->GetTemplateNode());
+					if (!Macro || !UK2Node_MacroInstance::GetAssociatedGraphMetadata(Macro->GetMacroGraph()))
+					{
+						continue;
+					}
 				}
 
 				// THE FILTER TAKES AN LVALUE. `FBlueprintActionFilter::IsFiltered` is declared

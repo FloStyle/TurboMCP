@@ -4,6 +4,9 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "TurboMCPGraphReplace.h"
+#include "TurboMCPNodeType.h"
+#include "BlueprintActionDatabase.h"
+#include "BlueprintNodeSpawner.h"
 #include "Tools/TurboMCPToolsets.h"
 #include "Editor/TransBuffer.h"
 #include "BlueprintEditorSettings.h"
@@ -18,6 +21,7 @@
 #include "EdGraphSchema_K2.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_MacroInstance.h"
 #include "K2Node_Tunnel.h"
 #include "Editor.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -350,6 +354,22 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Unrelated undo witness is untouched"), HistoryWitness->NodeComment, FString(TEXT("first record")));
     };
 
+    // Publish the malformed macro before resolving the new PrintString in
+    // Replace. Remove only this fixture's actions before deferred stock priming.
+    FBlueprintActionDatabase& Database = FBlueprintActionDatabase::Get();
+    ON_SCOPE_EXIT { Database.ClearAssetActions(Blueprint); };
+    Database.RefreshAssetActions(Blueprint);
+    const auto* FixtureActions = Database.GetAllActions().Find(FObjectKey(Blueprint));
+    if (!TestTrue(TEXT("Malformed macro has a registered stock action"), FixtureActions
+        && FixtureActions->ContainsByPredicate([&](const UBlueprintNodeSpawner* Spawner)
+        {
+            if (!Spawner || Spawner->NodeClass.Get() != UK2Node_MacroInstance::StaticClass()) return false;
+            const auto* Instance = Cast<UK2Node_MacroInstance>(Spawner->GetTemplateNode());
+            return Instance && Instance->GetMacroGraph() == Macro
+                && !UK2Node_MacroInstance::GetAssociatedGraphMetadata(Macro);
+        })))
+        return false;
+
     FTurboMCPGraphReplace::FPlan LivePlan;
     {
         int32 HistoryEvents = 0;
@@ -358,6 +378,10 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
         ON_SCOPE_EXIT { Buffer->OnTransactionStateChanged().Remove(Handle); };
         if (!TestTrue(TEXT("Explicit one-node removal and addition plan before editing"), Plan(NewBody, LivePlan) && LivePlan.bAcceptable()))
         { AddError(Error + FTurboMCPGraphReplace::RenderPreview(LivePlan)); return false; }
+        const TArray<FString> TypeIds = FTurboMCPNodeType::AvailableTypeIds(Blueprint, Graph);
+        TestTrue(TEXT("Valid stock macro keeps its exact discovery ID"), TypeIds.Contains(TEXT("Math|Integer|IncrementInt")));
+        TestFalse(TEXT("Malformed macro is absent from discovery"), TypeIds.ContainsByPredicate([](const FString& TypeId)
+            { return TypeId.EndsWith(TEXT("|ProtectedMacro"), ESearchCase::CaseSensitive); }));
         ExpectHistoryUnchanged();
 
         FString Rewire = NewBody;
