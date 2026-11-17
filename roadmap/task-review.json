@@ -2906,7 +2906,7 @@
       "owners": [
         "R12"
       ],
-      "finding": "Source 5.8.3 plugin compilation is established; installed 5.8.3 package availability is not. Module extraction remains a proposal, not a proven prerequisite.",
+      "finding": "Source 5.8.4 plugin compilation is established; installed 5.8.4 package availability is not. Module extraction remains a proposal, not a proven prerequisite.",
       "action": "After R16 and baseline acceptance, inspect exact target distribution then package and test Blueprint-only and C++ consumers. If unavailable, record blocked; no support claim from source build or installed 5.6.",
       "id": "R12",
       "path": "todo/roadmap-r12.md",
