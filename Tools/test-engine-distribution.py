@@ -43,6 +43,37 @@ def expect_error(callable_, label):
     return 1
 
 
+def check_package_profile():
+    """The package profile must gate on the matching distribution, not on doctor."""
+    import importlib.util
+
+    repo = HERE.parent
+    spec = importlib.util.spec_from_file_location('execute_tests', repo / 'Tools' / 'execute-tests.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    failures = 0
+    engine = str(repo / 'EngineThatDoesNotNeedToExist')
+    request = {'profile': 'package'}
+
+    os.environ['TURBOMCP_ENGINE_DISTRIBUTION'] = 'installed-launcher'
+    first = module.commands(request, engine)[0]
+    if not any('engine_distribution.py' in str(part) for part in first):
+        failures += 1
+        print('FAIL: the Launcher package profile does not start with the distribution check')
+    if any('doctor.py' in str(part) for part in first):
+        failures += 1
+        print('FAIL: the Launcher package profile still starts with doctor.py')
+
+    os.environ['TURBOMCP_ENGINE_DISTRIBUTION'] = 'source-build'
+    first = module.commands(request, engine)[0]
+    if not any('doctor.py' in str(part) for part in first):
+        failures += 1
+        print('FAIL: the source package profile no longer starts with doctor.py')
+    os.environ.pop('TURBOMCP_ENGINE_DISTRIBUTION', None)
+    return failures
+
+
 def main():
     failures = 0
     with tempfile.TemporaryDirectory() as temp:
@@ -104,11 +135,13 @@ def main():
             lambda: engine_distribution.identify(not_git, 'source-build', PIN),
             'a source build that is not a git checkout')
 
+    failures += check_package_profile()
+
     if failures:
         print('RESULT: FAIL (%d case(s))' % failures)
         return 1
     print('RESULT: PASS (default, config, environment precedence, unknown value, Launcher identity, '
-          'not-promoted, missing changelist, version mismatch, non-git source build)')
+          'not-promoted, missing changelist, version mismatch, non-git source build, package profile gate)')
     return 0
 
 

@@ -14,6 +14,7 @@ from execution_runtime import ResourceLocks, canonical, run_owned
 from tmcp_paths import find_engine
 from execution_recovery import atomic_json, snapshot, restore, pending, collect_failure
 from engine_execution import preflight, finish_lease
+import engine_distribution
 import package_consumer
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -64,7 +65,14 @@ def commands(request, engine):
     if not pwsh:raise ValueError('PowerShell 7 is required')
     doctor = [sys.executable, 'Tools/doctor.py']
     if request['profile']=='package':
-        return [doctor, [pwsh,'-NoProfile','-File','Tools/package-plugin.ps1','-Engine',engine]]
+        # doctor.py checks the pinned source checkout and cannot certify an
+        # installed Launcher engine, which has no git history. That build is
+        # gated by the distribution identity check instead.
+        first = doctor
+        if engine_distribution.configured(ROOT) == 'installed-launcher':
+            first = [sys.executable,'Tools/engine_distribution.py','--repo',str(ROOT),
+                     '--engine',engine,'--json']
+        return [first, [pwsh,'-NoProfile','-File','Tools/package-plugin.ps1','-Engine',engine]]
     steps=[doctor, [pwsh,'-NoProfile','-File','Tools/build.ps1','-Engine',engine]]
     if request['profile']=='build':return steps
     suite=[pwsh,'-NoProfile','-File','Tools/run-suites.ps1','-Suites',','.join(request['suites'])]

@@ -234,9 +234,17 @@ class ExecutionTests(unittest.TestCase):
         executor = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(executor)
         self.assertIn('package', executor.ENGINE_PROFILES)
-        with patch.object(executor.shutil, 'which', return_value='pwsh'):
+        with patch.object(executor.shutil, 'which', return_value='pwsh'), \
+                patch.dict(os.environ, {'TURBOMCP_ENGINE_DISTRIBUTION': 'source-build'}):
             self.assertEqual(executor.commands(plan, 'owned-engine'), [
                 [sys.executable, 'Tools/doctor.py'],
+                ['pwsh', '-NoProfile', '-File', 'Tools/package-plugin.ps1', '-Engine', 'owned-engine'],
+            ])
+        with patch.object(executor.shutil, 'which', return_value='pwsh'), \
+                patch.dict(os.environ, {'TURBOMCP_ENGINE_DISTRIBUTION': 'installed-launcher'}):
+            self.assertEqual(executor.commands(plan, 'owned-engine'), [
+                [sys.executable, 'Tools/engine_distribution.py', '--repo', str(executor.ROOT),
+                 '--engine', 'owned-engine', '--json'],
                 ['pwsh', '-NoProfile', '-File', 'Tools/package-plugin.ps1', '-Engine', 'owned-engine'],
             ])
         for override in ({'suites': ['test-asset-describe-metadata']}, {'output': 'elsewhere'}):
