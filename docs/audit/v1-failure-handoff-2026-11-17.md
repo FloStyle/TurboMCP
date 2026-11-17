@@ -44,8 +44,12 @@ only these two failed suites through the supervisor. Keep old failures.
       suites: test-graph-append PASS, test-datatable-rows PASS (26 checks run),
       2 passed of 2, 383 s wall. Report and logs are under
       .local/executions/4ff208c2b7ef46eca4ed3aa88e28bb73/.
-- [ ] Integrate the reviewed graph fix and acceptance/consumer work into main;
+- [x] Integrate the reviewed graph fix and acceptance/consumer work into main;
       close #27 only after integration, with its existing passing evidence.
+      Done: PR #35 merged as c9a84897 and #27 was closed against that
+      evidence. The merge changed the graph replacement contract, which left
+      site/tools.json stale; PR #36 regenerated it as 61ecc4ae after the Pages
+      check caught it.
 - [ ] Build the owner-approved private 1.0.0 candidate (#16). Keep public
       preview labels until final acceptance passes.
 - [ ] Test the same final ZIP in clean Blueprint-only and C++ consumers (#16).

@@ -16,7 +16,7 @@ The original 97 acceptance specifications remain in Tests/acceptance.json with t
 
 - [x] Owner agreed scope (#14); source and issue reconciliation is recorded below.
 - [x] Exact unloaded-object resolution (#13), repository controls (#17), fresh-checkout claims (#18), and call-log repair (#28) integrated.
-- [ ] Explicit graph deletion repair (#27) integrated into public main after review and focused native acceptance.
+- [x] Explicit graph deletion repair (#27) integrated into public main after review and focused native acceptance (c9a84897; two-suite rerun 4ff208c2b7ef46eca4ed3aa88e28bb73).
 - [ ] Frozen-candidate focused acceptance (#15).
 - [ ] Exact versioned package and both clean consumers (#16).
 - [ ] Publish stable and v1.0.0 with the tested ZIP, manifest and SHA-256; update website, wiki and README to V1.
