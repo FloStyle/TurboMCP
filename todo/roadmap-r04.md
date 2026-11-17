@@ -23,6 +23,24 @@ UTF-8 JSON, omission counts and unchanged in-memory operation results. The
 engine remains the pinned stock 5.8.4 source build. This closes the implemented
 disk-sink slice after integration; it is not full logging or V1 acceptance.
 
+## Website and handbook integration (2026-11-17)
+
+Reviewed site candidate 4a4bc122 and navigation follow-up d4659a69 against
+approved base 30937018. The exact seven-file scope passed. The revised pages
+retain 33 chapter anchors and the 196-tool catalogue, with 24 schema-checked
+request templates, labelled illustrative results and three recorded synthetic
+captures. Root browser checks covered capture switching, copy output, exact
+catalogue search, DataTable reading, a narrow presentation layout, and the
+corrected chapter-to-Present/Back/Forward flow. The prepared Pages tree includes
+the existing icon using the deployment workflow's copy step. No new native
+behavior or performance result is claimed by these examples.
+
+The human wiki is published at revision ece4a9d: seven handbook pages and a
+sidebar. Root reviewed all content, verified the public Home page and added
+links from the README, website and guide. The wiki covers installation, tool
+selection, Blueprint inspection, data, verification and troubleshooting. Wiki
+publication is separate from stable release acceptance. R04 remains open.
+
 ## Current review: concrete website demonstrations (2026-11-17)
 
 Readiness: ready. The integration owner approves v1-site-demonstrations in the
