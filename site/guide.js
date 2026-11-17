@@ -3,7 +3,8 @@
 // Reading and presentation share the same static HTML chapters. No hidden
 // slide copy, remote renderer or server-side routing is needed for deep links.
 const chapters = [...document.querySelectorAll(".chapter")];
-const chapterLinks = [...document.querySelectorAll("#chapter-links li")];
+const chapterLinks = [...document.querySelectorAll("#chapter-links [data-chapter]")];
+const headings = [...document.querySelectorAll("[data-group-heading]")];
 const search = document.querySelector("#chapter-search");
 const presentToggle = document.querySelector("#present-toggle");
 const controls = document.querySelector(".presentation-controls");
@@ -38,14 +39,19 @@ function updateNavigation() {
 function render() {
   const terms = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
   let count = 0;
+  const matchingGroups = new Set();
   chapters.forEach((chapter, index) => {
     const match = terms.every((term) => chapter.textContent.toLowerCase().includes(term));
     chapter.hidden = presenting ? index !== active : !match;
     chapterLinks[index].hidden = !match;
-    if (match) count++;
+    if (match) {
+      count++;
+      matchingGroups.add(chapter.dataset.group);
+    }
   });
+  headings.forEach((heading) => { heading.hidden = !matchingGroups.has(heading.dataset.groupHeading); });
   document.querySelector("#no-chapters").hidden = count > 0 || presenting;
-  document.querySelector("#search-status").textContent = terms.length ? `${count} of ${chapters.length} chapters` : `${chapters.length} chapters · choose any starting point`;
+  document.querySelector("#search-status").textContent = terms.length ? `${count} matching sections` : "";
   updateNavigation();
 }
 function writeLocation(push) {
@@ -123,17 +129,17 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-document.querySelectorAll("pre.prompt").forEach((prompt) => {
+document.querySelectorAll("[data-request]").forEach((request) => {
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "copy-prompt";
-  button.textContent = "Copy example prompt";
-  button.setAttribute("aria-label", `Copy example prompt: ${prompt.closest(".chapter").querySelector("h2").textContent}`);
+  button.className = "copy copy-prompt";
+  button.textContent = "Copy request";
+  button.setAttribute("aria-label", `Copy request for ${request.closest(".request").querySelector("figcaption code").textContent}`);
   button.addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(prompt.textContent); tell("Example prompt copied."); }
-    catch { tell("Clipboard unavailable. Select and copy the visible prompt."); }
+    try { await navigator.clipboard.writeText(request.textContent); tell("Request copied."); }
+    catch { tell("Clipboard unavailable. Select and copy the request text."); }
   });
-  prompt.after(button);
+  request.after(button);
 });
 
 // Printed output includes every chapter and expanded detail, even when the
