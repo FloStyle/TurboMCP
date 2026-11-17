@@ -40,11 +40,17 @@ class IdentityTests(unittest.TestCase):
             descriptor.write_text(data)
             dll.write_bytes(b'reviewed')
             check_installed_discovery(project, engine)
-            duplicate = engine/'Engine/Plugins/Other/Renamed.uplugin'
-            duplicate.parent.mkdir(parents=True)
-            duplicate.write_text('{"Modules":[{"Name":"TurboMCP"},],}')
-            with self.assertRaisesRegex(ValueError, 'exactly one'):
-                check_installed_discovery(project, engine)
+            for path, filename, contents in (
+                ('Plugins', 'Renamed.uplugin', '{"Modules":[{"Name":"TurboMCP"},],}'),
+                ('Platforms/Win64/Plugins', 'Renamed.uplugin', data),
+                ('Restricted/NoRedist/Platforms/Win64/Plugins', 'TurboMCP_Win64.uplugin', '{"bIsPluginExtension":true}'),
+            ):
+                duplicate = engine/'Engine'/path/'Other'/filename
+                duplicate.parent.mkdir(parents=True)
+                duplicate.write_text(contents)
+                with self.subTest(path=path), self.assertRaisesRegex(ValueError, 'exactly one'):
+                    check_installed_discovery(project, engine)
+                duplicate.unlink()
 
             exe = engine/'UnrealEditor.exe'
             expected = {dll: hashlib.sha256(b'reviewed').hexdigest()}

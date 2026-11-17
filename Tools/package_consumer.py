@@ -793,10 +793,10 @@ def execute_phase(repo, engine, run, request, phase, evidence):
     verify_packaged_descriptor(plugin, descriptor, identity)
     project = generate_project(owned, phase)
     check_installed_discovery(project, engine)
-    env = dict(os.environ, TEMP=str(owned / 'Temp'), TMP=str(owned / 'Temp'))
-    env['UE-LocalDataCachePath'] = str(owned / 'DerivedDataCache')
-    for inherited in ('UBT_EXTRA_ARGS', 'UnrealBuildTool_TMP'):
-        env.pop(inherited, None)
+    ignored = {'UBT_EXTRA_ARGS', 'UNREALBUILDTOOL_TMP', 'UE_ADDITIONAL_PLUGIN_PATHS'}
+    env = {key: value for key, value in os.environ.items() if key.upper() not in ignored}
+    env.update(TEMP=str(owned / 'Temp'), TMP=str(owned / 'Temp'))
+    env['UE-LOCALDATACACHEPATH'] = str(owned / 'DerivedDataCache')
     modules = {plugin / DLL: data['dll_sha256']}
     if phase == 'cpp':
         binary, sha256 = build_consumer(project, engine, identity['build_id'], env, evidence)

@@ -74,12 +74,38 @@ def ordinary(path, *, directory=False, optional=False):
     return True
 
 
+def _extension_children(container):
+    if not ordinary(container, directory=True, optional=True):
+        return
+    for path in container.iterdir():
+        info = path.lstat()
+        if getattr(info, 'st_file_attributes', 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT or stat.S_ISLNK(info.st_mode):
+            raise ValueError(f'Redirected plugin extension directory: {path}')
+        if stat.S_ISDIR(info.st_mode):
+            yield path
+
+
+def _plugin_extension_roots(base):
+    # FPaths::GetExtensionDirs also checks platform directories inside restricted roots.
+    if not ordinary(base, directory=True, optional=True):
+        return
+    yield base / 'Plugins'
+    for platform in _extension_children(base / 'Platforms'):
+        yield platform / 'Plugins'
+    for restricted in _extension_children(base / 'Restricted'):
+        yield from _plugin_extension_roots(restricted)
+
+
 def check_installed_discovery(project, engine):
     """Verify the installed descriptor without relying on TestProject mounts."""
     expected = project.parent / 'Plugins/TurboMCP/TurboMCP.uplugin'
     expected_dll = expected.parent / 'Binaries/Win64/UnrealEditor-TurboMCP.dll'
     found = []
-    for root in (project.parent / 'Plugins', engine / 'Engine/Plugins', engine / 'Enterprise/Plugins'):
+    roots = [*_plugin_extension_roots(project.parent), *_plugin_extension_roots(engine / 'Engine'),
+             project.parent / 'Mods']
+    if ordinary(engine / 'Enterprise', directory=True, optional=True):
+        roots.append(engine / 'Enterprise/Plugins')
+    for root in roots:
         if not ordinary(root, directory=True, optional=True):
             continue
         for directory, children, names in os.walk(root, onerror=_walk_error):
@@ -98,7 +124,9 @@ def check_installed_discovery(project, engine):
                 raw = re.sub(r'("(?:[^"\\]|\\.)*")|,\s*(?=[}\]])', lambda match: match[1] or '', raw)
                 descriptor = json.loads(raw)
                 modules = descriptor.get('Modules', [])
-                if name.casefold() == expected.name.casefold() or any(
+                extends_turbomcp = (descriptor.get('bIsPluginExtension') is True
+                                    and file.stem.partition('_')[0].casefold() == 'turbomcp')
+                if name.casefold() == expected.name.casefold() or extends_turbomcp or any(
                     module['Name'].casefold() == 'turbomcp' for module in modules
                 ):
                     found.append(file)
