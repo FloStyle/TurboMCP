@@ -22,8 +22,11 @@
 #include "Editor.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/Actor.h"
+#include "Internationalization/TextNamespaceUtil.h"
+#include "Internationalization/TextPackageNamespaceUtil.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UObject/Package.h"
+#include "UObject/StrongObjectPtr.h"
 #include "UObject/UnrealType.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPReplacePlanTest,
@@ -67,10 +70,26 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     UK2Node_CallFunction* Consumer = Print(620);
     UK2Node_CallFunction* Target = Print(980);
     UK2Node_CallFunction* TextSource = Call(UKismetTextLibrary::StaticClass(), TEXT("Conv_TextToString"), 180);
+    UK2Node_CallFunction* TextLiteral = Call(UKismetSystemLibrary::StaticClass(), TEXT("MakeLiteralText"), 0);
     UK2Node_CallFunction* ObjectSource = Call(UKismetSystemLibrary::StaticClass(), TEXT("IsValid"), 100);
-    UEdGraphPin* TextDefault = TextSource->FindPinChecked(TEXT("InText"));
-    const FText Localized = FText::ChangeKey(TEXT("FixtureNamespace"), TEXT("ExactKey"), FText::FromString(TEXT("shared display text")));
+    // The converter's const-reference input ignores its default. Use a real
+    // editable by-value text pin, then wire its value into the converter.
+    UEdGraphPin* TextDefault = TextLiteral->FindPinChecked(TEXT("Value"));
+    if (!TestTrue(TEXT("Stock literal node exposes an editable text default"),
+        TextDefault->PinType.PinCategory == UEdGraphSchema_K2::PC_Text && TextDefault->Direction == EGPD_Input
+        && !TextDefault->bHidden && !TextDefault->bDefaultValueIsIgnored && !TextDefault->bDefaultValueIsReadOnly))
+        return false;
+    FString TextNamespace = TEXT("FixtureNamespace");
+#if USE_STABLE_LOCALIZATION_KEYS
+    TextNamespace = TextNamespaceUtil::BuildFullNamespace(TextNamespace, TextNamespaceUtil::EnsurePackageNamespace(Package), true);
+#endif
+    const FText Localized = FText::ChangeKey(*TextNamespace, TEXT("ExactKey"), FText::FromString(TEXT("shared display text")));
     TextDefault->DefaultTextValue = Localized;
+    const FTextId InitialTextId = FTextInspector::GetTextId(TextDefault->DefaultTextValue);
+    TestEqual(TEXT("Fixture text namespace is installed on the pin"), InitialTextId.GetNamespace().ToString(), TextNamespace);
+    TestEqual(TEXT("Fixture text key is installed on the pin"), InitialTextId.GetKey().ToString(), FString(TEXT("ExactKey")));
+    TestTrue(TEXT("Literal text feeds the conversion input"), GetDefault<UEdGraphSchema_K2>()->TryCreateConnection(
+        TextLiteral->FindPinChecked(TEXT("ReturnValue")), TextSource->FindPinChecked(TEXT("InText"))));
     ObjectSource->FindPinChecked(TEXT("Object"))->DefaultObject = GetMutableDefault<UKismetTextLibrary>();
     TextSource->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Source->FindPinChecked(TEXT("InString")));
     TextSource->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Target->FindPinChecked(TEXT("InString")));
@@ -150,7 +169,17 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     Package->SetDirtyFlag(false); // End of fixture setup.
     TestEqual(TEXT("Fixture restored exact initial semantic state"), Load(), Export);
     TestEqual(TEXT("Repeated export uses stable order and fingerprint"), Load(), Export);
-    TestTrue(TEXT("Localized default is rendered with its namespace and key"), Export.Contains(TEXT("FixtureNamespace")) && Export.Contains(TEXT("ExactKey")));
+    const FString LiteralFormTag = TEXT(" ; ") + Id(*TextLiteral) + TEXT("\n");
+    const int32 LiteralForm = Export.Find(LiteralFormTag, ESearchCase::CaseSensitive);
+    const int32 LiteralFormEnd = LiteralForm != INDEX_NONE
+        ? Export.Find(TEXT("\n)\n"), ESearchCase::CaseSensitive, ESearchDir::FromStart, LiteralForm) : INDEX_NONE;
+    const FString ExactLocalizedLine = TEXT(" \"Value\" \"NSLOCTEXT(\\\"") + TextNamespace
+        + TEXT("\\\", \\\"ExactKey\\\", \\\"shared display text\\\")\"");
+    if (!TestTrue(TEXT("Exact localized pin form is present"), LiteralForm != INDEX_NONE && LiteralFormEnd != INDEX_NONE)) return false;
+    const FString LiteralFormBody = Export.Mid(LiteralForm, LiteralFormEnd - LiteralForm);
+    if (!TestTrue(TEXT("Localized default is rendered with its namespace and key on the exact text pin"),
+        LiteralFormBody.Contains(ExactLocalizedLine, ESearchCase::CaseSensitive)))
+        AddError(TEXT("Exported literal form: ") + LiteralFormBody);
     TestTrue(TEXT("Object default is rendered by exact object path"), Export.Contains(GetDefault<UKismetTextLibrary>()->GetPathName()));
     const FString TextFormTag = TEXT(" ; ") + Id(*TextSource) + TEXT("\n");
     TestEqual(TEXT("Shared pure node emitted exactly once"), Export.Replace(*TextFormTag, TEXT("")).Len(), Export.Len() - TextFormTag.Len());
@@ -267,10 +296,12 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
 
     // One applied record and one unapplied record expose both redo pruning and
     // empty transaction churn. Keep them independent of the edited graph.
-    UEdGraph* HistoryGraph = NewObject<UEdGraph>(Blueprint, TEXT("HistoryWitness"), RF_Transactional);
+    // A sibling graph of this Blueprint is not independent. The stock
+    // Blueprint undo client walks the transacted object's outers and
+    // rebuilds that Blueprint's skeleton. Use a graph with no Blueprint outer.
+    const TStrongObjectPtr<UEdGraph> HistoryGraph(NewObject<UEdGraph>(GetTransientPackage(), NAME_None, RF_Transactional));
     HistoryGraph->Schema = UEdGraphSchema_K2::StaticClass();
-    Blueprint->UbergraphPages.Add(HistoryGraph);
-    UEdGraphNode_Comment* HistoryWitness = NewObject<UEdGraphNode_Comment>(HistoryGraph, NAME_None, RF_Transactional);
+    UEdGraphNode_Comment* HistoryWitness = NewObject<UEdGraphNode_Comment>(HistoryGraph.Get(), NAME_None, RF_Transactional);
     HistoryGraph->AddNode(HistoryWitness, false, false);
     HistoryWitness->CreateNewGuid();
     {
@@ -286,7 +317,19 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     if (!TestTrue(TEXT("Fixture establishes a redo record"), Buffer->Undo(true))) return false;
     TestEqual(TEXT("Undo produces the first record's actual state"), HistoryWitness->NodeComment, FString(TEXT("first record")));
     if (!TestTrue(TEXT("Fixture has existing undo and redo entries"), Buffer->GetUndoCount() > 0 && AppliedUndoCount() > 0)) return false;
-    Package->SetDirtyFlag(false); // End of undo fixture setup.
+    TestFalse(TEXT("Independent undo fixture leaves the target package clean"), Package->IsDirty());
+    TestEqual(TEXT("Independent undo fixture leaves target nodes, edges and defaults unchanged"), Inspect(), Original);
+    const FString AfterHistorySetup = Load();
+    if (!TestTrue(TEXT("Independent undo fixture preserves the original edit export"),
+        AfterHistorySetup.Equals(Export, ESearchCase::CaseSensitive)))
+    {
+        FString BeforeHeader, AfterHeader;
+        Export.Split(TEXT("\n"), &BeforeHeader, nullptr);
+        AfterHistorySetup.Split(TEXT("\n"), &AfterHeader, nullptr);
+        AddError(TEXT("Target edit header before history setup: ") + BeforeHeader);
+        AddError(TEXT("Target edit header after history setup: ") + AfterHeader);
+        return false;
+    }
     auto ReadHistory = [&]()
     {
         TArray<FGuid> Ids;
@@ -357,7 +400,10 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
 
     // Change only the localization identity, while leaving displayed text and
     // the node/pin count unchanged. A stored plan must fail its live SHA-256 check.
-    TextDefault->DefaultTextValue = FText::ChangeKey(TEXT("FixtureNamespace"), TEXT("EditedOutsidePlan"), Localized);
+    TextDefault->DefaultTextValue = FText::ChangeKey(*TextNamespace, TEXT("EditedOutsidePlan"), Localized);
+    TestEqual(TEXT("Localization-only edit retains the display string"), TextDefault->DefaultTextValue.ToString(), Localized.ToString());
+    TestEqual(TEXT("Localization-only edit changes the exact key"),
+        FTextInspector::GetTextId(TextDefault->DefaultTextValue).GetKey().ToString(), FString(TEXT("EditedOutsidePlan")));
     const FString ChangedOutside = Inspect();
     TestFalse(TEXT("Apply refuses semantic change since planning"), FTurboMCPGraphReplace::Apply(LivePlan, Report, Error));
     TestTrue(TEXT("Apply reports stale graph"), Error.Contains(TEXT("stale")));
@@ -381,9 +427,10 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Success reports one explicit deletion"), Report.Contains(TEXT("1 node(s) removed")) && Report.Contains(TargetGuid.ToString(EGuidFormats::DigitsLower)));
     TestFalse(TEXT("Only the exact requested node was deleted"), Graph->Nodes.ContainsByPredicate([&](const UEdGraphNode* Node)
         { return Node->NodeGuid == TargetGuid; }));
-    TestEqual(TEXT("One replacement node added"), Graph->Nodes.Num(), 7);
+    TestEqual(TEXT("One replacement node added"), Graph->Nodes.Num(), 8);
     TestTrue(TEXT("All unrelated node identities survive"), Graph->Nodes.Contains(Event) && Graph->Nodes.Contains(Comment)
-        && Graph->Nodes.Contains(Source) && Graph->Nodes.Contains(Consumer) && Graph->Nodes.Contains(TextSource) && Graph->Nodes.Contains(ObjectSource));
+        && Graph->Nodes.Contains(Source) && Graph->Nodes.Contains(Consumer) && Graph->Nodes.Contains(TextSource) && Graph->Nodes.Contains(TextLiteral)
+        && Graph->Nodes.Contains(ObjectSource));
     UEdGraphPin* ConsumerThen = Consumer->FindPinChecked(TEXT("then"));
     if (!TestEqual(TEXT("Exactly one replacement wire"), ConsumerThen->LinkedTo.Num(), 1)) return false;
     UEdGraphPin* NewExec = ConsumerThen->LinkedTo[0];
@@ -395,6 +442,8 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Entry and unaffected surviving wire are intact"), Event->FindPinChecked(TEXT("then"))->LinkedTo.Contains(Source->FindPinChecked(TEXT("execute")))
         && Source->FindPinChecked(TEXT("then"))->LinkedTo.Contains(Consumer->FindPinChecked(TEXT("execute")))
         && TextSource->FindPinChecked(TEXT("ReturnValue"))->LinkedTo.Contains(Source->FindPinChecked(TEXT("InString"))));
+    TestEqual(TEXT("Live edit preserves the localized text key"),
+        FTextInspector::GetTextId(TextLiteral->FindPinChecked(TEXT("Value"))->DefaultTextValue).GetKey().ToString(), FString(TEXT("ExactKey")));
     TestTrue(TEXT("Package is dirty after successful edit"), Package->IsDirty());
     TestEqual(TEXT("Exactly one applied undo record"), AppliedUndoCount(), BeforeSuccess + 1);
     TestTrue(TEXT("One undo restores the original graph"), GEditor->UndoTransaction(false));
