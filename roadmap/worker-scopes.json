@@ -4406,6 +4406,17 @@
             "docs/user/tools.md"
           ],
           "new_files": []
+        },
+        "v1-call-log-sink": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLog.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCallLog.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogSinkTest.cpp",
+            "Tools/test-call-log-sink.py"
+          ]
         }
       },
       "preserve_rows": []

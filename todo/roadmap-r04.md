@@ -8,6 +8,15 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current review: call-log disk truthfulness (2026-11-17)
+
+Readiness: ready. The integration owner approves v1-call-log-sink under the
+exact schema-2 scope. Follow [the repair contract](../docs/design/v1-call-log-sink.md)
+and ARC14. This repairs observed unchecked sink operations and unbounded record
+writes, without changing actual tool outcomes. Worker returns source and focused
+evidence; root owns native execution and shared acceptance. No other logging or
+panel redesign is authorized.
+
 ## Factual website review evidence (2026-11-17)
 
 Worker candidate a6f998cad2a8f9a4b5aec0059d8534247498cea5 passed exact
