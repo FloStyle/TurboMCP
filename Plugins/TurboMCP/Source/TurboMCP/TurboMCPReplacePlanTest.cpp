@@ -71,7 +71,7 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     UEdGraphPin* TextDefault = TextSource->FindPinChecked(TEXT("InText"));
     const FText Localized = FText::ChangeKey(TEXT("FixtureNamespace"), TEXT("ExactKey"), FText::FromString(TEXT("shared display text")));
     TextDefault->DefaultTextValue = Localized;
-    ObjectSource->FindPinChecked(TEXT("Object"))->DefaultObject = GetDefault<UKismetTextLibrary>();
+    ObjectSource->FindPinChecked(TEXT("Object"))->DefaultObject = GetMutableDefault<UKismetTextLibrary>();
     TextSource->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Source->FindPinChecked(TEXT("InString")));
     TextSource->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Target->FindPinChecked(TEXT("InString")));
     Source->FindPinChecked(TEXT("then"))->MakeLinkTo(Consumer->FindPinChecked(TEXT("execute")));
