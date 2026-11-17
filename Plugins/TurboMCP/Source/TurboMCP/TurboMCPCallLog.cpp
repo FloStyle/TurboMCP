@@ -7,16 +7,15 @@
 
 #include "TurboMCPCallLog.h"
 
-#include "HAL/FileManager.h"
+#include "Containers/StringConv.h"
+#include "GenericPlatform/GenericPlatformFile.h"
 #include "HAL/PlatformFileManager.h"
 #include "HAL/PlatformTime.h"
+#include "Math/UnrealMathUtility.h"
 #include "Misc/DateTime.h"
-#include "Misc/FileHelper.h"
+#include "Misc/ScopeLock.h"
 #include "Misc/Paths.h"
-#include "Serialization/JsonSerializer.h"
-#include "Serialization/JsonWriter.h"
-#include "Dom/JsonObject.h"
-#include "Dom/JsonValue.h"
+#include "Templates/UniquePtr.h"
 
 #include "TurboMCPSettings.h"
 #include "TurboMCPCallTimeline.h"
@@ -24,34 +23,90 @@
 
 namespace
 {
-	/** One JSON string, escaped. */
-	FString JsonString(const FString& In)
+	bool IsHighSurrogate(uint32 Value)
 	{
-		FString Out;
-		Out.Reserve(In.Len() + 8);
-		for (const TCHAR Character : In)
+		return Value >= 0xd800 && Value <= 0xdbff;
+	}
+
+	bool IsLowSurrogate(uint32 Value)
+	{
+		return Value >= 0xdc00 && Value <= 0xdfff;
+	}
+
+	// Keep a prefix within the escaped UTF-8 byte budget. Count omitted bytes of the
+	// input value, without JSON escaping. Invalid units are replaced with U+FFFD.
+	int64 AppendJsonValue(FString& Out, const FString& In, int32 ByteBudget)
+	{
+		int64 Omitted = 0;
+		bool bClipped = false;
+		for (int32 Index = 0; Index < In.Len(); ++Index)
 		{
-			switch (Character)
+			const int32 Start = Index;
+			uint32 Scalar = static_cast<uint32>(In[Index]);
+			bool bInvalid = false;
+			if constexpr (sizeof(TCHAR) == 2)
 			{
-			case TEXT('"'):  Out += TEXT("\\\""); break;
-			case TEXT('\\'): Out += TEXT("\\\\"); break;
-			case TEXT('\n'): Out += TEXT("\\n");  break;
-			case TEXT('\r'): Out += TEXT("\\r");  break;
-			case TEXT('\t'): Out += TEXT("\\t");  break;
-			default:
-				if (Character < 0x20)
+				if (IsHighSurrogate(Scalar) && Index + 1 < In.Len() && IsLowSurrogate(In[Index + 1]))
 				{
-					Out += FString::Printf(TEXT("\\u%04x"), static_cast<int32>(Character));
+					Scalar = 0x10000 + ((Scalar - 0xd800) << 10) + (In[++Index] - 0xdc00);
 				}
 				else
 				{
-					Out.AppendChar(Character);
+					bInvalid = IsHighSurrogate(Scalar) || IsLowSurrogate(Scalar);
 				}
 			}
+			else
+			{
+				bInvalid = Scalar > 0x10ffff || IsHighSurrogate(Scalar) || IsLowSurrogate(Scalar);
+			}
+			if (bInvalid)
+			{
+				Scalar = 0xfffd;
+			}
+
+			const TCHAR* Escape = nullptr;
+			switch (Scalar)
+			{
+			case '"':  Escape = TEXT("\\\""); break;
+			case '\\': Escape = TEXT("\\\\"); break;
+			case '\n': Escape = TEXT("\\n"); break;
+			case '\r': Escape = TEXT("\\r"); break;
+			case '\t': Escape = TEXT("\\t"); break;
+			default: break;
+			}
+			const int32 RawBytes = Scalar < 0x80 ? 1 : Scalar < 0x800 ? 2 : Scalar < 0x10000 ? 3 : 4;
+			const int32 EscapedBytes = Escape ? 2 : Scalar < 0x20 ? 6 : RawBytes;
+			if (bClipped || EscapedBytes > ByteBudget)
+			{
+				bClipped = true;
+				Omitted += RawBytes;
+				continue;
+			}
+			ByteBudget -= EscapedBytes;
+			if (Escape)
+			{
+				Out += Escape;
+			}
+			else if (Scalar < 0x20)
+			{
+				constexpr TCHAR Hex[] = TEXT("0123456789abcdef");
+				Out += TEXT("\\u00");
+				Out.AppendChar(Hex[Scalar >> 4]);
+				Out.AppendChar(Hex[Scalar & 15]);
+			}
+			else if (bInvalid)
+			{
+				Out.AppendChar(static_cast<TCHAR>(Scalar));
+			}
+			else
+			{
+				Out.AppendChars(*In + Start, Index - Start + 1);
+			}
 		}
-		return Out;
+		return Omitted;
 	}
 }
+
 
 FTurboMCPCallLog& FTurboMCPCallLog::Get()
 {
@@ -62,7 +117,23 @@ FTurboMCPCallLog& FTurboMCPCallLog::Get()
 #if WITH_DEV_AUTOMATION_TESTS
 FTurboMCPCallLog* FTurboMCPCallLog::CreateForTest(bool bEnabled)
 {
-	return new FTurboMCPCallLog(FTestOptions{false, bEnabled});
+	FTurboMCPCallLog* Log = new FTurboMCPCallLog;
+	Log->bUseSettings = false;
+	Log->bTestEnabled = bEnabled;
+	Log->bDiskSink = false;
+	return Log;
+}
+
+FTurboMCPCallLog* FTurboMCPCallLog::CreateDiskSinkForTest(FString InPath, int64 InFileLimit,
+	TFunction<bool(EDiskStage)> InRefuseOperation)
+{
+	check(!InPath.IsEmpty() && InFileLimit > 0);
+	FTurboMCPCallLog* Log = CreateForTest();
+	Log->bDiskSink = true;
+	Log->TestDiskPath = MoveTemp(InPath);
+	Log->FileLimit = InFileLimit;
+	Log->RefuseDiskOperation = MoveTemp(InRefuseOperation);
+	return Log;
 }
 #endif
 
@@ -97,37 +168,72 @@ void FTurboMCPCallLog::SetEnabled(bool bInEnabled)
 
 FString FTurboMCPCallLog::GetLogFilePath() const
 {
-	// Beside the project's own logs, so a reader looks where the rest of the editor's logs are.
+#if WITH_DEV_AUTOMATION_TESTS
+	if (!TestDiskPath.IsEmpty())
+	{
+		return TestDiskPath;
+	}
+#endif
+	// Beside the project's own logs.
 	return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Logs"), TEXT("TurboMCPCalls.jsonl"));
 }
 
-FString FTurboMCPCallLog::ToJsonLine(const FEntry& InEntry)
+FString FTurboMCPCallLog::ToJsonLine(const FEntry& InEntry, int64& OutOmittedBytes)
 {
-	// Built by hand rather than through FJsonObject, because the ORDER matters for a log a human
-	// reads with their eyes: the time, then what was called, then what came back.
-	FString Out;
-	Out += TEXT("{\"time\":\"") + JsonString(InEntry.Timestamp) + TEXT("\"");
-	Out += TEXT(",\"phase\":\"") + JsonString(InEntry.Phase) + TEXT("\"");
-	Out += TEXT(",\"source\":\"") + JsonString(InEntry.Source) + TEXT("\"");
+	FString Out = TEXT("{");
+	Out.Reserve(384);
+	FString Omissions;
+	OutOmittedBytes = 0;
+	auto Field = [&](const TCHAR* InName, const FString& InValue, int32 InBudget)
+	{
+		if (Out.Len() > 1)
+		{
+			Out.AppendChar(TEXT(','));
+		}
+		Out += FString::Printf(TEXT("\"%s\":\""), InName);
+		const int64 Omitted = AppendJsonValue(Out, InValue, InBudget);
+		Out.AppendChar(TEXT('"'));
+		if (Omitted > 0)
+		{
+			if (!Omissions.IsEmpty())
+			{
+				Omissions.AppendChar(TEXT(','));
+			}
+			Omissions += FString::Printf(TEXT("\"%s\":%lld"), InName, Omitted);
+			OutOmittedBytes += Omitted;
+		}
+	};
+
+	// The field budgets leave room for measured values and omission counts.
+	Field(TEXT("time"), InEntry.Timestamp, 256);
+	Field(TEXT("phase"), InEntry.Phase, 64);
+	Field(TEXT("source"), InEntry.Source, 64);
 	if (!InEntry.SessionId.IsEmpty())
 	{
-		Out += TEXT(",\"session\":\"") + JsonString(InEntry.SessionId) + TEXT("\"");
+		Field(TEXT("session"), InEntry.SessionId, 512);
 	}
-	Out += TEXT(",\"toolset\":\"") + JsonString(InEntry.Toolset) + TEXT("\"");
-	Out += TEXT(",\"tool\":\"") + JsonString(InEntry.Tool) + TEXT("\"");
+	Field(TEXT("toolset"), InEntry.Toolset, 512);
+	Field(TEXT("tool"), InEntry.Tool, 512);
 	if (!InEntry.Arguments.IsEmpty())
 	{
-		Out += TEXT(",\"arguments\":\"") + JsonString(InEntry.Arguments) + TEXT("\"");
+		Field(TEXT("arguments"), InEntry.Arguments, 6144);
 	}
 	if (!InEntry.Result.IsEmpty())
 	{
-		Out += TEXT(",\"result\":\"") + JsonString(InEntry.Result) + TEXT("\"");
+		Field(TEXT("result"), InEntry.Result, 6144);
 	}
-	Out += FString::Printf(TEXT(",\"duration_ms\":%.3f"), InEntry.DurationMs);
+	Out += FMath::IsFinite(InEntry.DurationMs)
+		? FString::Printf(TEXT(",\"duration_ms\":%.3f"), InEntry.DurationMs)
+		: FString(TEXT(",\"duration_ms\":null"));
 	Out += InEntry.ResultChars == FEntry::NotMeasured ? FString(TEXT(",\"result_chars\":null")) : FString::Printf(TEXT(",\"result_chars\":%d"), InEntry.ResultChars);
 	Out += InEntry.TokenEstimate == FEntry::NotMeasured ? FString(TEXT(",\"token_estimate\":null")) : FString::Printf(TEXT(",\"token_estimate\":%d"), InEntry.TokenEstimate);
 	Out += FString::Printf(TEXT(",\"error\":%s"), InEntry.bError ? TEXT("true") : TEXT("false"));
+	if (!Omissions.IsEmpty())
+	{
+		Out += TEXT(",\"omitted_utf8_bytes\":{") + Omissions + TEXT("}");
+	}
 	Out += TEXT("}");
+	Out += LINE_TERMINATOR;
 	return Out;
 }
 
@@ -136,7 +242,7 @@ FString FTurboMCPCallLog::RenderTimeline() const
 	const TArray<FEntry> Records = GetEntries();
 	if (Records.Num() == 0)
 	{
-		return TEXT("; no calls recorded yet this session");
+		return TEXT("; no calls recorded yet this session\n") + RenderDiskStatus();
 	}
 
 	// ONE ROW PER CALL, NOT PER RECORD. Since the plugin's own tools began writing a `start` and an
@@ -171,67 +277,231 @@ FString FTurboMCPCallLog::RenderTimeline() const
 		Out += TEXT("\n  ") + FTurboMCPCallTimeline::RenderRow(Call);
 	}
 
+	Out += TEXT("\n") + RenderDiskStatus();
 	return Out;
 }
-void FTurboMCPCallLog::AppendToFile(const FString& InLine) const
+
+bool FTurboMCPCallLog::ShouldRefuseDiskOperation(EDiskStage InStage) const
 {
+#if WITH_DEV_AUTOMATION_TESTS
+	return RefuseDiskOperation && RefuseDiskOperation(InStage);
+#else
+	return false;
+#endif
+}
+
+void FTurboMCPCallLog::RecordDiskFailure(EDiskStage InStage, const TCHAR* InReason)
+{
+	++DiskFailures[static_cast<int32>(InStage)];
+	LastDiskFailure = InReason;
+}
+
+FString FTurboMCPCallLog::RenderDiskStatus() const
+{
+	FScopeLock Lock(&Mutex);
 	if (!bDiskSink)
+	{
+		return TEXT("disk sink: disabled");
+	}
+
+	FString Out = FString::Printf(
+		TEXT("disk sink: up to %d UTF-8 bytes per record and %lld per log file"),
+		MaxRecordBytes, FileLimit);
+	if (ShortenedRecords > 0)
+	{
+		Out += FString::Printf(
+			TEXT("\ndisk omissions this session: %llu written record(s), %llu UTF-8 value byte(s)"),
+			ShortenedRecords, OmittedBytes);
+	}
+	if (!LastDiskFailure.IsEmpty())
+	{
+		constexpr const TCHAR* Stages[] = {
+			TEXT("directory"), TEXT("size"), TEXT("backup deletion"), TEXT("rotation move"),
+			TEXT("append open"), TEXT("write"), TEXT("flush"), TEXT("write restoration")
+		};
+		static_assert(UE_ARRAY_COUNT(Stages) == static_cast<int32>(EDiskStage::Count));
+
+		Out += TEXT("\ndisk failures this session:");
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(Stages); ++Index)
+		{
+			if (DiskFailures[Index] > 0)
+			{
+				Out += FString::Printf(TEXT(" %s=%llu"), Stages[Index], DiskFailures[Index]);
+			}
+		}
+		Out += TEXT("\nlast disk failure: ") + LastDiskFailure;
+	}
+	if (PriorBackupLosses > 0)
+	{
+		Out += FString::Printf(TEXT("\nprevious backups lost during failed rotation: %llu"), PriorBackupLosses);
+	}
+	if (bDiskAppendBlocked)
+	{
+		Out += TEXT("\ndisk writes paused after incomplete write restoration. Inspect the active log before restarting the editor.");
+	}
+	return Out;
+}
+
+void FTurboMCPCallLog::AppendToFile(const FEntry& InEntry)
+{
+	if (!bDiskSink || bDiskAppendBlocked)
 	{
 		return;
 	}
-	const FString Path = GetLogFilePath();
-	const FString Directory = FPaths::GetPath(Path);
 
-	// The directory is made first: a first-ever call would otherwise have nothing to write into
-	// and the log would silently stay empty, which is the failure this whole tool exists to make
-	// visible.
-	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-	if (!PlatformFile.DirectoryExists(*Directory))
+	int64 RecordOmittedBytes = 0;
+	const FString Line = ToJsonLine(InEntry, RecordOmittedBytes);
+	const int32 LineBytes = StringCast<UTF8CHAR>(*Line, Line.Len()).Length();
+	if (LineBytes > MaxRecordBytes || LineBytes > FileLimit)
 	{
-		PlatformFile.CreateDirectoryTree(*Directory);
+		RecordDiskFailure(EDiskStage::Size, TEXT("The encoded record exceeds the disk byte limit."));
+		return;
 	}
 
-	// ROTATION, BECAUSE THE FILE GREW WITHOUT BOUND.
-	//
-	// Measured before this was added: 402 KB and 1229 lines from ONE ROUND of testing, because
-	// every tool call writes a line — and every READ of the log is a tool call, so reading the log
-	// grows the log. Left alone, a long session produces a file nobody will open and a disk cost
-	// nobody asked for. `P6` caps the in-memory list at 1000 entries for the same reason; the file
-	// had no cap at all.
-	//
-	// ONE rotation, not a numbered series. A second file is what makes a crash readable: the
-	// current file holds what just happened, the previous one holds what led up to it, and a
-	// directory of a hundred rotated files is a directory nobody reads. The older file is REPLACED
-	// rather than kept, so the on-disk cost has a hard ceiling of about twice the limit.
-	if (PlatformFile.FileSize(*Path) >= MaxFileBytes)
+	const FString Path = GetLogFilePath();
+	const FString Directory = FPaths::GetPath(Path);
+	const FString PreviousPath = Path + TEXT(".1");
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	if (!PlatformFile.DirectoryExists(*Directory)
+		&& (ShouldRefuseDiskOperation(EDiskStage::Directory) || !PlatformFile.CreateDirectoryTree(*Directory)))
 	{
-		const FString PreviousPath = Path + TEXT(".1");
+		RecordDiskFailure(EDiskStage::Directory, TEXT("Could not create the log directory."));
+		return;
+	}
 
-		// The previous file is removed BEFORE the move, because `MoveFile` fails when the
-		// destination exists and a failed move would leave rotation silently not happening — the
-		// exact shape of failure this project keeps having to look for.
-		PlatformFile.DeleteFile(*PreviousPath);
-		PlatformFile.MoveFile(*PreviousPath, *Path);
+	if (ShouldRefuseDiskOperation(EDiskStage::Size))
+	{
+		RecordDiskFailure(EDiskStage::Size, TEXT("Could not determine the disk log sizes."));
+		return;
+	}
+	const int64 PreviousSize = PlatformFile.FileSize(*PreviousPath);
+	if (PreviousSize < 0 && (PlatformFile.FileExists(*PreviousPath) || PlatformFile.DirectoryExists(*PreviousPath)))
+	{
+		RecordDiskFailure(EDiskStage::Size, TEXT("Could not determine the previous log file size."));
+		return;
+	}
+	if (PreviousSize > FileLimit)
+	{
+		RecordDiskFailure(EDiskStage::Size, TEXT("The previous log already exceeds the byte limit. Archive it before recording to disk again."));
+		return;
+	}
 
-		// A marker line, so a reader of the older file can see WHY it stops where it does rather
-		// than wondering whether the log lost data. It is written with the same field set as every
-		// other line, so a parser needs no special case.
-		FTurboMCPCallLog::FEntry Marker;
+	auto OpenForAppend = [&]() -> TUniquePtr<IFileHandle>
+	{
+		if (ShouldRefuseDiskOperation(EDiskStage::OpenAppend))
+		{
+			return {};
+		}
+		return TUniquePtr<IFileHandle>(PlatformFile.OpenWrite(*Path, /*bAppend=*/true, /*bAllowRead=*/true));
+	};
+
+	TUniquePtr<IFileHandle> Handle = OpenForAppend();
+	if (!Handle)
+	{
+		RecordDiskFailure(EDiskStage::OpenAppend, TEXT("Could not open the active log for append."));
+		return;
+	}
+
+	// The stock Windows OpenWrite append implementation does not return the
+	// result of its seek. Check the position ourselves before any write.
+	const int64 ActiveSize = Handle->SeekFromEnd() ? Handle->Tell() : -1;
+	if (ActiveSize < 0 || ActiveSize > FileLimit)
+	{
+		RecordDiskFailure(EDiskStage::Size, ActiveSize < 0
+			? TEXT("Could not determine the active log file size.")
+			: TEXT("The active log already exceeds the byte limit. Archive it before recording to disk again."));
+		return;
+	}
+	if (ActiveSize > 0)
+	{
+		uint8 Tail = 0;
+		if (!Handle->Seek(ActiveSize - 1) || !Handle->Read(&Tail, 1) || Tail != '\n' || !Handle->Seek(ActiveSize))
+		{
+			RecordDiskFailure(EDiskStage::Size, TEXT("Could not verify a complete final line in the active log. Inspect or archive it before recording to disk again."));
+			return;
+		}
+	}
+
+	const bool bRotate = LineBytes > FileLimit - ActiveSize;
+	FString Payload;
+	if (bRotate || bRotationMarkerPending)
+	{
+		FEntry Marker;
 		Marker.Timestamp = FDateTime::UtcNow().ToIso8601();
 		Marker.Phase = TEXT("rotate");
 		Marker.Source = TEXT("plumbing");
-		Marker.Result = FString::Printf(
-			TEXT("the log reached %d bytes and was rotated to %s.1"),
-			MaxFileBytes, *Path);
-
-		FFileHelper::SaveStringToFile(ToJsonLine(Marker) + LINE_TERMINATOR, *Path,
-			FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM,
-			&IFileManager::Get(), FILEWRITE_Append);
+		Marker.Result = TEXT("The previous active log was moved to the .1 file.");
+		int64 MarkerOmittedBytes = 0;
+		Payload = ToJsonLine(Marker, MarkerOmittedBytes);
+	}
+	Payload += Line;
+	const auto EncodedPayload = StringCast<UTF8CHAR>(*Payload, Payload.Len());
+	const int64 AppendOffset = bRotate ? 0 : ActiveSize;
+	if (EncodedPayload.Length() > FileLimit - AppendOffset)
+	{
+		RecordDiskFailure(EDiskStage::Size, TEXT("The record and rotation marker do not fit within the file byte limit."));
+		return;
 	}
 
-	FFileHelper::SaveStringToFile(InLine + LINE_TERMINATOR, *Path,
-		FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM,
-		&IFileManager::Get(), FILEWRITE_Append);
+	if (bRotate)
+	{
+		Handle.Reset();
+		const bool bHadBackup = PreviousSize >= 0;
+		if (bHadBackup && (ShouldRefuseDiskOperation(EDiskStage::DeleteBackup) || !PlatformFile.DeleteFile(*PreviousPath)))
+		{
+			RecordDiskFailure(EDiskStage::DeleteBackup, TEXT("Could not remove the previous backup. The active log was not rotated."));
+			return;
+		}
+		if (ShouldRefuseDiskOperation(EDiskStage::MoveActive) || !PlatformFile.MoveFile(*PreviousPath, *Path))
+		{
+			if (bHadBackup)
+			{
+				++PriorBackupLosses;
+			}
+			RecordDiskFailure(EDiskStage::MoveActive, bHadBackup
+				? TEXT("Could not move the active log. The prior backup was removed.")
+				: TEXT("Could not move the active log to the backup path."));
+			return;
+		}
+
+		bRotationMarkerPending = true;
+		Handle = OpenForAppend();
+		if (!Handle)
+		{
+			RecordDiskFailure(EDiskStage::OpenAppend, TEXT("Rotation moved the active log to the backup, but the new active log could not be opened."));
+			return;
+		}
+		if (!Handle->SeekFromEnd() || Handle->Tell() != 0)
+		{
+			RecordDiskFailure(EDiskStage::Size, TEXT("The new active log could not be verified empty after rotation."));
+			return;
+		}
+	}
+
+	if (ShouldRefuseDiskOperation(EDiskStage::Write)
+		|| !Handle->Write(reinterpret_cast<const uint8*>(EncodedPayload.Get()), EncodedPayload.Length()))
+	{
+		RecordDiskFailure(EDiskStage::Write, TEXT("Could not append the complete record."));
+		// A failed write may already have emitted bytes. Restore the prior
+		// boundary before another record can be appended to that file.
+		if (ShouldRefuseDiskOperation(EDiskStage::RestoreWrite) || !Handle->Truncate(AppendOffset) || !Handle->Flush())
+		{
+			bDiskAppendBlocked = true;
+			RecordDiskFailure(EDiskStage::RestoreWrite, TEXT("Could not verify restoration after a failed disk write."));
+		}
+		return;
+	}
+
+	bRotationMarkerPending = false;
+	if (RecordOmittedBytes > 0)
+	{
+		++ShortenedRecords;
+		OmittedBytes += RecordOmittedBytes;
+	}
+	if (ShouldRefuseDiskOperation(EDiskStage::Flush) || !Handle->Flush())
+	{
+		RecordDiskFailure(EDiskStage::Flush, TEXT("The write returned success, but its flush failed. Disk persistence was not verified."));
+	}
 }
 
 void FTurboMCPCallLog::Write(const FEntry& InEntry)
@@ -241,15 +511,12 @@ void FTurboMCPCallLog::Write(const FEntry& InEntry)
 		return;
 	}
 
-	// The file FIRST, and flushed, because `03_TOOLS.md` requires the record to survive a crash.
-	// A record held only in memory would be lost by exactly the event the start record exists for.
-	AppendToFile(ToJsonLine(InEntry));
-
 	FScopeLock Lock(&Mutex);
+	AppendToFile(InEntry);
+
 	Entries.Add(InEntry);
 	if (Entries.Num() > MaxEntries)
 	{
-		// Bounded, per `P6`. The oldest go first, and the FILE keeps everything.
 		Entries.RemoveAt(0, Entries.Num() - MaxEntries);
 	}
 	++Revision;
@@ -293,7 +560,7 @@ FTurboMCPCallLog::FScopedCall::FScopedCall(
 	const FString& InToolset, const FString& InTool, const FString& InArguments)
 	: Toolset(InToolset), Tool(InTool), Arguments(InArguments)
 {
-	// The start record, written and flushed BEFORE the call runs.
+	// Attempt to record the start before the tool runs.
 	StartStamp = FDateTime::UtcNow().ToIso8601();
 	StartSeconds = FPlatformTime::Seconds();
 
@@ -327,8 +594,16 @@ void FTurboMCPCallLog::FScopedCall::Finish(const FString& InResult, bool bInErro
 	// the FULL figures, so the cap never hides how big the answer really was.
 	if (InResult.Len() > 4000)
 	{
-		Entry.Result = InResult.Left(4000)
-			+ FString::Printf(TEXT("\n... [%d more characters]"), InResult.Len() - 4000);
+		int32 Retained = 4000;
+		if constexpr (sizeof(TCHAR) == 2)
+		{
+			if (IsHighSurrogate(InResult[Retained - 1]) && IsLowSurrogate(InResult[Retained]))
+			{
+				--Retained;
+			}
+		}
+		Entry.Result = InResult.Left(Retained)
+			+ FString::Printf(TEXT("\n... [%d more characters]"), InResult.Len() - Retained);
 	}
 	else
 	{

@@ -12,6 +12,7 @@
 #include "CoreTypes.h"
 #include "Delegates/Delegate.h"
 #include "HAL/CriticalSection.h"
+#include "Templates/Function.h"
 #include "Templates/SharedPointer.h"
 
 /**
@@ -19,8 +20,8 @@
  *
  * `03_TOOLS.md` asks for a JSON line per call holding the timestamp, the toolset and tool, the
  * arguments, the outcome or the error text, how long it took, the result size and a token estimate.
- * It also asks for a START record written and flushed BEFORE the call runs and an END record after
- * it, so the last call before an editor crash is in the log.
+ * Recording attempts a disk write and checks its flush before a tool starts and again after it
+ * ends. The in-memory history and the tool result remain independent of disk failures.
  *
  * TWO SOURCES, BECAUSE The ENGINE'S HOOK DOES NOT CARRY ENOUGH
  * -----------------------------------------------------------
@@ -130,9 +131,19 @@ public:
 	/** Public so an isolated test instance can be owned by a scoped fixture. */
 	~FTurboMCPCallLog() = default;
 
+	/** Disk stages have fixed diagnostic buckets. */
+	enum class EDiskStage : uint8
+	{
+		Directory, Size, DeleteBackup, MoveActive, OpenAppend, Write, Flush, RestoreWrite, Count
+	};
+
 #if WITH_DEV_AUTOMATION_TESTS
 	/** A private per-test log with no disk sink and an explicit enabled state. */
 	static FTurboMCPCallLog* CreateForTest(bool bEnabled = true);
+
+	/** An isolated sink and optional operation refusal for a fixture-owned path. */
+	static FTurboMCPCallLog* CreateDiskSinkForTest(FString InPath, int64 InFileLimit,
+		TFunction<bool(EDiskStage)> InRefuseOperation = {});
 #endif
 
 	/**
@@ -173,6 +184,9 @@ public:
 	/** The file the log is written to. */
 	FString GetLogFilePath() const;
 
+	/** Summarizes disk limits, omissions and failures separately from tool outcomes. */
+	FString RenderDiskStatus() const;
+
 	/**
 	 * One line per call, oldest first: IN from the `start` record and OUT from the `end` record that follows it.
 	 *
@@ -209,49 +223,38 @@ public:
 	};
 
 private:
-	struct FTestOptions
-	{
-		bool bDiskSink = false;
-		bool bEnabled = true;
-	};
-
 	FTurboMCPCallLog() = default;
-	explicit FTurboMCPCallLog(const FTestOptions& InOptions)
-		: bUseSettings(false)
-		, bTestEnabled(InOptions.bEnabled)
-		, bDiskSink(InOptions.bDiskSink)
-	{
-	}
 
-	/** Serialises one entry as a JSON object on its own line. */
-	static FString ToJsonLine(const FEntry& InEntry);
+	/** Serializes one bounded disk record, retaining full measured metrics. */
+	static FString ToJsonLine(const FEntry& InEntry, int64& OutOmittedBytes);
 
-	/** Appends a line to the file and flushes it, so a crash cannot lose it. */
-	void AppendToFile(const FString& InLine) const;
+	/** Disk operations and memory admission share Mutex. */
+	void AppendToFile(const FEntry& InEntry);
+	bool ShouldRefuseDiskOperation(EDiskStage InStage) const;
+	void RecordDiskFailure(EDiskStage InStage, const TCHAR* InReason);
 
 	mutable FCriticalSection Mutex;
-
-	/** Kept bounded: a long session must not grow without limit. */
 	TArray<FEntry> Entries;
-
-	/** Incremented on every memory write and clear, under Mutex. */
 	uint64 Revision = 0;
 
-	/** Production reads the editor setting; the isolated test instance owns its state. */
 	bool bUseSettings = true;
 	bool bTestEnabled = false;
 	bool bDiskSink = true;
 
-	/** The cap, from `02_PRINCIPLES.md` `P6`: a list must not grow without bound. */
 	static constexpr int32 MaxEntries = 1000;
+	static constexpr int32 MaxRecordBytes = 16 * 1024;
+	int64 FileLimit = 4 * 1024 * 1024;
+#if WITH_DEV_AUTOMATION_TESTS
+	FString TestDiskPath;
+	TFunction<bool(EDiskStage)> RefuseDiskOperation;
+#endif
 
-	/**
-	 * The file size at which the log rotates, in bytes.
-	 *
-	 * 4 MB holds roughly ten thousand lines at the size measured in phase 5 — about 400 bytes a
-	 * line — which is many sessions of work. The exact figure is not the point: it is that a bound
-	 * EXISTS. The file previously had none and reached 402 KB in a single round of testing, because
-	 * every tool call writes a line and every READ of the log is itself a tool call.
-	 */
-	static constexpr int64 MaxFileBytes = 4 * 1024 * 1024;
+	// One bounded set of diagnostics for this editor session, under Mutex.
+	uint64 DiskFailures[static_cast<int32>(EDiskStage::Count)] = {};
+	uint64 PriorBackupLosses = 0;
+	uint64 ShortenedRecords = 0;
+	uint64 OmittedBytes = 0;
+	FString LastDiskFailure;
+	bool bRotationMarkerPending = false;
+	bool bDiskAppendBlocked = false;
 };

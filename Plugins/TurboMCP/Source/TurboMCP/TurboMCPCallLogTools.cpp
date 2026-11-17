@@ -23,7 +23,7 @@ namespace
 		Escaped.ReplaceInline(TEXT("\r"), TEXT("\\r"));
 		Escaped.ReplaceInline(TEXT("\n"), TEXT("\\n"));
 		Escaped.ReplaceInline(TEXT("\t"), TEXT("\\t"));
-		return Escaped.Len() > 200 ? Escaped.Left(200) + TEXT(" [truncated; see disk log]") : Escaped;
+		return Escaped.Len() > 200 ? Escaped.Left(200) + TEXT(" [excerpt truncated]") : Escaped;
 	}
 }
 
@@ -83,6 +83,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 	Out += FString::Printf(TEXT("\nlog file: %s"), *Log.GetLogFilePath());
 	Out += FString::Printf(TEXT("\nrecording: %s"),
 		Log.IsEnabled() ? TEXT("on") : TEXT("off (use EditTurboMCPCallLog to enable recording)"));
+	Out += TEXT("\n") + Log.RenderDiskStatus();
 	Out += FString::Printf(TEXT("\ncounts: %d in memory, showing %d newest of %d matching"),
 		All.Num(), Selected.Num(), Total);
 
