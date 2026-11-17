@@ -15,6 +15,7 @@ let active = 0;
 let presenting = false;
 let noticeTimer;
 let printState = null;
+let navigationScrollY;
 
 function tell(message) {
   notice.textContent = message;
@@ -61,12 +62,17 @@ function writeLocation(push) {
   else url.searchParams.delete("view");
   if (url.href !== location.href) history[push ? "pushState" : "replaceState"](null, "", url);
 }
+function scrollToSelection(target) {
+  // Keep the selected chapter through observer updates from this jump.
+  target.scrollIntoView({ block: "start", behavior: "instant" });
+  navigationScrollY = window.scrollY;
+}
 function choose(index, { focus = true, scroll = true, push = true } = {}) {
   active = Math.max(0, Math.min(chapters.length - 1, index));
   if (search.value) search.value = "";
   render();
   writeLocation(push);
-  if (scroll) chapters[active].scrollIntoView({ block: "start" });
+  if (scroll) scrollToSelection(chapters[active]);
   if (focus) chapters[active].querySelector("h2").focus({ preventScroll: true });
 }
 function setMode(value, { push = false, focus = true, updateUrl = true } = {}) {
@@ -79,7 +85,7 @@ function setMode(value, { push = false, focus = true, updateUrl = true } = {}) {
   render();
   if (updateUrl) writeLocation(push);
   if (focus) {
-    chapters[active].scrollIntoView({ block: "start" });
+    scrollToSelection(chapters[active]);
     chapters[active].querySelector("h2").focus({ preventScroll: true });
   }
 }
@@ -87,8 +93,7 @@ function syncLocation() {
   const index = indexFromHash();
   active = index >= 0 ? index : 0;
   setMode(new URL(location.href).searchParams.get("view") === "present", { focus: false, updateUrl: false });
-  if (index >= 0) chapters[active].scrollIntoView({ block: "start" });
-  else document.querySelector("#guide-main").scrollIntoView({ block: "start" });
+  scrollToSelection(index >= 0 ? chapters[active] : document.querySelector("#guide-main"));
 }
 
 presentToggle.hidden = false;
@@ -164,7 +169,8 @@ document.querySelector("#print-guide").addEventListener("click", () => window.pr
 // rewrite history: a shared URL changes only after explicit chapter selection.
 if ("IntersectionObserver" in window) {
   const observer = new IntersectionObserver((entries) => {
-    if (presenting || printState || search.value) return;
+    if (presenting || printState || search.value || window.scrollY === navigationScrollY) return;
+    navigationScrollY = undefined;
     const visible = entries.filter((entry) => entry.isIntersecting);
     if (visible.length) {
       active = chapters.indexOf(visible[0].target);
@@ -177,4 +183,4 @@ const initialIndex = indexFromHash();
 if (initialIndex >= 0) active = initialIndex;
 if (new URL(location.href).searchParams.get("view") === "present") setMode(true, { focus: false });
 else render();
-if (initialIndex >= 0) chapters[active].scrollIntoView({ block: "start" });
+if (initialIndex >= 0) scrollToSelection(chapters[active]);
