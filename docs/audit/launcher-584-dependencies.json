@@ -1,0 +1,913 @@
+{
+  "schema": 1,
+  "task": "R12",
+  "slice": "launcher-584-audit",
+  "checked_utc_date": "2026-11-17",
+  "kind": "investigation",
+  "engine": {
+    "root": "C:\\Program Files\\Epic Games\\UE_5.8",
+    "build_version": {
+      "MajorVersion": 5,
+      "MinorVersion": 8,
+      "PatchVersion": 4,
+      "Changelist": 58902052,
+      "CompatibleChangelist": 55116800,
+      "IsLicenseeVersion": 0,
+      "IsPromotedBuild": 1,
+      "BranchName": "++UE5+Release-5.8"
+    },
+    "editor_modules_build_id": "55116800",
+    "launcher_installed": {
+      "InstallLocation": "C:\\Program Files\\Epic Games\\UE_5.8",
+      "NamespaceId": "ue",
+      "ItemId": "18b3b415bc434c5b974f50488360ca31",
+      "ArtifactId": "UE_5.8",
+      "AppVersion": "5.8.4-58902052+++UE5+Release-5.8-Windows",
+      "AppName": "UE_5.8"
+    }
+  },
+  "plugins": [
+    {
+      "plugin": "ModelContextProtocol",
+      "present": true,
+      "descriptor": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\ModelContextProtocol.uplugin",
+      "enabled_by_default": false,
+      "installed": false,
+      "is_beta_version": false,
+      "is_experimental_version": true,
+      "explicitly_loaded": null,
+      "modules": [
+        "ModelContextProtocol",
+        "ModelContextProtocolEngine",
+        "ModelContextProtocolEditor",
+        "ModelContextProtocolTests",
+        "ModelContextProtocolEngineTests",
+        "ModelContextProtocolEditorTests"
+      ],
+      "module_files": {
+        "ModelContextProtocol": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocol.dll",
+          "dll_exists": true,
+          "dll_sha256": "a6186131f87f281c8ae446fb70bd464812c6c8ff6f3cc588e8ee40b9bcb08d25",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ModelContextProtocol\\UnrealEditor-ModelContextProtocol.lib",
+          "lib_exists": true
+        },
+        "ModelContextProtocolEngine": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocolEngine.dll",
+          "dll_exists": true,
+          "dll_sha256": "a63628fb86e8aca586d5b2d3fe10a1ef12a6ef77437c3b91c664ec85a8a9a5fd",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ModelContextProtocolEngine\\UnrealEditor-ModelContextProtocolEngine.lib",
+          "lib_exists": true
+        },
+        "ModelContextProtocolEditor": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocolEditor.dll",
+          "dll_exists": true,
+          "dll_sha256": "2eea7512711d49dd924ba9761a58dccf00b1c3e7f370a3790a082403c2ba1f26",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ModelContextProtocolEditor\\UnrealEditor-ModelContextProtocolEditor.lib",
+          "lib_exists": true
+        },
+        "ModelContextProtocolTests": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocolTests.dll",
+          "dll_exists": true,
+          "dll_sha256": "b20e8f864352d5e7b2c51f5634b82ce184a6e0e9c3c31e193f3bf37ec068e5d1",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ModelContextProtocolTests\\UnrealEditor-ModelContextProtocolTests.lib",
+          "lib_exists": true
+        },
+        "ModelContextProtocolEngineTests": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocolEngineTests.dll",
+          "dll_exists": true,
+          "dll_sha256": "2f097ffd05b178172b7db6dfb180afead690fb76287ddac78a5e08a98d7ae76b",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ModelContextProtocolEngineTests\\UnrealEditor-ModelContextProtocolEngineTests.lib",
+          "lib_exists": true
+        },
+        "ModelContextProtocolEditorTests": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocolEditorTests.dll",
+          "dll_exists": true,
+          "dll_sha256": "232524de540c2eb33cb66f2d3da2d26ca9d2c7219dd20e3ed0cf47ac0902cbb2",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ModelContextProtocolEditorTests\\UnrealEditor-ModelContextProtocolEditorTests.lib",
+          "lib_exists": true
+        }
+      },
+      "plugin_modules_build_id": "55116800"
+    },
+    {
+      "plugin": "ToolsetRegistry",
+      "present": true,
+      "descriptor": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\ToolsetRegistry.uplugin",
+      "enabled_by_default": false,
+      "installed": false,
+      "is_beta_version": false,
+      "is_experimental_version": true,
+      "explicitly_loaded": null,
+      "modules": [
+        "ToolsetRegistry"
+      ],
+      "module_files": {
+        "ToolsetRegistry": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Binaries\\Win64\\UnrealEditor-ToolsetRegistry.dll",
+          "dll_exists": true,
+          "dll_sha256": "28d20938c0c9affb29e4fb3bb3e78656c9b2433ca325f5cc87328422f36a6e2f",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ToolsetRegistry\\UnrealEditor-ToolsetRegistry.lib",
+          "lib_exists": true
+        }
+      },
+      "plugin_modules_build_id": "55116800"
+    },
+    {
+      "plugin": "SlateInspectorToolset",
+      "present": true,
+      "descriptor": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\Toolsets\\SlateInspectorToolset\\SlateInspectorToolset.uplugin",
+      "enabled_by_default": false,
+      "installed": false,
+      "is_beta_version": false,
+      "is_experimental_version": true,
+      "explicitly_loaded": null,
+      "modules": [
+        "SlateInspectorToolset",
+        "SlateInspectorToolsetTests"
+      ],
+      "module_files": {
+        "SlateInspectorToolset": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\Toolsets\\SlateInspectorToolset\\Binaries\\Win64\\UnrealEditor-SlateInspectorToolset.dll",
+          "dll_exists": true,
+          "dll_sha256": "d7eedc10930bc48d9e069b84f41a9f3b45944a2c684deec9a7861e405a643904",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\Toolsets\\SlateInspectorToolset\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\SlateInspectorToolset\\UnrealEditor-SlateInspectorToolset.lib",
+          "lib_exists": true
+        },
+        "SlateInspectorToolsetTests": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\Toolsets\\SlateInspectorToolset\\Binaries\\Win64\\UnrealEditor-SlateInspectorToolsetTests.dll",
+          "dll_exists": true,
+          "dll_sha256": "f40a0d7f8598f2b1d6975c518aa96a2a6a54f60d5c79c3ddba5c68453b9ee25f",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\Toolsets\\SlateInspectorToolset\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\SlateInspectorToolsetTests\\UnrealEditor-SlateInspectorToolsetTests.lib",
+          "lib_exists": true
+        }
+      },
+      "plugin_modules_build_id": "55116800"
+    },
+    {
+      "plugin": "Niagara",
+      "present": true,
+      "descriptor": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Niagara.uplugin",
+      "enabled_by_default": true,
+      "installed": false,
+      "is_beta_version": false,
+      "is_experimental_version": null,
+      "explicitly_loaded": null,
+      "modules": [
+        "NiagaraCore",
+        "Niagara",
+        "NiagaraAnimNotifies",
+        "NiagaraShader",
+        "NiagaraVertexFactories",
+        "NiagaraBlueprintNodes",
+        "NiagaraEditor",
+        "NiagaraEditorWidgets"
+      ],
+      "module_files": {
+        "NiagaraCore": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Binaries\\Win64\\UnrealEditor-NiagaraCore.dll",
+          "dll_exists": true,
+          "dll_sha256": "c0d5e32889b895e84a4f88b20e378d27e59ae0fc444fc9df36cc526831fc2086",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\NiagaraCore\\UnrealEditor-NiagaraCore.lib",
+          "lib_exists": true
+        },
+        "Niagara": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Binaries\\Win64\\UnrealEditor-Niagara.dll",
+          "dll_exists": true,
+          "dll_sha256": "15cd03700266c4cbf25d01dfab59582f8deeb9922a1220f5783db37d3b1caeed",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\Niagara\\UnrealEditor-Niagara.lib",
+          "lib_exists": true
+        },
+        "NiagaraAnimNotifies": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Binaries\\Win64\\UnrealEditor-NiagaraAnimNotifies.dll",
+          "dll_exists": true,
+          "dll_sha256": "ffe976c9f5985fedf3ec6adf69fb2686f426a7572c411a6b510602aba008d43c",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\NiagaraAnimNotifies\\UnrealEditor-NiagaraAnimNotifies.lib",
+          "lib_exists": true
+        },
+        "NiagaraShader": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Binaries\\Win64\\UnrealEditor-NiagaraShader.dll",
+          "dll_exists": true,
+          "dll_sha256": "7e09dac6b39478cc8c670894b6c8fc245e39531b444992fe1d0ff17ecbf4e17d",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\NiagaraShader\\UnrealEditor-NiagaraShader.lib",
+          "lib_exists": true
+        },
+        "NiagaraVertexFactories": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Binaries\\Win64\\UnrealEditor-NiagaraVertexFactories.dll",
+          "dll_exists": true,
+          "dll_sha256": "3b06723353195393c0bc8a8de1b41f18afde8057879c76ed7041f7ecb1936595",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\NiagaraVertexFactories\\UnrealEditor-NiagaraVertexFactories.lib",
+          "lib_exists": true
+        },
+        "NiagaraBlueprintNodes": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Binaries\\Win64\\UnrealEditor-NiagaraBlueprintNodes.dll",
+          "dll_exists": true,
+          "dll_sha256": "fa7aab07b8163ec230d22328c8a6b009885a4106e07cc85fe8c68a1ab17f8579",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\NiagaraBlueprintNodes\\UnrealEditor-NiagaraBlueprintNodes.lib",
+          "lib_exists": true
+        },
+        "NiagaraEditor": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Binaries\\Win64\\UnrealEditor-NiagaraEditor.dll",
+          "dll_exists": true,
+          "dll_sha256": "eb901b1b552f24ff7f92140bde4bd44c5cc7aca076546494992a63ab2db6cba9",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\NiagaraEditor\\UnrealEditor-NiagaraEditor.lib",
+          "lib_exists": true
+        },
+        "NiagaraEditorWidgets": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Binaries\\Win64\\UnrealEditor-NiagaraEditorWidgets.dll",
+          "dll_exists": true,
+          "dll_sha256": "61c55c744fdc5ebc535cb280b490780d245cffe5918ebf889405479235cb5e56",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\NiagaraEditorWidgets\\UnrealEditor-NiagaraEditorWidgets.lib",
+          "lib_exists": true
+        }
+      },
+      "plugin_modules_build_id": "55116800"
+    },
+    {
+      "plugin": "EditorScriptingUtilities",
+      "present": true,
+      "descriptor": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Editor\\EditorScriptingUtilities\\EditorScriptingUtilities.uplugin",
+      "enabled_by_default": false,
+      "installed": false,
+      "is_beta_version": true,
+      "is_experimental_version": null,
+      "explicitly_loaded": null,
+      "modules": [
+        "EditorScriptingUtilities"
+      ],
+      "module_files": {
+        "EditorScriptingUtilities": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Editor\\EditorScriptingUtilities\\Binaries\\Win64\\UnrealEditor-EditorScriptingUtilities.dll",
+          "dll_exists": true,
+          "dll_sha256": "9ab1de30185162bd49d64e3c0b7feb36635d22b44f58e5aafd36953c51d19a1f",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Editor\\EditorScriptingUtilities\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\EditorScriptingUtilities\\UnrealEditor-EditorScriptingUtilities.lib",
+          "lib_exists": true
+        }
+      },
+      "plugin_modules_build_id": "55116800"
+    },
+    {
+      "plugin": "PythonScriptPlugin",
+      "present": true,
+      "descriptor": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\PythonScriptPlugin\\PythonScriptPlugin.uplugin",
+      "enabled_by_default": false,
+      "installed": false,
+      "is_beta_version": true,
+      "is_experimental_version": null,
+      "explicitly_loaded": null,
+      "modules": [
+        "PythonScriptPluginPreload",
+        "PythonScriptPlugin"
+      ],
+      "module_files": {
+        "PythonScriptPluginPreload": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\PythonScriptPlugin\\Binaries\\Win64\\UnrealEditor-PythonScriptPluginPreload.dll",
+          "dll_exists": true,
+          "dll_sha256": "a21be77f9270264fd2dac54c8386d0eef4475c7e3d09121fdc138d74cc13e022",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\PythonScriptPlugin\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\PythonScriptPluginPreload\\UnrealEditor-PythonScriptPluginPreload.lib",
+          "lib_exists": true
+        },
+        "PythonScriptPlugin": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\PythonScriptPlugin\\Binaries\\Win64\\UnrealEditor-PythonScriptPlugin.dll",
+          "dll_exists": true,
+          "dll_sha256": "8616fe67275e134905941a1631c60127ebd6e48366fc8f3446182681824ae2c9",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\PythonScriptPlugin\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\PythonScriptPlugin\\UnrealEditor-PythonScriptPlugin.lib",
+          "lib_exists": true
+        }
+      },
+      "plugin_modules_build_id": "55116800"
+    },
+    {
+      "plugin": "EnhancedInput",
+      "present": true,
+      "descriptor": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\EnhancedInput\\EnhancedInput.uplugin",
+      "enabled_by_default": true,
+      "installed": false,
+      "is_beta_version": false,
+      "is_experimental_version": null,
+      "explicitly_loaded": null,
+      "modules": [
+        "EnhancedInput",
+        "InputBlueprintNodes",
+        "InputEditor"
+      ],
+      "module_files": {
+        "EnhancedInput": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\EnhancedInput\\Binaries\\Win64\\UnrealEditor-EnhancedInput.dll",
+          "dll_exists": true,
+          "dll_sha256": "e5c5802ac1347ac6b4442e2392d91edd90e543a644c9c109a9d1bdceceafe969",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\EnhancedInput\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\EnhancedInput\\UnrealEditor-EnhancedInput.lib",
+          "lib_exists": true
+        },
+        "InputBlueprintNodes": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\EnhancedInput\\Binaries\\Win64\\UnrealEditor-InputBlueprintNodes.dll",
+          "dll_exists": true,
+          "dll_sha256": "324f8f1d79a416f971adeb6ef7bb40ef5d22e971f9a569a514b796fe508acb5d",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\EnhancedInput\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\InputBlueprintNodes\\UnrealEditor-InputBlueprintNodes.lib",
+          "lib_exists": true
+        },
+        "InputEditor": {
+          "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\EnhancedInput\\Binaries\\Win64\\UnrealEditor-InputEditor.dll",
+          "dll_exists": true,
+          "dll_sha256": "6ab628b428c5b6648467ddf1c8b0ecd46003a76a55d03fca3ccc20c07ed360b7",
+          "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\EnhancedInput\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\InputEditor\\UnrealEditor-InputEditor.lib",
+          "lib_exists": true
+        }
+      },
+      "plugin_modules_build_id": "55116800"
+    }
+  ],
+  "modules": {
+    "Core": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Core.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\Core\\UnrealEditor-Core.lib",
+      "lib_exists": true
+    },
+    "CoreUObject": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-CoreUObject.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\CoreUObject\\UnrealEditor-CoreUObject.lib",
+      "lib_exists": true
+    },
+    "Engine": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Engine.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\Engine\\UnrealEditor-Engine.lib",
+      "lib_exists": true
+    },
+    "AssetRegistry": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-AssetRegistry.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\AssetRegistry\\UnrealEditor-AssetRegistry.lib",
+      "lib_exists": true
+    },
+    "BlueprintEditorLibrary": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-BlueprintEditorLibrary.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\BlueprintEditorLibrary\\UnrealEditor-BlueprintEditorLibrary.lib",
+      "lib_exists": true
+    },
+    "BlueprintGraph": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-BlueprintGraph.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\BlueprintGraph\\UnrealEditor-BlueprintGraph.lib",
+      "lib_exists": true
+    },
+    "KismetCompiler": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-KismetCompiler.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\KismetCompiler\\UnrealEditor-KismetCompiler.lib",
+      "lib_exists": true
+    },
+    "DeveloperSettings": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-DeveloperSettings.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\DeveloperSettings\\UnrealEditor-DeveloperSettings.lib",
+      "lib_exists": true
+    },
+    "EditorFramework": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-EditorFramework.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\EditorFramework\\UnrealEditor-EditorFramework.lib",
+      "lib_exists": true
+    },
+    "EditorScriptingUtilities": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Editor\\EditorScriptingUtilities\\Binaries\\Win64\\UnrealEditor-EditorScriptingUtilities.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Editor\\EditorScriptingUtilities\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\EditorScriptingUtilities\\UnrealEditor-EditorScriptingUtilities.lib",
+      "lib_exists": true
+    },
+    "EditorSubsystem": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-EditorSubsystem.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\EditorSubsystem\\UnrealEditor-EditorSubsystem.lib",
+      "lib_exists": true
+    },
+    "GraphEditor": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-GraphEditor.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\GraphEditor\\UnrealEditor-GraphEditor.lib",
+      "lib_exists": true
+    },
+    "Json": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Json.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\Json\\UnrealEditor-Json.lib",
+      "lib_exists": true
+    },
+    "JsonUtilities": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-JsonUtilities.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\JsonUtilities\\UnrealEditor-JsonUtilities.lib",
+      "lib_exists": true
+    },
+    "Kismet": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Kismet.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\Kismet\\UnrealEditor-Kismet.lib",
+      "lib_exists": true
+    },
+    "InputCore": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-InputCore.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\InputCore\\UnrealEditor-InputCore.lib",
+      "lib_exists": true
+    },
+    "Slate": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Slate.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\Slate\\UnrealEditor-Slate.lib",
+      "lib_exists": true
+    },
+    "SlateCore": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-SlateCore.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\SlateCore\\UnrealEditor-SlateCore.lib",
+      "lib_exists": true
+    },
+    "ToolMenus": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-ToolMenus.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ToolMenus\\UnrealEditor-ToolMenus.lib",
+      "lib_exists": true
+    },
+    "UnrealEd": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-UnrealEd.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\UnrealEd\\UnrealEditor-UnrealEd.lib",
+      "lib_exists": true
+    },
+    "ModelContextProtocol": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocol.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ModelContextProtocol\\UnrealEditor-ModelContextProtocol.lib",
+      "lib_exists": true
+    },
+    "ModelContextProtocolEngine": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocolEngine.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ModelContextProtocolEngine\\UnrealEditor-ModelContextProtocolEngine.lib",
+      "lib_exists": true
+    },
+    "ToolsetRegistry": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Binaries\\Win64\\UnrealEditor-ToolsetRegistry.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ToolsetRegistry\\UnrealEditor-ToolsetRegistry.lib",
+      "lib_exists": true
+    },
+    "ImageWrapper": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-ImageWrapper.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\ImageWrapper\\UnrealEditor-ImageWrapper.lib",
+      "lib_exists": true
+    },
+    "RenderCore": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-RenderCore.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\RenderCore\\UnrealEditor-RenderCore.lib",
+      "lib_exists": true
+    },
+    "UMG": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-UMG.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\UMG\\UnrealEditor-UMG.lib",
+      "lib_exists": true
+    },
+    "UMGEditor": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-UMGEditor.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\UMGEditor\\UnrealEditor-UMGEditor.lib",
+      "lib_exists": true
+    },
+    "MaterialEditor": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-MaterialEditor.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\MaterialEditor\\UnrealEditor-MaterialEditor.lib",
+      "lib_exists": true
+    },
+    "Projects": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Projects.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\Projects\\UnrealEditor-Projects.lib",
+      "lib_exists": true
+    },
+    "AnalyticsET": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-AnalyticsET.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\AnalyticsET\\UnrealEditor-AnalyticsET.lib",
+      "lib_exists": true
+    },
+    "SlateInspectorToolset": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\Toolsets\\SlateInspectorToolset\\Binaries\\Win64\\UnrealEditor-SlateInspectorToolset.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\Toolsets\\SlateInspectorToolset\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\SlateInspectorToolset\\UnrealEditor-SlateInspectorToolset.lib",
+      "lib_exists": true
+    },
+    "AnimGraph": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-AnimGraph.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\AnimGraph\\UnrealEditor-AnimGraph.lib",
+      "lib_exists": true
+    },
+    "Niagara": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Binaries\\Win64\\UnrealEditor-Niagara.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\Niagara\\UnrealEditor-Niagara.lib",
+      "lib_exists": true
+    },
+    "NiagaraEditor": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Binaries\\Win64\\UnrealEditor-NiagaraEditor.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\FX\\Niagara\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\NiagaraEditor\\UnrealEditor-NiagaraEditor.lib",
+      "lib_exists": true
+    },
+    "PythonScriptPlugin": {
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\PythonScriptPlugin\\Binaries\\Win64\\UnrealEditor-PythonScriptPlugin.dll",
+      "dll_exists": true,
+      "lib": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\PythonScriptPlugin\\Intermediate\\Build\\Win64\\x64\\UnrealEditor\\Development\\PythonScriptPlugin\\UnrealEditor-PythonScriptPlugin.lib",
+      "lib_exists": true
+    }
+  },
+  "headers": [
+    {
+      "surface": "registry registration",
+      "header": "Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Public/ToolsetRegistry/UToolsetRegistry.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Source\\ToolsetRegistry\\Public\\ToolsetRegistry\\UToolsetRegistry.h",
+      "exists": true
+    },
+    {
+      "surface": "recorder wrapper",
+      "header": "Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Public/ToolsetRegistry/Toolset.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Source\\ToolsetRegistry\\Public\\ToolsetRegistry\\Toolset.h",
+      "exists": true
+    },
+    {
+      "surface": "recorder wrapper",
+      "header": "ToolsetRegistry.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Source\\ToolsetRegistry\\Public\\ToolsetRegistry\\ToolsetRegistry.h",
+      "exists": true
+    },
+    {
+      "surface": "MCP analytics interception",
+      "header": "Engine/Plugins/Experimental/ModelContextProtocol/Source/ModelContextProtocol/Public/IModelContextProtocolModule.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Source\\ModelContextProtocol\\Public\\IModelContextProtocolModule.h",
+      "exists": true
+    },
+    {
+      "surface": "MCP analytics interception",
+      "header": "ModelContextProtocolAnalytics.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Source\\ModelContextProtocol\\Public\\ModelContextProtocolAnalytics.h",
+      "exists": true
+    },
+    {
+      "surface": "SlateInspector screenshot",
+      "header": "Engine/Plugins/Experimental/Toolsets/SlateInspectorToolset/Source/SlateInspectorToolset/Public/SlateInspectorToolset.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\Toolsets\\SlateInspectorToolset\\Source\\SlateInspectorToolset\\Public\\SlateInspectorToolset.h",
+      "exists": true
+    },
+    {
+      "surface": "editor save",
+      "header": "Engine/Plugins/Editor/EditorScriptingUtilities/Source/EditorScriptingUtilities/Public/EditorAssetLibrary.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Editor\\EditorScriptingUtilities\\Source\\EditorScriptingUtilities\\Public\\EditorAssetLibrary.h",
+      "exists": true
+    },
+    {
+      "surface": "source-control interfaces",
+      "header": "Developer/SourceControl/Public/ISourceControlModule.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source\\Developer\\SourceControl\\Public\\ISourceControlModule.h",
+      "exists": true
+    },
+    {
+      "surface": "analytics event attribute",
+      "header": "Runtime/Analytics/Analytics/Public/AnalyticsEventAttribute.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source\\Runtime\\Analytics\\Analytics\\Public\\AnalyticsEventAttribute.h",
+      "exists": true
+    },
+    {
+      "surface": "render-target readback and RHI closure",
+      "header": "Engine/Source/Runtime/Engine/Public/UnrealClient.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source\\Runtime\\Engine\\Public\\UnrealClient.h",
+      "exists": true
+    },
+    {
+      "surface": "render-target readback and RHI closure",
+      "header": "Engine/Source/Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h",
+      "resolved": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Source\\Runtime\\Engine\\Classes\\Engine\\TextureRenderTarget2D.h",
+      "exists": true
+    }
+  ],
+  "toolchain": {
+    "launcher_windows_sdk": {
+      "MainVersion": "10.0.22621.0",
+      "MinVersion": "10.0.19041.0",
+      "MaxVersion": "10.9.99999.0",
+      "MinSoftwareVersion": "10.0.19041.0",
+      "PreferredClangVersions": [
+        "20.1.8-20.999",
+        "20.1.0-20.1.7",
+        "19.1.0-19.999",
+        "18.1.8-18.999"
+      ],
+      "MinimumClangVersion": "18.1.8",
+      "//01.1": "this is a strange format, but instead of a version range, this maps min clang version for each MSVC version",
+      "//01.2": "14.44 = VS2022 17.14.x -> clang 19",
+      "//01.3": "14.42 = VS2022 17.12.x -> clang 18",
+      "//01.4": "14.40 = VS2022 17.10.x -> clang 17",
+      "//01.5": "14.37 = VS2022 17.7.x-17.9.x -> clang 16",
+      "MinimumRequiredClangVersion": [
+        "14.44-19",
+        "14.42-18",
+        "14.40-17",
+        "14.37-16"
+      ],
+      "//02.1": "Version number is the MSVC family, which is the version in the Visual Studio folder",
+      "//02.2": "14.50.35717-14.50.99999 = VS2026 18.0",
+      "//02.3": "14.44.35207-14.44.99999 = VS2022 17.14",
+      "PreferredVisualCppVersions": [
+        "14.50.35717-14.50.99999",
+        "14.44.35207-14.44.99999"
+      ],
+      "//03.1": "14.50.35717 -- VS2026 18.0.0 - 18.2.0: Internal compiler errors. Resolved with 14.50.35723",
+      "//03.2": "14.44.35207 -- VS2022 17.14.0 - 17.4.3: Template compile error. Resolved with 14.44.35211",
+      "//03.3": "14.40.x -- VS2022 17.10.0: Codegen issue causes runtime crash for AVX/2/512. 17.10.x: PGO optimize issue causes runtime crash",
+      "//03.4": "14.39.x -- VS2022 17.9.0 - 17.9.3: Internal compiler errors. 17.9.x: Codegen issue causes runtime crash for AVX/2/512",
+      "BannedVisualCppVersions": [
+        "14.50.0-14.50.35722",
+        "14.44.0-14.44.35210",
+        "14.40.0-14.43.99999",
+        "14.39.0-14.39.99999"
+      ],
+      "MinimumVisualCppVersion": "14.38.33130",
+      "PreferredIntelOneApiVersions": [
+        "2026.0.0-2026.0.9999"
+      ],
+      "MinimumIntelOneApiVersion": "2026.0.0",
+      "VisualStudioSuggestedComponents": [
+        "Microsoft.Net.Component.4.6.2.TargetingPack",
+        "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+        "Microsoft.VisualStudio.Component.Windows11SDK.22621",
+        "Microsoft.VisualStudio.Component.VC.Llvm.Clang",
+        "Microsoft.VisualStudio.Workload.CoreEditor",
+        "Microsoft.VisualStudio.Workload.ManagedDesktop",
+        "Microsoft.VisualStudio.Workload.NativeDesktop",
+        "Microsoft.VisualStudio.Workload.NativeGame",
+        "Component.Unreal.Ide",
+        "Component.Unreal.Debugger"
+      ],
+      "VisualStudioSuggestedLinuxComponents": [
+        "Microsoft.VisualStudio.Workload.NativeCrossPlat"
+      ],
+      "//04.1": "Microsoft.VisualStudio.Component.VC.14.44.17.14.x86.x64 -- Only LTSC versions of MSVC should be suggested",
+      "//04.2": "Microsoft.VisualStudio.Component.VC.14.44.17.14.ATL -- Match version of MSVC",
+      "VisualStudio2022SuggestedComponents": [
+        "Microsoft.VisualStudio.Component.VC.14.44.17.14.x86.x64",
+        "Microsoft.VisualStudio.Component.VC.14.44.17.14.ATL"
+      ],
+      "//05.1": "Microsoft.VisualStudio.Component.VC.14.50.18.0.x86.x64 -- Only LTSC versions of MSVC should be suggested",
+      "//05.2": "Microsoft.VisualStudio.Component.VC.14.50.18.0.ATL -- Match version of MSVC",
+      "VisualStudio2026SuggestedComponents": [
+        "Microsoft.VisualStudio.Component.VC.14.50.18.0.x86.x64",
+        "Microsoft.VisualStudio.Component.VC.14.50.18.0.ATL"
+      ],
+      "MinimumVisualStudio2022Version": "17.8",
+      "MinimumVisualStudio2026Version": "18.0",
+      "//06.1": "X64 -- 0xA00 = Win10",
+      "//06.2": "Arm64 -- 0xA00 = Win10",
+      "MinimumWindowsX64TargetVersion": "0xA00",
+      "MinimumWindowsArm64TargetVersion": "0xA00",
+      "IncludeSDKFile": "$(EngineDir)/Config/Microsoft/GDK_SDK.json"
+    }
+  },
+  "symbols": [
+    {
+      "surface": "registry registration",
+      "symbol": "UToolsetRegistry::RegisterToolsetClass",
+      "module": "ToolsetRegistry",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Binaries\\Win64\\UnrealEditor-ToolsetRegistry.dll",
+      "pattern": "RegisterToolsetClass@UToolsetRegistry",
+      "exported": true,
+      "export_line": "111   6E 000F4B30 ?RegisterToolsetClass@UToolsetRegistry@@SAXV?$TSubclassOf@VUToolsetDefinition@@@@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "registry registration",
+      "symbol": "UToolsetRegistry::IsToolsetClassRegistered",
+      "module": "ToolsetRegistry",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Binaries\\Win64\\UnrealEditor-ToolsetRegistry.dll",
+      "pattern": "IsToolsetClassRegistered@UToolsetRegistry",
+      "exported": true,
+      "export_line": "102   65 000E9A10 ?IsToolsetClassRegistered@UToolsetRegistry@@SA_NV?$TSubclassOf@VUToolsetDefinition@@@@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "registry registration",
+      "symbol": "UToolsetRegistry::GetToolsetJsonSchema",
+      "module": "ToolsetRegistry",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Binaries\\Win64\\UnrealEditor-ToolsetRegistry.dll",
+      "pattern": "GetToolsetJsonSchema@UToolsetRegistry",
+      "exported": true,
+      "export_line": "89   58 000E3D30 ?GetToolsetJsonSchema@UToolsetRegistry@@SA?AVFString@@V?$TSubclassOf@VUToolsetDefinition@@@@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "recorder wrapper",
+      "symbol": "FToolset::ExecuteTool",
+      "module": "ToolsetRegistry",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Binaries\\Win64\\UnrealEditor-ToolsetRegistry.dll",
+      "pattern": "ExecuteTool@FToolset",
+      "exported": true,
+      "export_line": "64   3F 000DB6B0 ?ExecuteTool@FToolset@ToolsetRegistry@UE@@QEAA?AV?$TFuture@V?$TValueOrError@VFString@@V1@@@@@AEBVFString@@0@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "recorder wrapper",
+      "symbol": "FToolset::GetJsonSchema",
+      "module": "ToolsetRegistry",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Binaries\\Win64\\UnrealEditor-ToolsetRegistry.dll",
+      "pattern": "GetJsonSchema@FToolset",
+      "exported": true,
+      "export_line": "85   54 000E1410 ?GetJsonSchema@FToolset@ToolsetRegistry@UE@@QEBA?AVFString@@XZ",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "recorder wrapper",
+      "symbol": "FToolsetRegistry::Find",
+      "module": "ToolsetRegistry",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Binaries\\Win64\\UnrealEditor-ToolsetRegistry.dll",
+      "pattern": "Find@FToolsetRegistry",
+      "exported": true,
+      "export_line": "69   44 000DCA80 ?Find@FToolsetRegistry@ToolsetRegistry@UE@@QEAA?AV?$TSharedPtr@VFToolset@ToolsetRegistry@UE@@$00@@AEBVFString@@_NPEAV5@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "recorder wrapper",
+      "symbol": "FToolsetRegistry::RegisterToolset",
+      "module": "ToolsetRegistry",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Binaries\\Win64\\UnrealEditor-ToolsetRegistry.dll",
+      "pattern": "RegisterToolset@FToolsetRegistry",
+      "exported": true,
+      "export_line": "110   6D 000F4940 ?RegisterToolset@FToolsetRegistry@ToolsetRegistry@UE@@QEAA_NV?$TSharedPtr@VFToolset@ToolsetRegistry@UE@@$00@@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "recorder wrapper",
+      "symbol": "FToolsetRegistry::ForEachToolset",
+      "module": "ToolsetRegistry",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ToolsetRegistry\\Binaries\\Win64\\UnrealEditor-ToolsetRegistry.dll",
+      "pattern": "ForEachToolset@FToolsetRegistry",
+      "exported": true,
+      "export_line": "70   45 000DD1C0 ?ForEachToolset@FToolsetRegistry@ToolsetRegistry@UE@@QEBAXV?$TFunctionRef@$$A6AXAEBVFString@@AEBVFToolset@ToolsetRegistry@UE@@@Z@@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "MCP analytics interception",
+      "symbol": "IModelContextProtocolModule::Get",
+      "module": "ModelContextProtocol",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocol.dll",
+      "pattern": "Get@IModelContextProtocolModule",
+      "exported": true,
+      "export_line": "12    B 000240E0 ?Get@IModelContextProtocolModule@@SAPEAV1@XZ",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "MCP analytics interception",
+      "symbol": "ParseToolsetName",
+      "module": "ModelContextProtocol",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocol.dll",
+      "pattern": "ParseToolsetName",
+      "exported": true,
+      "export_line": "34   21 00028AC0 ?ParseToolsetName@Analytics@ModelContextProtocol@UE@@YA?AVFString@@AEBV4@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "MCP analytics interception",
+      "symbol": "HashToolIdentifier",
+      "module": "ModelContextProtocol",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\ModelContextProtocol\\Binaries\\Win64\\UnrealEditor-ModelContextProtocol.dll",
+      "pattern": "HashToolIdentifier",
+      "exported": true,
+      "export_line": "18   11 000250C0 ?HashToolIdentifier@Analytics@ModelContextProtocol@UE@@YA?AVFString@@AEBV4@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "SlateInspector screenshot",
+      "symbol": "USlateInspectorToolset::Screenshot",
+      "module": "SlateInspectorToolset",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Experimental\\Toolsets\\SlateInspectorToolset\\Binaries\\Win64\\UnrealEditor-SlateInspectorToolset.dll",
+      "pattern": "Screenshot@USlateInspectorToolset",
+      "exported": true,
+      "export_line": "32   1F 00016D30 ?Screenshot@USlateInspectorToolset@@SA?AUFToolsetImage@@AEBVFString@@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "editor save",
+      "symbol": "UEditorAssetLibrary::SaveLoadedAsset",
+      "module": "EditorScriptingUtilities",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Plugins\\Editor\\EditorScriptingUtilities\\Binaries\\Win64\\UnrealEditor-EditorScriptingUtilities.dll",
+      "pattern": "SaveLoadedAsset@UEditorAssetLibrary",
+      "exported": true,
+      "export_line": "144   8F 00022160 ?SaveLoadedAsset@UEditorAssetLibrary@@SA_NPEAVUObject@@_N@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "source-control interfaces",
+      "symbol": "ISourceControlModule::Get (inline accessor)",
+      "module": "Core",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Core.dll",
+      "pattern": "LoadModule@FModuleManager",
+      "exported": true,
+      "export_line": "4793 12B8 006279E0 ?LoadModule@FModuleManager@@QEAAPEAVIModuleInterface@@VFName@@W4ELoadModuleFlags@@@Z",
+      "required_export": false,
+      "mechanism": "inline accessor: resolves through FModuleManager::LoadModule, and the provider interface it returns is exported"
+    },
+    {
+      "surface": "source-control interfaces",
+      "symbol": "ISourceControlProvider",
+      "module": "SourceControl",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-SourceControl.dll",
+      "pattern": "ISourceControlProvider",
+      "exported": true,
+      "export_line": "27   1A 0002DBF0 ?AnnotateFile@USourceControlHelpers@@SA_NAEAVISourceControlProvider@@AEBVFString@@1AEAV?$TArray@VFAnnotationLine@@V?$TSizedDefaultAllocator@$0CA@@@@@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "analytics event attribute",
+      "symbol": "FAnalyticsEventAttribute",
+      "module": "Analytics",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Analytics.dll",
+      "pattern": "FAnalyticsEventAttribute",
+      "exported": true,
+      "export_line": "58   39 000196C0 ?VisitAll@FAnalyticsPropertyStore@@UEBAXAEBV?$TFunction@$$A6AX$$QEAUFAnalyticsEventAttribute@@@Z@@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "render-target readback",
+      "symbol": "FRenderTarget::ReadPixels",
+      "module": "Engine",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Engine.dll",
+      "pattern": "ReadPixels@FRenderTarget",
+      "exported": true,
+      "export_line": "26306 66C1 02492A20 ?ReadPixels@FRenderTarget@@UEAA_NAEAV?$TArray@UFColor@@V?$TSizedDefaultAllocator@$0CA@@@@@VFReadSurfaceDataFlags@@U?$TIntRect@H@Math@UE@@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    },
+    {
+      "surface": "render-target readback",
+      "symbol": "UTextureRenderTarget2D",
+      "module": "Engine",
+      "dll": "C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Engine.dll",
+      "pattern": "UTextureRenderTarget2D",
+      "exported": true,
+      "export_line": "3742  E9D 02456030 ??0UTextureRenderTarget2D@@QEAA@AEAVFVTableHelper@@@Z",
+      "required_export": true,
+      "mechanism": "imported symbol"
+    }
+  ],
+  "trial_build": {
+    "exit_code": 0,
+    "actions": 253,
+    "plugin_actions": 248,
+    "engine_actions": 5,
+    "engine_compile_or_link_actions": [
+      "Compile Resource [x64] Default.rc2",
+      "Compile [x64] SharedPCH.UnrealEd.Cpp20.cpp",
+      "Compile [x64] Logging.cpp",
+      "Compile [x64] PerModuleInline.gen.cpp"
+    ],
+    "dll": "C:\\Dev\\_b\\.local\\launcher-audit\\package\\Binaries\\Win64\\UnrealEditor-TurboMCP.dll",
+    "dll_sha256": "19129c0866c307ed8e3ce233bc6e26ad5004e5820b012b22a840e43c25899db5",
+    "package_modules_build_id": "55116800",
+    "log": "C:\\Dev\\_b\\.local\\launcher-audit\\buildplugin.log",
+    "failed_attempts": [
+      {
+        "attempt": 1,
+        "exit_code": 1,
+        "cause": "the command line split -Plugin= from its value, so AutomationTool received an empty path",
+        "log_kept": false,
+        "note": "The process was rerun with a quoted command line; the failed log was overwritten."
+      }
+    ]
+  },
+  "verdict": "ready-for-package",
+  "limits": [
+    "Investigation only. No plugin, descriptor or dependency change.",
+    "The trial build is a feasibility test, not a release package, and gives no support claim.",
+    "Nothing under C:/Program Files/Epic Games was written by this audit."
+  ]
+}

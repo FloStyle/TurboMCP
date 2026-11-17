@@ -9,11 +9,19 @@ Design: docs/design/verification.md
 Kind: investigation
 Review: source-reviewed
 
+## Approved slice: 2026-11-17 (R12, part 1)
+
+Owner decisions recorded in chat: D3 "yes", run the Launcher dependency audit before R11; D4, the owner installed Launcher 5.8.4 at `C:\Program Files\Epic Games\UE_5.8`.
+
+Kind: investigation. Assignment `launcher-584-audit`. New files only: `docs/audit/launcher-584-dependencies.md` and `docs/audit/launcher-584-dependencies.json`. The slice inspects the exact installed distribution, records dependency, module, symbol and toolchain availability, and ends in one of three verdicts: `ready-for-package`, `needs-decoupling: <list>`, or `blocked: <exact missing input>`.
+
+This slice does not authorize module extraction, a plugin or descriptor change, or any support claim. A trial `BuildPlugin` against the Launcher engine is a feasibility test, not a release package.
+
 ## Problem
-Verify dependency headers/libraries/manifests before proposing module extraction. Source 5.8.3 and installed 5.6 do not prove installed 5.8.3 support. Extract fixture-only dependencies only when production callers are accounted for; package against the exact target.
+Verify dependency headers/libraries/manifests before proposing module extraction. Source 5.8.4 and installed 5.6 do not prove installed 5.8.4 support. Extract fixture-only dependencies only when production callers are accounted for; package against the exact target.
 
 ## Scope
-Plugin descriptor/Build.cs, development commandlets, exact installed 5.8.3 distribution and clean consumer project.
+Plugin descriptor/Build.cs, development commandlets, exact installed 5.8.4 distribution and clean consumer project.
 
 ## Dependencies
 R16, R11
@@ -44,7 +52,7 @@ Pending. Record source/engine/artifact identity, command, exit, log and remainin
 
 **Decision:** plan. **Follow-up owner:** [R12](roadmap-r12.md).
 
-Source 5.8.3 plugin compilation is established; installed 5.8.3 package availability is not. Module extraction remains a proposal, not a proven prerequisite.
+Source 5.8.4 plugin compilation is established; installed 5.8.4 package availability is not. Module extraction remains a proposal, not a proven prerequisite.
 
 ### Next action and acceptance
 

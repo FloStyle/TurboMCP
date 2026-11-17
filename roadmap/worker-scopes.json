@@ -4477,6 +4477,19 @@
         }
       },
       "preserve_rows": []
+    },
+    "R12": {
+      "task_file": "todo/roadmap-r12.md",
+      "assignments": {
+        "launcher-584-audit": {
+          "files": [],
+          "new_files": [
+            "docs/audit/launcher-584-dependencies.md",
+            "docs/audit/launcher-584-dependencies.json"
+          ]
+        }
+      },
+      "preserve_rows": []
     }
   }
 }
