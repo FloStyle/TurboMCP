@@ -24,6 +24,9 @@ GitHub holds discussion and new evidence. The linked source plans preserve repor
 | `REL-HOST` | [#17 Finish repository protections and release publication controls](https://github.com/FloStyle/TurboMCP/issues/17) |
 | `DEV-CLAIM` | [#18 Make fresh-checkout task claim setup and output reliable](https://github.com/FloStyle/TurboMCP/issues/18) |
 | `UE59-PREP` | [#19 Prepare and verify Unreal 5.9 compatibility separately](https://github.com/FloStyle/TurboMCP/issues/19) |
+| `CI-MAINT` | [#20 Update pinned actions to supported runtime versions](https://github.com/FloStyle/TurboMCP/issues/20) |
+| `V1-GRAPH` | [#27 Require complete edit exports and explicit graph deletions](https://github.com/FloStyle/TurboMCP/issues/27) |
+| `V1-LOG` | [#28 Report disk logging failures and bound rotated records](https://github.com/FloStyle/TurboMCP/issues/28) |
 | `DOC-GUIDE` | [#23 Add interactive technical guide and presentation mode](https://github.com/FloStyle/TurboMCP/issues/23) |
 
 The eleven November field records are open investigations or partial work. They are not eleven newly confirmed defects. The multi-asset resolver and fresh-checkout claim fixes merged in PR #22 and their issues are closed with focused verification evidence. Release checks and Unreal 5.9 preparation are separate.
@@ -31,3 +34,11 @@ The eleven November field records are open investigations or partial work. They 
 Older FIELD-03 through FIELD-10 and the remaining roadmap records are linked from REL-SCOPE for reconciliation. Keep duplicate findings under one owner rather than copying every historical row into a new issue.
 
 When an issue closes, link the fix and evidence; keep this map as a stable ID index. A daily source release does not close any issue automatically.
+
+The [17 November reconciliation](audit/v1-remaining-reconciliation-2026-11-17.json)
+links current issues, older FIELD records and proposed repairs. The separate
+[acceptance mapping proposal](audit/v1-acceptance-mapping-2026-11-17.json) covers
+97 required cases: 20 existing-equivalent candidates, 59 partial checks and
+18 missing checks. These are coverage classifications, not test results.
+Graph replacement (#27) and call-log disk handling (#28) are confirmed source
+mismatches with approved disjoint repairs in progress. Neither is complete.
