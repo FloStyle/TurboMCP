@@ -254,6 +254,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-consumer-reply",
+      "path": "Tools/test-consumer-reply.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
+    },
+    {
       "id": "test-coverage-audit",
       "path": "Tools/test-coverage-audit.py",
       "tier": "offline",

@@ -39,6 +39,47 @@ def hex_id(value, length):
     return isinstance(value, str) and re.fullmatch(r'[0-9a-f]{%d}' % length, value)
 
 
+DIRTY_HEADER = re.compile(r'^dirty_packages: before=(\d+) after=(\d+) newly_dirty=(\d+) no_longer_dirty=(\d+)$')
+DIRTY_REVIEW = ('Review newly dirty packages against the requested targets; this report does not save '
+                'or discard them. Dependency/editor side effects may be included.')
+
+
+def split_edit_reply(reply):
+    """Split an edit reply into its message lines and its dirty-package block.
+
+    Every edit reply carries a dirty-package report after the message
+    (TurboMCPCallRecorder). The message is compared exactly and the report is
+    validated on its own, so a documented report cannot hide a change to the
+    operation's own answer.
+    """
+    lines = reply.splitlines()
+    for index, line in enumerate(lines):
+        if line.startswith(('dirty_packages:', '  newly_dirty:', '  no_longer_dirty:')):
+            return lines[:index], lines[index:]
+    return lines, []
+
+
+def check_dirty_block(block, expect_name=None, require=False):
+    """Validate the dirty-package report and return the newly dirty names."""
+    if not block:
+        if require:
+            raise ValueError('Edit reply carried no dirty-package report')
+        return []
+    header = DIRTY_HEADER.match(block[0])
+    if not header:
+        raise ValueError('Dirty-package report header is not in the documented form: %r' % block[0])
+    newly = int(header.group(3))
+    names = [line[len('  newly_dirty: '):] for line in block if line.startswith('  newly_dirty: ')]
+    if len(names) != newly:
+        raise ValueError('Dirty-package report has %d newly_dirty row(s) for newly_dirty=%d'
+                         % (len(names), newly))
+    if expect_name is not None and expect_name not in names:
+        raise ValueError('Dirty-package report does not name %s' % expect_name)
+    if require and block[-1] != DIRTY_REVIEW:
+        raise ValueError('Dirty-package report is missing its review sentence')
+    return names
+
+
 def windows_component(name):
     base = name.partition('.')[0].rstrip(' ').upper()
     return (name not in ('', '.', '..') and name[-1] not in '. '
@@ -697,14 +738,15 @@ def smoke(session, content, evidence):
     if inventory(content):
         raise ValueError('Consumer Content changed before the edit')
     created = create('create')
-    lines = created.splitlines()
+    lines, dirty = split_edit_reply(created)
     if lines != ['changed', f'Created Blueprint function library: {OBJECT}', f'Parent: {PARENT}',
-                  f'Generated class: {OBJECT}_C',
-                  'Unsaved changes: yes. No disk save was requested. Inspect the library before saving; do not automatically retry creation.']:
-        if any(line.startswith('error:') for line in lines) or created.startswith('unchanged'):
+                 f'Generated class: {OBJECT}_C',
+                 'Unsaved changes: yes. No disk save was requested. Inspect the library before saving; do not automatically retry creation.']:
+        if any(line.startswith('error:') for line in lines) or lines[:1] == ['unchanged']:
             record_mutation(content.parent, 'create', 'completed', 'reported_failure')
             raise ValueError('Consumer function library creation returned a refusal or partial failure')
         raise UnknownMutation('Consumer creation response did not confirm all expected outcomes')
+    check_dirty_block(dirty, ASSET, require=True)
     record_mutation(content.parent, 'create', 'completed', 'created')
     described = describe('after_create')
     expected_lines = {f'package: {ASSET}', f'object: {OBJECT}', 'class: Blueprint',
@@ -714,11 +756,13 @@ def smoke(session, content, evidence):
             not expected_lines.issubset(line.strip() for line in described.splitlines())):
         raise ValueError('Independent read did not verify the created unsaved function library')
     duplicate = create('duplicate')
-    if duplicate != 'unchanged\nrefused: The destination package already exists in memory, the registry or on disk: ' + ASSET:
-        if duplicate.startswith(('changed', 'unchanged')):
+    dup_lines, dup_dirty = split_edit_reply(duplicate)
+    if dup_lines != ['unchanged', 'refused: The destination package already exists in memory, the registry or on disk: ' + ASSET]:
+        if dup_lines[:1] in (['changed'], ['unchanged']):
             record_mutation(content.parent, 'duplicate', 'completed', 'reported_failure')
             raise ValueError('Duplicate consumer create did not refuse as expected')
         raise UnknownMutation('Duplicate consumer create returned an ambiguous result')
+    check_dirty_block(dup_dirty)
     record_mutation(content.parent, 'duplicate', 'completed', 'already_exists')
     if describe('after_refusal') != described or inventory(content):
         raise ValueError('Duplicate create changed the consumer asset or wrote Content')
