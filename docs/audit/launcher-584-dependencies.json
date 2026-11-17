@@ -894,20 +894,6 @@
     "dll_sha256": "19129c0866c307ed8e3ce233bc6e26ad5004e5820b012b22a840e43c25899db5",
     "package_modules_build_id": "55116800",
     "log": "C:\\Dev\\_b\\.local\\launcher-audit\\buildplugin.log",
-    "tail": [
-      "Output binary: C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor.exe",
-      "",
-      "Result: Succeeded",
-      "Total execution time: 249.67 seconds",
-      "Trace written to file C:\\Users\\flost\\AppData\\Local\\UnrealBuildTool\\Trace.uba with size 91.5kb",
-      "Took 250,09s to run dotnet.exe, ExitCode=0",
-      "Building plugin for target platforms: Win64",
-      "Reading filter rules from C:\\Dev\\_b\\.local\\launcher-audit\\package\\HostProject\\Plugins\\TurboMCP\\Config\\FilterPlugin.ini",
-      "Loading FilterPluginWin64.ini",
-      "BUILD SUCCESSFUL",
-      "AutomationTool executed for 0h 4m 11s",
-      "AutomationTool exiting with ExitCode=0 (Success)"
-    ],
     "failed_attempts": [
       {
         "attempt": 1,
