@@ -4417,6 +4417,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogSinkTest.cpp",
             "Tools/test-call-log-sink.py"
           ]
+        },
+        "v1-clean-consumer-contract": {
+          "files": [],
+          "new_files": [
+            "docs/audit/v1-clean-consumer-contract-2026-11-17.md"
+          ]
         }
       },
       "preserve_rows": []

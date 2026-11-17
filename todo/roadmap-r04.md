@@ -8,6 +8,22 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current review: clean package consumer contract (2026-11-17)
+
+Readiness: ready for source investigation only. The integration owner approves
+v1-clean-consumer-contract, one new audit contract file, following the existing
+[v1-supervised-package design](../docs/design/v1-guide-and-package.md) and ARC13.
+Specify the smallest owned BP-only and C++ consumer check of the exact staged
+ZIP: installation, loaded DLL identity, discovery, one read/edit/refusal, and
+preserved package bytes. Source review must cover supervisor admission, child
+ownership, ports, project-local enable settings, separate installed-plugin
+identity and temporary directory containment. The current start-editor and
+plugin_identity helpers assume the development TestProject/binary; do not bypass
+those guards or call that a consumer test. Propose exact minimal file changes
+and negative controls, then stop for integration-owner review. No engine launch,
+compilation, fixture mutation, implementation or stable approval is authorized
+by this source-only assignment. Launcher compatibility remains separate.
+
 ## V1 reconciliation review (2026-11-17)
 
 Candidate 62bca63ddc3b50f974eef9c6b1f63747de5d8c65 passed its six-file
