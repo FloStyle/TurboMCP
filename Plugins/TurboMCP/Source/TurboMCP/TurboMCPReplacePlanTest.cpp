@@ -4,6 +4,7 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "TurboMCPGraphReplace.h"
+#include "TurboMCPGraphText.h"
 #include "TurboMCPNodeType.h"
 #include "BlueprintActionDatabase.h"
 #include "BlueprintNodeSpawner.h"
@@ -68,6 +69,7 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
         Graph->AddNode(Node, false, false);
         Node->CreateNewGuid();
         Node->AllocateDefaultPins();
+        Node->PostPlacedNewNode();
         Node->NodePosX = X;
         return Node;
     };
@@ -75,6 +77,13 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     UK2Node_CallFunction* Source = Print(280);
     UK2Node_CallFunction* Consumer = Print(620);
     UK2Node_CallFunction* Target = Print(980);
+    // Stock PrintString placement sets DevelopmentOnly. Undo would otherwise
+    // normalize a manually created Enabled node during transaction loading.
+    if (!TestTrue(TEXT("Stock placement enables each PrintString for development only"),
+        Source->GetDesiredEnabledState() == ENodeEnabledState::DevelopmentOnly
+        && Consumer->GetDesiredEnabledState() == ENodeEnabledState::DevelopmentOnly
+        && Target->GetDesiredEnabledState() == ENodeEnabledState::DevelopmentOnly))
+        return false;
     UK2Node_CallFunction* TextSource = Call(UKismetTextLibrary::StaticClass(), TEXT("Conv_TextToString"), 180);
     UK2Node_CallFunction* TextLiteral = Call(UKismetSystemLibrary::StaticClass(), TEXT("MakeLiteralText"), 0);
     UK2Node_CallFunction* ObjectSource = Call(UKismetSystemLibrary::StaticClass(), TEXT("IsValid"), 100);
@@ -231,8 +240,8 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
         TArray<FString> Records;
         for (const UEdGraphNode* Node : Graph->Nodes)
         {
-            Records.Add(FString::Printf(TEXT("node %s %s %d,%d %s"), *Id(*Node), *Node->GetClass()->GetPathName(),
-                Node->NodePosX, Node->NodePosY, *Node->NodeComment));
+            Records.Add(FString::Printf(TEXT("node %s %s %d,%d enabled=%d %s"), *Id(*Node), *Node->GetClass()->GetPathName(),
+                Node->NodePosX, Node->NodePosY, int32(Node->GetDesiredEnabledState()), *Node->NodeComment));
             for (const UEdGraphPin* Pin : Node->Pins)
             {
                 FString Localization;
@@ -464,6 +473,27 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     ExpectHistoryUnchanged();
     TextDefault->DefaultTextValue = Localized;
 
+    // Diagnostic records use the real fingerprint fields. The independent
+    // graph oracle above still determines whether authored state was restored.
+    auto FingerprintRecords = [&]()
+    {
+        TMap<FString, FString> Records;
+        Records.Add(TEXT("Blueprint parent"), GetPathNameSafe(Blueprint->ParentClass));
+        Records.Add(TEXT("Graph schema"), GetPathNameSafe(Graph->GetSchema()->GetClass()));
+        for (const UEdGraphNode* Node : Graph->Nodes)
+        {
+            const FString Key = Node->GetName() + TEXT(" [") + Id(*Node) + TEXT("]");
+            Records.Add(Key, FTurboMCPGraphText::EditNodeState(*Node));
+            for (const UEdGraphPin* Pin : Node->Pins)
+            {
+                const FString PinKey = Key + TEXT(".") + Pin->PinName.ToString() + TEXT(" [") + Pin->PinId.ToString() + TEXT("]");
+                Records.Add(PinKey + TEXT(" shape"), FTurboMCPGraphText::EditPinShape(*Pin));
+                Records.Add(PinKey + TEXT(" default"), FTurboMCPGraphText::EditDefaultState(*Pin));
+            }
+        }
+        return Records;
+    };
+    const auto RecordsBeforeRollback = FingerprintRecords();
     const int32 BeforeSuccess = AppliedUndoCount();
     TestFalse(TEXT("Injected failure after live removal/write returns false"),
         FTurboMCPGraphReplace::ApplyInternal(LivePlan, Report, Error, true));
@@ -487,6 +517,22 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
         RestoredExport.Split(TEXT("\n"), &AfterHeader, nullptr);
         AddError(TEXT("Edit header before owned rollback: ") + BeforeHeader);
         AddError(TEXT("Edit header after owned rollback: ") + AfterHeader);
+        const auto RecordsAfterRollback = FingerprintRecords();
+        TArray<FString> Keys;
+        RecordsBeforeRollback.GetKeys(Keys);
+        for (const auto& Record : RecordsAfterRollback) Keys.AddUnique(Record.Key);
+        Keys.Sort();
+        for (const FString& Key : Keys)
+        {
+            const FString Before = RecordsBeforeRollback.FindRef(Key);
+            const FString After = RecordsAfterRollback.FindRef(Key);
+            if (Before.Equals(After, ESearchCase::CaseSensitive)) continue;
+            int32 Offset = 0;
+            while (Offset < FMath::Min(Before.Len(), After.Len()) && Before[Offset] == After[Offset]) ++Offset;
+            const int32 Start = FMath::Max(0, Offset - 30);
+            AddError(FString::Printf(TEXT("Fingerprint record %s differs at %d. Before [%s] after [%s]"),
+                *Key, Offset, *Before.Mid(Start, 120), *After.Mid(Start, 120)));
+        }
     }
 
     // Stock undo marks the package dirty. Start the independent successful
