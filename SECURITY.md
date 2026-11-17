@@ -1,6 +1,6 @@
 # Security
 
-TurboMCP is a development preview. Fixes target `main`; no stable release or backport support is promised yet.
+TurboMCP 1.0.0 is stable for Windows on the pinned Unreal Engine 5.8.4 source build. Fixes target `main`, and the `stable` branch carries released versions. Launcher builds and Unreal 5.9 are not certified yet.
 
 ## Report privately
 

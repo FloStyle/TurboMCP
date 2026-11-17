@@ -25,7 +25,7 @@ Read, view and edit are workflow groups, not permission levels. Some calls execu
 
 1. Use Windows, the C++ toolchain and a source engine matching [engine.lock.json](engine.lock.json).
 2. Install the plugin one of two ways:
-   - **From the 1.0.0 ZIP.** Download the package from the [1.0.0 release](https://github.com/FloStyle/TurboMCP/releases/tag/v1.0.0) and extract it so that `Plugins/TurboMCP` sits inside your project. The prebuilt binary matches only the engine build that produced it, identified by its BuildId `ad399df4-fb25-4fc8-af97-38e7d74715d2`. On your own 5.8.4 source build Unreal skips that binary and rebuilds TurboMCP from the included `Source` folder with your C++ toolchain, so the first editor build takes longer.
+   - **From the 1.0.0 ZIP.** Download the package from the [1.0.0 release](https://github.com/FloStyle/TurboMCP/releases/tag/v1.0.0) and extract it so that `Plugins/TurboMCP` sits inside your project. The prebuilt binary matches only the engine build that produced it, identified by its BuildId `ad399df4-fb25-4fc8-af97-38e7d74715d2`. Unreal does not load that binary on another engine build. Build the plugin from the included `Source` folder with your C++ toolchain, in a C++ project or under the engine's `Plugins` folder. A Blueprint-only project may refuse to build it and ask you to build manually.
    - **From source.** Copy `Plugins/TurboMCP` from a checkout of this repository into your project's `Plugins` directory and build your editor target.
 3. Open **Edit > Editor Preferences > Plugins > TurboMCP**, enable **TurboMCP**, then restart the editor. This per-user preference defaults to off.
 4. Enable Unreal's local MCP server and use its generated connection settings in your client.
