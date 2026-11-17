@@ -252,9 +252,15 @@ try {
 } finally { $zip.Dispose() }
 
 $zipHash = (Get-FileHash -LiteralPath $zipPath).Hash.ToLowerInvariant()
+# The scope follows the owner approval in release/status.json. A stable archive
+# must not describe itself as a preview, and a preview must not claim stable.
+$releaseScope = (& python (Join-Path $PSScriptRoot 'release_scope.py') --status (Join-Path $repo 'release/status.json')).Trim()
+if ($LASTEXITCODE -ne 0 -or $releaseScope -notin @('stable', 'development-preview')) {
+    throw 'Could not derive release_scope from release/status.json'
+}
 $manifest = [ordered]@{
     schema = 1
-    release_scope = 'development-preview'
+    release_scope = $releaseScope
     engine_distribution = 'source-build'
     source_commit = $commit
     plugin_tree = $pluginTree

@@ -870,6 +870,13 @@
       "acceptance": "infrastructure-regression"
     },
     {
+      "id": "test-release-scope",
+      "path": "Tools/test-release-scope.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
+    },
+    {
       "id": "test-replace-plan",
       "path": "Tools/test-replace-plan.py",
       "tier": "engine",

@@ -148,10 +148,14 @@ Integration resumed from this handoff in the canonical checkout.
    PR #35. Conflicts: worker-scopes.json resolved as a union of assignment
    entries (534 assignments), site/index.html and the rest of site/ taken
    verbatim from main so the branch and the published site agree.
-   python Tools/validate.py reports 28 passed, 0 failed on the merged tree.
-4. Still open after this: the clean-consumer 1.0.0 candidate, the public
-   export and final exact-candidate evidence, and the stable publish. Issue
-   #27 closes once PR #35 lands on main.
+   python Tools/validate.py reported 28 passed, 0 failed on that merged main
+   tree. The later candidate commit needed docs/audit/capabilities.json
+   regenerated, because the version bump changed the plugin tree hash and
+   validate-repo refused the stale inventory. The candidate now passes the
+   same 28 checks.
+4. Still open after this: both clean consumers, the public export and final
+   exact-candidate evidence, the owner approval that sets readiness, and the
+   stable publish. Issue #27 is closed.
 
 ## Workspace cleanup and engine access
 
