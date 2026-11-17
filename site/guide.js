@@ -42,7 +42,7 @@ function render() {
   let count = 0;
   const matchingGroups = new Set();
   chapters.forEach((chapter, index) => {
-    const match = terms.every((term) => chapter.textContent.toLowerCase().includes(term));
+    const match = terms.every((term) => `${chapter.textContent} ${chapter.dataset.group}`.toLowerCase().includes(term));
     chapter.hidden = presenting ? index !== active : !match;
     chapterLinks[index].hidden = !match;
     if (match) {

@@ -8,17 +8,28 @@
       "id": "why",
       "number": 1,
       "group": "Getting started",
-      "status": "Development preview",
+      "status": "Illustrative recipe, not a recorded passing test",
       "href": "guide.html#why",
-      "title": "Find what an event calls",
+      "title": "Build and test a Settings button",
       "tools": [
+        "ReadTurboMCPWidgetTree",
         "ReadTurboMCPBlueprintLoad",
-        "ReadTurboMCPNodeContext"
+        "PreviewTurboMCPWidgetAdd",
+        "EditTurboMCPFunctionAdd",
+        "EditTurboMCPGraphAppend",
+        "EditTurboMCPCompile",
+        "ReadTurboMCPPlayInputState",
+        "EditTurboMCPPlayInput",
+        "LookTurboMCPCapture",
+        "ReadTurboMCPEditorLog",
+        "EditTurboMCPSave"
       ],
       "contracts": [
-        "https://github.com/FloStyle/TurboMCP/blob/main/README.md"
+        "https://github.com/FloStyle/TurboMCP/wiki/Build-and-test-a-menu-feature",
+        "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "stock-unreal",
@@ -35,7 +46,8 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/tool-comparison.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "tool-roles",
@@ -52,7 +64,8 @@
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "discovery",
@@ -70,7 +83,8 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/user/installation.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "context-steering",
@@ -88,7 +102,8 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/protocol.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/audit/vision-workflow-review.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "results",
@@ -105,7 +120,8 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/release-1.0.0.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "blueprint-reading",
@@ -123,7 +139,8 @@
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "vision",
@@ -141,7 +158,8 @@
       ],
       "evidence": [
         "assets/asset-provenance.json"
-      ]
+      ],
+      "presentation": true
     },
     {
       "id": "graph-edits",
@@ -160,7 +178,8 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/audit/event-connect-workflow-review.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "graph-tidy",
@@ -178,7 +197,8 @@
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/graphs.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "batching",
@@ -194,7 +214,8 @@
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "inventory",
@@ -202,17 +223,16 @@
       "group": "Data, widgets and materials",
       "status": "Current tools",
       "href": "guide.html#inventory",
-      "title": "Find saved referencers of an asset",
+      "title": "Find assets and widgets affected by a change",
       "tools": [
         "ReadTurboMCPRefsBatch",
-        "ReadTurboMCPWidgetInventory",
-        "ReadTurboMCPNodeFind",
-        "ReadTurboMCPBulkExport"
+        "ReadTurboMCPWidgetInventory"
       ],
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "data-read",
@@ -227,7 +247,8 @@
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/data-asset-edits.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "data-edit",
@@ -235,7 +256,7 @@
       "group": "Data, widgets and materials",
       "status": "Revisioned property workflow",
       "href": "guide.html#data-edit",
-      "title": "Preview a guarded Data Asset change",
+      "title": "Preview changing one Data Asset field",
       "tools": [
         "PreviewTurboMCPDataAssetProperty",
         "ReadTurboMCPDataAssetProperty",
@@ -244,7 +265,8 @@
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/data-asset-edits.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "data-create",
@@ -260,7 +282,8 @@
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "data-tables",
@@ -277,7 +300,8 @@
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "widgets-materials",
@@ -296,7 +320,8 @@
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "play-input",
@@ -313,7 +338,8 @@
       "contracts": [
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "safeguards",
@@ -330,7 +356,8 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/SECURITY.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/architecture.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "feedback",
@@ -348,7 +375,8 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/SKILL.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/skills/turbomcp-session-report/references/report-format.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "development-process",
@@ -363,7 +391,8 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/contributing.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/worker-boundaries.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "installation",
@@ -380,7 +409,8 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/engine.lock.json",
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/user/troubleshooting.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "release",
@@ -397,114 +427,12 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/status.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/todo/roadmap-r04.md"
       ],
-      "evidence": []
-    },
-    {
-      "id": "turboux",
-      "number": 24,
-      "group": "TurboUX prototype",
-      "status": "Early software prototype",
-      "href": "guide.html#turboux",
-      "title": "Prototype a menu route in TurboUX",
-      "tools": [],
-      "contracts": [
-        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/v1-guide-and-package.md"
-      ],
-      "evidence": []
-    },
-    {
-      "id": "project-model",
-      "number": 25,
-      "group": "TurboUX prototype",
-      "status": "Implemented local model",
-      "href": "guide.html#project-model",
-      "title": "Name screens, controls and routes",
-      "tools": [],
-      "contracts": [],
-      "evidence": []
-    },
-    {
-      "id": "authoring-loop",
-      "number": 26,
-      "group": "TurboUX prototype",
-      "status": "Focused working-loop evidence",
-      "href": "guide.html#authoring-loop",
-      "title": "Play through a prototype route",
-      "tools": [],
-      "contracts": [],
-      "evidence": []
-    },
-    {
-      "id": "workspaces",
-      "number": 27,
-      "group": "TurboUX prototype",
-      "status": "Prototype workspaces",
-      "href": "guide.html#workspaces",
-      "title": "Reuse a button without reusing its action",
-      "tools": [],
-      "contracts": [],
-      "evidence": []
-    },
-    {
-      "id": "ux-inputs",
-      "number": 28,
-      "group": "TurboUX prototype",
-      "status": "Static prototype analysis",
-      "href": "guide.html#ux-inputs",
-      "title": "Specify Back with and without a modal",
-      "tools": [],
-      "contracts": [],
-      "evidence": []
-    },
-    {
-      "id": "command-parity",
-      "number": 29,
-      "group": "TurboUX prototype",
-      "status": "Shared boundary · parity in progress",
-      "href": "guide.html#command-parity",
-      "title": "Review a prototype change by ID",
-      "tools": [],
-      "contracts": [],
-      "evidence": []
-    },
-    {
-      "id": "portable-projects",
-      "number": 30,
-      "group": "TurboUX prototype",
-      "status": "Implemented portable format · focused checks",
-      "href": "guide.html#portable-projects",
-      "title": "Package a reproducible prototype",
-      "tools": [],
-      "contracts": [],
-      "evidence": []
-    },
-    {
-      "id": "svg-figma",
-      "number": 31,
-      "group": "TurboUX prototype",
-      "status": "Experimental interchange",
-      "href": "guide.html#svg-figma",
-      "title": "Compare visual export with the prototype",
-      "tools": [],
-      "contracts": [],
-      "evidence": []
-    },
-    {
-      "id": "native-handoff",
-      "number": 32,
-      "group": "TurboUX prototype",
-      "status": "Staged bridge · automatic sync planned",
-      "href": "guide.html#native-handoff",
-      "title": "Turn a prototype route into a PIE check",
-      "tools": [],
-      "contracts": [
-        "https://github.com/FloStyle/TurboMCP/blob/main/docs/design/v1-guide-and-package.md"
-      ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     },
     {
       "id": "next",
-      "number": 33,
+      "number": 24,
       "group": "Release reference",
       "status": "Evidence-led development",
       "href": "guide.html#next",
@@ -515,7 +443,8 @@
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/status.md",
         "https://github.com/FloStyle/TurboMCP/blob/main/docs/github-issues.md"
       ],
-      "evidence": []
+      "evidence": [],
+      "presentation": true
     }
   ]
 }
