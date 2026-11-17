@@ -4388,6 +4388,24 @@
             "docs/audit/v1-remaining-reconciliation-2026-11-17.json",
             "docs/audit/v1-acceptance-mapping-2026-11-17.json"
           ]
+        },
+        "v1-explicit-graph-replace": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphText.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphReplace.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplaceTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPReplacePlanTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphEditWorkflowTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
+            "Tools/test-graph-replace.py",
+            "Tools/test-replace-plan.py",
+            "docs/user/tools.md"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

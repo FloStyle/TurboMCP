@@ -8,6 +8,15 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current review: explicit replacement safety (2026-11-17)
+
+Readiness: ready. The integration owner approves v1-explicit-graph-replace in
+its exact schema-2 scope. Follow [the repair contract](../docs/design/v1-explicit-graph-replace.md)
+and ARC07 before historical evidence. This prioritizes the confirmed implicit
+node-deletion mismatch; it does not authorize arbitrary R06 work or new widget
+features. Worker returns evidence; root owns native execution, generated files,
+acceptance and release status. R04 remains incomplete.
+
 ## Current review: V1 completion batches (2026-11-17)
 
 Readiness: ready. The owner requests a factual Pages revision and completion
