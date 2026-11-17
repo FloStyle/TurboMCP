@@ -49,4 +49,4 @@ the two links.
 - It does not test a Launcher engine other than 5.8.4 Changelist `58902052`.
 - It does not exercise the extended acceptance suites on the Launcher engine; only the
   V1-BP-CONSUMER and V1-CPP-CONSUMER checks were run.
-- It does not change the plugin, the descriptor, the pin or any engine file.
+- It does not change the plugin, the descriptor or the pin. The packaging build wrote nothing under the engine folder. The consumer editor runs did make the engine's bundled Python 3.11 write `__pycache__` bytecode under `Engine/Binaries/ThirdParty/Python3/Win64/Lib`; that is generated cache from the engine's own Python, not a change to engine source or binaries.
