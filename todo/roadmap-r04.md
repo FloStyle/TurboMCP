@@ -8,6 +8,50 @@ Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
 
+## Current review: V1 completion batches (2026-11-17)
+
+Readiness: ready. The owner requests a factual Pages revision and completion
+of remaining V1 work with minimal focused tests. The integrator approves the
+two disjoint assignments in worker-scopes.json at the supplied full base.
+Workers cannot self-approve release acceptance or edit shared task status.
+
+### v1-factual-site
+
+Replace vague pitch, slogans and inflated comparisons with concrete operations,
+example input/output and explicit supported scope. Preserve the 196-tool
+catalogue, 33 chapter URLs, useful screenshots, reading/presentation views,
+search and feedback links. Verify claims against current source/evidence.
+State preview status and clean-consumer gaps plainly. No invented benchmarks
+or V1 certification. Use simple technical English, dark Noto and restrained
+colour. Public material stays synthetic/generic. No new framework, hosting,
+assets, telemetry or workflow changes. Check links/JS and representative
+rendered layouts; return a clean candidate for integrator publication.
+
+### v1-release-reconcile
+
+Reconcile open GitHub issues 2-12, 14-16 and 20 with current source, field plans,
+historical FIELD-03..10 and the active roadmap. Keep 5.9 issue19 separate.
+Produce the scoped JSON remaining-work report: original ID, current behavior,
+implementation/evidence state, duplicates/owner, V1 impact, exact next repair
+files and minimal focused check. Distinguish missing field evidence, engine
+bugs, implemented work and missing features. Preserve known append failures.
+Do not mark unknown causes fixed or invent accepted deferrals. Send the first
+actionable repair scope early for parallel integrator dispatch.
+
+Map each of the 97 required acceptance cases to an existing executable and
+assertion with dependencies, or a precise missing check, in the separate
+scoped JSON proposal. Do not edit acceptance status, release approval,
+architecture, baseline or shared trackers. A mapping is not passing evidence.
+
+Implement issue20 only: verify official supported checkout/setup-python
+release tags and commit provenance, then update exact pins in all four scoped
+workflow/template files. Preserve permissions, events, fork isolation, exact
+candidate checkout and source-only publication. No other workflow changes.
+Run focused structure/template/daily-release checks; hosted CI and all native
+execution belong to the integrator. Return candidate, evidence, limitations
+and proposed repair scopes. This first batch is not completion of V1: the
+integrator will dispatch remaining repairs, acceptance and clean-consumer work.
+
 ## Current review: interactive documentation and preview packaging (2026-11-17)
 
 Readiness: ready. The integration owner approves two disjoint assignments from
