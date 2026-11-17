@@ -51,6 +51,23 @@ binary Git-blob streaming and keeps the per-file hash guard. The targeted
 CRLF-configuration and opaque-binary staging regression passed. Native retry
 is pending; retain the initial failure as evidence.
 
+The retry passed: supervised run 802cee64cd5640019a27c45c9b81ad4d on
+source 9c97d01af2c094fb1f022fccf903f377a2f78fdc completed in 900.973 seconds.
+Doctor and Win64 BuildPlugin exited 0; the supervisor restored 16 fixture
+boundary files and left the candidate unchanged. The exact tree was then
+available on public main through PR #24 at 813fdaa7. Hosted PR/main validation,
+Pages deployment and the daily source prerelease passed.
+
+The local development-preview ZIP contains 371 files (40,160,669 bytes).
+SHA-256: eeafc80cb06838cf71e5ac836673d3daedd328d7dfb502f0f96850adad1617a6.
+DLL SHA-256: a627fae272bea15957b3ce2b6fcdaf3d624b1091d66e47e7a7bb967e7b87bdbd.
+The package module build ID matches the pinned source engine. The manifest
+records actual engine 5.8.4 even though stock packaging writes descriptor
+EngineVersion 5.8.0 and Installed=true. PDB symbols are included. These facts
+do not establish clean-consumer or Launcher compatibility. No binary was
+attached to the source-only daily release. GitHub #16 remains open for exact
+archive installation checks, and stable release acceptance remains unchanged.
+
 ## Reviewed website and exact identity candidates (2026-11-16)
 
 The integrator accepted the exact scope and reviewed code for the website
