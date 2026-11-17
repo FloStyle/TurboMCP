@@ -103,3 +103,32 @@ This local handoff and issue together are the takeover record. Website PR #31
 is merged; check main CI/Pages before claiming the live site has changed.
 TurboUX work must not be renewed. Figma testing is deferred. No new automatic
 goal is active: the user cleared it. Continue only the authorized release work.
+
+## Additional caller findings from Sol
+
+Source review found two more stale DataTable test assumptions: the current
+planner reports an unknown/ambiguous field with its internal-name guidance
+before the older refusal branch; row reads include page/revision metadata
+and default output includes values. The same scoped repair will request the
+documented names-only output and delimit actual rows, while retaining exact
+row identity/count and refusal assertions. These findings are not new
+production fixes. Native confirmation remains pending.
+
+## Workspace cleanup and engine access
+
+A final Dev-folder cleanup has NOT been performed. Read-only inventory found
+C:/Dev/TurboMCP alongside active C:/Dev/TurboMCP-Public, TurboMCP-Wiki-draft,
+TurboUX-native-review-20261117, historical evidence folders, weekly-2026-10-19
+and worktrees. They are review candidates, not approved deletions. Preserve
+active worktrees, evidence and recovery material until ownership/reference
+checks establish safe archival. The active repair worker still lives under
+.codex/worktrees; do not move it during its claimed assignment.
+
+Canonical workspace.local.json selects C:/UnrealEngine. engine.lock.json pins
+5.8.4 at f45729c0b6f097038e72b52d366a62baeca3275b; UnrealEditor.exe exists at
+C:/UnrealEngine/Engine/Binaries/Win64/UnrealEditor.exe. No UnrealEditor process
+was observed during this check. The current repair worker has no local
+workspace.local.json; do not assume its engine discovery is configured.
+Its assignment is explicitly source/offline only. Native work is scheduled
+by the integrator through the supervised runner with configured engine path
+and shared ownership locks; filesystem availability is not execution ownership.
