@@ -13,6 +13,7 @@
 #include "TurboMCPGraphText.h"
 #include "TurboMCPGraphTextLex.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPTestAdmission.h"
 
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
@@ -1201,8 +1202,11 @@ bool FTurboMCPWidgetPersistenceTest::RunTest(const FString& Parameters)
 	// and live-ancestor verification). This is a deliberate temporary refusal,
 	// not an environment bypass. A separately reviewed admission seam must
 	// replace this before native execution.
-	AddError(TEXT("admission-not-implemented: C++ supervisor context verification is unavailable"));
-	return false;
+	if (!TurboMCPTestAdmission::IsCppSupervisorAdmissionAvailable())
+	{
+		AddError(TEXT("admission-not-implemented: C++ supervisor context verification is unavailable"));
+		return false;
+	}
 
 	// This test performs a global package unload. It must only run inside the
 	// disposable TestProject editor owned by the suite runner.
