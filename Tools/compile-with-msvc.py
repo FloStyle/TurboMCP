@@ -110,6 +110,43 @@ def run(command, cwd, log):
     return result.returncode
 
 
+def to_clang_shared(lines):
+    """Translate MSVC shared flags into clang-cl equivalents.
+
+    The PCH flags are dropped because clang compiles syntax only, /external:I
+    becomes -isystem so engine headers stay external, and the MSVC-only warning
+    switches are dropped; clang gets its own unreachable-code error instead.
+    """
+    converted = []
+    for raw in lines:
+        line = raw.strip()
+        if not line:
+            continue
+        lowered = line.lower()
+        if lowered.startswith('/yu') or lowered.startswith('/fp') or lowered.startswith('/yc'):
+            continue
+        if lowered.startswith('/we') or lowered.startswith('/wd') or lowered.startswith('/wx'):
+            continue
+        if lowered.startswith('/external:i'):
+            converted.append('-isystem ' + line[len('/external:I'):].strip())
+            continue
+        converted.append(line)
+    return converted
+
+
+def exit_code(errors, warnings, allow_warnings):
+    """Exit status for one finished leg.
+
+    Warnings fail the leg. With --allow-warnings the run is diagnosis only and
+    returns 3, which no caller can mistake for a pass.
+    """
+    if errors:
+        return 1
+    if warnings:
+        return 3 if allow_warnings else 1
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--msvc', required=True, help='MSVC version directory or cl.exe path')
@@ -118,6 +155,8 @@ def main(argv=None):
     parser.add_argument('--engine', help='engine root; defaults to the configured engine')
     parser.add_argument('--file', help='compile one translation unit instead of the module')
     parser.add_argument('--scratch', help='scratch directory; defaults to <repo>/.local/x1-compiler')
+    parser.add_argument('--clang', action='store_true',
+                        help='compile with clang-cl instead of MSVC')
     parser.add_argument('--allow-warnings', action='store_true',
                         help='diagnosis only: do not fail on warnings')
     args = parser.parse_args(argv)
@@ -138,7 +177,13 @@ def main(argv=None):
         print('BLOCKED: no engine source at %s' % engine_source)
         return 2
 
-    cl = find_compiler(args.msvc)
+    if args.clang:
+        cl = pathlib.Path(args.msvc)
+        if not cl.is_file():
+            print('BLOCKED: no clang-cl at %s' % cl)
+            return 2
+    else:
+        cl = find_compiler(args.msvc)
     sources = pathlib.Path(args.sources) if args.sources else repo / 'Plugins/TurboMCP/Source/TurboMCP'
     scratch = pathlib.Path(args.scratch) if args.scratch else repo / '.local/x1-compiler'
     logs = scratch / 'logs'
@@ -164,16 +209,24 @@ def main(argv=None):
         print('BLOCKED: no shared PCH source at %s' % pch_cpp)
         return 2
 
+    if args.clang:
+        converted = to_clang_shared(read_rsp(shared))
+        shared = scratch / 'shared.rsp'
+        shared.write_text('\n'.join(converted) + '\n', encoding='utf-8')
+        print('clang: syntax-only, shared flags %s' % shared)
+
     pch = scratch / 'pch.pch'
     pch_log = logs / 'pch.log'
-    shared = retarget_shared(shared, cl, scratch, trailing)
-    pch_rsp = [f'"{pch_cpp}"', f'@"{shared}"', f'/FI"{yuu}"', f'/Yc"{yuu}"', f'/Fp"{pch}"', '/nologo', '/TP']
-    rsp_path = scratch / 'pch.rsp'
-    rsp_path.write_text('\n'.join(pch_rsp) + '\n', encoding='utf-8')
-    code = run([str(cl), '@' + str(rsp_path)], engine_source, pch_log)
-    print('pch: exit %d (log %s)' % (code, pch_log))
-    if code:
-        return 1
+    if not args.clang:
+        shared = retarget_shared(shared, cl, scratch, trailing)
+        pch_rsp = [f'"{pch_cpp}"', f'@"{shared}"', f'/FI"{yuu}"', f'/Yc"{yuu}"',
+                   f'/Fp"{pch}"', '/nologo', '/TP']
+        rsp_path = scratch / 'pch.rsp'
+        rsp_path.write_text('\n'.join(pch_rsp) + '\n', encoding='utf-8')
+        code = run([str(cl), '@' + str(rsp_path)], engine_source, pch_log)
+        print('pch: exit %d (log %s)' % (code, pch_log))
+        if code:
+            return 1
 
     files = sorted(sources.glob('*.cpp'))
     if args.file:
@@ -193,8 +246,12 @@ def main(argv=None):
         lines = [f'"{source}"']
         if args.sources:
             lines.append(f'/I"{sources.as_posix()}"')
-        lines += [f'@"{shared}"'] + includes + [
-            f'/Yu"{yuu}"', f'/Fp"{pch}"', f'/Fo"{obj}"', '/nologo', '/TP']
+        lines += [f'@"{shared}"'] + includes
+        if args.clang:
+            lines += [f'/FI"{yuu}"', '-fsyntax-only',
+                      '-Werror=unreachable-code-aggressive', '/nologo', '/TP']
+        else:
+            lines += [f'/Yu"{yuu}"', f'/Fp"{pch}"', f'/Fo"{obj}"', '/nologo', '/TP']
         per_file = scratch / (source.stem + '.rsp')
         per_file.write_text('\n'.join(lines) + '\n', encoding='utf-8')
         code = run([str(cl), '@' + str(per_file)], engine_source, log)
@@ -213,14 +270,14 @@ def main(argv=None):
     print()
     print('files=%d errors=%d warnings=%d C4702=%d failing=%d'
           % (len(files), total_errors, total_warnings, total_c4702, len(failed)))
-    if total_warnings and args.allow_warnings:
-        print('ALLOWING %d WARNING(S): --allow-warnings is for diagnosis only, not a pass'
-              % total_warnings)
     if failed:
         print('failing files: %s' % ', '.join(failed))
-        return 1
-    print('PASS: %d translation units compiled with %s' % (len(files), cl))
-    return 0
+    status = exit_code(total_errors, total_warnings, args.allow_warnings)
+    if status == 3:
+        print('DIAGNOSIS ONLY: %d warnings, not a pass' % total_warnings)
+    elif status == 0:
+        print('PASS: %d translation units compiled with %s' % (len(files), cl))
+    return status
 
 
 if __name__ == '__main__':
