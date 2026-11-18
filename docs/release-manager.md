@@ -12,6 +12,17 @@ After acceptance, verify the complete export and review its source and artifact 
 
 The checked-in GitHub workflow and local validation run the offline gate. Verify it on the active integration host. Hosted offline results do not satisfy native installation or release acceptance.
 
+## Second compiler
+
+The plugin module must compile with zero errors under each MSVC family Epic prefers for the pinned engine. For 5.8.4 the preferred families are 14.50.35717+ and 14.44.35207+, per `Engine/Config/Windows/Windows_SDK.json`, with the banned and minimum ranges applied to the compiler version. One compiler is not evidence: 1.0.0 shipped a C4702 break because every gate used the same family, and only 14.4x reports that break.
+
+Correction to 33a30826's message: the 1.0.0 compiler was MSVC 14.50.35728 (family 14.50.35717), which Epic lists as preferred, not banned.
+
+- `python Tools/check-toolchain.py --log <build log>` reads the compiler version a build names and compares it with the pinned rules. A banned version fails; a version outside the preferred ranges warns. Run it against the release evidence. It is a release gate, not part of `validate.py`, because validate.py runs offline and has no engine build logs.
+- `python Tools/compile-with-msvc.py --msvc <version-dir>` rebuilds the shared PCH and compiles the module's translation units from UBT's response files with the chosen compiler, writing only to scratch.
+
+This gate is manual. `release-check.py` reads evidence schema 1 and cannot verify it offline, so record the run IDs, the compiler versions and the error counts next to the release evidence.
+
 Before public publication, complete the [GitHub controls checklist](governance.md#github-controls-and-publication-checklist), test private vulnerability reporting and review binary assets under the [language policy](language.md). Versioned policies alone do not enable GitHub protections.
 
 ## Owner-authorized daily source publication (2026-11-16)
