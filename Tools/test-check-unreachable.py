@@ -6,9 +6,10 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Check the dead-statement scanner against the shapes it must accept and refuse.
 
-The first fixture is the shape v1.0.0 shipped: a fail-closed gate that returns
-immediately, with the real body still live underneath it. The others are shapes
-a naive line scan flags wrongly.
+The failure cases are the shipped X1 shape and the reviewer probes that got past
+the first version: a raw string with an unbalanced parenthesis that hid the rest
+of the file, and a dead statement whose identifier looks like a label. The pass
+cases are shapes a naive scan flags wrongly.
 """
 
 import importlib.util
@@ -112,35 +113,102 @@ bool Gate()
 }
 '''
 
+RAW_STRING_THEN_OLD_GATE = '''
+static void Report()
+{
+	const TCHAR* Text = TEXT(R"DSL(node (A
+  (more
+)DSL");
+	(void)Text;
+}
+
+bool FWidgetPersistenceTest::RunTest(const FString& Parameters)
+{
+	AddError(TEXT("admission-not-implemented"));
+	return false;
+	g();
+}
+'''
+
+RAW_STRING_WITH_RETURN = '''
+void F()
+{
+	const char* s = R"(
+line } return;
+end)";
+	g();
+}
+'''
+
+GOTO_LABEL_AFTER_RETURN = '''
+void F()
+{
+	if (!Ready())
+	{
+		goto done;
+	}
+	return;
+done:
+	g();
+}
+'''
+
+CASE_AFTER_RETURN = '''
+int32 Pick(int32 Value)
+{
+	switch (Value)
+	{
+	case 0:
+		return 0;
+	case 1:
+		g();
+		return 1;
+	}
+	return -1;
+}
+'''
+
+DEAD_STD_STRING = '''
+void F()
+{
+	return;
+	std::string s;
+}
+'''
+
 FIXTURES = [
-    ('old gate shape', OLD_RUNTEST, True),
-    ('fixed gate shape', FIXED_RUNTEST, False),
-    ('switch return then case', SWITCH_RETURN_THEN_CASE, False),
-    ('namespace function shape', TRACE_NAMESPACE, False),
-    ('comments and strings', COMMENTS_AND_STRINGS, False),
+    ('old gate shape', OLD_RUNTEST, 1),
+    ('fixed gate shape', FIXED_RUNTEST, 0),
+    ('switch return then case', SWITCH_RETURN_THEN_CASE, 0),
+    ('namespace function shape', TRACE_NAMESPACE, 0),
+    ('comments and strings', COMMENTS_AND_STRINGS, 0),
+    ('raw string with unbalanced paren then old gate', RAW_STRING_THEN_OLD_GATE, 1),
+    ('statement-level raw string with return', RAW_STRING_WITH_RETURN, 0),
+    ('goto label after return', GOTO_LABEL_AFTER_RETURN, 0),
+    ('case after return inside switch', CASE_AFTER_RETURN, 0),
+    ('dead std::string after return', DEAD_STD_STRING, 1),
 ]
 
 
 def main():
     failures = 0
-    for label, text, must_fail in FIXTURES:
+    for label, text, expected in FIXTURES:
         findings = scanner.scan_text(text, label)
-        if must_fail and not findings:
+        if len(findings) != expected:
             failures += 1
-            print('FAIL: %s was accepted' % label)
-        elif not must_fail and findings:
+            print('FAIL: %s reported %d finding(s), expected %d: %r'
+                  % (label, len(findings), expected, findings))
+            continue
+        if expected and not findings[0][0] < findings[0][1]:
             failures += 1
-            print('FAIL: %s was refused at line %d' % (label, findings[0][0]))
-        elif must_fail:
-            terminator, statement = findings[0][0], findings[0][1]
-            if not terminator < statement:
-                failures += 1
-                print('FAIL: %s reported terminator line %d after statement line %d'
-                      % (label, terminator, statement))
+            print('FAIL: %s reported terminator line %d after statement line %d'
+                  % (label, findings[0][0], findings[0][1]))
     if failures:
         print('RESULT: FAIL (%d case(s))' % failures)
         return 1
-    print('RESULT: PASS (old gate refused, fixed gate, switch, namespace and literals accepted)')
+    print('RESULT: PASS (%d fixtures: old gate, fixed gate, switch, namespace, literals, '
+          'raw string then gate, raw string with return, goto label, case after return, '
+          'dead std::string)' % len(FIXTURES))
     return 0
 
 

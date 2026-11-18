@@ -7,17 +7,19 @@
 """Refuse statements left dead by an unconditional terminator in the same block.
 
 A `return`, `continue` or `break` that always runs makes the rest of its block
-unreachable. MSVC reports that as C4702, which Unreal 5.8 raises to an error for
-test targets, so the break reaches a user who builds the plugin from source.
+unreachable. That is an error for projects on BuildSettingsVersion V7 or Latest
+(/we4702), so the break reaches a user who builds the plugin from source.
 
 The scan is deliberately conservative and works on source text:
 
-* string and character literals, `//` comments, `/* */` comments and
-  preprocessor lines are ignored;
+* string, character and raw string literals, `//` comments, `/* */` comments and
+  preprocessor lines are ignored. Raw strings are tracked across lines, with
+  their delimiter, so a `(` or `return` inside one never counts;
 * statements are tracked per brace depth, so a terminator inside an `if` block
   does not mark the rest of the function dead;
 * a label (`case X:`, `default:`, `name:`) ends the dead region, because control
-  can arrive there from elsewhere;
+  can arrive there from elsewhere. Access specifiers do not count, and `std::` or
+  `Name::` are not labels;
 * `break` is allowed directly inside a `switch` block.
 
 It reports the line of the terminator and the line of the first dead statement.
@@ -29,31 +31,61 @@ import re
 import sys
 
 SOURCE = pathlib.Path('Plugins/TurboMCP/Source')
-LABEL = re.compile(r'^(?:case\b[^:]*|default\s*:|[A-Za-z_]\w*\s*:)\s*')
 TERMINATOR = re.compile(r'^(return|continue|break)\b')
+CASE_LABEL = re.compile(r'^(?:case\b[^:]*|default\s*:)\s*')
+NAMED_LABEL = re.compile(r'^([A-Za-z_]\w*)\s*:(?!:)')
+ACCESS = {'public', 'private', 'protected'}
+RAW_START = re.compile(r'(?:u8|u|U|L)?R"([^ ()\\]{0,16})\(')
 
 
-def strip_code(line, in_block_comment):
-    """Return the code of one line with literals and comments blanked out."""
+def strip_label(text):
+    """Remove a leading label. Return (rest, is_label)."""
+    match = CASE_LABEL.match(text)
+    if match:
+        return text[match.end():].strip(), True
+    match = NAMED_LABEL.match(text)
+    if match:
+        if match.group(1) in ACCESS:
+            return text, False
+        return text[match.end():].strip(), True
+    return text, False
+
+
+def strip_code(line, state):
+    """Blank literals and comments in one line. Return (code, state).
+
+    ``state`` carries two things between lines: whether a block comment is open,
+    and the delimiter of an open raw string so its content stays blank across
+    lines.
+    """
     out = []
     index = 0
     length = len(line)
+    block = state.get('block', False)
+    raw = state.get('raw')
     while index < length:
-        char = line[index]
-        if in_block_comment:
+        if raw is not None:
+            end = line.find(')' + raw + '"', index)
+            if end < 0:
+                return ''.join(out), {'block': block, 'raw': raw}
+            index = end + len(raw) + 2
+            raw = None
+            continue
+        if block:
             end = line.find('*/', index)
             if end < 0:
-                return ''.join(out), True
+                return ''.join(out), {'block': True, 'raw': None}
             index = end + 2
-            in_block_comment = False
+            block = False
             continue
+        char = line[index]
         if char == '/' and index + 1 < length and line[index + 1] == '/':
             break
         if char == '/' and index + 1 < length and line[index + 1] == '*':
-            in_block_comment = True
+            block = True
             index += 2
             continue
-        if char in '"\'':
+        if char == '"' or char == '\'':
             quote = char
             index += 1
             while index < length:
@@ -66,9 +98,18 @@ def strip_code(line, in_block_comment):
                 index += 1
             out.append(' ')
             continue
+        match = RAW_START.match(line, index)
+        if match and (index == 0 or not (line[index - 1].isalnum() or line[index - 1] == '_')):
+            delimiter = match.group(1)
+            index = match.end()
+            end = line.find(')' + delimiter + '"', index)
+            if end < 0:
+                return ''.join(out), {'block': False, 'raw': delimiter}
+            index = end + len(delimiter) + 2
+            continue
         out.append(char)
         index += 1
-    return ''.join(out), in_block_comment
+    return ''.join(out), {'block': block, 'raw': None}
 
 
 CONTROL = re.compile(r'^(if|for|while|switch|else|do)\b')
@@ -85,7 +126,7 @@ def scan_text(text, name='<text>'):
     buffer_line = None
     buffer_parens = None
     parens = 0
-    in_comment = False
+    state = {'block': False, 'raw': None}
     branches = []
 
     def take():
@@ -100,10 +141,11 @@ def scan_text(text, name='<text>'):
 
     def handle(chunk, line, start_parens):
         while True:
-            label = LABEL.match(chunk)
+            chunk, label = strip_label(chunk)
             if not label:
                 break
-            chunk = chunk[label.end():].strip()
+            dead.pop(depth, None)
+            expected.pop(depth, None)
             if not chunk:
                 return
         if not chunk:
@@ -127,8 +169,8 @@ def scan_text(text, name='<text>'):
         if match and not (match.group(1) == 'break' and 'switch' in kinds):
             dead[depth] = (line, match.group(1))
 
-    for number, raw in enumerate(text.splitlines(), 1):
-        code, in_comment = strip_code(raw, in_comment)
+    for number, raw_line in enumerate(text.splitlines(), 1):
+        code, state = strip_code(raw_line, state)
         directive = code.strip()
         if directive.startswith('#'):
             word = directive[1:].strip().split(' ', 1)[0] if directive[1:].strip() else ''
@@ -180,6 +222,7 @@ def scan_text(text, name='<text>'):
     handle(chunk, line, start)
     return findings
 
+
 def scan_file(path):
     text = path.read_text(encoding='utf-8', errors='replace')
     return [(path, terminator, statement, word)
@@ -195,7 +238,7 @@ def main(argv=None):
     if not base.is_dir():
         print('FAIL: %s is not a directory' % base)
         return 2
-    files = sorted([p for p in base.rglob('*.cpp')] + [p for p in base.rglob('*.h')])
+    files = sorted(list(base.rglob('*.cpp')) + list(base.rglob('*.h')))
     found = []
     for path in files:
         found.extend(scan_file(path))
