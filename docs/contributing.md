@@ -46,6 +46,10 @@ Commit coherent changes and include the task ID in commit messages. Submit the c
 
 Record commands, exit codes, logs, source commit, artifact hash and engine identity as applicable. Identify tests that could not run. Static checks do not replace runtime acceptance.
 
+Gate evidence must come from a run on the pull request head, with the recorded tree unchanged since that commit. Evidence from a pre-commit tree, or from a commit that has since been amended, does not count, even when the content is identical.
+
+A change under `Plugins/` includes the regenerated [capability inventory](audit/capabilities.json) in the same pull request: run `python Tools/audit-inventory.py` and commit the result. Without it the plugin-tree pin is stale and `validate-repo` fails.
+
 The integration owner applies the [worker submission gate](worker-boundaries.md), reconciles and verifies the change against the current integration main, and records task evidence and status before regenerating TODO.md. Changes enter main through a reviewed PR or an explicitly authorized local merge. Never force-push main.
 
 Follow [public source preparation](public-preparation.md) for the initial publication and the [release guide](release.md) for stable releases.
