@@ -4,7 +4,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 def main():
     run=ROOT/'.local/validation'/uuid.uuid4().hex;run.mkdir(parents=True)
     catalog=json.loads((ROOT/'Tests/catalog.json').read_text())
-    checks=[{'id':n,'path':'Tools/'+n+'.py','timeout_seconds':300} for n in ['validate-repo','check-language']]
+    checks=[{'id':n,'path':'Tools/'+n+'.py','timeout_seconds':300} for n in ['validate-repo','check-language','check-unreachable']]
     checks += [x for x in catalog['suites'] if x['tier']=='offline']
     results=[]
     for check in checks:

@@ -107,6 +107,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-check-unreachable",
+      "path": "Tools/test-check-unreachable.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-build-provenance",
       "path": "Tools/test-build-provenance.py",
       "tier": "offline",
