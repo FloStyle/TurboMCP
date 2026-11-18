@@ -81,26 +81,29 @@ def classify(version, family, sdk):
 
 
 def toolchain_from_file(path):
-    """Return (version, family) named by a build log or evidence file.
+    """Return (version, family) from the toolchain line a build log carries.
 
-    The version is the number in "Using Visual Studio <version> toolchain"; the
-    family is the MSVC folder in the same line. Either may be absent, in which
-    case the other stands in for it.
+    Only "Using Visual Studio <version> toolchain (<dir>)" is accepted. The
+    version is the number on that line; the family is the MSVC folder on the same
+    line. A missing line, a missing folder or two different versions all fail,
+    because a guessed version is worse than no answer.
     """
     text = pathlib.Path(path).read_text(encoding='utf-8', errors='replace')
-    for line in text.splitlines():
-        if 'toolchain' not in line.lower() and 'MSVC' not in line:
-            continue
-        version = LOG_VERSION.search(line)
+    lines = [line for line in text.splitlines() if LOG_VERSION.search(line)]
+    if not lines:
+        raise ValueError('cannot determine the real compiler version in %s' % path)
+    found = {}
+    for line in lines:
+        version = LOG_VERSION.search(line).group(1)
         family = LOG_FAMILY.search(line.replace('/', '\\'))
-        if version or family:
-            return (version.group(1) if version else family.group(1),
-                    family.group(1) if family else None)
-    match = ANY_VERSION.search(text)
-    if match:
-        return match.group(1), None
-    raise ValueError('No MSVC version found in %s' % path)
-
+        found.setdefault(version, family.group(1) if family else None)
+    if len(found) > 1:
+        raise ValueError('conflicting compiler versions in %s: %s'
+                         % (path, ', '.join(sorted(found))))
+    version, family = next(iter(found.items()))
+    if not family:
+        raise ValueError('no MSVC folder on the toolchain line in %s' % path)
+    return version, family
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
@@ -127,10 +130,14 @@ def main(argv=None):
         print('FAIL: no Windows SDK rules at %s' % sdk_path)
         return 2
 
-    if args.log:
-        version, family = toolchain_from_file(args.log)
-    else:
-        version, family = args.version, args.family
+    try:
+        if args.log:
+            version, family = toolchain_from_file(args.log)
+        else:
+            version, family = args.version, args.family
+    except (OSError, ValueError) as error:
+        print('FAIL: %s' % error, file=sys.stderr)
+        return 2
     family = family or version
 
     sdk = read_json(sdk_path)
@@ -140,8 +147,8 @@ def main(argv=None):
         print('FAIL: %s is banned for this engine (%s)' % (label, sdk_path))
         return 1
     if verdict == 'below-minimum':
-        print('WARN: %s is below the engine minimum' % label)
-        return 0
+        print('FAIL: %s is below the engine minimum' % label)
+        return 1
     if verdict == 'preferred':
         print('PASS: %s is preferred for this engine' % label)
         return 0

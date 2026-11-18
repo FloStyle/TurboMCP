@@ -18,7 +18,7 @@ The plugin module must compile with zero errors under each MSVC family Epic pref
 
 Correction to 33a30826's message: the 1.0.0 compiler was MSVC 14.50.35728 (family 14.50.35717), which Epic lists as preferred, not banned.
 
-- `python Tools/check-toolchain.py --log <build log>` reads the compiler version a build names and compares it with the pinned rules. A banned version fails; a version outside the preferred ranges warns. Run it against the release evidence. It is a release gate, not part of `validate.py`, because existing evidence names a compiler that is now banned.
+- `python Tools/check-toolchain.py --log <build log>` reads the compiler version a build names and compares it with the pinned rules. A banned version fails; a version outside the preferred ranges warns. Run it against the release evidence. It is a release gate, not part of `validate.py`, because validate.py runs offline and has no engine build logs.
 - `python Tools/compile-with-msvc.py --msvc <version-dir>` rebuilds the shared PCH and compiles the module's translation units from UBT's response files with the chosen compiler, writing only to scratch.
 
 This gate is manual. `release-check.py` reads evidence schema 1 and cannot verify it offline, so record the run IDs, the compiler versions and the error counts next to the release evidence.

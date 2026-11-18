@@ -81,6 +81,24 @@ def main():
             failures += 1
             print('FAIL: the colleague toolchain was refused')
 
+        folder_only = base / 'folder-only.log'
+        folder_only.write_text('C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\'
+                               'VC\\Tools\\MSVC\\14.43.34808\\bin\\Hostx64\\x64\\cl.exe' + '\n',
+                               encoding='utf-8')
+        if toolchain.main(['--log', str(folder_only), '--sdk', str(sdk)]) != 2:
+            failures += 1
+            print('FAIL: a log with only a folder path was not refused with exit 2')
+
+        stray = base / 'stray.log'
+        stray.write_text('unrelated 14.44.35230 mention\n', encoding='utf-8')
+        if toolchain.main(['--log', str(stray), '--sdk', str(sdk)]) != 2:
+            failures += 1
+            print('FAIL: an unrelated version number was accepted as the compiler version')
+
+        if toolchain.main(['--version', '14.36.32548', '--family', '14.36.32532',
+                           '--sdk', str(sdk)]) != 1:
+            failures += 1
+            print('FAIL: a version below the minimum did not fail')
         if toolchain.main(['--version', '14.43.34808', '--sdk', str(sdk)]) != 1:
             failures += 1
             print('FAIL: a banned version did not fail')

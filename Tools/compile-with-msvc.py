@@ -118,6 +118,8 @@ def main(argv=None):
     parser.add_argument('--engine', help='engine root; defaults to the configured engine')
     parser.add_argument('--file', help='compile one translation unit instead of the module')
     parser.add_argument('--scratch', help='scratch directory; defaults to <repo>/.local/x1-compiler')
+    parser.add_argument('--allow-warnings', action='store_true',
+                        help='diagnosis only: do not fail on warnings')
     args = parser.parse_args(argv)
 
     repo = pathlib.Path(args.repo).resolve()
@@ -182,27 +184,38 @@ def main(argv=None):
             return 2
 
     total_errors = 0
+    total_warnings = 0
     total_c4702 = 0
     failed = []
     for source in files:
         obj = scratch / (source.stem + '.obj')
         log = logs / (source.stem + '.log')
-        lines = [f'"{source}"', f'@"{shared}"'] + includes + [
+        lines = [f'"{source}"']
+        if args.sources:
+            lines.append(f'/I"{sources.as_posix()}"')
+        lines += [f'@"{shared}"'] + includes + [
             f'/Yu"{yuu}"', f'/Fp"{pch}"', f'/Fo"{obj}"', '/nologo', '/TP']
         per_file = scratch / (source.stem + '.rsp')
         per_file.write_text('\n'.join(lines) + '\n', encoding='utf-8')
         code = run([str(cl), '@' + str(per_file)], engine_source, log)
         text = log.read_text(encoding='utf-8', errors='replace')
         errors = len(re.findall(r' error ', text))
+        warnings = len(re.findall(r' warning C', text))
         c4702 = len(re.findall(r'C4702', text))
         total_errors += errors
+        total_warnings += warnings
         total_c4702 += c4702
-        if code or errors:
+        if code or errors or (warnings and not args.allow_warnings):
             failed.append(source.name)
-        print('%-52s exit=%-3d errors=%-4d C4702=%d' % (source.name, code, errors, c4702))
+        print('%-52s exit=%-3d errors=%-4d warnings=%-3d C4702=%d'
+              % (source.name, code, errors, warnings, c4702))
 
     print()
-    print('files=%d errors=%d C4702=%d failing=%d' % (len(files), total_errors, total_c4702, len(failed)))
+    print('files=%d errors=%d warnings=%d C4702=%d failing=%d'
+          % (len(files), total_errors, total_warnings, total_c4702, len(failed)))
+    if total_warnings and args.allow_warnings:
+        print('ALLOWING %d WARNING(S): --allow-warnings is for diagnosis only, not a pass'
+              % total_warnings)
     if failed:
         print('failing files: %s' % ', '.join(failed))
         return 1
