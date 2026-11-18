@@ -226,6 +226,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-compile-matrix",
+      "path": "Tools/test-compile-matrix.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-collapse-function",
       "path": "Tools/test-collapse-function.py",
       "tier": "engine",

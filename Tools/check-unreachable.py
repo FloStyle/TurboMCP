@@ -32,7 +32,7 @@ import sys
 
 SOURCE = pathlib.Path('Plugins/TurboMCP/Source')
 TERMINATOR = re.compile(r'^(return|continue|break)\b')
-CASE_LABEL = re.compile(r'^(?:case\b[^:]*|default\s*:)\s*')
+CASE_LABEL = re.compile(r'^(?:case\b.*?|default):(?!:)\s*')
 NAMED_LABEL = re.compile(r'^([A-Za-z_]\w*)\s*:(?!:)')
 ACCESS = {'public', 'private', 'protected'}
 RAW_START = re.compile(r'(?:u8|u|U|L)?R"([^ ()\\]{0,16})\(')
@@ -211,11 +211,13 @@ def scan_text(text, name='<text>'):
                 chunk, line, start = take()
                 handle(chunk, line, start)
                 expected.pop(depth, None)
+                # Only the block that closes loses its dead region. The parent
+                # keeps its own: a terminator before a nested block still kills
+                # what follows that block.
                 dead.pop(depth, None)
                 if kinds:
                     kinds.pop()
                 depth = max(0, depth - 1)
-                dead.pop(depth, None)
             else:
                 buffer.append(char)
     chunk, line, start = take()

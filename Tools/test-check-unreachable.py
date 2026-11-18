@@ -176,6 +176,22 @@ void F()
 }
 '''
 
+BREAK_IN_LOOP_INSIDE_SWITCH = '''
+void F(int32 x)
+{
+	switch (x)
+	{
+	case 1:
+		return;
+		for (;;)
+		{
+			break;
+		}
+		Dead();
+	}
+}
+'''
+
 FIXTURES = [
     ('old gate shape', OLD_RUNTEST, 1),
     ('fixed gate shape', FIXED_RUNTEST, 0),
@@ -187,6 +203,7 @@ FIXTURES = [
     ('goto label after return', GOTO_LABEL_AFTER_RETURN, 0),
     ('case after return inside switch', CASE_AFTER_RETURN, 0),
     ('dead std::string after return', DEAD_STD_STRING, 1),
+    ('break in a loop inside a switch case', BREAK_IN_LOOP_INSIDE_SWITCH, 1),
 ]
 
 
@@ -208,7 +225,7 @@ def main():
         return 1
     print('RESULT: PASS (%d fixtures: old gate, fixed gate, switch, namespace, literals, '
           'raw string then gate, raw string with return, goto label, case after return, '
-          'dead std::string)' % len(FIXTURES))
+          'dead std::string, break in a loop inside a switch)' % len(FIXTURES))
     return 0
 
 
